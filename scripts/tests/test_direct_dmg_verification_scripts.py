@@ -1,4 +1,5 @@
 from pathlib import Path
+import stat
 import unittest
 
 
@@ -41,11 +42,13 @@ class DirectDMGVerificationScriptTests(unittest.TestCase):
         self.assertIn('mv "$TEMP_DMG.sha256" "$CHECKSUM_PATH"', text)
 
     def test_hosted_wrapper_is_read_only_and_uses_canonical_github_asset(self) -> None:
-        text = (
+        wrapper = (
             ROOT
             / "scripts"
             / "Run-NeAntik-0.3.12-DMG-Hosted-Verification.command"
-        ).read_text()
+        )
+        text = wrapper.read_text()
+        self.assertTrue(wrapper.stat().st_mode & stat.S_IXUSR)
         self.assertIn("verify-direct-hosted-dmg.sh", text)
         self.assertIn(
             "https://github.com/AffPapa/neantik/releases/download/v0.3.12/"

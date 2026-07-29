@@ -44,5 +44,15 @@
 	<string></string>
 	<key>NeAntikTelemetryEndpoint</key>
 	<string></string>
+	<key>NeAntikUpdateChannelEnabled</key>
+	<false/>
+	<key>NeAntikUpdateAutoDownload</key>
+	<false/>
+	<key>NeAntikUpdateManifestURL</key>
+	<string></string>
+	<key>NeAntikUpdatePublicKeyBase64</key>
+	<string></string>
+	<key>NeAntikUpdatePublicKeyID</key>
+	<string></string>
 </dict>
 </plist>

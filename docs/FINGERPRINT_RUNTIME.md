@@ -24,6 +24,19 @@ high-bit values are folded into the supported positive range and any resulting
 collisions are resolved before the repaired metadata is persisted. The launch
 builder applies the same conversion defensively.
 
+Each profile also persists identity catalog version `1` and the tuple ID
+derived from its runtime-compatible seed. Catalog v1 is immutable: its tuple
+order and count must not change. An unknown catalog version or a stored tuple
+that no longer matches the seed fails closed instead of silently rotating the
+profile fingerprint. A future catalog requires a new version and an explicit
+user-visible migration.
+
+Profile metadata writes are atomic and keep one owner-only previous revision.
+If the current JSON becomes undecodable, NeAntik restores the valid previous
+revision, preserves the rejected bytes under the owner-only `Recovery`
+directory, and leaves the profile's `BrowserData` untouched. If no valid
+revision exists, storage remains fail-closed.
+
 NeAntik deliberately does not guess CPU, GPU, screen, memory, or platform
 version in the manager. Those values must be generated as one coherent tuple
 inside the exact Chromium runtime and proven by the three-pass check. A
@@ -78,16 +91,21 @@ controls:
 --force-webrtc-ip-handling-policy=disable_non_proxied_udp
 --disable-quic
 --dns-prefetch-disable
+--disable-features=AsyncDns,DnsOverHttps[,WebGPUService]
 --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE <proxy host>
 --proxy-bypass-list=<-loopback>
 ```
 
 The resolver rule permits DNS resolution of the proxy itself while preventing
-other browser components from resolving target hosts directly.
+other browser components from resolving target hosts directly. Async DNS and
+DoH are disabled in proxy mode as defense in depth. Direct profiles use
+`--force-webrtc-ip-handling-policy=default_public_interface_only` to avoid
+exposing every local interface while preserving ordinary WebRTC calls.
 
 Direct Chromium supports authenticated HTTP/HTTPS proxies through its native
 authentication flow. Chromium does not implement SOCKS5 authentication, so
-NeAntik Direct accepts SOCKS5 only without credentials.
+NeAntik Direct accepts SOCKS5 only without credentials. The Store edition
+uses Apple's Network framework and has a separate proxy implementation.
 
 After a successful proxy test, NeAntik also stores the exit timezone and
 primary locale with the profile identity. A compatible runtime receives both
@@ -161,8 +179,17 @@ Reports are stored locally with owner-only file permissions:
 ## Production qualification
 
 The ordinary `verified` verdict is useful for engineering diagnostics, but it
-is not sufficient by itself for a production release. A report is
-production-qualified only when all of the following are true:
+is not sufficient by itself for a production release. Schema 2 deliberately
+separates two levels:
+
+- **public-alpha-qualified** proves that the normal browser surfaces used by
+  the current alpha are available and stable in A -> B -> A;
+- **production-qualified** additionally proves repeat-call and main-realm /
+  worker coherence. A legacy schema 1 report may remain valid public-alpha
+  evidence, but can never satisfy the strict production gate.
+
+A schema 2 report is production-qualified only when all of the following are
+true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
 - the ordinary verdict is `verified`;
@@ -172,13 +199,24 @@ production-qualified only when all of the following are true:
 - all of those required values are stable between the first and repeated
   launch of profile A;
 - WebGL pixels differ between profiles A and B.
+- repeated Canvas, WebGL pixel, and ClientRects reads match the first read in
+  each capture, so per-call random noise cannot pass;
+- Canvas and WebGL results from the main realm agree with a dedicated Web
+  Worker using OffscreenCanvas;
+- main-realm and worker UA, Client Hints, platform, languages, timezone,
+  `Intl` locale, CPU count, WebGL metadata/extensions, and shader precision
+  agree;
+- CSS `device-width`, `device-height`, and `resolution` media queries agree
+  with the exposed screen and DPR values;
 - the runtime version and valid code signature are recorded;
 - SHA-256 hashes bind both the runtime executable and Chromium Framework.
 
-The Direct UI shows production evidence separately from the diagnostic
-verdict. The runtime audit CLI enforces the same distinction: diagnostic mode
-may prove that the fingerprint protocol works, while browser mode must also
-pass the production qualification gate.
+The Direct UI shows public-alpha evidence separately from strict production
+evidence and the ordinary diagnostic verdict. The runtime audit CLI and the
+independent Python verifier enforce the same distinction. Missing worker,
+OffscreenCanvas, CSS media-query, or shader-precision evidence is a confirmed
+strict-production limitation; the gates must not synthesize or substitute
+values to obtain a pass.
 
 NeAntik re-inspects the signature, version, architecture, and both binary
 hashes before and after A -> B -> A. If the runtime changes during the check,

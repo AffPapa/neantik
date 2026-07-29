@@ -181,6 +181,9 @@ struct FingerprintAuditView: View {
                     "Контекст: модель графики, расширения, шрифты, экран, процессор, память, язык, часовой пояс, Client Hints и хэшированные адреса WebRTC."
                 )
                 Text(
+                    "Строгая проверка также сравнивает повторные вызовы, CSS media queries и значения основной страницы с Web Worker и OffscreenCanvas."
+                )
+                Text(
                     "Проверочный скрипт запускается только для этой проверки через локальный DevTools. NeAntik не внедряет его в обычные страницы."
                 )
             }
@@ -244,6 +247,51 @@ struct FingerprintAuditView: View {
                 .padding(.vertical, 4)
             }
 
+            GroupBox("Происхождение проверки") {
+                VStack(alignment: .leading, spacing: 9) {
+                    LabeledContent(
+                        "Менеджер",
+                        value: report.safeManagerVersionSummary
+                    )
+                    LabeledContent(
+                        "Схема и каталог",
+                        value:
+                            "\(report.effectiveAuditSchemaVersion) · \(report.identityCatalogVersion.map(String.init) ?? "не записан")"
+                    )
+                    LabeledContent(
+                        "Движок",
+                        value: report.safeRuntimeVersionSummary
+                    )
+                    LabeledContent(
+                        "Режим",
+                        value: report.effectiveExecutionMode.diagnosticTitle
+                    )
+                    LabeledContent(
+                        "Подпись",
+                        value: report.safeRuntimeSignatureSummary
+                    )
+
+                    DisclosureGroup("Безопасная диагностическая сводка") {
+                        Text(report.safeDiagnosticSummary)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .padding(.top, 6)
+                            .accessibilityLabel(
+                                "Безопасная диагностическая сводка проверки"
+                            )
+                    }
+                    .font(.caption)
+
+                    Text(
+                        "Текст можно выделить и скопировать. В нём нет имён и идентификаторов профилей, настроек прокси или измеренных значений сайтов."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+
             GroupBox("Доказательство для релиза") {
                 VStack(alignment: .leading, spacing: 8) {
                     if report.isPublicAlphaReleaseQualified {
@@ -252,10 +300,24 @@ struct FingerprintAuditView: View {
                             systemImage: "checkmark.seal.fill"
                         )
                         .foregroundStyle(.green)
-                        if !report.productionReleaseIssues.isEmpty {
-                            Text(
-                                "Для строгого production-уровня ещё нужна полностью согласованная модель устройства Apple."
+                        if report.isProductionReleaseQualified {
+                            Label(
+                                "Строгая согласованность production подтверждена",
+                                systemImage: "checkmark.shield.fill"
                             )
+                            .foregroundStyle(.green)
+                        } else {
+                            Label(
+                                "Строгая согласованность production пока не подтверждена",
+                                systemImage: "exclamationmark.shield.fill"
+                            )
+                            .foregroundStyle(.orange)
+                            ForEach(
+                                report.productionReleaseIssues,
+                                id: \.self
+                            ) { issue in
+                                Text("• \(localizedIssue(issue))")
+                            }
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         }
@@ -284,6 +346,28 @@ struct FingerprintAuditView: View {
         if issue.contains("browser mode") ||
             issue.contains("diagnostic mode") {
             return "Отчёт получен не в обычном режиме браузера."
+        }
+        if issue.contains("strict fingerprint audit schema") {
+            return "Нужен свежий отчёт текущего формата; старый отчёт подходит только для уровня public alpha."
+        }
+        if issue.contains("immutable identity catalog") {
+            return "Отчёт не связан с текущей неизменяемой версией каталога устройств."
+        }
+        if issue.contains("disagrees with worker_") ||
+            issue.contains("page and worker") {
+            return "Основная страница и Web Worker показывают разные значения."
+        }
+        if issue.contains("canvas_repeat") {
+            return "Повторные чтения Canvas внутри одной страницы нестабильны."
+        }
+        if issue.contains("client_rects_repeat") {
+            return "Повторные чтения ClientRects внутри одной страницы нестабильны."
+        }
+        if issue.contains("webgl_pixels_repeat") {
+            return "Повторные чтения пикселей WebGL внутри одной страницы нестабильны."
+        }
+        if issue.contains("CSS screen") {
+            return "CSS media queries не согласованы с размером экрана и DPR."
         }
         if issue.contains("runtime") {
             return "Отчёт не удалось надёжно связать с проверенным браузерным движком."

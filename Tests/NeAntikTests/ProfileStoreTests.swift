@@ -229,6 +229,83 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func recoversPreviousRevisionWithoutTouchingBrowserData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let original = try store.upsert(
+            BrowserProfile(name: "Previous revision")
+        )
+        let marker = paths.browserDataDirectory(for: original.id)
+            .appendingPathComponent("session-marker")
+        try Data("keep".utf8).write(to: marker)
+
+        var edited = original
+        edited.name = "Newest revision"
+        _ = try store.upsert(edited)
+        let corruptData = Data("{ partial-write".utf8)
+        try paths.writePrivateFile(corruptData, to: paths.profilesFile)
+
+        let recovered = ProfileStore(paths: paths)
+
+        #expect(
+            recovered.profile(withID: original.id)?.name ==
+                "Previous revision"
+        )
+        #expect(recovered.lastError?.contains("Recovery") == true)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        let recoveryFiles = try FileManager.default.contentsOfDirectory(
+            at: paths.profilesRecoveryDirectory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(recoveryFiles.count == 1)
+        #expect(try Data(contentsOf: recoveryFiles[0]) == corruptData)
+        let backupMode = try FileManager.default.attributesOfItem(
+            atPath: paths.profilesBackupFile.path
+        )[.posixPermissions] as? NSNumber
+        let rejectedMode = try FileManager.default.attributesOfItem(
+            atPath: recoveryFiles[0].path
+        )[.posixPermissions] as? NSNumber
+        #expect(backupMode?.intValue == 0o600)
+        #expect(rejectedMode?.intValue == 0o600)
+    }
+
+    @Test
+    func symlinkedRecoverySnapshotBlocksProfileOverwrite() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let original = try store.upsert(BrowserProfile(name: "Original"))
+        try FileManager.default.removeItem(at: paths.profilesBackupFile)
+        let protectedData = Data("outside".utf8)
+        try protectedData.write(to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: paths.profilesBackupFile,
+            withDestinationURL: outside
+        )
+
+        var edited = original
+        edited.name = "Must not persist"
+        #expect(throws: (any Error).self) {
+            try store.upsert(edited)
+        }
+
+        #expect(store.profile(withID: original.id)?.name == "Original")
+        #expect(try Data(contentsOf: outside) == protectedData)
+    }
+
+    @Test
     func rejectsSymlinkedProfileDirectoryWithoutWritingOutsideRoot() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

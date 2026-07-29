@@ -56,6 +56,8 @@ fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
+"$PROJECT_DIR/scripts/verify-direct-update-policy.py"
+"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 "$PROJECT_DIR/scripts/verify-direct-ui-localization.py"
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
   --app "$APP_PATH" \

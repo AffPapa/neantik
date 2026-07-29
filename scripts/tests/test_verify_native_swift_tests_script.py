@@ -26,5 +26,6 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("trap cleanup EXIT", text)
         self.assertIn("/private/tmp/nevision-swift-cache-*", text)
         self.assertIn("rm -rf \"$SWIFT_TEST_ROOT\"", text)
+
 if __name__ == "__main__":
     unittest.main()

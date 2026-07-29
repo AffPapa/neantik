@@ -106,37 +106,131 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
     }
 }
 
+struct ProxyContextEvidence: Codable, Equatable, Sendable {
+    static let supportedSource = "ipapi.co"
+    static let freshnessLifetime: TimeInterval = 30 * 24 * 60 * 60
+
+    let source: String
+    let observedAt: Date
+
+    static func ipAPI(observedAt: Date = Date()) -> ProxyContextEvidence {
+        ProxyContextEvidence(
+            source: supportedSource,
+            observedAt: observedAt
+        )
+    }
+
+    var isValid: Bool {
+        source == Self.supportedSource &&
+            observedAt.timeIntervalSinceReferenceDate.isFinite
+    }
+
+    func isFresh(relativeTo now: Date = Date()) -> Bool {
+        guard isValid else { return false }
+        let age = now.timeIntervalSince(observedAt)
+        return age >= -5 * 60 && age <= Self.freshnessLifetime
+    }
+}
+
+enum BrowserIdentityCatalog {
+    static let currentVersion = 1
+
+    // Version 1 is immutable. Reordering, removing, or appending entries would
+    // change seed modulo selection for existing profiles. A future catalog
+    // must use a new version and an explicit user-visible identity migration.
+    static let tupleIDs = [
+        "macbook-air-m1",
+        "macbook-pro-m1-pro",
+        "macbook-air-m2",
+        "macbook-pro-m2-max",
+        "macbook-pro-m2-pro",
+        "macbook-air-m3",
+        "macbook-pro-m3-max",
+        "macbook-pro-m3-pro",
+        "macbook-air-m4",
+        "macbook-pro-m4-max",
+        "macbook-pro-m4-pro"
+    ]
+
+    static func tupleID(forRuntimeSeed seed: UInt32) -> String {
+        tupleIDs[Int(seed % UInt32(tupleIDs.count))]
+    }
+}
+
 struct BrowserIdentity: Codable, Equatable, Sendable {
     static let maximumRuntimeSeed = UInt32(Int32.max)
 
     let seed: UInt32
     let timezoneIdentifier: String?
     let localeIdentifier: String?
+    let catalogVersion: Int
+    let deviceTupleID: String
+    let proxyContextEvidence: ProxyContextEvidence?
 
     init(
         seed: UInt32? = nil,
         timezoneIdentifier: String? = nil,
-        localeIdentifier: String? = nil
+        localeIdentifier: String? = nil,
+        proxyContextEvidence: ProxyContextEvidence? = nil
     ) {
         let value = seed ??
             UInt32.random(in: 1...Self.maximumRuntimeSeed)
         self.seed = Self.runtimeCompatibleSeed(value)
+        catalogVersion = BrowserIdentityCatalog.currentVersion
+        deviceTupleID = BrowserIdentityCatalog.tupleID(
+            forRuntimeSeed: Self.runtimeCompatibleSeed(value)
+        )
         self.timezoneIdentifier = timezoneIdentifier.flatMap {
             TimeZone(identifier: $0) == nil ? nil : $0
         }
         self.localeIdentifier = localeIdentifier.flatMap(Self.normalizedLocale)
+        self.proxyContextEvidence = proxyContextEvidence.flatMap {
+            $0.isValid ? $0 : nil
+        }
     }
 
     private enum CodingKeys: String, CodingKey {
         case seed
         case timezoneIdentifier
         case localeIdentifier
+        case catalogVersion
+        case deviceTupleID
+        case proxyContextEvidence
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSeed = try container.decode(UInt32.self, forKey: .seed)
         seed = decodedSeed == 0 ? 1 : decodedSeed
+        let decodedCatalogVersion = try container.decodeIfPresent(
+            Int.self,
+            forKey: .catalogVersion
+        ) ?? BrowserIdentityCatalog.currentVersion
+        guard decodedCatalogVersion == BrowserIdentityCatalog.currentVersion
+        else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .catalogVersion,
+                in: container,
+                debugDescription:
+                    "Unsupported browser identity catalog version \(decodedCatalogVersion)."
+            )
+        }
+        catalogVersion = decodedCatalogVersion
+        let expectedTupleID = BrowserIdentityCatalog.tupleID(
+            forRuntimeSeed: Self.runtimeCompatibleSeed(seed)
+        )
+        if let decodedTupleID = try container.decodeIfPresent(
+            String.self,
+            forKey: .deviceTupleID
+        ), decodedTupleID != expectedTupleID {
+            throw DecodingError.dataCorruptedError(
+                forKey: .deviceTupleID,
+                in: container,
+                debugDescription:
+                    "Browser identity tuple does not match its immutable seed."
+            )
+        }
+        deviceTupleID = expectedTupleID
         timezoneIdentifier = try container.decodeIfPresent(
             String.self,
             forKey: .timezoneIdentifier
@@ -147,6 +241,12 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
             String.self,
             forKey: .localeIdentifier
         ).flatMap(Self.normalizedLocale)
+        proxyContextEvidence = try container.decodeIfPresent(
+            ProxyContextEvidence.self,
+            forKey: .proxyContextEvidence
+        ).flatMap {
+            $0.isValid ? $0 : nil
+        }
     }
 
     static func runtimeCompatibleSeed(_ value: UInt32) -> UInt32 {

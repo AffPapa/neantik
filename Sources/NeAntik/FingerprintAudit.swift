@@ -54,6 +54,15 @@ enum FingerprintAuditExecutionMode: String, Codable, Sendable {
             ]
         }
     }
+
+    var diagnosticTitle: String {
+        switch self {
+        case .browser:
+            "Обычный режим браузера"
+        case .headlessSingleProcessDiagnostic:
+            "Диагностический режим"
+        }
+    }
 }
 
 struct FingerprintCapture: Codable, Equatable, Sendable {
@@ -65,13 +74,14 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
+    static let currentAuditSchemaVersion = 2
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
         "audio",
         "client_rects"
     ]
-    static let productionStableContextKeys = [
+    static let publicAlphaStableContextKeys = [
         "webgl_vendor",
         "webgl_renderer",
         "webgl_extensions",
@@ -87,9 +97,32 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "languages",
         "timezone"
     ]
+    static let productionExtendedContextKeys = [
+        "canvas_repeat",
+        "client_rects_repeat",
+        "webgl_pixels_repeat",
+        "webgl_shader_precision",
+        "css_screen_match",
+        "intl_locale",
+        "worker_canvas",
+        "worker_webgl_pixels",
+        "worker_webgl_vendor",
+        "worker_webgl_renderer",
+        "worker_webgl_extensions",
+        "worker_webgl_shader_precision",
+        "worker_user_agent",
+        "worker_platform",
+        "worker_languages",
+        "worker_timezone",
+        "worker_intl_locale",
+        "worker_hardware_concurrency",
+        "worker_client_hints"
+    ]
 
     let id: UUID
     let createdAt: Date
+    let auditSchemaVersion: Int?
+    let identityCatalogVersion: Int?
     let managerVersion: String?
     let managerBuild: String?
     let runtimeName: String
@@ -106,6 +139,9 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     init(
         id: UUID,
         createdAt: Date,
+        auditSchemaVersion: Int = Self.currentAuditSchemaVersion,
+        identityCatalogVersion: Int =
+            BrowserIdentityCatalog.currentVersion,
         managerVersion: String? = nil,
         managerBuild: String? = nil,
         runtimeName: String,
@@ -121,6 +157,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     ) {
         self.id = id
         self.createdAt = createdAt
+        self.auditSchemaVersion = auditSchemaVersion
+        self.identityCatalogVersion = identityCatalogVersion
         self.managerVersion = managerVersion
         self.managerBuild = managerBuild
         self.runtimeName = runtimeName
@@ -137,6 +175,62 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
     var effectiveExecutionMode: FingerprintAuditExecutionMode {
         executionMode ?? .browser
+    }
+
+    var effectiveAuditSchemaVersion: Int {
+        auditSchemaVersion ?? 1
+    }
+
+    var safeManagerVersionSummary: String {
+        let version = Self.safeMetadataValue(managerVersion)
+        let build = Self.safeMetadataValue(managerBuild)
+        switch (version, build) {
+        case let (version?, build?):
+            return "\(version) (\(build))"
+        case let (version?, nil):
+            return version
+        case let (nil, build?):
+            return "сборка \(build)"
+        case (nil, nil):
+            return "не записана"
+        }
+    }
+
+    var safeRuntimeVersionSummary: String {
+        let version = Self.safeMetadataValue(runtimeVersion) ?? "не записана"
+        return "\(runtimeFlavor.title) · \(version)"
+    }
+
+    var safeRuntimeSignatureSummary: String {
+        runtimeCodeSignatureValid == true
+            ? "Подпись подтверждена"
+            : "Подпись не подтверждена"
+    }
+
+    var safeRuntimeExecutableHashSummary: String {
+        Self.safeSHA256(runtimeExecutableSHA256)
+    }
+
+    var safeRuntimeFrameworkHashSummary: String {
+        Self.safeSHA256(runtimeFrameworkSHA256)
+    }
+
+    /// Allowlisted release provenance only. Never derive this text by encoding
+    /// the report: captures contain profile identity and browser measurements.
+    var safeDiagnosticSummary: String {
+        [
+            "NeAntik — безопасная сводка fingerprint-проверки",
+            "Менеджер: \(safeManagerVersionSummary)",
+            "Схема проверки: \(effectiveAuditSchemaVersion)",
+            "Каталог устройств: \(identityCatalogVersion.map(String.init) ?? "не записан")",
+            "Движок: \(safeRuntimeVersionSummary)",
+            "Режим: \(effectiveExecutionMode.diagnosticTitle)",
+            "Подпись движка: \(safeRuntimeSignatureSummary)",
+            "SHA-256 executable: \(safeRuntimeExecutableHashSummary)",
+            "SHA-256 framework: \(safeRuntimeFrameworkHashSummary)",
+            "Публичное тестирование: \(isPublicAlphaReleaseQualified ? "PASS" : "FAIL")",
+            "Строгая проверка: \(isProductionReleaseQualified ? "PASS" : "FAIL")"
+        ].joined(separator: "\n")
     }
 
     var unstableKeys: [String] {
@@ -196,18 +290,33 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
     var productionReleaseIssues: [String] {
         var issues = publicAlphaReleaseIssues
-        if !productionUnavailableKeys.isEmpty {
+        if effectiveAuditSchemaVersion != Self.currentAuditSchemaVersion {
+            issues.append(
+                "The report does not use the current strict fingerprint audit schema."
+            )
+        }
+        if identityCatalogVersion !=
+            BrowserIdentityCatalog.currentVersion
+        {
+            issues.append(
+                "The report does not use the current immutable identity catalog."
+            )
+        }
+        if !productionExtendedUnavailableKeys.isEmpty {
             issues.append(
                 "Required browser surfaces are unavailable: " +
-                    productionUnavailableKeys.joined(separator: ", ") + "."
+                    productionExtendedUnavailableKeys.joined(separator: ", ") +
+                    "."
             )
         }
-        if !productionUnstableKeys.isEmpty {
+        if !productionExtendedUnstableKeys.isEmpty {
             issues.append(
                 "Required browser surfaces are unstable: " +
-                    productionUnstableKeys.joined(separator: ", ") + "."
+                    productionExtendedUnstableKeys.joined(separator: ", ") +
+                    "."
             )
         }
+        issues.append(contentsOf: crossRealmConsistencyIssues)
         issues.append(contentsOf: deviceTupleConsistencyIssues)
         return issues
     }
@@ -259,6 +368,18 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         if verdict != .verified {
             issues.append("The critical-surface verdict is not verified.")
         }
+        if !publicAlphaUnavailableKeys.isEmpty {
+            issues.append(
+                "Required browser surfaces are unavailable: " +
+                    publicAlphaUnavailableKeys.joined(separator: ", ") + "."
+            )
+        }
+        if !publicAlphaUnstableKeys.isEmpty {
+            issues.append(
+                "Required browser surfaces are unstable: " +
+                    publicAlphaUnstableKeys.joined(separator: ", ") + "."
+            )
+        }
         if !changedCriticalKeys.contains("webgl_pixels") {
             issues.append("WebGL pixels did not differ between profiles.")
         }
@@ -294,6 +415,16 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
     }
 
+    var crossRealmConsistencyIssues: [String] {
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
+            Self.crossRealmIssues(for: capture, label: label)
+        }
+    }
+
     private var comparableCriticalKeys: [String] {
         Self.criticalKeys.filter { key in
             Self.isAvailable(firstInitial.values[key]) &&
@@ -314,6 +445,27 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         return value.utf8.allSatisfy {
             (48...57).contains($0) || (97...102).contains($0)
         }
+    }
+
+    private static func safeSHA256(_ value: String?) -> String {
+        guard isSHA256(value), let value else {
+            return "не подтверждён"
+        }
+        return value
+    }
+
+    private static func safeMetadataValue(_ value: String?) -> String? {
+        guard let value else {
+            return nil
+        }
+        let sanitized = value
+            .components(separatedBy: .newlines)
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !sanitized.isEmpty else {
+            return nil
+        }
+        return String(sanitized.prefix(80))
     }
 
     private static func canMapDeviceTuple(_ capture: FingerprintCapture) -> Bool {
@@ -483,8 +635,124 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         )
     ]
 
+    private var publicAlphaUnavailableKeys: [String] {
+        Self.publicAlphaRequiredKeys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
+        }
+    }
+
+    private var publicAlphaUnstableKeys: [String] {
+        Self.publicAlphaRequiredKeys.filter {
+            firstInitial.values[$0] != firstRepeat.values[$0]
+        }
+    }
+
+    private var productionExtendedUnavailableKeys: [String] {
+        Self.productionExtendedContextKeys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
+        }
+    }
+
+    private var productionExtendedUnstableKeys: [String] {
+        Self.productionExtendedContextKeys.filter {
+            firstInitial.values[$0] != firstRepeat.values[$0]
+        }
+    }
+
+    private static var publicAlphaRequiredKeys: [String] {
+        criticalKeys + publicAlphaStableContextKeys
+    }
+
     private static var productionRequiredKeys: [String] {
-        criticalKeys + productionStableContextKeys
+        publicAlphaRequiredKeys + productionExtendedContextKeys
+    }
+
+    private static func crossRealmIssues(
+        for capture: FingerprintCapture,
+        label: String
+    ) -> [String] {
+        let values = capture.values
+        var issues: [String] = []
+
+        func expectEqual(_ first: String, _ second: String) {
+            guard isAvailable(values[first]), isAvailable(values[second]) else {
+                return
+            }
+            if values[first] != values[second] {
+                issues.append(
+                    "The \(label) \(first) value disagrees with \(second)."
+                )
+            }
+        }
+
+        for pair in [
+            ("canvas", "canvas_repeat"),
+            ("canvas", "worker_canvas"),
+            ("client_rects", "client_rects_repeat"),
+            ("webgl_pixels", "webgl_pixels_repeat"),
+            ("webgl_pixels", "worker_webgl_pixels"),
+            ("webgl_vendor", "worker_webgl_vendor"),
+            ("webgl_renderer", "worker_webgl_renderer"),
+            ("webgl_extensions", "worker_webgl_extensions"),
+            ("webgl_shader_precision", "worker_webgl_shader_precision"),
+            ("user_agent", "worker_user_agent"),
+            ("platform", "worker_platform"),
+            ("languages", "worker_languages"),
+            ("timezone", "worker_timezone"),
+            ("intl_locale", "worker_intl_locale"),
+            ("hardware_concurrency", "worker_hardware_concurrency")
+        ] {
+            expectEqual(pair.0, pair.1)
+        }
+
+        if isAvailable(values["css_screen_match"]),
+           values["css_screen_match"] !=
+            "width:1|height:1|resolution:1"
+        {
+            issues.append(
+                "The \(label) CSS media queries disagree with the Screen API."
+            )
+        }
+
+        if let topHints = parsedClientHints(values["client_hints"]),
+           let workerHints = parsedClientHints(values["worker_client_hints"])
+        {
+            for key in [
+                "architecture",
+                "bitness",
+                "mobile",
+                "model",
+                "platform",
+                "platformVersion",
+                "uaFullVersion",
+                "wow64"
+            ] where String(describing: topHints[key]) !=
+                String(describing: workerHints[key])
+            {
+                issues.append(
+                    "The \(label) Client Hints \(key) value disagrees between the page and worker."
+                )
+            }
+        }
+
+        return issues
+    }
+
+    private static func parsedClientHints(
+        _ text: String?
+    ) -> [String: Any]? {
+        guard let text,
+              let data = text.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any]
+        else {
+            return nil
+        }
+        return object
     }
 
     private static func changedKeys(
@@ -1004,11 +1272,16 @@ final class FingerprintAuditCoordinator: ObservableObject {
       const canvasHash = fnv(
         context.getImageData(0, 0, canvas.width, canvas.height).data
       );
+      const canvasRepeatHash = fnv(
+        context.getImageData(0, 0, canvas.width, canvas.height).data
+      );
 
       let webglPixels = 'unavailable';
+      let webglPixelsRepeat = 'unavailable';
       let webglVendor = 'unavailable';
       let webglRenderer = 'unavailable';
       let webglExtensions = 'unavailable';
+      let webglShaderPrecision = 'unavailable';
       try {
         const webglCanvas = document.createElement('canvas');
         webglCanvas.width = 128;
@@ -1071,9 +1344,32 @@ final class FingerprintAuditCoordinator: ObservableObject {
             throw new Error('WebGL pixel readback failed');
           }
           webglPixels = fnv(pixels);
+          const repeatPixels = new Uint8Array(128 * 128 * 4);
+          gl.readPixels(
+            0, 0, 128, 128, gl.RGBA, gl.UNSIGNED_BYTE, repeatPixels
+          );
+          if (gl.getError() !== gl.NO_ERROR) {
+            throw new Error('WebGL repeated pixel readback failed');
+          }
+          webglPixelsRepeat = fnv(repeatPixels);
           webglExtensions = hashText(
             (gl.getSupportedExtensions() || []).sort().join('|')
           );
+          const precisionValues = [];
+          for (const shader of [gl.VERTEX_SHADER, gl.FRAGMENT_SHADER]) {
+            for (const precision of [
+              gl.LOW_FLOAT, gl.MEDIUM_FLOAT, gl.HIGH_FLOAT,
+              gl.LOW_INT, gl.MEDIUM_INT, gl.HIGH_INT
+            ]) {
+              const value = gl.getShaderPrecisionFormat(shader, precision);
+              precisionValues.push(
+                value ? [
+                  value.rangeMin, value.rangeMax, value.precision
+                ].join(':') : 'none'
+              );
+            }
+          }
+          webglShaderPrecision = hashText(precisionValues.join('|'));
         }
       } catch (_) {}
 
@@ -1126,6 +1422,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
       ).map(rect => [
         rect.x, rect.y, rect.width, rect.height
       ].map(value => value.toFixed(6)).join(',')).join('|');
+      const rectRepeatValues = Array.from(
+        rectHost.firstChild.getClientRects()
+      ).map(rect => [
+        rect.x, rect.y, rect.width, rect.height
+      ].map(value => value.toFixed(6)).join(',')).join('|');
       rectHost.remove();
 
       const fontCandidates = [
@@ -1147,6 +1448,211 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
       } catch (_) {}
 
+      const cssScreenMatch = [
+        `width:${matchMedia(
+          `(device-width: ${screen.width}px)`
+        ).matches ? 1 : 0}`,
+        `height:${matchMedia(
+          `(device-height: ${screen.height}px)`
+        ).matches ? 1 : 0}`,
+        `resolution:${matchMedia(
+          `(resolution: ${window.devicePixelRatio}dppx)`
+        ).matches ? 1 : 0}`
+      ].join('|');
+
+      const workerValues = await new Promise(resolve => {
+        if (typeof Worker !== 'function' ||
+            typeof OffscreenCanvas !== 'function') {
+          resolve({});
+          return;
+        }
+        const source = `
+          (async () => {
+            const fnv = bytes => {
+              let value = 0x811c9dc5;
+              for (const byte of bytes) {
+                value ^= byte;
+                value = Math.imul(value, 0x01000193);
+              }
+              return (value >>> 0).toString(16).padStart(8, '0');
+            };
+            const hashText = value =>
+              fnv(new TextEncoder().encode(String(value)));
+            const canvas = new OffscreenCanvas(360, 120);
+            const context = canvas.getContext('2d');
+            context.textBaseline = 'alphabetic';
+            context.fillStyle = '#f60';
+            context.fillRect(20, 20, 180, 70);
+            context.fillStyle = '#069';
+            context.font = '18px Arial';
+            context.fillText('NeAntik 0123456789', 24, 58);
+            context.globalCompositeOperation = 'multiply';
+            context.fillStyle = 'rgba(90, 20, 220, 0.73)';
+            context.beginPath();
+            context.arc(205, 55, 36, 0, Math.PI * 2);
+            context.fill();
+            const canvasHash = fnv(
+              context.getImageData(
+                0, 0, canvas.width, canvas.height
+              ).data
+            );
+
+            let webglPixels = 'unavailable';
+            let webglVendor = 'unavailable';
+            let webglRenderer = 'unavailable';
+            let webglExtensions = 'unavailable';
+            let webglShaderPrecision = 'unavailable';
+            try {
+              const webglCanvas = new OffscreenCanvas(128, 128);
+              const gl = webglCanvas.getContext('webgl', {
+                antialias: true,
+                preserveDrawingBuffer: true
+              });
+              if (gl) {
+                const debug =
+                  gl.getExtension('WEBGL_debug_renderer_info');
+                webglVendor = String(
+                  debug ?
+                    gl.getParameter(debug.UNMASKED_VENDOR_WEBGL) :
+                    gl.getParameter(gl.VENDOR)
+                );
+                webglRenderer = String(
+                  debug ?
+                    gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) :
+                    gl.getParameter(gl.RENDERER)
+                );
+                const vertex = gl.createShader(gl.VERTEX_SHADER);
+                gl.shaderSource(
+                  vertex,
+                  'attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.0,1.0);}'
+                );
+                gl.compileShader(vertex);
+                const fragment = gl.createShader(gl.FRAGMENT_SHADER);
+                gl.shaderSource(
+                  fragment,
+                  'precision highp float;varying vec2 v;void main(){gl_FragColor=vec4(v.x*v.x+0.4,v.y*v.y+0.3,sin(v.x*9.0)*0.2+0.5,1.0);}'
+                );
+                gl.compileShader(fragment);
+                const program = gl.createProgram();
+                gl.attachShader(program, vertex);
+                gl.attachShader(program, fragment);
+                gl.linkProgram(program);
+                if (!gl.getShaderParameter(vertex, gl.COMPILE_STATUS) ||
+                    !gl.getShaderParameter(fragment, gl.COMPILE_STATUS) ||
+                    !gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                  throw new Error('worker WebGL shader failed');
+                }
+                gl.useProgram(program);
+                const buffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+                gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array([-1, -1, 1, -1, 0, 1]),
+                  gl.STATIC_DRAW
+                );
+                const location = gl.getAttribLocation(program, 'p');
+                gl.enableVertexAttribArray(location);
+                gl.vertexAttribPointer(
+                  location, 2, gl.FLOAT, false, 0, 0
+                );
+                gl.viewport(0, 0, 128, 128);
+                gl.drawArrays(gl.TRIANGLES, 0, 3);
+                const pixels = new Uint8Array(128 * 128 * 4);
+                gl.readPixels(
+                  0, 0, 128, 128,
+                  gl.RGBA, gl.UNSIGNED_BYTE, pixels
+                );
+                if (gl.getError() !== gl.NO_ERROR) {
+                  throw new Error('worker WebGL pixel readback failed');
+                }
+                webglPixels = fnv(pixels);
+                webglExtensions = hashText(
+                  (gl.getSupportedExtensions() || [])
+                    .sort().join('|')
+                );
+                const precisionValues = [];
+                for (const shader of [
+                  gl.VERTEX_SHADER, gl.FRAGMENT_SHADER
+                ]) {
+                  for (const precision of [
+                    gl.LOW_FLOAT, gl.MEDIUM_FLOAT, gl.HIGH_FLOAT,
+                    gl.LOW_INT, gl.MEDIUM_INT, gl.HIGH_INT
+                  ]) {
+                    const value = gl.getShaderPrecisionFormat(
+                      shader, precision
+                    );
+                    precisionValues.push(
+                      value ? [
+                        value.rangeMin,
+                        value.rangeMax,
+                        value.precision
+                      ].join(':') : 'none'
+                    );
+                  }
+                }
+                webglShaderPrecision =
+                  hashText(precisionValues.join('|'));
+              }
+            } catch (_) {}
+
+            let clientHints = {};
+            try {
+              if (navigator.userAgentData) {
+                clientHints =
+                  await navigator.userAgentData.getHighEntropyValues([
+                    'architecture', 'bitness', 'brands',
+                    'fullVersionList', 'mobile', 'model',
+                    'platform', 'platformVersion',
+                    'uaFullVersion', 'wow64'
+                  ]);
+              }
+            } catch (_) {}
+
+            postMessage({
+              canvas: canvasHash,
+              webgl_pixels: webglPixels,
+              webgl_vendor: webglVendor,
+              webgl_renderer: webglRenderer,
+              webgl_extensions: webglExtensions,
+              webgl_shader_precision: webglShaderPrecision,
+              user_agent: navigator.userAgent,
+              platform: navigator.platform,
+              languages: (navigator.languages || []).join(','),
+              timezone:
+                Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+              intl_locale:
+                Intl.DateTimeFormat().resolvedOptions().locale || '',
+              hardware_concurrency:
+                String(navigator.hardwareConcurrency || ''),
+              client_hints: JSON.stringify(clientHints)
+            });
+          })().catch(() => postMessage({}));
+        `;
+        const blobURL = URL.createObjectURL(
+          new Blob([source], { type: 'text/javascript' })
+        );
+        const worker = new Worker(blobURL);
+        const finish = value => {
+          worker.terminate();
+          URL.revokeObjectURL(blobURL);
+          resolve(value && typeof value === 'object' ? value : {});
+        };
+        const timer = setTimeout(() => finish({}), 4000);
+        worker.onmessage = event => {
+          clearTimeout(timer);
+          finish(event.data);
+        };
+        worker.onerror = () => {
+          clearTimeout(timer);
+          finish({});
+        };
+      });
+      const workerValue = key => {
+        const value = workerValues[key];
+        return value === undefined || value === null || value === '' ?
+          'unavailable' : String(value);
+      };
+
       let rtcHash = 'unavailable';
       try {
         const candidates = [];
@@ -1163,17 +1669,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
 
       return JSON.stringify({
         canvas: canvasHash,
+        canvas_repeat: canvasRepeatHash,
         webgl_pixels: webglPixels,
+        webgl_pixels_repeat: webglPixelsRepeat,
         webgl_vendor: webglVendor,
         webgl_renderer: webglRenderer,
         webgl_extensions: webglExtensions,
+        webgl_shader_precision: webglShaderPrecision,
         webgpu_policy: webgpuPolicy,
         audio: audioHash,
         client_rects: hashText(rectValues),
+        client_rects_repeat: hashText(rectRepeatValues),
         user_agent: navigator.userAgent,
         platform: navigator.platform,
         languages: (navigator.languages || []).join(','),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        intl_locale:
+          Intl.DateTimeFormat().resolvedOptions().locale || '',
+        css_screen_match: cssScreenMatch,
         screen: [
           screen.width, screen.height, screen.availWidth, screen.availHeight,
           screen.colorDepth, window.devicePixelRatio
@@ -1183,6 +1696,21 @@ final class FingerprintAuditCoordinator: ObservableObject {
         touch_points: String(navigator.maxTouchPoints || 0),
         fonts: fonts.join(','),
         client_hints: JSON.stringify(clientHints),
+        worker_canvas: workerValue('canvas'),
+        worker_webgl_pixels: workerValue('webgl_pixels'),
+        worker_webgl_vendor: workerValue('webgl_vendor'),
+        worker_webgl_renderer: workerValue('webgl_renderer'),
+        worker_webgl_extensions: workerValue('webgl_extensions'),
+        worker_webgl_shader_precision:
+          workerValue('webgl_shader_precision'),
+        worker_user_agent: workerValue('user_agent'),
+        worker_platform: workerValue('platform'),
+        worker_languages: workerValue('languages'),
+        worker_timezone: workerValue('timezone'),
+        worker_intl_locale: workerValue('intl_locale'),
+        worker_hardware_concurrency:
+          workerValue('hardware_concurrency'),
+        worker_client_hints: workerValue('client_hints'),
         webrtc_candidates: rtcHash
       });
     })()

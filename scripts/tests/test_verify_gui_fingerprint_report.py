@@ -24,6 +24,7 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         summary = MODULE.verification_summary(production_report())
 
         self.assertTrue(summary["qualified"])
+        self.assertTrue(summary["productionQualified"])
         self.assertEqual(summary["issues"], [])
         self.assertIn("webgl_pixels", summary["changedCriticalKeys"])
 
@@ -156,6 +157,22 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             ):
                 MODULE.expected_runtime_evidence_from_app(integrated_app)
 
+    def test_rejects_distributed_patch_manifest_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            integrated_app = write_integrated_app_fixture(Path(temporary))
+            manifest = (
+                integrated_app
+                / "Contents/Resources/NeAntikRuntimeEvidence/"
+                "neantik-patch-series.json"
+            )
+            manifest.write_text('{"changed":true}\n', encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.FingerprintReportError,
+                "neantik-patch-series.json",
+            ):
+                MODULE.expected_runtime_evidence_from_app(integrated_app)
+
     def test_rejects_unordered_capture_timestamps(self) -> None:
         report = production_report()
         report["second"]["capturedAt"] = "2026-07-25T08:29:37Z"
@@ -206,6 +223,47 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             any(issue.startswith("Required browser surfaces are unstable") for issue in issues)
         )
 
+    def test_cross_realm_mismatch_fails_strict_but_not_public_alpha(self) -> None:
+        report = production_report()
+        report["firstInitial"]["values"]["worker_platform"] = "Win32"
+        report["firstRepeat"]["values"]["worker_platform"] = "Win32"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile A, first capture platform value disagrees with worker_platform.",
+            summary["productionIssues"],
+        )
+
+    def test_legacy_schema_fails_strict_but_not_public_alpha(self) -> None:
+        report = production_report()
+        del report["auditSchemaVersion"]
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertEqual(summary["auditSchemaVersion"], 1)
+        self.assertIn(
+            "The report does not use the current strict fingerprint audit schema.",
+            summary["productionIssues"],
+        )
+
+    def test_identity_catalog_drift_fails_strict_but_not_public_alpha(self) -> None:
+        report = production_report()
+        report["identityCatalogVersion"] = 2
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The report does not use the current immutable identity catalog.",
+            summary["productionIssues"],
+        )
+
     def test_load_report_rejects_non_object_json(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "report.json"
@@ -220,6 +278,8 @@ def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
         "createdAt": "2026-07-25T08:29:41Z",
         "managerVersion": "0.3.12",
         "managerBuild": "15",
+        "auditSchemaVersion": 2,
+        "identityCatalogVersion": 1,
         "executionMode": "browser",
         "runtimeName": "NeAntik Browser",
         "runtimeVersion": runtime_version,
@@ -300,16 +360,73 @@ def write_integrated_app_fixture(root: Path) -> Path:
             {"CFBundleShortVersionString": "144.0.7559.132"},
             file,
         )
-    evidence_path = (
+    evidence_root = (
         integrated_app
-        / "Contents/Resources/NeAntikRuntimeEvidence/runtime-verification.json"
+        / "Contents/Resources/NeAntikRuntimeEvidence"
     )
-    evidence_path.parent.mkdir(parents=True)
+    evidence_root.mkdir(parents=True)
+    patch_series = evidence_root / "neantik-patch-series.json"
+    device_tuples = evidence_root / "apple-device-tuples.json"
+    security_baseline = evidence_root / "security-baseline.json"
+    args_gn = evidence_root / "args.gn"
+    patch_series.write_text('{"schemaVersion":1}\n', encoding="utf-8")
+    device_tuples.write_text(
+        '{"schemaVersion":1,"tuples":[]}\n',
+        encoding="utf-8",
+    )
+    security_baseline.write_text('{"schemaVersion":1}\n', encoding="utf-8")
+    args_gn.write_text(
+        'target_cpu = "arm64"\nangle_enable_metal = true\n',
+        encoding="utf-8",
+    )
+    fingerprint_patch_sha = "1" * 64
+    mac_patch_sha = "2" * 64
+    overlay_sha = "3" * 64
+    tuple_overlay_sha = "4" * 64
+    lock_path = evidence_root / "fingerprint-chromium.lock.json"
+    lock_path.write_text(
+        json.dumps(
+            {
+                "fingerprintChromium": {
+                    "patchSeriesSHA256": fingerprint_patch_sha,
+                },
+                "macPackaging": {
+                    "patchSeriesSHA256": mac_patch_sha,
+                },
+                "nevisionOverlay": {
+                    "scriptSHA256": overlay_sha,
+                },
+                "nevisionDeviceTuples": {
+                    "scriptSHA256": tuple_overlay_sha,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path = evidence_root / "runtime-verification.json"
     evidence_path.write_text(
         json.dumps(
             {
+                "schemaVersion": 2,
                 "createdAt": "2026-07-25T08:00:00Z",
                 "chromiumVersion": "144.0.7559.132",
+                "sourceLockSHA256": MODULE.sha256_file(lock_path),
+                "fingerprintChromiumPatchSeriesSHA256":
+                    fingerprint_patch_sha,
+                "macPackagingPatchSeriesSHA256": mac_patch_sha,
+                "neantikPatchManifestSHA256":
+                    MODULE.sha256_file(patch_series),
+                "appleDeviceTuplesManifestSHA256":
+                    MODULE.sha256_file(device_tuples),
+                "securityBaselineSHA256":
+                    MODULE.sha256_file(security_baseline),
+                "nevisionOverlaySHA256": overlay_sha,
+                "nevisionDeviceTupleOverlaySHA256":
+                    tuple_overlay_sha,
+                "buildArguments": {
+                    "path": "/tmp/args.gn",
+                    "sha256": MODULE.sha256_file(args_gn),
+                },
                 "executable": {
                     "path": (
                         "/tmp/NeAntik Browser.app/Contents/MacOS/"
@@ -346,6 +463,15 @@ def capture(
     platform_version: str,
     runtime_version: str = "144.0.7559.132",
 ) -> dict:
+    client_hints = (
+        '{"architecture":"arm","bitness":"64","platform":"macOS",'
+        f'"platformVersion":"{platform_version}","uaFullVersion":"{runtime_version}"}}'
+    )
+    user_agent = f"Mozilla/5.0 Chrome/{runtime_version} Safari/537.36"
+    renderer = (
+        "ANGLE (Apple, ANGLE Metal Renderer: "
+        f"Apple {gpu}, Unspecified Version)"
+    )
     return {
         "capturedAt": "2026-07-25T08:29:38Z",
         "profileID": profile_id,
@@ -353,26 +479,42 @@ def capture(
         "identityCode": identity_code,
         "values": {
             "canvas": canvas,
+            "canvas_repeat": canvas,
             "webgl_pixels": webgl_pixels,
+            "webgl_pixels_repeat": webgl_pixels,
             "audio": audio,
             "client_rects": client_rects,
+            "client_rects_repeat": client_rects,
             "webgl_vendor": "Google Inc. (Apple)",
-            "webgl_renderer": f"ANGLE (Apple, ANGLE Metal Renderer: Apple {gpu}, Unspecified Version)",
+            "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
+            "webgl_shader_precision": "precision",
             "webgpu_policy": "disabled",
-            "user_agent": f"Mozilla/5.0 Chrome/{runtime_version} Safari/537.36",
+            "user_agent": user_agent,
             "platform": "MacIntel",
-            "client_hints": (
-                '{"architecture":"arm","bitness":"64","platform":"macOS",'
-                f'"platformVersion":"{platform_version}","uaFullVersion":"{runtime_version}"}}'
-            ),
+            "client_hints": client_hints,
             "screen": screen,
+            "css_screen_match": "width:1|height:1|resolution:1",
             "hardware_concurrency": str(cores),
             "device_memory": "8",
             "touch_points": "0",
             "fonts": "Arial,Menlo",
             "languages": "en-US,en",
             "timezone": "Asia/Bangkok",
+            "intl_locale": "en-US",
+            "worker_canvas": canvas,
+            "worker_webgl_pixels": webgl_pixels,
+            "worker_webgl_vendor": "Google Inc. (Apple)",
+            "worker_webgl_renderer": renderer,
+            "worker_webgl_extensions": "extensions",
+            "worker_webgl_shader_precision": "precision",
+            "worker_user_agent": user_agent,
+            "worker_platform": "MacIntel",
+            "worker_languages": "en-US,en",
+            "worker_timezone": "Asia/Bangkok",
+            "worker_intl_locale": "en-US",
+            "worker_hardware_concurrency": str(cores),
+            "worker_client_hints": client_hints,
         },
     }
 

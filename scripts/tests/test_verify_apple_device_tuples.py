@@ -22,6 +22,7 @@ class AppleDeviceTupleVerifierTests(unittest.TestCase):
             manifest_path=PROJECT_ROOT / "runtime" / "apple-device-tuples.json",
             swift_path=PROJECT_ROOT / "Sources" / "NeAntik" / "FingerprintAudit.swift",
             python_path=PROJECT_ROOT / "scripts" / "verify-gui-fingerprint-report.py",
+            models_path=PROJECT_ROOT / "Sources" / "NeAntik" / "Models.swift",
         )
 
         self.assertTrue(report["consistent"])
@@ -76,6 +77,45 @@ class AppleDeviceTupleVerifierTests(unittest.TestCase):
             manifest.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(MODULE.DeviceTupleError, "duplicate"):
                 MODULE.load_manifest(manifest)
+
+    def test_detects_identity_catalog_reordering(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            models = root / "Models.swift"
+            models.write_text(
+                (
+                    PROJECT_ROOT
+                    / "Sources"
+                    / "NeAntik"
+                    / "Models.swift"
+                )
+                .read_text(encoding="utf-8")
+                .replace(
+                    '"macbook-air-m1",\n        "macbook-pro-m1-pro"',
+                    '"macbook-pro-m1-pro",\n        "macbook-air-m1"',
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            report = MODULE.verify_consistency(
+                manifest_path=PROJECT_ROOT
+                / "runtime"
+                / "apple-device-tuples.json",
+                swift_path=PROJECT_ROOT
+                / "Sources"
+                / "NeAntik"
+                / "FingerprintAudit.swift",
+                python_path=PROJECT_ROOT
+                / "scripts"
+                / "verify-gui-fingerprint-report.py",
+                models_path=models,
+            )
+
+        self.assertFalse(report["consistent"])
+        self.assertTrue(
+            any("identity catalog" in issue for issue in report["issues"])
+        )
 
 
 if __name__ == "__main__":

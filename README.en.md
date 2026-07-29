@@ -80,6 +80,11 @@ builder's Keychain and are never stored in this repository.
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before
 opening a pull request or reporting a vulnerability.
 
+The synthetic
+[fingerprint conformance corpus](docs/PUBLIC_FINGERPRINT_CONFORMANCE.md)
+reuses the release verifier without publishing user profiles, seeds, proxy
+configuration, or real audit reports.
+
 NeAntik-owned source files are licensed under MPL-2.0. Chromium-derived files
 retain their upstream licenses and notices. The NeAntik name and logo are
 subject to [TRADEMARKS.md](TRADEMARKS.md).

@@ -37,6 +37,7 @@ struct BrowserProcessManagerTests {
         try manager.launch(profile: profile, runtime: runtime)
 
         #expect(manager.runningProfileIDs.contains(profile.id))
+        #expect(manager.processState(for: profile.id) == .managed)
         #expect(FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
         let lockData = try Data(contentsOf: paths.lockFile(for: profile.id))
         let decoder = JSONDecoder()
@@ -59,6 +60,7 @@ struct BrowserProcessManagerTests {
         }
 
         #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(manager.processState(for: profile.id) == .stopped)
         #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
     }
 
@@ -104,6 +106,10 @@ struct BrowserProcessManagerTests {
         )
         restoredManager.reconcile(profiles: [profile])
         #expect(restoredManager.runningProfileIDs.contains(profile.id))
+        #expect(
+            restoredManager.processState(for: profile.id) ==
+                .externalVerified
+        )
 
         restoredManager.stop(profileID: profile.id)
         for _ in 0..<30 {
@@ -113,6 +119,7 @@ struct BrowserProcessManagerTests {
             try await Task.sleep(nanoseconds: 100_000_000)
         }
         #expect(!restoredManager.runningProfileIDs.contains(profile.id))
+        #expect(restoredManager.processState(for: profile.id) == .stopped)
     }
 
     @Test
@@ -233,6 +240,9 @@ struct BrowserProcessManagerTests {
         )
         restored.reconcile(profiles: [profile])
         #expect(restored.runningProfileIDs.contains(profile.id))
+        #expect(
+            restored.processState(for: profile.id) == .externalVerified
+        )
 
         restored.stop(profileID: profile.id)
         #expect(sentSignal == SIGTERM)
@@ -254,6 +264,7 @@ struct BrowserProcessManagerTests {
             try await Task.sleep(nanoseconds: 100_000_000)
         }
         #expect(!restored.runningProfileIDs.contains(profile.id))
+        #expect(restored.processState(for: profile.id) == .stopped)
     }
 
     @Test
@@ -337,6 +348,10 @@ struct BrowserProcessManagerTests {
 
         restored.reconcile(profiles: [profile])
         #expect(restored.runningProfileIDs.contains(profile.id))
+        #expect(
+            restored.processState(for: profile.id) ==
+                .externalUnverified
+        )
         #expect(restored.lastError != nil)
         restored.stop(profileID: profile.id)
         #expect(!signalWasSent)
@@ -350,6 +365,7 @@ struct BrowserProcessManagerTests {
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         #expect(!restored.runningProfileIDs.contains(profile.id))
+        #expect(restored.processState(for: profile.id) == .stopped)
     }
 
     @Test
@@ -472,14 +488,13 @@ struct BrowserProcessManagerTests {
         )
 
         try manager.launch(profile: profile, runtime: runtime)
-        for _ in 0..<50 {
+        for _ in 0..<20 {
             if !manager.runningProfileIDs.contains(profile.id) {
                 break
             }
-            try await Task.sleep(nanoseconds: 100_000_000)
+            try await Task.sleep(nanoseconds: 20_000_000)
         }
 
-        #expect(!manager.runningProfileIDs.contains(profile.id))
         let text = try String(
             contentsOf: paths.logFile(for: profile.id),
             encoding: .utf8

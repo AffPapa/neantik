@@ -84,6 +84,10 @@ notarization хранятся только в Связке ключей комп
 Перед pull request прочитайте [CONTRIBUTING.md](CONTRIBUTING.md). Сообщения об
 уязвимостях следует отправлять по правилам из [SECURITY.md](SECURITY.md), не
 публикуя чувствительные подробности в обычной issue.
+Синтетический
+[fingerprint conformance corpus](docs/PUBLIC_FINGERPRINT_CONFORMANCE.md)
+проверяет границы public alpha и strict production без публикации профилей,
+seed, прокси или пользовательских отчётов.
 
 Собственный код NeAntik распространяется по MPL-2.0. Производные файлы
 Chromium сохраняют исходные лицензии и notices. Правила использования названия

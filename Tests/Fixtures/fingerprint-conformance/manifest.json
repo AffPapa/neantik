@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "privacyBoundary": "synthetic-only",
+  "baseReport": "base-production-qualified.json",
+  "cases": [
+    {
+      "id": "production-qualified",
+      "mutations": [],
+      "publicAlphaQualified": true,
+      "productionQualified": true,
+      "issueContains": []
+    },
+    {
+      "id": "public-alpha-worker-mismatch",
+      "mutations": [
+        {
+          "path": "firstInitial.values.worker_platform",
+          "value": "Win32"
+        },
+        {
+          "path": "firstRepeat.values.worker_platform",
+          "value": "Win32"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "platform value disagrees with worker_platform"
+      ]
+    },
+    {
+      "id": "unstable-canvas",
+      "mutations": [
+        {
+          "path": "firstRepeat.values.canvas",
+          "value": "synthetic-canvas-unstable"
+        }
+      ],
+      "publicAlphaQualified": false,
+      "productionQualified": false,
+      "issueContains": [
+        "Required browser surfaces are unstable: canvas."
+      ]
+    },
+    {
+      "id": "diagnostic-mode",
+      "mutations": [
+        {
+          "path": "executionMode",
+          "value": "headless-single-process-diagnostic"
+        }
+      ],
+      "publicAlphaQualified": false,
+      "productionQualified": false,
+      "issueContains": [
+        "captured in diagnostic mode"
+      ]
+    },
+    {
+      "id": "device-memory-unavailable",
+      "mutations": [
+        {
+          "path": "firstInitial.values.device_memory",
+          "operation": "delete"
+        },
+        {
+          "path": "second.values.device_memory",
+          "operation": "delete"
+        },
+        {
+          "path": "firstRepeat.values.device_memory",
+          "operation": "delete"
+        }
+      ],
+      "publicAlphaQualified": false,
+      "productionQualified": false,
+      "issueContains": [
+        "Required browser surfaces are unavailable: device_memory."
+      ]
+    }
+  ]
+}

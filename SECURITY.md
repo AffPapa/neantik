@@ -1,27 +1,57 @@
-# Security policy
+# Политика безопасности
 
-## Supported version
+## Поддерживаемые версии
 
-Security fixes are developed for the newest published Direct release. Older
-alpha builds may not receive backports.
+Исправления безопасности готовятся для последней опубликованной версии
+NeAntik Direct. Старые alpha-сборки могут не получать backport. Версия
+Chromium и её security baseline фиксируются отдельно для каждого выпуска.
 
-## Reporting a vulnerability
+## Как сообщить об уязвимости
 
-Please use GitHub's private vulnerability reporting for this repository.
-Do not open a public issue for a vulnerability that could expose user data,
-proxy credentials, profile isolation, signing, or update integrity.
+Используйте приватный пункт **Security → Report a vulnerability** в
+репозитории GitHub. Не публикуйте технические детали в обычном issue, если
+уязвимость может затрагивать пользовательские данные, Keychain, прокси,
+изоляцию профилей, fingerprint, подпись, обновление или release pipeline.
 
-Include:
+Если приватная форма GitHub недоступна, создайте issue только с просьбой
+предоставить приватный канал связи — без шагов воспроизведения, логов,
+вложений и персональных данных.
 
-- affected NeAntik and Chromium versions;
-- macOS version and Mac model class;
-- minimal reproduction steps;
-- expected and observed behavior;
-- logs with URLs, cookies, profile names, proxy hosts, usernames, passwords,
-  fingerprint seeds, and other personal data removed.
+В безопасном отчёте укажите:
 
-Never include Apple credentials, certificates, private keys, Keychain exports,
-browser profile data, or real proxy credentials.
+- версии NeAntik, Chromium и macOS;
+- класс Mac без серийного номера;
+- минимальные шаги воспроизведения;
+- ожидаемое и фактическое поведение;
+- влияние на конфиденциальность, целостность или доступность;
+- минимальный синтетический пример, если он необходим.
 
-NeAntik does not accept requests to add CAPTCHA, ban, automation, anti-fraud,
-or platform-rule evasion.
+Удалите из логов URL, cookies, историю, имена и UUID профилей, proxy host,
+логин, пароль, публичный IP, fingerprint identity/seed, локальные пути и
+другие персональные данные.
+
+Никогда не присылайте Apple credentials, сертификаты, закрытые ключи,
+Keychain export, содержимое браузерных профилей или настоящие данные прокси.
+
+Мы постараемся подтвердить получение в течение пяти рабочих дней, затем
+согласуем проверку и безопасный срок раскрытия. Срок исправления зависит от
+сложности и необходимости обновления Chromium.
+
+## Область действия
+
+В область входят:
+
+- нативный менеджер NeAntik Direct;
+- изоляция профилей и миграция данных;
+- Keychain и обработка proxy credentials;
+- встроенный Chromium и owned patch series;
+- DNS, WebRTC и proxy leak controls;
+- fingerprint stability/coherence и локальный аудит;
+- подпись, notarization, обновления и supply chain;
+- официальный сайт, release metadata и загружаемые артефакты.
+
+Не относятся к программе запросы на добавление обхода CAPTCHA, банов,
+WebDriver/automation detection, антифрода или правил сторонних сервисов.
+
+Проверяйте только собственные профили, устройства и инфраструктуру. Не
+нарушайте доступность сервиса и не извлекайте чужие данные.

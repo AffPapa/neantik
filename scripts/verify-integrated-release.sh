@@ -89,6 +89,20 @@ if ! cmp -s \
 fi
 
 if ! cmp -s \
+  "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+  "$EVIDENCE/neantik-patch-series.json"; then
+  echo "Integrated NeAntik patch series does not match the project manifest." >&2
+  exit 65
+fi
+
+if ! cmp -s \
+  "$PROJECT_DIR/runtime/apple-device-tuples.json" \
+  "$EVIDENCE/apple-device-tuples.json"; then
+  echo "Integrated Apple device tuples do not match the reviewed catalog." >&2
+  exit 65
+fi
+
+if ! cmp -s \
   "$PROJECT_DIR/Resources/NeAntik.icns" \
   "$RUNTIME_APP/Contents/Resources/app.icns"; then
   echo "Integrated runtime does not contain the NeAntik icon." >&2
@@ -98,6 +112,8 @@ fi
 for required in \
   "$EVIDENCE/args.gn" \
   "$EVIDENCE/runtime-verification.json" \
+  "$EVIDENCE/neantik-patch-series.json" \
+  "$EVIDENCE/apple-device-tuples.json" \
   "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md" \
   "$LICENSES/Chromium-LICENSE" \
   "$LICENSES/fingerprint-chromium-LICENSE" \

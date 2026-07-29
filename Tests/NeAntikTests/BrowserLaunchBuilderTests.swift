@@ -41,7 +41,7 @@ struct BrowserLaunchBuilderTests {
     }
 
     @Test
-    func directProfileHasNoProxyArgument() {
+    func directProfileHasNoProxyButLimitsWebRTCToPublicInterface() {
         let profile = BrowserProfile(name: "Direct")
         let arguments = BrowserLaunchBuilder.arguments(
             profile: profile,
@@ -50,9 +50,9 @@ struct BrowserLaunchBuilderTests {
 
         #expect(!arguments.contains { $0.hasPrefix("--proxy-server=") })
         #expect(
-            !arguments.contains {
-                $0.hasPrefix("--force-webrtc-ip-handling-policy=")
-            }
+            arguments.contains(
+                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+            )
         )
         #expect(!arguments.contains("--dns-prefetch-disable"))
         #expect(!arguments.contains("--disable-quic"))
@@ -138,7 +138,11 @@ struct BrowserLaunchBuilderTests {
         #expect(arguments.contains("--fingerprinting-client-rects-noise"))
         #expect(arguments.contains("--fingerprinting-canvas-measuretext-noise"))
         #expect(arguments.contains("--fingerprinting-canvas-image-data-noise"))
-        #expect(arguments.contains("--disable-features=WebGPUService"))
+        #expect(
+            arguments.contains(
+                "--disable-features=AsyncDns,DnsOverHttps,WebGPUService"
+            )
+        )
         #expect(!arguments.contains("--user-data-dir=/tmp/evil"))
         #expect(!arguments.contains("--proxy-server=direct://"))
         #expect(!arguments.contains("--proxy-bypass-list=*"))
@@ -154,6 +158,45 @@ struct BrowserLaunchBuilderTests {
         #expect(!arguments.contains("--fingerprint"))
         #expect(!arguments.contains("--proxy-server"))
         #expect(!arguments.contains(" --remote-debugging-address=0.0.0.0"))
+    }
+
+    @Test
+    func proxyProfileCombinesFailClosedNetworkFeatures() {
+        let profile = BrowserProfile(
+            name: "Proxy privacy",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: ""
+            ),
+            identity: BrowserIdentity(seed: 123)
+        )
+
+        let arguments = BrowserLaunchBuilder.arguments(
+            profile: profile,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/proxy-privacy"),
+            runtimeCapabilities: .fingerprintIdentity
+        )
+
+        #expect(
+            arguments.contains(
+                "--disable-features=AsyncDns,DnsOverHttps,WebGPUService"
+            )
+        )
+        #expect(
+            arguments.contains(
+                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+            )
+        )
+        #expect(
+            !arguments.contains(
+                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+            )
+        )
+        #expect(
+            arguments.filter { $0.hasPrefix("--disable-features=") }.count == 1
+        )
     }
 
     @Test
@@ -234,6 +277,59 @@ struct BrowserLaunchBuilderTests {
             let identity = BrowserIdentity()
             #expect((1...BrowserIdentity.maximumRuntimeSeed).contains(identity.seed))
             #expect(identity.seed == identity.runtimeSeed)
+            #expect(
+                identity.catalogVersion ==
+                    BrowserIdentityCatalog.currentVersion
+            )
+            #expect(
+                identity.deviceTupleID ==
+                    BrowserIdentityCatalog.tupleID(
+                        forRuntimeSeed: identity.runtimeSeed
+                    )
+            )
+        }
+    }
+
+    @Test
+    func legacyIdentityIsPinnedToCurrentImmutableCatalog() throws {
+        let identity = try JSONDecoder().decode(
+            BrowserIdentity.self,
+            from: Data(#"{"seed":123}"#.utf8)
+        )
+        let encoded = try JSONEncoder().encode(identity)
+        let object = try #require(
+            JSONSerialization.jsonObject(with: encoded)
+                as? [String: Any]
+        )
+
+        #expect(identity.catalogVersion == 1)
+        #expect(
+            identity.deviceTupleID ==
+                BrowserIdentityCatalog.tupleID(forRuntimeSeed: 123)
+        )
+        #expect(object["catalogVersion"] as? Int == 1)
+        #expect(
+            object["deviceTupleID"] as? String == identity.deviceTupleID
+        )
+    }
+
+    @Test
+    func rejectsUnknownIdentityCatalogOrTupleDrift() {
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(
+                BrowserIdentity.self,
+                from: Data(
+                    #"{"seed":123,"catalogVersion":2,"deviceTupleID":"macbook-air-m1"}"#.utf8
+                )
+            )
+        }
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(
+                BrowserIdentity.self,
+                from: Data(
+                    #"{"seed":123,"catalogVersion":1,"deviceTupleID":"wrong"}"#.utf8
+                )
+            )
         }
     }
 

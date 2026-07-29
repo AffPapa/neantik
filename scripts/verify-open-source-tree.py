@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -13,8 +14,12 @@ RELEASE_METADATA = PROJECT_ROOT / "releases" / "v0.3.12.json"
 
 FORBIDDEN_PARTS = {
     ".build",
+    ".build-support",
     ".swiftpm",
     "DerivedData",
+    "StoreEdition",
+    "StoreSubmission",
+    "TelemetryDashboard",
     "dist",
     "node_modules",
     "__pycache__",
@@ -59,6 +64,21 @@ TEXT_SUFFIXES = {
     ".yml",
     ".yaml",
 }
+REQUIRED_PUBLIC_PATHS = {
+    ".github/workflows/ci.yml",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "SECURITY.md",
+    "Sources/NeAntik/UpdateManifest.swift",
+    "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json",
+    "Tests/Fixtures/fingerprint-conformance/manifest.json",
+    "Tests/NeAntikTests/UpdateManifestTests.swift",
+    "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
+    "runtime/chromium-150-toolchain-lock.json",
+    "scripts/tests/test_verify_public_fingerprint_corpus.py",
+    "scripts/verify-direct-update-policy.py",
+    "scripts/verify-public-fingerprint-corpus.py",
+}
 
 
 def fail(message: str) -> None:
@@ -74,6 +94,8 @@ def iter_public_files() -> list[Path]:
             continue
         if any(part in FORBIDDEN_PARTS for part in relative.parts):
             fail(f"forbidden generated path is present: {relative}")
+        if path.is_symlink():
+            fail(f"symbolic link is not allowed in public source: {relative}")
         if path.is_file():
             files.append(path)
     return files
@@ -116,10 +138,49 @@ def verify_release_metadata() -> None:
         fail("release build does not match Resources/Info.plist")
 
 
+def verify_required_contracts() -> None:
+    missing = sorted(
+        path
+        for path in REQUIRED_PUBLIC_PATHS
+        if not (PROJECT_ROOT / path).is_file()
+    )
+    if missing:
+        fail("required public source files are missing: " + ", ".join(missing))
+
+    ci_text = (
+        PROJECT_ROOT / ".github/workflows/ci.yml"
+    ).read_text(encoding="utf-8")
+    for marker in [
+        "UpdateManifestTests",
+        "verify-public-fingerprint-corpus.py",
+        "verify-open-source-tree.py",
+    ]:
+        if marker not in ci_text:
+            fail(f"GitHub Actions does not enforce {marker}")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(
+                PROJECT_ROOT
+                / "scripts/verify-public-fingerprint-corpus.py"
+            ),
+        ],
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        fail(f"public fingerprint corpus failed: {detail}")
+
+
 def main() -> None:
     files = iter_public_files()
     verify_files(files)
     verify_release_metadata()
+    verify_required_contracts()
     print(
         "PASS: open-source tree contains no generated build roots, "
         "private deployment paths, or recognized secret material; "

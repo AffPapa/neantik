@@ -15,6 +15,7 @@ struct ContentView: View {
     let keychain: KeychainStore
     let runtimeLocator: BrowserRuntimeLocator
     let launchIntent: NeAntikLaunchIntent
+    private let updateChannel = UpdateChannelConfiguration.fromBundle()
 
     @State private var selection: UUID?
     @State private var editorRequest: EditorRequest?
@@ -228,9 +229,12 @@ struct ContentView: View {
             } else {
                 List(selection: $selection) {
                     ForEach(store.profiles) { profile in
+                        let processState = processes.processState(
+                            for: profile.id
+                        )
                         ProfileRow(
                             profile: profile,
-                            isRunning: processes.runningProfileIDs.contains(profile.id)
+                            processState: processState
                         )
                         .tag(profile.id)
                         .contextMenu {
@@ -239,15 +243,22 @@ struct ContentView: View {
                             } label: {
                                 Label("Изменить", systemImage: "slider.horizontal.3")
                             }
-                            .disabled(
-                                processes.runningProfileIDs.contains(profile.id)
-                            )
-                            if processes.runningProfileIDs.contains(profile.id) {
+                            .disabled(processState.isRunning)
+                            if processState.isRunning &&
+                                processState.canRequestStop {
                                 Button {
                                     processes.stop(profileID: profile.id)
                                 } label: {
                                     Label("Остановить", systemImage: "stop.fill")
                                 }
+                            } else if processState.isRunning {
+                                Button {} label: {
+                                    Label(
+                                        "Закрой браузер вручную",
+                                        systemImage: "hand.raised.fill"
+                                    )
+                                }
+                                .disabled(true)
                             } else {
                                 Button {
                                     launch(profile)
@@ -263,6 +274,8 @@ struct ContentView: View {
 
             Divider()
             runtimeStatus
+            Divider()
+            updateStatus
             if telemetry.isConfigured {
                 Divider()
                 telemetryStatus
@@ -293,27 +306,46 @@ struct ContentView: View {
             }
 
             if let profile = selectedProfile {
+                let processState = processes.processState(for: profile.id)
                 Button {
-                    if processes.runningProfileIDs.contains(profile.id) {
+                    if processState.isRunning {
                         processes.stop(profileID: profile.id)
                     } else {
                         launch(profile)
                     }
                 } label: {
                     Label(
-                        processes.runningProfileIDs.contains(profile.id)
-                            ? "Остановить выбранный"
+                        processState.isRunning
+                            ? (
+                                processState.canRequestStop
+                                    ? "Остановить выбранный"
+                                    : "Закрой браузер вручную"
+                            )
                             : "Запустить выбранный",
-                        systemImage: processes.runningProfileIDs.contains(profile.id)
-                            ? "stop.fill"
-                            : "play.fill"
+                        systemImage:
+                            processState.isRunning
+                                ? (
+                                    processState.canRequestStop
+                                        ? "stop.fill"
+                                        : "hand.raised.fill"
+                                )
+                                : "play.fill"
                     )
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(
-                    !processes.runningProfileIDs.contains(profile.id) &&
-                        isResolvingRuntime
+                    (!processState.isRunning && isResolvingRuntime) ||
+                        (processState.isRunning &&
+                            !processState.canRequestStop)
+                )
+                .help(
+                    processState.guidance ??
+                        (
+                            processState.isRunning
+                                ? "Остановить профиль"
+                                : "Запустить профиль"
+                        )
                 )
             }
         }
@@ -327,7 +359,7 @@ struct ContentView: View {
         if let profile = selectedProfile {
             ProfileDetailView(
                 profile: profile,
-                isRunning: processes.runningProfileIDs.contains(profile.id),
+                processState: processes.processState(for: profile.id),
                 isResolvingRuntime: isResolvingRuntime,
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
                 runtimeSupportsFingerprint: runtime?.supportsFingerprintIdentity == true,
@@ -507,6 +539,36 @@ struct ContentView: View {
         .padding(12)
     }
 
+    private var updateStatus: some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "checkmark.shield")
+                .foregroundStyle(updateChannel.isEnabled ? .orange : .secondary)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(
+                    updateChannel.isEnabled
+                        ? "Подписанный канал обновлений"
+                        : "Обновления вручную"
+                )
+                .font(.caption)
+                .fontWeight(.medium)
+
+                Text(
+                    updateChannel.isEnabled
+                        ? "Принимаются только Ed25519-подписанные Direct-манифесты. Автозагрузка и автоустановка выключены."
+                        : "Канал ещё не настроен. NeAntik ничего не проверяет и не скачивает в фоне."
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .accessibilityElement(children: .combine)
+    }
+
     private var runtimeStatusColor: Color {
         guard let runtime else { return .orange }
         if runtimePreflight?.isReady == false {
@@ -639,7 +701,7 @@ struct ContentView: View {
 
 private struct ProfileRow: View {
     let profile: BrowserProfile
-    let isRunning: Bool
+    let processState: BrowserProfileProcessState
 
     var body: some View {
         HStack(spacing: 10) {
@@ -647,9 +709,14 @@ private struct ProfileRow: View {
                 .fill(Color(hex: profile.colorHex))
                 .frame(width: 11, height: 11)
                 .overlay {
-                    if isRunning {
+                    if processState.isRunning {
                         Circle()
-                            .stroke(.green, lineWidth: 2)
+                            .stroke(
+                                processState == .externalUnverified
+                                    ? Color.orange
+                                    : Color.green,
+                                lineWidth: 2
+                            )
                             .padding(-3)
                     }
                 }
@@ -665,13 +732,13 @@ private struct ProfileRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityValue(isRunning ? "Запущен" : "Остановлен")
+        .accessibilityValue(processState.title)
     }
 }
 
 private struct ProfileDetailView: View {
     let profile: BrowserProfile
-    let isRunning: Bool
+    let processState: BrowserProfileProcessState
     let isResolvingRuntime: Bool
     let browserDataPath: String
     let runtimeSupportsFingerprint: Bool
@@ -686,6 +753,10 @@ private struct ProfileDetailView: View {
 
     private var actionColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 118), spacing: 10, alignment: .leading)]
+    }
+
+    private var isRunning: Bool {
+        processState.isRunning
     }
 
     var body: some View {
@@ -709,17 +780,36 @@ private struct ProfileDetailView: View {
                         isRunning ? onStop() : onStart()
                     } label: {
                         Label(
-                            isRunning ? "Остановить" : "Запустить",
-                            systemImage: isRunning ? "stop.fill" : "play.fill"
+                            isRunning
+                                ? (
+                                    processState.canRequestStop
+                                        ? "Остановить"
+                                        : "Закрыть вручную"
+                                )
+                                : "Запустить",
+                            systemImage:
+                                isRunning
+                                    ? (
+                                        processState.canRequestStop
+                                            ? "stop.fill"
+                                            : "hand.raised.fill"
+                                    )
+                                    : "play.fill"
                         )
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(!isRunning && isResolvingRuntime)
+                    .disabled(
+                        (!isRunning && isResolvingRuntime) ||
+                            (isRunning && !processState.canRequestStop)
+                    )
                     .help(
-                        !isRunning && isResolvingRuntime
-                            ? "NeAntik проверяет локальный браузер"
-                            : ""
+                        processState.guidance ??
+                            (
+                                !isRunning && isResolvingRuntime
+                                    ? "NeAntik проверяет локальный браузер"
+                                    : ""
+                            )
                     )
 
                     Button(action: onEdit) {
@@ -779,6 +869,28 @@ private struct ProfileDetailView: View {
                         }
                         if let locale = profile.identity.localeIdentifier {
                             LabeledContent("Язык", value: locale)
+                        }
+                        if let evidence =
+                            profile.identity.proxyContextEvidence {
+                            LabeledContent(
+                                "Контекст сети",
+                                value:
+                                    "\(evidence.source) · \(evidence.observedAt.formatted(date: .abbreviated, time: .omitted))"
+                            )
+                            if !evidence.isFresh() {
+                                Text(
+                                    "Данные старше 30 дней. Перепроверь прокси перед важной сессией; при запуске NeAntik сам не обращается к сервису геолокации."
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            }
+                        } else if profile.identity.timezoneIdentifier != nil ||
+                                    profile.identity.localeIdentifier != nil {
+                            Text(
+                                "Часовой пояс сохранён старой версией без даты проверки. NeAntik не обновляет его через сеть автоматически."
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         }
                         Text(
                             runtimeSupportsFingerprint
@@ -855,11 +967,25 @@ private struct ProfileDetailView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)
             Label(
-                isRunning ? "Запущен" : "Остановлен",
+                processState.title,
                 systemImage: isRunning ? "circle.fill" : "circle"
             )
             .font(.subheadline)
-            .foregroundStyle(isRunning ? .green : .secondary)
+            .foregroundStyle(
+                processState == .externalUnverified
+                    ? Color.orange
+                    : (isRunning ? Color.green : Color.secondary)
+            )
+            if let guidance = processState.guidance {
+                Text(guidance)
+                    .font(.caption)
+                    .foregroundStyle(
+                        processState == .externalUnverified
+                            ? Color.orange
+                            : Color.secondary
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }

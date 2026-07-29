@@ -14,10 +14,10 @@ final class ProfileStore: ObservableObject {
         do {
             try paths.prepareBaseDirectories()
             try paths.validatePrivateFile(paths.profilesFile)
-            let loadedProfiles = try Self.readProfiles(
-                from: paths.profilesFile
+            let load = try Self.readProfilesWithRecovery(
+                paths: paths
             )
-            let normalized = Self.normalizedForIsolation(loadedProfiles)
+            let normalized = Self.normalizedForIsolation(load.profiles)
             profiles = normalized.profiles
             if FileManager.default.fileExists(
                 atPath: paths.profilesFile.path
@@ -31,7 +31,7 @@ final class ProfileStore: ObservableObject {
                 sortProfiles()
                 try persist()
             }
-            lastError = paths.migrationWarning
+            lastError = load.warning ?? paths.migrationWarning
         } catch {
             storageIsAvailable = false
             lastError = error.localizedDescription
@@ -76,7 +76,8 @@ final class ProfileStore: ObservableObject {
                     )
                     : requestedSeed,
                 timezoneIdentifier: value.identity.timezoneIdentifier,
-                localeIdentifier: value.identity.localeIdentifier
+                localeIdentifier: value.identity.localeIdentifier,
+                proxyContextEvidence: value.identity.proxyContextEvidence
             )
         }
         let profileDirectory = paths.profileDirectory(for: value.id)
@@ -114,7 +115,7 @@ final class ProfileStore: ObservableObject {
             let operationError = error
             profiles = previousProfiles
             do {
-                try persist()
+                try persist(synchronizeRecoverySnapshot: true)
             } catch {
                 // The first persist succeeded, so its state is the last
                 // metadata known to be durable if the rollback cannot commit.
@@ -199,7 +200,7 @@ final class ProfileStore: ObservableObject {
                     )
                 }
                 profiles = previousProfiles
-                try persist()
+                try persist(synchronizeRecoverySnapshot: true)
             } catch {
                 profiles = deletedProfiles
                 throw ProfileDeleteRollbackError(
@@ -217,12 +218,41 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private func persist() throws {
+    private func persist(
+        synchronizeRecoverySnapshot: Bool = false
+    ) throws {
         try requireStorage()
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(profiles)
+        if synchronizeRecoverySnapshot {
+            try paths.writePrivateFile(
+                data,
+                to: paths.profilesBackupFile
+            )
+            try paths.writePrivateFile(data, to: paths.profilesFile)
+            return
+        }
+        if FileManager.default.fileExists(atPath: paths.profilesFile.path) {
+            try paths.validatePrivateFile(paths.profilesFile)
+            let previousData = try Data(contentsOf: paths.profilesFile)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            _ = try decoder.decode(
+                [BrowserProfile].self,
+                from: previousData
+            )
+            try paths.writePrivateFile(
+                previousData,
+                to: paths.profilesBackupFile
+            )
+        } else {
+            try paths.writePrivateFile(
+                data,
+                to: paths.profilesBackupFile
+            )
+        }
         try paths.writePrivateFile(data, to: paths.profilesFile)
     }
 
@@ -237,6 +267,38 @@ final class ProfileStore: ObservableObject {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode([BrowserProfile].self, from: Data(contentsOf: url))
+    }
+
+    private static func readProfilesWithRecovery(
+        paths: AppPaths
+    ) throws -> (profiles: [BrowserProfile], warning: String?) {
+        do {
+            return (
+                try readProfiles(from: paths.profilesFile),
+                nil
+            )
+        } catch is DecodingError {
+            try paths.validatePrivateFile(paths.profilesFile)
+            try paths.validatePrivateFile(paths.profilesBackupFile)
+            let backupData = try Data(contentsOf: paths.profilesBackupFile)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let recovered = try decoder.decode(
+                [BrowserProfile].self,
+                from: backupData
+            )
+            let rejectedData = try Data(contentsOf: paths.profilesFile)
+            let rejectedURL = paths.profilesRecoveryDirectory
+                .appendingPathComponent(
+                    "profiles-rejected-\(UUID().uuidString).json"
+                )
+            try paths.writePrivateFile(rejectedData, to: rejectedURL)
+            try paths.writePrivateFile(backupData, to: paths.profilesFile)
+            return (
+                recovered,
+                "Повреждённый файл профилей сохранён в папке Recovery. NeAntik восстановил предыдущую локальную версию; данные браузеров не изменялись."
+            )
+        }
     }
 
     private static func normalizedForIsolation(
@@ -270,7 +332,8 @@ final class ProfileStore: ObservableObject {
                 values[index].identity = BrowserIdentity(
                     seed: replacementSeed,
                     timezoneIdentifier: identity.timezoneIdentifier,
-                    localeIdentifier: identity.localeIdentifier
+                    localeIdentifier: identity.localeIdentifier,
+                    proxyContextEvidence: identity.proxyContextEvidence
                 )
                 changed = true
             }

@@ -19,7 +19,7 @@ CRITICAL_KEYS = [
     "audio",
     "client_rects",
 ]
-PRODUCTION_STABLE_CONTEXT_KEYS = [
+PUBLIC_ALPHA_STABLE_CONTEXT_KEYS = [
     "webgl_vendor",
     "webgl_renderer",
     "webgl_extensions",
@@ -35,7 +35,31 @@ PRODUCTION_STABLE_CONTEXT_KEYS = [
     "languages",
     "timezone",
 ]
-PRODUCTION_REQUIRED_KEYS = CRITICAL_KEYS + PRODUCTION_STABLE_CONTEXT_KEYS
+PRODUCTION_EXTENDED_CONTEXT_KEYS = [
+    "canvas_repeat",
+    "client_rects_repeat",
+    "webgl_pixels_repeat",
+    "webgl_shader_precision",
+    "css_screen_match",
+    "intl_locale",
+    "worker_canvas",
+    "worker_webgl_pixels",
+    "worker_webgl_vendor",
+    "worker_webgl_renderer",
+    "worker_webgl_extensions",
+    "worker_webgl_shader_precision",
+    "worker_user_agent",
+    "worker_platform",
+    "worker_languages",
+    "worker_timezone",
+    "worker_intl_locale",
+    "worker_hardware_concurrency",
+    "worker_client_hints",
+]
+PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
+PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
+CURRENT_AUDIT_SCHEMA_VERSION = 2
+CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -166,13 +190,13 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         / "Resources"
         / "NeAntik Browser.app"
     )
-    evidence_path = (
+    evidence_root = (
         integrated_app
         / "Contents"
         / "Resources"
         / "NeAntikRuntimeEvidence"
-        / "runtime-verification.json"
     )
+    evidence_path = evidence_root / "runtime-verification.json"
     try:
         with (integrated_app / "Contents" / "Info.plist").open("rb") as file:
             manager_info = plistlib.load(file)
@@ -187,6 +211,79 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must be a JSON object"
         )
+    if evidence.get("schemaVersion") != 2:
+        raise FingerprintReportError(
+            "Embedded runtime verification report must use provenance schema 2"
+        )
+    provenance_files = {
+        "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
+        "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",
+        "appleDeviceTuplesManifestSHA256": evidence_root / "apple-device-tuples.json",
+        "securityBaselineSHA256": evidence_root / "security-baseline.json",
+    }
+    for report_key, path in provenance_files.items():
+        recorded = evidence.get(report_key)
+        if not isinstance(recorded, str) or not SHA256_RE.fullmatch(recorded):
+            raise FingerprintReportError(
+                f"Embedded runtime verification report has invalid {report_key}"
+            )
+        if sha256_file(path) != recorded:
+            raise FingerprintReportError(
+                f"Embedded runtime provenance does not match {path.name}"
+            )
+    args_path = evidence_root / "args.gn"
+    try:
+        recorded_args_sha = str(evidence["buildArguments"]["sha256"])
+        embedded_lock = load_runtime_lock(
+            evidence_root / "fingerprint-chromium.lock.json"
+        )
+        lock_fingerprint_patch_sha = str(
+            embedded_lock["fingerprintChromium"]["patchSeriesSHA256"]
+        )
+        lock_mac_patch_sha = str(
+            embedded_lock["macPackaging"]["patchSeriesSHA256"]
+        )
+        lock_overlay_sha = str(
+            embedded_lock["nevisionOverlay"]["scriptSHA256"]
+        )
+        lock_tuple_overlay_sha = str(
+            embedded_lock["nevisionDeviceTuples"]["scriptSHA256"]
+        )
+    except (KeyError, TypeError) as error:
+        raise FingerprintReportError(
+            f"Embedded runtime provenance is missing expected key: {error}"
+        ) from error
+    immutable_provenance = {
+        "buildArguments.sha256": (
+            recorded_args_sha,
+            sha256_file(args_path),
+        ),
+        "fingerprintChromiumPatchSeriesSHA256": (
+            evidence.get("fingerprintChromiumPatchSeriesSHA256"),
+            lock_fingerprint_patch_sha,
+        ),
+        "macPackagingPatchSeriesSHA256": (
+            evidence.get("macPackagingPatchSeriesSHA256"),
+            lock_mac_patch_sha,
+        ),
+        "nevisionOverlaySHA256": (
+            evidence.get("nevisionOverlaySHA256"),
+            lock_overlay_sha,
+        ),
+        "nevisionDeviceTupleOverlaySHA256": (
+            evidence.get("nevisionDeviceTupleOverlaySHA256"),
+            lock_tuple_overlay_sha,
+        ),
+    }
+    for label, (recorded, expected) in immutable_provenance.items():
+        if (
+            not isinstance(recorded, str)
+            or not SHA256_RE.fullmatch(recorded)
+            or recorded != expected
+        ):
+            raise FingerprintReportError(
+                f"Embedded runtime provenance mismatch: {label}"
+            )
     try:
         executable = _distributed_path(
             runtime_app,
@@ -343,18 +440,88 @@ def unavailable_required_keys(
     first: dict[str, str],
     second: dict[str, str],
     repeat: dict[str, str],
+    *,
+    required_keys: list[str] = PRODUCTION_REQUIRED_KEYS,
 ) -> list[str]:
     return [
         key
-        for key in PRODUCTION_REQUIRED_KEYS
+        for key in required_keys
         if not is_available(first.get(key))
         or not is_available(second.get(key))
         or not is_available(repeat.get(key))
     ]
 
 
-def unstable_required_keys(first: dict[str, str], repeat: dict[str, str]) -> list[str]:
-    return [key for key in PRODUCTION_REQUIRED_KEYS if first.get(key) != repeat.get(key)]
+def unstable_required_keys(
+    first: dict[str, str],
+    repeat: dict[str, str],
+    *,
+    required_keys: list[str] = PRODUCTION_REQUIRED_KEYS,
+) -> list[str]:
+    return [key for key in required_keys if first.get(key) != repeat.get(key)]
+
+
+def parsed_client_hints(value: str | None) -> dict[str, Any] | None:
+    if not is_available(value):
+        return None
+    try:
+        parsed = json.loads(value or "")
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def cross_realm_consistency_issues(
+    label: str,
+    capture_object: dict[str, Any],
+) -> list[str]:
+    v = values(capture_object)
+    issues: list[str] = []
+
+    for first, second in (
+        ("canvas", "canvas_repeat"),
+        ("canvas", "worker_canvas"),
+        ("client_rects", "client_rects_repeat"),
+        ("webgl_pixels", "webgl_pixels_repeat"),
+        ("webgl_pixels", "worker_webgl_pixels"),
+        ("webgl_vendor", "worker_webgl_vendor"),
+        ("webgl_renderer", "worker_webgl_renderer"),
+        ("webgl_extensions", "worker_webgl_extensions"),
+        ("webgl_shader_precision", "worker_webgl_shader_precision"),
+        ("user_agent", "worker_user_agent"),
+        ("platform", "worker_platform"),
+        ("languages", "worker_languages"),
+        ("timezone", "worker_timezone"),
+        ("intl_locale", "worker_intl_locale"),
+        ("hardware_concurrency", "worker_hardware_concurrency"),
+    ):
+        if is_available(v.get(first)) and is_available(v.get(second)) and v.get(first) != v.get(second):
+            issues.append(f"The {label} {first} value disagrees with {second}.")
+
+    if (
+        is_available(v.get("css_screen_match"))
+        and v.get("css_screen_match") != "width:1|height:1|resolution:1"
+    ):
+        issues.append(f"The {label} CSS media queries disagree with the Screen API.")
+
+    top_hints = parsed_client_hints(v.get("client_hints"))
+    worker_hints = parsed_client_hints(v.get("worker_client_hints"))
+    if top_hints is not None and worker_hints is not None:
+        for key in (
+            "architecture",
+            "bitness",
+            "mobile",
+            "model",
+            "platform",
+            "platformVersion",
+            "uaFullVersion",
+            "wow64",
+        ):
+            if top_hints.get(key) != worker_hints.get(key):
+                issues.append(
+                    f"The {label} Client Hints {key} value disagrees between the page and worker."
+                )
+    return issues
 
 
 def tuple_for_identity(identity_code: object) -> AppleDeviceTuple | None:
@@ -430,10 +597,24 @@ def production_release_issues(
     second = values(second_capture)
     repeat = values(repeat_capture)
 
-    unavailable = unavailable_required_keys(first, second, repeat)
+    if report.get("auditSchemaVersion", 1) != CURRENT_AUDIT_SCHEMA_VERSION:
+        issues.append("The report does not use the current strict fingerprint audit schema.")
+    if report.get("identityCatalogVersion") != CURRENT_IDENTITY_CATALOG_VERSION:
+        issues.append("The report does not use the current immutable identity catalog.")
+
+    unavailable = unavailable_required_keys(
+        first,
+        second,
+        repeat,
+        required_keys=PRODUCTION_EXTENDED_CONTEXT_KEYS,
+    )
     if unavailable:
         issues.append("Required browser surfaces are unavailable: " + ", ".join(unavailable) + ".")
-    unstable = unstable_required_keys(first, repeat)
+    unstable = unstable_required_keys(
+        first,
+        repeat,
+        required_keys=PRODUCTION_EXTENDED_CONTEXT_KEYS,
+    )
     if unstable:
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
 
@@ -460,6 +641,12 @@ def production_release_issues(
                 runtime_version=runtime_version,
             )
         )
+    for label, capture_object in (
+        ("profile A, first capture", first_capture),
+        ("profile B", second_capture),
+        ("profile A, repeat capture", repeat_capture),
+    ):
+        issues.extend(cross_realm_consistency_issues(label, capture_object))
     return issues
 
 
@@ -535,10 +722,19 @@ def public_alpha_release_issues(
     if unstable_critical or len(changed_critical) < 2:
         issues.append("The critical-surface verdict is not verified.")
 
-    unavailable = unavailable_required_keys(first, second, repeat)
+    unavailable = unavailable_required_keys(
+        first,
+        second,
+        repeat,
+        required_keys=PUBLIC_ALPHA_REQUIRED_KEYS,
+    )
     if unavailable:
         issues.append("Required browser surfaces are unavailable: " + ", ".join(unavailable) + ".")
-    unstable = unstable_required_keys(first, repeat)
+    unstable = unstable_required_keys(
+        first,
+        repeat,
+        required_keys=PUBLIC_ALPHA_REQUIRED_KEYS,
+    )
     if unstable:
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
     if "webgl_pixels" not in changed_critical:
@@ -564,6 +760,8 @@ def verification_summary(
         "issues": issues,
         "productionQualified": not production_issues,
         "productionIssues": production_issues,
+        "auditSchemaVersion": report.get("auditSchemaVersion", 1),
+        "identityCatalogVersion": report.get("identityCatalogVersion"),
         "changedCriticalKeys": changed_critical_keys(first, second, repeat),
         "unstableRequiredKeys": unstable_required_keys(first, repeat),
         "changedKeys": changed_keys(first, second),

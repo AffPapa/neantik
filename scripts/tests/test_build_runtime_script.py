@@ -27,6 +27,28 @@ class BuildRuntimeScriptTests(unittest.TestCase):
         self.assertIn("verify_source_version", resumed_block)
         self.assertIn("verify_source_version", fresh_block)
 
+    def test_owned_rebase_stamp_binds_manifest_and_has_explicit_recovery(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("patch_manifest_sha256=", script)
+        self.assertIn("NEANTIK_RECOVER_SOURCE_STAMP", script)
+        self.assertIn("apply-neantik-patchset.py", script)
+        self.assertIn("write_owned_source_stamp", script)
+        self.assertIn(
+            "after an intentional patch-manifest update",
+            script,
+        )
+
+    def test_owned_rebase_verifies_rust_archive_missing_upstream_hash(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+        lock = (
+            PROJECT_ROOT / "runtime" / "chromium-150-toolchain-lock.json"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("chromium-150-toolchain-lock.json", script)
+        self.assertIn("Locked Rust toolchain archive verified.", script)
+        self.assertIn("03d5e8cf7331c6ed8a779eba0c24ab6a", lock)
+
 
 if __name__ == "__main__":
     unittest.main()

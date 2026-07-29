@@ -31,6 +31,7 @@ struct ProfileEditorView: View {
     @State private var detectedTimezone: String?
     @State private var detectedLocale: String?
     @State private var detectedLocation: String?
+    @State private var detectedProxyContextEvidence: ProxyContextEvidence?
     @State private var errorMessage: String?
     @State private var testMessage: String?
     @State private var isTesting = false
@@ -83,6 +84,9 @@ struct ProfileEditorView: View {
             initialValue: profile.identity.localeIdentifier
         )
         _detectedLocation = State(initialValue: nil)
+        _detectedProxyContextEvidence = State(
+            initialValue: profile.identity.proxyContextEvidence
+        )
     }
 
     var body: some View {
@@ -214,6 +218,23 @@ struct ProfileEditorView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         }
+                        if let evidence = detectedProxyContextEvidence {
+                            Text(
+                                "Источник: \(evidence.source) · проверено \(evidence.observedAt.formatted(date: .abbreviated, time: .shortened)). При запуске повторного запроса нет."
+                            )
+                            .font(.caption)
+                            .foregroundStyle(
+                                evidence.isFresh()
+                                    ? Color.secondary
+                                    : Color.orange
+                            )
+                        } else if detectedTimezone != nil {
+                            Text(
+                                "Сохранено старой версией без даты проверки. Нажми «Проверить прокси», чтобы обновить контекст."
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -299,6 +320,9 @@ struct ProfileEditorView: View {
                     : nil,
                 localeIdentifier: locationMatchesProxy
                     ? detectedLocale
+                    : nil,
+                proxyContextEvidence: locationMatchesProxy
+                    ? detectedProxyContextEvidence
                     : nil
             )
             try onSave(profile, proxyPassword)
@@ -331,6 +355,7 @@ struct ProfileEditorView: View {
                         detectedTimezone = result.timezoneIdentifier
                         detectedLocale = result.localeIdentifier
                         detectedLocation = location.isEmpty ? nil : location
+                        detectedProxyContextEvidence = .ipAPI()
                         isTesting = false
                     }
                 } catch {

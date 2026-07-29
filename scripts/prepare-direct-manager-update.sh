@@ -67,6 +67,8 @@ fi
 "$PROJECT_DIR/scripts/verify-runtime-security-reference.py"
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
+"$PROJECT_DIR/scripts/verify-direct-update-policy.py"
+"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 "$PROJECT_DIR/scripts/verify-direct-ui-localization.py"
 codesign --verify --deep --strict --verbose=2 "$SOURCE_APP"
 

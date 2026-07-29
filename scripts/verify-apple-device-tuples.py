@@ -48,6 +48,12 @@ PYTHON_TUPLE_RE = re.compile(
     re.MULTILINE,
 )
 
+IDENTITY_CATALOG_RE = re.compile(
+    r"static let tupleIDs = \[(?P<body>.*?)\]",
+    re.DOTALL,
+)
+SWIFT_STRING_RE = re.compile(r'"([^"]+)"')
+
 
 def tuple_from_mapping(value: dict[str, Any], *, label: str) -> DeviceTuple:
     try:
@@ -140,6 +146,26 @@ def parse_python_tuples(path: Path) -> list[DeviceTuple]:
     return parsed
 
 
+def parse_identity_catalog_ids(path: Path) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise DeviceTupleError(
+            f"cannot read Swift identity catalog source: {path}"
+        ) from error
+    match = IDENTITY_CATALOG_RE.search(text)
+    if match is None:
+        raise DeviceTupleError("Swift identity catalog tupleIDs are missing")
+    ids = SWIFT_STRING_RE.findall(match.group("body"))
+    if not ids:
+        raise DeviceTupleError("Swift identity catalog tupleIDs are empty")
+    if len(ids) != len(set(ids)):
+        raise DeviceTupleError(
+            "Swift identity catalog contains duplicate tuple ids"
+        )
+    return ids
+
+
 def validate_collection(items: list[DeviceTuple], *, label: str) -> None:
     if len(items) < 8:
         raise DeviceTupleError(f"{label} must contain a reviewed Apple Silicon tuple catalog")
@@ -169,20 +195,28 @@ def verify_consistency(
     manifest_path: Path,
     swift_path: Path,
     python_path: Path,
+    models_path: Path = PROJECT_ROOT / "Sources" / "NeAntik" / "Models.swift",
 ) -> dict[str, Any]:
     manifest = load_manifest(manifest_path)
     swift = parse_swift_tuples(swift_path)
     python = parse_python_tuples(python_path)
+    identity_ids = parse_identity_catalog_ids(models_path)
+    manifest_ids = [item.id for item in manifest]
     issues = [
         *compare(swift, manifest, label="Swift"),
         *compare(python, manifest, label="Python"),
     ]
+    if identity_ids != manifest_ids:
+        issues.append(
+            "Swift identity catalog tuple order does not match the immutable manifest"
+        )
     return {
         "schemaVersion": 1,
         "tupleCount": len(manifest),
         "manifest": str(manifest_path),
         "swift": str(swift_path),
         "python": str(python_path),
+        "models": str(models_path),
         "consistent": not issues,
         "issues": issues,
     }
@@ -207,6 +241,11 @@ def main() -> int:
         type=Path,
         default=PROJECT_ROOT / "scripts" / "verify-gui-fingerprint-report.py",
     )
+    parser.add_argument(
+        "--models",
+        type=Path,
+        default=PROJECT_ROOT / "Sources" / "NeAntik" / "Models.swift",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     try:
@@ -214,6 +253,7 @@ def main() -> int:
             manifest_path=args.manifest,
             swift_path=args.swift,
             python_path=args.python,
+            models_path=args.models,
         )
     except DeviceTupleError as error:
         print(f"Apple device tuple verification failed: {error}", file=sys.stderr)

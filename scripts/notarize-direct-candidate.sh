@@ -40,6 +40,8 @@ fi
   "${SECURITY_BASELINE_ARGS[@]}"
 "$PROJECT_DIR/scripts/verify-runtime-security-reference.py"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
+"$PROJECT_DIR/scripts/verify-direct-update-policy.py"
+"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 python3 "$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py" \
   "$REPORT_PATH" \
   --integrated-app "$APP_PATH"

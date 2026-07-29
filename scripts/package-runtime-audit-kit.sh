@@ -83,6 +83,12 @@ chmod 0755 "$PACKAGE_DIR/prepare-gui-fingerprint-release-evidence.py"
 cp "$PROJECT_DIR/docs/RUNTIME_AUDIT_KIT_README.md" "$PACKAGE_DIR/README.md"
 cp "$PROJECT_DIR/runtime/fingerprint-chromium.lock.json" \
   "$EVIDENCE_DIR/fingerprint-chromium.lock.json"
+cp "$PROJECT_DIR/runtime/security-baseline.json" \
+  "$EVIDENCE_DIR/security-baseline.json"
+cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+  "$EVIDENCE_DIR/neantik-patch-series.json"
+cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
+  "$EVIDENCE_DIR/apple-device-tuples.json"
 cp "$BUILD_ARGS" "$EVIDENCE_DIR/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE_DIR/runtime-verification.json"
 python3 - "$EVIDENCE_DIR/fingerprint-chromium.lock.json" <<'PY'

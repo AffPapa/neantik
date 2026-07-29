@@ -5,6 +5,108 @@ import Testing
 
 struct FingerprintAuditTests {
     @Test
+    func safeDiagnosticSummaryUsesOnlyAllowlistedProvenance() {
+        let profileID = UUID()
+        let secretProfileName = "PROFILE-NAME-MUST-NOT-LEAK"
+        let secretIdentityCode = "NA-DEADBEEF"
+        let secretSurfaceValue = "proxy-login:secret@example.test"
+        let first = FingerprintCapture(
+            profileID: profileID,
+            profileName: secretProfileName,
+            identityCode: secretIdentityCode,
+            capturedAt: Date(timeIntervalSince1970: 1),
+            values: [
+                "canvas": secretSurfaceValue,
+                "webgl_pixels": "webgl-a",
+                "audio": "audio-a",
+                "client_rects": "rects-a"
+            ]
+        )
+        let second = FingerprintCapture(
+            profileID: UUID(),
+            profileName: "SECOND-PROFILE-MUST-NOT-LEAK",
+            identityCode: "NA-CAFEBABE",
+            capturedAt: Date(timeIntervalSince1970: 2),
+            values: [
+                "canvas": "canvas-b",
+                "webgl_pixels": "webgl-b",
+                "audio": "audio-a",
+                "client_rects": "rects-a"
+            ]
+        )
+        let executableHash = String(repeating: "a", count: 64)
+        let frameworkHash = String(repeating: "b", count: 64)
+        let report = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 3),
+            managerVersion: "0.3.12",
+            managerBuild: "15",
+            runtimeName: "NeAntik Browser",
+            runtimeVersion: "150.0.7871.186",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: executableHash,
+            runtimeFrameworkSHA256: frameworkHash,
+            firstInitial: first,
+            second: second,
+            firstRepeat: first
+        )
+
+        let summary = report.safeDiagnosticSummary
+
+        #expect(summary.contains("Менеджер: 0.3.12 (15)"))
+        #expect(
+            summary.contains(
+                "Движок: Chromium с разделением отпечатков · 150.0.7871.186"
+            )
+        )
+        #expect(summary.contains(executableHash))
+        #expect(summary.contains(frameworkHash))
+        #expect(!summary.contains(secretProfileName))
+        #expect(!summary.contains(secretIdentityCode))
+        #expect(!summary.contains(secretSurfaceValue))
+        #expect(!summary.contains(profileID.uuidString))
+        #expect(!summary.contains(second.profileName))
+        #expect(!summary.contains(second.identityCode))
+    }
+
+    @Test
+    func safeDiagnosticSummaryRejectsMalformedMetadataAndHashes() {
+        let first = capture(
+            name: "First",
+            values: baseValues(canvas: "canvas-a")
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            managerVersion: "0.4\nINJECTED",
+            managerBuild: " ",
+            runtimeName: "Ignored runtime name",
+            runtimeVersion: "",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: false,
+            runtimeExecutableSHA256: "NOT-A-HASH",
+            runtimeFrameworkSHA256: nil,
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                values: baseValues(canvas: "canvas-b")
+            ),
+            firstRepeat: first
+        )
+
+        #expect(result.safeManagerVersionSummary == "0.4 INJECTED")
+        #expect(result.safeRuntimeExecutableHashSummary == "не подтверждён")
+        #expect(result.safeRuntimeFrameworkHashSummary == "не подтверждён")
+        #expect(
+            result.safeDiagnosticSummary.contains(
+                "Подпись движка: Подпись не подтверждена"
+            )
+        )
+        #expect(!result.safeDiagnosticSummary.contains("Ignored runtime name"))
+    }
+
+    @Test
     func verifiesStableDistinctCriticalSurfaces() {
         let first = capture(
             name: "First",
@@ -132,6 +234,12 @@ struct FingerprintAuditTests {
             "webgpu_policy",
             "client_hints",
             "webrtc_candidates",
+            "canvas_repeat",
+            "worker_canvas",
+            "worker_webgl_pixels",
+            "worker_client_hints",
+            "css_screen_match",
+            "webgl_shader_precision",
             "COMPILE_STATUS",
             "LINK_STATUS",
             "pixel readback failed"
@@ -310,6 +418,135 @@ struct FingerprintAuditTests {
         #expect(result.productionUnstableKeys.isEmpty)
         #expect(result.productionReleaseIssues.isEmpty)
         #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func crossRealmMismatchFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["worker_platform"] = "Win32"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "platform value disagrees with worker_platform"
+                )
+            }
+        )
+    }
+
+    @Test
+    func legacyAuditSchemaCannotQualifyForStrictProduction() throws {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let current = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+        let encoded = try JSONEncoder().encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object.removeValue(forKey: "auditSchemaVersion")
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let legacy = try JSONDecoder().decode(
+            FingerprintAuditReport.self,
+            from: data
+        )
+
+        #expect(legacy.effectiveAuditSchemaVersion == 1)
+        #expect(legacy.isPublicAlphaReleaseQualified)
+        #expect(!legacy.isProductionReleaseQualified)
+        #expect(
+            legacy.productionReleaseIssues.contains(
+                "The report does not use the current strict fingerprint audit schema."
+            )
+        )
+    }
+
+    @Test
+    func identityCatalogDriftCannotQualifyForStrictProduction() {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            identityCatalogVersion: 2,
+            runtimeName: "Test",
+            runtimeVersion: "1",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: String(repeating: "a", count: 64),
+            runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            firstRepeat: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.productionReleaseIssues.contains(
+                "The report does not use the current immutable identity catalog."
+            )
+        )
     }
 
     @Test
@@ -746,25 +983,45 @@ struct FingerprintAuditTests {
         webGLPixels: String,
         renderer: String
     ) -> [String: String] {
-        [
+        let clientHints = "{\"platform\":\"macOS\"}"
+        return [
             "canvas": canvas,
+            "canvas_repeat": canvas,
             "webgl_pixels": webGLPixels,
+            "webgl_pixels_repeat": webGLPixels,
             "audio": "audio",
             "client_rects": "rects",
+            "client_rects_repeat": "rects",
             "webgl_vendor": "Google Inc. (Apple)",
             "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
+            "webgl_shader_precision": "precision",
             "webgpu_policy": "disabled",
             "user_agent": "Mozilla/5.0",
             "platform": "MacIntel",
-            "client_hints": "{\"platform\":\"macOS\"}",
+            "client_hints": clientHints,
             "screen": "1512x982x1512x944x24x2",
+            "css_screen_match": "width:1|height:1|resolution:1",
             "hardware_concurrency": "8",
             "device_memory": "8",
             "touch_points": "0",
             "fonts": "Arial,Menlo",
             "languages": "en-US,en",
-            "timezone": "Europe/Berlin"
+            "timezone": "Europe/Berlin",
+            "intl_locale": "en-US",
+            "worker_canvas": canvas,
+            "worker_webgl_pixels": webGLPixels,
+            "worker_webgl_vendor": "Google Inc. (Apple)",
+            "worker_webgl_renderer": renderer,
+            "worker_webgl_extensions": "extensions",
+            "worker_webgl_shader_precision": "precision",
+            "worker_user_agent": "Mozilla/5.0",
+            "worker_platform": "MacIntel",
+            "worker_languages": "en-US,en",
+            "worker_timezone": "Europe/Berlin",
+            "worker_intl_locale": "en-US",
+            "worker_hardware_concurrency": "8",
+            "worker_client_hints": clientHints
         ]
     }
 
@@ -788,8 +1045,11 @@ struct FingerprintAuditTests {
         values["client_hints"] = """
         {"architecture":"arm","bitness":"64","platform":"macOS","platformVersion":"\(platformVersion)","uaFullVersion":"\(runtimeVersion)"}
         """
+        values["worker_user_agent"] = values["user_agent"]
+        values["worker_client_hints"] = values["client_hints"]
         values["screen"] = screen
         values["hardware_concurrency"] = String(cores)
+        values["worker_hardware_concurrency"] = String(cores)
         return values
     }
 

@@ -18,19 +18,25 @@ SPEC.loader.exec_module(MODULE)
 class RuntimeReportConsistencyTests(unittest.TestCase):
     def report(self) -> dict[str, object]:
         return {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "chromiumVersion": "150.0.7871.186",
             "architecture": "arm64",
             "gpuMode": "metal",
             "sourceLockSHA256": "a" * 64,
-            "nevisionOverlaySHA256": "b" * 64,
+            "fingerprintChromiumPatchSeriesSHA256": "b" * 64,
+            "macPackagingPatchSeriesSHA256": "c" * 64,
+            "neantikPatchManifestSHA256": "d" * 64,
+            "appleDeviceTuplesManifestSHA256": "e" * 64,
+            "securityBaselineSHA256": "f" * 64,
+            "nevisionOverlaySHA256": "1" * 64,
+            "nevisionDeviceTupleOverlaySHA256": "2" * 64,
             "machoCount": 13,
             "codeSignature": "verified",
             "codeSignatureKind": "developer-id",
             "fingerprintProtocolStrings": "verified",
-            "executable": {"path": "/first", "sha256": "c" * 64},
-            "framework": {"path": "/second", "sha256": "d" * 64},
-            "buildArguments": {"path": "/args", "sha256": "e" * 64},
+            "executable": {"path": "/first", "sha256": "3" * 64},
+            "framework": {"path": "/second", "sha256": "4" * 64},
+            "buildArguments": {"path": "/args", "sha256": "5" * 64},
             "createdAt": "ignored",
         }
 
@@ -53,15 +59,32 @@ class RuntimeReportConsistencyTests(unittest.TestCase):
         fresh["createdAt"] = "different"
         fresh["executable"] = {
             "path": "/roundtrip/runtime",
-            "sha256": "c" * 64,
+            "sha256": "3" * 64,
         }
         self.verify(packaged, fresh)
 
     def test_rejects_changed_runtime_hash(self) -> None:
         packaged = self.report()
         fresh = self.report()
-        fresh["framework"] = {"path": "/second", "sha256": "f" * 64}
+        fresh["framework"] = {"path": "/second", "sha256": "6" * 64}
         with self.assertRaisesRegex(SystemExit, "framework.sha256"):
+            self.verify(packaged, fresh)
+
+    def test_rejects_changed_patch_manifest_hash(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        fresh["neantikPatchManifestSHA256"] = "6" * 64
+        with self.assertRaisesRegex(SystemExit, "neantikPatchManifestSHA256"):
+            self.verify(packaged, fresh)
+
+    def test_rejects_changed_device_tuple_overlay_hash(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        fresh["nevisionDeviceTupleOverlaySHA256"] = "6" * 64
+        with self.assertRaisesRegex(
+            SystemExit,
+            "nevisionDeviceTupleOverlaySHA256",
+        ):
             self.verify(packaged, fresh)
 
     def test_rejects_missing_immutable_field(self) -> None:

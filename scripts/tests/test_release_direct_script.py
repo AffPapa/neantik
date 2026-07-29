@@ -23,6 +23,14 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             '"$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"',
             text,
         )
+        self.assertIn(
+            '"$PROJECT_DIR/scripts/verify-direct-update-policy.py"',
+            text,
+        )
+        self.assertIn(
+            '"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"',
+            text,
+        )
         self.assertIn('APP_PATH="$PROJECT_DIR/dist/NeAntik.app"', text)
         self.assertIn('ditto "$ENGINEERING_APP_PATH" "$APP_PATH"', text)
         self.assertNotIn('rm -f "$ARCHIVE_PATH" "$CHECKSUM_PATH"', text)

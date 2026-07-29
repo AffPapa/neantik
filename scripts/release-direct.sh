@@ -90,6 +90,8 @@ fi
 "$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" "${SECURITY_BASELINE_ARGS[@]}"
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
+"$PROJECT_DIR/scripts/verify-direct-update-policy.py"
+"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 
 : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
 : "${NEANTIK_NOTARY_PROFILE:?Set NEANTIK_NOTARY_PROFILE to an xcrun notarytool Keychain profile}"
@@ -180,4 +182,4 @@ verify_zip_has_no_finder_metadata "$ARCHIVE_PATH"
 
 echo "$ARCHIVE_PATH"
 echo "$CHECKSUM_PATH"
-echo "Next: upload the versioned archive to a draft GitHub Release, verify the downloaded asset, then publish the release."
+echo "Next: upload the versioned archive without switching the public CTA, then run scripts/finalize-direct-public-release.sh."

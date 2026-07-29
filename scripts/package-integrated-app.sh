@@ -77,6 +77,10 @@ cp "$PROJECT_DIR/runtime/fingerprint-chromium.lock.json" \
   "$EVIDENCE/fingerprint-chromium.lock.json"
 cp "$PROJECT_DIR/runtime/security-baseline.json" \
   "$EVIDENCE/security-baseline.json"
+cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+  "$EVIDENCE/neantik-patch-series.json"
+cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
+  "$EVIDENCE/apple-device-tuples.json"
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
 cp "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md" \

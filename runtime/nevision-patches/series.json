@@ -34,9 +34,9 @@
       "postimageSHA256": {
         "components/ungoogled/BUILD.gn": "c5e3eb030b64550d18d4dfa81358041f0d32cfca4a2698d2cfdaf7cebe27d99d",
         "components/ungoogled/ungoogled_switches.h": "053ed245e98110088eba2ab8b38e830437d14f9e1059909c93ab1dcf9abd2a19",
-        "components/ungoogled/ungoogled_switches.cc": "b243eec44f9f2252afee18f0d956ee9669532deb9ee163fe4c05c0c6ad0d4dff",
-        "components/ungoogled/nevision_fingerprint.h": "b21dd385094dfc0dbe33a7355b42cd0e08368b50c38e156e443aa52fed01e933",
-        "components/ungoogled/nevision_fingerprint.cc": "369d6599bd7e70fb914cd0eca159dd61de55fd9d689fc42ce867a3e74d589a83",
+        "components/ungoogled/ungoogled_switches.cc": "0c43eef73b9109f3a956d6b383af5e10de1fbdbd044bc302e548cfcfd524311e",
+        "components/ungoogled/nevision_fingerprint.h": "98ae951a66179be8620f34b9b9156147366223aead7df5e7c363d8480e6f26b7",
+        "components/ungoogled/nevision_fingerprint.cc": "29df11a4c164dcc0ff03482dc1478cddc09e856cd73739b00ae4d49bbb026ec0",
         "content/browser/renderer_host/render_process_host_impl.cc": "5e79fce2fb466f558c7a7dc89f13c69ff06414d904d5652f94e147628b9161e2"
       }
     },
@@ -57,9 +57,9 @@
         "noise uses stable hashing rather than per-load randomness"
       ],
       "postimageSHA256": {
-        "third_party/blink/renderer/core/dom/document.cc": "3ed895a21a0b2a28f4e6789b7aa4e5e2093dc3c8f6041e242d76316fea0b1969",
+        "third_party/blink/renderer/core/dom/document.cc": "1753418e6607fdb95510177fbec78d85db2ecf121409e8a4009757fabc9b99a0",
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "1e2570c258f937482d18fa191679a4fd1458d8d39724931d5d7ffabb724c0f1f",
-        "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f69608e236e194bcd7b89387f0dce061794e18808499b66a0b8fcddd88bae50b",
+        "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f95128efcb8885770bf291a171459d4d4218aee8ef0f5f82ec44407e5ff69dc5",
         "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "4b4e55d873999b6208c9db6ad23fbfed1aee49762340ad7968a75906194b8c6b",
         "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "2c1d41aadd13c875bb9749f58c7a55334391900d349318f5924badfa1dcb738c"
       }
@@ -97,7 +97,7 @@
         "Tests/NeAntikTests/FingerprintAuditTests.swift"
       ],
       "patchFile": "patches/timezone-locale-network-context.patch",
-      "patchSHA256": "a17d81aa9a7b2b793789c140026fbabb6f237f34be69faac06fcb29ae011dbbf",
+      "patchSHA256": "4b93984d2cec6b25fedabe699f4850d32a0aa1897da9b9d8fc670231acd5015d",
       "requiredBehavior": [
         "timezone is captured and stable in the GUI fingerprint report",
         "WebRTC candidate data is hashed rather than persisted raw",
@@ -105,7 +105,7 @@
       ],
       "postimageSHA256": {
         "third_party/blink/renderer/core/BUILD.gn": "832b8c759bb07bafd34d54d3a1c00d4cc3750fa27f2d9f30882fd7930aec44f7",
-        "third_party/blink/renderer/core/core_initializer.cc": "383eaab057fe61df964824adbdf36ff4caf3174e3e45261c5d4e59624908d5fd"
+        "third_party/blink/renderer/core/core_initializer.cc": "a7a4a6ec5d2596829c4a9230eb1c269c3f1fe2723342d31e422df89d5ed5388d"
       }
     },
     {
@@ -126,7 +126,7 @@
         "security baseline verifier remains the source of public release eligibility"
       ],
       "postimageSHA256": {
-        "components/version_info/version_info_with_user_agent.h": "6ed8ecf2e9a6479ce172b81c1c4c41038719ac831983c5ebcf5ff60ab6b06b53"
+        "components/version_info/version_info_with_user_agent.h": "cb28b86d2e228e3c3c97ade6613573853ccc8815f4483c239b66d20346ab10d1"
       }
     },
     {
@@ -148,7 +148,7 @@
       "postimageSHA256": {
         "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
         "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
-        "third_party/blink/renderer/core/frame/screen.cc": "fe79611a4b3f7363af47aafa754e0537b016b060d9f068cc69f047efd414233d",
+        "third_party/blink/renderer/core/frame/screen.cc": "cec3eefab518188c2bb33870e588e409b982482cf02637cbec8df308838b1c85",
         "third_party/blink/renderer/core/frame/local_dom_window.cc": "4631b8862275ba11299bc8ac4be63eb7ae98efe45db2a88ad1cb2c4aef852e9c"
       }
     },
@@ -171,8 +171,8 @@
         "ARM64 Metal build and normal GUI A -> B -> A evidence are regenerated after Chromium 150 port"
       ],
       "postimageSHA256": {
-        "chrome/app/theme/chromium/BRANDING": "c49446ab785ce478cef03fa7a393f65dee45e7e1479a85aadeb96acfd3df1d09",
-        "chrome/app/app-Info.plist": "301f94404c8730d65bd5c3449b20067b3fe585725c16e18fdeda17eec6bffe86"
+        "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
+        "chrome/app/app-Info.plist": "1fab7408680ca4c31a1898e74d701253606fb4cea075e717d924056b4658101a"
       }
     }
   ]

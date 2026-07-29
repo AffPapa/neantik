@@ -4,6 +4,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
+PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
+DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
+SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn]" >&2
@@ -71,6 +74,30 @@ EXPECTED_VERSION="$(
 )"
 SOURCE_LOCK_SHA256="$(
   shasum -a 256 "$LOCK_FILE" | awk '{print $1}'
+)"
+for provenance_file in \
+  "$PATCH_SERIES_FILE" \
+  "$DEVICE_TUPLES_FILE" \
+  "$SECURITY_BASELINE_FILE"; do
+  if [[ ! -f "$provenance_file" ]]; then
+    echo "Runtime provenance file is missing: $provenance_file" >&2
+    exit 66
+  fi
+done
+FINGERPRINT_PATCH_SERIES_SHA256="$(
+  plutil -extract fingerprintChromium.patchSeriesSHA256 raw -o - "$LOCK_FILE"
+)"
+MAC_PACKAGING_PATCH_SERIES_SHA256="$(
+  plutil -extract macPackaging.patchSeriesSHA256 raw -o - "$LOCK_FILE"
+)"
+NEANTIK_PATCH_MANIFEST_SHA256="$(
+  shasum -a 256 "$PATCH_SERIES_FILE" | awk '{print $1}'
+)"
+APPLE_DEVICE_TUPLES_MANIFEST_SHA256="$(
+  shasum -a 256 "$DEVICE_TUPLES_FILE" | awk '{print $1}'
+)"
+SECURITY_BASELINE_SHA256="$(
+  shasum -a 256 "$SECURITY_BASELINE_FILE" | awk '{print $1}'
 )"
 OVERLAY_SHA256="$(
   plutil -extract nevisionOverlay.scriptSHA256 raw -o - "$LOCK_FILE"
@@ -165,7 +192,12 @@ for protocol_string in \
   "fingerprint-platform" \
   "fingerprint-timezone" \
   "fingerprint-locale" \
-  "apple-device-tuple"
+  "apple-device-tuple" \
+  "default_public_interface_only" \
+  "disable_non_proxied_udp" \
+  "DnsOverHttps" \
+  "AsyncDns" \
+  "WebGPUService"
 do
   if ! grep -aFq "$protocol_string" "$FRAMEWORK_BINARY"; then
     echo "Missing fingerprint protocol string: $protocol_string" >&2
@@ -175,7 +207,7 @@ done
 
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
-  SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
+  SERIES_FILE="$PATCH_SERIES_FILE"
   if [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
     if [[ ! -f "$SERIES_FILE" ]]; then
       echo "NeAntik patch series manifest is missing: $SERIES_FILE" >&2
@@ -250,6 +282,11 @@ if [[ -n "$REPORT_PATH" ]]; then
   SIGNATURE_KIND="$SIGNATURE_KIND" \
   GPU_MODE="$GPU_MODE" \
   SOURCE_LOCK_SHA256="$SOURCE_LOCK_SHA256" \
+  FINGERPRINT_PATCH_SERIES_SHA256="$FINGERPRINT_PATCH_SERIES_SHA256" \
+  MAC_PACKAGING_PATCH_SERIES_SHA256="$MAC_PACKAGING_PATCH_SERIES_SHA256" \
+  NEANTIK_PATCH_MANIFEST_SHA256="$NEANTIK_PATCH_MANIFEST_SHA256" \
+  APPLE_DEVICE_TUPLES_MANIFEST_SHA256="$APPLE_DEVICE_TUPLES_MANIFEST_SHA256" \
+  SECURITY_BASELINE_SHA256="$SECURITY_BASELINE_SHA256" \
   OVERLAY_SHA256="$OVERLAY_SHA256" \
   DEVICE_TUPLE_OVERLAY_SHA256="$DEVICE_TUPLE_OVERLAY_SHA256" \
   BUILD_ARGS_PATH="$BUILD_ARGS_PATH" \
@@ -261,7 +298,7 @@ import os
 from pathlib import Path
 
 report = {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "createdAt": datetime.datetime.now(
         datetime.timezone.utc
     ).isoformat().replace("+00:00", "Z"),
@@ -269,6 +306,15 @@ report = {
     "architecture": "arm64",
     "gpuMode": os.environ["GPU_MODE"],
     "sourceLockSHA256": os.environ["SOURCE_LOCK_SHA256"],
+    "fingerprintChromiumPatchSeriesSHA256":
+        os.environ["FINGERPRINT_PATCH_SERIES_SHA256"],
+    "macPackagingPatchSeriesSHA256":
+        os.environ["MAC_PACKAGING_PATCH_SERIES_SHA256"],
+    "neantikPatchManifestSHA256":
+        os.environ["NEANTIK_PATCH_MANIFEST_SHA256"],
+    "appleDeviceTuplesManifestSHA256":
+        os.environ["APPLE_DEVICE_TUPLES_MANIFEST_SHA256"],
+    "securityBaselineSHA256": os.environ["SECURITY_BASELINE_SHA256"],
     "nevisionOverlaySHA256": os.environ["OVERLAY_SHA256"],
     "nevisionDeviceTupleOverlaySHA256":
         os.environ["DEVICE_TUPLE_OVERLAY_SHA256"],

@@ -320,6 +320,48 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             ],
         )
 
+    def test_nested_source_root_cannot_silently_skip_patch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repository = root / "checkout"
+            source_root = repository / "build" / "src"
+            source_root.mkdir(parents=True)
+            subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
+            (source_root / "a.txt").write_text("old\n", encoding="utf-8")
+            patch_text = (
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n"
+            )
+            manifest = fixture_manifest()
+            manifest["status"] = "release-ready"
+            manifest["patchGroups"][0].update(
+                {
+                    "status": "ported",
+                    "patchFile": "patches/stable.patch",
+                    "patchSHA256": hashlib.sha256(
+                        patch_text.encode("utf-8")
+                    ).hexdigest(),
+                    "postimageSHA256": {"a.txt": "a" * 64},
+                }
+            )
+            manifest_path, rebase_path = write_fixture(root, manifest=manifest)
+            patch_path = manifest_path.parent / "patches" / "stable.patch"
+            patch_path.parent.mkdir(parents=True)
+            patch_path.write_text(patch_text, encoding="utf-8")
+
+            summary = MODULE.verify_manifest(
+                manifest_path=manifest_path,
+                rebase_plan_path=rebase_path,
+                release=True,
+                source_root=source_root,
+            )
+
+            self.assertTrue(summary["releaseReady"])
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

@@ -76,14 +76,34 @@ def assert_patch_scope_allowed(patch_path: Path, forbidden_scopes: list[str], gr
 
 
 def apply_check(source_root: Path, patch_path: Path) -> None:
+    repository = subprocess.run(
+        ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    apply_root = source_root
+    directory_options: list[str] = []
+    if repository.returncode == 0:
+        apply_root = Path(repository.stdout.strip()).resolve()
+        try:
+            relative_root = source_root.resolve().relative_to(apply_root)
+        except ValueError as error:
+            raise PatchsetManifestError(
+                f"source root escapes detected Git worktree: {source_root}"
+            ) from error
+        if relative_root != Path("."):
+            directory_options = [f"--directory={relative_root.as_posix()}"]
     completed = subprocess.run(
         [
             "git",
             "-C",
-            str(source_root),
+            str(apply_root),
             "apply",
             "--check",
             "--whitespace=nowarn",
+            *directory_options,
             str(patch_path),
         ],
         text=True,
@@ -91,7 +111,7 @@ def apply_check(source_root: Path, patch_path: Path) -> None:
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if completed.returncode != 0:
+    if completed.returncode != 0 or "Skipped patch" in completed.stdout:
         raise PatchsetManifestError(
             f"patch does not apply cleanly with git apply --check: {patch_path.name}\n"
             + completed.stdout.strip()

@@ -15,6 +15,45 @@ enum BrowserProcessIdentityInspection: Equatable, Sendable {
     case unknown
 }
 
+enum BrowserProfileProcessState: Equatable, Sendable {
+    case stopped
+    case managed
+    case externalVerified
+    case externalUnverified
+
+    var isRunning: Bool {
+        self != .stopped
+    }
+
+    var canRequestStop: Bool {
+        self != .externalUnverified
+    }
+
+    var title: String {
+        switch self {
+        case .stopped:
+            "Остановлен"
+        case .managed:
+            "Запущен"
+        case .externalVerified:
+            "Запущен другим NeAntik"
+        case .externalUnverified:
+            "Требуется закрыть вручную"
+        }
+    }
+
+    var guidance: String? {
+        switch self {
+        case .stopped, .managed:
+            nil
+        case .externalVerified:
+            "Профиль запущен другим экземпляром NeAntik. Его можно безопасно остановить здесь."
+        case .externalUnverified:
+            "NeAntik видит работающий процесс, но не может безопасно подтвердить его. Закрой окно браузера вручную; профиль разблокируется автоматически."
+        }
+    }
+}
+
 enum BrowserLaunchBuilder {
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
@@ -51,16 +90,17 @@ enum BrowserLaunchBuilder {
             "--disable-background-mode",
             "--new-window"
         ]
+        var disabledFeatures = Set<String>()
 
         if runtimeCapabilities.contains(.fingerprintSeed) {
             arguments.append("--fingerprint=\(profile.identity.runtimeSeed)")
             arguments.append("--fingerprinting-client-rects-noise")
             arguments.append("--fingerprinting-canvas-measuretext-noise")
             arguments.append("--fingerprinting-canvas-image-data-noise")
-            // The 144 runtime normalizes WebGL but not WebGPU adapter
-            // capabilities. Disable WebGPU in fingerprint mode so sites
-            // cannot correlate the selected Apple tuple with the host GPU.
-            arguments.append("--disable-features=WebGPUService")
+            // The runtime normalizes WebGL but not the WebGPU adapter surface.
+            // Keep WebGPU unavailable until it is part of the same reviewed
+            // Apple device tuple.
+            disabledFeatures.insert("WebGPUService")
         }
         if runtimeCapabilities.contains(.platformOverride) {
             arguments.append("--fingerprint-platform=macos")
@@ -84,10 +124,26 @@ enum BrowserLaunchBuilder {
             )
             arguments.append("--disable-quic")
             arguments.append("--dns-prefetch-disable")
+            // Resolver rules are the primary fail-closed control. Disabling
+            // Chromium's asynchronous and secure-DNS paths adds defense in
+            // depth so a future resolver path cannot silently bypass them.
+            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttps"])
             arguments.append(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
             )
             arguments.append("--proxy-bypass-list=<-loopback>")
+        } else {
+            // Direct profiles still avoid exposing every local interface to
+            // WebRTC while retaining ordinary calls over the public route.
+            arguments.append(
+                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+            )
+        }
+
+        if !disabledFeatures.isEmpty {
+            arguments.append(
+                "--disable-features=\(disabledFeatures.sorted().joined(separator: ","))"
+            )
         }
 
         arguments.append(
@@ -161,6 +217,7 @@ final class BrowserProcessManager: ObservableObject {
     private let observationIntervalNanoseconds: UInt64
     private var processes: [UUID: Process] = [:]
     private var externalLocks: [UUID: BrowserProcessLock] = [:]
+    private var externalUnverifiedProfileIDs = Set<UUID>()
     private var externalStopTasks: [UUID: Task<Void, Never>] = [:]
     private var externalObservationTasks: [UUID: Task<Void, Never>] = [:]
 
@@ -230,6 +287,7 @@ final class BrowserProcessManager: ObservableObject {
         externalObservationTasks.values.forEach { $0.cancel() }
         externalObservationTasks.removeAll()
         externalLocks.removeAll()
+        externalUnverifiedProfileIDs.removeAll()
         runningProfileIDs = Set(
             processes.compactMap { key, process in
                 process.isRunning ? key : nil
@@ -274,6 +332,7 @@ final class BrowserProcessManager: ObservableObject {
                 )
             case .unknown:
                 externalLocks[profile.id] = lock
+                externalUnverifiedProfileIDs.insert(profile.id)
                 runningProfileIDs.insert(profile.id)
                 lastError =
                     "NeAntik не смог безопасно проверить уже запущенный браузер. Профиль остаётся заблокированным до завершения процесса."
@@ -285,6 +344,19 @@ final class BrowserProcessManager: ObservableObject {
                 try? FileManager.default.removeItem(at: lockURL)
             }
         }
+    }
+
+    func processState(for profileID: UUID) -> BrowserProfileProcessState {
+        if processes[profileID]?.isRunning == true {
+            return .managed
+        }
+        if externalUnverifiedProfileIDs.contains(profileID) {
+            return .externalUnverified
+        }
+        if externalLocks[profileID] != nil {
+            return .externalVerified
+        }
+        return runningProfileIDs.contains(profileID) ? .managed : .stopped
     }
 
     func launch(
@@ -458,6 +530,7 @@ final class BrowserProcessManager: ObservableObject {
         externalObservationTasks[profileID]?.cancel()
         externalObservationTasks.removeValue(forKey: profileID)
         externalLocks.removeValue(forKey: profileID)
+        externalUnverifiedProfileIDs.remove(profileID)
         runningProfileIDs.remove(profileID)
         try? FileManager.default.removeItem(at: paths.lockFile(for: profileID))
     }

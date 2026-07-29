@@ -82,4 +82,67 @@ struct ProxyTesterTests {
         #expect(result.timezoneIdentifier == nil)
         #expect(result.localeIdentifier == nil)
     }
+
+    @Test
+    func proxyContextEvidenceHasExplicitSourceAndFreshness() {
+        let observedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let evidence = ProxyContextEvidence.ipAPI(observedAt: observedAt)
+
+        #expect(evidence.source == "ipapi.co")
+        #expect(
+            evidence.isFresh(
+                relativeTo: observedAt.addingTimeInterval(29 * 24 * 60 * 60)
+            )
+        )
+        #expect(
+            !evidence.isFresh(
+                relativeTo: observedAt.addingTimeInterval(31 * 24 * 60 * 60)
+            )
+        )
+        #expect(
+            !evidence.isFresh(
+                relativeTo: observedAt.addingTimeInterval(-10 * 60)
+            )
+        )
+    }
+
+    @Test
+    func identityRejectsUnknownProxyContextSource() {
+        let evidence = ProxyContextEvidence(
+            source: "untrusted.example",
+            observedAt: Date()
+        )
+        let identity = BrowserIdentity(
+            seed: 123,
+            timezoneIdentifier: "Europe/Berlin",
+            localeIdentifier: "de-DE",
+            proxyContextEvidence: evidence
+        )
+
+        #expect(identity.proxyContextEvidence == nil)
+        #expect(identity.timezoneIdentifier == "Europe/Berlin")
+        #expect(identity.localeIdentifier == "de-DE")
+    }
+
+    @Test
+    func legacyIdentityKeepsContextWithoutInventingEvidence() throws {
+        let data = Data(
+            """
+            {
+              "seed": 123,
+              "timezoneIdentifier": "Europe/Berlin",
+              "localeIdentifier": "de-DE"
+            }
+            """.utf8
+        )
+
+        let identity = try JSONDecoder().decode(
+            BrowserIdentity.self,
+            from: data
+        )
+
+        #expect(identity.timezoneIdentifier == "Europe/Berlin")
+        #expect(identity.localeIdentifier == "de-DE")
+        #expect(identity.proxyContextEvidence == nil)
+    }
 }
