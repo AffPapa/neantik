@@ -160,7 +160,7 @@ struct FingerprintAuditView: View {
                 Text(coordinator.phase)
                     .fontWeight(.medium)
                 Text(
-                    "Будет три коротких запуска Chromium. Эти профили должны быть закрыты во время проверки."
+                    "Будет один прямой WebRTC-контроль и три коротких запуска A → B → A. Эти профили должны быть закрыты во время проверки."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -178,7 +178,7 @@ struct FingerprintAuditView: View {
                     "Критичные поверхности: пиксели Canvas и WebGL, звук AudioContext и размеры элементов ClientRects."
                 )
                 Text(
-                    "Контекст: модель графики, расширения, шрифты, экран, процессор, память, язык, часовой пояс, Client Hints и хэшированные адреса WebRTC."
+                    "Контекст: модель графики, расширения, шрифты, экран, процессор, память, язык, часовой пояс, Client Hints и только количество типов WebRTC-кандидатов — без сохранения адресов."
                 )
                 Text(
                     "Строгая проверка также сравнивает повторные вызовы, CSS media queries и значения основной страницы с Web Worker и OffscreenCanvas."

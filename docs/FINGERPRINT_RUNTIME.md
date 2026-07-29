@@ -132,11 +132,12 @@ The Direct app includes **Fingerprint Check** when:
 - the selected runtime passed preflight; and
 - the runtime flavor declares fingerprint support.
 
-The check performs three short launches:
+The check performs four short launches:
 
-1. profile A;
-2. profile B;
-3. profile A again.
+1. a disposable direct WebRTC positive control;
+2. profile A;
+3. profile B;
+4. profile A again.
 
 NeAntik connects to a random loopback-only Chromium DevTools port and evaluates
 the probe in `about:blank`. It never injects the probe into normal browsing and
@@ -157,8 +158,9 @@ Context values:
 - WebGL vendor, renderer, and extensions;
 - user agent, platform, Client Hints, fonts, screen, CPU, memory, and touch;
 - language and timezone;
-- a hash and count of local WebRTC candidates, without persisting raw
-  candidates.
+- the declared direct/proxied route and aggregate WebRTC candidate-type
+  counts. Candidate strings, addresses, hostnames, and hashes derived from
+  them are never stored.
 
 Verdicts:
 
@@ -179,7 +181,7 @@ Reports are stored locally with owner-only file permissions:
 ## Production qualification
 
 The ordinary `verified` verdict is useful for engineering diagnostics, but it
-is not sufficient by itself for a production release. Schema 3 deliberately
+is not sufficient by itself for a production release. Schema 5 deliberately
 separates two levels:
 
 - **public-alpha-qualified** proves that the normal browser surfaces used by
@@ -188,7 +190,7 @@ separates two levels:
   worker coherence. A legacy schema 1 report may remain valid public-alpha
   evidence, but can never satisfy the strict production gate.
 
-A schema 3 report is production-qualified only when all of the following are
+A schema 5 report is production-qualified only when all of the following are
 true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
@@ -208,8 +210,24 @@ true:
   agree;
 - CSS `device-width`, `device-height`, and `resolution` media queries agree
   with the exposed screen and DPR values;
+- the same-run direct `loopback-stun-v1` control completes and Chromium sends
+  at least one valid STUN Binding Request to the private loopback responder;
+- the network route and `loopback-stun-v1` probe contract are valid,
+  ICE gathering reaches `complete`, candidate counts are bounded and
+  internally consistent, unknown candidate types are absent, and a proxied
+  route sends zero STUN requests and exposes no host, server-reflexive, or
+  peer-reflexive candidate;
 - the runtime version and valid code signature are recorded;
 - SHA-256 hashes bind both the runtime executable and Chromium Framework.
+
+The WebRTC probe uses a self-tested UDP responder bound only to
+`127.0.0.1` on a random port. It accepts only bounded RFC 8489 Binding
+Requests, stores only a saturated request count, and never records packet
+bytes, transaction IDs, candidate strings, addresses, hostnames, or endpoint
+hashes. The exact audit-only HTTP loopback bypass does not change normal
+browsing policy. This mechanism is implemented in source, but must still pass
+the fresh signed GUI A → B → A release run before NeAntik claims the shipped
+binary has qualified proxy WebRTC protection.
 
 The Direct UI shows public-alpha evidence separately from strict production
 evidence and the ordinary diagnostic verdict. The runtime audit CLI and the

@@ -77,6 +77,42 @@
       "issueContains": [
         "Required browser surfaces are unavailable: device_memory."
       ]
+    },
+    {
+      "id": "proxied-host-candidate-leak",
+      "mutations": [
+        {
+          "path": "second.values.network_route",
+          "value": "proxied"
+        },
+        {
+          "path": "second.values.webrtc_stun_requests",
+          "value": "0"
+        },
+        {
+          "path": "second.values.webrtc_candidate_summary",
+          "value": "{\"total\":1,\"host\":1,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "proxied route exposed a direct WebRTC candidate"
+      ]
+    },
+    {
+      "id": "proxied-stun-request-leak",
+      "mutations": [
+        {
+          "path": "second.values.network_route",
+          "value": "proxied"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "proxied route sent a loopback STUN request"
+      ]
     }
   ]
 }

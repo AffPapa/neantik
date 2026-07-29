@@ -56,10 +56,15 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
     "worker_intl_locale",
     "worker_hardware_concurrency",
     "worker_client_hints",
+    "network_route",
+    "webrtc_probe",
+    "webrtc_complete",
+    "webrtc_stun_requests",
+    "webrtc_candidate_summary",
 ]
 PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
-CURRENT_AUDIT_SCHEMA_VERSION = 3
+CURRENT_AUDIT_SCHEMA_VERSION = 5
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -529,6 +534,67 @@ def cross_realm_consistency_issues(
     return issues
 
 
+def network_privacy_issues(
+    label: str,
+    capture_object: dict[str, Any],
+) -> list[str]:
+    v = values(capture_object)
+    route = v.get("network_route")
+    if route not in {"direct", "proxied"}:
+        return [f"The {label} network route is invalid."]
+    if v.get("webrtc_probe") != "loopback-stun-v1":
+        return [f"The {label} WebRTC probe contract is invalid."]
+    if v.get("webrtc_complete") != "true":
+        return [f"The {label} WebRTC gathering did not complete."]
+    request_text = v.get("webrtc_stun_requests")
+    if (
+        not isinstance(request_text, str)
+        or not re.fullmatch(r"0|[1-9][0-9]{0,2}", request_text)
+        or int(request_text) > 256
+    ):
+        return [f"The {label} STUN request count is invalid."]
+    request_count = int(request_text)
+    try:
+        summary = json.loads(v.get("webrtc_candidate_summary", ""))
+    except json.JSONDecodeError:
+        summary = None
+    expected_keys = {"total", "host", "srflx", "prflx", "relay", "unknown"}
+    if not isinstance(summary, dict) or set(summary) != expected_keys:
+        return [f"The {label} WebRTC candidate summary is invalid."]
+    counts = [summary.get(key) for key in expected_keys]
+    if (
+        not all(isinstance(value, int) and not isinstance(value, bool) for value in counts)
+        or any(value < 0 or value > 256 for value in counts)
+        or summary["total"]
+        != summary["host"]
+        + summary["srflx"]
+        + summary["prflx"]
+        + summary["relay"]
+        + summary["unknown"]
+    ):
+        return [f"The {label} WebRTC candidate summary is invalid."]
+    issues: list[str] = []
+    if summary["unknown"] > 0:
+        issues.append(
+            f"The {label} WebRTC candidate summary contains unknown candidate types."
+        )
+    if route == "direct" and request_count == 0:
+        issues.append(
+            f"The {label} direct route did not reach the loopback STUN control."
+        )
+    if route == "proxied" and request_count != 0:
+        issues.append(
+            f"The {label} proxied route sent a loopback STUN request."
+        )
+    if route == "proxied" and any(
+        summary[key] > 0 for key in ("host", "srflx", "prflx")
+    ):
+        issues.append(
+            f"The {label} proxied route exposed a direct WebRTC candidate."
+        )
+    return issues
+
+
 def tuple_for_identity(identity_code: object) -> AppleDeviceTuple | None:
     if not isinstance(identity_code, str):
         return None
@@ -607,6 +673,20 @@ def production_release_issues(
     if report.get("identityCatalogVersion") != CURRENT_IDENTITY_CATALOG_VERSION:
         issues.append("The report does not use the current immutable identity catalog.")
 
+    try:
+        direct_control = capture(report, "webrtcDirectControl")
+    except FingerprintReportError:
+        issues.append(
+            "The report does not contain a WebRTC direct positive control."
+        )
+    else:
+        issues.extend(
+            network_privacy_issues(
+                "WebRTC direct control",
+                direct_control,
+            )
+        )
+
     unavailable = unavailable_required_keys(
         first,
         second,
@@ -652,6 +732,7 @@ def production_release_issues(
         ("profile A, repeat capture", repeat_capture),
     ):
         issues.extend(cross_realm_consistency_issues(label, capture_object))
+        issues.extend(network_privacy_issues(label, capture_object))
     return issues
 
 

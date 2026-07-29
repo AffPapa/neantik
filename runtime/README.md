@@ -194,10 +194,15 @@ This emits separate `publicAlphaQualified` and `productionQualified` verdicts.
 The public-alpha gate rejects diagnostic mode, missing binary hashes,
 unavailable required browser surfaces, unstable A-repeat values, invalid
 A -> B -> A profile identity, and device-tuple mismatches. The strict
-production gate additionally requires fingerprint audit schema 3 evidence for
+production gate additionally requires fingerprint audit schema 5 evidence for
 repeat-call stability including OfflineAudio, main-realm / Web Worker and
 OffscreenCanvas coherence, CSS
-screen/DPR media-query coherence, and WebGL shader precision. A legacy schema 1
+screen/DPR media-query coherence, WebGL shader precision, and bounded
+candidate-type-only WebRTC route evidence plus a same-run loopback STUN direct
+positive control and zero STUN requests for proxied captures. Raw ICE candidate strings,
+addresses, hostnames, and derived hashes are not persisted. The current
+signed GUI release still has to produce fresh `loopback-stun-v1` evidence
+before the shipped binary can be qualified. A legacy schema 1
 report may remain valid alpha evidence but cannot be promoted to strict
 production evidence.
 

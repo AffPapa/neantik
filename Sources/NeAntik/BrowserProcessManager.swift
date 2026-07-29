@@ -54,6 +54,11 @@ enum BrowserProfileProcessState: Equatable, Sendable {
     }
 }
 
+enum BrowserLaunchPurpose: Equatable, Sendable {
+    case normal
+    case fingerprintAudit(httpLoopbackPort: UInt16)
+}
+
 enum BrowserLaunchBuilder {
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
@@ -81,7 +86,8 @@ enum BrowserLaunchBuilder {
         browserDataDirectory: URL,
         runtimeCapabilities: BrowserRuntimeCapabilities = [],
         additionalArguments: [String] = [],
-        startURLOverride: URL? = nil
+        startURLOverride: URL? = nil,
+        purpose: BrowserLaunchPurpose = .normal
     ) -> [String] {
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
@@ -131,7 +137,17 @@ enum BrowserLaunchBuilder {
             arguments.append(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
             )
-            arguments.append("--proxy-bypass-list=<-loopback>")
+            let bypass: String
+            switch purpose {
+            case .normal:
+                bypass = "<-loopback>"
+            case let .fingerprintAudit(httpLoopbackPort):
+                precondition(httpLoopbackPort != 0)
+                bypass =
+                    "<-loopback>;http://127.0.0.1:" +
+                    String(httpLoopbackPort)
+            }
+            arguments.append("--proxy-bypass-list=\(bypass)")
         } else {
             // Direct profiles still avoid exposing every local interface to
             // WebRTC while retaining ordinary calls over the public route.
@@ -364,7 +380,8 @@ final class BrowserProcessManager: ObservableObject {
         runtime: BrowserRuntime,
         additionalArguments: [String] = [],
         startURLOverride: URL? = nil,
-        browserDataDirectoryOverride: URL? = nil
+        browserDataDirectoryOverride: URL? = nil,
+        purpose: BrowserLaunchPurpose = .normal
     ) throws {
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
@@ -397,7 +414,8 @@ final class BrowserProcessManager: ObservableObject {
             browserDataDirectory: browserDataDirectory,
             runtimeCapabilities: runtime.capabilities,
             additionalArguments: additionalArguments,
-            startURLOverride: startURLOverride
+            startURLOverride: startURLOverride,
+            purpose: purpose
         )
         process.currentDirectoryURL = paths.profileDirectory(for: profile.id)
 

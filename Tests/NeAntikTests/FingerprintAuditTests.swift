@@ -233,7 +233,10 @@ struct FingerprintAuditTests {
             "webgl_renderer",
             "webgpu_policy",
             "client_hints",
-            "webrtc_candidates",
+            "webrtc_candidate_summary",
+            "loopback-stun-v1",
+            "webrtc_complete",
+            "stunPort",
             "audio_repeat",
             "canvas_repeat",
             "worker_canvas",
@@ -247,6 +250,8 @@ struct FingerprintAuditTests {
         ] {
             #expect(expression.contains(marker))
         }
+        #expect(!expression.contains("candidate.candidate"))
+        #expect(!expression.contains("webrtc_candidates"))
     }
 
     @Test
@@ -494,6 +499,183 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func proxiedRouteRejectsDirectWebRTCCandidate() {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        var secondValues = productionValues(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b",
+            renderer: "Apple M4"
+        )
+        secondValues["network_route"] = "proxied"
+        secondValues["webrtc_stun_requests"] = "0"
+        secondValues["webrtc_candidate_summary"] =
+            #"{"total":1,"host":1,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains(
+                    "proxied route exposed a direct WebRTC candidate"
+                )
+            }
+        )
+    }
+
+    @Test
+    func rejectsMalformedWebRTCCandidateSummary() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["webrtc_candidate_summary"] =
+            #"{"total":1,"host":0,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains("WebRTC candidate summary is invalid")
+            }
+        )
+    }
+
+    @Test
+    func incompleteWebRTCGatheringFailsStrictProduction() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["webrtc_complete"] = "false"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains("WebRTC gathering did not complete")
+            }
+        )
+    }
+
+    @Test
+    func proxiedRelayOnlyWebRTCCandidatePassesNetworkGate() {
+        var secondValues = productionValues(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b",
+            renderer: "Apple M4"
+        )
+        secondValues["network_route"] = "proxied"
+        secondValues["webrtc_stun_requests"] = "0"
+        secondValues["webrtc_candidate_summary"] =
+            #"{"total":1,"host":0,"srflx":0,"prflx":0,"relay":1,"unknown":0}"#
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.networkPrivacyIssues.isEmpty)
+        #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func proxiedSTUNRequestFailsStrictProduction() {
+        var secondValues = productionValues(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b",
+            renderer: "Apple M4"
+        )
+        secondValues["network_route"] = "proxied"
+        secondValues["webrtc_stun_requests"] = "1"
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains("proxied route sent a loopback STUN request")
+            }
+        )
+    }
+
+    @Test
     func legacyAuditSchemaCannotQualifyForStrictProduction() throws {
         let first = capture(
             name: "First",
@@ -560,6 +742,11 @@ struct FingerprintAuditTests {
             runtimeCodeSignatureValid: true,
             runtimeExecutableSHA256: String(repeating: "a", count: 64),
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                identityCode: "NA-13579BDF",
+                values: first.values
+            ),
             firstInitial: first,
             second: capture(
                 name: "Second",
@@ -617,6 +804,11 @@ struct FingerprintAuditTests {
             runtimeCodeSignatureValid: true,
             runtimeExecutableSHA256: String(repeating: "a", count: 64),
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                identityCode: "NA-13579BDF",
+                values: firstValues
+            ),
             firstInitial: first,
             second: capture(
                 name: "Second",
@@ -1060,7 +1252,13 @@ struct FingerprintAuditTests {
             "worker_timezone": "Europe/Berlin",
             "worker_intl_locale": "en-US",
             "worker_hardware_concurrency": "8",
-            "worker_client_hints": clientHints
+            "worker_client_hints": clientHints,
+            "network_route": "direct",
+            "webrtc_probe": "loopback-stun-v1",
+            "webrtc_complete": "true",
+            "webrtc_stun_requests": "1",
+            "webrtc_candidate_summary":
+                #"{"total":0,"host":0,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
         ]
     }
 
@@ -1121,6 +1319,10 @@ struct FingerprintAuditTests {
             runtimeCodeSignatureValid: true,
             runtimeExecutableSHA256: String(repeating: "a", count: 64),
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                values: first.values
+            ),
             firstInitial: first,
             second: second,
             firstRepeat: repeatCapture

@@ -93,6 +93,49 @@ struct BrowserLaunchBuilderTests {
     }
 
     @Test
+    func auditOnlyLoopbackBypassDoesNotWeakenNormalProxyLaunch() {
+        let profile = BrowserProfile(
+            name: "Proxy audit",
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "proxy.example",
+                port: 8080,
+                username: ""
+            )
+        )
+        let directory = URL(fileURLWithPath: "/tmp/proxy-audit")
+
+        let normal = BrowserLaunchBuilder.arguments(
+            profile: profile,
+            browserDataDirectory: directory
+        )
+        let audit = BrowserLaunchBuilder.arguments(
+            profile: profile,
+            browserDataDirectory: directory,
+            startURLOverride: URL(string: "http://127.0.0.1:32123/"),
+            purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
+        )
+
+        #expect(normal.contains("--proxy-bypass-list=<-loopback>"))
+        #expect(
+            !normal.contains(
+                "--proxy-bypass-list=<-loopback>;http://127.0.0.1:32123"
+            )
+        )
+        #expect(
+            audit.contains(
+                "--proxy-bypass-list=<-loopback>;http://127.0.0.1:32123"
+            )
+        )
+        #expect(!audit.contains("--proxy-bypass-list=<-loopback>"))
+        #expect(
+            audit.contains(
+                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+            )
+        )
+    }
+
+    @Test
     func additionalArgumentsCannotOverrideIsolationOrFingerprintContract() {
         let profile = BrowserProfile(
             name: "Protected",

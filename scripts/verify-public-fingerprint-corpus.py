@@ -23,6 +23,8 @@ SYNTHETIC_PROFILE_IDS = {
 }
 SYNTHETIC_PROFILE_NAMES = {"SYNTHETIC-A", "SYNTHETIC-B"}
 SYNTHETIC_IDENTITY_CODES = {"NA-13579BDF", "NA-2468ACE0"}
+SYNTHETIC_CONTROL_ID = "00000000-0000-4000-8000-000000000303"
+SYNTHETIC_CONTROL_NAME = "SYNTHETIC-CONTROL"
 ALLOWED_MUTATION_PATHS = {
     "executionMode",
     "firstInitial.values.worker_platform",
@@ -31,6 +33,9 @@ ALLOWED_MUTATION_PATHS = {
     "firstInitial.values.device_memory",
     "second.values.device_memory",
     "firstRepeat.values.device_memory",
+    "second.values.network_route",
+    "second.values.webrtc_stun_requests",
+    "second.values.webrtc_candidate_summary",
 }
 FORBIDDEN_KEY_MARKERS = {
     "cookie",
@@ -122,6 +127,15 @@ def verify_privacy_boundary(report: dict[str, Any]) -> None:
     if identity_codes != SYNTHETIC_IDENTITY_CODES:
         raise PublicFingerprintCorpusError(
             "Corpus contains an unexpected identity code."
+        )
+    direct_control = report.get("webrtcDirectControl")
+    if not isinstance(direct_control, dict) or (
+        direct_control.get("profileID") != SYNTHETIC_CONTROL_ID
+        or direct_control.get("profileName") != SYNTHETIC_CONTROL_NAME
+        or direct_control.get("identityCode") != "NA-13579BDF"
+    ):
+        raise PublicFingerprintCorpusError(
+            "Corpus contains a non-synthetic WebRTC direct control."
         )
     if report.get("runtimeExecutableSHA256") != "a" * 64 or (
         report.get("runtimeFrameworkSHA256") != "b" * 64

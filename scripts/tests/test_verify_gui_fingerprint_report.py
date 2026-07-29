@@ -278,6 +278,134 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             summary["productionIssues"],
         )
 
+    def test_proxied_host_candidate_fails_strict_but_not_public_alpha(
+        self,
+    ) -> None:
+        report = production_report()
+        report["second"]["values"]["network_route"] = "proxied"
+        report["second"]["values"]["webrtc_stun_requests"] = "0"
+        report["second"]["values"]["webrtc_candidate_summary"] = (
+            '{"total":1,"host":1,"srflx":0,"prflx":0,'
+            '"relay":0,"unknown":0}'
+        )
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile B proxied route exposed a direct WebRTC candidate.",
+            summary["productionIssues"],
+        )
+
+    def test_unknown_candidate_type_fails_strict(self) -> None:
+        report = production_report()
+        report["firstInitial"]["values"]["webrtc_candidate_summary"] = (
+            '{"total":1,"host":0,"srflx":0,"prflx":0,'
+            '"relay":0,"unknown":1}'
+        )
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile A, first capture WebRTC candidate summary contains "
+            "unknown candidate types.",
+            summary["productionIssues"],
+        )
+
+    def test_malformed_candidate_summary_fails_strict(self) -> None:
+        invalid_summaries = (
+            '{"total":1,"host":0,"srflx":0,"prflx":0,"relay":0}',
+            '{"total":0,"host":-1,"srflx":0,"prflx":0,'
+            '"relay":0,"unknown":1}',
+            '{"total":257,"host":257,"srflx":0,"prflx":0,'
+            '"relay":0,"unknown":0}',
+            '{"total":2,"host":1,"srflx":0,"prflx":0,'
+            '"relay":0,"unknown":0}',
+            '{"total":0,"host":0,"srflx":0,"prflx":0,'
+            '"relay":0,"unknown":0,"address":"192.0.2.1"}',
+        )
+
+        for candidate_summary in invalid_summaries:
+            with self.subTest(candidate_summary=candidate_summary):
+                report = production_report()
+                report["firstInitial"]["values"][
+                    "webrtc_candidate_summary"
+                ] = candidate_summary
+
+                summary = MODULE.verification_summary(report)
+
+                self.assertFalse(summary["productionQualified"])
+                self.assertIn(
+                    "The profile A, first capture WebRTC candidate summary is "
+                    "invalid.",
+                    summary["productionIssues"],
+                )
+
+    def test_invalid_webrtc_route_probe_or_completion_fails_strict(
+        self,
+    ) -> None:
+        mutations = (
+            ("network_route", "unknown", "network route is invalid"),
+            ("webrtc_probe", "external-stun", "probe contract is invalid"),
+            (
+                "webrtc_complete",
+                "false",
+                "WebRTC gathering did not complete",
+            ),
+        )
+        for key, value, expected in mutations:
+            with self.subTest(key=key):
+                report = production_report()
+                report["firstInitial"]["values"][key] = value
+                summary = MODULE.verification_summary(report)
+                self.assertFalse(summary["productionQualified"])
+                self.assertTrue(
+                    any(
+                        expected in issue
+                        for issue in summary["productionIssues"]
+                    )
+                )
+
+    def test_proxied_relay_only_candidate_is_accepted(self) -> None:
+        report = production_report()
+        report["second"]["values"]["network_route"] = "proxied"
+        report["second"]["values"]["webrtc_stun_requests"] = "0"
+        report["second"]["values"]["webrtc_candidate_summary"] = (
+            '{"total":1,"host":0,"srflx":0,"prflx":0,'
+            '"relay":1,"unknown":0}'
+        )
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["productionQualified"])
+
+    def test_missing_direct_control_fails_strict(self) -> None:
+        report = production_report()
+        del report["webrtcDirectControl"]
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The report does not contain a WebRTC direct positive control.",
+            summary["productionIssues"],
+        )
+
+    def test_proxied_stun_request_fails_strict(self) -> None:
+        report = production_report()
+        report["second"]["values"]["network_route"] = "proxied"
+        report["second"]["values"]["webrtc_stun_requests"] = "1"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile B proxied route sent a loopback STUN request.",
+            summary["productionIssues"],
+        )
+
     def test_load_report_rejects_non_object_json(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "report.json"
@@ -292,7 +420,7 @@ def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
         "createdAt": "2026-07-25T08:29:41Z",
         "managerVersion": "0.3.12",
         "managerBuild": "15",
-        "auditSchemaVersion": 3,
+        "auditSchemaVersion": 5,
         "identityCatalogVersion": 1,
         "executionMode": "browser",
         "runtimeName": "NeAntik Browser",
@@ -301,6 +429,19 @@ def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
         "runtimeCodeSignatureValid": True,
         "runtimeExecutableSHA256": SHA_A,
         "runtimeFrameworkSHA256": SHA_B,
+        "webrtcDirectControl": capture(
+            profile_id="00000000-0000-4000-8000-000000000303",
+            identity_code="NA-13579BDF",
+            canvas="control",
+            webgl_pixels="control",
+            audio="control",
+            client_rects="control",
+            gpu="M2 Pro",
+            cores=12,
+            screen="1512x982x1512x957x24x2",
+            platform_version="15.3.1",
+            runtime_version=runtime_version,
+        ),
         "firstInitial": capture(
             profile_id="CB226A31-C3F1-4CC9-A5B4-FA50D3C89747",
             identity_code="NA-13579BDF",
@@ -530,6 +671,13 @@ def capture(
             "worker_intl_locale": "en-US",
             "worker_hardware_concurrency": str(cores),
             "worker_client_hints": client_hints,
+            "network_route": "direct",
+            "webrtc_probe": "loopback-stun-v1",
+            "webrtc_complete": "true",
+            "webrtc_stun_requests": "1",
+            "webrtc_candidate_summary":
+                '{"total":0,"host":0,"srflx":0,"prflx":0,'
+                '"relay":0,"unknown":0}',
         },
     }
 

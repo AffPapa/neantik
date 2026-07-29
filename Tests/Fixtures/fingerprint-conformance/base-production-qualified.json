@@ -3,7 +3,7 @@
   "createdAt": "2026-01-01T00:00:03Z",
   "managerVersion": "0.0.0-synthetic",
   "managerBuild": "0",
-  "auditSchemaVersion": 3,
+  "auditSchemaVersion": 5,
   "identityCatalogVersion": 1,
   "executionMode": "browser",
   "runtimeName": "NeAntik Browser Synthetic Fixture",
@@ -12,6 +12,19 @@
   "runtimeCodeSignatureValid": true,
   "runtimeExecutableSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "runtimeFrameworkSHA256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "webrtcDirectControl": {
+    "capturedAt": "2026-01-01T00:00:00Z",
+    "profileID": "00000000-0000-4000-8000-000000000303",
+    "profileName": "SYNTHETIC-CONTROL",
+    "identityCode": "NA-13579BDF",
+    "values": {
+      "network_route": "direct",
+      "webrtc_probe": "loopback-stun-v1",
+      "webrtc_complete": "true",
+      "webrtc_stun_requests": "1",
+      "webrtc_candidate_summary": "{\"total\":0,\"host\":0,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
+    }
+  },
   "firstInitial": {
     "capturedAt": "2026-01-01T00:00:00Z",
     "profileID": "00000000-0000-4000-8000-000000000101",
@@ -55,7 +68,12 @@
       "worker_timezone": "Asia/Bangkok",
       "worker_intl_locale": "en-US",
       "worker_hardware_concurrency": "12",
-      "worker_client_hints": "{\"architecture\":\"arm\",\"bitness\":\"64\",\"platform\":\"macOS\",\"platformVersion\":\"15.3.1\",\"uaFullVersion\":\"150.0.7871.186\"}"
+      "worker_client_hints": "{\"architecture\":\"arm\",\"bitness\":\"64\",\"platform\":\"macOS\",\"platformVersion\":\"15.3.1\",\"uaFullVersion\":\"150.0.7871.186\"}",
+      "network_route": "direct",
+      "webrtc_probe": "loopback-stun-v1",
+      "webrtc_complete": "true",
+      "webrtc_stun_requests": "1",
+      "webrtc_candidate_summary": "{\"total\":0,\"host\":0,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
     }
   },
   "second": {
@@ -101,7 +119,12 @@
       "worker_timezone": "Asia/Bangkok",
       "worker_intl_locale": "en-US",
       "worker_hardware_concurrency": "10",
-      "worker_client_hints": "{\"architecture\":\"arm\",\"bitness\":\"64\",\"platform\":\"macOS\",\"platformVersion\":\"15.1.0\",\"uaFullVersion\":\"150.0.7871.186\"}"
+      "worker_client_hints": "{\"architecture\":\"arm\",\"bitness\":\"64\",\"platform\":\"macOS\",\"platformVersion\":\"15.1.0\",\"uaFullVersion\":\"150.0.7871.186\"}",
+      "network_route": "direct",
+      "webrtc_probe": "loopback-stun-v1",
+      "webrtc_complete": "true",
+      "webrtc_stun_requests": "1",
+      "webrtc_candidate_summary": "{\"total\":0,\"host\":0,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
     }
   },
   "firstRepeat": {
@@ -147,7 +170,12 @@
       "worker_timezone": "Asia/Bangkok",
       "worker_intl_locale": "en-US",
       "worker_hardware_concurrency": "12",
-      "worker_client_hints": "{\"architecture\":\"arm\",\"bitness\":\"64\",\"platform\":\"macOS\",\"platformVersion\":\"15.3.1\",\"uaFullVersion\":\"150.0.7871.186\"}"
+      "worker_client_hints": "{\"architecture\":\"arm\",\"bitness\":\"64\",\"platform\":\"macOS\",\"platformVersion\":\"15.3.1\",\"uaFullVersion\":\"150.0.7871.186\"}",
+      "network_route": "direct",
+      "webrtc_probe": "loopback-stun-v1",
+      "webrtc_complete": "true",
+      "webrtc_stun_requests": "1",
+      "webrtc_candidate_summary": "{\"total\":0,\"host\":0,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
     }
   }
 }

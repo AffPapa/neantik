@@ -74,7 +74,7 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
-    static let currentAuditSchemaVersion = 3
+    static let currentAuditSchemaVersion = 5
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
@@ -117,7 +117,12 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "worker_timezone",
         "worker_intl_locale",
         "worker_hardware_concurrency",
-        "worker_client_hints"
+        "worker_client_hints",
+        "network_route",
+        "webrtc_probe",
+        "webrtc_complete",
+        "webrtc_stun_requests",
+        "webrtc_candidate_summary"
     ]
 
     let id: UUID
@@ -133,6 +138,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     let runtimeExecutableSHA256: String?
     let runtimeFrameworkSHA256: String?
     let executionMode: FingerprintAuditExecutionMode?
+    let webrtcDirectControl: FingerprintCapture?
     let firstInitial: FingerprintCapture
     let second: FingerprintCapture
     let firstRepeat: FingerprintCapture
@@ -152,6 +158,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         runtimeExecutableSHA256: String? = nil,
         runtimeFrameworkSHA256: String? = nil,
         executionMode: FingerprintAuditExecutionMode = .browser,
+        webrtcDirectControl: FingerprintCapture? = nil,
         firstInitial: FingerprintCapture,
         second: FingerprintCapture,
         firstRepeat: FingerprintCapture
@@ -169,6 +176,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         self.runtimeExecutableSHA256 = runtimeExecutableSHA256
         self.runtimeFrameworkSHA256 = runtimeFrameworkSHA256
         self.executionMode = executionMode
+        self.webrtcDirectControl = webrtcDirectControl
         self.firstInitial = firstInitial
         self.second = second
         self.firstRepeat = firstRepeat
@@ -319,6 +327,19 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
         issues.append(contentsOf: crossRealmConsistencyIssues)
         issues.append(contentsOf: deviceTupleConsistencyIssues)
+        if let webrtcDirectControl {
+            issues.append(
+                contentsOf: Self.networkPrivacyIssues(
+                    for: webrtcDirectControl,
+                    label: "WebRTC direct control"
+                )
+            )
+        } else {
+            issues.append(
+                "The report does not contain a WebRTC direct positive control."
+            )
+        }
+        issues.append(contentsOf: networkPrivacyIssues)
         return issues
     }
 
@@ -423,6 +444,16 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("profile A, repeat capture", firstRepeat)
         ].flatMap { label, capture in
             Self.crossRealmIssues(for: capture, label: label)
+        }
+    }
+
+    var networkPrivacyIssues: [String] {
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
+            Self.networkPrivacyIssues(for: capture, label: label)
         }
     }
 
@@ -780,6 +811,89 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         return issues
     }
 
+    private struct WebRTCCandidateSummary: Decodable {
+        let total: Int
+        let host: Int
+        let srflx: Int
+        let prflx: Int
+        let relay: Int
+        let unknown: Int
+
+        var isValid: Bool {
+            let counts = [total, host, srflx, prflx, relay, unknown]
+            return counts.allSatisfy { (0...256).contains($0) } &&
+                total == host + srflx + prflx + relay + unknown
+        }
+    }
+
+    private static func networkPrivacyIssues(
+        for capture: FingerprintCapture,
+        label: String
+    ) -> [String] {
+        guard let route = capture.values["network_route"],
+              route == "direct" || route == "proxied"
+        else {
+            return ["The \(label) network route is invalid."]
+        }
+        guard capture.values["webrtc_probe"] ==
+            "loopback-stun-v1"
+        else {
+            return ["The \(label) WebRTC probe contract is invalid."]
+        }
+        guard capture.values["webrtc_complete"] == "true" else {
+            return ["The \(label) WebRTC gathering did not complete."]
+        }
+        guard let requestText =
+            capture.values["webrtc_stun_requests"],
+              let requestCount = Int(requestText),
+              (0...256).contains(requestCount),
+              String(requestCount) == requestText
+        else {
+            return ["The \(label) STUN request count is invalid."]
+        }
+        guard let encoded = capture.values["webrtc_candidate_summary"],
+              let data = encoded.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any],
+              Set(object.keys) == Set([
+                "total", "host", "srflx", "prflx", "relay", "unknown"
+              ]),
+              let summary = try? JSONDecoder().decode(
+                WebRTCCandidateSummary.self,
+                from: data
+              ),
+              summary.isValid
+        else {
+            return [
+                "The \(label) WebRTC candidate summary is invalid."
+            ]
+        }
+        var issues: [String] = []
+        if summary.unknown > 0 {
+            issues.append(
+                "The \(label) WebRTC candidate summary contains unknown candidate types."
+            )
+        }
+        if route == "direct", requestCount == 0 {
+            issues.append(
+                "The \(label) direct route did not reach the loopback STUN control."
+            )
+        }
+        if route == "proxied", requestCount != 0 {
+            issues.append(
+                "The \(label) proxied route sent a loopback STUN request."
+            )
+        }
+        if route == "proxied",
+           summary.host > 0 || summary.srflx > 0 || summary.prflx > 0
+        {
+            issues.append(
+                "The \(label) proxied route exposed a direct WebRTC candidate."
+            )
+        }
+        return issues
+    }
+
     private static func parsedClientHints(
         _ text: String?
     ) -> [String: Any]? {
@@ -890,6 +1004,15 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 let initialRuntimeInspection =
                     await inspectRuntime(runtime.executableURL)
 
+                phase = "Проверяем прямой WebRTC-контроль"
+                var controlProfile = first
+                controlProfile.proxy = nil
+                let webrtcDirectControl = try await capture(
+                    profile: controlProfile,
+                    runtime: runtime,
+                    executionMode: executionMode
+                )
+
                 phase = "Снимаем \(first.name) · проход 1 из 3"
                 let firstInitial = try await capture(
                     profile: first,
@@ -933,6 +1056,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     runtimeFrameworkSHA256:
                         finalRuntimeInspection.frameworkSHA256,
                     executionMode: executionMode,
+                    webrtcDirectControl: webrtcDirectControl,
                     firstInitial: firstInitial,
                     second: secondCapture,
                     firstRepeat: firstRepeat
@@ -980,6 +1104,20 @@ final class FingerprintAuditCoordinator: ObservableObject {
         try paths.prepareProfileDirectories(for: profile.id)
         let auditServer = try await FingerprintAuditLoopbackServer.start()
         defer { auditServer.stop() }
+        let stunServer =
+            try await FingerprintAuditLoopbackSTUNServer.start()
+        defer { stunServer.stop() }
+        var auditURLComponents = URLComponents(
+            url: auditServer.url,
+            resolvingAgainstBaseURL: false
+        )!
+        auditURLComponents.queryItems = [
+            URLQueryItem(
+                name: "stunPort",
+                value: String(stunServer.port.rawValue)
+            )
+        ]
+        let auditURL = auditURLComponents.url!
 
         let dataDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -1008,6 +1146,9 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 "--remote-debugging-port=0",
                 "--remote-allow-origins=http://neantik.local",
                 "--disable-extensions",
+                "--disable-background-networking",
+                "--disable-component-update",
+                "--disable-sync",
                 "--window-size=1200,800"
             ] + executionMode.additionalLaunchArguments
             try processes.launch(
@@ -1018,14 +1159,21 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 // secure-context-only fingerprint surfaces such as
                 // navigator.deviceMemory remain observable. No external
                 // page or user data is transmitted by the audit.
-                startURLOverride: auditServer.url,
-                browserDataDirectoryOverride: dataDirectory
+                startURLOverride: auditURL,
+                browserDataDirectoryOverride: dataDirectory,
+                purpose: .fingerprintAudit(
+                    httpLoopbackPort: UInt16(auditServer.url.port!)
+                )
             )
             let port = try await waitForDevToolsPort(at: portFile)
-            let values = try await evaluateProbeWithRetry(
+            var values = try await evaluateProbeWithRetry(
                 port: port,
-                expectedPageURL: auditServer.url
+                expectedPageURL: auditURL
             )
+            values["network_route"] =
+                profile.proxy == nil ? "direct" : "proxied"
+            values["webrtc_stun_requests"] =
+                String(stunServer.acceptedRequestCount)
             processes.stop(profileID: profile.id)
             try await waitUntilStopped(profileID: profile.id)
             activeProfileID = nil
@@ -1697,18 +1845,62 @@ final class FingerprintAuditCoordinator: ObservableObject {
           'unavailable' : String(value);
       };
 
-      let rtcHash = 'unavailable';
+      let rtcSummary = {
+        total: 0,
+        host: 0,
+        srflx: 0,
+        prflx: 0,
+        relay: 0,
+        unknown: 0
+      };
+      let rtcSummaryValue = 'unavailable';
+      let rtcComplete = 'false';
+      const stunPort = new URL(location.href).searchParams.get('stunPort');
+      const stunURL = stunPort && /^[1-9][0-9]{0,4}$/.test(stunPort) ?
+        `stun:127.0.0.1:${stunPort}` : null;
       try {
-        const candidates = [];
-        const peer = new RTCPeerConnection({ iceServers: [] });
+        if (!stunURL) throw new Error('missing loopback STUN port');
+        const peer = new RTCPeerConnection({
+          iceServers: [{ urls: [stunURL] }],
+          iceTransportPolicy: 'all'
+        });
         peer.createDataChannel('probe');
         peer.onicecandidate = event => {
-          if (event.candidate) candidates.push(event.candidate.candidate);
+          if (!event.candidate) return;
+          const type = String(
+            event.candidate.type || 'unknown'
+          ).toLowerCase();
+          rtcSummary.total += 1;
+          if (Object.prototype.hasOwnProperty.call(rtcSummary, type) &&
+              type !== 'total') {
+            rtcSummary[type] += 1;
+          } else {
+            rtcSummary.unknown += 1;
+          }
         };
         await peer.setLocalDescription(await peer.createOffer());
-        await new Promise(resolve => setTimeout(resolve, 900));
+        if (peer.iceGatheringState !== 'complete') {
+          await new Promise(resolve => {
+            let settled = false;
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              peer.removeEventListener('icegatheringstatechange', changed);
+              clearTimeout(timer);
+              resolve();
+            };
+            const changed = () => {
+              if (peer.iceGatheringState === 'complete') finish();
+            };
+            const timer = setTimeout(finish, 8000);
+            peer.addEventListener('icegatheringstatechange', changed);
+            changed();
+          });
+        }
+        rtcComplete = peer.iceGatheringState === 'complete' ?
+          'true' : 'false';
         peer.close();
-        rtcHash = `${hashText(candidates.sort().join('|'))}:${candidates.length}`;
+        rtcSummaryValue = JSON.stringify(rtcSummary);
       } catch (_) {}
 
       return JSON.stringify({
@@ -1756,7 +1948,9 @@ final class FingerprintAuditCoordinator: ObservableObject {
         worker_hardware_concurrency:
           workerValue('hardware_concurrency'),
         worker_client_hints: workerValue('client_hints'),
-        webrtc_candidates: rtcHash
+        webrtc_probe: 'loopback-stun-v1',
+        webrtc_complete: rtcComplete,
+        webrtc_candidate_summary: rtcSummaryValue
       });
     })()
     """#

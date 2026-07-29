@@ -19,7 +19,7 @@ Tests/Fixtures/fingerprint-conformance/
 └── manifest.json
 ```
 
-Базовый schema 3 report содержит только документированные синтетические
+Базовый schema 5 report содержит только документированные синтетические
 UUID, имена, identity codes, значения поверхностей и фиктивные SHA-256.
 `manifest.json` применяет небольшой allowlist мутаций и фиксирует ожидаемый
 результат:
@@ -28,7 +28,14 @@ UUID, имена, identity codes, значения поверхностей и �
 - public alpha PASS при рассогласовании main realm и Worker;
 - нестабильный Canvas;
 - диагностический, а не обычный browser mode;
-- недоступная `deviceMemory`.
+- недоступная `deviceMemory`;
+- прямой WebRTC candidate при объявленном proxied route.
+
+WebRTC evidence хранит только тип и количество candidates, факт завершения ICE
+и ограниченное число запросов к приватному loopback STUN responder. Строки
+ICE, IP-адреса, hostnames, packet bytes, transaction IDs и их хэши в публичный
+corpus и локальный report не попадают. `loopback-stun-v1` требует положительный
+direct control в том же запуске и ноль STUN-запросов для proxied route.
 
 Verifier выполняет настоящий `verify-gui-fingerprint-report.py`, а не
 упрощённую копию правил. Дополнительно он отклоняет:
