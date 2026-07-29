@@ -320,6 +320,7 @@ struct KeychainStoreTests {
         )
 
         #expect(summary.attemptedCount == 0)
+        #expect(!summary.inspectionFailed)
         #expect(backend.deleteCallCount == 0)
         #expect(
             backend.string(
@@ -355,11 +356,21 @@ struct KeychainStoreTests {
                 "not-a-uuid.credentials-pending"
             )
         )
+        let validProfileID = UUID()
+        try createCommittedCleanupMarkers(
+            paths: paths,
+            profileID: validProfileID
+        )
         let backend = MemoryKeychainBackend()
         backend.set(
             "must-remain",
             service: KeychainStore.currentService,
             profileID: profileID
+        )
+        backend.set(
+            "remove-me",
+            service: KeychainStore.currentService,
+            profileID: validProfileID
         )
         let cleanup = DeletedProfileCredentialCleanup(
             paths: paths,
@@ -371,13 +382,21 @@ struct KeychainStoreTests {
             excluding: []
         )
 
-        #expect(summary.attemptedCount == 0)
-        #expect(backend.deleteCallCount == 0)
+        #expect(summary.attemptedCount == 1)
+        #expect(summary.clearedCount == 1)
+        #expect(summary.inspectionFailed)
+        #expect(backend.deleteCallCount == 2)
         #expect(
             backend.string(
                 service: KeychainStore.currentService,
                 profileID: profileID
             ) == "must-remain"
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: validProfileID
+            ) == nil
         )
     }
 
@@ -413,6 +432,46 @@ struct KeychainStoreTests {
             excluding: []
         )
 
+        #expect(summary.attemptedCount == 0)
+        #expect(summary.inspectionFailed)
+        #expect(backend.deleteCallCount == 0)
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == "must-remain"
+        )
+    }
+
+    @Test
+    func missingDeletionTombstoneReportsInspectionFailure() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let profileID = UUID()
+        try paths.createPrivateFileExclusively(
+            Data("keychain-cleanup-v1".utf8),
+            at: paths.profileCredentialCleanupMarker(for: profileID)
+        )
+        let backend = MemoryKeychainBackend()
+        backend.set(
+            "must-remain",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        let cleanup = DeletedProfileCredentialCleanup(
+            paths: paths,
+            keychain: KeychainStore(backend: backend)
+        )
+
+        let summary = await cleanup.runOnce(
+            metadataIsTrusted: true,
+            excluding: []
+        )
+
+        #expect(summary.inspectionFailed)
         #expect(summary.attemptedCount == 0)
         #expect(backend.deleteCallCount == 0)
         #expect(
@@ -468,12 +527,129 @@ struct KeychainStoreTests {
 
         #expect(summary.attemptedCount == 0)
         #expect(summary.clearedCount == 0)
+        #expect(!summary.inspectionFailed)
         #expect(backend.deleteCallCount == 0)
         #expect(
             backend.string(
                 service: KeychainStore.currentService,
                 profileID: profileID
             ) == "must-remain"
+        )
+    }
+
+    @Test
+    func malformedPendingMarkerIsIgnoredWithoutInspectionFailure()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        try paths.createPrivateFileExclusively(
+            Data("ignored".utf8),
+            at: paths.processLocksDirectory.appendingPathComponent(
+                "not-a-uuid.credentials-pending"
+            )
+        )
+        let backend = MemoryKeychainBackend()
+        let cleanup = DeletedProfileCredentialCleanup(
+            paths: paths,
+            keychain: KeychainStore(backend: backend)
+        )
+
+        let summary = await cleanup.runOnce(
+            metadataIsTrusted: true,
+            excluding: []
+        )
+
+        #expect(!summary.inspectionFailed)
+        #expect(summary.attemptedCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test
+    func unsafeProcessGuardReportsInspectionFailure() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let profileID = UUID()
+        try createCommittedCleanupMarkers(
+            paths: paths,
+            profileID: profileID
+        )
+        try FileManager.default.createSymbolicLink(
+            at: paths.lockGuardFile(for: profileID),
+            withDestinationURL: paths.profileDeletionTombstone(
+                for: profileID
+            )
+        )
+        let backend = MemoryKeychainBackend()
+        backend.set(
+            "must-remain",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        let cleanup = DeletedProfileCredentialCleanup(
+            paths: paths,
+            keychain: KeychainStore(backend: backend)
+        )
+
+        let summary = await cleanup.runOnce(
+            metadataIsTrusted: true,
+            excluding: []
+        )
+
+        #expect(summary.inspectionFailed)
+        #expect(summary.attemptedCount == 0)
+        #expect(backend.deleteCallCount == 0)
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == "must-remain"
+        )
+    }
+
+    @Test
+    func keychainFailureIsNotMisreportedAsInspectionFailure()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let profileID = UUID()
+        try createCommittedCleanupMarkers(
+            paths: paths,
+            profileID: profileID
+        )
+        let backend = MemoryKeychainBackend()
+        backend.set(
+            "must-remain",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        backend.deleteFailureService = KeychainStore.currentService
+        let cleanup = DeletedProfileCredentialCleanup(
+            paths: paths,
+            keychain: KeychainStore(backend: backend)
+        )
+
+        let summary = await cleanup.runOnce(
+            metadataIsTrusted: true,
+            excluding: []
+        )
+
+        #expect(summary.failedCount == 1)
+        #expect(!summary.inspectionFailed)
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileCredentialCleanupMarker(for: profileID)
+            ) == .regular
         )
     }
 

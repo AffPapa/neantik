@@ -461,7 +461,7 @@ struct BrowserLaunchBuilderTests {
             {
               "seed": 0,
               "timezoneIdentifier": "../../invalid",
-              "localeIdentifier": "en-US-extra"
+              "localeIdentifier": "еn-US"
             }
             """.utf8
         )

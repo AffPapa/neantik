@@ -265,19 +265,26 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         ).split(separator: "-", omittingEmptySubsequences: false)
         guard (1...2).contains(components.count),
               (2...3).contains(components[0].count),
-              components[0].allSatisfy(\.isLetter)
+              Self.isASCIILetters(components[0])
         else {
             return nil
         }
         if components.count == 2 {
             guard components[1].count == 2,
-                  components[1].allSatisfy(\.isLetter)
+                  Self.isASCIILetters(components[1])
             else {
                 return nil
             }
             return "\(components[0].lowercased())-\(components[1].uppercased())"
         }
         return components[0].lowercased()
+    }
+
+    private static func isASCIILetters(_ value: Substring) -> Bool {
+        value.utf8.count == value.count &&
+            value.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0)
+            }
     }
 
     static func migrated(profileID: UUID) -> BrowserIdentity {

@@ -77,6 +77,7 @@ actor DeletedProfileCredentialCleanup {
         var clearedCount = 0
         var failedCount = 0
         var skippedActiveCount = 0
+        var inspectionFailed = false
         for profileID in profileIDs {
             guard !activeProfileIDs.contains(profileID) else {
                 skippedActiveCount += 1
@@ -87,20 +88,25 @@ actor DeletedProfileCredentialCleanup {
             beforeCandidateRevalidation(profileID)
             do {
                 try paths.withProcessLockGuard(for: profileID) {
-                    guard try paths.privateFileEntryKind(
+                    let markerKind = try paths.privateFileEntryKind(
                         paths.profileCredentialCleanupMarker(
                             for: profileID
                         )
-                    ) == .regular,
-                        try paths.privateFileEntryKind(
-                            paths.profileDeletionTombstone(
-                                for: profileID
-                            )
-                        ) == .regular,
-                        try paths.privateFileEntryKind(
-                            paths.profileDirectory(for: profileID)
-                        ) == .missing
+                    )
+                    guard markerKind != .missing else {
+                        return
+                    }
+                    guard markerKind == .regular,
+                          try paths.privateFileEntryKind(
+                              paths.profileDeletionTombstone(
+                                  for: profileID
+                              )
+                          ) == .regular,
+                          try paths.privateFileEntryKind(
+                              paths.profileDirectory(for: profileID)
+                          ) == .missing
                     else {
+                        inspectionFailed = true
                         return
                     }
                     keychainAttempted = true
@@ -125,6 +131,8 @@ actor DeletedProfileCredentialCleanup {
                 if keychainAttempted {
                     attemptedCount += 1
                     failedCount += 1
+                } else {
+                    inspectionFailed = true
                 }
             }
         }
@@ -134,7 +142,7 @@ actor DeletedProfileCredentialCleanup {
             failedCount: failedCount,
             skippedActiveCount: skippedActiveCount,
             skippedBecauseMetadataUntrusted: false,
-            inspectionFailed: false,
+            inspectionFailed: inspectionFailed,
             alreadyRan: false
         )
     }

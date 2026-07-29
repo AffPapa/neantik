@@ -146,11 +146,7 @@ struct AppPaths: Sendable {
                 .lastPathComponent
             guard let profileID = UUID(uuidString: basename),
                   candidate.lastPathComponent ==
-                    "\(profileID.uuidString).credentials-pending",
-                  try privateFileEntryKind(candidate) == .regular,
-                  try privateFileEntryKind(
-                    profileDeletionTombstone(for: profileID)
-                  ) == .regular
+                    "\(profileID.uuidString).credentials-pending"
             else {
                 continue
             }
