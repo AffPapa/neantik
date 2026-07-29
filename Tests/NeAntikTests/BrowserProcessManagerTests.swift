@@ -472,13 +472,14 @@ struct BrowserProcessManagerTests {
         )
 
         try manager.launch(profile: profile, runtime: runtime)
-        for _ in 0..<20 {
+        for _ in 0..<50 {
             if !manager.runningProfileIDs.contains(profile.id) {
                 break
             }
-            try await Task.sleep(nanoseconds: 20_000_000)
+            try await Task.sleep(nanoseconds: 100_000_000)
         }
 
+        #expect(!manager.runningProfileIDs.contains(profile.id))
         let text = try String(
             contentsOf: paths.logFile(for: profile.id),
             encoding: .utf8

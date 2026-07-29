@@ -16,9 +16,9 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Swift tests
-        run: ./scripts/verify-native-swift-tests.sh
+        run: python3 scripts/verify-native-swift-ci.py
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract
