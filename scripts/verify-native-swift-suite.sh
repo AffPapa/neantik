@@ -18,6 +18,7 @@ case "$SUITE" in
   FingerprintAuditTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
+  ProfileEditorPasswordTests|\
   ProfileStoreTests|\
   ProxyTesterTests|\
   RuntimePreferenceStoreTests|\

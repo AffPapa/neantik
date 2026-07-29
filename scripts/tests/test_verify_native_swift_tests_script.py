@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import unittest
 
 
@@ -6,6 +7,12 @@ SCRIPT = Path(__file__).resolve().parents[1] / "verify-native-swift-tests.sh"
 SUITE_SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "verify-native-swift-suite.sh"
+)
+CI_WORKFLOW = (
+    Path(__file__).resolve().parents[2]
+    / ".github"
+    / "workflows"
+    / "ci.yml"
 )
 
 
@@ -36,6 +43,19 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
 
         self.assertIn("UpdateManifestTests)", text)
         self.assertIn('--filter "$SUITE"', text)
+
+    def test_ci_matrix_suites_are_allowed_by_runner(self) -> None:
+        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
+        matrix_suites = re.findall(
+            r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
+            workflow,
+            flags=re.MULTILINE,
+        )
+
+        self.assertGreater(len(matrix_suites), 0)
+        for suite in matrix_suites:
+            self.assertIn(suite, runner)
 
 if __name__ == "__main__":
     unittest.main()
