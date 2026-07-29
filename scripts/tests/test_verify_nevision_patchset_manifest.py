@@ -39,6 +39,7 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             self.assertGreater(summary["plannedCount"], 0)
             self.assertFalse(summary["releaseReady"])
         self.assertGreaterEqual(summary["portedCount"], 0)
+        self.assertEqual(summary["generatedInputCount"], 1)
         self.assertEqual(summary["groupCount"], len(summary["groups"]))
         self.assertTrue(
             all(
@@ -63,6 +64,46 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
                     release=False,
                     verify_source_evidence=True,
                     project_root=root,
+                )
+
+    def test_rejects_generated_catalog_hash_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = fixture_manifest()
+            manifest["generatedInputs"][0]["catalogSHA256"] = "0" * 64
+            manifest_path, rebase_path = write_fixture(
+                root,
+                manifest=manifest,
+            )
+
+            with self.assertRaisesRegex(
+                MODULE.PatchsetManifestError,
+                "catalogSHA256 mismatch",
+            ):
+                MODULE.verify_manifest(
+                    manifest_path=manifest_path,
+                    rebase_plan_path=rebase_path,
+                    release=False,
+                )
+
+    def test_rejects_generated_input_without_locked_postimages(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = fixture_manifest()
+            manifest["generatedInputs"][0]["postimageSHA256"] = {}
+            manifest_path, rebase_path = write_fixture(
+                root,
+                manifest=manifest,
+            )
+
+            with self.assertRaisesRegex(
+                MODULE.PatchsetManifestError,
+                "postimageSHA256",
+            ):
+                MODULE.verify_manifest(
+                    manifest_path=manifest_path,
+                    rebase_plan_path=rebase_path,
+                    release=False,
                 )
 
     def test_release_mode_blocks_planned_groups(self) -> None:
@@ -367,12 +408,24 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def fixture_manifest() -> dict:
+    catalog = b"{}\n"
+    generator = b"# fixture\n"
     return {
         "schemaVersion": 1,
         "targetChromiumVersion": "150.0.7871.186",
         "status": "planned-not-ported",
         "policy": "Fixture policy for planned Chromium 150 patchset verification.",
         "forbiddenScopes": ["automation-evasion"],
+        "generatedInputs": [
+            {
+                "id": "fixture-generated-input",
+                "catalogPath": "generated/catalog.json",
+                "catalogSHA256": hashlib.sha256(catalog).hexdigest(),
+                "generatorPath": "generated/generator.py",
+                "generatorSHA256": hashlib.sha256(generator).hexdigest(),
+                "postimageSHA256": {"generated/output.h": "a" * 64},
+            }
+        ],
         "patchGroups": [
             {
                 "id": "stable-surface",
@@ -393,6 +446,10 @@ def write_fixture(root: Path, *, manifest: dict | None = None) -> tuple[Path, Pa
     manifest_path = root / "runtime" / "nevision-patches" / "series.json"
     rebase_path = root / "runtime" / "chromium-150-rebase-plan.json"
     manifest_path.parent.mkdir(parents=True)
+    generated_root = root / "generated"
+    generated_root.mkdir(parents=True)
+    (generated_root / "catalog.json").write_bytes(b"{}\n")
+    (generated_root / "generator.py").write_bytes(b"# fixture\n")
     rebase_path.write_text(
         json.dumps(
             {

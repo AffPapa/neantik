@@ -74,7 +74,7 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
-    static let currentAuditSchemaVersion = 2
+    static let currentAuditSchemaVersion = 3
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
@@ -98,6 +98,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "timezone"
     ]
     static let productionExtendedContextKeys = [
+        "audio_repeat",
         "canvas_repeat",
         "client_rects_repeat",
         "webgl_pixels_repeat",
@@ -726,6 +727,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
 
         for pair in [
+            ("audio", "audio_repeat"),
             ("canvas", "canvas_repeat"),
             ("canvas", "worker_canvas"),
             ("client_rects", "client_rects_repeat"),
@@ -1425,10 +1427,10 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
       } catch (_) {}
 
-      let audioHash = 'unavailable';
-      try {
+      const renderAudioHash = async () => {
         const Audio = window.OfflineAudioContext ||
           window.webkitOfflineAudioContext;
+        if (!Audio) throw new Error('OfflineAudioContext unavailable');
         const audio = new Audio(1, 6000, 44100);
         const oscillator = audio.createOscillator();
         oscillator.type = 'triangle';
@@ -1444,7 +1446,13 @@ final class FingerprintAuditCoordinator: ObservableObject {
         oscillator.start(0);
         const rendered = await audio.startRendering();
         const samples = rendered.getChannelData(0);
-        audioHash = fnv(new Uint8Array(samples.buffer));
+        return fnv(new Uint8Array(samples.buffer));
+      };
+      let audioHash = 'unavailable';
+      let audioRepeatHash = 'unavailable';
+      try {
+        audioHash = await renderAudioHash();
+        audioRepeatHash = await renderAudioHash();
       } catch (_) {}
 
       const rectHost = document.createElement('div');
@@ -1714,6 +1722,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         webgl_shader_precision: webglShaderPrecision,
         webgpu_policy: webgpuPolicy,
         audio: audioHash,
+        audio_repeat: audioRepeatHash,
         client_rects: hashText(rectValues),
         client_rects_repeat: hashText(rectRepeatValues),
         user_agent: navigator.userAgent,

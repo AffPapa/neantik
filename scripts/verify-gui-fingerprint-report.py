@@ -36,6 +36,7 @@ PUBLIC_ALPHA_STABLE_CONTEXT_KEYS = [
     "timezone",
 ]
 PRODUCTION_EXTENDED_CONTEXT_KEYS = [
+    "audio_repeat",
     "canvas_repeat",
     "client_rects_repeat",
     "webgl_pixels_repeat",
@@ -58,7 +59,7 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
 ]
 PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
-CURRENT_AUDIT_SCHEMA_VERSION = 2
+CURRENT_AUDIT_SCHEMA_VERSION = 3
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -482,6 +483,7 @@ def cross_realm_consistency_issues(
     issues: list[str] = []
 
     for first, second in (
+        ("audio", "audio_repeat"),
         ("canvas", "canvas_repeat"),
         ("canvas", "worker_canvas"),
         ("client_rects", "client_rects_repeat"),

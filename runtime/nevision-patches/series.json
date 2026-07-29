@@ -12,6 +12,25 @@
     "broad-fake-font-list",
     "independent-cpu-gpu-screen-guesses"
   ],
+  "generatedInputs": [
+    {
+      "id": "canonical-apple-device-tuples",
+      "catalogPath": "runtime/apple-device-tuples.json",
+      "catalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+      "generatorPath": "scripts/apply-owned-runtime-device-tuples.py",
+      "generatorSHA256": "35996d38ac3b1b82fc6455c319cae0876772ae2b1b56230c281b3c7ccfd183f5",
+      "postimageSHA256": {
+        "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
+        "components/embedder_support/user_agent_utils.cc": "989eb7bd73fc11f4df1bed9ef37b39e39fc22f5727e7a9ef5477e7c54419eb2f",
+        "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "c24ba09b3a1f76baea12df380dd63bf729b5232bd48c128a5f6efa2358247b06",
+        "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
+        "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
+        "third_party/blink/renderer/core/frame/screen.cc": "60f1378ba5252765852093b4f288cf1b09d701169f6f12ebf4e379aea7e23429",
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "bfc8495a33bc70da13a65883d23cfdce5e03069793a2f8fb9880f1902981bc45"
+      }
+    }
+  ],
   "patchGroups": [
     {
       "id": "profile-seed-contract",
@@ -42,7 +61,7 @@
     },
     {
       "id": "deterministic-rendered-surfaces",
-      "title": "Deterministic Canvas, measureText, ClientRects, and OfflineAudio noise",
+      "title": "Deterministic Canvas, measureText, and ClientRects noise",
       "status": "ported",
       "releaseRequired": true,
       "sourceEvidence": [
@@ -62,6 +81,27 @@
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f95128efcb8885770bf291a171459d4d4218aee8ef0f5f82ec44407e5ff69dc5",
         "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "4b4e55d873999b6208c9db6ad23fbfed1aee49762340ad7968a75906194b8c6b",
         "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "2c1d41aadd13c875bb9749f58c7a55334391900d349318f5924badfa1dcb738c"
+      }
+    },
+    {
+      "id": "deterministic-offline-audio",
+      "title": "Deterministic bounded OfflineAudio output",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "Sources/NeAntik/FingerprintAudit.swift",
+        "Tests/NeAntikTests/FingerprintAuditTests.swift",
+        "docs/FINGERPRINT_RUNTIME.md"
+      ],
+      "patchFile": "patches/deterministic-offline-audio.patch",
+      "patchSHA256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652",
+      "requiredBehavior": [
+        "OfflineAudio keeps the requested sample rate, frame count, and graph semantics",
+        "profile A remains stable across repeated OfflineAudio renders",
+        "profile B receives a different deterministic bounded sparse-sample perturbation"
+      ],
+      "postimageSHA256": {
+        "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "35627d77308303eb04d93953ae92b8788ba0b6a22253fd28526bfbf2413833fb"
       }
     },
     {
@@ -135,6 +175,8 @@
       "status": "ported",
       "releaseRequired": true,
       "sourceEvidence": [
+        "runtime/apple-device-tuples.json",
+        "scripts/apply-owned-runtime-device-tuples.py",
         "scripts/apply-runtime-device-tuples.py",
         "scripts/verify-gui-fingerprint-report.py"
       ],

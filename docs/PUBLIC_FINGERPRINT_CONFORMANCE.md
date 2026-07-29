@@ -19,7 +19,7 @@ Tests/Fixtures/fingerprint-conformance/
 └── manifest.json
 ```
 
-Базовый schema 2 report содержит только документированные синтетические
+Базовый schema 3 report содержит только документированные синтетические
 UUID, имена, identity codes, значения поверхностей и фиктивные SHA-256.
 `manifest.json` применяет небольшой allowlist мутаций и фиксирует ожидаемый
 результат:

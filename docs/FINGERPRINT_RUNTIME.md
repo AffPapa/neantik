@@ -179,7 +179,7 @@ Reports are stored locally with owner-only file permissions:
 ## Production qualification
 
 The ordinary `verified` verdict is useful for engineering diagnostics, but it
-is not sufficient by itself for a production release. Schema 2 deliberately
+is not sufficient by itself for a production release. Schema 3 deliberately
 separates two levels:
 
 - **public-alpha-qualified** proves that the normal browser surfaces used by
@@ -188,7 +188,7 @@ separates two levels:
   worker coherence. A legacy schema 1 report may remain valid public-alpha
   evidence, but can never satisfy the strict production gate.
 
-A schema 2 report is production-qualified only when all of the following are
+A schema 3 report is production-qualified only when all of the following are
 true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
@@ -199,8 +199,8 @@ true:
 - all of those required values are stable between the first and repeated
   launch of profile A;
 - WebGL pixels differ between profiles A and B.
-- repeated Canvas, WebGL pixel, and ClientRects reads match the first read in
-  each capture, so per-call random noise cannot pass;
+- repeated Canvas, OfflineAudio, WebGL pixel, and ClientRects reads match the
+  first read in each capture, so per-call random noise cannot pass;
 - Canvas and WebGL results from the main realm agree with a dedicated Web
   Worker using OffscreenCanvas;
 - main-realm and worker UA, Client Hints, platform, languages, timezone,

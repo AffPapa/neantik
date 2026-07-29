@@ -237,6 +237,20 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             summary["productionIssues"],
         )
 
+    def test_repeated_offline_audio_mismatch_fails_strict(self) -> None:
+        report = production_report()
+        report["firstInitial"]["values"]["audio_repeat"] = "audio-random"
+        report["firstRepeat"]["values"]["audio_repeat"] = "audio-random"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile A, first capture audio value disagrees with audio_repeat.",
+            summary["productionIssues"],
+        )
+
     def test_legacy_schema_fails_strict_but_not_public_alpha(self) -> None:
         report = production_report()
         del report["auditSchemaVersion"]
@@ -278,7 +292,7 @@ def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
         "createdAt": "2026-07-25T08:29:41Z",
         "managerVersion": "0.3.12",
         "managerBuild": "15",
-        "auditSchemaVersion": 2,
+        "auditSchemaVersion": 3,
         "identityCatalogVersion": 1,
         "executionMode": "browser",
         "runtimeName": "NeAntik Browser",
@@ -483,6 +497,7 @@ def capture(
             "webgl_pixels": webgl_pixels,
             "webgl_pixels_repeat": webgl_pixels,
             "audio": audio,
+            "audio_repeat": audio,
             "client_rects": client_rects,
             "client_rects_repeat": client_rects,
             "webgl_vendor": "Google Inc. (Apple)",

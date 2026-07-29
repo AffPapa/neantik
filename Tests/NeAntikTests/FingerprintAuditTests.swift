@@ -234,6 +234,7 @@ struct FingerprintAuditTests {
             "webgpu_policy",
             "client_hints",
             "webrtc_candidates",
+            "audio_repeat",
             "canvas_repeat",
             "worker_canvas",
             "worker_webgl_pixels",
@@ -453,6 +454,41 @@ struct FingerprintAuditTests {
                 $0.contains(
                     "platform value disagrees with worker_platform"
                 )
+            }
+        )
+    }
+
+    @Test
+    func repeatedOfflineAudioMismatchFailsStrictProduction() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["audio_repeat"] = "audio-random"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains("audio value disagrees with audio_repeat")
             }
         )
     }
@@ -728,6 +764,7 @@ struct FingerprintAuditTests {
         secondValues["webgl_vendor"] = "unavailable"
         secondValues["webgl_renderer"] = "unavailable"
         secondValues["audio"] = "audio-b"
+        secondValues["audio_repeat"] = "audio-b"
         let first = capture(name: "First", values: firstValues)
         let result = report(
             first: first,
@@ -974,6 +1011,7 @@ struct FingerprintAuditTests {
             "canvas": canvas,
             "webgl_pixels": "webgl",
             "audio": "audio",
+            "audio_repeat": "audio",
             "client_rects": "rects"
         ]
     }
@@ -990,6 +1028,7 @@ struct FingerprintAuditTests {
             "webgl_pixels": webGLPixels,
             "webgl_pixels_repeat": webGLPixels,
             "audio": "audio",
+            "audio_repeat": "audio",
             "client_rects": "rects",
             "client_rects_repeat": "rects",
             "webgl_vendor": "Google Inc. (Apple)",

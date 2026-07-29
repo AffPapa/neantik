@@ -179,6 +179,19 @@ write_owned_source_stamp() {
     > "$SOURCE_STAMP"
 }
 
+apply_owned_source_layers() {
+  "$TOOLS_DIR/bin/python3" \
+    "$SCRIPT_DIR/apply-neantik-patchset.py" \
+    "$SOURCE_DIR"
+  "$TOOLS_DIR/bin/python3" \
+    "$SCRIPT_DIR/apply-owned-runtime-device-tuples.py" \
+    "$SOURCE_DIR"
+  "$TOOLS_DIR/bin/python3" \
+    "$SCRIPT_DIR/apply-owned-runtime-device-tuples.py" \
+    "$SOURCE_DIR" \
+    --check
+}
+
 prepare_source() {
   case "${NEANTIK_RECOVER_SOURCE_STAMP:-0}" in
     0|1) ;;
@@ -214,18 +227,14 @@ prepare_source() {
         exit 65
       fi
       verify_source_version
-      "$TOOLS_DIR/bin/python3" \
-        "$SCRIPT_DIR/apply-neantik-patchset.py" \
-        "$SOURCE_DIR"
+      apply_owned_source_layers
       write_owned_source_stamp
       echo "Recovered verified Chromium 150 source stamp after an intentional patch-manifest update."
       return
     fi
     verify_source_version
     if [[ "$SOURCE_MODE" == "owned-rebase-150" ]]; then
-      "$TOOLS_DIR/bin/python3" \
-        "$SCRIPT_DIR/apply-neantik-patchset.py" \
-        "$SOURCE_DIR"
+      apply_owned_source_layers
     fi
     return
   fi
@@ -236,9 +245,7 @@ prepare_source() {
       exit 65
     fi
     verify_source_version
-    "$TOOLS_DIR/bin/python3" \
-      "$SCRIPT_DIR/apply-neantik-patchset.py" \
-      "$SOURCE_DIR"
+    apply_owned_source_layers
     write_owned_source_stamp
     echo "Recovered verified Chromium 150 source stamp after interrupted prepare."
     return
@@ -265,9 +272,7 @@ prepare_source() {
     "$SOURCE_DIR"
   verify_source_version
   if [[ "$SOURCE_MODE" == "owned-rebase-150" ]]; then
-    "$TOOLS_DIR/bin/python3" \
-      "$SCRIPT_DIR/apply-neantik-patchset.py" \
-      "$SOURCE_DIR"
+    apply_owned_source_layers
   fi
 
   printf '%s\n' \
@@ -374,9 +379,7 @@ validate_gpu_mode() {
 configure_build() {
   prepare_source
   if [[ "$SOURCE_MODE" == "owned-rebase-150" ]]; then
-    "$TOOLS_DIR/bin/python3" \
-      "$SCRIPT_DIR/apply-neantik-patchset.py" \
-      "$SOURCE_DIR"
+    apply_owned_source_layers
   else
   local expected_overlay_sha256
   local actual_overlay_sha256

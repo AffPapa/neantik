@@ -194,8 +194,9 @@ This emits separate `publicAlphaQualified` and `productionQualified` verdicts.
 The public-alpha gate rejects diagnostic mode, missing binary hashes,
 unavailable required browser surfaces, unstable A-repeat values, invalid
 A -> B -> A profile identity, and device-tuple mismatches. The strict
-production gate additionally requires schema 2 evidence for repeat-call
-stability, main-realm / Web Worker and OffscreenCanvas coherence, CSS
+production gate additionally requires fingerprint audit schema 3 evidence for
+repeat-call stability including OfflineAudio, main-realm / Web Worker and
+OffscreenCanvas coherence, CSS
 screen/DPR media-query coherence, and WebGL shader precision. A legacy schema 1
 report may remain valid alpha evidence but cannot be promoted to strict
 production evidence.

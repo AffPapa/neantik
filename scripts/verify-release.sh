@@ -29,6 +29,7 @@ for key in \
   CFBundlePackageType \
   CFBundleShortVersionString \
   CFBundleVersion \
+  NeAntikDeveloperTeamIdentifier \
   NeAntikTelemetryEndpoint \
   NeAntikPublicStatsURL \
   LSMinimumSystemVersion \
