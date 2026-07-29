@@ -8,7 +8,8 @@
 - Строгий fingerprint gate теперь измеряет `WorkerNavigator.deviceMemory` и
   требует согласия с main realm и Apple device tuple. Старые отчёты остаются
   честным public-alpha evidence, но больше не могут получить production PASS
-  без worker memory; версия строгого audit-контракта поднята до schema 6.
+  без worker memory; версия строгого audit-контракта поднята до schema 7,
+  включая ECMA-402 locale core для script/region coherence.
 - Пассивное наблюдение за внешними/recovery-процессами приостанавливается,
   когда NeAntik неактивен, и полностью пересобирается после возврата или
   пробуждения Mac; управляемые браузеры и fail-closed lease не затрагиваются.
@@ -39,7 +40,7 @@
   не входят в открытый Direct release contract.
 - Публичный 0.3.12 и исторический runtime lock не изменены. Следующий runtime
   остаётся заблокирован до установки Xcode Metal Toolchain, новой
-  `angle_enable_metal=true` сборки и свежего GUI schema 6 A → B → A evidence.
+  `angle_enable_metal=true` сборки и свежего GUI schema 7 A → B → A evidence.
 - Отмена проверки прокси теперь немедленно завершает её `curl`-процесс, а
   повторное копирование credentials отменяет старые таймеры очистки буфера.
 - Поиск preferred runtime прекращается после первого пригодного Chromium и

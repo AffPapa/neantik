@@ -43,6 +43,8 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
     "webgl_shader_precision",
     "css_screen_match",
     "intl_locale",
+    "primary_locale_core",
+    "intl_locale_core",
     "worker_canvas",
     "worker_webgl_pixels",
     "worker_webgl_vendor",
@@ -54,6 +56,8 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
     "worker_languages",
     "worker_timezone",
     "worker_intl_locale",
+    "worker_primary_locale_core",
+    "worker_intl_locale_core",
     "worker_hardware_concurrency",
     "worker_device_memory",
     "worker_client_hints",
@@ -65,7 +69,7 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
 ]
 PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
-CURRENT_AUDIT_SCHEMA_VERSION = 6
+CURRENT_AUDIT_SCHEMA_VERSION = 7
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REPORT_KEYS = {
@@ -587,6 +591,94 @@ def parsed_client_hints(value: str | None) -> dict[str, Any] | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+def normalized_audit_locale(value: str) -> str | None:
+    components = value.strip().replace("_", "-").split("-")
+    if (
+        not components
+        or any(not component for component in components)
+        or not 2 <= len(components[0]) <= 8
+        or not components[0].isascii()
+        or not components[0].isalpha()
+    ):
+        return None
+    normalized = [components[0].lower()]
+    index = 1
+    if len(components[0]) <= 3:
+        extlang_count = 0
+        while (
+            index < len(components)
+            and extlang_count < 3
+            and len(components[index]) == 3
+            and components[index].isascii()
+            and components[index].isalpha()
+        ):
+            normalized.append(components[index].lower())
+            index += 1
+            extlang_count += 1
+    if (
+        index < len(components)
+        and len(components[index]) == 4
+        and components[index].isascii()
+        and components[index].isalpha()
+    ):
+        normalized.append(components[index].title())
+        index += 1
+    if index < len(components):
+        region = components[index]
+        if len(region) == 2 and region.isascii() and region.isalpha():
+            normalized.append(region.upper())
+            index += 1
+        elif len(region) == 3 and region.isascii() and region.isdigit():
+            normalized.append(region)
+            index += 1
+    while index < len(components):
+        variant = components[index]
+        if not (
+            variant.isascii()
+            and variant.isalnum()
+            and (
+                5 <= len(variant) <= 8
+                or (
+                    len(variant) == 4
+                    and variant[0].isdigit()
+                )
+            )
+        ):
+            break
+        index += 1
+    while index < len(components):
+        singleton = components[index]
+        if (
+            len(singleton) != 1
+            or not singleton.isascii()
+            or not singleton.isalnum()
+        ):
+            return None
+        index += 1
+        extension_count = 0
+        minimum_length = 1 if singleton.lower() == "x" else 2
+        while index < len(components) and len(components[index]) != 1:
+            subtag = components[index]
+            if (
+                not minimum_length <= len(subtag) <= 8
+                or not subtag.isascii()
+                or not subtag.isalnum()
+            ):
+                return None
+            extension_count += 1
+            index += 1
+        if extension_count == 0:
+            return None
+    # Intl.DateTimeFormat may legitimately minimize script, region, and
+    # variant subtags in resolvedOptions().locale. Compare only the validated
+    # primary language until a future schema captures Intl.Locale.maximize().
+    return normalized[0]
+
+
+def primary_audit_locale(languages: str) -> str | None:
+    return normalized_audit_locale(languages.split(",", 1)[0])
+
+
 def cross_realm_consistency_issues(
     label: str,
     capture_object: dict[str, Any],
@@ -610,11 +702,53 @@ def cross_realm_consistency_issues(
         ("languages", "worker_languages"),
         ("timezone", "worker_timezone"),
         ("intl_locale", "worker_intl_locale"),
+        ("primary_locale_core", "worker_primary_locale_core"),
+        ("intl_locale_core", "worker_intl_locale_core"),
         ("hardware_concurrency", "worker_hardware_concurrency"),
         ("device_memory", "worker_device_memory"),
     ):
         if is_available(v.get(first)) and is_available(v.get(second)) and v.get(first) != v.get(second):
             issues.append(f"The {label} {first} value disagrees with {second}.")
+
+    for languages_key, locale_key, primary_core_key, locale_core_key in (
+        (
+            "languages",
+            "intl_locale",
+            "primary_locale_core",
+            "intl_locale_core",
+        ),
+        (
+            "worker_languages",
+            "worker_intl_locale",
+            "worker_primary_locale_core",
+            "worker_intl_locale_core",
+        ),
+    ):
+        languages = v.get(languages_key)
+        locale = v.get(locale_key)
+        primary_core = v.get(primary_core_key)
+        locale_core = v.get(locale_core_key)
+        if not all(
+            is_available(value)
+            for value in (languages, locale, primary_core, locale_core)
+        ):
+            continue
+        if (
+            primary_audit_locale(languages or "") is None
+            or normalized_audit_locale(locale or "") is None
+            or normalized_audit_locale(primary_core or "") is None
+            or normalized_audit_locale(locale_core or "") is None
+        ):
+            issues.append(
+                f"The {label} locale evidence contains not supported "
+                "locale identifiers."
+            )
+            continue
+        if primary_core != locale_core:
+            issues.append(
+                f"The {label} {primary_core_key} disagrees with "
+                f"{locale_core_key}."
+            )
 
     if (
         is_available(v.get("css_screen_match"))
@@ -649,7 +783,7 @@ def network_privacy_issues(
     v = values(capture_object)
     route = v.get("network_route")
     if route not in {"direct", "proxied"}:
-        return [f"The {label} network route is invalid."]
+        return [f"The {label} configured network route is invalid."]
     if v.get("webrtc_probe") != "loopback-stun-v1":
         return [f"The {label} WebRTC probe contract is invalid."]
     if v.get("webrtc_complete") != "true":
@@ -961,6 +1095,8 @@ def verification_summary(
         "issues": issues,
         "productionQualified": not production_issues,
         "productionIssues": production_issues,
+        "networkEvidenceScope": "configured-route-webrtc-only",
+        "effectiveHTTPRouteObserved": False,
         "auditSchemaVersion": report.get("auditSchemaVersion", 1),
         "identityCatalogVersion": report.get("identityCatalogVersion"),
         "changedCriticalKeys": changed_critical_keys(first, second, repeat),

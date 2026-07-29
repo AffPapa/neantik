@@ -19,7 +19,7 @@ Tests/Fixtures/fingerprint-conformance/
 └── manifest.json
 ```
 
-Базовый schema 6 report содержит только документированные синтетические
+Базовый schema 7 report содержит только документированные синтетические
 UUID, имена, identity codes, значения поверхностей и фиктивные SHA-256.
 `manifest.json` применяет небольшой allowlist мутаций и фиксирует ожидаемый
 результат:
@@ -28,6 +28,8 @@ UUID, имена, identity codes, значения поверхностей и �
 - public alpha PASS при рассогласовании main realm и Worker;
 - public alpha PASS при недоступной или расходящейся Worker device memory,
   которая блокирует только строгий production;
+- public alpha PASS при стабильной, но внутренне противоречивой паре
+  `navigator.languages`/`Intl.locale`, которая блокирует строгий production;
 - нестабильный Canvas;
 - диагностический, а не обычный browser mode;
 - недоступная `deviceMemory`;

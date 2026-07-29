@@ -12,12 +12,14 @@ final class ProfileStore: ObservableObject {
     private let trashDirectory: (URL) throws -> URL
     private let restoreTrashedDirectory: (URL, URL) throws -> Void
     private let beforeDeleteMetadataPersist: () throws -> Void
+    private let afterDeleteMetadataPersist: () throws -> Void
 
     init(
         paths: AppPaths = AppPaths(),
         trashDirectory: ((URL) throws -> URL)? = nil,
         restoreTrashedDirectory: ((URL, URL) throws -> Void)? = nil,
-        beforeDeleteMetadataPersist: @escaping () throws -> Void = {}
+        beforeDeleteMetadataPersist: @escaping () throws -> Void = {},
+        afterDeleteMetadataPersist: @escaping () throws -> Void = {}
     ) {
         self.paths = paths
         self.trashDirectory =
@@ -25,6 +27,7 @@ final class ProfileStore: ObservableObject {
         self.restoreTrashedDirectory =
             restoreTrashedDirectory ?? Self.restoreDirectoryFromTrash
         self.beforeDeleteMetadataPersist = beforeDeleteMetadataPersist
+        self.afterDeleteMetadataPersist = afterDeleteMetadataPersist
         do {
             try paths.prepareBaseDirectories()
             try paths.withProfilesMetadataGuard {
@@ -52,6 +55,10 @@ final class ProfileStore: ObservableObject {
             storageIsAvailable = false
             lastError = error.localizedDescription
         }
+    }
+
+    var hasTrustedMetadata: Bool {
+        storageIsAvailable
     }
 
     func profile(withID id: UUID?) -> BrowserProfile? {
@@ -225,6 +232,7 @@ final class ProfileStore: ObservableObject {
         }
         do {
             try afterCommit(profile)
+            try paths.removeCredentialCleanupMarker(for: profile.id)
         } catch {
             throw ProfileCredentialCleanupPendingError(
                 cleanupError: error
@@ -288,9 +296,20 @@ final class ProfileStore: ObservableObject {
         }
         profiles.removeAll { $0.id == profile.id }
         let deletedProfiles = profiles
+        let cleanupMarker =
+            paths.profileCredentialCleanupMarker(for: profile.id)
         do {
             try beforeDeleteMetadataPersist()
             try persist()
+            try afterDeleteMetadataPersist()
+            // Only a successfully committed deletion may authorize automatic
+            // Keychain cleanup. A crash before this marker can leave an
+            // orphaned secret, which is safer than deleting credentials for
+            // BrowserData that may still be recoverable from the Trash.
+            try paths.createPrivateFileExclusively(
+                Data("keychain-cleanup-v1".utf8),
+                at: cleanupMarker
+            )
         } catch {
             let operationError = error
             do {
@@ -298,7 +317,8 @@ final class ProfileStore: ObservableObject {
                     previousProfiles: previousProfiles,
                     directory: directory,
                     trashedURL: trashedURL,
-                    tombstone: tombstone
+                    tombstone: tombstone,
+                    cleanupProfileID: profile.id
                 )
             } catch {
                 profiles = deletedProfiles
@@ -316,7 +336,8 @@ final class ProfileStore: ObservableObject {
         previousProfiles: [BrowserProfile],
         directory: URL,
         trashedURL: URL?,
-        tombstone: URL
+        tombstone: URL,
+        cleanupProfileID: UUID
     ) throws {
         if let trashedURL {
             guard FileManager.default.fileExists(atPath: trashedURL.path),
@@ -333,6 +354,9 @@ final class ProfileStore: ObservableObject {
         profiles = previousProfiles
         try persist(synchronizeRecoverySnapshot: true)
         try removeDeletionTombstone(tombstone)
+        try paths.removeCredentialCleanupMarker(
+            for: cleanupProfileID
+        )
     }
 
     private func removeDeletionTombstone(_ tombstone: URL) throws {
@@ -562,7 +586,7 @@ struct ProfileCredentialCleanupPendingError: LocalizedError {
     let cleanupError: Error
 
     var errorDescription: String? {
-        "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. Очистку можно повторить позже."
+        "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. NeAntik безопасно повторит очистку при следующем запуске."
     }
 }
 

@@ -203,7 +203,7 @@ separates two levels:
   worker coherence. A legacy schema 1 report may remain valid public-alpha
   evidence, but can never satisfy the strict production gate.
 
-A schema 6 report is production-qualified only when all of the following are
+A schema 7 report is production-qualified only when all of the following are
 true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
@@ -221,11 +221,16 @@ true:
 - main-realm and worker UA, Client Hints, platform, languages, timezone,
   `Intl` locale, CPU count, device memory, WebGL metadata/extensions, and
   shader precision agree;
+- the primary `navigator.languages` token agrees with the `Intl` locale in
+  both the page and worker after `Intl.Locale(...).maximize()` supplies
+  likely script and region subtags; variants and Unicode extensions are
+  intentionally excluded from this comparison core;
 - CSS `device-width`, `device-height`, and `resolution` media queries agree
   with the exposed screen and DPR values;
 - the same-run direct `loopback-stun-v1` control completes and Chromium sends
   at least one valid STUN Binding Request to the private loopback responder;
-- the network route and `loopback-stun-v1` probe contract are valid,
+- the configured route declaration and `loopback-stun-v1` WebRTC control are
+  valid,
   ICE gathering reaches `complete`, candidate counts are bounded and
   internally consistent, unknown candidate types are absent, and a proxied
   route sends zero STUN requests and exposes no host, server-reflexive, or
@@ -241,6 +246,12 @@ hashes. The exact audit-only HTTP loopback bypass does not change normal
 browsing policy. This mechanism is implemented in source, but must still pass
 the fresh signed GUI A → B → A release run before NeAntik claims the shipped
 binary has qualified proxy WebRTC protection.
+
+`productionQualified` means strict fingerprint coherence plus WebRTC
+leak-control for the configured route. It does not mean that Chromium's
+effective HTTP or DNS egress was observed. The verifier therefore emits
+`networkEvidenceScope=configured-route-webrtc-only` and
+`effectiveHTTPRouteObserved=false`; the UI shows the same limitation.
 
 The Direct UI shows public-alpha evidence separately from strict production
 evidence and the ordinary diagnostic verdict. The runtime audit CLI and the

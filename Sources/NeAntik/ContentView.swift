@@ -44,6 +44,7 @@ struct ContentView: View {
     @ObservedObject var telemetry: TelemetryController
 
     let keychain: KeychainStore
+    let credentialCleanup: DeletedProfileCredentialCleanup
     let runtimeLocator: BrowserRuntimeLocator
     let launchIntent: NeAntikLaunchIntent
     private let updateChannel = UpdateChannelConfiguration.fromBundle()
@@ -275,6 +276,25 @@ struct ContentView: View {
         }
         .task(id: runtimePreferences.preference) {
             await resolveRuntime()
+        }
+        .task {
+            await recoverDeletedProfileCredentials()
+        }
+    }
+
+    private func recoverDeletedProfileCredentials() async {
+        let summary = await credentialCleanup.runOnce(
+            metadataIsTrusted: store.hasTrustedMetadata,
+            excluding: Set(store.profiles.map(\.id))
+        )
+        guard !Task.isCancelled,
+              summary.failedCount > 0 || summary.inspectionFailed
+        else {
+            return
+        }
+        if localError == nil {
+            localError =
+                "Не удалось завершить очистку некоторых ранее удалённых паролей прокси. NeAntik безопасно повторит попытку при следующем запуске."
         }
     }
 

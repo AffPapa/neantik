@@ -336,6 +336,16 @@ struct FingerprintAuditView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
+                    Divider()
+                    LabeledContent(
+                        "Фактический HTTP-маршрут",
+                        value: "Не измерялся"
+                    )
+                    Text(
+                        "Проверка подтверждает настройки запуска и WebRTC-контроль для выбранного маршрута. Она не исключает влияние VPN, сетевого расширения macOS, обязательной политики, DNS-перехвата или расширения, управляющего прокси."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 4)
             }

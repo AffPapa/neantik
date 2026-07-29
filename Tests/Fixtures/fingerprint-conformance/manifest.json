@@ -69,6 +69,49 @@
       ]
     },
     {
+      "id": "public-alpha-locale-mismatch",
+      "mutations": [
+        {
+          "path": "firstInitial.values.languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstInitial.values.worker_languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstInitial.values.primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        },
+        {
+          "path": "firstInitial.values.worker_primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        },
+        {
+          "path": "firstRepeat.values.languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstRepeat.values.worker_languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstRepeat.values.primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        },
+        {
+          "path": "firstRepeat.values.worker_primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "primary_locale_core disagrees with intl_locale_core",
+        "worker_primary_locale_core disagrees with worker_intl_locale_core"
+      ]
+    },
+    {
       "id": "unstable-canvas",
       "mutations": [
         {

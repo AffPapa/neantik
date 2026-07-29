@@ -227,7 +227,7 @@ This emits separate `publicAlphaQualified` and `productionQualified` verdicts.
 The public-alpha gate rejects diagnostic mode, missing binary hashes,
 unavailable required alpha browser surfaces, unstable A-repeat values and an
 invalid A -> B -> A profile identity. The strict production gate additionally
-requires device-tuple agreement and fingerprint audit schema 6 evidence for
+requires device-tuple agreement and fingerprint audit schema 7 evidence for
 repeat-call stability including OfflineAudio, main-realm / Web Worker
 coherence for CPU and device memory, OffscreenCanvas coherence, CSS
 screen/DPR media-query coherence, WebGL shader precision, and bounded

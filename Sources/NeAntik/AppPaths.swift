@@ -124,6 +124,62 @@ struct AppPaths: Sendable {
         )
     }
 
+    func profileCredentialCleanupMarker(for id: UUID) -> URL {
+        processLocksDirectory.appendingPathComponent(
+            "\(id.uuidString).credentials-pending"
+        )
+    }
+
+    func pendingCredentialCleanupProfileIDs() throws -> [UUID] {
+        try validatePrivateDirectory(processLocksDirectory)
+        let candidates = try FileManager.default.contentsOfDirectory(
+            at: processLocksDirectory,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+        var profileIDs: [UUID] = []
+        for candidate in candidates {
+            guard candidate.pathExtension == "credentials-pending" else {
+                continue
+            }
+            let basename = candidate.deletingPathExtension()
+                .lastPathComponent
+            guard let profileID = UUID(uuidString: basename),
+                  candidate.lastPathComponent ==
+                    "\(profileID.uuidString).credentials-pending",
+                  try privateFileEntryKind(candidate) == .regular,
+                  try privateFileEntryKind(
+                    profileDeletionTombstone(for: profileID)
+                  ) == .regular
+            else {
+                continue
+            }
+            profileIDs.append(profileID)
+        }
+        return profileIDs.sorted {
+            $0.uuidString < $1.uuidString
+        }
+    }
+
+    func removeCredentialCleanupMarker(for id: UUID) throws {
+        let marker = profileCredentialCleanupMarker(for: id)
+        switch try privateFileEntryKind(marker) {
+        case .missing:
+            return
+        case .regular:
+            let result = marker.path.withCString {
+                Darwin.unlink($0)
+            }
+            guard result == 0 || errno == ENOENT else {
+                throw POSIXError(
+                    POSIXErrorCode(rawValue: errno) ?? .EIO
+                )
+            }
+        case .unsafe:
+            throw POSIXError(.EFTYPE)
+        }
+    }
+
     func logFile(for id: UUID) -> URL {
         logsDirectory.appendingPathComponent(
             "\(id.uuidString).manager.log"

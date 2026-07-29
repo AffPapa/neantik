@@ -271,7 +271,8 @@ or delete existing evidence.
 - normal GUI A → B → A proves stable A and distinct B for Canvas, Audio,
   ClientRects, and WebGL pixels;
 - UA/Client Hints equal the real compiled browser version;
-- proxy/DNS/WebRTC/timezone checks pass;
+- configured proxy/DNS launch controls, WebRTC loopback evidence, and
+  timezone/locale coherence pass; effective HTTP/DNS egress is not observed;
 - notices, SBOM, Developer ID signing, notarization, and stapling pass.
 
 Primary sources:

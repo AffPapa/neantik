@@ -73,6 +73,16 @@ struct FingerprintAuditTests {
         )
         #expect(summary.contains(executableHash))
         #expect(summary.contains(frameworkHash))
+        #expect(
+            summary.contains(
+                "Сетевое доказательство: настроенный маршрут и WebRTC-контроль"
+            )
+        )
+        #expect(
+            summary.contains(
+                "Фактический HTTP-маршрут: не измерялся"
+            )
+        )
         #expect(!summary.contains(secretProfileName))
         #expect(!summary.contains(secretIdentityCode))
         #expect(!summary.contains(secretSurfaceValue))
@@ -678,6 +688,215 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func localeMismatchFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["languages"] = "ru-RU,ru"
+        firstValues["worker_languages"] = "ru-RU,ru"
+        firstValues["primary_locale_core"] = "ru-Cyrl-RU"
+        firstValues["worker_primary_locale_core"] = "ru-Cyrl-RU"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "primary_locale_core disagrees with intl_locale_core"
+                )
+            }
+        )
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "worker_primary_locale_core disagrees with worker_intl_locale_core"
+                )
+            }
+        )
+    }
+
+    @Test
+    func localeCanonicalizationAcceptsEquivalentIdentifiers() {
+        func canonicalizedValues(
+            canvas: String,
+            webGLPixels: String,
+            renderer: String,
+            languages: String,
+            intlLocale: String,
+            localeCore: String
+        ) -> [String: String] {
+            var values = productionValues(
+                canvas: canvas,
+                webGLPixels: webGLPixels,
+                renderer: renderer
+            )
+            values["languages"] = languages
+            values["worker_languages"] = languages
+            values["intl_locale"] = intlLocale
+            values["worker_intl_locale"] = intlLocale
+            values["primary_locale_core"] = localeCore
+            values["intl_locale_core"] = localeCore
+            values["worker_primary_locale_core"] = localeCore
+            values["worker_intl_locale_core"] = localeCore
+            return values
+        }
+
+        for (languages, intlLocale, localeCore) in [
+            ("en_us,en", "en-US", "en-Latn-US"),
+            ("es-419,es", "es-419", "es-Latn-419"),
+            ("zh-Hant,zh", "zh-Hant", "zh-Hant-TW"),
+            ("sr-Latn,sr", "sr-Latn", "sr-Latn-RS"),
+            ("en-US,en", "en-US-u-hc-h12", "en-Latn-US"),
+            ("de-DE-1996,de", "de-DE", "de-Latn-DE"),
+            ("sl-rozaj-biske,sl", "sl", "sl-Latn-SI"),
+            ("en-Latn-US,en", "en", "en-Latn-US"),
+            ("es-Latn-419,es", "es", "es-Latn-419"),
+            ("fil-Latn-PH,fil", "fil", "fil-Latn-PH"),
+            ("iw-IL,iw", "he-IL", "he-Hebr-IL"),
+            ("in-ID,in", "id-ID", "id-Latn-ID"),
+            ("ji,ji", "yi", "yi-Hebr-UA")
+        ] {
+            let first = capture(
+                name: "First",
+                values: canonicalizedValues(
+                    canvas: "canvas-a",
+                    webGLPixels: "webgl-a",
+                    renderer: "Apple M2",
+                    languages: languages,
+                    intlLocale: intlLocale,
+                    localeCore: localeCore
+                )
+            )
+            let result = report(
+                first: first,
+                second: capture(
+                    name: "Second",
+                    values: canonicalizedValues(
+                        canvas: "canvas-b",
+                        webGLPixels: "webgl-b",
+                        renderer: "Apple M4",
+                        languages: languages,
+                        intlLocale: intlLocale,
+                        localeCore: localeCore
+                    )
+                ),
+                repeatCapture: capture(
+                    id: first.profileID,
+                    name: first.profileName,
+                    values: first.values
+                )
+            )
+
+            #expect(result.isProductionReleaseQualified)
+        }
+    }
+
+    @Test
+    func maximizedLocaleCoreRejectsRegionalOrScriptContradictions() {
+        for (languages, intlLocale, primaryCore, intlCore) in [
+            ("en-US,en", "en-GB", "en-Latn-US", "en-Latn-GB"),
+            ("pt-BR,pt", "pt-PT", "pt-Latn-BR", "pt-Latn-PT"),
+            ("zh-Hans-CN,zh", "zh-Hant-TW", "zh-Hans-CN", "zh-Hant-TW"),
+            ("sr-Latn-RS,sr", "sr-Cyrl-RS", "sr-Latn-RS", "sr-Cyrl-RS")
+        ] {
+            var firstValues = productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+            for prefix in ["", "worker_"] {
+                firstValues["\(prefix)languages"] = languages
+                firstValues["\(prefix)intl_locale"] = intlLocale
+                firstValues["\(prefix)primary_locale_core"] = primaryCore
+                firstValues["\(prefix)intl_locale_core"] = intlCore
+            }
+            let first = capture(name: "First", values: firstValues)
+            let result = report(
+                first: first,
+                second: capture(
+                    name: "Second",
+                    values: productionValues(
+                        canvas: "canvas-b",
+                        webGLPixels: "webgl-b",
+                        renderer: "Apple M4"
+                    )
+                ),
+                repeatCapture: capture(
+                    id: first.profileID,
+                    name: first.profileName,
+                    values: first.values
+                )
+            )
+
+            #expect(!result.isProductionReleaseQualified)
+            #expect(
+                result.crossRealmConsistencyIssues.contains {
+                    $0.contains(
+                        "primary_locale_core disagrees with intl_locale_core"
+                    )
+                }
+            )
+        }
+    }
+
+    @Test
+    func nonASCIILocaleIdentifiersFailStrictProduction() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["languages"] = "еn-US,en"
+        firstValues["worker_languages"] = "еn-US,en"
+        firstValues["intl_locale"] = "еn-US"
+        firstValues["worker_intl_locale"] = "еn-US"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.productionReleaseIssues.contains {
+                $0.contains("not supported locale identifiers")
+            }
+        )
+    }
+
+    @Test
     func repeatedOfflineAudioMismatchFailsStrictProduction() {
         var firstValues = productionValues(
             canvas: "canvas-a",
@@ -980,7 +1199,7 @@ struct FingerprintAuditTests {
     }
 
     @Test
-    func schemaFiveCannotUseSchemaSixProductionContract() throws {
+    func schemaSixCannotUseSchemaSevenProductionContract() throws {
         let first = capture(
             name: "First",
             values: productionValues(
@@ -1009,14 +1228,14 @@ struct FingerprintAuditTests {
         var object = try #require(
             JSONSerialization.jsonObject(with: encoded) as? [String: Any]
         )
-        object["auditSchemaVersion"] = 5
+        object["auditSchemaVersion"] = 6
         let data = try JSONSerialization.data(withJSONObject: object)
         let previous = try JSONDecoder().decode(
             FingerprintAuditReport.self,
             from: data
         )
 
-        #expect(previous.effectiveAuditSchemaVersion == 5)
+        #expect(previous.effectiveAuditSchemaVersion == 6)
         #expect(previous.isPublicAlphaReleaseQualified)
         #expect(!previous.isProductionReleaseQualified)
         #expect(
@@ -1544,6 +1763,8 @@ struct FingerprintAuditTests {
             "languages": "en-US,en",
             "timezone": "Europe/Berlin",
             "intl_locale": "en-US",
+            "primary_locale_core": "en-Latn-US",
+            "intl_locale_core": "en-Latn-US",
             "worker_canvas": canvas,
             "worker_webgl_pixels": webGLPixels,
             "worker_webgl_vendor": "Google Inc. (Apple)",
@@ -1555,6 +1776,8 @@ struct FingerprintAuditTests {
             "worker_languages": "en-US,en",
             "worker_timezone": "Europe/Berlin",
             "worker_intl_locale": "en-US",
+            "worker_primary_locale_core": "en-Latn-US",
+            "worker_intl_locale_core": "en-Latn-US",
             "worker_hardware_concurrency": "8",
             "worker_device_memory": "8",
             "worker_client_hints": clientHints,

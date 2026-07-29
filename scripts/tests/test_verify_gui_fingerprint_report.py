@@ -27,6 +27,11 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         self.assertTrue(summary["productionQualified"])
         self.assertEqual(summary["issues"], [])
         self.assertIn("webgl_pixels", summary["changedCriticalKeys"])
+        self.assertEqual(
+            summary["networkEvidenceScope"],
+            "configured-route-webrtc-only",
+        )
+        self.assertFalse(summary["effectiveHTTPRouteObserved"])
 
     def test_accepts_future_runtime_when_tuple_matches_runtime_version(self) -> None:
         summary = MODULE.verification_summary(
@@ -322,6 +327,119 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             summary["productionIssues"],
         )
 
+    def test_locale_mismatch_fails_strict_but_not_public_alpha(self) -> None:
+        report = production_report()
+        for capture_key in ["firstInitial", "firstRepeat"]:
+            report[capture_key]["values"]["languages"] = "ru-RU,ru"
+            report[capture_key]["values"]["worker_languages"] = "ru-RU,ru"
+            report[capture_key]["values"][
+                "primary_locale_core"
+            ] = "ru-Cyrl-RU"
+            report[capture_key]["values"][
+                "worker_primary_locale_core"
+            ] = "ru-Cyrl-RU"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile A, first capture primary_locale_core "
+            "disagrees with intl_locale_core.",
+            summary["productionIssues"],
+        )
+        self.assertIn(
+            "The profile A, first capture worker_primary_locale_core "
+            "disagrees with worker_intl_locale_core.",
+            summary["productionIssues"],
+        )
+
+    def test_locale_canonicalization_accepts_equivalent_identifiers(self) -> None:
+        for languages, intl_locale, locale_core in (
+            ("en_us,en", "en-US", "en-Latn-US"),
+            ("es-419,es", "es-419", "es-Latn-419"),
+            ("zh-Hant,zh", "zh-Hant", "zh-Hant-TW"),
+            ("sr-Latn,sr", "sr-Latn", "sr-Latn-RS"),
+            ("en-US,en", "en-US-u-hc-h12", "en-Latn-US"),
+            ("de-DE-1996,de", "de-DE", "de-Latn-DE"),
+            ("sl-rozaj-biske,sl", "sl", "sl-Latn-SI"),
+            ("en-Latn-US,en", "en", "en-Latn-US"),
+            ("es-Latn-419,es", "es", "es-Latn-419"),
+            ("fil-Latn-PH,fil", "fil", "fil-Latn-PH"),
+            ("iw-IL,iw", "he-IL", "he-Hebr-IL"),
+            ("in-ID,in", "id-ID", "id-Latn-ID"),
+            ("ji,ji", "yi", "yi-Hebr-UA"),
+        ):
+            with self.subTest(
+                languages=languages,
+                intl_locale=intl_locale,
+            ):
+                report = production_report()
+                for capture_key in ["firstInitial", "second", "firstRepeat"]:
+                    values = report[capture_key]["values"]
+                    values["languages"] = languages
+                    values["worker_languages"] = languages
+                    values["intl_locale"] = intl_locale
+                    values["worker_intl_locale"] = intl_locale
+                    values["primary_locale_core"] = locale_core
+                    values["intl_locale_core"] = locale_core
+                    values["worker_primary_locale_core"] = locale_core
+                    values["worker_intl_locale_core"] = locale_core
+
+                summary = MODULE.verification_summary(report)
+
+                self.assertTrue(summary["qualified"])
+                self.assertTrue(summary["productionQualified"])
+
+    def test_locale_core_rejects_region_or_script_contradictions(self) -> None:
+        for languages, intl_locale, primary_core, intl_core in (
+            ("en-US,en", "en-GB", "en-Latn-US", "en-Latn-GB"),
+            ("pt-BR,pt", "pt-PT", "pt-Latn-BR", "pt-Latn-PT"),
+            ("zh-Hans-CN,zh", "zh-Hant-TW", "zh-Hans-CN", "zh-Hant-TW"),
+            ("sr-Latn-RS,sr", "sr-Cyrl-RS", "sr-Latn-RS", "sr-Cyrl-RS"),
+        ):
+            with self.subTest(languages=languages, intl_locale=intl_locale):
+                report = production_report()
+                for capture_key in ["firstInitial", "firstRepeat"]:
+                    values = report[capture_key]["values"]
+                    for prefix in ("", "worker_"):
+                        values[f"{prefix}languages"] = languages
+                        values[f"{prefix}intl_locale"] = intl_locale
+                        values[f"{prefix}primary_locale_core"] = primary_core
+                        values[f"{prefix}intl_locale_core"] = intl_core
+
+                summary = MODULE.verification_summary(report)
+
+                self.assertTrue(summary["qualified"])
+                self.assertFalse(summary["productionQualified"])
+                self.assertTrue(
+                    any(
+                        "primary_locale_core disagrees with intl_locale_core"
+                        in issue
+                        for issue in summary["productionIssues"]
+                    )
+                )
+
+    def test_non_ascii_locale_identifiers_fail_strict(self) -> None:
+        report = production_report()
+        for capture_key in ["firstInitial", "firstRepeat"]:
+            values = report[capture_key]["values"]
+            values["languages"] = "еn-US,en"
+            values["worker_languages"] = "еn-US,en"
+            values["intl_locale"] = "еn-US"
+            values["worker_intl_locale"] = "еn-US"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertTrue(
+            any(
+                "not supported locale identifiers" in issue
+                for issue in summary["productionIssues"]
+            )
+        )
+
     def test_repeated_offline_audio_mismatch_fails_strict(self) -> None:
         report = production_report()
         report["firstInitial"]["values"]["audio_repeat"] = "audio-random"
@@ -445,7 +563,11 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         self,
     ) -> None:
         mutations = (
-            ("network_route", "unknown", "network route is invalid"),
+            (
+                "network_route",
+                "unknown",
+                "configured network route is invalid",
+            ),
             ("webrtc_probe", "external-stun", "probe contract is invalid"),
             (
                 "webrtc_complete",
@@ -478,6 +600,29 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         summary = MODULE.verification_summary(report)
 
         self.assertTrue(summary["productionQualified"])
+        self.assertFalse(summary["effectiveHTTPRouteObserved"])
+        self.assertEqual(
+            summary["networkEvidenceScope"],
+            "configured-route-webrtc-only",
+        )
+
+    def test_configured_route_alias_is_rejected_as_ambiguous_input(self) -> None:
+        for keep_legacy_key in (False, True):
+            with self.subTest(keep_legacy_key=keep_legacy_key):
+                report = production_report()
+                values = report["firstInitial"]["values"]
+                values["configured_route"] = "direct"
+                if not keep_legacy_key:
+                    del values["network_route"]
+
+                issues = MODULE.exact_schema_issues(report)
+
+                self.assertTrue(
+                    any(
+                        "unsupported fields: configured_route" in issue
+                        for issue in issues
+                    )
+                )
 
     def test_missing_direct_control_fails_strict(self) -> None:
         report = production_report()
@@ -554,7 +699,7 @@ def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
         "createdAt": "2026-07-25T08:29:41Z",
         "managerVersion": "0.3.12",
         "managerBuild": "15",
-        "auditSchemaVersion": 6,
+        "auditSchemaVersion": 7,
         "identityCatalogVersion": 1,
         "executionMode": "browser",
         "runtimeName": "NeAntik Browser",
@@ -812,6 +957,8 @@ def capture(
             "languages": "en-US,en",
             "timezone": "Asia/Bangkok",
             "intl_locale": "en-US",
+            "primary_locale_core": "en-Latn-US",
+            "intl_locale_core": "en-Latn-US",
             "worker_canvas": canvas,
             "worker_webgl_pixels": webgl_pixels,
             "worker_webgl_vendor": "Google Inc. (Apple)",
@@ -823,6 +970,8 @@ def capture(
             "worker_languages": "en-US,en",
             "worker_timezone": "Asia/Bangkok",
             "worker_intl_locale": "en-US",
+            "worker_primary_locale_core": "en-Latn-US",
+            "worker_intl_locale_core": "en-Latn-US",
             "worker_hardware_concurrency": str(cores),
             "worker_device_memory": "8",
             "worker_client_hints": client_hints,

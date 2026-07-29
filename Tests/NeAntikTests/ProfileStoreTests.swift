@@ -245,6 +245,13 @@ struct ProfileStoreTests {
             )
         )
         #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileCredentialCleanupMarker(
+                    for: profile.id
+                ).path
+            )
+        )
+        #expect(
             backend.string(
                 service: KeychainStore.currentService,
                 profileID: profile.id
@@ -316,6 +323,11 @@ struct ProfileStoreTests {
         try deletingStore.delete(
             profile,
             processManager: processManager
+        )
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileCredentialCleanupMarker(for: profile.id)
+            ) == .missing
         )
 
         let staleManager = BrowserProcessManager(
@@ -460,7 +472,7 @@ struct ProfileStoreTests {
             restoreTrashedDirectory: { _, _ in
                 throw ProfileStoreTestError()
             },
-            beforeDeleteMetadataPersist: {
+            afterDeleteMetadataPersist: {
                 throw ProfileStoreTestError()
             }
         )
@@ -489,6 +501,11 @@ struct ProfileStoreTests {
                     for: profile.id
                 ).path
             )
+        )
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileCredentialCleanupMarker(for: profile.id)
+            ) == .missing
         )
         let runtime = BrowserRuntime(
             name: "Never launched",

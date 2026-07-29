@@ -75,7 +75,7 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
-    static let currentAuditSchemaVersion = 6
+    static let currentAuditSchemaVersion = 7
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
@@ -106,6 +106,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "webgl_shader_precision",
         "css_screen_match",
         "intl_locale",
+        "primary_locale_core",
+        "intl_locale_core",
         "worker_canvas",
         "worker_webgl_pixels",
         "worker_webgl_vendor",
@@ -117,6 +119,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "worker_languages",
         "worker_timezone",
         "worker_intl_locale",
+        "worker_primary_locale_core",
+        "worker_intl_locale_core",
         "worker_hardware_concurrency",
         "worker_device_memory",
         "worker_client_hints",
@@ -239,6 +243,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             "Подпись движка: \(safeRuntimeSignatureSummary)",
             "SHA-256 executable: \(safeRuntimeExecutableHashSummary)",
             "SHA-256 framework: \(safeRuntimeFrameworkHashSummary)",
+            "Сетевое доказательство: настроенный маршрут и WebRTC-контроль",
+            "Фактический HTTP-маршрут: не измерялся",
             "Публичное тестирование: \(isPublicAlphaReleaseQualified ? "PASS" : "FAIL")",
             "Строгая проверка: \(isProductionReleaseQualified ? "PASS" : "FAIL")"
         ].joined(separator: "\n")
@@ -741,6 +747,145 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         publicAlphaRequiredKeys + productionExtendedContextKeys
     }
 
+    private static func normalizedAuditLocale(
+        _ value: String
+    ) -> String? {
+        let components = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
+            .split(separator: "-", omittingEmptySubsequences: false)
+        guard !components.isEmpty,
+              components.allSatisfy({ !$0.isEmpty }),
+              Self.isASCIIAlpha(components[0]),
+              (2...8).contains(components[0].count)
+        else {
+            return nil
+        }
+
+        var normalized = [components[0].lowercased()]
+        var index = 1
+        if components[0].count <= 3 {
+            var extlangCount = 0
+            while index < components.count,
+                  extlangCount < 3,
+                  components[index].count == 3,
+                  Self.isASCIIAlpha(components[index])
+            {
+                normalized.append(components[index].lowercased())
+                index += 1
+                extlangCount += 1
+            }
+        }
+
+        if index < components.count,
+           components[index].count == 4,
+           Self.isASCIIAlpha(components[index])
+        {
+            let script = components[index].lowercased()
+            normalized.append(
+                script.prefix(1).uppercased() +
+                    String(script.dropFirst())
+            )
+            index += 1
+        }
+        if index < components.count {
+            let region = components[index]
+            if region.count == 2, Self.isASCIIAlpha(region) {
+                normalized.append(region.uppercased())
+                index += 1
+            } else if region.count == 3, Self.isASCIIDigit(region) {
+                normalized.append(String(region))
+                index += 1
+            }
+        }
+
+        while index < components.count,
+              Self.isBCP47Variant(components[index])
+        {
+            index += 1
+        }
+
+        while index < components.count {
+            let singleton = components[index]
+            guard singleton.count == 1,
+                  Self.isASCIIAlphanumeric(singleton)
+            else {
+                return nil
+            }
+            index += 1
+            var extensionCount = 0
+            let minimumLength = singleton.lowercased() == "x" ? 1 : 2
+            while index < components.count,
+                  components[index].count != 1
+            {
+                let subtag = components[index]
+                guard (minimumLength...8).contains(subtag.count),
+                      Self.isASCIIAlphanumeric(subtag)
+                else {
+                    return nil
+                }
+                extensionCount += 1
+                index += 1
+            }
+            guard extensionCount > 0 else {
+                return nil
+            }
+        }
+        // Intl.DateTimeFormat may legitimately minimize script, region, and
+        // variant subtags in resolvedOptions().locale. Compare only the
+        // validated primary language until the probe captures an
+        // Intl.Locale(...).maximize() value in a future report schema.
+        return normalized[0]
+    }
+
+    private static func isASCIIAlpha(_ value: Substring) -> Bool {
+        !value.isEmpty && value.unicodeScalars.allSatisfy {
+            (65...90).contains($0.value) ||
+                (97...122).contains($0.value)
+        }
+    }
+
+    private static func isASCIIDigit(_ value: Substring) -> Bool {
+        !value.isEmpty && value.unicodeScalars.allSatisfy {
+            (48...57).contains($0.value)
+        }
+    }
+
+    private static func isASCIIAlphanumeric(
+        _ value: Substring
+    ) -> Bool {
+        !value.isEmpty && value.unicodeScalars.allSatisfy {
+            (48...57).contains($0.value) ||
+                (65...90).contains($0.value) ||
+                (97...122).contains($0.value)
+        }
+    }
+
+    private static func isBCP47Variant(_ value: Substring) -> Bool {
+        guard Self.isASCIIAlphanumeric(value) else { return false }
+        return (5...8).contains(value.count) ||
+            (
+                value.count == 4 &&
+                value.first?.isNumber == true
+            )
+    }
+
+    private static func primaryAuditLocale(
+        in languages: String
+    ) -> String? {
+        guard let primary = languages
+            .split(
+                separator: ",",
+                maxSplits: 1,
+                omittingEmptySubsequences: false
+            )
+            .first
+        else {
+            return nil
+        }
+        return normalizedAuditLocale(String(primary))
+    }
+
     private static func crossRealmIssues(
         for capture: FingerprintCapture,
         label: String
@@ -775,11 +920,59 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("languages", "worker_languages"),
             ("timezone", "worker_timezone"),
             ("intl_locale", "worker_intl_locale"),
+            ("primary_locale_core", "worker_primary_locale_core"),
+            ("intl_locale_core", "worker_intl_locale_core"),
             ("hardware_concurrency", "worker_hardware_concurrency"),
             ("device_memory", "worker_device_memory")
         ] {
             expectEqual(pair.0, pair.1)
         }
+
+        func expectLocaleCoherence(
+            languagesKey: String,
+            localeKey: String,
+            primaryCoreKey: String,
+            localeCoreKey: String
+        ) {
+            guard isAvailable(values[languagesKey]),
+                  isAvailable(values[localeKey]),
+                  isAvailable(values[primaryCoreKey]),
+                  isAvailable(values[localeCoreKey])
+            else {
+                return
+            }
+            guard let languages = values[languagesKey],
+                  let locale = values[localeKey],
+                  let primaryCore = values[primaryCoreKey],
+                  let localeCore = values[localeCoreKey],
+                  primaryAuditLocale(in: languages) != nil,
+                  normalizedAuditLocale(locale) != nil,
+                  normalizedAuditLocale(primaryCore) != nil,
+                  normalizedAuditLocale(localeCore) != nil
+            else {
+                issues.append(
+                    "The \(label) locale evidence contains not supported locale identifiers."
+                )
+                return
+            }
+            if primaryCore != localeCore {
+                issues.append(
+                    "The \(label) \(primaryCoreKey) disagrees with \(localeCoreKey)."
+                )
+            }
+        }
+        expectLocaleCoherence(
+            languagesKey: "languages",
+            localeKey: "intl_locale",
+            primaryCoreKey: "primary_locale_core",
+            localeCoreKey: "intl_locale_core"
+        )
+        expectLocaleCoherence(
+            languagesKey: "worker_languages",
+            localeKey: "worker_intl_locale",
+            primaryCoreKey: "worker_primary_locale_core",
+            localeCoreKey: "worker_intl_locale_core"
+        )
 
         if isAvailable(values["css_screen_match"]),
            values["css_screen_match"] !=
@@ -836,7 +1029,9 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         guard let route = capture.values["network_route"],
               route == "direct" || route == "proxied"
         else {
-            return ["The \(label) network route is invalid."]
+            return [
+                "The \(label) configured network route is invalid."
+            ]
         }
         guard capture.values["webrtc_probe"] ==
             "loopback-stun-v1"
@@ -1541,6 +1736,17 @@ final class FingerprintAuditCoordinator: ObservableObject {
         return (value >>> 0).toString(16).padStart(8, '0');
       };
       const hashText = value => fnv(new TextEncoder().encode(String(value)));
+      const localeCore = value => {
+        try {
+          const locale = new Intl.Locale(
+            String(value || '').replaceAll('_', '-')
+          ).maximize();
+          return [locale.language, locale.script, locale.region]
+            .filter(Boolean).join('-');
+        } catch (_) {
+          return '';
+        }
+      };
 
       const canvas = document.createElement('canvas');
       canvas.width = 360;
@@ -1772,6 +1978,17 @@ final class FingerprintAuditCoordinator: ObservableObject {
             };
             const hashText = value =>
               fnv(new TextEncoder().encode(String(value)));
+            const localeCore = value => {
+              try {
+                const locale = new Intl.Locale(
+                  String(value || '').replaceAll('_', '-')
+                ).maximize();
+                return [locale.language, locale.script, locale.region]
+                  .filter(Boolean).join('-');
+              } catch (_) {
+                return '';
+              }
+            };
             const canvas = new OffscreenCanvas(360, 120);
             const context = canvas.getContext('2d');
             context.textBaseline = 'alphabetic';
@@ -1916,6 +2133,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 Intl.DateTimeFormat().resolvedOptions().timeZone || '',
               intl_locale:
                 Intl.DateTimeFormat().resolvedOptions().locale || '',
+              primary_locale_core:
+                localeCore((navigator.languages || [])[0] || ''),
+              intl_locale_core: localeCore(
+                Intl.DateTimeFormat().resolvedOptions().locale || ''
+              ),
               hardware_concurrency:
                 String(navigator.hardwareConcurrency || ''),
               device_memory: String(navigator.deviceMemory || ''),
@@ -2026,6 +2248,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
         intl_locale:
           Intl.DateTimeFormat().resolvedOptions().locale || '',
+        primary_locale_core:
+          localeCore((navigator.languages || [])[0] || ''),
+        intl_locale_core: localeCore(
+          Intl.DateTimeFormat().resolvedOptions().locale || ''
+        ),
         css_screen_match: cssScreenMatch,
         screen: [
           screen.width, screen.height, screen.availWidth, screen.availHeight,
@@ -2048,6 +2275,10 @@ final class FingerprintAuditCoordinator: ObservableObject {
         worker_languages: workerValue('languages'),
         worker_timezone: workerValue('timezone'),
         worker_intl_locale: workerValue('intl_locale'),
+        worker_primary_locale_core:
+          workerValue('primary_locale_core'),
+        worker_intl_locale_core:
+          workerValue('intl_locale_core'),
         worker_hardware_concurrency:
           workerValue('hardware_concurrency'),
         worker_device_memory: workerValue('device_memory'),
