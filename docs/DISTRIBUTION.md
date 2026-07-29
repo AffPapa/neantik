@@ -66,6 +66,13 @@ stapled ticket, Gatekeeper assessment, embedded app, and SHA-256 all pass.
 Publishing to GitHub or the product site remains a separate hosted-verification
 gate.
 
+Before upload, the release flow runs
+`scripts/verify-direct-notarized-dmg.sh` against the temporary final image.
+After upload, run `scripts/verify-direct-hosted-dmg.sh` with the final public
+HTTPS URL. The hosted gate downloads the image into a new temporary directory,
+requires byte-for-byte SHA-256 and size equality with the local artifact, then
+repeats the container, mounted-app, stapling, runtime and Gatekeeper checks.
+
 ## Installation
 
 1. Download the notarized DMG or ZIP from GitHub Releases.

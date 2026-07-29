@@ -181,11 +181,14 @@ spctl --assess --type execute --verbose=4 "$MOUNT_POINT/NeAntik.app"
 hdiutil detach "$MOUNT_POINT" >/dev/null
 MOUNTED=0
 
-mv "$TEMP_DMG" "$DMG_PATH"
 (
-  cd "$(dirname "$DMG_PATH")"
-  shasum -a 256 "$(basename "$DMG_PATH")"
-) >"$CHECKSUM_PATH"
+  cd "$(dirname "$TEMP_DMG")"
+  shasum -a 256 "$(basename "$TEMP_DMG")"
+) >"$TEMP_DMG.sha256"
+"$PROJECT_DIR/scripts/verify-direct-notarized-dmg.sh" "$TEMP_DMG"
+
+mv "$TEMP_DMG" "$DMG_PATH"
+mv "$TEMP_DMG.sha256" "$CHECKSUM_PATH"
 
 echo
 echo "PASS: signed, notarized and stapled DMG verified."
