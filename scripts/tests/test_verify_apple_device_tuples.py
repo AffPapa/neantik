@@ -78,6 +78,33 @@ class AppleDeviceTupleVerifierTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.DeviceTupleError, "duplicate"):
                 MODULE.load_manifest(manifest)
 
+    def test_rejects_memory_or_scale_incoherence(self) -> None:
+        payload = json.loads(
+            (PROJECT_ROOT / "runtime" / "apple-device-tuples.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        payload["tuples"][0]["physicalMemoryGB"] = 4
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "apple-device-tuples.json"
+            manifest.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(
+                MODULE.DeviceTupleError,
+                "physicalMemoryGB",
+            ):
+                MODULE.load_manifest(manifest)
+
+        payload["tuples"][0]["physicalMemoryGB"] = 8
+        payload["tuples"][0]["deviceScaleFactor"] = 1
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / "apple-device-tuples.json"
+            manifest.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(
+                MODULE.DeviceTupleError,
+                "deviceScaleFactor",
+            ):
+                MODULE.load_manifest(manifest)
+
     def test_detects_identity_catalog_reordering(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

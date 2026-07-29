@@ -22,7 +22,10 @@ class DeviceTuple:
     id: str
     gpuModel: str
     hardwareConcurrency: int
+    physicalMemoryGB: int
+    webDeviceMemoryGB: int
     screen: str
+    deviceScaleFactor: int
     platformVersion: str
 
 
@@ -31,7 +34,10 @@ SWIFT_TUPLE_RE = re.compile(
     r'id:\s*"(?P<id>[^"]+)",\s*'
     r'gpuModel:\s*"(?P<gpuModel>[^"]+)",\s*'
     r"hardwareConcurrency:\s*(?P<hardwareConcurrency>\d+),\s*"
+    r"physicalMemoryGB:\s*(?P<physicalMemoryGB>\d+),\s*"
+    r"webDeviceMemoryGB:\s*(?P<webDeviceMemoryGB>\d+),\s*"
     r'screen:\s*"(?P<screen>[^"]+)",\s*'
+    r"deviceScaleFactor:\s*(?P<deviceScaleFactor>\d+),\s*"
     r'platformVersion:\s*"(?P<platformVersion>[^"]+)"\s*'
     r"\)",
     re.MULTILINE,
@@ -42,7 +48,10 @@ PYTHON_TUPLE_RE = re.compile(
     r'"(?P<id>[^"]+)",\s*'
     r'"(?P<gpu_model>[^"]+)",\s*'
     r"(?P<hardwareConcurrency>\d+),\s*"
+    r"(?P<physicalMemoryGB>\d+),\s*"
+    r"(?P<webDeviceMemoryGB>\d+),\s*"
     r'"(?P<screen>[^"]+)",\s*'
+    r"(?P<deviceScaleFactor>\d+),\s*"
     r'"(?P<platformVersion>[^"]+)"\s*'
     r"\)",
     re.MULTILINE,
@@ -61,7 +70,10 @@ def tuple_from_mapping(value: dict[str, Any], *, label: str) -> DeviceTuple:
             id=str(value["id"]),
             gpuModel=str(value["gpuModel"]),
             hardwareConcurrency=int(value["hardwareConcurrency"]),
+            physicalMemoryGB=int(value["physicalMemoryGB"]),
+            webDeviceMemoryGB=int(value["webDeviceMemoryGB"]),
             screen=str(value["screen"]),
+            deviceScaleFactor=int(value["deviceScaleFactor"]),
             platformVersion=str(value["platformVersion"]),
         )
     except (KeyError, TypeError, ValueError) as error:
@@ -79,8 +91,20 @@ def validate_tuple(item: DeviceTuple, *, label: str) -> None:
         raise DeviceTupleError(
             f"{label} hardwareConcurrency is outside the reviewed Mac range: {item.hardwareConcurrency}"
         )
+    if item.physicalMemoryGB < item.webDeviceMemoryGB:
+        raise DeviceTupleError(
+            f"{label} physicalMemoryGB cannot be below webDeviceMemoryGB"
+        )
+    if item.webDeviceMemoryGB not in {4, 8}:
+        raise DeviceTupleError(
+            f"{label} webDeviceMemoryGB must use a reviewed browser cohort"
+        )
     if not re.fullmatch(r"\d+x\d+x\d+x\d+x24x2", item.screen):
         raise DeviceTupleError(f"{label} screen tuple is invalid: {item.screen}")
+    if item.deviceScaleFactor != 2:
+        raise DeviceTupleError(
+            f"{label} deviceScaleFactor must match the reviewed Retina cohort"
+        )
     if not re.fullmatch(r"15\.\d+\.\d+", item.platformVersion):
         raise DeviceTupleError(
             f"{label} platformVersion must remain a reviewed macOS 15 Client Hint value: {item.platformVersion}"
@@ -118,7 +142,10 @@ def parse_swift_tuples(path: Path) -> list[DeviceTuple]:
             id=match.group("id"),
             gpuModel=match.group("gpuModel"),
             hardwareConcurrency=int(match.group("hardwareConcurrency")),
+            physicalMemoryGB=int(match.group("physicalMemoryGB")),
+            webDeviceMemoryGB=int(match.group("webDeviceMemoryGB")),
             screen=match.group("screen"),
+            deviceScaleFactor=int(match.group("deviceScaleFactor")),
             platformVersion=match.group("platformVersion"),
         )
         for match in SWIFT_TUPLE_RE.finditer(text)
@@ -137,7 +164,10 @@ def parse_python_tuples(path: Path) -> list[DeviceTuple]:
             id=match.group("id"),
             gpuModel=match.group("gpu_model"),
             hardwareConcurrency=int(match.group("hardwareConcurrency")),
+            physicalMemoryGB=int(match.group("physicalMemoryGB")),
+            webDeviceMemoryGB=int(match.group("webDeviceMemoryGB")),
             screen=match.group("screen"),
+            deviceScaleFactor=int(match.group("deviceScaleFactor")),
             platformVersion=match.group("platformVersion"),
         )
         for match in PYTHON_TUPLE_RE.finditer(text)

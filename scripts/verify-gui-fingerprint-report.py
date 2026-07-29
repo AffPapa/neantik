@@ -68,22 +68,25 @@ class AppleDeviceTuple:
     id: str
     gpu_model: str
     hardware_concurrency: int
+    physical_memory_gb: int
+    web_device_memory_gb: int
     screen: str
+    device_scale_factor: int
     platform_version: str
 
 
 APPLE_DEVICE_TUPLES = [
-    AppleDeviceTuple("macbook-air-m1", "M1", 8, "1280x800x1280x775x24x2", "15.5.0"),
-    AppleDeviceTuple("macbook-pro-m1-pro", "M1 Pro", 10, "1512x982x1512x957x24x2", "15.4.1"),
-    AppleDeviceTuple("macbook-air-m2", "M2", 8, "1280x832x1280x807x24x2", "15.4.0"),
-    AppleDeviceTuple("macbook-pro-m2-max", "M2 Max", 12, "1728x1117x1728x1092x24x2", "15.3.2"),
-    AppleDeviceTuple("macbook-pro-m2-pro", "M2 Pro", 12, "1512x982x1512x957x24x2", "15.3.1"),
-    AppleDeviceTuple("macbook-air-m3", "M3", 8, "1280x832x1280x807x24x2", "15.3.0"),
-    AppleDeviceTuple("macbook-pro-m3-max", "M3 Max", 16, "1728x1117x1728x1092x24x2", "15.2.0"),
-    AppleDeviceTuple("macbook-pro-m3-pro", "M3 Pro", 12, "1512x982x1512x957x24x2", "15.1.1"),
-    AppleDeviceTuple("macbook-air-m4", "M4", 10, "1280x832x1280x807x24x2", "15.1.0"),
-    AppleDeviceTuple("macbook-pro-m4-max", "M4 Max", 16, "1728x1117x1728x1092x24x2", "15.0.1"),
-    AppleDeviceTuple("macbook-pro-m4-pro", "M4 Pro", 14, "1512x982x1512x957x24x2", "15.5.0"),
+    AppleDeviceTuple("macbook-air-m1", "M1", 8, 8, 8, "1280x800x1280x775x24x2", 2, "15.5.0"),
+    AppleDeviceTuple("macbook-pro-m1-pro", "M1 Pro", 10, 16, 8, "1512x982x1512x957x24x2", 2, "15.4.1"),
+    AppleDeviceTuple("macbook-air-m2", "M2", 8, 8, 8, "1280x832x1280x807x24x2", 2, "15.4.0"),
+    AppleDeviceTuple("macbook-pro-m2-max", "M2 Max", 12, 32, 8, "1728x1117x1728x1092x24x2", 2, "15.3.2"),
+    AppleDeviceTuple("macbook-pro-m2-pro", "M2 Pro", 12, 16, 8, "1512x982x1512x957x24x2", 2, "15.3.1"),
+    AppleDeviceTuple("macbook-air-m3", "M3", 8, 8, 8, "1280x832x1280x807x24x2", 2, "15.3.0"),
+    AppleDeviceTuple("macbook-pro-m3-max", "M3 Max", 16, 36, 8, "1728x1117x1728x1092x24x2", 2, "15.2.0"),
+    AppleDeviceTuple("macbook-pro-m3-pro", "M3 Pro", 12, 18, 8, "1512x982x1512x957x24x2", 2, "15.1.1"),
+    AppleDeviceTuple("macbook-air-m4", "M4", 10, 16, 8, "1280x832x1280x807x24x2", 2, "15.1.0"),
+    AppleDeviceTuple("macbook-pro-m4-max", "M4 Max", 16, 36, 8, "1728x1117x1728x1092x24x2", 2, "15.0.1"),
+    AppleDeviceTuple("macbook-pro-m4-pro", "M4 Pro", 14, 24, 8, "1512x982x1512x957x24x2", 2, "15.5.0"),
 ]
 
 
@@ -547,7 +550,7 @@ def device_tuple_issues(
 
     expected_values = {
         "hardware_concurrency": str(tuple_.hardware_concurrency),
-        "device_memory": "8",
+        "device_memory": str(tuple_.web_device_memory_gb),
         "screen": tuple_.screen,
         "platform": "MacIntel",
         "webgl_vendor": "Google Inc. (Apple)",

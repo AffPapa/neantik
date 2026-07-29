@@ -503,7 +503,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
 
         expect("hardware_concurrency", String(tuple.hardwareConcurrency))
-        expect("device_memory", "8")
+        expect("device_memory", String(tuple.webDeviceMemoryGB))
         expect("screen", tuple.screen)
         expect("platform", "MacIntel")
         expect("webgl_vendor", "Google Inc. (Apple)")
@@ -551,7 +551,10 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         let id: String
         let gpuModel: String
         let hardwareConcurrency: Int
+        let physicalMemoryGB: Int
+        let webDeviceMemoryGB: Int
         let screen: String
+        let deviceScaleFactor: Int
         let platformVersion: String
     }
 
@@ -560,77 +563,110 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             id: "macbook-air-m1",
             gpuModel: "M1",
             hardwareConcurrency: 8,
+            physicalMemoryGB: 8,
+            webDeviceMemoryGB: 8,
             screen: "1280x800x1280x775x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.5.0"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m1-pro",
             gpuModel: "M1 Pro",
             hardwareConcurrency: 10,
+            physicalMemoryGB: 16,
+            webDeviceMemoryGB: 8,
             screen: "1512x982x1512x957x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.4.1"
         ),
         AppleDeviceTuple(
             id: "macbook-air-m2",
             gpuModel: "M2",
             hardwareConcurrency: 8,
+            physicalMemoryGB: 8,
+            webDeviceMemoryGB: 8,
             screen: "1280x832x1280x807x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.4.0"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m2-max",
             gpuModel: "M2 Max",
             hardwareConcurrency: 12,
+            physicalMemoryGB: 32,
+            webDeviceMemoryGB: 8,
             screen: "1728x1117x1728x1092x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.3.2"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m2-pro",
             gpuModel: "M2 Pro",
             hardwareConcurrency: 12,
+            physicalMemoryGB: 16,
+            webDeviceMemoryGB: 8,
             screen: "1512x982x1512x957x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.3.1"
         ),
         AppleDeviceTuple(
             id: "macbook-air-m3",
             gpuModel: "M3",
             hardwareConcurrency: 8,
+            physicalMemoryGB: 8,
+            webDeviceMemoryGB: 8,
             screen: "1280x832x1280x807x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.3.0"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m3-max",
             gpuModel: "M3 Max",
             hardwareConcurrency: 16,
+            physicalMemoryGB: 36,
+            webDeviceMemoryGB: 8,
             screen: "1728x1117x1728x1092x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.2.0"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m3-pro",
             gpuModel: "M3 Pro",
             hardwareConcurrency: 12,
+            physicalMemoryGB: 18,
+            webDeviceMemoryGB: 8,
             screen: "1512x982x1512x957x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.1.1"
         ),
         AppleDeviceTuple(
             id: "macbook-air-m4",
             gpuModel: "M4",
             hardwareConcurrency: 10,
+            physicalMemoryGB: 16,
+            webDeviceMemoryGB: 8,
             screen: "1280x832x1280x807x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.1.0"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m4-max",
             gpuModel: "M4 Max",
             hardwareConcurrency: 16,
+            physicalMemoryGB: 36,
+            webDeviceMemoryGB: 8,
             screen: "1728x1117x1728x1092x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.0.1"
         ),
         AppleDeviceTuple(
             id: "macbook-pro-m4-pro",
             gpuModel: "M4 Pro",
             hardwareConcurrency: 14,
+            physicalMemoryGB: 24,
+            webDeviceMemoryGB: 8,
             screen: "1512x982x1512x957x24x2",
+            deviceScaleFactor: 2,
             platformVersion: "15.5.0"
         )
     ]
