@@ -121,7 +121,33 @@ struct BrowserRuntimeLocator: Sendable {
     func preferredRuntime(
         preference: BrowserRuntimePreference? = nil
     ) -> BrowserRuntime? {
-        availableRuntimes(preference: preference).first
+        if let preference, !preference.path.isEmpty {
+            let executable = normalizedExecutable(
+                URL(fileURLWithPath: preference.path)
+            )
+            if FileManager.default.isExecutableFile(
+                atPath: executable.path
+            ) {
+                let inspection = BrowserRuntimeInspector.inspect(
+                    executableURL: executable
+                )
+                if inspection.supportsAppleSilicon {
+                    let flavor = declaredNeAntikFlavor(
+                        for: executable
+                    ) ?? preference.flavor
+                    return BrowserRuntime(
+                        name: flavor == .fingerprintChromium
+                            ? "NeAntik Browser"
+                            : flavor.title,
+                        executableURL: executable,
+                        source: "Выбран вручную",
+                        flavor: flavor,
+                        inspection: inspection
+                    )
+                }
+            }
+        }
+        return availableRuntimes(preference: preference).first
     }
 
     private func cloakRuntimes() -> [Candidate] {
