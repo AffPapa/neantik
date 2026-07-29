@@ -171,6 +171,9 @@ browser-surface значений.
 [fingerprint conformance corpus](docs/PUBLIC_FINGERPRINT_CONFORMANCE.md)
 позволяет проверять release verifier без публикации реальных профилей,
 fingerprint seed или proxy-конфигурации.
+Контракт разрабатываемой аутентифицированной оболочки и её честные ограничения
+описаны в
+[документе schema 8](docs/security/fingerprint-evidence-schema-8.md).
 
 Исходники NeAntik распространяются по MPL-2.0. Производные файлы Chromium
 сохраняют свои upstream-лицензии и notices. Название и логотип регулируются

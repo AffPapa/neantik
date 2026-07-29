@@ -25,6 +25,7 @@ jobs:
           - BrowserRuntimePreflightTests
           - FingerprintAuditLoopbackSTUNServerTests
           - FingerprintAuditTests
+          - FingerprintEvidenceEnvelopeTests
           - KeychainStoreTests
           - LaunchIntentTests
           - ProfileEditorPasswordTests

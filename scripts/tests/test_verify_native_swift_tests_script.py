@@ -44,6 +44,15 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("UpdateManifestTests)", text)
         self.assertIn('--filter "$SUITE"', text)
 
+    def test_ci_suite_runner_includes_authenticated_evidence_tests(
+        self,
+    ) -> None:
+        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("- FingerprintEvidenceEnvelopeTests", workflow)
+        self.assertIn("FingerprintEvidenceEnvelopeTests|\\", runner)
+
     def test_ci_matrix_suites_are_allowed_by_runner(self) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")
