@@ -98,7 +98,15 @@ controls:
 
 The resolver rule permits DNS resolution of the proxy itself while preventing
 other browser components from resolving target hosts directly. Async DNS and
-DoH are disabled in proxy mode as defense in depth. Direct profiles use
+DoH are disabled in proxy mode as defense in depth. Direct profiles explicitly
+pass `--no-proxy-server`, so they do not inherit a macOS HTTP proxy, PAC file,
+or proxy auto-detection setting. That switch does not bypass a VPN, Network
+Extension, system routing, DNS interception, or an upstream network proxy.
+Mandatory Chromium proxy policy and a proxy-controlling extension can also
+take precedence over command-line proxy preferences. The current audit records
+the configured route; it does not independently observe the effective HTTP
+route, so a Direct label is not proof against those overrides.
+Direct profiles also use
 `--force-webrtc-ip-handling-policy=default_public_interface_only` to avoid
 exposing every local interface while preserving ordinary WebRTC calls.
 
@@ -195,7 +203,7 @@ separates two levels:
   worker coherence. A legacy schema 1 report may remain valid public-alpha
   evidence, but can never satisfy the strict production gate.
 
-A schema 5 report is production-qualified only when all of the following are
+A schema 6 report is production-qualified only when all of the following are
 true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
@@ -211,8 +219,8 @@ true:
 - Canvas and WebGL results from the main realm agree with a dedicated Web
   Worker using OffscreenCanvas;
 - main-realm and worker UA, Client Hints, platform, languages, timezone,
-  `Intl` locale, CPU count, WebGL metadata/extensions, and shader precision
-  agree;
+  `Intl` locale, CPU count, device memory, WebGL metadata/extensions, and
+  shader precision agree;
 - CSS `device-width`, `device-height`, and `resolution` media queries agree
   with the exposed screen and DPR values;
 - the same-run direct `loopback-stun-v1` control completes and Chromium sends

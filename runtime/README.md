@@ -225,11 +225,11 @@ scripts/verify-gui-fingerprint-report.py \
 
 This emits separate `publicAlphaQualified` and `productionQualified` verdicts.
 The public-alpha gate rejects diagnostic mode, missing binary hashes,
-unavailable required browser surfaces, unstable A-repeat values, invalid
-A -> B -> A profile identity, and device-tuple mismatches. The strict
-production gate additionally requires fingerprint audit schema 5 evidence for
-repeat-call stability including OfflineAudio, main-realm / Web Worker and
-OffscreenCanvas coherence, CSS
+unavailable required alpha browser surfaces, unstable A-repeat values and an
+invalid A -> B -> A profile identity. The strict production gate additionally
+requires device-tuple agreement and fingerprint audit schema 6 evidence for
+repeat-call stability including OfflineAudio, main-realm / Web Worker
+coherence for CPU and device memory, OffscreenCanvas coherence, CSS
 screen/DPR media-query coherence, WebGL shader precision, and bounded
 candidate-type-only WebRTC route evidence plus a same-run loopback STUN direct
 positive control and zero STUN requests for proxied captures. Raw ICE candidate strings,

@@ -81,6 +81,9 @@ struct BrowserLaunchBuilderTests {
         )
 
         #expect(!arguments.contains { $0.hasPrefix("--proxy-server=") })
+        #expect(arguments.filter { $0 == "--no-proxy-server" }.count == 1)
+        #expect(!arguments.contains("--proxy-auto-detect"))
+        #expect(!arguments.contains { $0.hasPrefix("--proxy-pac-url=") })
         #expect(
             arguments.contains(
                 "--force-webrtc-ip-handling-policy=default_public_interface_only"
@@ -177,6 +180,9 @@ struct BrowserLaunchBuilderTests {
                 "--remote-debugging-port=0",
                 "--user-data-dir=/tmp/evil",
                 "--proxy-server=direct://",
+                "--no-proxy-server",
+                "--proxy-auto-detect",
+                "--proxy-pac-url=https://attacker.example/proxy.pac",
                 "--proxy-bypass-list=*",
                 "--host-resolver-rules=MAP * 127.0.0.1",
                 "--force-webrtc-ip-handling-policy=default",
@@ -199,6 +205,9 @@ struct BrowserLaunchBuilderTests {
         #expect(arguments.contains("--remote-debugging-port=0"))
         #expect(arguments.contains("--user-data-dir=/tmp/protected"))
         #expect(arguments.contains("--proxy-server=http://proxy.example:8080"))
+        #expect(!arguments.contains("--no-proxy-server"))
+        #expect(!arguments.contains("--proxy-auto-detect"))
+        #expect(!arguments.contains { $0.hasPrefix("--proxy-pac-url=") })
         #expect(
             arguments.contains(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE proxy.example"
@@ -264,6 +273,9 @@ struct BrowserLaunchBuilderTests {
                 "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
         )
+        #expect(!arguments.contains("--no-proxy-server"))
+        #expect(!arguments.contains("--proxy-auto-detect"))
+        #expect(!arguments.contains { $0.hasPrefix("--proxy-pac-url=") })
         #expect(
             !arguments.contains(
                 "--force-webrtc-ip-handling-policy=default_public_interface_only"

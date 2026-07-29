@@ -19,13 +19,15 @@ Tests/Fixtures/fingerprint-conformance/
 └── manifest.json
 ```
 
-Базовый schema 5 report содержит только документированные синтетические
+Базовый schema 6 report содержит только документированные синтетические
 UUID, имена, identity codes, значения поверхностей и фиктивные SHA-256.
 `manifest.json` применяет небольшой allowlist мутаций и фиксирует ожидаемый
 результат:
 
 - полная строгая квалификация;
 - public alpha PASS при рассогласовании main realm и Worker;
+- public alpha PASS при недоступной или расходящейся Worker device memory,
+  которая блокирует только строгий production;
 - нестабильный Canvas;
 - диагностический, а не обычный browser mode;
 - недоступная `deviceMemory`;

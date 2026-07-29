@@ -242,6 +242,31 @@ struct ContentView: View {
         }
         .onReceive(
             NotificationCenter.default.publisher(
+                for: NSApplication.willResignActiveNotification
+            )
+        ) { _ in
+            processes.suspendPassiveObservations()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: NSApplication.didBecomeActiveNotification
+            )
+        ) { _ in
+            processes.reconcile(profiles: store.profiles)
+        }
+        .onReceive(
+            NSWorkspace.shared.notificationCenter.publisher(
+                for: NSWorkspace.didWakeNotification
+            )
+        ) { _ in
+            if NSApplication.shared.isActive {
+                processes.reconcile(profiles: store.profiles)
+            } else {
+                processes.suspendPassiveObservations()
+            }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
                 for: NSApplication.willTerminateNotification
             )
         ) { _ in

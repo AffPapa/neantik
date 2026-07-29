@@ -502,6 +502,114 @@ struct BrowserProcessManagerTests {
     }
 
     @Test
+    func passiveRecoveryObservationSuspendsUntilForegroundReconcile() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Suspended recovery")
+        try paths.prepareProfileDirectories(for: profile.id)
+        let browserData = paths.browserDataDirectory(for: profile.id)
+        let marker = browserData.appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: marker)
+        try paths.writePrivateFile(
+            Data("broken".utf8),
+            to: paths.lockFile(for: profile.id)
+        )
+        var inspection = BrowserDataProcessInspection.found
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityInspector: { _ in .unrelated },
+            processLivenessValidator: { _ in false },
+            observationIntervalNanoseconds: 20_000_000,
+            browserDataProcessInspector: { _ in inspection }
+        )
+
+        manager.reconcile(profiles: [profile])
+        #expect(
+            manager.processState(for: profile.id) == .recoveryRequired
+        )
+        manager.suspendPassiveObservations()
+        inspection = .absent
+        try await Task.sleep(nanoseconds: 120_000_000)
+
+        #expect(
+            manager.processState(for: profile.id) == .recoveryRequired
+        )
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+
+        manager.reconcile(profiles: [profile])
+
+        #expect(manager.processState(for: profile.id) == .stopped)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    @Test
+    func managedExitCannotRestartPassivePollingWhileSuspended() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 0.12\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+        let paths = AppPaths(
+            rootDirectory: root.appendingPathComponent("data")
+        )
+        let profile = BrowserProfile(name: "Suspended managed exit")
+        try paths.prepareProfileDirectories(for: profile.id)
+        let marker = paths.browserDataDirectory(for: profile.id)
+            .appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: marker)
+        var inspection = BrowserDataProcessInspection.absent
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            observationIntervalNanoseconds: 20_000_000,
+            browserDataProcessInspector: { _ in inspection }
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+
+        try manager.launch(profile: profile, runtime: runtime)
+        inspection = .found
+        manager.suspendPassiveObservations()
+        for _ in 0..<100 {
+            if manager.processState(for: profile.id) == .recoveryRequired {
+                break
+            }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        #expect(
+            manager.processState(for: profile.id) == .recoveryRequired
+        )
+
+        inspection = .absent
+        try await Task.sleep(nanoseconds: 120_000_000)
+        #expect(
+            manager.processState(for: profile.id) == .recoveryRequired
+        )
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+
+        manager.reconcile(profiles: [profile])
+
+        #expect(manager.processState(for: profile.id) == .stopped)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    @Test
     func corruptStaleLockIsRemovedAfterPositiveAbsentEvidence() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

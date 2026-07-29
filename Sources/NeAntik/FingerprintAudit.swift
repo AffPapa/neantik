@@ -75,7 +75,7 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
-    static let currentAuditSchemaVersion = 5
+    static let currentAuditSchemaVersion = 6
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
@@ -118,6 +118,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "worker_timezone",
         "worker_intl_locale",
         "worker_hardware_concurrency",
+        "worker_device_memory",
         "worker_client_hints",
         "network_route",
         "webrtc_probe",
@@ -774,7 +775,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("languages", "worker_languages"),
             ("timezone", "worker_timezone"),
             ("intl_locale", "worker_intl_locale"),
-            ("hardware_concurrency", "worker_hardware_concurrency")
+            ("hardware_concurrency", "worker_hardware_concurrency"),
+            ("device_memory", "worker_device_memory")
         ] {
             expectEqual(pair.0, pair.1)
         }
@@ -1916,6 +1918,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 Intl.DateTimeFormat().resolvedOptions().locale || '',
               hardware_concurrency:
                 String(navigator.hardwareConcurrency || ''),
+              device_memory: String(navigator.deviceMemory || ''),
               client_hints: JSON.stringify(clientHints)
             });
           })().catch(() => postMessage({}));
@@ -2047,6 +2050,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         worker_intl_locale: workerValue('intl_locale'),
         worker_hardware_concurrency:
           workerValue('hardware_concurrency'),
+        worker_device_memory: workerValue('device_memory'),
         worker_client_hints: workerValue('client_hints'),
         webrtc_probe: 'loopback-stun-v1',
         webrtc_complete: rtcComplete,

@@ -294,6 +294,34 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             MODULE.qualification_issues(summary, require_production=True),
         )
 
+    def test_missing_worker_memory_fails_strict_but_not_public_alpha(self) -> None:
+        report = production_report()
+        for capture_key in ["firstInitial", "second", "firstRepeat"]:
+            del report[capture_key]["values"]["worker_device_memory"]
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "Required browser surfaces are unavailable: worker_device_memory.",
+            summary["productionIssues"],
+        )
+
+    def test_worker_memory_mismatch_fails_strict_but_not_public_alpha(self) -> None:
+        report = production_report()
+        report["firstInitial"]["values"]["worker_device_memory"] = "4"
+        report["firstRepeat"]["values"]["worker_device_memory"] = "4"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
+        self.assertIn(
+            "The profile A, first capture device_memory value disagrees with worker_device_memory.",
+            summary["productionIssues"],
+        )
+
     def test_repeated_offline_audio_mismatch_fails_strict(self) -> None:
         report = production_report()
         report["firstInitial"]["values"]["audio_repeat"] = "audio-random"
@@ -317,6 +345,19 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         self.assertTrue(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertEqual(summary["auditSchemaVersion"], 1)
+        self.assertIn(
+            "The report does not use the current strict fingerprint audit schema.",
+            summary["productionIssues"],
+        )
+
+    def test_previous_schema_five_cannot_use_schema_six_production_contract(self) -> None:
+        report = production_report()
+        report["auditSchemaVersion"] = 5
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "The report does not use the current strict fingerprint audit schema.",
             summary["productionIssues"],
@@ -513,7 +554,7 @@ def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
         "createdAt": "2026-07-25T08:29:41Z",
         "managerVersion": "0.3.12",
         "managerBuild": "15",
-        "auditSchemaVersion": 5,
+        "auditSchemaVersion": 6,
         "identityCatalogVersion": 1,
         "executionMode": "browser",
         "runtimeName": "NeAntik Browser",
@@ -783,6 +824,7 @@ def capture(
             "worker_timezone": "Asia/Bangkok",
             "worker_intl_locale": "en-US",
             "worker_hardware_concurrency": str(cores),
+            "worker_device_memory": "8",
             "worker_client_hints": client_hints,
             "network_route": "direct",
             "webrtc_probe": "loopback-stun-v1",

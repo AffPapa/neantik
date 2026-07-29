@@ -55,6 +55,7 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
     "worker_timezone",
     "worker_intl_locale",
     "worker_hardware_concurrency",
+    "worker_device_memory",
     "worker_client_hints",
     "network_route",
     "webrtc_probe",
@@ -64,7 +65,7 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
 ]
 PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
-CURRENT_AUDIT_SCHEMA_VERSION = 5
+CURRENT_AUDIT_SCHEMA_VERSION = 6
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REPORT_KEYS = {
@@ -610,6 +611,7 @@ def cross_realm_consistency_issues(
         ("timezone", "worker_timezone"),
         ("intl_locale", "worker_intl_locale"),
         ("hardware_concurrency", "worker_hardware_concurrency"),
+        ("device_memory", "worker_device_memory"),
     ):
         if is_available(v.get(first)) and is_available(v.get(second)) and v.get(first) != v.get(second):
             issues.append(f"The {label} {first} value disagrees with {second}.")

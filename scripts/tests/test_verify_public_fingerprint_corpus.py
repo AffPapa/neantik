@@ -25,7 +25,7 @@ class VerifyPublicFingerprintCorpusTests(unittest.TestCase):
     def test_accepts_repository_corpus(self) -> None:
         result = MODULE.verify_public_corpus()
 
-        self.assertIn("7 synthetic cases", result)
+        self.assertIn("9 synthetic cases", result)
 
     def test_rejects_real_profile_name(self) -> None:
         with self.corpus_copy() as corpus:

@@ -200,6 +200,9 @@ enum BrowserLaunchBuilder {
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
         "--proxy-server",
+        "--no-proxy-server",
+        "--proxy-auto-detect",
+        "--proxy-pac-url",
         "--proxy-bypass-list",
         "--host-resolver-rules",
         "--force-webrtc-ip-handling-policy",
@@ -286,6 +289,9 @@ enum BrowserLaunchBuilder {
             }
             arguments.append("--proxy-bypass-list=\(bypass)")
         } else {
+            // "Direct" is an explicit product route. Do not silently inherit
+            // a macOS system proxy, PAC file or auto-detection setting.
+            arguments.append("--no-proxy-server")
             // Direct profiles still avoid exposing every local interface to
             // WebRTC while retaining ordinary calls over the public route.
             arguments.append(
@@ -414,6 +420,7 @@ final class BrowserProcessManager: ObservableObject {
     private var recoveryObservationTasks: [UUID: Task<Void, Never>] = [:]
     private var tombstoneObservationTasks: [UUID: Task<Void, Never>] = [:]
     private var tombstoneRecoveryMessages: [UUID: String] = [:]
+    private var passiveObservationsEnabled = true
 
     init(paths: AppPaths) {
         self.paths = paths
@@ -508,12 +515,8 @@ final class BrowserProcessManager: ObservableObject {
     func reconcile(profiles: [BrowserProfile]) {
         externalStopTasks.values.forEach { $0.cancel() }
         externalStopTasks.removeAll()
-        externalObservationTasks.values.forEach { $0.cancel() }
-        externalObservationTasks.removeAll()
-        recoveryObservationTasks.values.forEach { $0.cancel() }
-        recoveryObservationTasks.removeAll()
-        tombstoneObservationTasks.values.forEach { $0.cancel() }
-        tombstoneObservationTasks.removeAll()
+        passiveObservationsEnabled = true
+        cancelPassiveObservationTasks()
         if tombstoneRecoveryMessages.values.contains(
             where: { $0 == lastError }
         ) {
@@ -533,6 +536,20 @@ final class BrowserProcessManager: ObservableObject {
         for profile in profiles {
             reconcileProfile(profileID: profile.id)
         }
+    }
+
+    func suspendPassiveObservations() {
+        passiveObservationsEnabled = false
+        cancelPassiveObservationTasks()
+    }
+
+    private func cancelPassiveObservationTasks() {
+        externalObservationTasks.values.forEach { $0.cancel() }
+        externalObservationTasks.removeAll()
+        recoveryObservationTasks.values.forEach { $0.cancel() }
+        recoveryObservationTasks.removeAll()
+        tombstoneObservationTasks.values.forEach { $0.cancel() }
+        tombstoneObservationTasks.removeAll()
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
@@ -1164,6 +1181,10 @@ final class BrowserProcessManager: ObservableObject {
         lock: BrowserProcessLock
     ) {
         externalObservationTasks[profileID]?.cancel()
+        guard passiveObservationsEnabled else {
+            externalObservationTasks.removeValue(forKey: profileID)
+            return
+        }
         externalObservationTasks[profileID] = Task {
             [weak self] in
             guard let self else { return }
@@ -1229,6 +1250,10 @@ final class BrowserProcessManager: ObservableObject {
         record: BrowserProcessRecoveryRecord
     ) {
         recoveryObservationTasks[profileID]?.cancel()
+        guard passiveObservationsEnabled else {
+            recoveryObservationTasks.removeValue(forKey: profileID)
+            return
+        }
         recoveryObservationTasks[profileID] = Task { [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
@@ -1254,6 +1279,10 @@ final class BrowserProcessManager: ObservableObject {
 
     private func observeDeletionTombstone(profileID: UUID) {
         tombstoneObservationTasks[profileID]?.cancel()
+        guard passiveObservationsEnabled else {
+            tombstoneObservationTasks.removeValue(forKey: profileID)
+            return
+        }
         tombstoneObservationTasks[profileID] = Task { [weak self] in
             guard let self else { return }
             while !Task.isCancelled {

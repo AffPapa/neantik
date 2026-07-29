@@ -255,6 +255,7 @@ struct FingerprintAuditTests {
             "worker_canvas",
             "worker_webgl_pixels",
             "worker_client_hints",
+            "worker_device_memory",
             "css_screen_match",
             "webgl_shader_precision",
             "COMPILE_STATUS",
@@ -610,6 +611,73 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func missingWorkerMemoryFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues.removeValue(forKey: "worker_device_memory")
+        let first = capture(name: "First", values: firstValues)
+        var secondValues = productionValues(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b",
+            renderer: "Apple M4"
+        )
+        secondValues.removeValue(forKey: "worker_device_memory")
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(result.productionUnavailableKeys == ["worker_device_memory"])
+    }
+
+    @Test
+    func workerMemoryMismatchFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["worker_device_memory"] = "4"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "device_memory value disagrees with worker_device_memory"
+                )
+            }
+        )
+    }
+
+    @Test
     func repeatedOfflineAudioMismatchFailsStrictProduction() {
         var firstValues = productionValues(
             canvas: "canvas-a",
@@ -906,6 +974,53 @@ struct FingerprintAuditTests {
         #expect(!legacy.isProductionReleaseQualified)
         #expect(
             legacy.productionReleaseIssues.contains(
+                "The report does not use the current strict fingerprint audit schema."
+            )
+        )
+    }
+
+    @Test
+    func schemaFiveCannotUseSchemaSixProductionContract() throws {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let current = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+        let encoded = try JSONEncoder().encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object["auditSchemaVersion"] = 5
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let previous = try JSONDecoder().decode(
+            FingerprintAuditReport.self,
+            from: data
+        )
+
+        #expect(previous.effectiveAuditSchemaVersion == 5)
+        #expect(previous.isPublicAlphaReleaseQualified)
+        #expect(!previous.isProductionReleaseQualified)
+        #expect(
+            previous.productionReleaseIssues.contains(
                 "The report does not use the current strict fingerprint audit schema."
             )
         )
@@ -1441,6 +1556,7 @@ struct FingerprintAuditTests {
             "worker_timezone": "Europe/Berlin",
             "worker_intl_locale": "en-US",
             "worker_hardware_concurrency": "8",
+            "worker_device_memory": "8",
             "worker_client_hints": clientHints,
             "network_route": "direct",
             "webrtc_probe": "loopback-stun-v1",
