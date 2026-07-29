@@ -19,7 +19,6 @@ Before opening a pull request:
 ```bash
 ./scripts/verify-native-swift-tests.sh
 ./scripts/verify-native-swift-release.sh
-python3 scripts/verify-native-swift-ci.py
 python3 scripts/verify-direct-telemetry-disabled.py
 python3 scripts/verify-direct-ui-localization.py
 python3 scripts/verify-apple-device-tuples.py

@@ -10,15 +10,39 @@ permissions:
   contents: read
 
 jobs:
-  manager-and-release-contracts:
+  swift-tests:
+    name: Swift / ${{ matrix.suite }}
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - AppPathsTests
+          - BrowserLaunchBuilderTests
+          - BrowserProcessManagerTests
+          - BrowserRuntimeInspectorTests
+          - BrowserRuntimePreflightTests
+          - FingerprintAuditTests
+          - KeychainStoreTests
+          - LaunchIntentTests
+          - ProfileStoreTests
+          - ProxyTesterTests
+          - RuntimePreferenceStoreTests
+          - TelemetryTests
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run Swift suite
+        run: ./scripts/verify-native-swift-suite.sh "${{ matrix.suite }}"
+
+  release-contracts:
+    name: Release and privacy contracts
+    runs-on: macos-latest
+    timeout-minutes: 15
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v5
-      - name: Swift tests
-        run: python3 scripts/verify-native-swift-ci.py
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract
