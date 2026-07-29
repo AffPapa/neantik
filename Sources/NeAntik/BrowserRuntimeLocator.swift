@@ -1,12 +1,24 @@
 import Foundation
 
 struct BrowserRuntimeLocator: Sendable {
+    private let runtimeInspector:
+        @Sendable (URL) -> BrowserRuntimeInspection
+
     private typealias Candidate = (
         name: String,
         url: URL,
         source: String,
         flavor: BrowserRuntimeFlavor
     )
+
+    init(
+        runtimeInspector: @escaping @Sendable
+            (URL) -> BrowserRuntimeInspection = {
+                BrowserRuntimeInspector.inspect(executableURL: $0)
+            }
+    ) {
+        self.runtimeInspector = runtimeInspector
+    }
 
     func availableRuntimes(
         preference: BrowserRuntimePreference? = nil
@@ -102,9 +114,7 @@ struct BrowserRuntimeLocator: Sendable {
             else {
                 return nil
             }
-            let inspection = BrowserRuntimeInspector.inspect(
-                executableURL: candidate.url
-            )
+            let inspection = runtimeInspector(candidate.url)
             guard inspection.supportsAppleSilicon else {
                 return nil
             }

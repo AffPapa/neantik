@@ -3,6 +3,16 @@ import Testing
 @testable import NeAntik
 
 struct BrowserLaunchBuilderTests {
+    private func testRuntimeLocator() -> BrowserRuntimeLocator {
+        BrowserRuntimeLocator { _ in
+            BrowserRuntimeInspection(
+                version: "150.0.7871.186",
+                architectures: ["arm64"],
+                codeSignatureValid: true
+            )
+        }
+    }
+
     @Test
     func createsIsolatedProfileArguments() {
         let profile = BrowserProfile(
@@ -526,7 +536,7 @@ struct BrowserLaunchBuilderTests {
             flavor: .standard,
             updatedAt: Date()
         )
-        let runtime = BrowserRuntimeLocator().preferredRuntime(
+        let runtime = testRuntimeLocator().preferredRuntime(
             preference: preference
         )
 
@@ -563,7 +573,7 @@ struct BrowserLaunchBuilderTests {
             flavor: .fingerprintChromium,
             updatedAt: Date()
         )
-        let runtime = BrowserRuntimeLocator().preferredRuntime(
+        let runtime = testRuntimeLocator().preferredRuntime(
             preference: preference
         )
 
@@ -623,7 +633,7 @@ struct BrowserLaunchBuilderTests {
             to: contents.appendingPathComponent("Info.plist")
         )
 
-        let locator = BrowserRuntimeLocator()
+        let locator = testRuntimeLocator()
         #expect(
             locator.recommendedFlavor(for: root) ==
                 .fingerprintChromium
@@ -692,7 +702,7 @@ struct BrowserLaunchBuilderTests {
             to: contents.appendingPathComponent("Info.plist")
         )
 
-        let locator = BrowserRuntimeLocator()
+        let locator = testRuntimeLocator()
         #expect(locator.recommendedFlavor(for: root) == .standard)
 
         let preference = BrowserRuntimePreference(
