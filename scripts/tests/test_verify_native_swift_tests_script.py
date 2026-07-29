@@ -3,6 +3,10 @@ import unittest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-native-swift-tests.sh"
+SUITE_SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "verify-native-swift-suite.sh"
+)
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
@@ -26,6 +30,12 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("trap cleanup EXIT", text)
         self.assertIn("/private/tmp/nevision-swift-cache-*", text)
         self.assertIn("rm -rf \"$SWIFT_TEST_ROOT\"", text)
+
+    def test_ci_suite_runner_includes_signed_update_tests(self) -> None:
+        text = SUITE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("UpdateManifestTests)", text)
+        self.assertIn('--filter "$SUITE"', text)
 
 if __name__ == "__main__":
     unittest.main()

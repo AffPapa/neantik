@@ -20,7 +20,8 @@ case "$SUITE" in
   ProfileStoreTests|\
   ProxyTesterTests|\
   RuntimePreferenceStoreTests|\
-  TelemetryTests)
+  TelemetryTests|\
+  UpdateManifestTests)
     ;;
   *)
     echo "Unknown Swift test suite: $SUITE" >&2
