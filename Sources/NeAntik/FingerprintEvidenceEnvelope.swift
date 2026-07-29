@@ -101,6 +101,12 @@ struct SoftwareP256FingerprintEvidenceSigner: FingerprintEvidenceSigning {
         privateKey = P256.Signing.PrivateKey()
     }
 
+    init(rawRepresentation: Data) throws {
+        privateKey = try P256.Signing.PrivateKey(
+            rawRepresentation: rawRepresentation
+        )
+    }
+
     var publicKeyX963: Data {
         privateKey.publicKey.x963Representation
     }
@@ -145,6 +151,18 @@ enum FingerprintEvidenceEnvelopeCodec {
     static let maximumManifestBytes = 1 * 1_024 * 1_024
     static let maximumEnvelopeBytes =
         ((maximumPayloadBytes + 2) / 3) * 4 + 4_096
+    private static let p256Order: [UInt8] = [
+        0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xbc, 0xe6, 0xfa, 0xad, 0xa7, 0x17, 0x9e, 0x84,
+        0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63, 0x25, 0x51
+    ]
+    private static let p256HalfOrder: [UInt8] = [
+        0x7f, 0xff, 0xff, 0xff, 0x80, 0x00, 0x00, 0x00,
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xde, 0x73, 0x7d, 0x56, 0xd3, 0x8b, 0xcf, 0x42,
+        0x79, 0xdc, 0xe5, 0x61, 0x7e, 0x31, 0x92, 0xa8
+    ]
     private static let transcriptDomain =
         Data("NeAntik GUI fingerprint evidence v8\u{0}".utf8)
 
@@ -171,12 +189,14 @@ enum FingerprintEvidenceEnvelopeCodec {
 
         let manifestDigest = SHA256.hash(data: candidateManifest)
         let challengeDigest = SHA256.hash(data: validated.challenge)
-        let signature = try signer.signatureDER(
-            for: transcript(
-                payload: payload,
-                candidateManifestDigest: Data(manifestDigest),
-                sessionID: binding.sessionID,
-                challenge: validated.challenge
+        let signature = try canonicalLowSSignatureDER(
+            try signer.signatureDER(
+                for: transcript(
+                    payload: payload,
+                    candidateManifestDigest: Data(manifestDigest),
+                    sessionID: binding.sessionID,
+                    challenge: validated.challenge
+                )
             )
         )
         return FingerprintEvidenceEnvelope(
@@ -254,14 +274,7 @@ enum FingerprintEvidenceEnvelopeCodec {
             throw FingerprintEvidenceError.bindingMismatch
         }
 
-        let signature: P256.Signing.ECDSASignature
-        do {
-            signature = try P256.Signing.ECDSASignature(
-                derRepresentation: signatureData
-            )
-        } catch {
-            throw FingerprintEvidenceError.malformedEnvelope
-        }
+        let signature = try validatedLowSSignature(signatureData)
         let signedTranscript = transcript(
             payload: payload,
             candidateManifestDigest: Data(manifestDigest),
@@ -284,7 +297,10 @@ enum FingerprintEvidenceEnvelopeCodec {
         _ envelope: FingerprintEvidenceEnvelope
     ) throws -> Data {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
+        encoder.outputFormatting = [
+            .sortedKeys,
+            .withoutEscapingSlashes
+        ]
         return try encoder.encode(envelope)
     }
 
@@ -298,10 +314,14 @@ enum FingerprintEvidenceEnvelopeCodec {
             throw FingerprintEvidenceError.invalidManifestBinding
         }
         do {
-            return try JSONDecoder().decode(
+            let container = try JSONDecoder().decode(
                 CandidateManifestBindingContainer.self,
                 from: candidateManifest
-            ).fingerprintEvidence
+            )
+            guard container.schemaVersion == 3 else {
+                throw FingerprintEvidenceError.invalidManifestBinding
+            }
+            return container.fingerprintEvidence
         } catch {
             throw FingerprintEvidenceError.invalidManifestBinding
         }
@@ -311,7 +331,7 @@ enum FingerprintEvidenceEnvelopeCodec {
         guard let object = try? JSONSerialization.jsonObject(with: data),
               let canonical = try? JSONSerialization.data(
                   withJSONObject: object,
-                  options: [.sortedKeys]
+                  options: [.sortedKeys, .withoutEscapingSlashes]
               ),
               canonical == data,
               let dictionary = object as? [String: Any],
@@ -331,7 +351,8 @@ enum FingerprintEvidenceEnvelopeCodec {
                   "sessionID",
                   "challengeSHA256",
                   "signatureDER"
-              ]
+              ],
+              isUppercaseCanonicalUUID(authentication["sessionID"])
         else {
             return false
         }
@@ -342,7 +363,7 @@ enum FingerprintEvidenceEnvelopeCodec {
         guard let object = try? JSONSerialization.jsonObject(with: data),
               let canonical = try? JSONSerialization.data(
                   withJSONObject: object,
-                  options: [.sortedKeys]
+                  options: [.sortedKeys, .withoutEscapingSlashes]
               ),
               canonical == data,
               let dictionary = object as? [String: Any],
@@ -355,7 +376,8 @@ enum FingerprintEvidenceEnvelopeCodec {
                   "publicKeyX963",
                   "sessionID",
                   "challenge"
-              ]
+              ],
+              isUppercaseCanonicalUUID(binding["sessionID"])
         else {
             return false
         }
@@ -366,10 +388,10 @@ enum FingerprintEvidenceEnvelopeCodec {
         guard !data.isEmpty,
               String(data: data, encoding: .utf8) != nil,
               let object = try? JSONSerialization.jsonObject(with: data),
-              object is [String: Any],
+              let dictionary = object as? [String: Any],
               let canonical = try? JSONSerialization.data(
                   withJSONObject: object,
-                  options: [.sortedKeys]
+                  options: [.sortedKeys, .withoutEscapingSlashes]
               ),
               canonical == data
         else {
@@ -380,11 +402,202 @@ enum FingerprintEvidenceEnvelopeCodec {
         guard let report = try? decoder.decode(
             FingerprintAuditReport.self,
             from: data
-        ) else {
+        ),
+        hasUppercaseCanonicalPayloadUUIDs(dictionary)
+        else {
             return false
         }
         return report.auditSchemaVersion ==
             FingerprintAuditReport.currentAuditSchemaVersion
+    }
+
+    private static func canonicalLowSSignatureDER(
+        _ data: Data
+    ) throws -> Data {
+        let signature = try decodedCanonicalSignature(data)
+        var raw = [UInt8](signature.rawRepresentation)
+        guard raw.count == 64 else {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+        let r = Array(raw[0..<32])
+        var s = Array(raw[32..<64])
+        guard isValidScalar(r), isValidScalar(s) else {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+        if compareScalar(s, p256HalfOrder) == .orderedDescending {
+            s = subtractScalar(p256Order, s)
+            raw.replaceSubrange(32..<64, with: s)
+        }
+        do {
+            return try P256.Signing.ECDSASignature(
+                rawRepresentation: Data(raw)
+            ).derRepresentation
+        } catch {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+    }
+
+    private static func validatedLowSSignature(
+        _ data: Data
+    ) throws -> P256.Signing.ECDSASignature {
+        let signature = try decodedCanonicalSignature(data)
+        let raw = [UInt8](signature.rawRepresentation)
+        guard raw.count == 64 else {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+        let r = Array(raw[0..<32])
+        let s = Array(raw[32..<64])
+        guard isValidScalar(r), isValidScalar(s) else {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+        guard compareScalar(s, p256HalfOrder) != .orderedDescending else {
+            throw FingerprintEvidenceError.invalidSignature
+        }
+        return signature
+    }
+
+    private static func decodedCanonicalSignature(
+        _ data: Data
+    ) throws -> P256.Signing.ECDSASignature {
+        guard (8...72).contains(data.count) else {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+        do {
+            let signature = try P256.Signing.ECDSASignature(
+                derRepresentation: data
+            )
+            guard signature.derRepresentation == data else {
+                throw FingerprintEvidenceError.malformedEnvelope
+            }
+            return signature
+        } catch let error as FingerprintEvidenceError {
+            throw error
+        } catch {
+            throw FingerprintEvidenceError.malformedEnvelope
+        }
+    }
+
+    private static func isValidScalar(_ value: [UInt8]) -> Bool {
+        value.count == 32 &&
+            value.contains(where: { $0 != 0 }) &&
+            compareScalar(value, p256Order) == .orderedAscending
+    }
+
+    private static func isUppercaseCanonicalUUID(_ value: Any?) -> Bool {
+        guard let string = value as? String,
+              let uuid = UUID(uuidString: string)
+        else {
+            return false
+        }
+        return uuid.uuidString == string
+    }
+
+    private static func hasUppercaseCanonicalPayloadUUIDs(
+        _ report: [String: Any]
+    ) -> Bool {
+        let allowedKeys: Set<String> = [
+            "id", "createdAt", "auditSchemaVersion",
+            "identityCatalogVersion", "managerVersion", "managerBuild",
+            "runtimeName", "runtimeVersion", "runtimeFlavor",
+            "runtimeCodeSignatureValid", "runtimeExecutableSHA256",
+            "runtimeFrameworkSHA256", "executionMode",
+            "webrtcDirectControl", "firstInitial", "second",
+            "firstRepeat"
+        ]
+        let requiredKeys: Set<String> = [
+            "id", "createdAt", "auditSchemaVersion", "runtimeName",
+            "runtimeFlavor", "firstInitial", "second", "firstRepeat"
+        ]
+        guard Set(report.keys).isSubset(of: allowedKeys),
+              requiredKeys.isSubset(of: Set(report.keys)),
+              isUppercaseCanonicalUUID(report["id"]),
+              isCanonicalUTCSecondTimestamp(report["createdAt"])
+        else {
+            return false
+        }
+        for key in ["firstInitial", "second", "firstRepeat"] {
+            guard let capture = report[key] as? [String: Any],
+                  Set(capture.keys) == [
+                      "profileID", "profileName", "identityCode",
+                      "capturedAt", "values"
+                  ],
+                  isUppercaseCanonicalUUID(capture["profileID"]),
+                  isCanonicalUTCSecondTimestamp(capture["capturedAt"])
+            else {
+                return false
+            }
+        }
+        if let directControl = report["webrtcDirectControl"],
+           !(directControl is NSNull)
+        {
+            guard let capture = directControl as? [String: Any],
+                  Set(capture.keys) == [
+                      "profileID", "profileName", "identityCode",
+                      "capturedAt", "values"
+                  ],
+                  isUppercaseCanonicalUUID(capture["profileID"]),
+                  isCanonicalUTCSecondTimestamp(capture["capturedAt"])
+            else {
+                return false
+            }
+        }
+        return true
+    }
+
+    private static func isCanonicalUTCSecondTimestamp(
+        _ value: Any?
+    ) -> Bool {
+        guard let string = value as? String,
+              string.utf8.count == 20,
+              string.hasSuffix("Z")
+        else {
+            return false
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [
+            .withInternetDateTime,
+            .withDashSeparatorInDate,
+            .withColonSeparatorInTime
+        ]
+        guard let date = formatter.date(from: string) else {
+            return false
+        }
+        return formatter.string(from: date) == string
+    }
+
+    private static func compareScalar(
+        _ left: [UInt8],
+        _ right: [UInt8]
+    ) -> ComparisonResult {
+        for (leftByte, rightByte) in zip(left, right) {
+            if leftByte < rightByte {
+                return .orderedAscending
+            }
+            if leftByte > rightByte {
+                return .orderedDescending
+            }
+        }
+        return .orderedSame
+    }
+
+    private static func subtractScalar(
+        _ left: [UInt8],
+        _ right: [UInt8]
+    ) -> [UInt8] {
+        var result = [UInt8](repeating: 0, count: left.count)
+        var borrow = 0
+        for index in stride(from: left.count - 1, through: 0, by: -1) {
+            let minuend = Int(left[index])
+            let subtrahend = Int(right[index]) + borrow
+            if minuend >= subtrahend {
+                result[index] = UInt8(minuend - subtrahend)
+                borrow = 0
+            } else {
+                result[index] = UInt8(minuend + 256 - subtrahend)
+                borrow = 1
+            }
+        }
+        return result
     }
 
     private static func transcript(
@@ -408,5 +621,6 @@ enum FingerprintEvidenceEnvelopeCodec {
 }
 
 private struct CandidateManifestBindingContainer: Decodable {
+    let schemaVersion: Int
     let fingerprintEvidence: FingerprintEvidenceManifestBinding
 }

@@ -76,6 +76,7 @@ REQUIRED_PUBLIC_PATHS = {
     "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
     "docs/RUNTIME_INTEGRATION_NOTICES.md",
     "docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md",
+    "docs/security/fingerprint-evidence-schema-8.md",
     "runtime/chromium-150-source-contract.json",
     "runtime/chromium-150-toolchain-lock.json",
     "scripts/Run-NeAntik-Runtime-Audit.command",
@@ -88,6 +89,8 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/runtime_source_provenance.py",
     "scripts/runtime_candidate_lock.py",
     "scripts/tests/test_generate_runtime_integration_notices.py",
+    "scripts/tests/fixtures/fingerprint-evidence-schema8-swift.json",
+    "scripts/tests/test_fingerprint_evidence_schema8.py",
     "scripts/tests/test_runtime_source_provenance.py",
     "scripts/tests/test_runtime_candidate_lock.py",
     "scripts/tests/test_verify_public_artifact_privacy.py",
@@ -96,6 +99,8 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/tests/test_verify_public_fingerprint_corpus.py",
     "scripts/tests/test_verify_public_workflow_references.py",
     "scripts/verify-direct-hosted-download.py",
+    "scripts/fingerprint_evidence_schema8.py",
+    "scripts/verify-fingerprint-evidence-envelope.py",
     "scripts/verify-public-artifact-privacy.py",
     "scripts/verify-direct-update-policy.py",
     "scripts/verify-public-fingerprint-corpus.py",
@@ -178,6 +183,7 @@ def verify_required_contracts() -> None:
         "verify-public-fingerprint-corpus.py",
         "verify-open-source-tree.py",
         "verify-public-workflow-references.py",
+        "test_fingerprint_evidence_schema8",
     ]:
         if marker not in ci_text:
             fail(f"GitHub Actions does not enforce {marker}")
