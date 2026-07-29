@@ -413,6 +413,42 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.FingerprintReportError, "JSON object"):
                 MODULE.load_report(path)
 
+    def test_rejects_extra_sensitive_capture_value(self) -> None:
+        report = production_report()
+        report["firstInitial"]["values"]["proxyPassword"] = "secret"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertFalse(summary["qualified"])
+        self.assertIn(
+            "The firstInitial values contain unsupported fields: proxyPassword.",
+            summary["issues"],
+        )
+
+    def test_rejects_extra_top_level_key(self) -> None:
+        report = production_report()
+        report["cookies"] = "secret"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertFalse(summary["qualified"])
+        self.assertIn(
+            "The report contains unsupported top-level fields: cookies.",
+            summary["issues"],
+        )
+
+    def test_rejects_extra_capture_key(self) -> None:
+        report = production_report()
+        report["firstInitial"]["visitedURL"] = "https://example.test/private"
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertFalse(summary["qualified"])
+        self.assertIn(
+            "The firstInitial capture contains unsupported fields: visitedURL.",
+            summary["issues"],
+        )
+
 
 def production_report(*, runtime_version: str = "144.0.7559.132") -> dict:
     return {

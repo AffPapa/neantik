@@ -67,6 +67,33 @@ PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONT
 CURRENT_AUDIT_SCHEMA_VERSION = 5
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+REPORT_KEYS = {
+    "id",
+    "createdAt",
+    "managerVersion",
+    "managerBuild",
+    "auditSchemaVersion",
+    "identityCatalogVersion",
+    "executionMode",
+    "runtimeName",
+    "runtimeVersion",
+    "runtimeFlavor",
+    "runtimeCodeSignatureValid",
+    "runtimeExecutableSHA256",
+    "runtimeFrameworkSHA256",
+    "webrtcDirectControl",
+    "firstInitial",
+    "second",
+    "firstRepeat",
+}
+CAPTURE_KEYS = {
+    "capturedAt",
+    "profileID",
+    "profileName",
+    "identityCode",
+    "values",
+}
+VALUE_KEYS = set(PRODUCTION_REQUIRED_KEYS)
 
 
 @dataclass(frozen=True)
@@ -362,6 +389,47 @@ def capture(report: dict[str, Any], key: str) -> dict[str, Any]:
 
 def values(capture_object: dict[str, Any]) -> dict[str, str]:
     return capture_object["values"]
+
+
+def exact_schema_issues(report: dict[str, Any]) -> list[str]:
+    issues: list[str] = []
+    unknown_report_keys = sorted(set(report) - REPORT_KEYS)
+    if unknown_report_keys:
+        issues.append(
+            "The report contains unsupported top-level fields: "
+            + ", ".join(unknown_report_keys)
+            + "."
+        )
+
+    for capture_key in (
+        "webrtcDirectControl",
+        "firstInitial",
+        "second",
+        "firstRepeat",
+    ):
+        capture_object = report.get(capture_key)
+        if capture_object is None and capture_key == "webrtcDirectControl":
+            continue
+        if not isinstance(capture_object, dict):
+            continue
+        unknown_capture_keys = sorted(set(capture_object) - CAPTURE_KEYS)
+        if unknown_capture_keys:
+            issues.append(
+                f"The {capture_key} capture contains unsupported fields: "
+                + ", ".join(unknown_capture_keys)
+                + "."
+            )
+        capture_values = capture_object.get("values")
+        if not isinstance(capture_values, dict):
+            continue
+        unknown_value_keys = sorted(set(capture_values) - VALUE_KEYS)
+        if unknown_value_keys:
+            issues.append(
+                f"The {capture_key} values contain unsupported fields: "
+                + ", ".join(unknown_value_keys)
+                + "."
+            )
+    return issues
 
 
 def parse_iso8601(value: object, field: str) -> datetime:
@@ -748,7 +816,7 @@ def public_alpha_release_issues(
     second = values(second_capture)
     repeat = values(repeat_capture)
 
-    issues: list[str] = []
+    issues = exact_schema_issues(report)
     issues.extend(
         timestamp_issues(
             report,

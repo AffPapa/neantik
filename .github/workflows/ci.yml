@@ -34,7 +34,7 @@ jobs:
           - TelemetryTests
           - UpdateManifestTests
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Run Swift suite
         run: ./scripts/verify-native-swift-suite.sh "${{ matrix.suite }}"
 
@@ -45,7 +45,7 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract

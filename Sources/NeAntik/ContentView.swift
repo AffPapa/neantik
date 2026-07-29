@@ -57,6 +57,8 @@ struct ContentView: View {
     @State private var isResolvingRuntime = true
     @State private var clipboardLease = ClipboardLeaseState()
     @State private var clipboardNotice: ClipboardNotice?
+    @State private var clipboardClearTask: Task<Void, Never>?
+    @State private var clipboardNoticeTask: Task<Void, Never>?
     @State private var handledReleaseAuditIntent = false
 
     private var selectedProfile: BrowserProfile? {
@@ -238,6 +240,7 @@ struct ContentView: View {
                 for: NSApplication.willTerminateNotification
             )
         ) { _ in
+            cancelClipboardTasks()
             clearClipboardIfLeaseIsActive()
         }
         .task(id: runtimePreferences.preference) {
@@ -724,8 +727,12 @@ struct ContentView: View {
     }
 
     private func clearClipboardLater(changeCount: Int) {
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
+        clipboardClearTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 60_000_000_000)
+            } catch {
+                return
+            }
             clearClipboardIfLeaseIsActive(changeCount: changeCount)
         }
     }
@@ -735,6 +742,7 @@ struct ContentView: View {
         profileID: UUID,
         successMessage: String
     ) {
+        cancelClipboardTasks()
         clipboardLease.cancel()
         clipboardNotice = nil
 
@@ -778,12 +786,23 @@ struct ContentView: View {
             ]
         )
         clearClipboardLater(changeCount: changeCount)
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
+        clipboardNoticeTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 4_000_000_000)
+            } catch {
+                return
+            }
             if clipboardNotice == notice {
                 clipboardNotice = nil
             }
         }
+    }
+
+    private func cancelClipboardTasks() {
+        clipboardClearTask?.cancel()
+        clipboardClearTask = nil
+        clipboardNoticeTask?.cancel()
+        clipboardNoticeTask = nil
     }
 
     private func clearClipboardIfLeaseIsActive(changeCount: Int? = nil) {

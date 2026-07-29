@@ -81,10 +81,10 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source = root / "audit-good.json"
-            source.write_text(
-                json.dumps(VERIFIER_FIXTURES.production_report()),
-                encoding="utf-8",
-            )
+            report = VERIFIER_FIXTURES.production_report()
+            report["firstInitial"]["profileName"] = "Личный профиль"
+            report["second"]["profileName"] = "Рабочий профиль"
+            source.write_text(json.dumps(report), encoding="utf-8")
             output = root / "dist" / "fingerprint-audit.json"
             runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
 
@@ -99,7 +99,57 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
             self.assertEqual(Path(result["output"]), output)
             self.assertTrue(result["summary"]["qualified"])
             self.assertEqual(mode, 0o600)
-            self.assertEqual(json.loads(output.read_text(encoding="utf-8")), json.loads(source.read_text(encoding="utf-8")))
+            collected = json.loads(output.read_text(encoding="utf-8"))
+            self.assertNotEqual(collected, report)
+            self.assertEqual(
+                collected["firstInitial"]["profileName"],
+                collected["firstInitial"]["identityCode"],
+            )
+            self.assertNotIn("Личный профиль", output.read_text(encoding="utf-8"))
+            self.assertNotIn("Рабочий профиль", output.read_text(encoding="utf-8"))
+            self.assertEqual(
+                collected["firstInitial"]["profileID"],
+                collected["firstRepeat"]["profileID"],
+            )
+            self.assertNotEqual(
+                collected["firstInitial"]["profileID"],
+                report["firstInitial"]["profileID"],
+            )
+
+    def test_rejects_sensitive_extra_fields_without_writing_output(self) -> None:
+        mutations = (
+            ("top", "cookies"),
+            ("capture", "visitedURL"),
+            ("values", "proxyPassword"),
+        )
+        for location, key in mutations:
+            with self.subTest(location=location):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    report = VERIFIER_FIXTURES.production_report()
+                    if location == "top":
+                        report[key] = "secret"
+                    elif location == "capture":
+                        report["firstInitial"][key] = "secret"
+                    else:
+                        report["firstInitial"]["values"][key] = "secret"
+                    source = root / "audit-sensitive.json"
+                    source.write_text(json.dumps(report), encoding="utf-8")
+                    output = root / "dist" / "fingerprint-audit.json"
+                    runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
+
+                    with self.assertRaisesRegex(
+                        MODULE.EvidenceCollectionError,
+                        "not public-alpha-qualified",
+                    ):
+                        MODULE.collect_evidence(
+                            source=source,
+                            audits_dir=root,
+                            output=output,
+                            runtime_lock=runtime_lock,
+                        )
+
+                    self.assertFalse(output.exists())
 
     def test_binds_collection_to_exact_distributed_app(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

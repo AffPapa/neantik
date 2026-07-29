@@ -83,6 +83,14 @@ for input in "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_ROOT"; do
   fi
 done
 
+: "${NEANTIK_GUI_FINGERPRINT_REPORT:?Set NEANTIK_GUI_FINGERPRINT_REPORT to a current absolute GUI A-B-A JSON report}"
+if [[ "$NEANTIK_GUI_FINGERPRINT_REPORT" != /* ||
+      ! -f "$NEANTIK_GUI_FINGERPRINT_REPORT" ||
+      -L "$NEANTIK_GUI_FINGERPRINT_REPORT" ]]; then
+  echo "Direct release requires a regular, non-symlinked absolute GUI fingerprint report." >&2
+  exit 66
+fi
+
 SECURITY_BASELINE_ARGS=()
 if [[ "${NEANTIK_RELEASE_CHANNEL:-}" == "public-alpha" ]]; then
   SECURITY_BASELINE_ARGS+=(--allow-public-alpha-tuples)
@@ -161,6 +169,9 @@ if ! printf '%s\n' "$SIGNATURE_DETAILS" |
 fi
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
+"$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py" \
+  "$NEANTIK_GUI_FINGERPRINT_REPORT" \
+  --integrated-app "$APP_PATH"
 
 ditto --norsrc -c -k --keepParent "$APP_PATH" "$ARCHIVE_PATH"
 verify_zip_has_no_finder_metadata "$ARCHIVE_PATH"
@@ -182,4 +193,4 @@ verify_zip_has_no_finder_metadata "$ARCHIVE_PATH"
 
 echo "$ARCHIVE_PATH"
 echo "$CHECKSUM_PATH"
-echo "Next: upload the versioned archive without switching the public CTA, then run scripts/finalize-direct-public-release.sh."
+echo "Next: upload the versioned archive without switching the public CTA, then verify it with scripts/verify-direct-hosted-download.py before publishing links."

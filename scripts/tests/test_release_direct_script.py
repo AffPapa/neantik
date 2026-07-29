@@ -31,6 +31,25 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             '"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"',
             text,
         )
+        self.assertIn(
+            "NEANTIK_GUI_FINGERPRINT_REPORT:?",
+            text,
+            "Direct release must require real GUI fingerprint evidence",
+        )
+        self.assertIn(
+            '"$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py"',
+            text,
+        )
+        self.assertIn(
+            '--integrated-app "$APP_PATH"',
+            text,
+            "GUI evidence must be bound to the exact packaged app",
+        )
+        self.assertLess(
+            text.index('"$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py"'),
+            text.index('ditto --norsrc -c -k --keepParent "$APP_PATH"'),
+            "GUI evidence must pass before archive creation and notarization",
+        )
         self.assertIn('APP_PATH="$PROJECT_DIR/dist/NeAntik.app"', text)
         self.assertIn('ditto "$ENGINEERING_APP_PATH" "$APP_PATH"', text)
         self.assertNotIn('rm -f "$ARCHIVE_PATH" "$CHECKSUM_PATH"', text)

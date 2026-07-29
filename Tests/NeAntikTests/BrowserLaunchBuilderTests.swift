@@ -2,6 +2,28 @@ import Foundation
 import Testing
 @testable import NeAntik
 
+private final class RuntimeInspectionRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var inspectedPaths: [String] = []
+
+    var paths: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return inspectedPaths
+    }
+
+    func inspect(_ url: URL) -> BrowserRuntimeInspection {
+        lock.lock()
+        inspectedPaths.append(url.standardizedFileURL.path)
+        lock.unlock()
+        return BrowserRuntimeInspection(
+            version: "150.0.7871.186",
+            architectures: ["arm64"],
+            codeSignatureValid: true
+        )
+    }
+}
+
 struct BrowserLaunchBuilderTests {
     private func testRuntimeLocator() -> BrowserRuntimeLocator {
         BrowserRuntimeLocator { _ in
@@ -586,6 +608,57 @@ struct BrowserLaunchBuilderTests {
         #expect(runtime?.executableURL.standardizedFileURL == executable.standardizedFileURL)
         #expect(runtime?.source == "Выбран вручную")
         #expect(runtime?.supportsFingerprintIdentity == false)
+    }
+
+    @Test
+    func preferredRuntimeStopsAfterFirstUsableCandidate() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let first = directory.appendingPathComponent("First Browser")
+        let second = directory.appendingPathComponent("Second Browser")
+        for executable in [first, second] {
+            FileManager.default.createFile(
+                atPath: executable.path,
+                contents: Data([
+                    0xCF, 0xFA, 0xED, 0xFE,
+                    0x0C, 0x00, 0x00, 0x01
+                ])
+            )
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: executable.path
+            )
+        }
+
+        let recorder = RuntimeInspectionRecorder()
+        let locator = BrowserRuntimeLocator(
+            runtimeInspector: recorder.inspect,
+            candidates: [
+                BrowserRuntimeLocator.Candidate(
+                    name: "First",
+                    url: first,
+                    source: "Test",
+                    flavor: .fingerprintChromium
+                ),
+                BrowserRuntimeLocator.Candidate(
+                    name: "Second",
+                    url: second,
+                    source: "Test",
+                    flavor: .standard
+                )
+            ]
+        )
+
+        let preferred = locator.preferredRuntime()
+
+        #expect(preferred?.executableURL == first)
+        #expect(recorder.paths == [first.standardizedFileURL.path])
     }
 
     @Test

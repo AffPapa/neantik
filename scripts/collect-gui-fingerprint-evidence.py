@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import importlib.util
 import json
 import os
-import shutil
 import sys
 from pathlib import Path
 from typing import Any
@@ -62,6 +62,24 @@ def select_source_report(*, source: Path | None, audits_dir: Path) -> Path:
     return candidates[0]
 
 
+def sanitized_release_report(report: dict[str, Any]) -> dict[str, Any]:
+    sanitized = copy.deepcopy(report)
+    sanitized["id"] = "00000000-0000-4000-8000-000000000000"
+    public_profile_ids = {
+        "webrtcDirectControl": "00000000-0000-4000-8000-000000000003",
+        "firstInitial": "00000000-0000-4000-8000-000000000001",
+        "second": "00000000-0000-4000-8000-000000000002",
+        "firstRepeat": "00000000-0000-4000-8000-000000000001",
+    }
+    for capture_key, public_profile_id in public_profile_ids.items():
+        capture = sanitized.get(capture_key)
+        if not isinstance(capture, dict):
+            continue
+        capture["profileID"] = public_profile_id
+        capture["profileName"] = str(capture.get("identityCode", "NeAntik profile"))
+    return sanitized
+
+
 def collect_evidence(
     *,
     source: Path | None,
@@ -85,6 +103,10 @@ def collect_evidence(
         report,
         expected_runtime=expected_runtime,
     )
+    if report.get("auditSchemaVersion") != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION:
+        raise EvidenceCollectionError(
+            "Source report does not use the current fingerprint audit schema."
+        )
     if not summary["qualified"]:
         issues = "; ".join(summary["issues"])
         raise EvidenceCollectionError(
@@ -93,7 +115,25 @@ def collect_evidence(
 
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_name(f".{output.name}.tmp")
-    shutil.copyfile(source_report, temporary)
+    sanitized = sanitized_release_report(report)
+    sanitized_summary = GUI_VERIFIER.verification_summary(
+        sanitized,
+        expected_runtime=expected_runtime,
+    )
+    if not sanitized_summary["qualified"]:
+        raise EvidenceCollectionError(
+            "Sanitized release report failed fingerprint verification."
+        )
+    temporary.write_text(
+        json.dumps(
+            sanitized,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     os.chmod(temporary, 0o600)
     os.replace(temporary, output)
     os.chmod(output, 0o600)
@@ -103,7 +143,7 @@ def collect_evidence(
         "integratedApp": (
             str(integrated_app) if integrated_app is not None else None
         ),
-        "summary": summary,
+        "summary": sanitized_summary,
     }
 
 

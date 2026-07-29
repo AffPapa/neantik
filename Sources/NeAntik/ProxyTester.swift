@@ -39,46 +39,76 @@ struct ProxyTester: Sendable {
             throw NeAntikError.invalidProxy
         }
 
-        return try await Task.detached(priority: .userInitiated) {
-            try Self.runCurl(configuration: configuration, password: password)
-        }.value
-    }
-
-    private static func runCurl(
-        configuration: ProxyConfiguration,
-        password: String
-    ) throws -> ProxyTestResult {
-        let process = Process()
-        let input = Pipe()
-        let output = Pipe()
-
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
-        process.arguments = curlArguments
-        process.standardInput = input
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-
-        var config = "proxy = \"\(escaped(configuration.curlServer))\"\n"
+        var config =
+            "proxy = \"\(Self.escaped(configuration.curlServer))\"\n"
         if !configuration.username.isEmpty {
             let credentials = "\(configuration.username):\(password)"
-            config += "proxy-user = \"\(escaped(credentials))\"\n"
+            config +=
+                "proxy-user = \"\(Self.escaped(credentials))\"\n"
         }
-
-        try process.run()
-        input.fileHandleForWriting.write(Data(config.utf8))
-        try input.fileHandleForWriting.close()
-        process.waitUntilExit()
-
-        let outputData = output.fileHandleForReading.readDataToEndOfFile()
-        guard process.terminationStatus == 0 else {
+        let inputData = Data(config.utf8)
+        config.removeAll(keepingCapacity: false)
+        let result = try await Self.runCancellableProcess(
+            executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
+            arguments: Self.curlArguments,
+            standardInput: inputData
+        )
+        guard result.status == 0 else {
             throw NeAntikError.proxyTestFailed(
-                process.terminationStatus == 28
+                result.status == 28
                     ? "Сервер не ответил за 12 секунд. Проверь адрес, порт и доступность прокси."
                     : "Не удалось подключиться. Проверь адрес, порт, тип прокси и данные для входа."
             )
         }
 
-        return try parseResponse(outputData)
+        return try Self.parseResponse(result.output)
+    }
+
+    static func runCancellableProcess(
+        executableURL: URL,
+        arguments: [String],
+        standardInput: Data
+    ) async throws -> (status: Int32, output: Data) {
+        let runner = CancellableProcessRunner(
+            executableURL: executableURL,
+            arguments: arguments
+        )
+        let input = Pipe()
+        let output = Pipe()
+        runner.process.standardInput = input
+        runner.process.standardOutput = output
+        runner.process.standardError = FileHandle.nullDevice
+
+        input.fileHandleForWriting.write(standardInput)
+        try input.fileHandleForWriting.close()
+
+        return try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            return try await withCheckedThrowingContinuation {
+                continuation in
+                runner.process.terminationHandler = { process in
+                    let outputData =
+                        output.fileHandleForReading.readDataToEndOfFile()
+                    if runner.wasCancelled {
+                        continuation.resume(throwing: CancellationError())
+                    } else {
+                        continuation.resume(
+                            returning: (
+                                status: process.terminationStatus,
+                                output: outputData
+                            )
+                        )
+                    }
+                }
+                do {
+                    try runner.start()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        } onCancel: {
+            runner.cancel()
+        }
     }
 
     static func parseResponse(_ data: Data) throws -> ProxyTestResult {
@@ -148,5 +178,51 @@ struct ProxyTester: Sendable {
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
             .replacingOccurrences(of: "\u{000B}", with: "\\v")
+    }
+}
+
+private final class CancellableProcessRunner: @unchecked Sendable {
+    let process = Process()
+
+    private let lock = NSLock()
+    private var cancelled = false
+
+    init(executableURL: URL, arguments: [String]) {
+        process.executableURL = executableURL
+        process.arguments = arguments
+    }
+
+    var wasCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+
+    func start() throws {
+        lock.lock()
+        let shouldStart = !cancelled
+        lock.unlock()
+        guard shouldStart else {
+            throw CancellationError()
+        }
+
+        try process.run()
+
+        lock.lock()
+        let shouldTerminate = cancelled
+        lock.unlock()
+        if shouldTerminate, process.isRunning {
+            process.terminate()
+        }
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        let shouldTerminate = process.isRunning
+        lock.unlock()
+        if shouldTerminate {
+            process.terminate()
+        }
     }
 }

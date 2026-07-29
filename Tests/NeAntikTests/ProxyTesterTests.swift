@@ -4,6 +4,33 @@ import Testing
 
 struct ProxyTesterTests {
     @Test
+    func cancellationTerminatesProxyTestProcessPromptly() async {
+        let startedAt = Date()
+        let task = Task {
+            try await ProxyTester.runCancellableProcess(
+                executableURL: URL(fileURLWithPath: "/bin/sleep"),
+                arguments: ["10"],
+                standardInput: Data()
+            )
+        }
+
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            Issue.record("Cancelled proxy process unexpectedly succeeded.")
+        } catch is CancellationError {
+            // Expected: cancellation must reach and terminate the subprocess.
+        } catch {
+            Issue.record(
+                "Cancelled proxy process returned the wrong error: \(error)"
+            )
+        }
+        #expect(Date().timeIntervalSince(startedAt) < 2)
+    }
+
+    @Test
     func curlConfigEscapingPreservesSupportedSpecialCharacters() {
         #expect(
             ProxyTester.escaped("u\\\"ser\tpass\nline\rnext\u{000B}v") ==
