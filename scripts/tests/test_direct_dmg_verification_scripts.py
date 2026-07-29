@@ -40,6 +40,22 @@ class DirectDMGVerificationScriptTests(unittest.TestCase):
         self.assertLess(verify_index, move_index)
         self.assertIn('mv "$TEMP_DMG.sha256" "$CHECKSUM_PATH"', text)
 
+    def test_hosted_wrapper_is_read_only_and_uses_canonical_github_asset(self) -> None:
+        text = (
+            ROOT
+            / "scripts"
+            / "Run-NeAntik-0.3.12-DMG-Hosted-Verification.command"
+        ).read_text()
+        self.assertIn("verify-direct-hosted-dmg.sh", text)
+        self.assertIn(
+            "https://github.com/AffPapa/neantik/releases/download/v0.3.12/"
+            "NeAntik-0.3.12-arm64-notarized.dmg",
+            text,
+        )
+        self.assertIn("GitHub Release и сайт не изменялись", text)
+        self.assertNotIn("gh release upload", text)
+        self.assertNotIn("notarytool submit", text)
+
 
 if __name__ == "__main__":
     unittest.main()
