@@ -25,7 +25,8 @@ macOS-packaging source pair for the next runtime build. It deliberately has
 `binaryBindingStatus: pending-new-build`: it is source evidence, not a claim
 about an older distributed binary. A release build must emit and verify both
 `source-provenance.json` and `runtime-candidate-lock.json` beside the source
-root; `release-direct.sh` refuses to package a runtime without those records.
+root; `prepare-direct-runtime-candidate.sh` refuses to package a runtime
+without those records.
 
 The `releases/` directory records archive name, size, SHA-256, runtime version,
 platform, and verification status. The ZIP itself must never be committed to
@@ -49,17 +50,32 @@ A public release must:
 12. be downloaded again from GitHub and independently reverified before the
     release is marked public.
 
+The release is deliberately two-phase. First,
+`prepare-direct-runtime-candidate.sh` creates and signs one exact
+`dist/NeAntik.app`, then writes `dist/direct-candidate-manifest.json` with a
+full bundle inventory. A fresh GUI A → B → A audit must be collected from that
+exact candidate. `release-direct.sh` only verifies and notarizes it; it never
+rebuilds or re-signs after the GUI run. The release channel is explicit:
+`public-alpha` accepts the documented alpha threshold, while `production`
+requires strict coherent production qualification.
+
 After uploading the versioned ZIP without changing public links, repeat the
 complete archive and Gatekeeper gate against fresh downloaded bytes:
 
 ```bash
 python3 scripts/verify-direct-hosted-download.py \
+  --candidate-manifest dist/direct-candidate-manifest.json \
+  --release-channel public-alpha \
   --download-url https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.zip
 ```
 
 The verifier rejects credentials, query strings, fragments, wrong filenames,
 SHA-256 or size changes, and any downloaded archive that fails the same local
-notarized-app, integrated-runtime, stapling, and Gatekeeper checks.
+notarized-app, integrated-runtime, stapling, and Gatekeeper checks. For every
+new release, the candidate manifest and release channel are mandatory together;
+the verifier extracts both local and freshly downloaded ZIPs and proves their
+`NeAntik.app` bundle matches the prepared candidate. Omitting both flags remains
+available only for historical artifacts created before this manifest contract.
 
 ## Signing boundary
 

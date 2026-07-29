@@ -100,6 +100,72 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
 
         self.assertEqual(verified, [archive.resolve()])
 
+    def test_new_release_reverifies_local_and_downloaded_exact_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = self.make_fixture(root)
+            manifest = root / "dist" / "direct-candidate-manifest.json"
+            manifest.write_text("{}\n", encoding="utf-8")
+            candidate_checks: list[tuple[Path, Path, str]] = []
+
+            def downloader(
+                _url: str,
+                destination: Path,
+                _expected_size: int,
+            ) -> None:
+                shutil.copyfile(archive, destination)
+
+            result = MODULE.verify_hosted_download(
+                project_root=root,
+                archive=archive,
+                download_url=(
+                    "https://github.com/AffPapa/neantik/releases/download/v1.2.3/"
+                    "NeAntik-1.2.3-arm64-notarized.zip"
+                ),
+                downloader=downloader,
+                archive_verifier=lambda _candidate: None,
+                candidate_manifest=manifest,
+                release_channel="public-alpha",
+                candidate_verifier=lambda candidate, bound_manifest, channel:
+                    candidate_checks.append(
+                        (candidate, bound_manifest, channel)
+                    ),
+            )
+
+        self.assertEqual(
+            result["status"],
+            "hosted-zip-byte-identical-gatekeeper-and-candidate-verified",
+        )
+        self.assertEqual(len(candidate_checks), 2)
+        self.assertEqual(candidate_checks[0][0], archive.resolve())
+        self.assertNotEqual(
+            candidate_checks[0][0].parent,
+            candidate_checks[1][0].parent,
+        )
+        self.assertTrue(
+            all(check[2] == "public-alpha" for check in candidate_checks)
+        )
+
+    def test_candidate_manifest_and_channel_are_an_atomic_opt_in(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = self.make_fixture(root)
+            with self.assertRaisesRegex(
+                MODULE.HostedDownloadError,
+                "provided together",
+            ):
+                MODULE.verify_hosted_download(
+                    project_root=root,
+                    archive=archive,
+                    download_url=(
+                        "https://downloads.example/"
+                        "NeAntik-1.2.3-arm64-notarized.zip"
+                    ),
+                    candidate_manifest=root / "candidate.json",
+                    downloader=lambda _url, _destination, _size: None,
+                    archive_verifier=lambda _candidate: None,
+                )
+
     def test_url_contract_rejects_credentials_query_fragment_and_wrong_name(self) -> None:
         invalid = (
             "http://example.com/NeAntik-1.2.3-arm64-notarized.zip",
@@ -147,6 +213,8 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
         self.assertNotIn("TelemetryDashboard", text)
         self.assertNotIn("verify-site-release-manifest", text)
         self.assertNotIn("cpa.tg", text)
+        self.assertIn("direct-candidate-manifest.py", text)
+        self.assertIn('["ditto", "-x", "-k"', text)
 
 
 if __name__ == "__main__":

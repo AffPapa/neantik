@@ -60,7 +60,7 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         if not (
             Path(__file__).resolve().parents[2] / "dist" / "fingerprint-audit.json"
         ).is_file():
-            self.assertIn("Production GUI fingerprint report", blocked)
+            self.assertIn("GUI fingerprint qualification", blocked)
 
     def test_accepts_complete_fixture_plan(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -78,6 +78,7 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
                 env={
                     "NEANTIK_SIGNING_IDENTITY": "Developer ID Application: Example (TEAMID)",
                     "NEANTIK_NOTARY_PROFILE": "nevision-notary",
+                    "NEANTIK_RELEASE_CHANNEL": "public-alpha",
                 },
             )
 
@@ -88,6 +89,42 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
             if result.name == "Expected notarized archive name/download URL"
         )
         self.assertIn("HTTPS URL basename matches", archive_gate.details)
+
+    def test_production_channel_rejects_public_alpha_only_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            integrated, runtime, args_gn, gui_report, runtime_lock = (
+                write_fixture_project(root)
+            )
+            report = json.loads(gui_report.read_text(encoding="utf-8"))
+            report["firstInitial"]["values"]["worker_platform"] = "Win32"
+            report["firstRepeat"]["values"]["worker_platform"] = "Win32"
+            gui_report.write_text(json.dumps(report), encoding="utf-8")
+            results = MODULE.verify_direct_public_release_plan(
+                project_root=root,
+                integrated_app=integrated,
+                runtime_app=runtime,
+                args_gn=args_gn,
+                gui_fingerprint_report=gui_report,
+                runtime_lock=runtime_lock,
+                download_url=(
+                    "https://downloads.neantik.app/"
+                    "NeAntik-1.2.3-arm64-notarized.zip"
+                ),
+                release_channel="production",
+                env={
+                    "NEANTIK_SIGNING_IDENTITY":
+                        "Developer ID Application: Example (TEAMID)",
+                    "NEANTIK_NOTARY_PROFILE": "nevision-notary",
+                },
+            )
+        blocked = {
+            result.name: result.details
+            for result in results
+            if not result.passed
+        }
+        self.assertIn("GUI fingerprint qualification", blocked)
+        self.assertIn("worker_platform", blocked["GUI fingerprint qualification"])
 
     def test_rejects_no_metal_args_and_wrong_download_url(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

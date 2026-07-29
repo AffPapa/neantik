@@ -6,6 +6,39 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func browserDataArgumentMatchingIsExact() {
+        let expected = "/tmp/NeAntik/Profile A/BrowserData"
+
+        #expect(
+            BrowserProcessManager.arguments(
+                ["browser", "--user-data-dir=\(expected)"],
+                useBrowserDataPath: expected
+            )
+        )
+        #expect(
+            BrowserProcessManager.arguments(
+                ["browser", "--user-data-dir", expected],
+                useBrowserDataPath: expected
+            )
+        )
+        #expect(
+            !BrowserProcessManager.arguments(
+                ["browser", "--user-data-dir=\(expected)-other"],
+                useBrowserDataPath: expected
+            )
+        )
+        #expect(
+            !BrowserProcessManager.arguments(
+                [
+                    "browser",
+                    "--description=--user-data-dir=\(expected)"
+                ],
+                useBrowserDataPath: expected
+            )
+        )
+    }
+
+    @Test
     func tracksProcessAndRemovesLockAfterExit() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -1592,10 +1625,19 @@ struct BrowserProcessManagerTests {
             try await Task.sleep(nanoseconds: 20_000_000)
         }
 
-        let text = try String(
-            contentsOf: paths.logFile(for: profile.id),
-            encoding: .utf8
-        )
+        var text = ""
+        for _ in 0..<50 {
+            text = (
+                try? String(
+                    contentsOf: paths.logFile(for: profile.id),
+                    encoding: .utf8
+                )
+            ) ?? ""
+            if text.contains("browser_exit") {
+                break
+            }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
         #expect(!text.contains("private.example"))
         #expect(text.contains("browser_launch"))
         #expect(text.contains("browser_exit"))

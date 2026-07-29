@@ -140,6 +140,7 @@ MAX_TOTAL_ARTIFACT_BYTES = 256 * 1024 * 1024
 PUBLIC_ATTESTATION_KEYS = {
     "auditSchemaVersion",
     "changedCriticalKeys",
+    "candidateManifestSHA256",
     "createdAt",
     "identityCatalogVersion",
     "kind",
@@ -150,6 +151,7 @@ PUBLIC_ATTESTATION_KEYS = {
     "productionQualified",
     "publicAlphaIssues",
     "qualified",
+    "releaseChannel",
     "runtimeCodeSignatureValid",
     "runtimeExecutableSHA256",
     "runtimeFlavor",
@@ -658,10 +660,14 @@ def expected_public_attestation(
     summary: dict[str, object],
     *,
     private_evidence_sha256: str,
+    candidate_manifest_sha256: str = "0" * 64,
+    release_channel: str = "public-alpha",
 ) -> dict[str, object]:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "neantik-gui-fingerprint-attestation",
+        "releaseChannel": release_channel,
+        "candidateManifestSHA256": candidate_manifest_sha256,
         "createdAt": report.get("createdAt"),
         "managerVersion": report.get("managerVersion"),
         "managerBuild": report.get("managerBuild"),
@@ -696,9 +702,9 @@ def validate_public_attestation(payload: object) -> dict[str, object]:
         raise PublicArtifactPrivacyError(
             "Public fingerprint attestation has an invalid exact key set."
         )
-    if payload.get("schemaVersion") != 1:
+    if payload.get("schemaVersion") != 2:
         raise PublicArtifactPrivacyError(
-            "Public fingerprint attestation schemaVersion must be 1."
+            "Public fingerprint attestation schemaVersion must be 2."
         )
     if payload.get("kind") != "neantik-gui-fingerprint-attestation":
         raise PublicArtifactPrivacyError(
@@ -708,6 +714,13 @@ def validate_public_attestation(payload: object) -> dict[str, object]:
         raise PublicArtifactPrivacyError(
             "Public fingerprint attestation must be public-alpha-qualified."
         )
+    if payload.get("releaseChannel") not in {
+        "public-alpha",
+        "production",
+    }:
+        raise PublicArtifactPrivacyError(
+            "Public fingerprint attestation release channel is invalid."
+        )
     if payload.get("runtimeCodeSignatureValid") is not True:
         raise PublicArtifactPrivacyError(
             "Public fingerprint attestation must prove a valid runtime signature."
@@ -715,6 +728,13 @@ def validate_public_attestation(payload: object) -> dict[str, object]:
     if not isinstance(payload.get("productionQualified"), bool):
         raise PublicArtifactPrivacyError(
             "Public fingerprint attestation production verdict must be boolean."
+        )
+    if (
+        payload.get("releaseChannel") == "production"
+        and payload.get("productionQualified") is not True
+    ):
+        raise PublicArtifactPrivacyError(
+            "Production attestation must be production-qualified."
         )
     if (
         payload.get("auditSchemaVersion")
@@ -743,6 +763,7 @@ def validate_public_attestation(payload: object) -> dict[str, object]:
         raise PublicArtifactPrivacyError(str(error)) from error
     for key in (
         "privateEvidenceSHA256",
+        "candidateManifestSHA256",
         "runtimeExecutableSHA256",
         "runtimeFrameworkSHA256",
     ):
@@ -779,12 +800,25 @@ def verify_evidence_attestation_payload_binding(
     private_payload: bytes,
     public_payload: object,
     integrated_app: Path,
+    release_channel: str = "public-alpha",
+    candidate_manifest_sha256: str = "0" * 64,
 ) -> str:
     if not isinstance(public_payload, dict):
         raise PublicArtifactPrivacyError(
             "Public attestation must be a JSON object."
         )
     validate_public_attestation(public_payload)
+    if public_payload.get("releaseChannel") != release_channel:
+        raise PublicArtifactPrivacyError(
+            "Public attestation release channel does not match the release."
+        )
+    if (
+        public_payload.get("candidateManifestSHA256")
+        != candidate_manifest_sha256
+    ):
+        raise PublicArtifactPrivacyError(
+            "Public attestation does not match the immutable candidate manifest."
+        )
     expected_sha = hashlib.sha256(private_payload).hexdigest()
     if public_payload.get("privateEvidenceSHA256") != expected_sha:
         raise PublicArtifactPrivacyError(
@@ -810,14 +844,26 @@ def verify_evidence_attestation_payload_binding(
         )
     except GUI_VERIFIER.FingerprintReportError as error:
         raise PublicArtifactPrivacyError(str(error)) from error
-    if not summary.get("qualified"):
+    if release_channel not in {"public-alpha", "production"}:
         raise PublicArtifactPrivacyError(
-            "Private fingerprint evidence is not semantically qualified."
+            "Release channel must be public-alpha or production."
+        )
+    qualification_issues = GUI_VERIFIER.qualification_issues(
+        summary,
+        require_production=release_channel == "production",
+    )
+    if qualification_issues:
+        raise PublicArtifactPrivacyError(
+            "Private fingerprint evidence is not semantically qualified for "
+            f"{release_channel}: "
+            + "; ".join(qualification_issues)
         )
     expected_payload = expected_public_attestation(
         report,
         summary,
         private_evidence_sha256=expected_sha,
+        candidate_manifest_sha256=candidate_manifest_sha256,
+        release_channel=release_channel,
     )
     if public_payload != expected_payload:
         raise PublicArtifactPrivacyError(
@@ -831,6 +877,8 @@ def verify_evidence_attestation_binding(
     private_evidence: Path,
     attestation: Path,
     integrated_app: Path,
+    release_channel: str = "public-alpha",
+    candidate_manifest: Path | None = None,
 ) -> str:
     try:
         private_payload = private_evidence.read_bytes()
@@ -839,10 +887,22 @@ def verify_evidence_attestation_binding(
         raise PublicArtifactPrivacyError(
             f"Cannot read evidence/attestation binding inputs: {error}"
         ) from error
+    candidate_manifest_sha256 = "0" * 64
+    if candidate_manifest is not None:
+        try:
+            candidate_manifest_sha256 = hashlib.sha256(
+                candidate_manifest.read_bytes()
+            ).hexdigest()
+        except OSError as error:
+            raise PublicArtifactPrivacyError(
+                f"Cannot read candidate manifest: {error}"
+            ) from error
     return verify_evidence_attestation_payload_binding(
         private_payload=private_payload,
         public_payload=public_payload,
         integrated_app=integrated_app,
+        release_channel=release_channel,
+        candidate_manifest_sha256=candidate_manifest_sha256,
     )
 
 
@@ -896,6 +956,12 @@ def main() -> int:
     parser.add_argument("--private-evidence", type=Path)
     parser.add_argument("--attestation", type=Path)
     parser.add_argument("--integrated-app", type=Path)
+    parser.add_argument(
+        "--release-channel",
+        choices=("public-alpha", "production"),
+        default="public-alpha",
+    )
+    parser.add_argument("--candidate-manifest", type=Path)
     args = parser.parse_args()
     try:
         binding_arguments = (
@@ -920,6 +986,8 @@ def main() -> int:
                 private_evidence=args.private_evidence,
                 attestation=args.attestation,
                 integrated_app=args.integrated_app,
+                release_channel=args.release_channel,
+                candidate_manifest=args.candidate_manifest,
             )
     except (OSError, PublicArtifactPrivacyError, zipfile.BadZipFile) as error:
         print(f"Public artifact privacy verification failed: {error}", file=sys.stderr)

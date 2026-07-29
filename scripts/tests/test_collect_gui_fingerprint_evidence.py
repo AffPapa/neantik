@@ -33,11 +33,11 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
 
         self.assertIn(
-            "PASS: public-alpha GUI fingerprint evidence collected.",
+            "f\"{result['releaseQualification']} GUI fingerprint evidence \"",
             source,
         )
-        self.assertNotIn(
-            "PASS: production GUI fingerprint evidence collected.",
+        self.assertIn(
+            "choices=(\"public-alpha\", \"production\")",
             source,
         )
 
@@ -65,7 +65,6 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
             source.write_text(json.dumps(report), encoding="utf-8")
             output = root / "dist" / "fingerprint-audit.json"
             runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
-
             with self.assertRaisesRegex(
                 MODULE.EvidenceCollectionError,
                 "not public-alpha-qualified",
@@ -98,6 +97,8 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
                 root / "dist" / "fingerprint-audit-summary.json"
             )
             runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
+            candidate_manifest = root / "direct-candidate-manifest.json"
+            candidate_manifest.write_bytes(b"immutable candidate manifest\n")
 
             result = MODULE.collect_evidence(
                 source=source,
@@ -105,6 +106,7 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
                 output=output,
                 runtime_lock=runtime_lock,
                 summary_output=summary_output,
+                candidate_manifest=candidate_manifest,
             )
 
             mode = os.stat(output).st_mode & 0o777
@@ -177,6 +179,16 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
             self.assertEqual(
                 public_summary["privateEvidenceSHA256"],
                 result["privateEvidenceSHA256"],
+            )
+            self.assertEqual(
+                public_summary["candidateManifestSHA256"],
+                MODULE.hashlib.sha256(
+                    candidate_manifest.read_bytes()
+                ).hexdigest(),
+            )
+            self.assertEqual(
+                public_summary["releaseChannel"],
+                "public-alpha",
             )
             self.assertEqual(
                 MODULE.verify_attestation_binding(
@@ -487,6 +499,40 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
 
             self.assertTrue(result["summary"]["qualified"])
             self.assertEqual(result["integratedApp"], str(integrated_app))
+
+    def test_production_collection_rejects_public_alpha_only_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = VERIFIER_FIXTURES.production_report()
+            report["firstInitial"]["values"]["worker_platform"] = "Win32"
+            report["firstRepeat"]["values"]["worker_platform"] = "Win32"
+            source = root / "audit-alpha-only.json"
+            source.write_text(json.dumps(report), encoding="utf-8")
+            output = root / "dist" / "fingerprint-audit.json"
+            runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
+
+            alpha_result = MODULE.collect_evidence(
+                source=source,
+                audits_dir=root,
+                output=output,
+                runtime_lock=runtime_lock,
+                release_channel="public-alpha",
+            )
+            self.assertEqual(
+                alpha_result["releaseQualification"],
+                "public-alpha",
+            )
+            with self.assertRaisesRegex(
+                MODULE.EvidenceCollectionError,
+                "not production-qualified",
+            ):
+                MODULE.collect_evidence(
+                    source=source,
+                    audits_dir=root,
+                    output=root / "dist" / "production.json",
+                    runtime_lock=runtime_lock,
+                    release_channel="production",
+                )
 
     def test_rejects_qualified_report_with_runtime_hash_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

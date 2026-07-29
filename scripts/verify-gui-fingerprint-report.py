@@ -503,7 +503,9 @@ def timestamp_issues(
         return issues
 
     if any(capture_times[index][1] > capture_times[index + 1][1] for index in range(len(capture_times) - 1)):
-        issues.append("Capture timestamps are not ordered as A → B → A.")
+        issues.append(
+            "Capture timestamps are not ordered as direct control → A → B → A."
+        )
     if any(captured_at > report_created_at for _, captured_at in capture_times):
         issues.append("A capture timestamp is later than the report createdAt timestamp.")
     if expected_runtime is not None:
@@ -515,9 +517,13 @@ def timestamp_issues(
         except FingerprintReportError as error:
             issues.append(str(error))
         else:
-            if report_created_at < runtime_created_at:
+            if report_created_at < runtime_created_at or any(
+                captured_at < runtime_created_at
+                for _, captured_at in capture_times
+            ):
                 issues.append(
-                    "The report was created before the pinned runtime verification report."
+                    "The report or a capture predates the pinned runtime "
+                    "verification report."
                 )
     return issues
 
@@ -849,14 +855,21 @@ def public_alpha_release_issues(
     repeat = values(repeat_capture)
 
     issues = exact_schema_issues(report)
+    ordered_captures: list[tuple[str, dict[str, Any]]] = []
+    direct_control = report.get("webrtcDirectControl")
+    if isinstance(direct_control, dict):
+        ordered_captures.append(("webrtcDirectControl", direct_control))
+    ordered_captures.extend(
+        [
+            ("firstInitial", first_capture),
+            ("second", second_capture),
+            ("firstRepeat", repeat_capture),
+        ]
+    )
     issues.extend(
         timestamp_issues(
             report,
-            [
-                ("firstInitial", first_capture),
-                ("second", second_capture),
-                ("firstRepeat", repeat_capture),
-            ],
+            ordered_captures,
             expected_runtime=expected_runtime,
         )
     )
@@ -959,6 +972,16 @@ def verification_summary(
     }
 
 
+def qualification_issues(
+    summary: dict[str, Any],
+    *,
+    require_production: bool,
+) -> list[str]:
+    if require_production:
+        return list(summary["productionIssues"])
+    return list(summary["issues"])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Verify a NeAntik public-alpha GUI A -> B -> A fingerprint report.",
@@ -985,6 +1008,14 @@ def main() -> int:
             "version/build inside the distributed NeAntik app."
         ),
     )
+    parser.add_argument(
+        "--require-production",
+        action="store_true",
+        help=(
+            "Require strict coherent production qualification instead of the "
+            "documented Direct public-alpha threshold."
+        ),
+    )
     args = parser.parse_args()
     try:
         if args.integrated_app:
@@ -1002,19 +1033,45 @@ def main() -> int:
     except FingerprintReportError as error:
         raise SystemExit(str(error)) from error
 
+    issues = qualification_issues(
+        summary,
+        require_production=args.require_production,
+    )
+    qualified = not issues
     if args.json:
+        summary["requiredQualification"] = (
+            "production" if args.require_production else "public-alpha"
+        )
+        summary["requiredQualificationPassed"] = qualified
         print(json.dumps(summary, indent=2, ensure_ascii=False))
-    elif summary["qualified"]:
-        print("PASS: public-alpha GUI A -> B -> A fingerprint report is qualified.")
-        if not summary["productionQualified"]:
+    elif qualified:
+        if args.require_production:
+            print(
+                "PASS: strict coherent production GUI A -> B -> A "
+                "fingerprint report is qualified."
+            )
+        else:
+            print(
+                "PASS: public-alpha GUI A -> B -> A fingerprint report is "
+                "qualified."
+            )
+        if not args.require_production and not summary["productionQualified"]:
             print("NOTE: strict coherent production hardening is still incomplete.")
             for issue in summary["productionIssues"]:
                 print(f"- {issue}")
     else:
-        print("FAIL: public-alpha GUI A -> B -> A fingerprint report is not qualified.")
-        for issue in summary["issues"]:
+        label = (
+            "strict coherent production"
+            if args.require_production
+            else "public-alpha"
+        )
+        print(
+            f"FAIL: {label} GUI A -> B -> A fingerprint report is not "
+            "qualified."
+        )
+        for issue in issues:
             print(f"- {issue}")
-    return 0 if summary["qualified"] else 1
+    return 0 if qualified else 1
 
 
 if __name__ == "__main__":

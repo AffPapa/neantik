@@ -478,7 +478,7 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
         mutations = (
             ("extra", "value"),
             ("qualified", False),
-            ("schemaVersion", 2),
+            ("schemaVersion", 1),
             ("privateEvidenceSHA256", "not-a-hash"),
         )
         for key, value in mutations:

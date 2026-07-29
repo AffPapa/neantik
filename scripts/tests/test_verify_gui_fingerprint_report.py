@@ -119,7 +119,7 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             )
 
         self.assertIn(
-            "The report was created before the pinned runtime verification report.",
+            "The report or a capture predates the pinned runtime verification report.",
             issues,
         )
 
@@ -214,7 +214,21 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
 
         issues = MODULE.production_release_issues(report)
 
-        self.assertIn("Capture timestamps are not ordered as A → B → A.", issues)
+        self.assertIn(
+            "Capture timestamps are not ordered as direct control → A → B → A.",
+            issues,
+        )
+
+    def test_rejects_direct_control_after_first_capture(self) -> None:
+        report = production_report()
+        report["webrtcDirectControl"]["capturedAt"] = (
+            "2026-07-25T08:29:39Z"
+        )
+        issues = MODULE.production_release_issues(report)
+        self.assertIn(
+            "Capture timestamps are not ordered as direct control → A → B → A.",
+            issues,
+        )
 
     def test_rejects_capture_timestamp_after_report_created_at(self) -> None:
         report = production_report()
@@ -270,6 +284,14 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         self.assertIn(
             "The profile A, first capture platform value disagrees with worker_platform.",
             summary["productionIssues"],
+        )
+        self.assertEqual(
+            MODULE.qualification_issues(summary, require_production=False),
+            [],
+        )
+        self.assertIn(
+            "The profile A, first capture platform value disagrees with worker_platform.",
+            MODULE.qualification_issues(summary, require_production=True),
         )
 
     def test_repeated_offline_audio_mismatch_fails_strict(self) -> None:

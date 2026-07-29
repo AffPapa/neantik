@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import plistlib
@@ -15,6 +16,17 @@ from urllib.parse import unquote, urlparse
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CANDIDATE_MANIFEST_SCRIPT = (
+    PROJECT_ROOT / "scripts" / "direct-candidate-manifest.py"
+)
+CANDIDATE_SPEC = importlib.util.spec_from_file_location(
+    "direct_candidate_manifest_for_hosted_download",
+    CANDIDATE_MANIFEST_SCRIPT,
+)
+assert CANDIDATE_SPEC and CANDIDATE_SPEC.loader
+CANDIDATE = importlib.util.module_from_spec(CANDIDATE_SPEC)
+sys.modules[CANDIDATE_SPEC.name] = CANDIDATE
+CANDIDATE_SPEC.loader.exec_module(CANDIDATE)
 
 
 class HostedDownloadError(RuntimeError):
@@ -138,8 +150,64 @@ def verify_archive_with_local_gate(archive: Path, *, project_root: Path) -> None
         )
 
 
+def verify_archive_candidate_manifest(
+    archive: Path,
+    manifest: Path,
+    release_channel: str,
+) -> None:
+    if release_channel not in {"public-alpha", "production"}:
+        raise HostedDownloadError(
+            "release channel must be public-alpha or production"
+        )
+    if not manifest.is_file() or manifest.is_symlink():
+        raise HostedDownloadError(
+            f"candidate manifest is missing or unsafe: {manifest}"
+        )
+    with tempfile.TemporaryDirectory(
+        prefix="neantik-hosted-candidate-"
+    ) as temporary:
+        extraction_root = Path(temporary)
+        completed = subprocess.run(
+            ["ditto", "-x", "-k", str(archive), str(extraction_root)],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise HostedDownloadError(
+                "cannot extract hosted candidate archive:\n"
+                + completed.stdout.strip()
+            )
+        app = extraction_root / "NeAntik.app"
+        if not app.is_dir() or app.is_symlink():
+            raise HostedDownloadError(
+                "hosted archive must contain one top-level NeAntik.app"
+            )
+        unexpected_apps = [
+            path
+            for path in extraction_root.glob("*.app")
+            if path.name != "NeAntik.app"
+        ]
+        if unexpected_apps:
+            raise HostedDownloadError(
+                "hosted archive contains an unexpected top-level app"
+            )
+        try:
+            CANDIDATE.verify_manifest(
+                app,
+                manifest,
+                release_channel=release_channel,
+            )
+        except (CANDIDATE.CandidateManifestError, OSError) as error:
+            raise HostedDownloadError(
+                f"hosted app does not match candidate manifest: {error}"
+            ) from error
+
+
 Downloader = Callable[[str, Path, int], None]
 ArchiveVerifier = Callable[[Path], None]
+CandidateVerifier = Callable[[Path, Path, str], None]
 
 
 def verify_hosted_download(
@@ -149,6 +217,9 @@ def verify_hosted_download(
     download_url: str | None = None,
     downloader: Downloader | None = None,
     archive_verifier: ArchiveVerifier | None = None,
+    candidate_manifest: Path | None = None,
+    release_channel: str | None = None,
+    candidate_verifier: CandidateVerifier | None = None,
 ) -> dict[str, str | int]:
     project_root = project_root.resolve()
     archive_name = expected_archive_name(project_root)
@@ -174,6 +245,23 @@ def verify_hosted_download(
     if not archive.is_file() or archive.is_symlink():
         raise HostedDownloadError(
             f"local archive is missing or unsafe: {archive}"
+        )
+    if (candidate_manifest is None) != (release_channel is None):
+        raise HostedDownloadError(
+            "candidate manifest and release channel must be provided together"
+        )
+    if candidate_manifest is not None:
+        if not candidate_manifest.is_file() or candidate_manifest.is_symlink():
+            raise HostedDownloadError(
+                f"candidate manifest is missing or unsafe: {candidate_manifest}"
+            )
+        candidate_manifest = candidate_manifest.resolve()
+        if release_channel not in {"public-alpha", "production"}:
+            raise HostedDownloadError(
+                "release channel must be public-alpha or production"
+            )
+        candidate_verifier = (
+            candidate_verifier or verify_archive_candidate_manifest
         )
 
     download_url = download_url or os.environ.get(
@@ -204,6 +292,13 @@ def verify_hosted_download(
         )
 
     archive_verifier(archive)
+    if candidate_manifest is not None:
+        assert release_channel is not None and candidate_verifier is not None
+        candidate_verifier(
+            archive,
+            candidate_manifest,
+            release_channel,
+        )
     with tempfile.TemporaryDirectory(prefix="neantik-hosted-zip-") as temporary:
         downloaded = Path(temporary) / archive_name
         downloader(download_url, downloaded, expected_size)
@@ -226,13 +321,24 @@ def verify_hosted_download(
             encoding="utf-8",
         )
         archive_verifier(downloaded)
+        if candidate_manifest is not None:
+            assert release_channel is not None and candidate_verifier is not None
+            candidate_verifier(
+                downloaded,
+                candidate_manifest,
+                release_channel,
+            )
 
     return {
         "archiveName": archive_name,
         "downloadURL": download_url,
         "sha256": expected_sha256,
         "sizeBytes": expected_size,
-        "status": "hosted-zip-byte-identical-and-gatekeeper-verified",
+        "status": (
+            "hosted-zip-byte-identical-gatekeeper-and-candidate-verified"
+            if candidate_manifest is not None
+            else "hosted-zip-byte-identical-and-gatekeeper-verified"
+        ),
     }
 
 
@@ -249,6 +355,19 @@ def main() -> int:
         "--download-url",
         default=os.environ.get("NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL"),
     )
+    parser.add_argument(
+        "--candidate-manifest",
+        type=Path,
+        help=(
+            "Immutable prepared-candidate manifest. New releases must pass "
+            "this together with --release-channel."
+        ),
+    )
+    parser.add_argument(
+        "--release-channel",
+        choices=("public-alpha", "production"),
+        help="Qualification channel bound by the candidate manifest.",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     try:
@@ -256,6 +375,8 @@ def main() -> int:
             project_root=args.project_root,
             archive=args.archive,
             download_url=args.download_url,
+            candidate_manifest=args.candidate_manifest,
+            release_channel=args.release_channel,
         )
     except (OSError, HostedDownloadError) as error:
         print(f"Direct hosted ZIP verification failed: {error}", file=sys.stderr)

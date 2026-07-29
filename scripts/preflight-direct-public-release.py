@@ -129,12 +129,23 @@ def verify_direct_public_release_plan(
     gui_fingerprint_report: Path,
     runtime_lock: Path,
     download_url: str | None,
+    release_channel: str | None = None,
     env: dict[str, str] | None = None,
 ) -> list[GateResult]:
     env = env if env is not None else os.environ
+    effective_release_channel = (
+        release_channel or env.get("NEANTIK_RELEASE_CHANNEL", "")
+    ).strip()
     info_plist = read_plist(project_root / "Resources" / "Info.plist")
     version = str(info_plist["CFBundleShortVersionString"])
     expected_archive_name = f"NeAntik-{version}-arm64-notarized.zip"
+
+    def release_channel_contract() -> str:
+        if effective_release_channel not in {"public-alpha", "production"}:
+            raise ValueError(
+                "NEANTIK_RELEASE_CHANNEL must be public-alpha or production"
+            )
+        return effective_release_channel
 
     def integrated_bundle() -> str:
         if not integrated_app.is_dir():
@@ -317,8 +328,17 @@ def verify_direct_public_release_plan(
             GUI_VERIFIER.load_report(gui_fingerprint_report),
             expected_runtime=expected_runtime,
         )
-        if not summary["qualified"]:
-            raise ValueError("; ".join(summary["issues"]))
+        if effective_release_channel == "production":
+            if not summary.get("productionQualified", False):
+                raise ValueError("; ".join(summary["productionIssues"]))
+            return "production-qualified GUI A -> B -> A report"
+        if effective_release_channel == "public-alpha":
+            if not summary["qualified"]:
+                raise ValueError("; ".join(summary["issues"]))
+        else:
+            raise ValueError(
+                "release channel must be validated before GUI qualification"
+            )
         if not summary.get("productionQualified", False):
             return (
                 "public-alpha GUI A -> B -> A report; "
@@ -352,13 +372,14 @@ def verify_direct_public_release_plan(
         )
 
     return [
+        gate("Explicit Direct release channel", release_channel_contract),
         gate("Integrated Direct bundle", integrated_bundle),
         gate("Source-branded fingerprint runtime", runtime_identity),
         gate("Runtime app matches runtime lock", runtime_lock_contract),
         gate("Chromium 150 source provenance", runtime_source_provenance),
         gate("Runtime security baseline", runtime_security),
         gate("Metal runtime arguments", metal_args),
-        gate("Production GUI fingerprint report", gui_report),
+        gate("GUI fingerprint qualification", gui_report),
         gate("Developer ID signing environment", signing_env),
         gate("Notary profile environment", notary_env),
         gate("Expected notarized archive name/download URL", archive_name_url_contract),
@@ -384,11 +405,13 @@ def results_to_json(
     results: list[GateResult],
     *,
     download_url: str | None = None,
+    release_channel: str | None = None,
 ) -> dict[str, Any]:
     blocked = [result for result in results if not result.passed]
     return {
         "schemaVersion": 1,
         "channel": "Direct",
+        "releaseQualification": release_channel,
         "ready": not blocked,
         "downloadURLProvided": bool((download_url or "").strip()),
         "gateCount": len(results),
@@ -422,7 +445,7 @@ def main() -> int:
     parser.add_argument(
         "--integrated-app",
         type=Path,
-        default=PROJECT_ROOT / "dist" / "NeAntik-Integrated.app",
+        default=PROJECT_ROOT / "dist" / "NeAntik.app",
     )
     parser.add_argument("--runtime-app", type=Path)
     parser.add_argument("--args-gn", type=Path)
@@ -440,6 +463,15 @@ def main() -> int:
         "--download-url",
         default=os.environ.get("NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL"),
     )
+    parser.add_argument(
+        "--release-channel",
+        choices=("public-alpha", "production"),
+        default=os.environ.get("NEANTIK_RELEASE_CHANNEL"),
+        help=(
+            "Explicit fingerprint qualification required for this Direct "
+            "candidate."
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -452,11 +484,16 @@ def main() -> int:
         gui_fingerprint_report=args.gui_fingerprint_report.resolve(),
         runtime_lock=args.runtime_lock.resolve(),
         download_url=args.download_url,
+        release_channel=args.release_channel,
     )
     if args.json:
         print(
             json.dumps(
-                results_to_json(results, download_url=args.download_url),
+                results_to_json(
+                    results,
+                    download_url=args.download_url,
+                    release_channel=args.release_channel,
+                ),
                 indent=2,
                 ensure_ascii=False,
             )

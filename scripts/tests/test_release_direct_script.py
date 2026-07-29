@@ -2,72 +2,46 @@ import unittest
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "release-direct.sh"
+SCRIPTS = Path(__file__).resolve().parents[1]
+PREPARE = SCRIPTS / "prepare-direct-runtime-candidate.sh"
+RELEASE = SCRIPTS / "release-direct.sh"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
-    def test_public_release_builds_clean_non_overwriting_candidate(self) -> None:
-        text = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn(
-            "NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL:?",
-            text,
-            "public Direct release must require the final hosted download URL",
-        )
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-direct-notarized-archive.py"',
-            text,
-            "public Direct release must verify the final notarized ZIP",
-        )
-        self.assertIn('"$PROJECT_DIR/scripts/verify-direct-version-bump.py"', text)
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"',
-            text,
-        )
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-direct-update-policy.py"',
-            text,
-        )
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"',
-            text,
-        )
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py"',
-            text,
-        )
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py"',
-            text,
-        )
+    def test_prepare_builds_and_binds_one_exact_candidate(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
         self.assertIn('CANDIDATE_LOCK="$4"', text)
-        self.assertIn('--lock "$CANDIDATE_LOCK"', text)
-        self.assertIn('--source-root "$SOURCE_ROOT"', text)
-        self.assertIn(
-            "NEANTIK_GUI_FINGERPRINT_REPORT:?",
-            text,
-            "Direct release must require real GUI fingerprint evidence",
-        )
-        self.assertIn(
-            '"$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py"',
-            text,
-        )
-        self.assertIn(
-            '--integrated-app "$APP_PATH"',
-            text,
-            "GUI evidence must be bound to the exact packaged app",
-        )
-        self.assertLess(
-            text.index('"$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py"'),
-            text.index('ditto --norsrc -c -k --keepParent "$APP_PATH"'),
-            "GUI evidence must pass before archive creation and notarization",
-        )
+        self.assertIn("--source-root \"$SOURCE_ROOT\"", text)
+        self.assertIn("--lock \"$CANDIDATE_LOCK\"", text)
+        self.assertIn("angle_enable_metal=true", text)
+        self.assertIn("verify-runtime-source-provenance.py", text)
+        self.assertIn("verify-runtime-candidate-lock.py", text)
+        self.assertIn("verify-runtime-security-baseline.py", text)
+        self.assertIn("verify-direct-version-bump.py", text)
+        self.assertIn("verify-direct-telemetry-disabled.py", text)
+        self.assertIn("verify-direct-update-policy.py", text)
+        self.assertIn("verify-public-fingerprint-corpus.py", text)
+        self.assertIn("sign-runtime.sh", text)
+        self.assertIn("package-integrated-app.sh", text)
+        self.assertIn("direct-candidate-manifest.py", text)
         self.assertIn('APP_PATH="$PROJECT_DIR/dist/NeAntik.app"', text)
-        self.assertIn('ditto "$ENGINEERING_APP_PATH" "$APP_PATH"', text)
-        self.assertNotIn('rm -f "$ARCHIVE_PATH" "$CHECKSUM_PATH"', text)
-        self.assertIn('shasum -a 256 "$(basename "$ARCHIVE_PATH")"', text)
+        self.assertNotIn("notarytool submit", text)
+
+    def test_release_only_verifies_and_notarizes_prepared_candidate(self) -> None:
+        text = RELEASE.read_text(encoding="utf-8")
+        self.assertIn("NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL:?", text)
+        self.assertIn("NEANTIK_RELEASE_CHANNEL", text)
+        self.assertIn("direct-candidate-manifest.py", text)
+        self.assertGreaterEqual(text.count("direct-candidate-manifest.py"), 2)
+        self.assertIn("notarize-direct-candidate.sh", text)
+        self.assertIn("verify-direct-notarized-archive.py", text)
+        self.assertNotIn("sign-runtime.sh", text)
+        self.assertNotIn("package-integrated-app.sh", text)
+        self.assertNotIn("codesign --force", text)
+        self.assertNotIn("rm -rf", text)
         self.assertLess(
-            text.index('"$PROJECT_DIR/scripts/verify-direct-notarized-archive.py"'),
-            text.index("echo \"$ARCHIVE_PATH\""),
+            text.index("direct-candidate-manifest.py"),
+            text.index("notarize-direct-candidate.sh"),
         )
 
 

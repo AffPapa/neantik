@@ -64,13 +64,22 @@ The local release path is:
 ```bash
 export NEANTIK_SIGNING_IDENTITY="Developer ID Application: …"
 export NEANTIK_NOTARY_PROFILE="your-keychain-profile"
+export NEANTIK_RELEASE_CHANNEL="public-alpha" # or production
 export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm64-notarized.zip"
 
-./scripts/release-direct.sh \
+./scripts/prepare-direct-runtime-candidate.sh \
   "/absolute/path/to/NeAntik Browser.app" \
   /absolute/path/to/args.gn \
-  /absolute/path/to/chromium/src
+  /absolute/path/to/chromium/src \
+  /absolute/path/to/runtime-candidate-lock.json
+
+# Run a fresh GUI A → B → A audit from dist/NeAntik.app, then collect it
+# against dist/direct-candidate-manifest.json and the same release channel.
+./scripts/release-direct.sh
 ```
 
-Only upload an archive after signature, notarization, stapling, Gatekeeper, and
-SHA-256 verification pass.
+The first phase signs one exact candidate and writes a non-overwriting manifest
+of the complete bundle. The second phase refuses to rebuild or re-sign it and
+requires GUI evidence created after that manifest. `production` requires strict
+production qualification; `public-alpha` never silently upgrades that verdict.
+Only upload after notarization, stapling, Gatekeeper, and SHA-256 pass.

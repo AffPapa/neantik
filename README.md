@@ -97,6 +97,12 @@ swift run NeAntik
 Сертификат Developer ID и данные notarization остаются только в Связке ключей
 владельца релиза и не хранятся в репозитории или GitHub Actions.
 
+Выпуск идёт в два этапа: сначала создаётся и подписывается один точный
+`NeAntik.app` с неизменяемым manifest всего bundle, затем свежая GUI-проверка
+A → B → A привязывается к этому кандидату. Этап notarization не пересобирает и
+не переподписывает приложение. Канал `public-alpha` и строгий `production`
+выбираются явно и не подменяют друг друга.
+
 ## Проверки
 
 Основные локальные gates:
@@ -127,7 +133,8 @@ GUI evidence проверяется отдельно:
 
 ```bash
 python3 scripts/verify-gui-fingerprint-report.py \
-  /absolute/path/to/fingerprint-audit.json
+  /absolute/path/to/fingerprint-audit.json \
+  --require-production
 ```
 
 Диагностический или headless-отчёт не может пройти production gate. Нужен

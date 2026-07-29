@@ -78,7 +78,8 @@ echo
   echo "Independent production GUI report verification:"
   python3 "$REPORT_VERIFIER" \
     "$REPORT" \
-    --runtime-lock "$RUNTIME_LOCK"
+    --runtime-lock "$RUNTIME_LOCK" \
+    --require-production
 } 2>&1 | tee "$LOG"
 pipeline_status=("${PIPESTATUS[@]}")
 status=${pipeline_status[0]}

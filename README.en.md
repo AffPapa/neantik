@@ -81,6 +81,12 @@ Packaging a complete Direct application additionally requires a built Chromium
 runtime. Apple Developer ID signing and notarization use credentials in the
 builder's Keychain and are never stored in this repository.
 
+Direct releases use two phases: prepare and sign one exact `NeAntik.app` with
+an immutable full-bundle manifest, then bind a fresh GUI A → B → A audit to
+that candidate. Notarization never rebuilds or re-signs it. The
+`public-alpha` and strict `production` qualification channels are explicit and
+cannot be substituted for one another.
+
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before

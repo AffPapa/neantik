@@ -87,6 +87,7 @@ class RuntimeAuditLauncherTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("fingerprint-audit.json", verifier_args)
         self.assertIn("--runtime-lock", verifier_args)
+        self.assertIn("--require-production", verifier_args)
         self.assertIn("fingerprint-chromium.lock.json", verifier_args)
         self.assertIn("Independent production GUI report verification", log)
         self.assertIn("production-qualified A -> B -> A report", result.stdout)

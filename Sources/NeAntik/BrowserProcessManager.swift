@@ -1683,33 +1683,103 @@ final class BrowserProcessManager: ObservableObject {
     private nonisolated static func inspectBrowserDataProcess(
         _ browserDataDirectory: URL
     ) -> BrowserDataProcessInspection {
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-ww", "-axo", "command="]
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0,
-                  let value = String(data: data, encoding: .utf8)
-            else {
-                return .unknown
-            }
-            let marker =
-                "--user-data-dir=" +
-                browserDataDirectory.standardizedFileURL.path
-            return value
-                .components(separatedBy: .newlines)
-                .contains(where: { $0.contains(marker) })
-                ? .found
-                : .absent
-        } catch {
+        guard let processIDs = sameUserProcessIDs() else {
             return .unknown
         }
+        let expectedPath =
+            browserDataDirectory.standardizedFileURL.path
+        var inspectionWasUnavailable = false
+        for pid in processIDs where pid != getpid() {
+            guard let process = processArguments(pid: pid) else {
+                if isProcessAlive(pid) {
+                    inspectionWasUnavailable = true
+                }
+                continue
+            }
+            if arguments(
+                process.arguments,
+                useBrowserDataPath: expectedPath
+            ) {
+                return .found
+            }
+        }
+        return inspectionWasUnavailable ? .unknown : .absent
+    }
+
+    nonisolated static func arguments(
+        _ arguments: [String],
+        useBrowserDataPath expectedPath: String
+    ) -> Bool {
+        let standardizedExpected = URL(
+            fileURLWithPath: expectedPath
+        ).standardizedFileURL.path
+        for (index, argument) in arguments.enumerated() {
+            if argument.hasPrefix("--user-data-dir=") {
+                let value = String(
+                    argument.dropFirst("--user-data-dir=".count)
+                )
+                if URL(fileURLWithPath: value)
+                    .standardizedFileURL.path == standardizedExpected
+                {
+                    return true
+                }
+            } else if argument == "--user-data-dir",
+                      arguments.indices.contains(index + 1),
+                      URL(fileURLWithPath: arguments[index + 1])
+                        .standardizedFileURL.path == standardizedExpected
+            {
+                return true
+            }
+        }
+        return false
+    }
+
+    private nonisolated static func sameUserProcessIDs() -> [pid_t]? {
+        var managementInformationBase = [
+            CTL_KERN,
+            KERN_PROC,
+            KERN_PROC_UID,
+            Int32(getuid())
+        ]
+        var requiredBytes = 0
+        guard managementInformationBase.withUnsafeMutableBufferPointer({
+            sysctl(
+                $0.baseAddress,
+                u_int($0.count),
+                nil,
+                &requiredBytes,
+                nil,
+                0
+            )
+        }) == 0, requiredBytes > 0 else {
+            return nil
+        }
+
+        let entrySize = MemoryLayout<kinfo_proc>.stride
+        var entries = [kinfo_proc](
+            repeating: kinfo_proc(),
+            count: requiredBytes / entrySize + 32
+        )
+        var actualBytes = entries.count * entrySize
+        let readResult = managementInformationBase
+            .withUnsafeMutableBufferPointer { base in
+                entries.withUnsafeMutableBytes { bytes in
+                    sysctl(
+                        base.baseAddress,
+                        u_int(base.count),
+                        bytes.baseAddress,
+                        &actualBytes,
+                        nil,
+                        0
+                    )
+                }
+            }
+        guard readResult == 0, actualBytes >= 0 else {
+            return nil
+        }
+        return entries
+            .prefix(actualBytes / entrySize)
+            .map(\.kp_proc.p_pid)
     }
 
     private nonisolated static func processArguments(

@@ -5,6 +5,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SOURCE_APP="${1:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
 CANDIDATE_APP="$PROJECT_DIR/dist/NeAntik.app"
+CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 SOURCE_RUNTIME="$SOURCE_APP/Contents/Resources/NeAntik Browser.app"
 CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
@@ -46,6 +47,12 @@ verify_runtime_unchanged() {
 if [[ "$SOURCE_APP" != /* || ! -d "$SOURCE_APP" ]]; then
   echo "Source integrated app must be an existing absolute path." >&2
   exit 66
+fi
+if [[ -e "$CANDIDATE_MANIFEST" || -L "$CANDIDATE_MANIFEST" ]]; then
+  echo "Prepared candidate manifest already exists; refusing to replace it." >&2
+  echo "Archive or move this generated manifest before preparing a new candidate:" >&2
+  echo "$CANDIDATE_MANIFEST" >&2
+  exit 65
 fi
 case "${NEANTIK_RELEASE_CHANNEL:-}" in
   public-alpha)
@@ -128,6 +135,11 @@ verify_runtime_unchanged
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
   --app "$CANDIDATE_APP" \
   --allow-legacy-runtime-branding
+python3 "$PROJECT_DIR/scripts/direct-candidate-manifest.py" create \
+  --app "$CANDIDATE_APP" \
+  --manifest "$CANDIDATE_MANIFEST" \
+  --release-channel "$NEANTIK_RELEASE_CHANNEL"
 
 echo "$CANDIDATE_APP"
+echo "$CANDIDATE_MANIFEST"
 echo "Next: run a fresh GUI A → B → A report with this app, then notarize."

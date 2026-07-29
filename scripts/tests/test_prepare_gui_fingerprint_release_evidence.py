@@ -54,9 +54,23 @@ class PrepareGuiFingerprintReleaseEvidenceTests(unittest.TestCase):
     def test_collects_qualified_report_when_requested(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
+            integrated_app = VERIFIER_FIXTURES.write_integrated_app_fixture(
+                root
+            )
+            expected = (
+                MODULE.COLLECTOR.GUI_VERIFIER
+                .expected_runtime_evidence_from_app(integrated_app)
+            )
             source = root / "audit-good.json"
+            report = VERIFIER_FIXTURES.production_report()
+            report["runtimeExecutableSHA256"] = expected[
+                "runtimeExecutableSHA256"
+            ]
+            report["runtimeFrameworkSHA256"] = expected[
+                "runtimeFrameworkSHA256"
+            ]
             source.write_text(
-                json.dumps(VERIFIER_FIXTURES.production_report()),
+                json.dumps(report),
                 encoding="utf-8",
             )
             output = root / "dist" / "fingerprint-audit.json"
@@ -68,6 +82,7 @@ class PrepareGuiFingerprintReleaseEvidenceTests(unittest.TestCase):
                 output=output,
                 collect=True,
                 runtime_lock=runtime_lock,
+                integrated_app=integrated_app,
             )
 
             self.assertTrue(status["qualified"])
@@ -86,6 +101,10 @@ class PrepareGuiFingerprintReleaseEvidenceTests(unittest.TestCase):
             "createdAt": "2026-07-25T08:29:41Z",
             "qualified": True,
             "issues": [],
+            "productionQualified": False,
+            "productionIssues": ["strict pending"],
+            "releaseQualification": "public-alpha",
+            "releaseQualified": True,
         }
 
         text = MODULE.format_text(
@@ -94,7 +113,8 @@ class PrepareGuiFingerprintReleaseEvidenceTests(unittest.TestCase):
             collect=False,
         )
 
-        self.assertIn("qualified production GUI", text)
+        self.assertIn("qualified public-alpha GUI", text)
+        self.assertIn("production hardening remains incomplete", text)
         self.assertIn("Runtime lock", text)
         self.assertIn("Runtime verification created", text)
         self.assertIn("Report created", text)

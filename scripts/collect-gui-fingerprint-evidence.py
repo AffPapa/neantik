@@ -132,10 +132,14 @@ def public_attestation(
     summary: dict[str, Any],
     *,
     private_evidence_sha256: str,
+    candidate_manifest_sha256: str = "0" * 64,
+    release_channel: str = "public-alpha",
 ) -> dict[str, Any]:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "neantik-gui-fingerprint-attestation",
+        "releaseChannel": release_channel,
+        "candidateManifestSHA256": candidate_manifest_sha256,
         "createdAt": report.get("createdAt"),
         "managerVersion": report.get("managerVersion"),
         "managerBuild": report.get("managerBuild"),
@@ -314,6 +318,12 @@ def verify_attestation_binding(
         report,
         summary,
         private_evidence_sha256=expected_sha,
+        candidate_manifest_sha256=str(
+            public_payload.get("candidateManifestSHA256", "")
+        ),
+        release_channel=str(
+            public_payload.get("releaseChannel", "")
+        ),
     )
     if public_payload != expected_attestation:
         raise EvidenceCollectionError(
@@ -404,10 +414,25 @@ def collect_evidence(
     output: Path,
     runtime_lock: Path,
     integrated_app: Path | None = None,
+    candidate_manifest: Path | None = None,
     summary_output: Path | None = None,
     not_before: datetime | None = None,
     baseline_report_ids: set[str] | None = None,
+    release_channel: str = "public-alpha",
 ) -> dict[str, Any]:
+    if release_channel not in {"public-alpha", "production"}:
+        raise EvidenceCollectionError(
+            "Release channel must be public-alpha or production."
+        )
+    candidate_manifest_sha256 = "0" * 64
+    if candidate_manifest is not None:
+        if not candidate_manifest.is_file() or candidate_manifest.is_symlink():
+            raise EvidenceCollectionError(
+                "Candidate manifest must be a regular non-symlinked file."
+            )
+        candidate_manifest_sha256 = hashlib.sha256(
+            candidate_manifest.read_bytes()
+        ).hexdigest()
     if (
         summary_output is not None
         and summary_output.resolve() == output.resolve()
@@ -458,10 +483,14 @@ def collect_evidence(
         raise EvidenceCollectionError(
             "Source report does not use the current fingerprint audit schema."
         )
-    if not summary["qualified"]:
-        issues = "; ".join(summary["issues"])
+    qualification_issues = GUI_VERIFIER.qualification_issues(
+        summary,
+        require_production=release_channel == "production",
+    )
+    if qualification_issues:
+        issues = "; ".join(qualification_issues)
         raise EvidenceCollectionError(
-            f"Source report is not public-alpha-qualified: {issues}"
+            f"Source report is not {release_channel}-qualified: {issues}"
         )
 
     sanitized = sanitized_release_report(report)
@@ -469,9 +498,14 @@ def collect_evidence(
         sanitized,
         expected_runtime=expected_runtime,
     )
-    if not sanitized_summary["qualified"]:
+    sanitized_qualification_issues = GUI_VERIFIER.qualification_issues(
+        sanitized_summary,
+        require_production=release_channel == "production",
+    )
+    if sanitized_qualification_issues:
         raise EvidenceCollectionError(
-            "Sanitized release report failed fingerprint verification."
+            "Sanitized release report failed the required fingerprint "
+            "qualification."
         )
     private_payload = encoded_private_json(sanitized)
     write_private_bytes(output, private_payload)
@@ -484,6 +518,8 @@ def collect_evidence(
                 sanitized,
                 sanitized_summary,
                 private_evidence_sha256=private_evidence_sha256,
+                candidate_manifest_sha256=candidate_manifest_sha256,
+                release_channel=release_channel,
             ),
         )
     return {
@@ -497,6 +533,8 @@ def collect_evidence(
         ),
         "summary": sanitized_summary,
         "privateEvidenceSHA256": private_evidence_sha256,
+        "candidateManifestSHA256": candidate_manifest_sha256,
+        "releaseQualification": release_channel,
     }
 
 
@@ -553,6 +591,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--candidate-manifest",
+        type=Path,
+        help=(
+            "Immutable manifest created before the GUI run. Required when "
+            "--integrated-app is used for a Direct candidate."
+        ),
+    )
+    parser.add_argument(
         "--not-before",
         help=(
             "Reject reports created before this ISO-8601 timestamp or Unix epoch. "
@@ -563,6 +609,15 @@ def main() -> int:
         "--report-id-baseline",
         type=Path,
         help="Reject any report ID recorded before the current GUI attempt.",
+    )
+    parser.add_argument(
+        "--release-channel",
+        choices=("public-alpha", "production"),
+        default=os.environ.get(
+            "NEANTIK_RELEASE_CHANNEL",
+            "public-alpha",
+        ),
+        help="Required Direct fingerprint qualification.",
     )
     parser.add_argument(
         "--prepare-attempt-state",
@@ -585,12 +640,21 @@ def main() -> int:
             )
             print(f"Prepared private GUI attempt state: {baseline}")
             return 0
+        if (
+            args.integrated_app is not None
+            and args.candidate_manifest is None
+        ):
+            raise EvidenceCollectionError(
+                "--integrated-app requires --candidate-manifest for a Direct "
+                "candidate."
+            )
         result = collect_evidence(
             source=args.source,
             audits_dir=args.audits_dir,
             output=args.output,
             runtime_lock=args.runtime_lock,
             integrated_app=args.integrated_app,
+            candidate_manifest=args.candidate_manifest,
             summary_output=args.summary_output,
             not_before=parse_not_before(args.not_before),
             baseline_report_ids=(
@@ -598,6 +662,7 @@ def main() -> int:
                 if args.report_id_baseline is not None
                 else None
             ),
+            release_channel=args.release_channel,
         )
     except (OSError, GUI_VERIFIER.FingerprintReportError, EvidenceCollectionError) as error:
         print(f"GUI fingerprint evidence collection failed: {error}", file=sys.stderr)
@@ -606,7 +671,11 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
-        print("PASS: public-alpha GUI fingerprint evidence collected.")
+        print(
+            "PASS: "
+            f"{result['releaseQualification']} GUI fingerprint evidence "
+            "collected."
+        )
         print(f"Source: {result['source']}")
         print(f"Output: {result['output']}")
         print(f"Public-safe summary: {result['summaryOutput']}")
