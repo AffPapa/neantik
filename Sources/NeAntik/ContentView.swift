@@ -11,6 +11,32 @@ private struct ClipboardNotice: Equatable {
     let message: String
 }
 
+struct ClipboardLeaseState: Equatable {
+    private(set) var changeCount: Int?
+
+    mutating func cancel() {
+        changeCount = nil
+    }
+
+    mutating func begin(changeCount: Int) {
+        self.changeCount = changeCount
+    }
+
+    mutating func consumeIfOwned(
+        currentChangeCount: Int,
+        expectedChangeCount: Int? = nil
+    ) -> Bool {
+        guard let activeChangeCount = changeCount,
+              expectedChangeCount == nil ||
+                expectedChangeCount == activeChangeCount
+        else {
+            return false
+        }
+        changeCount = nil
+        return currentChangeCount == activeChangeCount
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
@@ -29,7 +55,7 @@ struct ContentView: View {
     @State private var localError: String?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
-    @State private var clipboardLeaseChangeCount: Int?
+    @State private var clipboardLease = ClipboardLeaseState()
     @State private var clipboardNotice: ClipboardNotice?
     @State private var handledReleaseAuditIntent = false
 
@@ -709,7 +735,7 @@ struct ContentView: View {
         profileID: UUID,
         successMessage: String
     ) {
-        clipboardLeaseChangeCount = nil
+        clipboardLease.cancel()
         clipboardNotice = nil
 
         let item = NSPasteboardItem()
@@ -737,7 +763,7 @@ struct ContentView: View {
             return
         }
         let changeCount = pasteboard.changeCount
-        clipboardLeaseChangeCount = changeCount
+        clipboardLease.begin(changeCount: changeCount)
         let notice = ClipboardNotice(
             profileID: profileID,
             message: successMessage
@@ -761,18 +787,13 @@ struct ContentView: View {
     }
 
     private func clearClipboardIfLeaseIsActive(changeCount: Int? = nil) {
-        guard let activeChangeCount = clipboardLeaseChangeCount,
-              changeCount == nil || changeCount == activeChangeCount
-        else {
-            return
+        let pasteboard = NSPasteboard.general
+        if clipboardLease.consumeIfOwned(
+            currentChangeCount: pasteboard.changeCount,
+            expectedChangeCount: changeCount
+        ) {
+            pasteboard.clearContents()
         }
-        defer {
-            clipboardLeaseChangeCount = nil
-        }
-        guard NSPasteboard.general.changeCount == activeChangeCount else {
-            return
-        }
-        NSPasteboard.general.clearContents()
     }
 }
 
