@@ -74,10 +74,32 @@ REQUIRED_PUBLIC_PATHS = {
     "Tests/Fixtures/fingerprint-conformance/manifest.json",
     "Tests/NeAntikTests/UpdateManifestTests.swift",
     "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
+    "docs/RUNTIME_INTEGRATION_NOTICES.md",
+    "docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md",
+    "runtime/chromium-150-source-contract.json",
     "runtime/chromium-150-toolchain-lock.json",
+    "scripts/Run-NeAntik-Runtime-Audit.command",
+    "scripts/generate-runtime-integration-notices.py",
+    "scripts/export-runtime-source-provenance.py",
+    "scripts/verify-runtime-source-provenance.py",
+    "scripts/export-runtime-candidate-lock.py",
+    "scripts/verify-runtime-candidate-lock.py",
+    "scripts/promote-runtime-candidate-lock.py",
+    "scripts/runtime_source_provenance.py",
+    "scripts/runtime_candidate_lock.py",
+    "scripts/tests/test_generate_runtime_integration_notices.py",
+    "scripts/tests/test_runtime_source_provenance.py",
+    "scripts/tests/test_runtime_candidate_lock.py",
+    "scripts/tests/test_verify_public_artifact_privacy.py",
+    "scripts/tests/test_runtime_audit_launcher.py",
+    "scripts/tests/test_verify_direct_hosted_download_oss.py",
     "scripts/tests/test_verify_public_fingerprint_corpus.py",
+    "scripts/tests/test_verify_public_workflow_references.py",
+    "scripts/verify-direct-hosted-download.py",
+    "scripts/verify-public-artifact-privacy.py",
     "scripts/verify-direct-update-policy.py",
     "scripts/verify-public-fingerprint-corpus.py",
+    "scripts/verify-public-workflow-references.py",
 }
 
 
@@ -152,8 +174,10 @@ def verify_required_contracts() -> None:
     ).read_text(encoding="utf-8")
     for marker in [
         "UpdateManifestTests",
+        "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",
         "verify-open-source-tree.py",
+        "verify-public-workflow-references.py",
     ]:
         if marker not in ci_text:
             fail(f"GitHub Actions does not enforce {marker}")
@@ -174,6 +198,23 @@ def verify_required_contracts() -> None:
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip()
         fail(f"public fingerprint corpus failed: {detail}")
+
+    workflow_result = subprocess.run(
+        [
+            sys.executable,
+            str(
+                PROJECT_ROOT
+                / "scripts/verify-public-workflow-references.py"
+            ),
+        ],
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if workflow_result.returncode != 0:
+        detail = (workflow_result.stderr or workflow_result.stdout).strip()
+        fail(f"public workflow reference gate failed: {detail}")
 
 
 def main() -> None:

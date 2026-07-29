@@ -18,6 +18,15 @@ https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-ar
 https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.dmg
 ```
 
+## Chromium 150 provenance boundary
+
+`runtime/chromium-150-source-contract.json` records the exact Chromium and
+macOS-packaging source pair for the next runtime build. It deliberately has
+`binaryBindingStatus: pending-new-build`: it is source evidence, not a claim
+about an older distributed binary. A release build must emit and verify both
+`source-provenance.json` and `runtime-candidate-lock.json` beside the source
+root; `release-direct.sh` refuses to package a runtime without those records.
+
 The `releases/` directory records archive name, size, SHA-256, runtime version,
 platform, and verification status. The ZIP itself must never be committed to
 Git.
@@ -39,6 +48,18 @@ A public release must:
 11. publish a SHA-256 sidecar and release metadata;
 12. be downloaded again from GitHub and independently reverified before the
     release is marked public.
+
+After uploading the versioned ZIP without changing public links, repeat the
+complete archive and Gatekeeper gate against fresh downloaded bytes:
+
+```bash
+python3 scripts/verify-direct-hosted-download.py \
+  --download-url https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.zip
+```
+
+The verifier rejects credentials, query strings, fragments, wrong filenames,
+SHA-256 or size changes, and any downloaded archive that fails the same local
+notarized-app, integrated-runtime, stapling, and Gatekeeper checks.
 
 ## Signing boundary
 

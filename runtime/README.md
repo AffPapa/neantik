@@ -3,38 +3,44 @@
 NeAntik Direct is a native profile manager. Browser-visible fingerprint
 changes must be implemented inside Chromium, not by page-level JavaScript.
 
-The first reproducible source candidate is pinned in
-`fingerprint-chromium.lock.json`:
+The Chromium 150 source inputs for the next build are pinned in
+`chromium-150-source-contract.json` and cross-checked against
+`chromium-150-rebase-plan.json`. The contract records
+`binaryBindingStatus: pending-new-build`: it does not retroactively claim that
+the published 0.3.12 binary is bound to those source commits.
 
-- `adryfish/fingerprint-chromium` supplies the BSD-3-Clause fingerprint patch
-  set and the command-line protocol already used by NeAntik.
 - `ungoogled-software/ungoogled-chromium-macos` supplies the BSD-3-Clause macOS
-  ARM64 build, signing, and packaging layer.
-- the macOS build repository's `ungoogled-chromium` submodule is deliberately
-  replaced with the pinned fingerprint fork, as the fingerprint project
-  documents.
+  ARM64 build and packaging layer at commit `9cbd94c...`;
+- its recorded Chromium `.181` submodule is deliberately replaced by the
+  pinned common `ungoogled-chromium` `150.0.7871.186-1` commit `fd0378e...`;
+- the reviewed NeAntik fingerprint changes come from the owned patch manifest
+  in `nevision-patches/series.json`.
 
-This pin is a source-integration checkpoint, not a claim that NeAntik owns a
-tested production browser binary. The two upstream tags share Chromium major
-144 but not the same patch release. Patch application, compilation, runtime
-behavior, signing, and the A -> B -> A fingerprint audit must all pass before a
-binary can be called a NeAntik runtime.
+`fingerprint-chromium.lock.json` still contains legacy Chromium 144 packaging
+metadata used by the already-published artifact. It must not be edited to
+pretend that artifact has new provenance. Release gates remain blocked until a
+new Metal build records the emitted source-provenance SHA-256 in a schema 3
+runtime report and the new-candidate lock is regenerated honestly as schema 4.
+That lock must bind this source contract, remove legacy fingerprint-fork
+integration fields, and repeat the exact mac/common Git objects and critical
+file hashes from the contract.
 
-## Prepare the exact source pair
-
-```sh
-scripts/prepare-runtime-source.sh /absolute/path/to/nevision-chromium-build
-```
-
-The destination must be absent or empty. The script clones only the two pinned
-repositories and verifies their Git objects and critical file hashes. It does
-not download Chromium source or start the very large compilation.
-
-To re-check an existing prepared tree:
+## Verify and export the exact Chromium 150 source evidence
 
 ```sh
-scripts/verify-runtime-source.sh /absolute/path/to/nevision-chromium-build
+python3 scripts/export-runtime-source-provenance.py \
+  /absolute/path/to/nevision-chromium-150/build/src
+python3 scripts/verify-runtime-source-provenance.py \
+  /absolute/path/to/nevision-chromium-150/build/source-provenance.json \
+  --source-root /absolute/path/to/nevision-chromium-150/build/src
 ```
+
+The exporter verifies both Git heads and trees, critical Git-object hashes,
+the official Chromium source archive and `chrome/VERSION`, the owned patchset,
+and the generated Apple tuple layer. It writes atomically and records no local
+absolute path. Legacy `prepare-runtime-source.sh` and
+`verify-runtime-source.sh` are intentionally blocked for Chromium 150 because
+their old layout reads the stale Chromium 144 lock.
 
 ## Reproducible Apple Silicon build
 
@@ -151,8 +157,34 @@ After the build and local or Developer ID signing, run:
 scripts/verify-built-runtime.sh \
   "/absolute/path/to/NeAntik Browser.app" \
   /absolute/path/to/runtime-verification.json \
-  /absolute/path/to/out/Default/args.gn
+  /absolute/path/to/out/Default/args.gn \
+  /absolute/path/to/build/source-provenance.json \
+  /absolute/path/to/build/runtime-candidate-lock.json
 ```
+
+The owned Chromium 150 configure phase emits both source provenance and a
+deterministic schema 4 candidate lock inside the build root. The candidate lock
+is timeless and source-only: it contains no timestamps, local paths, binary
+hashes, report path, or build/result claim. The schema 3 runtime report is the
+one-way binary binding and records the candidate-lock SHA-256. The checked
+`runtime/fingerprint-chromium.lock.json` is never overwritten by configure,
+build, verification, or packaging.
+
+Promotion is a separate manual operation after review of a fresh Metal report:
+
+```sh
+scripts/promote-runtime-candidate-lock.py \
+  /absolute/path/to/build/runtime-candidate-lock.json \
+  /absolute/path/to/build/source-provenance.json \
+  "/absolute/path/to/NeAntik Browser.app" \
+  /absolute/path/to/out/Default/args.gn \
+  /absolute/path/to/runtime-verification.json \
+  --confirm-promote-source-lock
+```
+
+Without the explicit confirmation flag the command exits without writing. It
+reruns binary verification, requires `angle_enable_metal=true`, compares the
+fresh and reviewed reports, then promotes the candidate bytes atomically.
 
 This gate verifies the exact pinned Chromium version, ARM64-only architecture
 for all nested Mach-O code, the deep code signature, runtime `--version`
@@ -162,7 +194,8 @@ SHA-256 and the proven `metal` or `no-metal` build mode are retained in
 the report. Without it, the verifier deliberately records the mode as
 `unrecorded`. The report also distinguishes local ad-hoc signing from a
 Developer ID identity. This does not replace the behavioral A -> B -> A audit.
-Runtime verification report schema 2 includes the source-lock, upstream
+Runtime verification report schema 3 includes the candidate-lock, source
+provenance, upstream
 fingerprint and macOS packaging patch-series hashes, the owned NeAntik patch
 manifest, reviewed Apple device-tuple catalog, security baseline, both
 deterministic overlays, build arguments, and executable/framework SHA-256
@@ -240,5 +273,6 @@ enough disposable disk and time for a full Chromium build. Before distribution:
 10. publish the exact lock, source attribution, binary SHA-256, and SBOM beside
    the release.
 
-The Direct app must keep accepting a separately installed runtime until this
-gate is complete. The Mac App Store edition remains WebKit-only.
+Новый встроенный Direct runtime нельзя публиковать, пока этот gate не
+завершён. Поддержка отдельно выбранного runtime остаётся только явным
+инженерным режимом и не подменяет проверку публичного bundle.

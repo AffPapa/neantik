@@ -18,25 +18,33 @@ SPEC.loader.exec_module(MODULE)
 class RuntimeReportConsistencyTests(unittest.TestCase):
     def report(self) -> dict[str, object]:
         return {
-            "schemaVersion": 2,
+            "schemaVersion": 3,
             "chromiumVersion": "150.0.7871.186",
             "architecture": "arm64",
             "gpuMode": "metal",
             "sourceLockSHA256": "a" * 64,
-            "fingerprintChromiumPatchSeriesSHA256": "b" * 64,
-            "macPackagingPatchSeriesSHA256": "c" * 64,
+            "candidateLockSHA256": "a" * 64,
+            "sourceContractSHA256": "7" * 64,
+            "sourceProvenanceSHA256": "8" * 64,
             "neantikPatchManifestSHA256": "d" * 64,
             "appleDeviceTuplesManifestSHA256": "e" * 64,
             "securityBaselineSHA256": "f" * 64,
-            "nevisionOverlaySHA256": "1" * 64,
-            "nevisionDeviceTupleOverlaySHA256": "2" * 64,
             "machoCount": 13,
             "codeSignature": "verified",
             "codeSignatureKind": "developer-id",
             "fingerprintProtocolStrings": "verified",
-            "executable": {"path": "/first", "sha256": "3" * 64},
-            "framework": {"path": "/second", "sha256": "4" * 64},
-            "buildArguments": {"path": "/args", "sha256": "5" * 64},
+            "executable": {
+                "path": "Contents/MacOS/NeAntik Browser",
+                "sha256": "3" * 64,
+            },
+            "framework": {
+                "path": (
+                    "Contents/Frameworks/NeVision Browser Framework.framework/"
+                    "Versions/150.0.7871.186/NeVision Browser Framework"
+                ),
+                "sha256": "4" * 64,
+            },
+            "buildArguments": {"sha256": "5" * 64},
             "createdAt": "ignored",
         }
 
@@ -53,21 +61,60 @@ class RuntimeReportConsistencyTests(unittest.TestCase):
             fresh_path.write_text(json.dumps(fresh), encoding="utf-8")
             MODULE.verify(packaged_path, fresh_path)
 
-    def test_ignores_paths_and_timestamps(self) -> None:
+    def test_ignores_timestamps(self) -> None:
         packaged = self.report()
         fresh = self.report()
         fresh["createdAt"] = "different"
+        self.verify(packaged, fresh)
+
+    def test_rejects_changed_runtime_path(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
         fresh["executable"] = {
-            "path": "/roundtrip/runtime",
+            "path": "Contents/MacOS/Redirected Browser",
             "sha256": "3" * 64,
         }
-        self.verify(packaged, fresh)
+        with self.assertRaisesRegex(SystemExit, "executable.path"):
+            self.verify(packaged, fresh)
+
+    def test_rejects_absolute_runtime_path(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        packaged["framework"] = {
+            "path": "/private/tmp/redirected-framework",
+            "sha256": "4" * 64,
+        }
+        with self.assertRaisesRegex(SystemExit, "bundle-relative"):
+            self.verify(packaged, fresh)
+
+    def test_rejects_build_arguments_path(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        packaged["buildArguments"] = {
+            "path": "/private/tmp/args.gn",
+            "sha256": "5" * 64,
+        }
+        with self.assertRaisesRegex(SystemExit, "only sha256"):
+            self.verify(packaged, fresh)
 
     def test_rejects_changed_runtime_hash(self) -> None:
         packaged = self.report()
         fresh = self.report()
-        fresh["framework"] = {"path": "/second", "sha256": "6" * 64}
+        fresh["framework"] = {
+            "path": (
+                "Contents/Frameworks/NeVision Browser Framework.framework/"
+                "Versions/150.0.7871.186/NeVision Browser Framework"
+            ),
+            "sha256": "6" * 64,
+        }
         with self.assertRaisesRegex(SystemExit, "framework.sha256"):
+            self.verify(packaged, fresh)
+
+    def test_rejects_changed_candidate_lock_hash(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        fresh["candidateLockSHA256"] = "9" * 64
+        with self.assertRaisesRegex(SystemExit, "candidateLockSHA256"):
             self.verify(packaged, fresh)
 
     def test_rejects_changed_patch_manifest_hash(self) -> None:
@@ -77,13 +124,23 @@ class RuntimeReportConsistencyTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "neantikPatchManifestSHA256"):
             self.verify(packaged, fresh)
 
-    def test_rejects_changed_device_tuple_overlay_hash(self) -> None:
+    def test_rejects_changed_source_provenance_hash(self) -> None:
         packaged = self.report()
         fresh = self.report()
-        fresh["nevisionDeviceTupleOverlaySHA256"] = "6" * 64
+        fresh["sourceProvenanceSHA256"] = "9" * 64
         with self.assertRaisesRegex(
             SystemExit,
-            "nevisionDeviceTupleOverlaySHA256",
+            "sourceProvenanceSHA256",
+        ):
+            self.verify(packaged, fresh)
+
+    def test_rejects_changed_source_contract_hash(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        fresh["sourceContractSHA256"] = "6" * 64
+        with self.assertRaisesRegex(
+            SystemExit,
+            "sourceContractSHA256",
         ):
             self.verify(packaged, fresh)
 
@@ -92,6 +149,14 @@ class RuntimeReportConsistencyTests(unittest.TestCase):
         fresh = self.report()
         del fresh["buildArguments"]
         with self.assertRaisesRegex(SystemExit, "missing immutable field"):
+            self.verify(packaged, fresh)
+
+    def test_rejects_schema_one_even_when_both_reports_match(self) -> None:
+        packaged = self.report()
+        fresh = self.report()
+        packaged["schemaVersion"] = 1
+        fresh["schemaVersion"] = 1
+        with self.assertRaisesRegex(SystemExit, "schema 3"):
             self.verify(packaged, fresh)
 
 

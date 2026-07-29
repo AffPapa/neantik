@@ -82,6 +82,8 @@ SOURCE_STAMP="$BUILD_DIR/.nevision-source-ready-v1"
 TOOLCHAIN_STAMP="$BUILD_DIR/.nevision-toolchain-ready-v1"
 CONFIG_STAMP="$BUILD_DIR/.nevision-config-ready-v1"
 BUILD_LOG="$BUILD_DIR/nevision-runtime-arm64.log"
+SOURCE_PROVENANCE="$BUILD_DIR/source-provenance.json"
+CANDIDATE_LOCK="$BUILD_DIR/runtime-candidate-lock.json"
 if [[ "$SOURCE_MODE" == "owned-rebase-150" ]]; then
   EXPECTED_CHROMIUM_VERSION="$(
     plutil -extract targetChromiumVersion raw -o - "$REBASE_PLAN"
@@ -466,6 +468,21 @@ configure_build() {
     ./out/Default/gn gen out/Default --fail-on-unused-args
   )
 
+  if [[ "$SOURCE_MODE" == "owned-rebase-150" ]]; then
+    python3 "$SCRIPT_DIR/export-runtime-source-provenance.py" \
+      "$SOURCE_DIR" \
+      --output "$SOURCE_PROVENANCE"
+    python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
+      "$SOURCE_PROVENANCE" \
+      --source-root "$SOURCE_DIR"
+    python3 "$SCRIPT_DIR/export-runtime-candidate-lock.py" \
+      "$SOURCE_PROVENANCE" \
+      --output "$CANDIDATE_LOCK"
+    python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
+      "$CANDIDATE_LOCK" \
+      "$SOURCE_PROVENANCE"
+  fi
+
   printf '%s\n' \
     "architecture=arm64" \
     "symbol_level=0" \
@@ -515,3 +532,6 @@ esac
 echo
 echo "NeAntik runtime phase completed: $PHASE"
 echo "Build root: $BUILD_ROOT"
+if [[ -f "$CANDIDATE_LOCK" ]]; then
+  echo "Candidate lock: $CANDIDATE_LOCK"
+fi

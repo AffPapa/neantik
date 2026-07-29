@@ -96,17 +96,19 @@ struct ContentView: View {
                 original: request.profile,
                 keychain: keychain
             ) { profile, passwordUpdate in
-                let saved = try store.upsert(profile) { saved in
-                    switch passwordUpdate {
-                    case .keepExisting:
-                        break
-                    case let .replace(password):
+                let saved: BrowserProfile
+                switch passwordUpdate {
+                case .delete:
+                    saved = try store.upsert(profile)
+                    try keychain.deleteProxyPassword(
+                        profileID: saved.id
+                    )
+                case .keepExisting:
+                    saved = try store.upsert(profile)
+                case let .replace(password):
+                    saved = try store.upsert(profile) { saved in
                         try keychain.saveProxyPassword(
                             password,
-                            profileID: saved.id
-                        )
-                    case .delete:
-                        try keychain.deleteProxyPassword(
                             profileID: saved.id
                         )
                     }
@@ -160,7 +162,10 @@ struct ContentView: View {
         ) { profile in
             Button("Переместить в Корзину", role: .destructive) {
                 do {
-                    try store.delete(profile) { deletedProfile in
+                    try store.delete(
+                        profile,
+                        processManager: processes
+                    ) { deletedProfile in
                         try keychain.deleteProxyPassword(
                             profileID: deletedProfile.id
                         )

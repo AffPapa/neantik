@@ -1,102 +1,165 @@
 # NeAntik
 
-NeAntik — открытый локальный менеджер браузерных профилей для Mac с Apple
-Silicon. Менеджер написан на SwiftUI и запускает встроенный Chromium, собранный
-из закреплённых исходников и опубликованного набора патчей. Electron, аккаунт,
-установленный Google Chrome и телеметрия не требуются.
+NeAntik — открытый локальный менеджер изолированных браузерных профилей для
+Mac с Apple Silicon. Менеджер написан на SwiftUI и запускает встроенный
+Chromium runtime, собранный из зафиксированных исходников. Electron, отдельная
+установка Chrome, обязательная учётная запись и телеметрия не нужны.
 
 [English version](README.en.md)
 
 ## Скачать приложение
 
-Готовое подписанное и нотарифицированное приложение публикуется в
-[GitHub Releases](https://github.com/AffPapa/neantik/releases).
+Подписанное и нотарифицированное приложение опубликовано в
+[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.12).
+Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
+приложение.
 
-Кнопка **Code → Download ZIP** скачивает исходники, а не приложение. Для
-установки выбирайте файл `NeAntik-0.3.12-arm64-notarized.zip` в разделе
-Releases.
+Текущий публичный alpha-релиз:
 
-Текущая версия:
-
-- NeAntik `0.3.12`, сборка `15`;
+- NeAntik `0.3.12`, build `15`;
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `150.0.7871.186`, ARM64, Metal;
+- архив `NeAntik-0.3.12-arm64-notarized.zip`;
 - SHA-256:
   `b8a791056a8857339e1a52e48a81181f49525d2737cf985886b0b1aa05b8fc73`.
 
-Сайт продукта: <https://affpapa.org/neantik>.
+Сайт продукта: [affpapa.org/neantik](https://affpapa.org/neantik).
+Зеркало релиза: [cpa.tg/neantik](https://cpa.tg/neantik/).
 
-Зеркало релиза: <https://cpa.tg/neantik/>.
+## Что умеет NeAntik
 
-## Возможности
+- хранит cookies, local storage и остальные данные в отдельных постоянных
+  профилях;
+- поддерживает Direct, HTTP/HTTPS с авторизацией через нативное окно Chromium
+  и SOCKS5 без логина и пароля;
+- хранит пароли прокси в Связке ключей macOS и не передаёт их в аргументах
+  командной строки;
+- не допускает повторный запуск одного профиля и корректно распознаёт живые
+  helper-процессы;
+- перемещает удаляемые данные профиля в Корзину, а секрет из Связки ключей
+  очищает отдельным безопасным этапом;
+- использует стабильный seed профиля для детерминированной изоляции
+  браузерных поверхностей в совместимом Chromium runtime;
+- содержит локальную проверку A → B → A на стабильность и различимость
+  профилей;
+- не включает телеметрию в Direct-сборке.
 
-- отдельные постоянные cookies, local storage и данные каждого профиля;
-- Direct; HTTP/HTTPS с авторизацией через системное окно Chromium; SOCKS5
-  только без логина и пароля;
-- хранение паролей прокси в Связке ключей macOS;
-- защита от повторного запуска одного профиля;
-- детерминированное разделение поддерживаемых браузерных поверхностей;
-- встроенная проверка A → B → A с локальным WebRTC/STUN-контролем без
-  сохранения адресов;
-- отключённая телеметрия Direct-версии.
+Для HTTP/HTTPS-прокси с авторизацией отдельные кнопки копируют логин и пароль
+в нативное окно Chromium. Пароль остаётся в Связке ключей и никогда не попадает
+в browser CLI. Скопированное значение помечается как временное и очищается
+через 60 секунд, если буфер не был изменён; в течение этого времени другие
+приложения с доступом к буферу всё ещё могут его прочитать.
 
-Для авторизованного HTTP/HTTPS-прокси логин и пароль копируются отдельными
-кнопками в системное окно Chromium. Пароль хранится в Связке ключей и никогда
-не попадает в командную строку браузера. Скопированные значения получают
-системные признаки transient/concealed, а неизменённый буфер очищается через
-60 секунд; в этот период другие приложения всё равно могут прочитать буфер.
-
-## Честные ограничения
+## Границы безопасности
 
 NeAntik предназначен для приватности, разделения рабочих сессий, разработки и
-QA. Он не обещает полную анонимность или «невидимость» и не предназначен для
-обхода CAPTCHA, блокировок, антифрода или правил сторонних сервисов.
+QA. Он не обещает полную анонимность или «необнаружимость» и не предназначен
+для обхода CAPTCHA, банов, антифрода или правил сторонних сервисов.
 
-Версия `0.3.12` подходит для публичного alpha-тестирования изоляции профилей.
-Строгая production-согласованность всех fingerprint- и сетевых поверхностей
-ещё не завершена.
+Версия `0.3.12` квалифицирована для public-alpha изоляции профилей. Строгая
+production-согласованность всех fingerprint- и сетевых поверхностей остаётся
+открытым ограничением.
 
-## Структура исходников
+Изменения в разделе `Unreleased` ещё не являются новым бинарным релизом. Для
+их публикации нужны новый Chromium build с Metal, свежая GUI-проверка
+A → B → A, Developer ID, notarization, stapling, Gatekeeper и повторная
+проверка скачанного артефакта.
 
-- `Sources/NeAntik` — нативный менеджер на SwiftUI;
-- `Tests/NeAntikTests` — тесты менеджера, профилей, прокси, runtime и
-  приватности;
-- `runtime` — lock-файл исходников Chromium, manifest патчей, сами патчи и
-  сторонние лицензии;
-- `scripts` — сборка, проверки, подписание и Direct release gates;
-- `docs` — архитектура, приватность, runtime и документация распространения;
-- `releases` — метаданные и контрольные суммы публичных сборок без самих
-  бинарных файлов.
+Уязвимости следует сообщать по правилам [SECURITY.md](SECURITY.md).
 
-Полный checkout Chromium и результаты многогигабайтной сборки намеренно не
-хранятся в Git. Runtime воспроизводится из закреплённой версии исходного
-Chromium и опубликованного набора патчей. Подробнее:
-[сборка из исходников](docs/BUILDING.md).
+## Структура репозитория
 
-## Сборка
+- `Sources/NeAntik` — нативный SwiftUI-менеджер;
+- `Tests/NeAntikTests` — тесты менеджера, профилей, прокси и приватности;
+- `runtime` — source locks, manifest патчей и лицензии Chromium;
+- `scripts` — сборка, проверки, подпись и Direct release gates;
+- `docs` — архитектура, приватность, runtime и выпуск;
+- `releases` — метаданные и checksums публичных бинарников, но не сами
+  бинарники.
 
-Менеджер:
+Многогигабайтный Chromium checkout, build cache, `.app`, ZIP и DMG намеренно
+не хранятся в Git. Runtime воспроизводится из зафиксированных upstream
+исходников и открытого набора патчей. Подробнее:
+[сборка из исходников](docs/BUILDING.md),
+[Direct distribution](docs/DISTRIBUTION.md) и
+[граница supply chain](docs/RUNTIME_SUPPLY_CHAIN.md).
+
+## Сборка менеджера
+
+Понадобятся Mac с Apple Silicon, macOS 14+ и Xcode 26+.
 
 ```bash
 ./scripts/verify-native-swift-tests.sh
 swift run NeAntik
 ```
 
-Для полного приложения нужен Chromium runtime. Инструкция находится в
-[docs/BUILDING.md](docs/BUILDING.md). Сертификаты Developer ID и данные
-notarization хранятся только в Связке ключей компьютера сборки и не входят в
-репозиторий.
+Полная Direct-сборка дополнительно требует подготовленный Chromium runtime.
+Сертификат Developer ID и данные notarization остаются только в Связке ключей
+владельца релиза и не хранятся в репозитории или GitHub Actions.
+
+## Проверки
+
+Основные локальные gates:
+
+```bash
+./scripts/verify-native-swift-tests.sh
+python3 scripts/verify-public-fingerprint-corpus.py
+python3 scripts/verify-open-source-tree.py
+python3 scripts/verify-public-workflow-references.py
+```
+
+Проверка точных исходников Chromium 150 и source-qualified candidate:
+
+```bash
+python3 scripts/verify-runtime-source-provenance.py \
+  /absolute/path/to/source-provenance.json \
+  --source-root /absolute/path/to/chromium/src
+python3 scripts/verify-runtime-candidate-lock.py \
+  /absolute/path/to/runtime-candidate-lock.json \
+  /absolute/path/to/source-provenance.json
+```
+
+Source contract для `150.0.7871.186` не подтверждает готовый бинарник сам по
+себе. Promotion в release lock разрешён только после новой Metal-сборки и
+точного schema-3 runtime verification report.
+
+GUI evidence проверяется отдельно:
+
+```bash
+python3 scripts/verify-gui-fingerprint-report.py \
+  /absolute/path/to/fingerprint-audit.json
+```
+
+Диагностический или headless-отчёт не может пройти production gate. Нужен
+обычный GUI-запуск с доступными и стабильными Canvas, WebGL pixels, Audio,
+ClientRects, GPU metadata и Client Hints.
+
+## Локальные данные
+
+Профили и browser data:
+
+```text
+~/Library/Application Support/NeAntik/
+```
+
+Пароли прокси хранятся отдельно в Связке ключей macOS. Локальные fingerprint
+отчёты находятся в:
+
+```text
+~/Library/Application Support/NeAntik/FingerprintAudits/
+```
+
+Отчёты имеют приватные права доступа. Публичный handoff может содержать только
+агрегированную аттестацию без имён и ID профилей, seed, адресов прокси и
+browser-surface значений.
 
 ## Участие в разработке
 
-Перед pull request прочитайте [CONTRIBUTING.md](CONTRIBUTING.md). Сообщения об
-уязвимостях следует отправлять по правилам из [SECURITY.md](SECURITY.md), не
-публикуя чувствительные подробности в обычной issue.
-Синтетический
+Перед pull request прочитайте [CONTRIBUTING.md](CONTRIBUTING.md). Синтетический
 [fingerprint conformance corpus](docs/PUBLIC_FINGERPRINT_CONFORMANCE.md)
-проверяет границы public alpha и strict production без публикации профилей,
-seed, прокси или пользовательских отчётов.
+позволяет проверять release verifier без публикации реальных профилей,
+fingerprint seed или proxy-конфигурации.
 
-Собственный код NeAntik распространяется по MPL-2.0. Производные файлы
-Chromium сохраняют исходные лицензии и notices. Правила использования названия
-и логотипа описаны в [TRADEMARKS.md](TRADEMARKS.md).
+Исходники NeAntik распространяются по MPL-2.0. Производные файлы Chromium
+сохраняют свои upstream-лицензии и notices. Название и логотип регулируются
+[TRADEMARKS.md](TRADEMARKS.md).

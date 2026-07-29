@@ -1,16 +1,35 @@
 # NeAntik changelog
 
-## Unreleased
+## Unreleased — fingerprint coherence hardening
 
-- Авторизация HTTP/HTTPS-прокси стала понятнее: карточка профиля отдельно
-  копирует логин и пароль для системного окна Chromium, не передавая секреты в
-  аргументах запуска.
-- Временная ошибка чтения Связки ключей больше не может удалить существующий
-  пароль при обычном сохранении профиля; решение покрыто регрессионными
-  тестами.
-- Скопированные credentials помечаются для совместимых clipboard managers как
-  transient/concealed и удаляются через 60 секунд только если пользователь не
-  заменил содержимое буфера.
+- Все операции process lease теперь сериализуются стабильным root-level guard.
+  Запуск без lease требует доказанного отсутствия процессов с тем же
+  `BrowserData`, завершение главного PID не освобождает профиль раньше helper-
+  процессов, а трёхменеджерная гонка не может удалить lease нового владельца.
+- Изменения `profiles.json` перечитывают последнюю дисковую ревизию под общим
+  guard. Durable deletion tombstone не позволяет устаревшему второму
+  экземпляру воскресить удалённый профиль; временный tombstone после отката
+  наблюдается и снимает блокировку автоматически.
+- Очистка proxy credentials выполняется только после commit удаления профиля.
+  Частичный сбой Keychain больше не откатывает профиль с потерянным или старым
+  секретом: профиль остаётся удалённым, а незавершённую очистку можно безопасно
+  повторить.
+- Public-artifact privacy gate полностью и с ограничением размера сканирует
+  разрешённые PNG/PDF/ICNS и другие binary assets, а ZIP с duplicate,
+  non-canonical, case-colliding, symlink или non-regular entries блокируется.
+  Attestation связан с точной версией/build приложения, runtime и SHA-256
+  executable/framework.
+- Новый Chromium 150 source contract фиксирует точные official, mac packaging
+  и common commits без выдуманной привязки к опубликованному бинарнику.
+  Deterministic schema 4 candidate lock создаётся в build root, а schema 3
+  runtime report связывает его с новым бинарником без локальных абсолютных
+  путей.
+- Direct build, release, hosted verification и публичная документация больше
+  не зависят от App Store/StoreSubmission workflow. Исторические Store-файлы
+  не входят в открытый Direct release contract.
+- Публичный 0.3.12 и исторический runtime lock не изменены. Следующий runtime
+  остаётся заблокирован до установки Xcode Metal Toolchain, новой
+  `angle_enable_metal=true` сборки и свежего GUI schema 5 A → B → A evidence.
 - Отмена проверки прокси теперь немедленно завершает её `curl`-процесс, а
   повторное копирование credentials отменяет старые таймеры очистки буфера.
 - Поиск preferred runtime прекращается после первого пригодного Chromium и
@@ -18,8 +37,55 @@
 - Direct release теперь требует свежий GUI A → B → A report, связанный с
   конкретным упакованным `.app`; fingerprint evidence отвергает любые лишние
   поля и обезличивает имена/UUID профилей перед сохранением release-копии.
-- Open-source version gate использует только checked-in `releases/v*.json` и
-  больше не зависит от закрытого website/telemetry дерева.
+- Публичный fingerprint summary больше не содержит profile seed,
+  `identityCode` или сырые значения browser surfaces. Проверяемая локальная
+  копия использует синтетические role IDs, остаётся приватной, а менеджер
+  автоматически хранит не более трёх последних raw-отчётов.
+- Профиль блокируется атомарной owner-scoped lease до запуска Chromium.
+  Повреждённый, нечитаемый или подменённый lock теперь переводит профиль в
+  fail-closed recovery, а stale lock удаляется только после доказанного
+  отсутствия процесса с тем же `BrowserData`.
+- Website handoff больше не включает raw fingerprint/storage JSON с
+  cookie-токенами, именами профилей или локальными путями.
+- Новый privacy gate проверяет staging и точный website handoff ZIP на
+  локальные пути, profile seed, raw fingerprint values и proxy credentials,
+  не выводя найденные значения в диагностике.
+- Версия отчёта A → B → A поднята до schema 2. Публичный alpha gate и строгий
+  production gate теперь явно разделены: старые корректные отчёты остаются
+  пригодны как alpha evidence, но не могут подтверждать строгую
+  production-согласованность.
+- Строгая проверка измеряет повторные вызовы Canvas, WebGL pixels и ClientRects,
+  чтобы выявлять хаотический шум внутри одной страницы.
+- Добавлена сверка main realm с Web Worker/OffscreenCanvas для Canvas, WebGL,
+  UA, Client Hints, platform, languages, timezone, locale, CPU и графических
+  параметров.
+- Добавлены проверки CSS media queries для размеров экрана и DPR, а также
+  WebGL shader precision. Несогласованные или недоступные поверхности теперь
+  честно блокируют только строгий production gate, не маскируясь зелёным
+  результатом публичного alpha.
+- Swift-классификатор и независимый Python release verifier используют один
+  набор обязательных полей и одинаковые правила cross-realm consistency.
+- Для proxy-профилей DNS-prefetch, Async DNS и DoH блокируются вместе с
+  fail-closed resolver rules; QUIC и непроксированный WebRTC UDP остаются
+  выключены. Direct-профили теперь ограничивают WebRTC публичным интерфейсом,
+  не отключая обычные звонки полностью.
+- Окно проверки теперь отдельно показывает public-alpha и strict-production
+  статус и объясняет по-русски schema, повторные вызовы, worker и CSS
+  coherence-проблемы вместо общего вводящего в заблуждение сообщения.
+- Профиль сохраняет версию неизменяемого Apple device catalog и рассчитанный
+  tuple ID. Неизвестная версия или tuple, не соответствующий seed, блокируется
+  вместо тихой смены отпечатка; strict-отчёт связан с catalog v1.
+- Перед изменением `profiles.json` сохраняется приватная предыдущая ревизия.
+  Если основной JSON повреждён, NeAntik восстанавливает проверенную ревизию,
+  сохраняет отвергнутый файл в закрытой папке `Recovery` и не трогает cookies,
+  сессии и остальной BrowserData. Symlink-подмена backup блокируется.
+- Runtime audit wrapper теперь передаёт поддерживаемый CLI-режим
+  `--manager-app /absolute/path/to/NeAntik.app`, чтобы schema 2 evidence можно
+  было связать с точной тестируемой сборкой менеджера.
+- Закрыт supply-chain дефект Chromium patch verifier: вложенный `build/src`
+  больше не может молча пропустить патч с сообщением `Skipped patch` и вернуть
+  exit 0. Восемь owned patches применяются одной транзакцией, проверяются по 22
+  postimage и привязываются к source stamp SHA самого manifest.
 
 ## Direct 0.3.12 (15) — July 28, 2026
 

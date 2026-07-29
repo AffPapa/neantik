@@ -1,6 +1,24 @@
 import Darwin
 import Foundation
 
+@_silgen_name("flock")
+private func neantikFlock(_ descriptor: Int32, _ operation: Int32) -> Int32
+
+enum PrivateFileEntryKind: Equatable, Sendable {
+    case missing
+    case regular
+    case unsafe
+}
+
+struct PrivateFileEntryIdentity: Equatable, Sendable {
+    let device: dev_t
+    let inode: ino_t
+    let mode: mode_t
+    let size: off_t
+    let modificationSeconds: Int
+    let modificationNanoseconds: Int
+}
+
 struct AppPaths: Sendable {
     let rootDirectory: URL
     let migrationWarning: String?
@@ -65,6 +83,10 @@ struct AppPaths: Sendable {
         rootDirectory.appendingPathComponent("Logs", isDirectory: true)
     }
 
+    var processLocksDirectory: URL {
+        rootDirectory.appendingPathComponent("ProcessLocks", isDirectory: true)
+    }
+
     var fingerprintAuditsDirectory: URL {
         rootDirectory.appendingPathComponent(
             "FingerprintAudits",
@@ -84,6 +106,24 @@ struct AppPaths: Sendable {
         profileDirectory(for: id).appendingPathComponent(".neantik.lock")
     }
 
+    func lockGuardFile(for id: UUID) -> URL {
+        processLocksDirectory.appendingPathComponent(
+            "\(id.uuidString).guard"
+        )
+    }
+
+    var profilesMetadataGuardFile: URL {
+        processLocksDirectory.appendingPathComponent(
+            "ProfilesMetadata.guard"
+        )
+    }
+
+    func profileDeletionTombstone(for id: UUID) -> URL {
+        processLocksDirectory.appendingPathComponent(
+            "\(id.uuidString).deleted"
+        )
+    }
+
     func logFile(for id: UUID) -> URL {
         logsDirectory.appendingPathComponent(
             "\(id.uuidString).manager.log"
@@ -93,6 +133,7 @@ struct AppPaths: Sendable {
     func prepareBaseDirectories() throws {
         try createPrivateDirectory(rootDirectory)
         try createPrivateDirectory(profilesDirectory)
+        try createPrivateDirectory(processLocksDirectory)
         try createPrivateDirectory(logsDirectory)
         try createPrivateDirectory(fingerprintAuditsDirectory)
         try createPrivateDirectory(profilesRecoveryDirectory)
@@ -113,6 +154,160 @@ struct AppPaths: Sendable {
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600],
             ofItemAtPath: url.path
+        )
+    }
+
+    func createPrivateFileExclusively(_ data: Data, at url: URL) throws {
+        try createPrivateDirectory(url.deletingLastPathComponent())
+        let descriptor = url.path.withCString {
+            Darwin.open(
+                $0,
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                mode_t(S_IRUSR | S_IWUSR)
+            )
+        }
+        guard descriptor >= 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+
+        var completed = false
+        defer {
+            _ = Darwin.close(descriptor)
+            if !completed {
+                _ = url.path.withCString { Darwin.unlink($0) }
+            }
+        }
+
+        try data.withUnsafeBytes { rawBuffer in
+            guard var pointer = rawBuffer.baseAddress else {
+                return
+            }
+            var remaining = rawBuffer.count
+            while remaining > 0 {
+                let written = Darwin.write(descriptor, pointer, remaining)
+                if written < 0 {
+                    if errno == EINTR {
+                        continue
+                    }
+                    throw POSIXError(
+                        POSIXErrorCode(rawValue: errno) ?? .EIO
+                    )
+                }
+                guard written > 0 else {
+                    throw POSIXError(.EIO)
+                }
+                remaining -= written
+                pointer = pointer.advanced(by: written)
+            }
+        }
+        guard Darwin.fsync(descriptor) == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        completed = true
+    }
+
+    func withProcessLockGuard<T>(
+        for id: UUID,
+        _ operation: () throws -> T
+    ) throws -> T {
+        try withPrivateFileGuard(
+            at: lockGuardFile(for: id),
+            operation
+        )
+    }
+
+    func withProfilesMetadataGuard<T>(
+        _ operation: () throws -> T
+    ) throws -> T {
+        try withPrivateFileGuard(
+            at: profilesMetadataGuardFile,
+            operation
+        )
+    }
+
+    private func withPrivateFileGuard<T>(
+        at guardURL: URL,
+        _ operation: () throws -> T
+    ) throws -> T {
+        try createPrivateDirectory(guardURL.deletingLastPathComponent())
+        let descriptor = guardURL.path.withCString {
+            Darwin.open(
+                $0,
+                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                mode_t(S_IRUSR | S_IWUSR)
+            )
+        }
+        guard descriptor >= 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        defer { _ = Darwin.close(descriptor) }
+
+        while neantikFlock(descriptor, LOCK_EX) != 0 {
+            guard errno == EINTR else {
+                throw POSIXError(
+                    POSIXErrorCode(rawValue: errno) ?? .EIO
+                )
+            }
+        }
+        defer { _ = neantikFlock(descriptor, LOCK_UN) }
+
+        var openedStatus = stat()
+        guard Darwin.fstat(descriptor, &openedStatus) == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        var pathStatus = stat()
+        let pathResult = guardURL.path.withCString {
+            Darwin.lstat($0, &pathStatus)
+        }
+        guard pathResult == 0,
+              (openedStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
+              (pathStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
+              openedStatus.st_dev == pathStatus.st_dev,
+              openedStatus.st_ino == pathStatus.st_ino,
+              openedStatus.st_nlink == 1
+        else {
+            throw POSIXError(.ELOOP)
+        }
+        guard Darwin.fchmod(
+            descriptor,
+            mode_t(S_IRUSR | S_IWUSR)
+        ) == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EACCES
+            )
+        }
+        return try operation()
+    }
+
+    func privateFileEntryKind(_ url: URL) throws -> PrivateFileEntryKind {
+        guard let status = try fileStatus(at: url) else {
+            return .missing
+        }
+        let type = status.st_mode & mode_t(S_IFMT)
+        return type == mode_t(S_IFREG) ? .regular : .unsafe
+    }
+
+    func privateFileEntryIdentity(
+        _ url: URL
+    ) throws -> PrivateFileEntryIdentity? {
+        guard let status = try fileStatus(at: url) else {
+            return nil
+        }
+        return PrivateFileEntryIdentity(
+            device: status.st_dev,
+            inode: status.st_ino,
+            mode: status.st_mode,
+            size: status.st_size,
+            modificationSeconds: status.st_mtimespec.tv_sec,
+            modificationNanoseconds: status.st_mtimespec.tv_nsec
         )
     }
 

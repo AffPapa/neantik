@@ -1,4 +1,5 @@
 import Combine
+import Darwin
 import Foundation
 import Network
 
@@ -919,6 +920,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReportStore: Sendable {
+    static let maximumStoredReports = 3
+
     let paths: AppPaths
 
     func save(_ report: FingerprintAuditReport) throws -> URL {
@@ -934,7 +937,96 @@ struct FingerprintAuditReportStore: Sendable {
         ]
         encoder.dateEncodingStrategy = .iso8601
         try paths.writePrivateFile(encoder.encode(report), to: url)
+        try pruneReports(preserving: url)
         return url
+    }
+
+    func pruneStoredReports() throws {
+        try paths.prepareBaseDirectories()
+        try pruneReports(preserving: nil)
+    }
+
+    private func pruneReports(preserving savedURL: URL?) throws {
+        let keys: Set<URLResourceKey> = [
+            .contentModificationDateKey,
+            .isRegularFileKey,
+            .isSymbolicLinkKey
+        ]
+        let savedPath = savedURL?.standardizedFileURL.path
+        let candidates = try FileManager.default.contentsOfDirectory(
+            at: paths.fingerprintAuditsDirectory,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles]
+        ).compactMap {
+            url -> (url: URL, modifiedAt: Date, device: dev_t, inode: ino_t)?
+            in
+            guard url.standardizedFileURL.path != savedPath,
+                  url.lastPathComponent.hasPrefix("audit-"),
+                  url.pathExtension == "json"
+            else {
+                return nil
+            }
+            let values = try url.resourceValues(forKeys: keys)
+            guard values.isRegularFile == true,
+                  values.isSymbolicLink != true,
+                  let identity = try regularFileIdentity(at: url)
+            else {
+                return nil
+            }
+            return (
+                url,
+                values.contentModificationDate ?? .distantPast,
+                identity.device,
+                identity.inode
+            )
+        }.sorted {
+            if $0.modifiedAt != $1.modifiedAt {
+                return $0.modifiedAt > $1.modifiedAt
+            }
+            return $0.url.lastPathComponent > $1.url.lastPathComponent
+        }
+
+        let retainedCandidateCount = max(
+            0,
+            Self.maximumStoredReports - (savedURL == nil ? 0 : 1)
+        )
+        for candidate in candidates.dropFirst(retainedCandidateCount) {
+            guard let current = try regularFileIdentity(at: candidate.url),
+                  current.device == candidate.device,
+                  current.inode == candidate.inode
+            else {
+                continue
+            }
+            let result = candidate.url.path.withCString {
+                Darwin.unlink($0)
+            }
+            guard result == 0 || errno == ENOENT else {
+                throw POSIXError(
+                    POSIXErrorCode(rawValue: errno) ?? .EIO
+                )
+            }
+        }
+    }
+
+    private func regularFileIdentity(
+        at url: URL
+    ) throws -> (device: dev_t, inode: ino_t)? {
+        var status = stat()
+        let result = url.path.withCString {
+            Darwin.lstat($0, &status)
+        }
+        if result != 0 {
+            if errno == ENOENT {
+                return nil
+            }
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        guard status.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else {
+            return nil
+        }
+        return (status.st_dev, status.st_ino)
     }
 }
 
@@ -954,6 +1046,14 @@ final class FingerprintAuditCoordinator: ObservableObject {
     init(paths: AppPaths, processes: BrowserProcessManager) {
         self.paths = paths
         self.processes = processes
+        do {
+            try FingerprintAuditReportStore(
+                paths: paths
+            ).pruneStoredReports()
+        } catch {
+            errorMessage =
+                "Не удалось безопасно ограничить старые локальные отчёты отпечатка."
+        }
     }
 
     func start(

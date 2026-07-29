@@ -42,7 +42,6 @@ scripts/export-gui-fingerprint-audit-runbook.py \
 scripts/export-gui-fingerprint-audit-runbook.py \
   --format json \
   --output dist/GUI-FINGERPRINT-AUDIT-RUNBOOK.json
-scripts/verify-persisted-owner-runbooks.py
 scripts/prepare-gui-fingerprint-release-evidence.py \
   --source /absolute/path/to/fingerprint-audit.json
 scripts/prepare-gui-fingerprint-release-evidence.py \

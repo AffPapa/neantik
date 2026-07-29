@@ -153,30 +153,24 @@ struct KeychainStore: Sendable {
     }
 
     func deleteProxyPassword(profileID: UUID) throws {
-        let previousCurrent = try backend.data(
-            service: Self.currentService,
-            profileID: profileID
-        )
-        let previousLegacy = try backend.data(
-            service: Self.legacyService,
-            profileID: profileID
-        )
-        do {
-            try backend.delete(
-                service: Self.currentService,
-                profileID: profileID
+        var failures = 0
+        for service in [
+            Self.currentService,
+            Self.legacyService
+        ] {
+            do {
+                try backend.delete(
+                    service: service,
+                    profileID: profileID
+                )
+            } catch {
+                failures += 1
+            }
+        }
+        if failures > 0 {
+            throw KeychainCredentialPurgeError(
+                failedNamespaceCount: failures
             )
-            try backend.delete(
-                service: Self.legacyService,
-                profileID: profileID
-            )
-        } catch {
-            restore(
-                current: previousCurrent,
-                legacy: previousLegacy,
-                profileID: profileID
-            )
-            throw error
         }
     }
 
@@ -221,6 +215,14 @@ struct KeychainStore: Sendable {
                 profileID: profileID
             )
         }
+    }
+}
+
+struct KeychainCredentialPurgeError: LocalizedError {
+    let failedNamespaceCount: Int
+
+    var errorDescription: String? {
+        "Не удалось полностью удалить пароль прокси из Связки ключей macOS. Очистку можно безопасно повторить позже."
     }
 }
 

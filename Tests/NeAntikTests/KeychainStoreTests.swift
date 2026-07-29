@@ -69,7 +69,7 @@ struct KeychainStoreTests {
     }
 
     @Test
-    func failedDualDeleteRestoresPreviousSecrets() throws {
+    func partialPurgeNeverRestoresAlreadyDeletedCurrentSecret() throws {
         let backend = MemoryKeychainBackend()
         let profileID = UUID()
         backend.set(
@@ -85,7 +85,7 @@ struct KeychainStoreTests {
         backend.deleteFailureService = KeychainStore.legacyService
         let store = KeychainStore(backend: backend)
 
-        #expect(throws: MemoryKeychainError.self) {
+        #expect(throws: KeychainCredentialPurgeError.self) {
             try store.deleteProxyPassword(profileID: profileID)
         }
 
@@ -93,7 +93,44 @@ struct KeychainStoreTests {
             backend.string(
                 service: KeychainStore.currentService,
                 profileID: profileID
-            ) == "current"
+            ) == nil
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.legacyService,
+                profileID: profileID
+            ) == "legacy"
+        )
+    }
+
+    @Test
+    func purgeNeverAttemptsCompensatingRestore() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.set(
+            "current",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        backend.set(
+            "legacy",
+            service: KeychainStore.legacyService,
+            profileID: profileID
+        )
+        backend.deleteFailureService = KeychainStore.legacyService
+        backend.upsertAlwaysFails = true
+        let store = KeychainStore(backend: backend)
+
+        #expect(throws: KeychainCredentialPurgeError.self) {
+            try store.deleteProxyPassword(profileID: profileID)
+        }
+
+        #expect(backend.upsertCallCount == 0)
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == nil
         )
         #expect(
             backend.string(
@@ -106,6 +143,8 @@ struct KeychainStoreTests {
 
 private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable {
     var deleteFailureService: String?
+    var upsertAlwaysFails = false
+    private(set) var upsertCallCount = 0
     private var values: [String: Data] = [:]
 
     func data(service: String, profileID: UUID) throws -> Data? {
@@ -117,6 +156,10 @@ private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable 
         service: String,
         profileID: UUID
     ) throws {
+        upsertCallCount += 1
+        if upsertAlwaysFails {
+            throw MemoryKeychainError()
+        }
         values[key(service: service, profileID: profileID)] = data
     }
 

@@ -157,6 +157,41 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             ):
                 MODULE.expected_runtime_evidence_from_app(integrated_app)
 
+    def test_report_path_cannot_redirect_runtime_hashing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            integrated_app = write_integrated_app_fixture(root)
+            redirected = root / "redirected-runtime"
+            redirected.write_bytes(b"runtime executable")
+            report_path = (
+                integrated_app
+                / "Contents/Resources/NeAntikRuntimeEvidence/"
+                "runtime-verification.json"
+            )
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            report["executable"]["path"] = str(redirected)
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.FingerprintReportError,
+                "non-canonical executable path",
+            ):
+                MODULE.expected_runtime_evidence_from_app(integrated_app)
+
+    def test_fixture_runtime_report_contains_no_local_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            integrated_app = write_integrated_app_fixture(Path(temporary))
+            report_path = (
+                integrated_app
+                / "Contents/Resources/NeAntikRuntimeEvidence/"
+                "runtime-verification.json"
+            )
+            report_text = report_path.read_text(encoding="utf-8")
+
+        self.assertNotIn("/private/tmp/", report_text)
+        self.assertNotIn("/var/folders/", report_text)
+        self.assertNotIn('"path": "/', report_text)
+
     def test_rejects_distributed_patch_manifest_drift(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             integrated_app = write_integrated_app_fixture(Path(temporary))
@@ -548,7 +583,10 @@ def write_integrated_app_fixture(root: Path) -> Path:
     runtime_info = runtime_app / "Contents/Info.plist"
     with runtime_info.open("wb") as file:
         plistlib.dump(
-            {"CFBundleShortVersionString": "144.0.7559.132"},
+            {
+                "CFBundleExecutable": "NeAntik Browser",
+                "CFBundleShortVersionString": "144.0.7559.132",
+            },
             file,
         )
     evidence_root = (
@@ -559,6 +597,8 @@ def write_integrated_app_fixture(root: Path) -> Path:
     patch_series = evidence_root / "neantik-patch-series.json"
     device_tuples = evidence_root / "apple-device-tuples.json"
     security_baseline = evidence_root / "security-baseline.json"
+    source_contract = evidence_root / "chromium-150-source-contract.json"
+    source_provenance = evidence_root / "source-provenance.json"
     args_gn = evidence_root / "args.gn"
     patch_series.write_text('{"schemaVersion":1}\n', encoding="utf-8")
     device_tuples.write_text(
@@ -566,6 +606,20 @@ def write_integrated_app_fixture(root: Path) -> Path:
         encoding="utf-8",
     )
     security_baseline.write_text('{"schemaVersion":1}\n', encoding="utf-8")
+    source_contract.write_text(
+        '{"schemaVersion":1,"binaryBindingStatus":"pending-new-build"}\n',
+        encoding="utf-8",
+    )
+    source_provenance.write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "binaryBindingStatus": "pending-new-build",
+                "contractSHA256": MODULE.sha256_file(source_contract),
+            }
+        ),
+        encoding="utf-8",
+    )
     args_gn.write_text(
         'target_cpu = "arm64"\nangle_enable_metal = true\n',
         encoding="utf-8",
@@ -598,10 +652,15 @@ def write_integrated_app_fixture(root: Path) -> Path:
     evidence_path.write_text(
         json.dumps(
             {
-                "schemaVersion": 2,
+                "schemaVersion": 3,
                 "createdAt": "2026-07-25T08:00:00Z",
                 "chromiumVersion": "144.0.7559.132",
                 "sourceLockSHA256": MODULE.sha256_file(lock_path),
+                "candidateLockSHA256": MODULE.sha256_file(lock_path),
+                "sourceContractSHA256":
+                    MODULE.sha256_file(source_contract),
+                "sourceProvenanceSHA256":
+                    MODULE.sha256_file(source_provenance),
                 "fingerprintChromiumPatchSeriesSHA256":
                     fingerprint_patch_sha,
                 "macPackagingPatchSeriesSHA256": mac_patch_sha,
@@ -615,19 +674,15 @@ def write_integrated_app_fixture(root: Path) -> Path:
                 "nevisionDeviceTupleOverlaySHA256":
                     tuple_overlay_sha,
                 "buildArguments": {
-                    "path": "/tmp/args.gn",
                     "sha256": MODULE.sha256_file(args_gn),
                 },
                 "executable": {
-                    "path": (
-                        "/tmp/NeAntik Browser.app/Contents/MacOS/"
-                        "NeAntik Browser"
-                    ),
+                    "path": "Contents/MacOS/NeAntik Browser",
                     "sha256": MODULE.sha256_file(executable),
                 },
                 "framework": {
                     "path": (
-                        "/tmp/NeAntik Browser.app/Contents/Frameworks/"
+                        "Contents/Frameworks/"
                         "NeVision Browser Framework.framework/Versions/"
                         "144.0.7559.132/NeVision Browser Framework"
                     ),

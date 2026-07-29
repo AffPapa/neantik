@@ -146,8 +146,12 @@ LaunchServices sees a complete macOS application bundle.
 3. Allow Terminal to run it if macOS asks.
 4. Wait for the direct WebRTC control and three Chromium launches:
    profile A, profile B, profile A.
-5. Send back `fingerprint-audit.json` and
-   `fingerprint-audit-terminal.log`.
+5. Keep `fingerprint-audit.json` and `fingerprint-audit-terminal.log` only on
+   the owner Mac. They contain private raw evidence and must not be attached
+   to issues, uploaded to GitHub or published on the site.
+6. After collection, share only `dist/fingerprint-audit-summary.json`. It is
+   an aggregate attestation without captures, profile identifiers, identity
+   codes or browser-surface values.
 
 The command runs the same `FingerprintAuditCoordinator` and JavaScript probe as
 NeAntik Direct. Diagnostic mode can prove protocol behavior with verdict
@@ -193,8 +197,10 @@ the `com.openai.codex` coalition and abort inside Apple's
 - a public update/download channel;
 - final regression and user-context GUI QA.
 
-The Mac App Store edition remains a separate sandboxed WebKit application and
-does not bundle or download this Chromium runtime.
+Это историческое доказательство Chromium 144 сохранено только для
+воспроизводимости. Текущий продукт имеет единственный Direct release path;
+новая публикация должна использовать Chromium 150 source contract и полный
+Direct release gate.
 
 ## Integration branding
 

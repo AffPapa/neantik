@@ -32,6 +32,17 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text,
         )
         self.assertIn(
+            '"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py"',
+            text,
+        )
+        self.assertIn(
+            '"$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py"',
+            text,
+        )
+        self.assertIn('CANDIDATE_LOCK="$4"', text)
+        self.assertIn('--lock "$CANDIDATE_LOCK"', text)
+        self.assertIn('--source-root "$SOURCE_ROOT"', text)
+        self.assertIn(
             "NEANTIK_GUI_FINGERPRINT_REPORT:?",
             text,
             "Direct release must require real GUI fingerprint evidence",

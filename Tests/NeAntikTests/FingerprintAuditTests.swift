@@ -347,6 +347,139 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func keepsOnlyThreePrivateReportsWithoutTouchingOtherEntries() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+        let paths = AppPaths(rootDirectory: root)
+        let store = FingerprintAuditReportStore(paths: paths)
+        let unrelated = paths.fingerprintAuditsDirectory
+            .appendingPathComponent("notes.json")
+        let external = root.appendingPathComponent("external.json")
+        let symlink = paths.fingerprintAuditsDirectory
+            .appendingPathComponent("audit-linked.json")
+        let directory = paths.fingerprintAuditsDirectory
+            .appendingPathComponent("audit-directory.json", isDirectory: true)
+
+        try paths.prepareBaseDirectories()
+        try paths.writePrivateFile(Data("keep".utf8), to: unrelated)
+        try paths.writePrivateFile(Data("external".utf8), to: external)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: false
+        )
+        try FileManager.default.createSymbolicLink(
+            at: symlink,
+            withDestinationURL: external
+        )
+
+        var savedURLs: [URL] = []
+        for offset in 0..<5 {
+            let first = capture(
+                name: "First",
+                values: baseValues(canvas: "a-\(offset)")
+            )
+            savedURLs.append(
+                try store.save(
+                    report(
+                        first: first,
+                        second: capture(
+                            name: "Second",
+                            values: baseValues(canvas: "b-\(offset)")
+                        ),
+                        repeatCapture: capture(
+                            id: first.profileID,
+                            name: first.profileName,
+                            values: first.values
+                        ),
+                        createdAt: Date(timeIntervalSince1970: Double(offset))
+                    )
+                )
+            )
+        }
+
+        let storedReports = try FileManager.default.contentsOfDirectory(
+            at: paths.fingerprintAuditsDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey]
+        ).filter { url in
+            let values = try? url.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey]
+            )
+            return url.lastPathComponent.hasPrefix("audit-")
+                && url.pathExtension == "json"
+                && values?.isRegularFile == true
+                && values?.isSymbolicLink != true
+        }
+        #expect(storedReports.count == 3)
+        #expect(FileManager.default.fileExists(atPath: savedURLs.last!.path))
+        #expect(FileManager.default.fileExists(atPath: unrelated.path))
+        #expect(FileManager.default.fileExists(atPath: external.path))
+        var isDirectory: ObjCBool = false
+        let directoryExists = FileManager.default.fileExists(
+            atPath: directory.path,
+            isDirectory: &isDirectory
+        )
+        #expect(directoryExists)
+        #expect(isDirectory.boolValue)
+        let symlinkDestination = try FileManager.default
+            .destinationOfSymbolicLink(atPath: symlink.path)
+        #expect(
+            symlinkDestination == external.path
+        )
+    }
+
+    @Test
+    func prunesHistoricalReportsBeforeAnotherAuditRuns() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+
+        for index in 0..<5 {
+            let url = paths.fingerprintAuditsDirectory
+                .appendingPathComponent(
+                    "audit-\(index)-\(UUID().uuidString).json"
+                )
+            try paths.writePrivateFile(
+                Data("{\"index\":\(index)}".utf8),
+                to: url
+            )
+            try FileManager.default.setAttributes(
+                [
+                    .modificationDate:
+                        Date(timeIntervalSince1970: Double(index))
+                ],
+                ofItemAtPath: url.path
+            )
+        }
+
+        try FingerprintAuditReportStore(
+            paths: paths
+        ).pruneStoredReports()
+
+        let remaining = try FileManager.default.contentsOfDirectory(
+            at: paths.fingerprintAuditsDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ).filter {
+            $0.lastPathComponent.hasPrefix("audit-")
+                && $0.pathExtension == "json"
+        }
+        #expect(remaining.count == 3)
+        #expect(
+            Set(remaining.map(\.lastPathComponent)).allSatisfy {
+                $0.hasPrefix("audit-2-")
+                    || $0.hasPrefix("audit-3-")
+                    || $0.hasPrefix("audit-4-")
+            }
+        )
+    }
+
+    @Test
     func recordsDiagnosticExecutionModeWithoutChangingBrowserDefault() throws {
         let first = capture(
             name: "First",
@@ -1364,11 +1497,12 @@ struct FingerprintAuditTests {
     private func report(
         first: FingerprintCapture,
         second: FingerprintCapture,
-        repeatCapture: FingerprintCapture
+        repeatCapture: FingerprintCapture,
+        createdAt: Date = Date(timeIntervalSince1970: 2)
     ) -> FingerprintAuditReport {
         FingerprintAuditReport(
             id: UUID(),
-            createdAt: Date(timeIntervalSince1970: 2),
+            createdAt: createdAt,
             runtimeName: "Test",
             runtimeVersion: "1",
             runtimeFlavor: .fingerprintChromium,

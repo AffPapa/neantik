@@ -58,7 +58,11 @@ jobs:
         run: python3 scripts/verify-apple-device-tuples.py
       - name: Runtime patch manifest
         run: python3 scripts/verify-nevision-patchset-manifest.py --release
+      - name: Runtime integration notices
+        run: python3 scripts/generate-runtime-integration-notices.py --check
       - name: Open-source publication boundary
         run: python3 scripts/verify-open-source-tree.py
+      - name: Public workflow dependency closure
+        run: python3 scripts/verify-public-workflow-references.py
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'

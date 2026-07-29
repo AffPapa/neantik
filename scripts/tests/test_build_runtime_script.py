@@ -67,6 +67,16 @@ class BuildRuntimeScriptTests(unittest.TestCase):
         self.assertIn("Locked Rust toolchain archive verified.", script)
         self.assertIn("03d5e8cf7331c6ed8a779eba0c24ab6a", lock)
 
+    def test_exports_source_provenance_before_ninja_compile(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        export_index = script.index("export-runtime-source-provenance.py")
+        verify_index = script.index("verify-runtime-source-provenance.py")
+        compile_index = script.index("ninja -C out/Default")
+        self.assertLess(export_index, compile_index)
+        self.assertLess(verify_index, compile_index)
+        self.assertIn('SOURCE_PROVENANCE="$BUILD_DIR/source-provenance.json"', script)
+
 
 if __name__ == "__main__":
     unittest.main()

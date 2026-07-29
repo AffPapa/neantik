@@ -201,22 +201,67 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _distributed_path(runtime_app: Path, recorded_path: object, label: str) -> Path:
-    if not isinstance(recorded_path, str) or "/Contents/" not in recorded_path:
+def _require_canonical_evidence_path(
+    recorded_path: object,
+    canonical_path: str,
+    label: str,
+) -> None:
+    if not isinstance(recorded_path, str) or recorded_path != canonical_path:
         raise FingerprintReportError(
-            f"Embedded runtime verification report has invalid {label} path"
+            "Embedded runtime verification report has a non-canonical "
+            f"{label} path"
         )
-    relative = Path("Contents") / recorded_path.split("/Contents/", 1)[1]
-    candidate = runtime_app / relative
+
+
+def _runtime_executable(runtime_app: Path, runtime_info: dict[object, object]) -> Path:
+    executable_name = runtime_info.get("CFBundleExecutable")
+    if (
+        not isinstance(executable_name, str)
+        or not executable_name
+        or Path(executable_name).name != executable_name
+    ):
+        raise FingerprintReportError(
+            "Distributed runtime has an invalid CFBundleExecutable"
+        )
+    executable = runtime_app / "Contents" / "MacOS" / executable_name
     try:
-        candidate.resolve().relative_to(runtime_app.resolve())
+        executable.resolve().relative_to(runtime_app.resolve())
     except (OSError, ValueError) as error:
         raise FingerprintReportError(
-            f"Embedded runtime verification report escapes the runtime bundle: {label}"
+            "Distributed runtime executable escapes the runtime bundle"
         ) from error
-    if not candidate.is_file():
-        raise FingerprintReportError(f"Distributed runtime {label} is missing: {candidate}")
-    return candidate
+    if not executable.is_file():
+        raise FingerprintReportError(
+            f"Distributed runtime executable is missing: {executable}"
+        )
+    return executable
+
+
+def _runtime_framework(runtime_app: Path) -> Path:
+    frameworks_root = runtime_app / "Contents" / "Frameworks"
+    try:
+        candidates = sorted(
+            path
+            for path in frameworks_root.rglob("* Framework")
+            if path.is_file() and not path.is_symlink()
+        )
+    except OSError as error:
+        raise FingerprintReportError(
+            f"Cannot inspect distributed runtime Frameworks: {error}"
+        ) from error
+    if len(candidates) != 1:
+        raise FingerprintReportError(
+            "Distributed runtime must contain exactly one canonical "
+            "Chromium Framework binary"
+        )
+    framework = candidates[0]
+    try:
+        framework.resolve().relative_to(runtime_app.resolve())
+    except (OSError, ValueError) as error:
+        raise FingerprintReportError(
+            "Distributed runtime Framework escapes the runtime bundle"
+        ) from error
+    return framework
 
 
 def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
@@ -247,12 +292,18 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must be a JSON object"
         )
-    if evidence.get("schemaVersion") != 2:
+    if evidence.get("schemaVersion") != 3:
         raise FingerprintReportError(
-            "Embedded runtime verification report must use provenance schema 2"
+            "Embedded runtime verification report must use provenance schema 3"
         )
     provenance_files = {
         "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
+        "candidateLockSHA256":
+            evidence_root / "fingerprint-chromium.lock.json",
+        "sourceContractSHA256":
+            evidence_root / "chromium-150-source-contract.json",
+        "sourceProvenanceSHA256":
+            evidence_root / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",
         "appleDeviceTuplesManifestSHA256": evidence_root / "apple-device-tuples.json",
         "securityBaselineSHA256": evidence_root / "security-baseline.json",
@@ -269,22 +320,15 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
             )
     args_path = evidence_root / "args.gn"
     try:
-        recorded_args_sha = str(evidence["buildArguments"]["sha256"])
-        embedded_lock = load_runtime_lock(
-            evidence_root / "fingerprint-chromium.lock.json"
-        )
-        lock_fingerprint_patch_sha = str(
-            embedded_lock["fingerprintChromium"]["patchSeriesSHA256"]
-        )
-        lock_mac_patch_sha = str(
-            embedded_lock["macPackaging"]["patchSeriesSHA256"]
-        )
-        lock_overlay_sha = str(
-            embedded_lock["nevisionOverlay"]["scriptSHA256"]
-        )
-        lock_tuple_overlay_sha = str(
-            embedded_lock["nevisionDeviceTuples"]["scriptSHA256"]
-        )
+        build_arguments = evidence["buildArguments"]
+        if (
+            not isinstance(build_arguments, dict)
+            or set(build_arguments) != {"sha256"}
+        ):
+            raise FingerprintReportError(
+                "Embedded runtime buildArguments must contain only sha256"
+            )
+        recorded_args_sha = str(build_arguments["sha256"])
     except (KeyError, TypeError) as error:
         raise FingerprintReportError(
             f"Embedded runtime provenance is missing expected key: {error}"
@@ -293,22 +337,6 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         "buildArguments.sha256": (
             recorded_args_sha,
             sha256_file(args_path),
-        ),
-        "fingerprintChromiumPatchSeriesSHA256": (
-            evidence.get("fingerprintChromiumPatchSeriesSHA256"),
-            lock_fingerprint_patch_sha,
-        ),
-        "macPackagingPatchSeriesSHA256": (
-            evidence.get("macPackagingPatchSeriesSHA256"),
-            lock_mac_patch_sha,
-        ),
-        "nevisionOverlaySHA256": (
-            evidence.get("nevisionOverlaySHA256"),
-            lock_overlay_sha,
-        ),
-        "nevisionDeviceTupleOverlaySHA256": (
-            evidence.get("nevisionDeviceTupleOverlaySHA256"),
-            lock_tuple_overlay_sha,
         ),
     }
     for label, (recorded, expected) in immutable_provenance.items():
@@ -320,15 +348,19 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
             raise FingerprintReportError(
                 f"Embedded runtime provenance mismatch: {label}"
             )
+    executable = _runtime_executable(runtime_app, runtime_info)
+    framework = _runtime_framework(runtime_app)
+    executable_bundle_path = executable.relative_to(runtime_app).as_posix()
+    framework_bundle_path = framework.relative_to(runtime_app).as_posix()
     try:
-        executable = _distributed_path(
-            runtime_app,
+        _require_canonical_evidence_path(
             evidence["executable"]["path"],
+            executable_bundle_path,
             "executable",
         )
-        framework = _distributed_path(
-            runtime_app,
+        _require_canonical_evidence_path(
             evidence["framework"]["path"],
+            framework_bundle_path,
             "framework",
         )
         created_at = str(evidence["createdAt"])

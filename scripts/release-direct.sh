@@ -68,20 +68,44 @@ submit_notarization() {
   fi
 }
 
-if [[ $# -ne 3 ]]; then
-  echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn /absolute/path/to/chromium/src" >&2
+if [[ $# -ne 4 ]]; then
+  echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn /absolute/path/to/chromium/src /absolute/path/to/runtime-candidate-lock.json" >&2
   exit 64
 fi
 
 RUNTIME_APP="$1"
 BUILD_ARGS="$2"
 SOURCE_ROOT="$3"
-for input in "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_ROOT"; do
+CANDIDATE_LOCK="$4"
+SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
+for input in "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_ROOT" "$CANDIDATE_LOCK"; do
   if [[ "$input" != /* || ! -e "$input" ]]; then
     echo "Direct release inputs must be existing absolute paths: $input" >&2
     exit 66
   fi
 done
+EXPECTED_BUILD_ARGS="$SOURCE_ROOT/out/Default/args.gn"
+if [[ "$(cd "$(dirname "$BUILD_ARGS")" && pwd -P)/$(basename "$BUILD_ARGS")" !=
+      "$(cd "$(dirname "$EXPECTED_BUILD_ARGS")" && pwd -P)/$(basename "$EXPECTED_BUILD_ARGS")" ]]; then
+  echo "Direct release requires canonical source-root out/Default/args.gn." >&2
+  exit 65
+fi
+EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
+if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
+      "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
+  echo "Direct release requires the candidate lock emitted for this build root." >&2
+  exit 65
+fi
+if [[ ! -f "$SOURCE_PROVENANCE" || -L "$SOURCE_PROVENANCE" ]]; then
+  echo "Direct release requires generated Chromium 150 source provenance." >&2
+  exit 66
+fi
+"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+  "$SOURCE_PROVENANCE" \
+  --source-root "$SOURCE_ROOT"
+"$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+  "$CANDIDATE_LOCK" \
+  "$SOURCE_PROVENANCE"
 
 : "${NEANTIK_GUI_FINGERPRINT_REPORT:?Set NEANTIK_GUI_FINGERPRINT_REPORT to a current absolute GUI A-B-A JSON report}"
 if [[ "$NEANTIK_GUI_FINGERPRINT_REPORT" != /* ||
@@ -95,7 +119,9 @@ SECURITY_BASELINE_ARGS=()
 if [[ "${NEANTIK_RELEASE_CHANNEL:-}" == "public-alpha" ]]; then
   SECURITY_BASELINE_ARGS+=(--allow-public-alpha-tuples)
 fi
-"$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" "${SECURITY_BASELINE_ARGS[@]}"
+"$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" \
+  --lock "$CANDIDATE_LOCK" \
+  "${SECURITY_BASELINE_ARGS[@]}"
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py"
@@ -139,7 +165,8 @@ export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
-  "$SOURCE_ROOT"
+  "$SOURCE_ROOT" \
+  "$CANDIDATE_LOCK"
 rm -rf "$APP_PATH"
 ditto "$ENGINEERING_APP_PATH" "$APP_PATH"
 
@@ -193,4 +220,5 @@ verify_zip_has_no_finder_metadata "$ARCHIVE_PATH"
 
 echo "$ARCHIVE_PATH"
 echo "$CHECKSUM_PATH"
-echo "Next: upload the versioned archive without switching the public CTA, then verify it with scripts/verify-direct-hosted-download.py before publishing links."
+echo "Next: upload the versioned archive without switching public links, then run:"
+echo "python3 scripts/verify-direct-hosted-download.py --download-url <FINAL_PUBLIC_HTTPS_ZIP_URL>"

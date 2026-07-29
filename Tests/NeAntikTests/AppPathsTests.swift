@@ -162,6 +162,36 @@ struct AppPathsTests {
         #expect(outsideMode?.intValue != 0o600)
     }
 
+    @Test
+    func createsPrivateStableProcessLockDirectoryAndGuard() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+
+        try paths.prepareBaseDirectories()
+        try paths.withProcessLockGuard(for: profileID) {}
+        try paths.withProfilesMetadataGuard {}
+
+        let directoryMode = try FileManager.default.attributesOfItem(
+            atPath: paths.processLocksDirectory.path
+        )[.posixPermissions] as? NSNumber
+        let guardMode = try FileManager.default.attributesOfItem(
+            atPath: paths.lockGuardFile(for: profileID).path
+        )[.posixPermissions] as? NSNumber
+        let metadataGuardMode = try FileManager.default.attributesOfItem(
+            atPath: paths.profilesMetadataGuardFile.path
+        )[.posixPermissions] as? NSNumber
+        #expect(directoryMode?.intValue == 0o700)
+        #expect(guardMode?.intValue == 0o600)
+        #expect(metadataGuardMode?.intValue == 0o600)
+        #expect(
+            paths.lockGuardFile(for: profileID)
+                .deletingLastPathComponent() ==
+                paths.processLocksDirectory
+        )
+    }
+
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent(
             UUID().uuidString,
