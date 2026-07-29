@@ -1,0 +1,173 @@
+--- a/components/ungoogled/BUILD.gn
++++ b/components/ungoogled/BUILD.gn
+@@ -6,6 +6,8 @@
+   sources = [
+     "ungoogled_switches.h",
+     "ungoogled_switches.cc",
++    "nevision_fingerprint.h",
++    "nevision_fingerprint.cc",
+   ]
+ 
+   defines = [ "IS_UNGOOGLED_IMPL" ]
+--- a/components/ungoogled/ungoogled_switches.h
++++ b/components/ungoogled/ungoogled_switches.h
+@@ -14,6 +14,10 @@
+ COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintingClientRectsNoise[];
+ COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintingCanvasMeasureTextNoise[];
+ COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintingCanvasImageDataNoise[];
++COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprint[];
++COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintPlatform[];
++COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintTimezone[];
++COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintLocale[];
+ 
+ }
+ 
+--- a/components/ungoogled/ungoogled_switches.cc
++++ b/components/ungoogled/ungoogled_switches.cc
+@@ -15,4 +15,13 @@
+ // Enable fingerprinting deception for Canvas image data
+ const char kFingerprintingCanvasImageDataNoise[] = "fingerprinting-canvas-image-data-noise";
+ 
++// Stable NeAntik profile identity seed. Missing or malformed values must
++// preserve stock Chromium behavior in every consumer.
++const char kFingerprint[] = "fingerprint";
++
++// Optional profile context supplied by NeAntik for coherent macOS profiles.
++const char kFingerprintPlatform[] = "fingerprint-platform";
++const char kFingerprintTimezone[] = "fingerprint-timezone";
++const char kFingerprintLocale[] = "fingerprint-locale";
++
+ }  // namespace switches
+--- /dev/null
++++ b/components/ungoogled/nevision_fingerprint.h
+@@ -0,0 +1,38 @@
++// Copyright (c) 2026 NeAntik Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef COMPONENTS_UNGOOGLED_NEANTIK_FINGERPRINT_H_
++#define COMPONENTS_UNGOOGLED_NEANTIK_FINGERPRINT_H_
++
++#include <stdint.h>
++
++#include <optional>
++#include <string_view>
++
++#include "base/component_export.h"
++
++namespace ungoogled::nevision {
++
++// Returns the validated NeAntik profile seed from the current process command
++// line. The value is intentionally constrained to a signed 31-bit range to
++// match the native NeAntik launch contract. Missing, zero, or malformed
++// values return std::nullopt so callers preserve stock Chromium behavior.
++COMPONENT_EXPORT(UNGOOGLED) std::optional<uint32_t> GetProfileSeed();
++
++// Returns a deterministic unit interval value derived from the profile seed and
++// a call-site salt. Missing or malformed profile seed returns std::nullopt.
++COMPONENT_EXPORT(UNGOOGLED)
++std::optional<double> GetProfileUnitInterval(std::string_view salt);
++
++// Returns a deterministic byte in [0, exclusive_max) derived from the profile
++// seed, call-site salt, and index. Missing or malformed profile seed returns
++// zero so callers can fail closed without adding random noise.
++COMPONENT_EXPORT(UNGOOGLED)
++uint8_t GetProfileByte(std::string_view salt,
++                       uint32_t index,
++                       uint8_t exclusive_max);
++
++}  // namespace ungoogled::nevision
++
++#endif  // COMPONENTS_UNGOOGLED_NEANTIK_FINGERPRINT_H_
+--- /dev/null
++++ b/components/ungoogled/nevision_fingerprint.cc
+@@ -0,0 +1,76 @@
++// Copyright (c) 2026 NeAntik Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/ungoogled/nevision_fingerprint.h"
++
++#include <limits>
++#include <optional>
++#include <string>
++#include <string_view>
++
++#include "base/command_line.h"
++#include "base/hash/hash.h"
++#include "base/strings/string_number_conversions.h"
++#include "components/ungoogled/ungoogled_switches.h"
++
++namespace ungoogled::nevision {
++
++namespace {
++
++constexpr uint32_t kMaximumRuntimeSeed =
++    static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
++
++std::optional<uint32_t> ReadSeedFromCommandLine() {
++  const base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
++  if (!command_line || !command_line->HasSwitch(switches::kFingerprint)) {
++    return std::nullopt;
++  }
++
++  uint32_t seed = 0;
++  if (!base::StringToUint(
++          command_line->GetSwitchValueASCII(switches::kFingerprint), &seed)) {
++    return std::nullopt;
++  }
++  if (seed == 0 || seed > kMaximumRuntimeSeed) {
++    return std::nullopt;
++  }
++  return seed;
++}
++
++uint32_t SaltedProfileHash(uint32_t seed, std::string_view salt) {
++  return base::PersistentHash(base::NumberToString(seed) + ":" +
++                              std::string(salt));
++}
++
++}  // namespace
++
++std::optional<uint32_t> GetProfileSeed() {
++  return ReadSeedFromCommandLine();
++}
++
++std::optional<double> GetProfileUnitInterval(std::string_view salt) {
++  std::optional<uint32_t> seed = GetProfileSeed();
++  if (!seed) {
++    return std::nullopt;
++  }
++  return static_cast<double>(SaltedProfileHash(*seed, salt)) /
++         static_cast<double>(std::numeric_limits<uint32_t>::max());
++}
++
++uint8_t GetProfileByte(std::string_view salt,
++                       uint32_t index,
++                       uint8_t exclusive_max) {
++  if (exclusive_max == 0) {
++    return 0;
++  }
++  std::optional<uint32_t> seed = GetProfileSeed();
++  if (!seed) {
++    return 0;
++  }
++  uint32_t hash = SaltedProfileHash(
++      *seed, std::string(salt) + ":" + base::NumberToString(index));
++  return static_cast<uint8_t>(hash % exclusive_max);
++}
++
++}  // namespace ungoogled::nevision
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -3867,6 +3867,10 @@
+       switches::kEnableWebGLDraftExtensions,
+       switches::kEnableWebGPUDeveloperFeatures,
+       switches::kFileUrlPathAlias,
++      switches::kFingerprint,
++      switches::kFingerprintPlatform,
++      switches::kFingerprintTimezone,
++      switches::kFingerprintLocale,
+       switches::kFingerprintingClientRectsNoise,
+       switches::kFingerprintingCanvasMeasureTextNoise,
+       switches::kFingerprintingCanvasImageDataNoise,

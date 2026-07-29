@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -euo pipefail
+
+METAL_TOOLCHAIN="${NEANTIK_METAL_TOOLCHAIN_PATH:-}"
+if [[ -z "$METAL_TOOLCHAIN" ]]; then
+  exec /usr/bin/xcrun "$@"
+fi
+
+if [[ "$METAL_TOOLCHAIN" != /* || ! -d "$METAL_TOOLCHAIN" ]]; then
+  echo "NEANTIK_METAL_TOOLCHAIN_PATH must be an absolute Metal.xctoolchain directory." >&2
+  exit 66
+fi
+
+METAL_BIN="$METAL_TOOLCHAIN/usr/bin/metal"
+METALLIB_BIN="$METAL_TOOLCHAIN/usr/bin/metallib"
+if [[ ! -x "$METAL_BIN" || ! -x "$METALLIB_BIN" ]]; then
+  echo "The selected Metal toolchain is missing metal or metallib." >&2
+  exit 66
+fi
+
+if [[ "${1:-}" == "--find" || "${1:-}" == "-f" ]]; then
+  case "${2:-}" in
+    metal)
+      printf '%s\n' "$METAL_BIN"
+      exit 0
+      ;;
+    metallib)
+      printf '%s\n' "$METALLIB_BIN"
+      exit 0
+      ;;
+  esac
+fi
+
+case "${1:-}" in
+  metal)
+    shift
+    for argument in "$@"; do
+      if [[ "$argument" == "--version" || "$argument" == "-v" ]]; then
+        exec "$METAL_BIN" "$@"
+      fi
+    done
+    MODULE_CACHE="${NEANTIK_METAL_MODULE_CACHE_PATH:-/private/tmp/nevision-metal-module-cache}"
+    mkdir -p "$MODULE_CACHE"
+    exec "$METAL_BIN" "$@" "-fmodules-cache-path=$MODULE_CACHE"
+    ;;
+  metallib)
+    shift
+    exec "$METALLIB_BIN" "$@"
+    ;;
+  *)
+    exec /usr/bin/xcrun "$@"
+    ;;
+esac

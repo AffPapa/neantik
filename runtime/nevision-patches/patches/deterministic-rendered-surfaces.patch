@@ -1,0 +1,137 @@
+--- a/third_party/blink/renderer/core/dom/document.cc
++++ b/third_party/blink/renderer/core/dom/document.cc
+@@ -44,6 +44,7 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
+ #include "base/trace_event/trace_event.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "cc/animation/animation_host.h"
+ #include "cc/animation/animation_timeline.h"
+ #include "cc/input/overscroll_behavior.h"
+@@ -1041,9 +1042,17 @@
+   TRACE_EVENT("blink", "Document::Document", perfetto::Flow::FromPointer(this));
+   DCHECK(agent_);
+   if (RuntimeEnabledFeatures::FingerprintingClientRectsNoiseEnabled()) {
+-    // Precompute -0.0003% to 0.0003% noise factor for get*ClientRect*() fingerprinting
+-    noise_factor_x_ = 1 + (base::RandDouble() - 0.5) * 0.000003;
+-    noise_factor_y_ = 1 + (base::RandDouble() - 0.5) * 0.000003;
++    // Precompute -0.0003% to 0.0003% deterministic profile noise factors for
++    // get*ClientRect*() fingerprinting. Without a valid NeAntik profile seed,
++    // preserve the historical random ungoogled behavior.
++    auto noise_x =
++        ungoogled::nevision::GetProfileUnitInterval("client-rects-x");
++    auto noise_y =
++        ungoogled::nevision::GetProfileUnitInterval("client-rects-y");
++    noise_factor_x_ =
++        1 + (noise_x.value_or(base::RandDouble()) - 0.5) * 0.000003;
++    noise_factor_y_ =
++        1 + (noise_y.value_or(base::RandDouble()) - 0.5) * 0.000003;
+   }
+   if (base::FeatureList::IsEnabled(features::kDelayAsyncScriptExecution) &&
+       features::kDelayAsyncScriptExecutionDelayByDefaultParam.Get()) {
+--- a/third_party/blink/renderer/platform/graphics/static_bitmap_image.h
++++ b/third_party/blink/renderer/platform/graphics/static_bitmap_image.h
+@@ -38,7 +38,11 @@
+ 
+   StaticBitmapImage(ImageOrientation orientation) : orientation_(orientation) {}
+ 
+-  static void ShuffleSubchannelColorData(const void *addr, const SkImageInfo& info, int srcX, int srcY);
++  static void ShuffleSubchannelColorData(const void* addr,
++                                         const SkImageInfo& info,
++                                         int srcX,
++                                         int srcY,
++                                         const char* salt);
+ 
+   bool IsStaticBitmapImage() const override { return true; }
+ 
+--- a/third_party/blink/renderer/platform/graphics/static_bitmap_image.cc
++++ b/third_party/blink/renderer/platform/graphics/static_bitmap_image.cc
+@@ -4,9 +4,12 @@
+ 
+ #include "third_party/blink/renderer/platform/graphics/static_bitmap_image.h"
+ 
++#include <string>
++
+ #include "base/rand_util.h"
+ #include "base/logging.h"
+ #include "base/numerics/checked_math.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "gpu/command_buffer/client/gles2_interface.h"
+ #include "third_party/blink/renderer/platform/graphics/accelerated_static_bitmap_image.h"
+ #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
+@@ -124,7 +127,11 @@
+ 
+ #define writable_addr(T, p, stride, x, y) (T*)((const char *)p + y * stride + x * sizeof(T))
+ 
+-void StaticBitmapImage::ShuffleSubchannelColorData(const void *addr, const SkImageInfo& info, int srcX, int srcY) {
++void StaticBitmapImage::ShuffleSubchannelColorData(const void* addr,
++                                                   const SkImageInfo& info,
++                                                   int srcX,
++                                                   int srcY,
++                                                   const char* salt) {
+   auto w = info.width() - srcX, h = info.height() - srcY;
+ 
+   // skip tiny images; info.width()/height() can also be 0
+@@ -132,8 +139,11 @@
+     return;
+   }
+ 
+-  // generate the first random number here
+-  double shuffleX = base::RandDouble();
++  // Generate deterministic coordinates when NeAntik supplies a valid profile
++  // seed. Preserve historical random ungoogled behavior otherwise.
++  auto profileShuffleX =
++      ungoogled::nevision::GetProfileUnitInterval(std::string(salt) + "-x");
++  double shuffleX = profileShuffleX.value_or(base::RandDouble());
+ 
+   // cap maximum pixels to change
+   auto pixels = (w + h) / 128;
+@@ -148,8 +158,9 @@
+ 
+   DLOG(INFO) << "BRM: ShuffleSubchannelColorData() w=" << w << " h=" << h << " colorType=" << colorType << " fRowBytes=" << fRowBytes;
+ 
+-  // second random number (for y/height)
+-  double shuffleY = base::RandDouble();
++  auto profileShuffleY =
++      ungoogled::nevision::GetProfileUnitInterval(std::string(salt) + "-y");
++  double shuffleY = profileShuffleY.value_or(base::RandDouble());
+ 
+   // calculate random coordinates using bisection
+   auto currentW = w, currentH = h;
+@@ -157,7 +168,10 @@
+     int x = currentW * shuffleX, y = currentH * shuffleY;
+ 
+     // calculate randomisation amounts for each RGB component
+-    uint8_t shuffleR = base::RandIntInclusive(0, 4);
++    uint8_t shuffleR =
++        profileShuffleX.has_value()
++            ? ungoogled::nevision::GetProfileByte(salt, pixels, 5)
++            : base::RandIntInclusive(0, 4);
+     uint8_t shuffleG = (shuffleR + x) % 4;
+     uint8_t shuffleB = (shuffleG + y) % 4;
+ 
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -515,7 +515,9 @@
+       DCHECK(!bounds.intersect(SkIRect::MakeXYWH(sx, sy, sw, sh)));
+     }
+     if (read_pixels_successful && RuntimeEnabledFeatures::FingerprintingCanvasImageDataNoiseEnabled()) {
+-      StaticBitmapImage::ShuffleSubchannelColorData(image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy);
++      StaticBitmapImage::ShuffleSubchannelColorData(
++          image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy,
++          "canvas-image-data");
+     }
+   }
+ 
+--- a/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
++++ b/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
+@@ -48,7 +48,8 @@
+                           double quality) {
+   if (RuntimeEnabledFeatures::FingerprintingCanvasImageDataNoiseEnabled()) {
+     // shuffle subchannel color data within the pixmap
+-    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(), 0, 0);
++    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(),
++                                                  0, 0, "image-encoder");
+   }
+   switch (mime_type) {
+     case kMimeTypeJpeg: {

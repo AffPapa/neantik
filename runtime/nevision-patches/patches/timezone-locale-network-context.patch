@@ -1,0 +1,71 @@
+diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
+index e84a67cee8..8aa1595e21 100644
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -407,6 +407,7 @@ component("core") {
+     "//base",
+     "//components/attribution_reporting",
+     "//components/attribution_reporting:mojom_blink",
++    "//components/ungoogled:ungoogled_switches",
+     "//components/paint_preview/common",
+     "//components/performance_manager/public/mojom:mojom_blink",
+     "//components/shared_highlighting/core/common",
+diff --git a/third_party/blink/renderer/core/core_initializer.cc b/third_party/blink/renderer/core/core_initializer.cc
+index 948451b578..20030b4876 100644
+--- a/third_party/blink/renderer/core/core_initializer.cc
++++ b/third_party/blink/renderer/core/core_initializer.cc
+@@ -30,6 +30,10 @@
+ 
+ #include "third_party/blink/renderer/core/core_initializer.h"
+ 
++#include <memory>
++
++#include "base/command_line.h"
++#include "components/ungoogled/ungoogled_switches.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/public/web/blink.h"
+ #include "third_party/blink/renderer/bindings/core/v8/binding_security.h"
+@@ -76,6 +80,35 @@
+ 
+ namespace blink {
+ 
++std::unique_ptr<TimeZoneController::TimeZoneOverride>&
++NeAntikTimeZoneOverrideHandle() {
++  static std::unique_ptr<TimeZoneController::TimeZoneOverride> handle;
++  return handle;
++}
++
++void ApplyNeAntikTimeZoneOverrideFromCommandLine() {
++  const base::CommandLine* command_line =
++      base::CommandLine::ForCurrentProcess();
++  if (!command_line->HasSwitch(switches::kFingerprintTimezone)) {
++    return;
++  }
++
++  std::string timezone_value =
++      command_line->GetSwitchValueASCII(switches::kFingerprintTimezone);
++  String timezone_id = String::FromUtf8(timezone_value);
++  if (timezone_id.empty()) {
++    return;
++  }
++
++  TimeZoneController::TimeZoneOverrideResult result =
++      TimeZoneController::SetTimeZoneOverride(timezone_id);
++  if (result.status ==
++          TimeZoneController::TimeZoneOverrideStatus::kSuccess &&
++      result.handle) {
++    NeAntikTimeZoneOverrideHandle() = std::move(result.handle);
++  }
++}
++
+ CoreInitializer* CoreInitializer::instance_ = nullptr;
+ 
+ // Function defined in third_party/blink/public/web/blink.h.
+@@ -173,6 +205,7 @@ void CoreInitializer::Initialize() {
+   ScriptStateImpl::Init();
+ 
+   TimeZoneController::Init();
++  ApplyNeAntikTimeZoneOverrideFromCommandLine();
+ 
+   FontGlobalContext::Init();
+ 

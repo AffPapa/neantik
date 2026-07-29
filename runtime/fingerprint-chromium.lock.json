@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 3,
+  "targetArchitecture": "arm64",
+  "status": "chromium-150-owned-patchset-metal-runtime-built-gui-audit-pending",
+  "verification": {
+    "verifiedAt": "2026-07-27",
+    "buildMode": "metal",
+    "runtimeReport": "artifacts/looper-goals/20260727-chromium-150-runtime/runtime-verification-integrated-metal.json",
+    "diagnosticFingerprintReport": "artifacts/looper-goals/20260725-overnight-audit/runtime-audit-headless-coherent-tuples.json",
+    "diagnosticFingerprintReportSHA256": "57c619d3fc42e6acfe6bba5586223d794661bb9dd5fc1f97ccdf91ac5f9a0c6a",
+    "binaryGate": "passed",
+    "interactiveFingerprintAudit": "pending-user-context",
+    "productionMetalBuild": "built-and-binary-verified",
+    "coherentAppleDeviceTuples": "diagnostic-verified-gui-pending",
+    "publicReleaseSecurityBaseline": "passed"
+  },
+  "fingerprintChromium": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "150.0.7871.186",
+    "commit": "0fcdce5f4fdec8d442d7df760cb541f1ca6e446d",
+    "tree": "c0920f828b2ac77159de461b97407c146e9c05f5",
+    "chromiumVersion": "150.0.7871.186",
+    "license": "BSD-3-Clause",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+    "patchSeriesSHA256": "e02a6533d157700a59aa3595f4485a0e0dbe802a9c480a4f633474087f1c7d74",
+    "fingerprintPatchTree": "38363b2d4c4efb104c78850cdeabc049708740d73db3c02044caf0d41d78ba2e",
+    "flagsSHA256": "cd57e10d872777df44b427f6235ac4852ec0e60d53f9bf31006bf0218041243b",
+    "downloadsSHA256": "dc3d4a77b79570878ad691ab26306946dfff0f8c711768edebce7eb26ae2fb68",
+    "pruningSHA256": "e3120e7f75e101725f06f17047908766252f407c1adbd6bfa86c99c98518f15f"
+  },
+  "macPackaging": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "tag": "144.0.7559.96",
+    "commit": "6bbb0dbdeae887af207c75c9e5173cceddbd381b",
+    "tree": "47ee6db194d1c33437e102df463021d776557315",
+    "license": "BSD-3-Clause",
+    "licenseSHA256": "2fdd1ed451121c07df0726a8ac8b86b49315d89a22c683edaf98b579e710504b",
+    "patchSeriesSHA256": "6cb744fed714d37917c0b51b7dedff18c5607d0f2e5dd540fceea93386939866",
+    "flagsSHA256": "4c2ef83f9aba988cd55b2f9542148c07a7a4056f0bde1fea6451bb31f7d39165",
+    "arm64DownloadsSHA256": "c1fa9fcc1a2f945b6625aa2e46528d1c861d3d8ee82f3bfdcc3f9a1c105f5bab",
+    "upstreamSubmoduleCommit": "4ab4dc360d5bc91382f4b35fd3834be16ac3e3d0"
+  },
+  "nevisionOverlay": {
+    "scriptSHA256": "a21d74c0a820864478ceadf8518191529e46a113ddb065616f26c99ed640353c",
+    "hashFunction": "base::PersistentHash",
+    "transformedExpressions": 22,
+    "postimageSHA256": {
+      "third_party/blink/renderer/core/dom/document.cc": "b432da2a42a837b3a4db825fc32775835d16bee19303ba1184f8cd7c956705c2",
+      "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "176d9108f1bfa1255e0923852f869b5093d7933e41149d50e5a7848c31a8d5a8",
+      "third_party/blink/renderer/platform/fonts/font_cache.cc": "9af47ff6467643f5491f8189b573a92ea1a6e7d382364c58a6b73ac0ff63b125",
+      "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "dc9c19a2d53ad83ba689914db6b35f18a6adaf455e5af3bed643b61620cb10e8",
+      "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "c1a8c2643b004dd001edda6d6008de09e5be0f1a436c9de8dd482f1622e3cc1d"
+    }
+  },
+  "nevisionDeviceTuples": {
+    "schemaVersion": 1,
+    "scriptSHA256": "9ca00811c5357e6884eee4c124ba15e22cd27eea600b1fd4684d77a8948dab83",
+    "selection": "fingerprint-seed-modulo-reviewed-catalog",
+    "status": "compiled-pending-gui-verification",
+    "postimageSHA256": {
+      "components/ungoogled/fingerprint_data.h": "ac8fd05d120b2664f523db64bade5222e5a5d97df65b93d642833626a5e82e09",
+      "third_party/blink/renderer/modules/webgl/gpu_fingerprint.cc": "4066d30220a81d729cd9e798ad7956ad1f238c0e61522b1162272d5525fd1671",
+      "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "e7791c3f40971b5330ab352476b4f34254c5ca066d843665a1b62ed3f9e76867",
+      "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "02d619bb22b4de4c2271ed0554ad3bfad60027ca050700149714634ec523c02a",
+      "third_party/blink/common/user_agent/user_agent_metadata.cc": "b1ebf0c6bcb69b80d1f6f8badbf68e14f04581c9968afa2ae536fb4b80dcaa8b",
+      "third_party/blink/renderer/core/frame/screen.cc": "96ec24fb4a9622225f2ba559524d2c88cd0f25cf969dadd73b3b9060010d72be",
+      "third_party/blink/renderer/core/frame/local_dom_window.cc": "8aba17992e2590e6163938db2678e628741ed1b742b2dcacab22b83f97e5fc91"
+    }
+  },
+  "nevisionBranding": {
+    "scriptSHA256": "3471c71fc5122e39f8c32841b5a7c405cf131b5d929b50253ec9b07e4c2b46a5",
+    "bundleIdentifier": "app.neantik.runtime",
+    "productFullName": "NeAntik Browser",
+    "productShortName": "NeAntik",
+    "buildMode": "source-build",
+    "postimageSHA256": {
+      "chrome/app/theme/chromium/BRANDING": "c49446ab785ce478cef03fa7a393f65dee45e7e1479a85aadeb96acfd3df1d09",
+      "chrome/app/app-Info.plist": "f9653170f8f5dcc0b71e202afb6ea716258a7a6c698b8d684da9ddead4e9bf5f",
+      "chrome/app/theme/chromium/mac/app.icns": "421defe904b8cc761d9cac3ed226e8d864cc7ecb0ab281a76bde5e67b61f317a",
+      "chrome/app/chromium_strings.grd": "0b382334bd23b84ef98c8263a85130505d360c3c5b68f26afee344e8dcb8208c"
+    }
+  }
+}

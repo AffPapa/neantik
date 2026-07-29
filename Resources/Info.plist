@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>NeAntik</string>
+	<key>CFBundleExecutable</key>
+	<string>NeAntik</string>
+	<key>CFBundleIconFile</key>
+	<string>NeAntik.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>app.neantik.desktop</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>NeAntik</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.3.12</string>
+	<key>CFBundleSignature</key>
+	<string>NANT</string>
+	<key>CFBundleVersion</key>
+	<string>15</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSArchitecturePriority</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSRequiresNativeExecution</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 NeAntik. All rights reserved.</string>
+	<key>NeAntikPublicStatsURL</key>
+	<string></string>
+	<key>NeAntikTelemetryEndpoint</key>
+	<string></string>
+</dict>
+</plist>

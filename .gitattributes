@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.command text eol=lf
+*.sh text eol=lf
+*.swift text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.plist text eol=lf
+*.patch text eol=lf
+*.icns binary
+*.png binary
+*.zip binary

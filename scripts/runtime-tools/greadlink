@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -eu
+
+if [ "${1:-}" = "-f" ] && [ "$#" -eq 2 ]; then
+  python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$2"
+  exit $?
+fi
+
+exec /usr/bin/readlink "$@"

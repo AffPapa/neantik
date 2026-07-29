@@ -1,0 +1,112 @@
+--- a/third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc
++++ b/third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc
+@@ -5,10 +5,16 @@
+ #include "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.h"
+ 
+ #include "base/system/sys_info.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ 
+ namespace blink {
+ 
+ unsigned NavigatorConcurrentHardware::hardwareConcurrency() const {
++  if (ungoogled::nevision::GetProfileSeed().has_value()) {
++    constexpr unsigned kAppleSiliconHardwareConcurrency[] = {8, 10, 8, 12, 12};
++    return kAppleSiliconHardwareConcurrency[ungoogled::nevision::GetProfileByte(
++        "apple-device-tuple", 0, (sizeof(kAppleSiliconHardwareConcurrency) / sizeof(kAppleSiliconHardwareConcurrency[0])))];
++  }
+   return static_cast<unsigned>(base::SysInfo::NumberOfProcessors());
+ }
+ 
+--- a/third_party/blink/renderer/core/frame/navigator_device_memory.cc
++++ b/third_party/blink/renderer/core/frame/navigator_device_memory.cc
+@@ -8,10 +8,16 @@
+ #include "third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom-shared.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ 
+ namespace blink {
+ 
+ float NavigatorDeviceMemory::deviceMemory() const {
++  if (ungoogled::nevision::GetProfileSeed().has_value()) {
++    constexpr float kAppleSiliconWebDeviceMemory[] = {8.0f, 8.0f, 8.0f, 8.0f, 8.0f};
++    return kAppleSiliconWebDeviceMemory[ungoogled::nevision::GetProfileByte(
++        "apple-device-tuple", 0, (sizeof(kAppleSiliconWebDeviceMemory) / sizeof(kAppleSiliconWebDeviceMemory[0])))];
++  }
+   return ApproximatedDeviceMemory::GetApproximatedDeviceMemory();
+ }
+ 
+--- a/third_party/blink/renderer/core/frame/screen.cc
++++ b/third_party/blink/renderer/core/frame/screen.cc
+@@ -29,6 +29,7 @@
+ #include "third_party/blink/renderer/core/frame/screen.h"
+ 
+ #include "base/numerics/safe_conversions.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-blink.h"
+ #include "third_party/blink/renderer/core/event_target_names.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+@@ -40,6 +41,32 @@
+ 
+ namespace blink {
+ 
++namespace {
++
++struct NeAntikAppleScreenTuple {
++  int width;
++  int height;
++  int avail_width;
++  int avail_height;
++};
++
++const NeAntikAppleScreenTuple* GetNeAntikAppleScreenTuple() {
++  if (!ungoogled::nevision::GetProfileSeed().has_value()) {
++    return nullptr;
++  }
++  static constexpr NeAntikAppleScreenTuple kTuples[] = {
++      {1280, 800, 1280, 775},
++      {1512, 982, 1512, 957},
++      {1280, 832, 1280, 807},
++      {1728, 1117, 1728, 1092},
++      {1512, 982, 1512, 957},
++  };
++  return &kTuples[ungoogled::nevision::GetProfileByte(
++      "apple-device-tuple", 0, (sizeof(kTuples) / sizeof(kTuples[0])))];
++}
++
++}  // namespace
++
+ Screen::Screen(LocalDOMWindow* window, int64_t display_id)
+     : ExecutionContextClient(window), display_id_(display_id) {}
+ 
+@@ -163,6 +190,10 @@
+ gfx::Rect Screen::GetRect(bool available) const {
+   if (!DomWindow())
+     return gfx::Rect();
++  if (const NeAntikAppleScreenTuple* tuple = GetNeAntikAppleScreenTuple()) {
++    return gfx::Rect(0, 0, available ? tuple->avail_width : tuple->width,
++                     available ? tuple->avail_height : tuple->height);
++  }
+   LocalFrame* frame = DomWindow()->GetFrame();
+   const display::ScreenInfo& screen_info = GetScreenInfo();
+   gfx::Rect rect = available ? screen_info.available_rect : screen_info.rect;
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -35,6 +35,7 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/trace_event/trace_id_helper.h"
+ #include "base/trace_event/typed_macros.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "build/build_config.h"
+ #include "cc/input/snap_selection_strategy.h"
+ #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
+@@ -1823,6 +1824,9 @@
+   if (!GetFrame())
+     return 0.0;
+ 
++  if (ungoogled::nevision::GetProfileSeed().has_value()) {
++    return 2.0;
++  }
+   return GetFrame()->DevicePixelRatio();
+ }
+ 

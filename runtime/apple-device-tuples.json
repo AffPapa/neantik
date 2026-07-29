@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Shared Apple Silicon device tuple contract for NeAntik fingerprint runtime evidence validation.",
+  "boundary": "This file is a release-time drift guard. The Swift in-app production verdict and Python release verifier must keep an identical tuple order because identity seeds map by modulo index.",
+  "tuples": [
+    {
+      "id": "macbook-air-m1",
+      "gpuModel": "M1",
+      "hardwareConcurrency": 8,
+      "screen": "1280x800x1280x775x24x2",
+      "platformVersion": "15.5.0"
+    },
+    {
+      "id": "macbook-pro-m1-pro",
+      "gpuModel": "M1 Pro",
+      "hardwareConcurrency": 10,
+      "screen": "1512x982x1512x957x24x2",
+      "platformVersion": "15.4.1"
+    },
+    {
+      "id": "macbook-air-m2",
+      "gpuModel": "M2",
+      "hardwareConcurrency": 8,
+      "screen": "1280x832x1280x807x24x2",
+      "platformVersion": "15.4.0"
+    },
+    {
+      "id": "macbook-pro-m2-max",
+      "gpuModel": "M2 Max",
+      "hardwareConcurrency": 12,
+      "screen": "1728x1117x1728x1092x24x2",
+      "platformVersion": "15.3.2"
+    },
+    {
+      "id": "macbook-pro-m2-pro",
+      "gpuModel": "M2 Pro",
+      "hardwareConcurrency": 12,
+      "screen": "1512x982x1512x957x24x2",
+      "platformVersion": "15.3.1"
+    },
+    {
+      "id": "macbook-air-m3",
+      "gpuModel": "M3",
+      "hardwareConcurrency": 8,
+      "screen": "1280x832x1280x807x24x2",
+      "platformVersion": "15.3.0"
+    },
+    {
+      "id": "macbook-pro-m3-max",
+      "gpuModel": "M3 Max",
+      "hardwareConcurrency": 16,
+      "screen": "1728x1117x1728x1092x24x2",
+      "platformVersion": "15.2.0"
+    },
+    {
+      "id": "macbook-pro-m3-pro",
+      "gpuModel": "M3 Pro",
+      "hardwareConcurrency": 12,
+      "screen": "1512x982x1512x957x24x2",
+      "platformVersion": "15.1.1"
+    },
+    {
+      "id": "macbook-air-m4",
+      "gpuModel": "M4",
+      "hardwareConcurrency": 10,
+      "screen": "1280x832x1280x807x24x2",
+      "platformVersion": "15.1.0"
+    },
+    {
+      "id": "macbook-pro-m4-max",
+      "gpuModel": "M4 Max",
+      "hardwareConcurrency": 16,
+      "screen": "1728x1117x1728x1092x24x2",
+      "platformVersion": "15.0.1"
+    },
+    {
+      "id": "macbook-pro-m4-pro",
+      "gpuModel": "M4 Pro",
+      "hardwareConcurrency": 14,
+      "screen": "1512x982x1512x957x24x2",
+      "platformVersion": "15.5.0"
+    }
+  ]
+}

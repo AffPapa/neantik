@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "150.0.7871.186",
+  "status": "release-ready",
+  "policy": "Owned NeAntik patchset for the Chromium 150 security rebase. This manifest is a release blocker until every releaseRequired group is ported, has a patch file, applies with zero fuzz, and records postimage hashes from the real Chromium 150 source tree.",
+  "forbiddenScopes": [
+    "automation-evasion",
+    "webdriver-hiding",
+    "headless-hiding",
+    "fake-shadow-roots",
+    "random-browser-version",
+    "broad-fake-font-list",
+    "independent-cpu-gpu-screen-guesses"
+  ],
+  "patchGroups": [
+    {
+      "id": "profile-seed-contract",
+      "title": "Validated signed profile seed",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "Sources/NeAntik/BrowserProcessManager.swift",
+        "Tests/NeAntikTests/BrowserLaunchBuilderTests.swift",
+        "Sources/NeAntik/FingerprintAudit.swift",
+        "runtime/fingerprint-chromium.lock.json"
+      ],
+      "patchFile": "patches/profile-seed-contract.patch",
+      "patchSHA256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4",
+      "requiredBehavior": [
+        "browser-visible profile identity is derived from the stable NeAntik fingerprint seed",
+        "missing or malformed seed fails closed to stock behavior",
+        "ordinary pages do not receive audit-only DevTools probes"
+      ],
+      "postimageSHA256": {
+        "components/ungoogled/BUILD.gn": "c5e3eb030b64550d18d4dfa81358041f0d32cfca4a2698d2cfdaf7cebe27d99d",
+        "components/ungoogled/ungoogled_switches.h": "053ed245e98110088eba2ab8b38e830437d14f9e1059909c93ab1dcf9abd2a19",
+        "components/ungoogled/ungoogled_switches.cc": "b243eec44f9f2252afee18f0d956ee9669532deb9ee163fe4c05c0c6ad0d4dff",
+        "components/ungoogled/nevision_fingerprint.h": "b21dd385094dfc0dbe33a7355b42cd0e08368b50c38e156e443aa52fed01e933",
+        "components/ungoogled/nevision_fingerprint.cc": "369d6599bd7e70fb914cd0eca159dd61de55fd9d689fc42ce867a3e74d589a83",
+        "content/browser/renderer_host/render_process_host_impl.cc": "5e79fce2fb466f558c7a7dc89f13c69ff06414d904d5652f94e147628b9161e2"
+      }
+    },
+    {
+      "id": "deterministic-rendered-surfaces",
+      "title": "Deterministic Canvas, measureText, ClientRects, and OfflineAudio noise",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "scripts/apply-runtime-overlay.py",
+        "runtime/fingerprint-chromium.lock.json"
+      ],
+      "patchFile": "patches/deterministic-rendered-surfaces.patch",
+      "patchSHA256": "4e10cb02a6fab439f1e8bcddbe6e02537d2d42b05022196088c60a9d905ea9d6",
+      "requiredBehavior": [
+        "profile A remains stable across A -> B -> A",
+        "profile B differs from profile A on at least two critical rendered/audio surfaces",
+        "noise uses stable hashing rather than per-load randomness"
+      ],
+      "postimageSHA256": {
+        "third_party/blink/renderer/core/dom/document.cc": "3ed895a21a0b2a28f4e6789b7aa4e5e2093dc3c8f6041e242d76316fea0b1969",
+        "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "1e2570c258f937482d18fa191679a4fd1458d8d39724931d5d7ffabb724c0f1f",
+        "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f69608e236e194bcd7b89387f0dce061794e18808499b66a0b8fcddd88bae50b",
+        "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "4b4e55d873999b6208c9db6ad23fbfed1aee49762340ad7968a75906194b8c6b",
+        "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "2c1d41aadd13c875bb9749f58c7a55334391900d349318f5924badfa1dcb738c"
+      }
+    },
+    {
+      "id": "deterministic-webgl-pixels",
+      "title": "Deterministic WebGL pixel readback noise",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "scripts/apply-runtime-overlay.py",
+        "scripts/apply-runtime-device-tuples.py",
+        "Tests/NeAntikTests/FingerprintAuditTests.swift"
+      ],
+      "patchFile": "patches/deterministic-webgl-pixels.patch",
+      "patchSHA256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0",
+      "requiredBehavior": [
+        "WebGL pixels are available in normal GUI mode",
+        "WebGL pixels differ between profile A and profile B",
+        "WebGL pixels remain stable for repeated profile A"
+      ],
+      "postimageSHA256": {
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "603cc2836df7403b0dab8471e8cccdf55ef20c252fc67f3262c8939fb578c0bf"
+      }
+    },
+    {
+      "id": "timezone-locale-network-context",
+      "title": "Timezone, locale, WebRTC, proxy/DNS context integrity",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "Sources/NeAntik/FingerprintAudit.swift",
+        "Sources/NeAntik/BrowserProcessManager.swift",
+        "Sources/NeAntik/ProxyTester.swift",
+        "Tests/NeAntikTests/FingerprintAuditTests.swift"
+      ],
+      "patchFile": "patches/timezone-locale-network-context.patch",
+      "patchSHA256": "a17d81aa9a7b2b793789c140026fbabb6f237f34be69faac06fcb29ae011dbbf",
+      "requiredBehavior": [
+        "timezone is captured and stable in the GUI fingerprint report",
+        "WebRTC candidate data is hashed rather than persisted raw",
+        "proxy failover remains disabled by NeAntik launch configuration"
+      ],
+      "postimageSHA256": {
+        "third_party/blink/renderer/core/BUILD.gn": "832b8c759bb07bafd34d54d3a1c00d4cc3750fa27f2d9f30882fd7930aec44f7",
+        "third_party/blink/renderer/core/core_initializer.cc": "383eaab057fe61df964824adbdf36ff4caf3174e3e45261c5d4e59624908d5fd"
+      }
+    },
+    {
+      "id": "real-browser-version-contract",
+      "title": "Real UA and Client Hints version contract",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "scripts/apply-runtime-device-tuples.py",
+        "scripts/verify-gui-fingerprint-report.py",
+        "runtime/chromium-150-rebase-plan.json"
+      ],
+      "patchFile": "patches/real-browser-version-contract.patch",
+      "patchSHA256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce",
+      "requiredBehavior": [
+        "UA and Client Hints report the compiled Chromium version",
+        "profile seed never randomizes browser version",
+        "security baseline verifier remains the source of public release eligibility"
+      ],
+      "postimageSHA256": {
+        "components/version_info/version_info_with_user_agent.h": "6ed8ecf2e9a6479ce172b81c1c4c41038719ac831983c5ebcf5ff60ab6b06b53"
+      }
+    },
+    {
+      "id": "minimal-apple-device-tuple",
+      "title": "Minimal coherent Apple Silicon tuple policy",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "scripts/apply-runtime-device-tuples.py",
+        "scripts/verify-gui-fingerprint-report.py"
+      ],
+      "patchFile": "patches/minimal-apple-device-tuple.patch",
+      "patchSHA256": "d24442c276c43b32f9f703460aa431acf86163b1caac036cd4b48ff3097af211",
+      "requiredBehavior": [
+        "if tuple spoofing is retained, GPU, CPU, memory, screen, scale, platform, and Client Hints come from one reviewed tuple",
+        "if tuple spoofing is deferred, real device values are kept and only rendered/noise surfaces differ",
+        "independent random CPU/GPU/screen guesses are forbidden"
+      ],
+      "postimageSHA256": {
+        "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
+        "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
+        "third_party/blink/renderer/core/frame/screen.cc": "fe79611a4b3f7363af47aafa754e0537b016b060d9f068cc69f047efd414233d",
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "4631b8862275ba11299bc8ac4be63eb7ae98efe45db2a88ad1cb2c4aef852e9c"
+      }
+    },
+    {
+      "id": "nevision-branding-and-source-lock",
+      "title": "NeAntik branding, notices, source lock, and binary evidence",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "scripts/apply-runtime-branding-overlay.py",
+        "scripts/verify-built-runtime.sh",
+        "scripts/generate-runtime-compliance.sh",
+        "runtime/fingerprint-chromium.lock.json"
+      ],
+      "patchFile": "patches/nevision-branding-and-source-lock.patch",
+      "patchSHA256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87",
+      "requiredBehavior": [
+        "bundle metadata identifies NeAntik Browser and app.neantik.runtime",
+        "source lock records Chromium base, mac packaging base, patchset hash, notices, and binary hashes",
+        "ARM64 Metal build and normal GUI A -> B -> A evidence are regenerated after Chromium 150 port"
+      ],
+      "postimageSHA256": {
+        "chrome/app/theme/chromium/BRANDING": "c49446ab785ce478cef03fa7a393f65dee45e7e1479a85aadeb96acfd3df1d09",
+        "chrome/app/app-Info.plist": "301f94404c8730d65bd5c3449b20067b3fe585725c16e18fdeda17eec6bffe86"
+      }
+    }
+  ]
+}

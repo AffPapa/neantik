@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "150.0.7871.186",
+  "minimumPrepareFreeGiB": 55,
+  "preservedEvidenceBuildRoot": "/private/tmp/nevision-chromium-build-20260725",
+  "macPackaging": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "commit": "9cbd94c2b8f6f2a58a80bf32b3e01b68f3d129d4",
+    "packagedChromiumVersion": "150.0.7871.181"
+  },
+  "commonChromium": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "150.0.7871.186-1",
+    "commit": "fd0378e4f20fa09e21b09beca71573d435d787cf"
+  },
+  "policy": "Do not mutate or delete the preserved Chromium 144 evidence build root automatically. Use a separate absolute build root with at least the required free space, then apply owned NeAntik patches with zero fuzz and regenerate source/binary evidence."
+}

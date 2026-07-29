@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible NeAntik problem without personal data
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include cookies, browsing history, profile names, proxy
+        credentials, fingerprint seeds, Apple credentials, or Keychain data.
+  - type: input
+    id: version
+    attributes:
+      label: NeAntik version
+      placeholder: "0.3.12 (15)"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model class
+      placeholder: "macOS 15.x, MacBook Air M2"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

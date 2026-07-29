@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>NeAntik local fingerprint probe</title>
+<pre id="result">pending</pre>
+<script>
+  function hash(value) {
+    let result = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      result ^= value.charCodeAt(index);
+      result = Math.imul(result, 16777619);
+    }
+    return (result >>> 0).toString(16).padStart(8, "0");
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 420;
+  canvas.height = 80;
+  const context = canvas.getContext("2d");
+  context.font = "18px Arial";
+  context.fillStyle = "#e33";
+  context.fillRect(4, 4, 180, 42);
+  context.fillStyle = "#173";
+  context.fillText("NeAntik identity ✓", 12, 32);
+
+  const webglCanvas = document.createElement("canvas");
+  const gl = webglCanvas.getContext("webgl");
+  const debug = gl && gl.getExtension("WEBGL_debug_renderer_info");
+
+  const result = {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: navigator.deviceMemory || null,
+    languages: navigator.languages,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    canvasHash: hash(canvas.toDataURL()),
+    webglVendor: debug ? gl.getParameter(debug.UNMASKED_VENDOR_WEBGL) : null,
+    webglRenderer: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null
+  };
+
+  document.getElementById("result").textContent = JSON.stringify(result);
+</script>

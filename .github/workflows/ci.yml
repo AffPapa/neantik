@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manager-and-release-contracts:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift tests
+        run: ./scripts/verify-native-swift-tests.sh
+      - name: Release build
+        run: ./scripts/verify-native-swift-release.sh
+      - name: Direct privacy contract
+        run: python3 scripts/verify-direct-telemetry-disabled.py
+      - name: Russian UI contract
+        run: python3 scripts/verify-direct-ui-localization.py
+      - name: Apple device tuple catalog
+        run: python3 scripts/verify-apple-device-tuples.py
+      - name: Runtime patch manifest
+        run: python3 scripts/verify-nevision-patchset-manifest.py --release
+      - name: Open-source publication boundary
+        run: python3 scripts/verify-open-source-tree.py
+      - name: Python regression tests
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'

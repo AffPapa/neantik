@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.3.12",
+  "version": "0.3.12",
+  "build": 15,
+  "releasedAt": "2026-07-28",
+  "channel": "public-alpha",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "150.0.7871.186",
+    "gpuMode": "metal"
+  },
+  "archive": {
+    "name": "NeAntik-0.3.12-arm64-notarized.zip",
+    "sizeBytes": 164305196,
+    "sha256": "b8a791056a8857339e1a52e48a81181f49525d2737cf985886b0b1aa05b8fc73"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "passed",
+    "fingerprint": "public-alpha-qualified",
+    "strictProductionFingerprintCoherence": "incomplete"
+  },
+  "mirror": "https://cpa.tg/neantik/downloads/NeAntik-0.3.12-arm64-notarized.zip"
+}
