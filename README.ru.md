@@ -8,7 +8,7 @@ Silicon. Менеджер написан на SwiftUI и запускает вс
 ## Скачать приложение
 
 Готовое подписанное и нотарифицированное приложение публикуется в
-[GitHub Releases](https://github.com/mrdumay-source/neantik/releases).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases).
 
 Кнопка **Code → Download ZIP** скачивает исходники, а не приложение. Для
 установки выбирайте файл `NeAntik-0.3.12-arm64-notarized.zip` в разделе

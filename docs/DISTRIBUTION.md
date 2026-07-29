@@ -12,7 +12,7 @@ multi-gigabyte Chromium checkout, build cache, `.app`, or notarized ZIP.
 Public binaries are attached to versioned GitHub Releases:
 
 ```text
-https://github.com/mrdumay-source/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.zip
+https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.zip
 ```
 
 The `releases/` directory records archive name, size, SHA-256, runtime version,

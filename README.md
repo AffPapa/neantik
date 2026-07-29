@@ -10,7 +10,7 @@ separately installed Chrome, or telemetry.
 ## Download
 
 Download the signed and notarized application from
-[GitHub Releases](https://github.com/mrdumay-source/neantik/releases).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases).
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
