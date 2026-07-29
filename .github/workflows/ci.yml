@@ -27,6 +27,7 @@ jobs:
           - FingerprintAuditTests
           - KeychainStoreTests
           - LaunchIntentTests
+          - ProfileEditorPasswordTests
           - ProfileStoreTests
           - ProxyTesterTests
           - RuntimePreferenceStoreTests

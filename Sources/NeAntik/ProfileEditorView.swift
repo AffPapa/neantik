@@ -1,5 +1,39 @@
 import SwiftUI
 
+enum ProxyPasswordUpdate: Equatable {
+    case keepExisting
+    case replace(String)
+    case delete
+
+    static func resolve(
+        currentHasUsername: Bool,
+        originalHadUsername: Bool,
+        enteredPassword: String,
+        originalPassword: String?,
+        readFailed: Bool
+    ) -> Self {
+        guard currentHasUsername else {
+            return .delete
+        }
+        guard originalHadUsername else {
+            return enteredPassword.isEmpty
+                ? .delete
+                : .replace(enteredPassword)
+        }
+        if readFailed {
+            return enteredPassword.isEmpty
+                ? .keepExisting
+                : .replace(enteredPassword)
+        }
+        if enteredPassword == (originalPassword ?? "") {
+            return .keepExisting
+        }
+        return enteredPassword.isEmpty
+            ? .delete
+            : .replace(enteredPassword)
+    }
+}
+
 struct ProfileEditorView: View {
     private static let colors = [
         "#FF3B4D",
@@ -15,7 +49,9 @@ struct ProfileEditorView: View {
 
     let original: BrowserProfile?
     let keychain: KeychainStore
-    let onSave: (BrowserProfile, String) throws -> Void
+    let onSave: (BrowserProfile, ProxyPasswordUpdate) throws -> Void
+    private let originalProxyPassword: String?
+    private let proxyPasswordReadFailed: Bool
 
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
@@ -40,7 +76,7 @@ struct ProfileEditorView: View {
     init(
         original: BrowserProfile?,
         keychain: KeychainStore,
-        onSave: @escaping (BrowserProfile, String) throws -> Void
+        onSave: @escaping (BrowserProfile, ProxyPasswordUpdate) throws -> Void
     ) {
         self.original = original
         self.keychain = keychain
@@ -56,15 +92,22 @@ struct ProfileEditorView: View {
         _proxyPort = State(initialValue: profile.proxy.map { String($0.port) } ?? "")
         _proxyUsername = State(initialValue: profile.proxy?.username ?? "")
         if original == nil {
+            originalProxyPassword = nil
+            proxyPasswordReadFailed = false
             _proxyPassword = State(initialValue: "")
         } else {
             do {
+                let password = try keychain.proxyPassword(
+                    profileID: profile.id
+                )
+                originalProxyPassword = password
+                proxyPasswordReadFailed = false
                 _proxyPassword = State(
-                    initialValue: try keychain.proxyPassword(
-                        profileID: profile.id
-                    ) ?? ""
+                    initialValue: password ?? ""
                 )
             } catch {
+                originalProxyPassword = nil
+                proxyPasswordReadFailed = true
                 _proxyPassword = State(initialValue: "")
                 _errorMessage = State(
                     initialValue:
@@ -200,7 +243,10 @@ struct ProfileEditorView: View {
                         .foregroundStyle(.secondary)
 
                         if !proxyUsername.isEmpty {
-                            Text("Chromium может попросить логин и пароль при первом запуске. NeAntik хранит пароль в Связке ключей, а не в файле профилей.")
+                            Text("Chromium может попросить логин и пароль при первом запуске. NeAntik не подставляет их автоматически: скопируй логин и пароль из карточки профиля. Пароль хранится только в Связке ключей.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("Проверка подтверждает доступность прокси и его внешний адрес, но не ввод логина в окне Chromium.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -325,7 +371,15 @@ struct ProfileEditorView: View {
                     ? detectedProxyContextEvidence
                     : nil
             )
-            try onSave(profile, proxyPassword)
+            let passwordUpdate = ProxyPasswordUpdate.resolve(
+                currentHasUsername: proxy?.username.isEmpty == false,
+                originalHadUsername:
+                    original?.proxy?.username.isEmpty == false,
+                enteredPassword: proxyPassword,
+                originalPassword: originalProxyPassword,
+                readFailed: proxyPasswordReadFailed
+            )
+            try onSave(profile, passwordUpdate)
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

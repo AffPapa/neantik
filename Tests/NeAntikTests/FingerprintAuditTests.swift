@@ -36,6 +36,16 @@ struct FingerprintAuditTests {
         )
         let executableHash = String(repeating: "a", count: 64)
         let frameworkHash = String(repeating: "b", count: 64)
+        let directControl = FingerprintCapture(
+            profileID: UUID(),
+            profileName: "CONTROL-NAME-MUST-NOT-LEAK",
+            identityCode: "NA-CONTROL-MUST-NOT-LEAK",
+            capturedAt: Date(timeIntervalSince1970: 0),
+            values: [
+                "network_route": "direct",
+                "webrtc_probe": secretSurfaceValue
+            ]
+        )
         let report = FingerprintAuditReport(
             id: UUID(),
             createdAt: Date(timeIntervalSince1970: 3),
@@ -47,6 +57,7 @@ struct FingerprintAuditTests {
             runtimeCodeSignatureValid: true,
             runtimeExecutableSHA256: executableHash,
             runtimeFrameworkSHA256: frameworkHash,
+            webrtcDirectControl: directControl,
             firstInitial: first,
             second: second,
             firstRepeat: first
@@ -68,6 +79,8 @@ struct FingerprintAuditTests {
         #expect(!summary.contains(profileID.uuidString))
         #expect(!summary.contains(second.profileName))
         #expect(!summary.contains(second.identityCode))
+        #expect(!summary.contains(directControl.profileName))
+        #expect(!summary.contains(directControl.identityCode))
     }
 
     @Test
@@ -672,6 +685,49 @@ struct FingerprintAuditTests {
             result.networkPrivacyIssues.contains {
                 $0.contains("proxied route sent a loopback STUN request")
             }
+        )
+    }
+
+    @Test
+    func missingWebRTCDirectControlFailsStrictProduction() {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            runtimeName: "Test",
+            runtimeVersion: "1",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: String(repeating: "a", count: 64),
+            runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            firstRepeat: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.productionReleaseIssues.contains(
+                "The report does not contain a WebRTC direct positive control."
+            )
         )
     }
 

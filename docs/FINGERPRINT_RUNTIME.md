@@ -103,9 +103,14 @@ DoH are disabled in proxy mode as defense in depth. Direct profiles use
 exposing every local interface while preserving ordinary WebRTC calls.
 
 Direct Chromium supports authenticated HTTP/HTTPS proxies through its native
-authentication flow. Chromium does not implement SOCKS5 authentication, so
-NeAntik Direct accepts SOCKS5 only without credentials. The Store edition
-uses Apple's Network framework and has a separate proxy implementation.
+authentication prompt. NeAntik does not silently inject credentials: the
+profile card exposes explicit login/password copy actions. Copied values carry
+the macOS transient/concealed pasteboard hints and an unchanged clipboard is
+cleared after 60 seconds, but another app can still read a copied value during
+that interval. The proxy connectivity test uses the Keychain password, but
+does not prove that credentials were entered into Chromium. Chromium does not
+implement SOCKS5 authentication, so NeAntik Direct accepts SOCKS5 only without
+credentials.
 
 After a successful proxy test, NeAntik also stores the exit timezone and
 primary locale with the profile identity. A compatible runtime receives both

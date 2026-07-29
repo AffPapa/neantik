@@ -6,6 +6,11 @@ private struct EditorRequest: Identifiable {
     let profile: BrowserProfile?
 }
 
+private struct ClipboardNotice: Equatable {
+    let profileID: UUID
+    let message: String
+}
+
 struct ContentView: View {
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
@@ -25,6 +30,7 @@ struct ContentView: View {
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
     @State private var clipboardLeaseChangeCount: Int?
+    @State private var clipboardNotice: ClipboardNotice?
     @State private var handledReleaseAuditIntent = false
 
     private var selectedProfile: BrowserProfile? {
@@ -61,15 +67,17 @@ struct ContentView: View {
             ProfileEditorView(
                 original: request.profile,
                 keychain: keychain
-            ) { profile, password in
+            ) { profile, passwordUpdate in
                 let saved = try store.upsert(profile) { saved in
-                    if saved.proxy?.username.isEmpty == false,
-                       !password.isEmpty {
+                    switch passwordUpdate {
+                    case .keepExisting:
+                        break
+                    case let .replace(password):
                         try keychain.saveProxyPassword(
                             password,
                             profileID: saved.id
                         )
-                    } else {
+                    case .delete:
                         try keychain.deleteProxyPassword(
                             profileID: saved.id
                         )
@@ -367,6 +375,10 @@ struct ContentView: View {
                     runtime?.supportsFingerprintIdentity == true &&
                     runtimePreflight?.isReady == true &&
                     store.profiles.count >= 2,
+                clipboardNotice:
+                    clipboardNotice?.profileID == profile.id
+                        ? clipboardNotice?.message
+                        : nil,
                 onStart: { launch(profile) },
                 onStop: { processes.stop(profileID: profile.id) },
                 onEdit: {
@@ -393,6 +405,20 @@ struct ContentView: View {
                         store.paths.profileDirectory(for: profile.id)
                     ])
                 },
+                onCopyProxyUsername: {
+                    guard let username = profile.proxy?.username,
+                          !username.isEmpty
+                    else {
+                        localError = "Для этого профиля не указан логин прокси."
+                        return
+                    }
+                    copyToClipboard(
+                        username,
+                        profileID: profile.id,
+                        successMessage:
+                            "Логин прокси скопирован. Буфер очистится через 60 секунд."
+                    )
+                },
                 onCopyProxyPassword: {
                     do {
                         guard let password = try keychain.proxyPassword(profileID: profile.id),
@@ -401,17 +427,12 @@ struct ContentView: View {
                             localError = "Для этого профиля не сохранён пароль прокси."
                             return
                         }
-                        NSPasteboard.general.clearContents()
-                        guard NSPasteboard.general.setString(
+                        copyToClipboard(
                             password,
-                            forType: .string
-                        ) else {
-                            localError = "Не удалось скопировать пароль прокси."
-                            return
-                        }
-                        let changeCount = NSPasteboard.general.changeCount
-                        clipboardLeaseChangeCount = changeCount
-                        clearClipboardLater(changeCount: changeCount)
+                            profileID: profile.id,
+                            successMessage:
+                                "Пароль прокси скопирован. Буфер очистится через 60 секунд."
+                        )
                     } catch {
                         localError = error.localizedDescription
                     }
@@ -683,6 +704,62 @@ struct ContentView: View {
         }
     }
 
+    private func copyToClipboard(
+        _ value: String,
+        profileID: UUID,
+        successMessage: String
+    ) {
+        clipboardLeaseChangeCount = nil
+        clipboardNotice = nil
+
+        let item = NSPasteboardItem()
+        guard item.setString(value, forType: .string) else {
+            localError = "Не удалось подготовить данные прокси для копирования."
+            return
+        }
+        item.setString(
+            "",
+            forType: NSPasteboard.PasteboardType(
+                "org.nspasteboard.TransientType"
+            )
+        )
+        item.setString(
+            "",
+            forType: NSPasteboard.PasteboardType(
+                "org.nspasteboard.ConcealedType"
+            )
+        )
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        guard pasteboard.writeObjects([item]) else {
+            localError = "Не удалось скопировать данные прокси."
+            return
+        }
+        let changeCount = pasteboard.changeCount
+        clipboardLeaseChangeCount = changeCount
+        let notice = ClipboardNotice(
+            profileID: profileID,
+            message: successMessage
+        )
+        clipboardNotice = notice
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: successMessage,
+                .priority: NSAccessibilityPriorityLevel.medium.rawValue
+            ]
+        )
+        clearClipboardLater(changeCount: changeCount)
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            if clipboardNotice == notice {
+                clipboardNotice = nil
+            }
+        }
+    }
+
     private func clearClipboardIfLeaseIsActive(changeCount: Int? = nil) {
         guard let activeChangeCount = clipboardLeaseChangeCount,
               changeCount == nil || changeCount == activeChangeCount
@@ -743,12 +820,14 @@ private struct ProfileDetailView: View {
     let browserDataPath: String
     let runtimeSupportsFingerprint: Bool
     let canRunFingerprintAudit: Bool
+    let clipboardNotice: String?
     let onStart: () -> Void
     let onStop: () -> Void
     let onEdit: () -> Void
     let onFingerprintAudit: () -> Void
     let onDelete: () -> Void
     let onReveal: () -> Void
+    let onCopyProxyUsername: () -> Void
     let onCopyProxyPassword: () -> Void
 
     private var actionColumns: [GridItem] {
@@ -840,10 +919,36 @@ private struct ProfileDetailView: View {
                             : "Нужны два профиля и готовый совместимый движок"
                     )
                     if let proxy = profile.proxy, !proxy.username.isEmpty {
-                        Button(action: onCopyProxyPassword) {
-                            Label("Пароль", systemImage: "key")
-                                .frame(maxWidth: .infinity)
+                        Button(action: onCopyProxyUsername) {
+                            Label(
+                                "Копировать логин",
+                                systemImage: "person.text.rectangle"
+                            )
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .frame(maxWidth: .infinity)
                         }
+                        .help(
+                            "Скопировать логин прокси на 60 секунд"
+                        )
+                        .accessibilityHint(
+                            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
+                        )
+                        Button(action: onCopyProxyPassword) {
+                            Label(
+                                "Копировать пароль",
+                                systemImage: "key"
+                            )
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .frame(maxWidth: .infinity)
+                        }
+                        .help(
+                            "Скопировать пароль из Связки ключей на 60 секунд"
+                        )
+                        .accessibilityHint(
+                            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
+                        )
                     }
                     Button(role: .destructive, action: onDelete) {
                         Label("Удалить", systemImage: "trash")
@@ -851,6 +956,15 @@ private struct ProfileDetailView: View {
                     }
                 }
                 .buttonStyle(.bordered)
+                if let clipboardNotice {
+                    Label(
+                        clipboardNotice,
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(clipboardNotice)
+                }
 
                 GroupBox("Стартовая страница") {
                     LabeledContent("URL", value: profile.startURL)

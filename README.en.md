@@ -31,14 +31,20 @@ The same release is mirrored at <https://cpa.tg/neantik/>.
 
 - keeps cookies, local storage, and browser data in separate persistent
   profiles;
-- supports direct connections and HTTP, HTTPS, and unauthenticated SOCKS5
-  proxies;
+- supports direct connections, authenticated HTTP/HTTPS through Chromium's
+  native prompt, and SOCKS5 without credentials;
 - keeps proxy passwords in macOS Keychain;
 - prevents a second launch of the same profile;
 - provides deterministic per-profile browser-surface isolation in the bundled
   patched Chromium runtime;
 - includes an A → B → A audit for stability and separation;
 - keeps Direct telemetry disabled.
+
+For authenticated HTTP/HTTPS proxies, separate buttons copy the username and
+password into Chromium's native prompt. The password remains in macOS
+Keychain and never enters the browser command line. Copied values carry the
+transient/concealed pasteboard hints and an unchanged clipboard is cleared
+after 60 seconds; another app can still read it during that interval.
 
 ## Security and scope
 
