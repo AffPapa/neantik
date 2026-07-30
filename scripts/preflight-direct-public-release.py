@@ -36,6 +36,21 @@ assert EVIDENCE_SPEC and EVIDENCE_SPEC.loader
 EVIDENCE_SCHEMA = importlib.util.module_from_spec(EVIDENCE_SPEC)
 sys.modules[EVIDENCE_SPEC.name] = EVIDENCE_SCHEMA
 EVIDENCE_SPEC.loader.exec_module(EVIDENCE_SCHEMA)
+NOTARY_INSPECTOR_PATH = (
+    PROJECT_ROOT / "scripts" / "notary_transaction_inspector.py"
+)
+if str(NOTARY_INSPECTOR_PATH.parent) not in sys.path:
+    sys.path.insert(0, str(NOTARY_INSPECTOR_PATH.parent))
+NOTARY_INSPECTOR_SPEC = importlib.util.spec_from_file_location(
+    "notary_transaction_inspector_for_preflight",
+    NOTARY_INSPECTOR_PATH,
+)
+assert NOTARY_INSPECTOR_SPEC and NOTARY_INSPECTOR_SPEC.loader
+NOTARY_INSPECTOR = importlib.util.module_from_spec(
+    NOTARY_INSPECTOR_SPEC
+)
+sys.modules[NOTARY_INSPECTOR_SPEC.name] = NOTARY_INSPECTOR
+NOTARY_INSPECTOR_SPEC.loader.exec_module(NOTARY_INSPECTOR)
 
 
 VERSION_RE = re.compile(r"^(?P<parts>[0-9]+(?:\.[0-9]+){1,3})")
@@ -142,6 +157,7 @@ def verify_direct_public_release_plan(
     download_url: str | None,
     release_channel: str | None = None,
     candidate_manifest: Path | None = None,
+    notary_transaction_report: dict[str, object] | None = None,
     env: dict[str, str] | None = None,
 ) -> list[GateResult]:
     env = env if env is not None else os.environ
@@ -158,6 +174,14 @@ def verify_direct_public_release_plan(
     info_plist = read_plist(project_root / "Resources" / "Info.plist")
     version = str(info_plist["CFBundleShortVersionString"])
     expected_archive_name = f"NeAntik-{version}-arm64-notarized.zip"
+    transaction_report = (
+        notary_transaction_report
+        if notary_transaction_report is not None
+        else NOTARY_INSPECTOR.inspect_dist(
+            project_root / "dist",
+            expected_archive_name=expected_archive_name,
+        )
+    )
 
     def release_channel_contract() -> str:
         if effective_release_channel not in {"public-alpha", "production"}:
@@ -428,6 +452,30 @@ def verify_direct_public_release_plan(
             "download URL not provided to this read-only preflight"
         )
 
+    def local_transaction_continuity() -> str:
+        summary = transaction_report.get("summary")
+        if not isinstance(summary, dict):
+            raise ValueError(
+                "local notarization transaction report is invalid"
+            )
+        if not transaction_report.get("safe"):
+            raise ValueError(
+                "local notarization transaction metadata is unsafe; "
+                f"unsafe entries: {summary.get('unsafeCount', 'unknown')}"
+            )
+        if not transaction_report.get("releaseReady"):
+            raise ValueError(
+                "local notarization transaction requires reconciliation; "
+                "no new Apple submission is allowed; "
+                "blocking entries: "
+                f"{summary.get('releaseBlockingCount', 'unknown')}"
+            )
+        return (
+            "read-only transaction continuity verified; "
+            f"active {summary.get('activeCount', 0)}, "
+            f"retired history {summary.get('retiredCount', 0)}"
+        )
+
     return [
         gate("Explicit Direct release channel", release_channel_contract),
         gate("Integrated Direct bundle", integrated_bundle),
@@ -439,6 +487,10 @@ def verify_direct_public_release_plan(
         gate("GUI fingerprint qualification", gui_report),
         gate("Developer ID signing environment", signing_env),
         gate("Notary profile environment", notary_env),
+        gate(
+            "Local notarization transaction continuity",
+            local_transaction_continuity,
+        ),
         gate("Expected notarized archive name/download URL", archive_name_url_contract),
     ]
 
@@ -463,6 +515,7 @@ def results_to_json(
     *,
     download_url: str | None = None,
     release_channel: str | None = None,
+    notary_transaction_report: dict[str, object] | None = None,
 ) -> dict[str, Any]:
     blocked = [result for result in results if not result.passed]
     return {
@@ -487,6 +540,7 @@ def results_to_json(
             }
             for result in results
         ],
+        "notaryTransactionDiagnostics": notary_transaction_report,
         "releaseBoundary": (
             "This is a read-only Direct release-plan preflight. It does not "
             "sign, notarize, staple, upload, host, publish, or approve a build."
@@ -538,8 +592,21 @@ def main() -> int:
     args = parser.parse_args()
 
     integrated_app = args.integrated_app.resolve()
+    project_root = args.project_root.resolve()
+    notary_transaction_report = NOTARY_INSPECTOR.inspect_dist(
+        project_root / "dist",
+        expected_archive_name=(
+            "NeAntik-"
+            + str(
+                read_plist(
+                    project_root / "Resources" / "Info.plist"
+                )["CFBundleShortVersionString"]
+            )
+            + "-arm64-notarized.zip"
+        ),
+    )
     results = verify_direct_public_release_plan(
-        project_root=args.project_root.resolve(),
+        project_root=project_root,
         integrated_app=integrated_app,
         runtime_app=(args.runtime_app or default_runtime_app(integrated_app)).resolve(),
         args_gn=(args.args_gn or default_args_gn(integrated_app)).resolve(),
@@ -548,6 +615,7 @@ def main() -> int:
         runtime_lock=args.runtime_lock.resolve(),
         download_url=args.download_url,
         release_channel=args.release_channel,
+        notary_transaction_report=notary_transaction_report,
     )
     if args.json:
         print(
@@ -556,6 +624,9 @@ def main() -> int:
                     results,
                     download_url=args.download_url,
                     release_channel=args.release_channel,
+                    notary_transaction_report=(
+                        notary_transaction_report
+                    ),
                 ),
                 indent=2,
                 ensure_ascii=False,

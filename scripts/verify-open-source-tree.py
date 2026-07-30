@@ -119,6 +119,7 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/release_transaction.py",
     "scripts/release_source_receipt.py",
     "scripts/notary_transaction_state.py",
+    "scripts/notary_transaction_inspector.py",
     "scripts/run-isolated-release-python.py",
     "scripts/notarize_direct_transaction.py",
     "scripts/verify-direct-hosted-download.py",
@@ -131,6 +132,7 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/tests/test_release_transaction.py",
     "scripts/tests/test_release_source_receipt.py",
     "scripts/tests/test_notary_transaction_state.py",
+    "scripts/tests/test_notary_transaction_inspector.py",
     "scripts/tests/test_run_isolated_release_python.py",
     "scripts/tests/test_notarize_direct_transaction.py",
 }

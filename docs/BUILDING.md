@@ -96,6 +96,19 @@ strict production qualification; `public-alpha` never silently upgrades that
 verdict. Only upload after authenticated schema-8 GUI evidence, notarization,
 stapling, Gatekeeper, and SHA-256 pass.
 
+Immediately before notarization, the release entrypoint runs the read-only
+local transaction continuity gate. It permits a candidate-version-matched
+known transaction to enter the notarizer's exact recovery validation, but
+blocks abandoned initialization, pre-effect active state, ambiguous
+`submit-intent`, unsafe metadata, or interrupted retired state after a
+possible Apple effect. The continuity layer checks the current versioned
+archive, retained submitted/final artifacts and exclusive release lock. The
+notarizer remains the final authority for channel, candidate inputs, clean
+source/runtime evidence, private receipts and public destinations.
+Owner-only `.notary-retired/` history is retained for
+recovery evidence; the gate neither deletes it nor interprets a clean result
+as approval to delete it.
+
 `./scripts/verify-native-swift-suite.sh
 SecureEnclaveFingerprintEvidenceSignerTests` checks deterministic lifecycle
 and fail-closed behavior with an injected backend only. It is not a hardware

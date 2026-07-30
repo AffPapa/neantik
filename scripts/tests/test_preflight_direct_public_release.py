@@ -162,6 +162,53 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         self.assertIn("Metal runtime arguments", blocked)
         self.assertIn("Expected notarized archive name/download URL", blocked)
 
+    def test_blocks_ambiguous_local_notarization_transaction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            integrated, runtime, args_gn, gui_report, runtime_lock = (
+                write_fixture_project(root)
+            )
+            results = MODULE.verify_direct_public_release_plan(
+                project_root=root,
+                integrated_app=integrated,
+                runtime_app=runtime,
+                args_gn=args_gn,
+                gui_fingerprint_report=gui_report,
+                runtime_lock=runtime_lock,
+                download_url=(
+                    "https://downloads.neantik.app/"
+                    "NeAntik-1.2.3-arm64-notarized.zip"
+                ),
+                notary_transaction_report={
+                    "safe": True,
+                    "releaseReady": False,
+                    "summary": {
+                        "activeCount": 1,
+                        "retiredCount": 0,
+                        "unsafeCount": 0,
+                        "releaseBlockingCount": 1,
+                    },
+                },
+                env={
+                    "NEANTIK_SIGNING_IDENTITY": "a" * 40,
+                    "NEANTIK_NOTARY_PROFILE": "neantik-notary",
+                    "NEANTIK_RELEASE_CHANNEL": "public-alpha",
+                },
+            )
+        blocked = {
+            result.name: result.details
+            for result in results
+            if not result.passed
+        }
+        self.assertIn(
+            "Local notarization transaction continuity",
+            blocked,
+        )
+        self.assertIn(
+            "no new Apple submission",
+            blocked["Local notarization transaction continuity"],
+        )
+
     def test_rejects_runtime_app_version_mismatch_with_runtime_lock(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -303,6 +350,7 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         self.assertEqual(report["gates"][1]["passed"], False)
         self.assertIn("does not sign", report["releaseBoundary"])
         self.assertIn("publish", report["releaseBoundary"])
+        self.assertIsNone(report["notaryTransactionDiagnostics"])
 
 
 def write_plist(path: Path, values: dict) -> None:

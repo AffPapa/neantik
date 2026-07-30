@@ -54,6 +54,7 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/fingerprint_evidence_schema8.py", "evidence-schema"),
     ("scripts/notarize-direct-candidate.sh", "release-entrypoint"),
     ("scripts/notarize_direct_transaction.py", "orchestrator"),
+    ("scripts/notary_transaction_inspector.py", "transaction-diagnostics"),
     ("scripts/notary_transaction_state.py", "transaction-state"),
     ("scripts/release-direct.sh", "release-entrypoint"),
     ("scripts/release_input_snapshot.py", "input-snapshot"),

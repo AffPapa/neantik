@@ -90,6 +90,42 @@ class IsolatedReleasePythonTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 2, completed.stderr)
             self.assertIn("--project-root", completed.stderr)
 
+    def test_read_only_notary_inspector_runs_under_runner(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".git").mkdir()
+            (root / "dist").mkdir(mode=0o700)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            shutil.copy2(
+                RUNNER.parent / "notary_transaction_inspector.py",
+                scripts / "notary_transaction_inspector.py",
+            )
+            target = scripts / "notary_transaction_inspector.py"
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-B",
+                    str(RUNNER),
+                    str(target),
+                    "--project-root",
+                    str(root),
+                    "--release-gate",
+                ],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                timeout=10,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn(
+                "локальных транзакций выпуска нет",
+                completed.stdout,
+            )
+            self.assertFalse((scripts / "__pycache__").exists())
+
     def test_child_python_cannot_write_repository_bytecode(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

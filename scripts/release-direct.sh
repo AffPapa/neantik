@@ -5,6 +5,14 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
+VERSION="$(/usr/libexec/PlistBuddy -c \
+  'Print :CFBundleShortVersionString' \
+  "$PROJECT_DIR/Resources/Info.plist")"
+if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+  echo "Resources/Info.plist contains an invalid release version." >&2
+  exit 65
+fi
+EXPECTED_ARCHIVE="NeAntik-$VERSION-arm64-notarized.zip"
 
 if [[ $# -ne 0 ]]; then
   echo "Usage: $0" >&2
@@ -47,6 +55,12 @@ fi
 "$RELEASE_PYTHON" -I -B \
   "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
   "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
+"$RELEASE_PYTHON" -I -B \
+  "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+  "$PROJECT_DIR/scripts/notary_transaction_inspector.py" \
+  --project-root "$PROJECT_DIR" \
+  --expected-archive-name "$EXPECTED_ARCHIVE" \
+  --release-gate
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"
 
 echo "Next: upload the versioned archive, then run scripts/verify-direct-hosted-download.py with --candidate-manifest, --release-channel, --fingerprint-evidence and --fingerprint-attestation."

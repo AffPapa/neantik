@@ -80,8 +80,12 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("run-isolated-release-python.py", text)
         self.assertEqual(
             text.count("run-isolated-release-python.py"),
-            2,
+            3,
         )
+        self.assertIn("notary_transaction_inspector.py", text)
+        self.assertIn("--release-gate", text)
+        self.assertIn("--expected-archive-name", text)
+        self.assertIn("EXPECTED_ARCHIVE=", text)
         self.assertIn("notarize-direct-candidate.sh", text)
         self.assertNotIn("verify-direct-notarized-archive.py", text)
         self.assertIn(
@@ -94,6 +98,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertNotIn("rm -rf", text)
         self.assertLess(
             text.index("direct-candidate-manifest.py"),
+            text.index("notary_transaction_inspector.py"),
+        )
+        self.assertLess(
+            text.index("notary_transaction_inspector.py"),
             text.index("notarize-direct-candidate.sh"),
         )
 

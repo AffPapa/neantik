@@ -103,6 +103,27 @@ Unknown, replaced, or crash-abandoned initialization paths fail closed for
 operator reconciliation; public archives, sidecars, and private receipts are
 never included in this retirement policy.
 
+Before a new Apple submission, `notary_transaction_inspector.py` performs a
+strict read-only descriptor-relative inspection. It validates owner, mode,
+device, link count, marker, lease, canonical hash chain and cross-stage seals.
+An initialization path, a pre-effect active path, an ambiguous
+`submit-intent`, an interrupted retired post-effect path, or unsafe metadata
+blocks a new submission. A valid, version-matched active transaction from
+`submission-known` onward may enter the notarizer's exact recovery validation;
+this continuity verdict does not replace its candidate/source/receipt/public
+destination checks. Safe `.notary-retired/` history
+is counted but not enumerated, never blocks a release, and is never treated as
+permission for automatic deletion. The report contains only bounded counts
+and stage/status enums—no paths, per-entry identifiers, UUIDs, archive names,
+hashes or Apple identifiers.
+
+```bash
+python3 scripts/notary_transaction_inspector.py \
+  --project-root . \
+  --expected-archive-name NeAntik-X.Y.Z-arm64-notarized.zip \
+  --release-gate
+```
+
 One uncertainty boundary is intentionally fail-closed: if the process dies
 after the durable `submit-intent` but before the Apple submission ID is
 recorded, the service may have received the upload. The next run refuses to
