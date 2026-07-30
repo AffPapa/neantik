@@ -445,64 +445,62 @@ def write_checksum_sidecar(
 ) -> FileSeal:
     destination = destination.absolute()
     parent = _directory_descriptor(destination.parent, private=True)
+    temporary_name = (
+        f".{destination.name}.neantik-write-{uuid.uuid4().hex}"
+    )
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     payload = (
         f"{archive.sha256}  {archive.path.name}\n".encode("utf-8")
     )
+    output = -1
     try:
-        output = os.open(
-            destination.name,
-            flags,
-            0o600,
-            dir_fd=parent,
-        )
-    except OSError as error:
-        os.close(parent)
-        raise ReleaseTransactionError(
-            "release checksum output is unavailable"
-        ) from error
-    try:
-        created_identity = os.fstat(output)
-    except OSError as error:
-        os.close(output)
-        os.close(parent)
-        raise ReleaseTransactionError(
-            "release checksum output is unavailable"
-        ) from error
-    succeeded = False
-    try:
-        view = memoryview(payload)
-        while view:
-            written = os.write(output, view)
-            if written <= 0:
-                raise ReleaseTransactionError(
-                    "release checksum write failed"
-                )
-            view = view[written:]
-        os.fsync(output)
-        os.fsync(parent)
-        succeeded = True
-    except OSError as error:
-        raise ReleaseTransactionError(
-            "release checksum write failed"
-        ) from error
+        try:
+            output = os.open(
+                temporary_name,
+                flags,
+                0o600,
+                dir_fd=parent,
+            )
+        except OSError as error:
+            raise ReleaseTransactionError(
+                "release checksum output is unavailable"
+            ) from error
+        try:
+            view = memoryview(payload)
+            while view:
+                written = os.write(output, view)
+                if written <= 0:
+                    raise ReleaseTransactionError(
+                        "release checksum write failed"
+                    )
+                view = view[written:]
+            os.fsync(output)
+        except OSError as error:
+            raise ReleaseTransactionError(
+                "release checksum write failed"
+            ) from error
+        finally:
+            os.close(output)
+            output = -1
+        try:
+            _rename_exclusive(
+                parent,
+                temporary_name,
+                parent,
+                destination.name,
+            )
+            os.fsync(parent)
+        except OSError as error:
+            raise ReleaseTransactionError(
+                "release checksum commit failed"
+            ) from error
     finally:
-        os.close(output)
-        if not succeeded:
+        if output >= 0:
             try:
-                current = os.stat(
-                    destination.name,
-                    dir_fd=parent,
-                    follow_symlinks=False,
-                )
-                if (
-                    current.st_dev == created_identity.st_dev
-                    and current.st_ino == created_identity.st_ino
-                ):
-                    os.unlink(destination.name, dir_fd=parent)
-            except (FileNotFoundError, OSError):
+                os.close(output)
+            except OSError:
                 pass
         os.close(parent)
     return seal_regular_file(
@@ -538,23 +536,6 @@ def assert_checksum_matches_archive(
         raise ReleaseTransactionError(
             "release checksum does not match the sealed archive"
         )
-
-
-def _unlink_if_identity(
-    parent: int,
-    name: str,
-    identity: tuple[int, int],
-) -> None:
-    try:
-        status = os.stat(
-            name,
-            dir_fd=parent,
-            follow_symlinks=False,
-        )
-        if (status.st_dev, status.st_ino) == identity:
-            os.unlink(name, dir_fd=parent)
-    except (FileNotFoundError, OSError):
-        return
 
 
 def _rename_exclusive(
@@ -654,8 +635,6 @@ def _publish_one_file(
     hidden_name = (
         f".{destination_name}.neantik-publish-{uuid.uuid4().hex}"
     )
-    hidden_identity: tuple[int, int] | None = None
-    validated_hidden_identity: tuple[int, int] | None = None
     final_identity: tuple[int, int] | None = None
     try:
         os.link(
@@ -678,10 +657,6 @@ def _publish_one_file(
             raise ReleaseTransactionError(
                 "release staging link does not match the sealed source"
             )
-        hidden_identity = (
-            linked_status.st_dev,
-            linked_status.st_ino,
-        )
         hidden_descriptor = os.open(
             hidden_name,
             os.O_RDONLY
@@ -691,11 +666,6 @@ def _publish_one_file(
         )
         try:
             hidden_status = os.fstat(hidden_descriptor)
-            hidden_identity = (
-                hidden_status.st_dev,
-                hidden_status.st_ino,
-            )
-            validated_hidden_identity = hidden_identity
             _assert_descriptor_matches_seal(
                 hidden_descriptor,
                 seal,
@@ -720,7 +690,6 @@ def _publish_one_file(
             final_status.st_dev,
             final_status.st_ino,
         )
-        hidden_identity = None
         final_descriptor = os.open(
             destination_name,
             os.O_RDONLY
@@ -742,18 +711,10 @@ def _publish_one_file(
         assert final_identity is not None
         return final_identity
     except BaseException:
-        if hidden_identity is not None:
-            _unlink_if_identity(
-                source_parent,
-                hidden_name,
-                hidden_identity,
-            )
-        if validated_hidden_identity is not None:
-            _unlink_if_identity(
-                source_parent,
-                hidden_name,
-                validated_hidden_identity,
-            )
+        # The hidden link is intentionally retained. Darwin cannot unlink an
+        # already-open inode, so stat-then-unlink would be vulnerable to a
+        # same-user name swap. A later recovery pass may adopt only the exact
+        # sealed inode; anything else remains for operator reconciliation.
         # A committed public name is never moved or deleted here. It may have
         # been replaced after the commit; retaining it and failing closed is
         # safer than touching an inode that is no longer proven to be ours.

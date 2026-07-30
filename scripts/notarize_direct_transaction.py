@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import plistlib
@@ -9,7 +10,7 @@ import re
 import stat
 import subprocess
 import sys
-import tempfile
+import time
 import uuid
 import zipfile
 from dataclasses import dataclass, replace
@@ -50,6 +51,14 @@ class CandidateInputs:
     manifest: SNAPSHOT.ReleaseInputSnapshot
     evidence: SNAPSHOT.ReleaseInputSnapshot
     attestation: SNAPSHOT.ReleaseInputSnapshot
+
+
+@dataclass(frozen=True)
+class TransactionRetirement:
+    destination: Path | None
+    moved: bool
+    durable: bool
+    verified: bool
 
 
 def rebase_candidate_inputs(
@@ -801,107 +810,274 @@ def ensure_private_receipt_directory(directory: Path) -> None:
         )
 
 
-def _clear_directory_descriptor(descriptor: int) -> None:
-    for name in os.listdir(descriptor):
-        try:
-            status = os.stat(
-                name,
-                dir_fd=descriptor,
-                follow_symlinks=False,
+_INITIAL_TRANSACTION_PATTERN = re.compile(
+    r"^\.neantik-notary-init\."
+    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-"
+    r"[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
+
+
+def create_initial_transaction_root(
+    dist: Path,
+) -> tuple[Path, int, int, int, str, os.stat_result]:
+    coordinator = STATE.acquire_transaction_lock(
+        dist / ".notary-locks",
+        "initialization",
+    )
+    root_descriptor = -1
+    lease_descriptor = -1
+    dist_descriptor = -1
+    root_status: os.stat_result | None = None
+    root: Path | None = None
+    try:
+        dist_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
+        if hasattr(os, "O_NOFOLLOW"):
+            dist_flags |= os.O_NOFOLLOW
+        dist_descriptor = os.open(dist, dist_flags)
+        unfinished = sorted(
+            name
+            for name in os.listdir(dist_descriptor)
+            if name.startswith(".neantik-notary-init.")
+        )
+        if unfinished:
+            raise DirectNotaryTransactionError(
+                "unfinished pre-activation notary transaction requires "
+                "operator reconciliation"
             )
-        except FileNotFoundError:
-            continue
-        if stat.S_ISDIR(status.st_mode):
-            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
-            if hasattr(os, "O_NOFOLLOW"):
-                flags |= os.O_NOFOLLOW
+        transaction_id = str(uuid.uuid4())
+        name = f".neantik-notary-init.{transaction_id}"
+        if not _INITIAL_TRANSACTION_PATTERN.fullmatch(name):
+            raise DirectNotaryTransactionError(
+                "initial notary transaction identifier is invalid"
+            )
+        root = dist / name
+        os.mkdir(name, 0o700, dir_fd=dist_descriptor)
+        root_status = os.stat(
+            name,
+            dir_fd=dist_descriptor,
+            follow_symlinks=False,
+        )
+        root_descriptor = os.open(
+            name,
+            dist_flags,
+            dir_fd=dist_descriptor,
+        )
+        opened_root_status = os.fstat(root_descriptor)
+        dist_status = os.fstat(dist_descriptor)
+        if (
+            not stat.S_ISDIR(opened_root_status.st_mode)
+            or opened_root_status.st_uid != os.geteuid()
+            or stat.S_IMODE(opened_root_status.st_mode) != 0o700
+            or opened_root_status.st_dev != dist_status.st_dev
+            or opened_root_status.st_dev != root_status.st_dev
+            or opened_root_status.st_ino != root_status.st_ino
+        ):
+            raise DirectNotaryTransactionError(
+                "initial notary transaction directory is unsafe"
+            )
+        lease_flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC
+        if hasattr(os, "O_NOFOLLOW"):
+            lease_flags |= os.O_NOFOLLOW
+        lease_descriptor = os.open(
+            ".init-lease",
+            lease_flags,
+            0o600,
+            dir_fd=root_descriptor,
+        )
+        lease_status = os.fstat(lease_descriptor)
+        if (
+            not stat.S_ISREG(lease_status.st_mode)
+            or lease_status.st_uid != os.geteuid()
+            or lease_status.st_nlink != 1
+            or stat.S_IMODE(lease_status.st_mode) != 0o600
+        ):
+            raise DirectNotaryTransactionError(
+                "initial notary transaction lease is unsafe"
+            )
+        fcntl.flock(lease_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        root_status = opened_root_status
+        write_private_json(
+            root / ".init-marker.json",
+            {
+                "activeTarget": f".neantik-notary.{transaction_id}",
+                "createdAtUnixNs": time.time_ns(),
+                "directoryName": name,
+                "externalEffectsAllowed": False,
+                "markerType": "neantik-notary-initialization",
+                "schemaVersion": 1,
+                "transactionId": transaction_id,
+            },
+        )
+        os.fsync(root_descriptor)
+        os.fsync(dist_descriptor)
+        os.close(dist_descriptor)
+        dist_descriptor = -1
+        return (
+            root,
+            root_descriptor,
+            lease_descriptor,
+            coordinator,
+            transaction_id,
+            root_status,
+        )
+    except Exception:
+        if (
+            root is not None
+            and root_status is not None
+            and root_descriptor < 0
+            and dist_descriptor >= 0
+        ):
             try:
-                child = os.open(name, flags, dir_fd=descriptor)
-            except OSError:
-                continue
-            try:
-                opened = os.fstat(child)
-                if (
-                    opened.st_dev != status.st_dev
-                    or opened.st_ino != status.st_ino
-                ):
-                    continue
-                _clear_directory_descriptor(child)
-            finally:
-                os.close(child)
-            try:
-                current = os.stat(
-                    name,
-                    dir_fd=descriptor,
-                    follow_symlinks=False,
+                retry_flags = (
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
                 )
-                if (
-                    current.st_dev == status.st_dev
-                    and current.st_ino == status.st_ino
-                ):
-                    os.rmdir(name, dir_fd=descriptor)
-            except OSError:
-                continue
-        else:
-            try:
-                current = os.stat(
-                    name,
-                    dir_fd=descriptor,
-                    follow_symlinks=False,
+                if hasattr(os, "O_NOFOLLOW"):
+                    retry_flags |= os.O_NOFOLLOW
+                root_descriptor = os.open(
+                    root.name,
+                    retry_flags,
+                    dir_fd=dist_descriptor,
                 )
-                if (
-                    current.st_dev == status.st_dev
-                    and current.st_ino == status.st_ino
-                ):
-                    os.unlink(name, dir_fd=descriptor)
             except OSError:
-                continue
+                pass
+        if root is not None and root_status is not None:
+            try:
+                retire_exact_transaction(
+                    root,
+                    descriptor=root_descriptor,
+                    expected_device=root_status.st_dev,
+                    expected_inode=root_status.st_ino,
+                )
+            except Exception:
+                pass
+        for opened in (
+            lease_descriptor,
+            root_descriptor,
+            dist_descriptor,
+            coordinator,
+        ):
+            if opened >= 0:
+                try:
+                    os.close(opened)
+                except OSError:
+                    pass
+        raise
 
 
-def cleanup_exact_transaction(
+def retire_exact_transaction(
     path: Path,
     *,
     descriptor: int,
     expected_device: int,
     expected_inode: int,
-) -> None:
+) -> TransactionRetirement:
+    """Move an exact transaction aside without deleting any discovered path.
+
+    Darwin has no unlink-by-file-descriptor primitive. A stat-then-unlink
+    cleanup can therefore delete a same-user replacement. Retirement uses an
+    exclusive same-filesystem rename, verifies the moved inode through a new
+    no-follow descriptor, and deliberately leaves recursive deletion to an
+    explicit operator-reviewed maintenance action.
+    """
     try:
         status = os.fstat(descriptor)
     except OSError:
-        return
+        return TransactionRetirement(None, False, False, False)
     if (
         not stat.S_ISDIR(status.st_mode)
         or status.st_dev != expected_device
         or status.st_ino != expected_inode
     ):
-        return
+        return TransactionRetirement(None, False, False, False)
+    retired_root = path.parent / ".notary-retired"
     try:
-        _clear_directory_descriptor(descriptor)
-    except OSError:
-        return
-    parent_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
+        STATE.ensure_private_directory(retired_root)
+    except (OSError, STATE.NotaryTransactionStateError):
+        return TransactionRetirement(None, False, False, False)
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
     if hasattr(os, "O_NOFOLLOW"):
-        parent_flags |= os.O_NOFOLLOW
+        directory_flags |= os.O_NOFOLLOW
+    source_parent = -1
+    retired_parent = -1
+    moved_descriptor = -1
+    destination = retired_root / str(uuid.uuid4())
+    moved = False
+    durable = False
+    verified = False
     try:
-        parent = os.open(path.parent, parent_flags)
-    except OSError:
-        return
-    try:
+        source_parent = os.open(path.parent, directory_flags)
+        retired_parent = os.open(retired_root, directory_flags)
         current = os.stat(
             path.name,
-            dir_fd=parent,
+            dir_fd=source_parent,
             follow_symlinks=False,
         )
         if (
-            stat.S_ISDIR(current.st_mode)
-            and current.st_dev == expected_device
-            and current.st_ino == expected_inode
+            not stat.S_ISDIR(current.st_mode)
+            or current.st_dev != expected_device
+            or current.st_ino != expected_inode
         ):
-            os.rmdir(path.name, dir_fd=parent)
-    except OSError:
-        return
+            return TransactionRetirement(None, False, False, False)
+        TRANSACTION._rename_exclusive(
+            source_parent,
+            path.name,
+            retired_parent,
+            destination.name,
+        )
+        moved = True
+        try:
+            os.fsync(source_parent)
+            os.fsync(retired_parent)
+            durable = True
+        except OSError:
+            return TransactionRetirement(
+                destination,
+                moved,
+                durable,
+                verified,
+            )
+        moved_descriptor = os.open(
+            destination.name,
+            directory_flags,
+            dir_fd=retired_parent,
+        )
+        moved_status = os.fstat(moved_descriptor)
+        verified = (
+            stat.S_ISDIR(moved_status.st_mode)
+            and moved_status.st_dev == expected_device
+            and moved_status.st_ino == expected_inode
+        )
+        if not verified:
+            return TransactionRetirement(
+                destination,
+                moved,
+                durable,
+                verified,
+            )
+        return TransactionRetirement(
+            destination,
+            moved,
+            durable,
+            verified,
+        )
+    except (OSError, TRANSACTION.ReleaseTransactionError):
+        return TransactionRetirement(
+            destination if moved else None,
+            moved,
+            durable,
+            verified,
+        )
     finally:
-        os.close(parent)
+        for opened in (
+            moved_descriptor,
+            retired_parent,
+            source_parent,
+        ):
+            if opened >= 0:
+                try:
+                    os.close(opened)
+                except OSError:
+                    pass
 
 
 def _canonical_private_json(payload: dict[str, object]) -> bytes:
@@ -1582,12 +1758,16 @@ def resume_known_transaction(
         | getattr(os, "O_NOFOLLOW", 0),
     )
     try:
-        cleanup_exact_transaction(
+        retirement = retire_exact_transaction(
             transaction_root,
             descriptor=transaction_descriptor,
             expected_device=transaction_status.st_dev,
             expected_inode=transaction_status.st_ino,
         )
+        if not retirement.verified or not retirement.durable:
+            raise DirectNotaryTransactionError(
+                "completed notary transaction could not be safely retired"
+            )
     finally:
         os.close(transaction_descriptor)
     return {
@@ -1648,18 +1828,14 @@ def run_transaction(
         raise DirectNotaryTransactionError(
             "prepared NeAntik.app is missing or unsafe"
         )
-    transaction_root = Path(
-        tempfile.mkdtemp(prefix=".neantik-notary-init.", dir=dist)
-    )
-    transaction_root.chmod(0o700)
-    transaction_status = transaction_root.stat(follow_symlinks=False)
-    transaction_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
-    if hasattr(os, "O_NOFOLLOW"):
-        transaction_flags |= os.O_NOFOLLOW
-    transaction_descriptor = os.open(
+    (
         transaction_root,
-        transaction_flags,
-    )
+        transaction_descriptor,
+        initialization_lease_descriptor,
+        initialization_coordinator_descriptor,
+        transaction_id,
+        transaction_status,
+    ) = create_initial_transaction_root(dist)
     context: dict[str, Path] = {"transaction": transaction_root}
     hook = phase_hook or (lambda _phase, _context: None)
     lock_descriptor = -1
@@ -1735,7 +1911,7 @@ def run_transaction(
             exclude=transaction_root,
         )
         if active is not None:
-            return resume_known_transaction(
+            resumed = resume_known_transaction(
                 active,
                 project_root=project_root,
                 dist=dist,
@@ -1749,7 +1925,8 @@ def run_transaction(
                 hook=hook,
                 source_assertion=source_assertion,
             )
-        transaction_id = str(uuid.uuid4())
+            transaction_complete = True
+            return resumed
         state_store = STATE.StateStore(
             transaction_root,
             transaction_id,
@@ -1773,6 +1950,7 @@ def run_transaction(
         )
         initial_root = transaction_root
         active_root = dist / f".neantik-notary.{transaction_id}"
+        hook("before-activation", context)
         dist_descriptor = os.open(
             dist,
             os.O_RDONLY
@@ -1788,7 +1966,43 @@ def run_transaction(
                 active_root.name,
             )
             transaction_root = active_root
-            os.fsync(dist_descriptor)
+            active_descriptor = os.open(
+                active_root.name,
+                os.O_RDONLY
+                | os.O_DIRECTORY
+                | os.O_CLOEXEC
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=dist_descriptor,
+            )
+            try:
+                active_status = os.fstat(active_descriptor)
+                if (
+                    not stat.S_ISDIR(active_status.st_mode)
+                    or active_status.st_dev != transaction_status.st_dev
+                    or active_status.st_ino != transaction_status.st_ino
+                    or active_status.st_uid != os.geteuid()
+                    or stat.S_IMODE(active_status.st_mode) != 0o700
+                ):
+                    raise DirectNotaryTransactionError(
+                        "activated notary transaction identity is invalid"
+                    )
+                os.fsync(dist_descriptor)
+                rebound_status = os.fstat(active_descriptor)
+                if (
+                    rebound_status.st_dev != active_status.st_dev
+                    or rebound_status.st_ino != active_status.st_ino
+                    or rebound_status.st_uid != active_status.st_uid
+                    or rebound_status.st_mode != active_status.st_mode
+                ):
+                    raise DirectNotaryTransactionError(
+                        "activated notary transaction changed before commit"
+                    )
+                os.close(initialization_lease_descriptor)
+                initialization_lease_descriptor = -1
+                os.close(initialization_coordinator_descriptor)
+                initialization_coordinator_descriptor = -1
+            finally:
+                os.close(active_descriptor)
         finally:
             os.close(dist_descriptor)
         context["transaction"] = transaction_root
@@ -2339,18 +2553,34 @@ def run_transaction(
     finally:
         try:
             if not preserve_transaction or transaction_complete:
-                cleanup_exact_transaction(
+                retirement = retire_exact_transaction(
                     transaction_root,
                     descriptor=transaction_descriptor,
                     expected_device=transaction_status.st_dev,
                     expected_inode=transaction_status.st_ino,
                 )
+                if transaction_complete and (
+                    not retirement.verified
+                    or not retirement.durable
+                ):
+                    raise DirectNotaryTransactionError(
+                        "completed notary transaction could not be safely retired"
+                    )
         finally:
             try:
                 os.close(transaction_descriptor)
             finally:
                 if lock_descriptor >= 0:
                     os.close(lock_descriptor)
+                for initialization_descriptor in (
+                    initialization_lease_descriptor,
+                    initialization_coordinator_descriptor,
+                ):
+                    if initialization_descriptor >= 0:
+                        try:
+                            os.close(initialization_descriptor)
+                        except OSError:
+                            pass
 
 
 def main() -> int:

@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = (
@@ -100,6 +101,78 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
             )
             MODULE.assert_release_source_unchanged(second)
 
+    def test_inventory_uses_the_captured_tree_identifier(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            expected_tree = self.git(root, "rev-parse", "HEAD^{tree}")
+            original_run_git = MODULE._run_git
+            queries: list[tuple[str, ...]] = []
+
+            def recording_run_git(
+                project_root: Path,
+                arguments: list[str],
+                **kwargs: object,
+            ) -> bytes:
+                queries.append(tuple(arguments))
+                return original_run_git(
+                    project_root,
+                    arguments,
+                    **kwargs,
+                )
+
+            with mock.patch.object(
+                MODULE,
+                "_run_git",
+                side_effect=recording_run_git,
+            ):
+                MODULE.capture_release_source(
+                    root,
+                    closure=self.closure,
+                )
+
+            inventories = [
+                query for query in queries if "ls-tree" in query
+            ]
+            self.assertEqual(len(inventories), 1)
+            self.assertEqual(inventories[0][-1], expected_tree)
+            self.assertNotIn("HEAD", inventories[0])
+
+    def test_head_drift_during_capture_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            original_reader = MODULE._read_committed_blobs
+            changed = False
+
+            def change_head_after_read(*args: object, **kwargs: object):
+                nonlocal changed
+                result = original_reader(*args, **kwargs)
+                if not changed:
+                    changed = True
+                    self.git(
+                        root,
+                        "commit",
+                        "--allow-empty",
+                        "-qm",
+                        "concurrent ref movement",
+                    )
+                return result
+
+            with mock.patch.object(
+                MODULE,
+                "_read_committed_blobs",
+                side_effect=change_head_after_read,
+            ):
+                with self.assertRaisesRegex(
+                    MODULE.ReleaseSourceReceiptError,
+                    "changed while it was captured",
+                ):
+                    MODULE.capture_release_source(
+                        root,
+                        closure=self.closure,
+                    )
+
     def test_dirty_tracked_staged_and_untracked_source_fail_closed(
         self,
     ) -> None:
@@ -156,6 +229,121 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
                 MODULE.capture_release_source(
                     root,
                     closure=self.closure,
+                )
+
+    def test_committed_blobs_use_one_batch_query_and_support_newline_path(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            unusual = root / "line\nbreak.txt"
+            unusual.write_text("tracked\n", encoding="utf-8")
+            duplicate = root / "duplicate-readme.txt"
+            duplicate.write_bytes((root / "README.md").read_bytes())
+            self.git(root, "add", unusual.name)
+            self.git(root, "add", duplicate.name)
+            self.git(root, "commit", "-qm", "unusual path")
+            original_run = MODULE.subprocess.run
+            commands: list[tuple[str, ...]] = []
+            batch_requests: list[bytes] = []
+
+            def recording_run(*args: object, **kwargs: object) -> object:
+                command = args[0]
+                if isinstance(command, list):
+                    commands.append(tuple(str(item) for item in command))
+                    if "cat-file" in command:
+                        request = kwargs.get("input")
+                        if isinstance(request, bytes):
+                            batch_requests.append(request)
+                return original_run(*args, **kwargs)
+
+            with mock.patch.object(
+                MODULE.subprocess,
+                "run",
+                side_effect=recording_run,
+            ):
+                snapshot = MODULE.capture_release_source(
+                    root,
+                    closure=self.closure,
+                )
+
+            self.assertIn(
+                "line\nbreak.txt",
+                {seal.relative_path for seal in snapshot.files},
+            )
+            self.assertEqual(
+                sum("cat-file" in command for command in commands),
+                1,
+            )
+            self.assertFalse(
+                any("show" in command for command in commands),
+            )
+            self.assertEqual(len(batch_requests), 1)
+            self.assertLess(
+                batch_requests[0].count(b"\0"),
+                len(snapshot.files),
+            )
+
+    def test_malformed_batch_response_fails_closed(self) -> None:
+        with mock.patch.object(
+            MODULE.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess(
+                args=[],
+                returncode=0,
+                stdout=b"malformed\n",
+                stderr=b"",
+            ),
+        ):
+            with self.assertRaisesRegex(
+                MODULE.ReleaseSourceReceiptError,
+                "blob response",
+            ):
+                MODULE._read_committed_blobs(  # noqa: SLF001
+                    Path("."),
+                    (("a" * 40, 0),),
+                    identifier_length=40,
+                )
+
+    def test_aggregate_blob_limit_fails_before_git_query(self) -> None:
+        objects = tuple(
+            (f"{index:040x}", MODULE._MAXIMUM_SOURCE_FILE_BYTES)
+            for index in range(9)
+        )
+        with mock.patch.object(
+            MODULE.subprocess,
+            "run",
+            side_effect=AssertionError("Git must not run"),
+        ):
+            with self.assertRaisesRegex(
+                MODULE.ReleaseSourceReceiptError,
+                "batch memory limit",
+            ):
+                MODULE._read_committed_blobs(  # noqa: SLF001
+                    Path("."),
+                    objects,
+                    identifier_length=40,
+                )
+
+    def test_blob_cardinality_limit_fails_before_git_query(self) -> None:
+        objects = tuple(
+            ("a" * 40, 0)
+            for _index in range(MODULE._MAXIMUM_TRACKED_FILES + 1)
+        )
+        with mock.patch.object(
+            MODULE.subprocess,
+            "run",
+            side_effect=AssertionError("Git must not run"),
+        ):
+            with self.assertRaisesRegex(
+                MODULE.ReleaseSourceReceiptError,
+                "too many tracked files",
+            ):
+                MODULE._read_committed_blobs(  # noqa: SLF001
+                    Path("."),
+                    objects,
+                    identifier_length=40,
                 )
 
     def test_symlink_and_hardlink_closure_files_fail_closed(self) -> None:

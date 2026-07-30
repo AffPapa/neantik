@@ -402,7 +402,7 @@ class ReleaseTransactionTests(unittest.TestCase):
             )
             self.assertEqual(archive.stat().st_nlink, 2)
 
-    def test_hidden_open_failure_never_strands_public_staging_link(
+    def test_hidden_open_failure_retains_only_recoverable_private_link(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -454,7 +454,74 @@ class ReleaseTransactionTests(unittest.TestCase):
                 [],
             )
             self.assertEqual(archive.stat().st_nlink, 1)
-            self.assertEqual(checksum.stat().st_nlink, 1)
+            retained = list(
+                transaction.glob(
+                    f".{checksum.name}.neantik-publish-*"
+                )
+            )
+            self.assertEqual(len(retained), 1)
+            self.assertEqual(checksum.stat().st_nlink, 2)
+
+            MODULE.publish_or_adopt_sealed_file(
+                checksum_seal,
+                destination=dist / checksum.name,
+                maximum_bytes=4 * 1024,
+            )
+            MODULE.publish_or_adopt_sealed_file(
+                archive_seal,
+                destination=dist / archive.name,
+                maximum_bytes=1024,
+            )
+
+            self.assertFalse(retained[0].exists())
+            self.assertEqual(
+                (dist / archive.name).read_bytes(),
+                b"transaction candidate",
+            )
+            self.assertEqual(
+                (dist / checksum.name).read_bytes(),
+                checksum.read_bytes(),
+            )
+
+    def test_checksum_failure_retains_private_temp_without_unlink(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            transaction = root / "transaction"
+            transaction.mkdir(mode=0o700)
+            archive = transaction / "candidate.zip"
+            self.write_private(archive, b"candidate")
+            archive_seal = MODULE.seal_regular_file(
+                archive,
+                maximum_bytes=1024,
+            )
+            checksum = transaction / "candidate.zip.sha256"
+
+            with (
+                mock.patch.object(MODULE.os, "write", return_value=0),
+                mock.patch.object(
+                    MODULE.os,
+                    "unlink",
+                    side_effect=AssertionError("must not unlink"),
+                    create=True,
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    MODULE.ReleaseTransactionError,
+                    "write failed",
+                ):
+                    MODULE.write_checksum_sidecar(
+                        archive_seal,
+                        checksum,
+                    )
+
+            self.assertFalse(checksum.exists())
+            retained = list(
+                transaction.glob(
+                    ".candidate.zip.sha256.neantik-write-*"
+                )
+            )
+            self.assertEqual(len(retained), 1)
+            self.assertEqual(retained[0].read_bytes(), b"")
 
 
 if __name__ == "__main__":

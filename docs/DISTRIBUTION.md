@@ -91,6 +91,18 @@ or ZIP only when it is the same inode and hash as the retained private
 artifact. The ZIP remains the only public commit marker. No recovery path
 re-submits an already known Apple transaction.
 
+Pre-activation directories use a canonical UUID name, a durable owner-only
+marker, an exclusive lease, and a global initialization coordinator lock.
+After activation the new path is reopened without following symlinks and its
+device/inode is compared with the descriptor created before the rename. On
+completion or an ordinary pre-effect failure, the exact transaction directory
+is moved with no-overwrite semantics into owner-only `.notary-retired/`.
+Release code does not recursively delete it: macOS has no unlink-by-open-inode
+primitive, so a stat-then-unlink cleanup could remove a same-user replacement.
+Unknown, replaced, or crash-abandoned initialization paths fail closed for
+operator reconciliation; public archives, sidecars, and private receipts are
+never included in this retirement policy.
+
 One uncertainty boundary is intentionally fail-closed: if the process dies
 after the durable `submit-intent` but before the Apple submission ID is
 recorded, the service may have received the upload. The next run refuses to
@@ -106,6 +118,12 @@ tracked, staged or untracked source changes fail closed. The historical
 untracked development working directory therefore cannot be used as source
 provenance for a new release; prepare and release the next candidate from the
 clean open-source checkout instead.
+The tracked inventory is read from the already captured tree object, accepts
+only regular-file blob modes, and uses one NUL-framed `git cat-file --batch`
+session with explicit file-count, path, per-file, aggregate, request and
+response limits. Commit, tree and worktree status are checked again after the
+descriptor-bound file reads; every worktree byte still has to match its
+committed blob exactly.
 
 The Direct release wrapper requires a native ARM64 Homebrew Python 3.11 or
 newer at `/opt/homebrew/bin/python3`. Check it before release:

@@ -6,6 +6,7 @@ import json
 import os
 import stat
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -73,9 +74,15 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
 )
 
 _MAXIMUM_SOURCE_FILE_BYTES = 32 * 1024 * 1024
+_MAXIMUM_TOTAL_SOURCE_BYTES = 256 * 1024 * 1024
+_MAXIMUM_BATCH_BLOB_BYTES = 256 * 1024 * 1024
+_MAXIMUM_TRACKED_FILES = 10_000
+_MAXIMUM_TRACKED_PATH_BYTES = 4 * 1024 * 1024
+_MAXIMUM_GIT_QUERY_BYTES = 2 * 1024 * 1024
+_MAXIMUM_GIT_OUTPUT_BYTES = 16 * 1024 * 1024
 
 
-def _run_git(project_root: Path, arguments: list[str]) -> bytes:
+def _git_environment() -> dict[str, str]:
     environment = os.environ.copy()
     for key in tuple(environment):
         if key.startswith("GIT_"):
@@ -87,25 +94,187 @@ def _run_git(project_root: Path, arguments: list[str]) -> bytes:
             "GIT_OPTIONAL_LOCKS": "0",
         }
     )
-    completed = subprocess.run(
-        [
-            "/usr/bin/git",
-            "--no-replace-objects",
-            "-C",
-            str(project_root),
-            *arguments,
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-        timeout=30,
-        env=environment,
-    )
+    return environment
+
+
+def _run_git(
+    project_root: Path,
+    arguments: list[str],
+    *,
+    maximum_output_bytes: int = _MAXIMUM_GIT_OUTPUT_BYTES,
+) -> bytes:
+    try:
+        with (
+            tempfile.TemporaryFile() as output,
+            tempfile.TemporaryFile() as errors,
+        ):
+            completed = subprocess.run(
+                [
+                    "/usr/bin/git",
+                    "--no-replace-objects",
+                    "-C",
+                    str(project_root),
+                    *arguments,
+                ],
+                stdout=output,
+                stderr=errors,
+                check=False,
+                timeout=30,
+                env=_git_environment(),
+            )
+            output_size = output.tell()
+            error_size = errors.tell()
+            if (
+                output_size > maximum_output_bytes
+                or error_size > _MAXIMUM_GIT_OUTPUT_BYTES
+            ):
+                raise ReleaseSourceReceiptError(
+                    "release source Git query output is too large"
+                )
+            output.seek(0)
+            result = output.read(maximum_output_bytes + 1)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ReleaseSourceReceiptError(
+            "release source Git query failed"
+        ) from error
     if completed.returncode != 0:
         raise ReleaseSourceReceiptError(
             "release source Git query failed"
         )
-    return completed.stdout
+    if len(result) != output_size:
+        raise ReleaseSourceReceiptError(
+            "release source Git query output is invalid"
+        )
+    return result
+
+
+def _read_committed_blobs(
+    project_root: Path,
+    objects: tuple[tuple[str, int], ...],
+    *,
+    identifier_length: int,
+) -> tuple[bytes, ...]:
+    if not objects:
+        raise ReleaseSourceReceiptError(
+            "release source tracked-file inventory is invalid"
+        )
+    if len(objects) > _MAXIMUM_TRACKED_FILES:
+        raise ReleaseSourceReceiptError(
+            "release source contains too many tracked files"
+        )
+    unique_objects: dict[str, int] = {}
+    for identifier, expected_size in objects:
+        if (
+            len(identifier) != identifier_length
+            or any(
+                character not in "0123456789abcdef"
+                for character in identifier
+            )
+            or expected_size < 0
+            or expected_size > _MAXIMUM_SOURCE_FILE_BYTES
+        ):
+            raise ReleaseSourceReceiptError(
+                "release source Git blob identifier is invalid"
+            )
+        known_size = unique_objects.setdefault(identifier, expected_size)
+        if known_size != expected_size:
+            raise ReleaseSourceReceiptError(
+                "release source Git blob inventory is inconsistent"
+            )
+    total_size = sum(unique_objects.values())
+    if total_size > _MAXIMUM_BATCH_BLOB_BYTES:
+        raise ReleaseSourceReceiptError(
+            "release source Git blobs exceed the batch memory limit"
+        )
+    request = b"".join(
+        identifier.encode("ascii") + b"\0"
+        for identifier in unique_objects
+    )
+    if len(request) > _MAXIMUM_GIT_QUERY_BYTES:
+        raise ReleaseSourceReceiptError(
+            "release source Git blob request is too large"
+        )
+    try:
+        completed = subprocess.run(
+            [
+                "/usr/bin/git",
+                "--no-replace-objects",
+                "-C",
+                str(project_root),
+                "cat-file",
+                "--batch",
+                "-Z",
+            ],
+            input=request,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            timeout=60,
+            env=_git_environment(),
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ReleaseSourceReceiptError(
+            "release source Git blob query failed"
+        ) from error
+    if completed.returncode != 0:
+        raise ReleaseSourceReceiptError(
+            "release source Git blob query failed"
+        )
+    output = completed.stdout
+    maximum_response_size = total_size + (
+        len(unique_objects) * (identifier_length + 64)
+    )
+    if len(output) > maximum_response_size:
+        raise ReleaseSourceReceiptError(
+            "release source Git blob response is invalid"
+        )
+    cursor = 0
+    blobs: dict[str, bytes] = {}
+    for expected_identifier, expected_size in unique_objects.items():
+        header_end = output.find(b"\0", cursor)
+        if header_end < 0:
+            raise ReleaseSourceReceiptError(
+                "release source Git blob response is invalid"
+            )
+        header = output[cursor:header_end].split(b" ")
+        if len(header) != 3:
+            raise ReleaseSourceReceiptError(
+                "release source Git blob response is invalid"
+            )
+        try:
+            observed_identifier = header[0].decode(
+                "ascii",
+                errors="strict",
+            )
+            object_type = header[1].decode("ascii", errors="strict")
+            size_text = header[2].decode("ascii", errors="strict")
+            size = int(size_text, 10)
+        except (UnicodeDecodeError, ValueError) as error:
+            raise ReleaseSourceReceiptError(
+                "release source Git blob response is invalid"
+            ) from error
+        if (
+            observed_identifier != expected_identifier
+            or object_type != "blob"
+            or size != expected_size
+            or str(size) != size_text
+        ):
+            raise ReleaseSourceReceiptError(
+                "release source Git blob response is invalid"
+            )
+        start = header_end + 1
+        end = start + size
+        if end >= len(output) or output[end : end + 1] != b"\0":
+            raise ReleaseSourceReceiptError(
+                "release source Git blob response is invalid"
+            )
+        blobs[expected_identifier] = output[start:end]
+        cursor = end + 1
+    if cursor != len(output):
+        raise ReleaseSourceReceiptError(
+            "release source Git blob response is invalid"
+        )
+    return tuple(blobs[identifier] for identifier, _size in objects)
 
 
 def _strict_git_identifier(value: bytes, *, length: int) -> str:
@@ -298,18 +467,62 @@ def capture_release_source(
 
     tracked_raw = _run_git(
         project_root,
-        ["ls-tree", "-r", "--name-only", "-z", "HEAD"],
+        ["ls-tree", "-r", "-l", "-z", "--full-tree", tree],
+        maximum_output_bytes=_MAXIMUM_GIT_OUTPUT_BYTES,
     )
+    tracked_entries: list[tuple[str, str, int]] = []
     try:
-        tracked_paths = tuple(
-            item.decode("utf-8", errors="strict")
-            for item in tracked_raw.split(b"\0")
-            if item
-        )
-    except UnicodeDecodeError as error:
+        for item in tracked_raw.split(b"\0"):
+            if not item:
+                continue
+            metadata, raw_path = item.split(b"\t", 1)
+            (
+                mode,
+                object_type,
+                raw_identifier,
+                raw_size,
+            ) = metadata.split()
+            relative_path = raw_path.decode("utf-8", errors="strict")
+            identifier = raw_identifier.decode("ascii", errors="strict")
+            size_text = raw_size.decode("ascii", errors="strict")
+            size = int(size_text, 10)
+            if (
+                object_type != b"blob"
+                or mode not in {b"100644", b"100755"}
+                or len(identifier) != identifier_length
+                or any(
+                    character not in "0123456789abcdef"
+                    for character in identifier
+                )
+                or size < 0
+                or size > _MAXIMUM_SOURCE_FILE_BYTES
+                or str(size) != size_text
+            ):
+                raise ValueError("unsupported tracked object")
+            tracked_entries.append((relative_path, identifier, size))
+            if len(tracked_entries) > _MAXIMUM_TRACKED_FILES:
+                raise ValueError("too many tracked files")
+    except (UnicodeDecodeError, ValueError) as error:
         raise ReleaseSourceReceiptError(
-            "release source contains a non-UTF-8 tracked path"
+            "release source tracked-file inventory is invalid"
         ) from error
+    tracked_paths = tuple(
+        path for path, _identifier, _size in tracked_entries
+    )
+    if (
+        sum(len(path.encode("utf-8")) for path in tracked_paths)
+        > _MAXIMUM_TRACKED_PATH_BYTES
+    ):
+        raise ReleaseSourceReceiptError(
+            "release source tracked paths exceed the aggregate limit"
+        )
+    if (
+        sum(size for _path, _identifier, size in tracked_entries)
+        > _MAXIMUM_TOTAL_SOURCE_BYTES
+    ):
+        raise ReleaseSourceReceiptError(
+            "release source tracked files exceed the aggregate limit"
+        )
     if (
         tuple(sorted(tracked_paths)) != tracked_paths
         or len(set(tracked_paths)) != len(tracked_paths)
@@ -318,6 +531,14 @@ def capture_release_source(
         raise ReleaseSourceReceiptError(
             "release source tracked-file inventory is invalid"
         )
+    committed_contents = _read_committed_blobs(
+        project_root,
+        tuple(
+            (identifier, size)
+            for _path, identifier, size in tracked_entries
+        ),
+        identifier_length=identifier_length,
+    )
     closure_roles = dict(closure)
     if not set(closure_roles).issubset(tracked_paths):
         raise ReleaseSourceReceiptError(
@@ -340,7 +561,11 @@ def capture_release_source(
     entries: list[dict[str, object]] = []
     seals: list[SourceFileSeal] = []
     directory_paths: set[Path] = {project_root}
-    for relative_path in tracked_paths:
+    for relative_path, committed in zip(
+        tracked_paths,
+        committed_contents,
+        strict=True,
+    ):
         if (
             not relative_path
             or relative_path.startswith("/")
@@ -364,10 +589,6 @@ def capture_release_source(
         while current_parent != project_root:
             directory_paths.add(current_parent)
             current_parent = current_parent.parent
-        committed = _run_git(
-            project_root,
-            ["show", f"HEAD:{relative_path}"],
-        )
         if committed != contents:
             raise ReleaseSourceReceiptError(
                 "release source tracked file differs from HEAD"
@@ -393,6 +614,31 @@ def capture_release_source(
                 mtime_ns=file_status.st_mtime_ns,
                 ctime_ns=file_status.st_ctime_ns,
             )
+        )
+    final_commit = _strict_git_identifier(
+        _run_git(project_root, ["rev-parse", "HEAD"]),
+        length=identifier_length,
+    )
+    final_tree = _strict_git_identifier(
+        _run_git(project_root, ["rev-parse", "HEAD^{tree}"]),
+        length=identifier_length,
+    )
+    final_status = _run_git(
+        project_root,
+        [
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--ignored=no",
+        ],
+    )
+    if (
+        final_commit != commit
+        or final_tree != tree
+        or final_status
+    ):
+        raise ReleaseSourceReceiptError(
+            "release source changed while it was captured"
         )
     closure_digest = hashlib.sha256(_canonical_json(entries)).hexdigest()
     payload: dict[str, object] = {

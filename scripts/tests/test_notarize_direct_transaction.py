@@ -598,13 +598,152 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             sentinel = transaction / "sentinel"
             sentinel.write_text("keep", encoding="utf-8")
 
-            MODULE.cleanup_exact_transaction(
+            retirement = MODULE.retire_exact_transaction(
                 transaction,
                 descriptor=descriptor,
                 expected_device=status.st_dev,
                 expected_inode=status.st_ino,
             )
             os.close(descriptor)
+
+            self.assertFalse(retirement.moved)
+            self.assertEqual(
+                sentinel.read_text(encoding="utf-8"),
+                "keep",
+            )
+            self.assertTrue(moved.is_dir())
+
+    def test_retirement_preserves_complete_private_tree_without_deletion(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            transaction = root / ".neantik-notary.original"
+            nested = transaction / "nested"
+            nested.mkdir(parents=True, mode=0o700)
+            sentinel = nested / "sentinel"
+            sentinel.write_text("retain", encoding="utf-8")
+            status = transaction.stat(follow_symlinks=False)
+            descriptor = os.open(
+                transaction,
+                os.O_RDONLY | os.O_DIRECTORY,
+            )
+            with (
+                mock.patch.object(
+                    MODULE.os,
+                    "unlink",
+                    side_effect=AssertionError("must not unlink"),
+                ),
+                mock.patch.object(
+                    MODULE.os,
+                    "rmdir",
+                    side_effect=AssertionError("must not rmdir"),
+                ),
+            ):
+                retirement = MODULE.retire_exact_transaction(
+                    transaction,
+                    descriptor=descriptor,
+                    expected_device=status.st_dev,
+                    expected_inode=status.st_ino,
+                )
+            os.close(descriptor)
+
+            self.assertTrue(retirement.moved)
+            self.assertTrue(retirement.durable)
+            self.assertTrue(retirement.verified)
+            retired = retirement.destination
+            assert retired is not None
+            self.assertFalse(transaction.exists())
+            self.assertEqual(
+                (retired / "nested" / "sentinel").read_text(
+                    encoding="utf-8"
+                ),
+                "retain",
+            )
+            self.assertEqual(
+                retired.stat(follow_symlinks=False).st_ino,
+                status.st_ino,
+            )
+
+    def test_initial_transaction_has_durable_marker_and_live_lease(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir(mode=0o700)
+            (
+                root,
+                root_descriptor,
+                lease_descriptor,
+                coordinator_descriptor,
+                transaction_id,
+                _root_status,
+            ) = MODULE.create_initial_transaction_root(dist)
+            try:
+                marker_path = root / ".init-marker.json"
+                marker = json.loads(
+                    marker_path.read_text(encoding="utf-8")
+                )
+                self.assertEqual(marker["schemaVersion"], 1)
+                self.assertEqual(
+                    marker["markerType"],
+                    "neantik-notary-initialization",
+                )
+                self.assertEqual(marker["transactionId"], transaction_id)
+                self.assertEqual(marker["directoryName"], root.name)
+                self.assertEqual(
+                    marker["activeTarget"],
+                    f".neantik-notary.{transaction_id}",
+                )
+                self.assertIs(marker["externalEffectsAllowed"], False)
+                self.assertEqual(
+                    stat.S_IMODE(marker_path.stat().st_mode),
+                    0o400,
+                )
+                self.assertEqual(
+                    stat.S_IMODE(
+                        (root / ".init-lease").stat().st_mode
+                    ),
+                    0o600,
+                )
+            finally:
+                os.close(lease_descriptor)
+                os.close(coordinator_descriptor)
+                os.close(root_descriptor)
+
+    def test_process_death_after_init_marker_blocks_without_cleanup(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir(mode=0o700)
+            code = (
+                "import os,sys;"
+                f"sys.path.insert(0,{str(SCRIPT.parent)!r});"
+                "import notarize_direct_transaction as m;"
+                f"r,*_=m.create_initial_transaction_root("
+                f"__import__('pathlib').Path({str(dist)!r}));"
+                "print(r,flush=True);os._exit(97)"
+            )
+            completed = subprocess.run(
+                [sys.executable, "-I", "-B", "-c", code],
+                check=False,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(completed.returncode, 97)
+            abandoned = Path(completed.stdout.strip())
+            self.assertTrue((abandoned / ".init-marker.json").is_file())
+            self.assertTrue((abandoned / ".init-lease").is_file())
+            sentinel = abandoned / "sentinel"
+            sentinel.write_text("keep", encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "operator reconciliation",
+            ):
+                MODULE.create_initial_transaction_root(dist)
 
             self.assertEqual(
                 sentinel.read_text(encoding="utf-8"),
@@ -783,6 +922,162 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 list((root / "dist").glob(".neantik-notary.*")),
                 [],
             )
+
+    def test_activation_source_swap_fails_before_apple_submission(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            runner = FakeReleaseRunner()
+            replacement: Path | None = None
+
+            def swap_source(
+                phase: str,
+                context: dict[str, Path],
+            ) -> None:
+                nonlocal replacement
+                if phase != "before-activation":
+                    return
+                source = context["transaction"]
+                backup = source.with_name(source.name + ".owner")
+                source.rename(backup)
+                source.mkdir(mode=0o700)
+                (source / "sentinel").write_text(
+                    "foreign",
+                    encoding="utf-8",
+                )
+                replacement = source
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "identity is invalid",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=runner,
+                    phase_hook=swap_source,
+                    **self.source_kwargs(root),
+                )
+
+            self.assertIsNotNone(replacement)
+            active = list(
+                (root / "dist").glob(".neantik-notary.*")
+            )
+            self.assertEqual(len(active), 1)
+            self.assertEqual(
+                (active[0] / "sentinel").read_text(encoding="utf-8"),
+                "foreign",
+            )
+            self.assertFalse(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "submit"]
+                    for command in runner.commands
+                )
+            )
+
+    def test_retirement_reports_post_rename_durability_failure(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            transaction = root / ".neantik-notary.original"
+            transaction.mkdir(mode=0o700)
+            status = transaction.stat(follow_symlinks=False)
+            descriptor = os.open(
+                transaction,
+                os.O_RDONLY | os.O_DIRECTORY,
+            )
+            with mock.patch.object(
+                MODULE.os,
+                "fsync",
+                side_effect=OSError("simulated durability failure"),
+            ):
+                retirement = MODULE.retire_exact_transaction(
+                    transaction,
+                    descriptor=descriptor,
+                    expected_device=status.st_dev,
+                    expected_inode=status.st_ino,
+                )
+            os.close(descriptor)
+
+            self.assertTrue(retirement.moved)
+            self.assertFalse(retirement.durable)
+            self.assertFalse(retirement.verified)
+            self.assertIsNotNone(retirement.destination)
+            assert retirement.destination is not None
+            self.assertTrue(retirement.destination.is_dir())
+            self.assertFalse(transaction.exists())
+
+    def test_marker_failure_quarantines_initial_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir(mode=0o700)
+            with mock.patch.object(
+                MODULE,
+                "write_private_json",
+                side_effect=OSError("simulated marker failure"),
+            ):
+                with self.assertRaisesRegex(OSError, "marker failure"):
+                    MODULE.create_initial_transaction_root(dist)
+
+            self.assertEqual(
+                list(dist.glob(".neantik-notary-init.*")),
+                [],
+            )
+            retired = list((dist / ".notary-retired").iterdir())
+            self.assertEqual(len(retired), 1)
+            self.assertTrue(retired[0].is_dir())
+
+    def test_initial_root_open_failure_retries_and_quarantines(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir(mode=0o700)
+            real_open = MODULE.os.open
+            injected = False
+
+            def fail_first_root_open(
+                path: object,
+                flags: int,
+                *args: object,
+                **kwargs: object,
+            ) -> int:
+                nonlocal injected
+                name = os.fsdecode(path)
+                if (
+                    not injected
+                    and name.startswith(".neantik-notary-init.")
+                ):
+                    injected = True
+                    raise OSError("simulated root open failure")
+                return real_open(path, flags, *args, **kwargs)
+
+            with mock.patch.object(
+                MODULE.os,
+                "open",
+                side_effect=fail_first_root_open,
+            ):
+                with self.assertRaisesRegex(
+                    OSError,
+                    "root open failure",
+                ):
+                    MODULE.create_initial_transaction_root(dist)
+
+            self.assertTrue(injected)
+            self.assertEqual(
+                list(dist.glob(".neantik-notary-init.*")),
+                [],
+            )
+            retired = list((dist / ".notary-retired").iterdir())
+            self.assertEqual(len(retired), 1)
+            self.assertTrue(retired[0].is_dir())
 
     def test_publication_hooks_cannot_mutate_committed_artifacts(
         self,
