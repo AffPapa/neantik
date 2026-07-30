@@ -117,6 +117,9 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/run-exact-command-with-timeout.py",
     "scripts/release_input_snapshot.py",
     "scripts/release_transaction.py",
+    "scripts/release_source_receipt.py",
+    "scripts/notary_transaction_state.py",
+    "scripts/run-isolated-release-python.py",
     "scripts/notarize_direct_transaction.py",
     "scripts/verify-direct-hosted-download.py",
     "scripts/fingerprint_evidence_schema8.py",
@@ -126,6 +129,9 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/verify-public-fingerprint-corpus.py",
     "scripts/verify-public-workflow-references.py",
     "scripts/tests/test_release_transaction.py",
+    "scripts/tests/test_release_source_receipt.py",
+    "scripts/tests/test_notary_transaction_state.py",
+    "scripts/tests/test_run_isolated_release_python.py",
     "scripts/tests/test_notarize_direct_transaction.py",
 }
 

@@ -69,16 +69,56 @@ submission ID is independently confirmed `Accepted`, only a fresh app
 extracted from that ZIP is stapled. A new final ZIP is built from the staged
 app, reverified, and published without replacement after its durable SHA-256
 sidecar. The final ZIP path appears last and is the release commit point. A
-private hash-bound receipt records both the Apple-submitted and final
-archive hashes. The release channel is explicit:
+private hash-bound schema-2 receipt records both the Apple-submitted and final
+archive hashes, the exact clean Git commit/tree, a SHA-256 closure of the
+security-sensitive release/verifier sources, and the candidate-manifest
+runtime evidence hashes. The local Chromium toolchain lock is recorded only
+as `reviewedToolchainLockSHA256`: until the next Chromium rebuild embeds that
+lock into runtime provenance, the receipt does not claim that the binary was
+built by that toolchain. The release channel is explicit:
 `public-alpha` accepts the documented alpha threshold, while `production`
 requires strict coherent production qualification.
 
-Publication is fail-closed but not yet automatically resumable across power
-loss. A crash after the checksum commit and before the ZIP commit can leave an
-orphan `.sha256` with no public ZIP. That state is not a valid release and the
-next run refuses to overwrite it; recovery must verify the private Accepted
-receipt and exact inode/hash before removing or resuming the orphan.
+Every external and publication boundary is an append-only, canonical,
+hash-named and hash-linked state transition under the owner-only transaction:
+`transaction-created → submission-ready → submit-intent → submission-known →
+accepted → final-verified → sidecar-committed → zip-committed →
+publication-complete`. The Apple upload uses `submit --no-wait`; its canonical
+submission ID is durably committed before the separate wait. A restart from
+`submission-known` polls only that ID. A restart from `accepted` re-extracts
+the retained exact submitted ZIP, and publication recovery adopts a sidecar
+or ZIP only when it is the same inode and hash as the retained private
+artifact. The ZIP remains the only public commit marker. No recovery path
+re-submits an already known Apple transaction.
+
+One uncertainty boundary is intentionally fail-closed: if the process dies
+after the durable `submit-intent` but before the Apple submission ID is
+recorded, the service may have received the upload. The next run refuses to
+submit again. An operator must reconcile the unique transaction-UUID filename
+against `notarytool history`; zero or multiple matches are not guessed.
+
+Release source provenance requires the exact clean `AffPapa/neantik` Git
+worktree. Branch name, remote URL, clone path and user identity are not
+recorded as provenance. Git-specific environment overrides are sanitized;
+the wider build environment is not claimed as reproducible provenance.
+Ignored `dist/` artifacts are allowed;
+tracked, staged or untracked source changes fail closed. The historical
+untracked development working directory therefore cannot be used as source
+provenance for a new release; prepare and release the next candidate from the
+clean open-source checkout instead.
+
+The Direct release wrapper requires a native ARM64 Homebrew Python 3.11 or
+newer at `/opt/homebrew/bin/python3`. Check it before release:
+
+```bash
+/opt/homebrew/bin/python3 -I -B -c \
+  'import platform,sys; print(platform.machine(), sys.version.split()[0])'
+```
+
+The wrapper uses isolated mode and a private empty bytecode-cache prefix so
+ignored `__pycache__` files cannot replace reviewed release helpers. The
+interpreter version is an execution prerequisite, not a claim of reproducible
+Chromium toolchain provenance.
 
 After uploading the versioned ZIP without changing public links, repeat the
 complete archive and Gatekeeper gate against fresh downloaded bytes:

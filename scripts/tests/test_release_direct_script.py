@@ -77,6 +77,11 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("NEANTIK_RELEASE_CHANNEL", text)
         self.assertIn("direct-candidate-manifest.py", text)
         self.assertEqual(text.count("direct-candidate-manifest.py"), 1)
+        self.assertIn("run-isolated-release-python.py", text)
+        self.assertEqual(
+            text.count("run-isolated-release-python.py"),
+            2,
+        )
         self.assertIn("notarize-direct-candidate.sh", text)
         self.assertNotIn("verify-direct-notarized-archive.py", text)
         self.assertIn(
@@ -95,6 +100,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
     def test_notarization_requires_authenticated_schema8_evidence(self) -> None:
         wrapper = NOTARIZE.read_text(encoding="utf-8")
         text = NOTARY_TRANSACTION.read_text(encoding="utf-8")
+        fresh = text.split("def run_transaction(", 1)[1]
 
         self.assertIn("verify-fingerprint-evidence-envelope.py", text)
         self.assertIn("snapshot_candidate_inputs", text)
@@ -103,7 +109,15 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn('"notarytool",\n                    "submit"', text)
         self.assertIn('"notarytool",\n                "info"', text)
         self.assertIn('"stapler", "staple", str(staged_app)', text)
-        self.assertIn("publish_release_pair", text)
+        self.assertIn("publish_or_adopt_sealed_file", text)
+        self.assertIn('"submit-intent"', text)
+        self.assertIn('"submission-known"', text)
+        self.assertIn('"sidecar-committed"', text)
+        self.assertIn('"zip-committed"', text)
+        self.assertIn('"publication-complete"', text)
+        self.assertIn("release_source_receipt", text)
+        self.assertIn('"--no-wait"', text)
+        self.assertIn('"notarytool",\n                    "wait"', text)
         self.assertIn('"publicationState": "transaction-verified"', text)
         self.assertIn("refusing overwrite", text)
         self.assertIn("Authority=Developer ID Application:", text)
@@ -118,21 +132,24 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertNotIn("notarytool submit", wrapper)
         self.assertNotIn("stapler", wrapper)
         self.assertIn("notarize_direct_transaction.py", wrapper)
+        self.assertIn("run-isolated-release-python.py", wrapper)
+        self.assertIn("/opt/homebrew/bin/python3", wrapper)
+        self.assertIn("Python 3.11", wrapper)
         self.assertLess(
-            text.index("submission ZIP packaging"),
-            text.index('"notarytool",\n                    "submit"'),
+            fresh.index("submission ZIP packaging"),
+            fresh.index('"notarytool",\n                    "submit"'),
         )
         self.assertLess(
-            text.index('"notarytool",\n                    "submit"'),
-            text.index('"stapler", "staple", str(staged_app)'),
+            fresh.index('"notarytool",\n                    "submit"'),
+            fresh.index('"stapler", "staple", str(staged_app)'),
         )
         self.assertLess(
-            text.index('"stapler", "staple", str(staged_app)'),
-            text.index("final ZIP packaging"),
+            fresh.index('"stapler", "staple", str(staged_app)'),
+            fresh.index("final ZIP packaging"),
         )
         self.assertLess(
-            text.index("final notarized archive verification"),
-            text.index("publish_release_pair"),
+            fresh.index("final notarized archive verification"),
+            fresh.index("publish_or_adopt_sealed_file"),
         )
 
 

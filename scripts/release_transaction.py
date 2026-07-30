@@ -5,6 +5,7 @@ import hashlib
 import ctypes
 import errno
 import os
+import re
 import select
 import stat
 import uuid
@@ -145,6 +146,7 @@ def seal_regular_file(
     path: Path,
     *,
     maximum_bytes: int,
+    allowed_link_counts: frozenset[int] = frozenset({1}),
 ) -> FileSeal:
     path = path.absolute()
     descriptor, before = _regular_file_descriptor(
@@ -165,8 +167,8 @@ def seal_regular_file(
         os.close(descriptor)
     if (
         _identity(before) != _identity(after)
-        or before.st_nlink != 1
-        or after.st_nlink != 1
+        or before.st_nlink not in allowed_link_counts
+        or after.st_nlink not in allowed_link_counts
         or total != after.st_size
     ):
         raise ReleaseTransactionError(
@@ -183,6 +185,121 @@ def seal_regular_file(
         uid=before.st_uid,
         mode=stat.S_IMODE(before.st_mode),
     )
+
+
+def publish_or_adopt_sealed_file(
+    seal: FileSeal,
+    *,
+    destination: Path,
+    maximum_bytes: int,
+) -> tuple[int, int]:
+    destination = destination.absolute()
+    if destination.name != seal.path.name:
+        raise ReleaseTransactionError(
+            "release destination does not match the sealed file"
+        )
+    for path in (seal.path, destination):
+        normalized = Path(os.path.normpath(str(path.absolute())))
+        if path.absolute() != normalized:
+            raise ReleaseTransactionError(
+                "release publication paths must be normalized"
+            )
+    destination_parent = -1
+    source_parent = -1
+    source_descriptor = -1
+    try:
+        destination_parent = _directory_descriptor(
+            destination.parent,
+            private=False,
+        )
+        source_parent = _directory_descriptor(
+            seal.path.parent,
+            private=True,
+        )
+        source_descriptor = os.open(
+            seal.path.name,
+            os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=source_parent,
+        )
+        if os.fstat(source_descriptor).st_dev != os.fstat(
+            destination_parent
+        ).st_dev:
+            raise ReleaseTransactionError(
+                "release transaction and destination are on different filesystems"
+            )
+        try:
+            existing = os.stat(
+                destination.name,
+                dir_fd=destination_parent,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            source_status = os.fstat(source_descriptor)
+            if source_status.st_nlink == 1:
+                identity = _publish_one_file(
+                    source_parent=source_parent,
+                    source_name=seal.path.name,
+                    source_descriptor=source_descriptor,
+                    seal=seal,
+                    destination_parent=destination_parent,
+                    destination_name=destination.name,
+                    maximum_bytes=maximum_bytes,
+                )
+            elif source_status.st_nlink == 2:
+                identity = _adopt_retained_staging_link(
+                    source_parent=source_parent,
+                    source_descriptor=source_descriptor,
+                    seal=seal,
+                    destination_parent=destination_parent,
+                    destination_name=destination.name,
+                    maximum_bytes=maximum_bytes,
+                )
+            else:
+                raise ReleaseTransactionError(
+                    "retained release artifact has an unexpected link count"
+                )
+        else:
+            identity = (existing.st_dev, existing.st_ino)
+            source_status = os.fstat(source_descriptor)
+            if identity != (
+                source_status.st_dev,
+                source_status.st_ino,
+            ):
+                raise ReleaseTransactionError(
+                    "release destination exists but is not the retained "
+                    "transaction artifact"
+                )
+            _assert_descriptor_matches_seal(
+                source_descriptor,
+                seal,
+                maximum_bytes=maximum_bytes,
+                expected_link_count=2,
+                exact_times=False,
+            )
+        _assert_public_destination(
+            parent=destination_parent,
+            name=destination.name,
+            seal=seal,
+            identity=identity,
+            maximum_bytes=maximum_bytes,
+        )
+        os.fsync(destination_parent)
+        return identity
+    except FileExistsError as error:
+        raise ReleaseTransactionError(
+            "release destination already exists"
+        ) from error
+    finally:
+        for descriptor in (
+            source_descriptor,
+            source_parent,
+            destination_parent,
+        ):
+            if descriptor >= 0:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
 
 
 def assert_sealed(
@@ -233,6 +350,7 @@ def observe_sealed_phase(
     action: Callable[[], _T],
     *,
     maximum_bytes: int,
+    allowed_link_counts: frozenset[int] = frozenset({1}),
 ) -> _T:
     descriptor, before = _regular_file_descriptor(
         seal.path,
@@ -248,7 +366,10 @@ def observe_sealed_phase(
             seal.ctime_ns,
             seal.mode,
         )
-        if _identity(before) != expected or before.st_nlink != 1:
+        if (
+            _identity(before) != expected
+            or before.st_nlink not in allowed_link_counts
+        ):
             raise ReleaseTransactionError(
                 "sealed release file changed before the external phase"
             )
@@ -294,7 +415,7 @@ def observe_sealed_phase(
         if (
             events
             or _identity(before) != _identity(after)
-            or after.st_nlink != 1
+            or after.st_nlink not in allowed_link_counts
             or path_status.st_dev != seal.device
             or path_status.st_ino != seal.inode
             or digest != seal.sha256
@@ -311,9 +432,11 @@ def observe_sealed_phase(
             "sealed release phase could not be observed"
         ) from error
     finally:
-        if queue is not None:
-            queue.close()
-        os.close(descriptor)
+        try:
+            if queue is not None:
+                queue.close()
+        finally:
+            os.close(descriptor)
 
 
 def write_checksum_sidecar(
@@ -386,6 +509,35 @@ def write_checksum_sidecar(
         destination,
         maximum_bytes=4 * 1024,
     )
+
+
+def assert_checksum_matches_archive(
+    archive: FileSeal,
+    checksum: FileSeal,
+) -> None:
+    descriptor, _status = _regular_file_descriptor(
+        checksum.path,
+        maximum_bytes=4 * 1024,
+    )
+    try:
+        digest, size = _hash_descriptor(
+            descriptor,
+            maximum_bytes=4 * 1024,
+        )
+    finally:
+        os.close(descriptor)
+    expected = (
+        f"{archive.sha256}  {archive.path.name}\n".encode("utf-8")
+    )
+    if (
+        size != len(expected)
+        or digest != hashlib.sha256(expected).hexdigest()
+        or checksum.sha256 != digest
+        or checksum.size != size
+    ):
+        raise ReleaseTransactionError(
+            "release checksum does not match the sealed archive"
+        )
 
 
 def _unlink_if_identity(
@@ -495,6 +647,10 @@ def _publish_one_file(
         expected_link_count=1,
         exact_times=True,
     )
+    # Keep the pre-commit hard link inside the private transaction directory.
+    # A descriptor/open failure must never strand a hidden artifact in the
+    # public destination. renameatx_np can atomically commit across two
+    # directories on the same filesystem.
     hidden_name = (
         f".{destination_name}.neantik-publish-{uuid.uuid4().hex}"
     )
@@ -506,15 +662,32 @@ def _publish_one_file(
             source_name,
             hidden_name,
             src_dir_fd=source_parent,
-            dst_dir_fd=destination_parent,
+            dst_dir_fd=source_parent,
             follow_symlinks=False,
+        )
+        linked_status = os.stat(
+            hidden_name,
+            dir_fd=source_parent,
+            follow_symlinks=False,
+        )
+        source_status = os.fstat(source_descriptor)
+        if (
+            linked_status.st_dev != source_status.st_dev
+            or linked_status.st_ino != source_status.st_ino
+        ):
+            raise ReleaseTransactionError(
+                "release staging link does not match the sealed source"
+            )
+        hidden_identity = (
+            linked_status.st_dev,
+            linked_status.st_ino,
         )
         hidden_descriptor = os.open(
             hidden_name,
             os.O_RDONLY
             | os.O_CLOEXEC
             | getattr(os, "O_NOFOLLOW", 0),
-            dir_fd=destination_parent,
+            dir_fd=source_parent,
         )
         try:
             hidden_status = os.fstat(hidden_descriptor)
@@ -533,7 +706,7 @@ def _publish_one_file(
         finally:
             os.close(hidden_descriptor)
         _rename_exclusive(
-            destination_parent,
+            source_parent,
             hidden_name,
             destination_parent,
             destination_name,
@@ -571,27 +744,95 @@ def _publish_one_file(
     except BaseException:
         if hidden_identity is not None:
             _unlink_if_identity(
-                destination_parent,
+                source_parent,
                 hidden_name,
                 hidden_identity,
             )
         if validated_hidden_identity is not None:
             _unlink_if_identity(
-                destination_parent,
+                source_parent,
                 hidden_name,
                 validated_hidden_identity,
             )
-        if final_identity is not None:
-            _unlink_if_identity(
-                destination_parent,
-                destination_name,
-                final_identity,
-            )
+        # A committed public name is never moved or deleted here. It may have
+        # been replaced after the commit; retaining it and failing closed is
+        # safer than touching an inode that is no longer proven to be ours.
         try:
             os.fsync(destination_parent)
         except OSError:
             pass
         raise
+
+
+def _adopt_retained_staging_link(
+    *,
+    source_parent: int,
+    source_descriptor: int,
+    seal: FileSeal,
+    destination_parent: int,
+    destination_name: str,
+    maximum_bytes: int,
+) -> tuple[int, int]:
+    prefix = f".{destination_name}.neantik-publish-"
+    candidates = [
+        name
+        for name in os.listdir(source_parent)
+        if name.startswith(prefix)
+        and re.fullmatch(
+            re.escape(prefix) + r"[0-9a-f]{32}",
+            name,
+        )
+    ]
+    if len(candidates) != 1:
+        raise ReleaseTransactionError(
+            "retained release staging link is missing or ambiguous"
+        )
+    hidden_name = candidates[0]
+    hidden_descriptor = os.open(
+        hidden_name,
+        os.O_RDONLY
+        | os.O_CLOEXEC
+        | getattr(os, "O_NOFOLLOW", 0),
+        dir_fd=source_parent,
+    )
+    try:
+        source_status = os.fstat(source_descriptor)
+        hidden_status = os.fstat(hidden_descriptor)
+        if (
+            source_status.st_dev != hidden_status.st_dev
+            or source_status.st_ino != hidden_status.st_ino
+        ):
+            raise ReleaseTransactionError(
+                "retained release staging link has a foreign identity"
+            )
+        _assert_descriptor_matches_seal(
+            hidden_descriptor,
+            seal,
+            maximum_bytes=maximum_bytes,
+            expected_link_count=2,
+            exact_times=False,
+        )
+    finally:
+        os.close(hidden_descriptor)
+    _rename_exclusive(
+        source_parent,
+        hidden_name,
+        destination_parent,
+        destination_name,
+    )
+    final_status = os.stat(
+        destination_name,
+        dir_fd=destination_parent,
+        follow_symlinks=False,
+    )
+    identity = (final_status.st_dev, final_status.st_ino)
+    if identity != (seal.device, seal.inode):
+        raise ReleaseTransactionError(
+            "retained release staging link changed during adoption"
+        )
+    os.fsync(source_parent)
+    os.fsync(destination_parent)
+    return identity
 
 
 def _assert_public_destination(
@@ -707,6 +948,21 @@ def publish_release_pair(
             raise ReleaseTransactionError(
                 "release checksum does not match the sealed archive"
             )
+        for destination_name in (
+            checksum_destination.name,
+            archive_destination.name,
+        ):
+            try:
+                os.stat(
+                    destination_name,
+                    dir_fd=destination_parent,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                continue
+            raise ReleaseTransactionError(
+                "release destination already exists"
+            )
         checksum_identity = _publish_one_file(
             source_parent=checksum_parent,
             source_name=checksum.path.name,
@@ -741,18 +997,6 @@ def publish_release_pair(
         )
         os.fsync(destination_parent)
     except FileExistsError as error:
-        if archive_identity is not None and destination_parent >= 0:
-            _unlink_if_identity(
-                destination_parent,
-                archive_destination.name,
-                archive_identity,
-            )
-        if checksum_identity is not None:
-            _unlink_if_identity(
-                destination_parent,
-                checksum_destination.name,
-                checksum_identity,
-            )
         try:
             os.fsync(destination_parent)
         except OSError:
@@ -761,18 +1005,10 @@ def publish_release_pair(
             "release destination already exists"
         ) from error
     except BaseException:
-        if archive_identity is not None and destination_parent >= 0:
-            _unlink_if_identity(
-                destination_parent,
-                archive_destination.name,
-                archive_identity,
-            )
-        if checksum_identity is not None:
-            _unlink_if_identity(
-                destination_parent,
-                checksum_destination.name,
-                checksum_identity,
-            )
+        # Publication is monotonic. Once a path has been committed with
+        # RENAME_EXCL it is never removed by a racy check-then-unlink rollback.
+        # A later verifier/recovery pass must prove and adopt the exact inode
+        # or stop for operator reconciliation.
         try:
             os.fsync(destination_parent)
         except OSError:

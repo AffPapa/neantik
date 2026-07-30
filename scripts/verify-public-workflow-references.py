@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import sys
 from collections import deque
@@ -36,6 +37,12 @@ SCRIPT_DIR_REFERENCE = re.compile(
 )
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\((?P<target>[^)]+)\)")
 EXPLICIT_NON_LOCAL_PLACEHOLDER_MARKERS = ("<", ">", "VERSION")
+LOCAL_PYTHON_MODULE_PREFIXES = (
+    "fingerprint_",
+    "notary_",
+    "release_",
+    "runtime_",
+)
 
 
 class PublicWorkflowReferenceError(RuntimeError):
@@ -101,6 +108,31 @@ def verify_markdown_links(path: Path, *, project_root: Path) -> None:
             )
 
 
+def local_python_imports(path: Path, text: str) -> set[str]:
+    if path.suffix != ".py":
+        return set()
+    try:
+        tree = ast.parse(text, filename=str(path))
+    except SyntaxError as error:
+        raise PublicWorkflowReferenceError(
+            f"public Python workflow is invalid: {path.name}"
+        ) from error
+    references: set[str] = set()
+    for node in ast.walk(tree):
+        modules: list[str] = []
+        if isinstance(node, ast.Import):
+            modules.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            modules.append(node.module)
+        for module in modules:
+            top_level = module.split(".", 1)[0]
+            if top_level.startswith(LOCAL_PYTHON_MODULE_PREFIXES):
+                references.add(
+                    f"scripts/{top_level.replace('.', '/')}.py"
+                )
+    return references
+
+
 def verify_public_workflow_references(
     *,
     project_root: Path = PROJECT_ROOT,
@@ -125,6 +157,15 @@ def verify_public_workflow_references(
             verify_markdown_links(path, project_root=project_root)
 
         text = path.read_text(encoding="utf-8")
+        imported_references = local_python_imports(path, text)
+        for reference in sorted(imported_references):
+            require_safe_file(
+                project_root,
+                reference,
+                executable=False,
+            )
+            references.add(reference)
+            queue.append(reference)
         for line in text.splitlines():
             line_references = [
                 match.group("path")

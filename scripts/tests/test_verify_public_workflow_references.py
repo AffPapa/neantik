@@ -45,6 +45,25 @@ class PublicWorkflowReferenceTests(unittest.TestCase):
                     entrypoints=("scripts/entry.sh",),
                 )
 
+    def test_missing_local_python_import_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "scripts").mkdir()
+            entrypoint = root / "scripts" / "entry.py"
+            entrypoint.write_text(
+                "import release_missing_helper\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                MODULE.PublicWorkflowReferenceError,
+                "release_missing_helper.py",
+            ):
+                MODULE.verify_public_workflow_references(
+                    project_root=root,
+                    entrypoints=("scripts/entry.py",),
+                )
+
     def test_missing_local_markdown_link_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

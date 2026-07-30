@@ -3,10 +3,12 @@ import json
 import os
 import plistlib
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
+from unittest import mock
 from pathlib import Path
 
 
@@ -34,12 +36,14 @@ class FakeReleaseRunner:
         notary_status: str = "Accepted",
         info_identifier: str = SUBMISSION_ID,
         fail_final_verifier: bool = False,
+        fail_submit: bool = False,
     ) -> None:
         self.commands: list[list[str]] = []
         self.mutate_during_submit = mutate_during_submit
         self.notary_status = notary_status
         self.info_identifier = info_identifier
         self.fail_final_verifier = fail_final_verifier
+        self.fail_submit = fail_submit
 
     def package(self, source: Path, destination: Path) -> None:
         with zipfile.ZipFile(
@@ -80,6 +84,8 @@ class FakeReleaseRunner:
                 "Timestamp=30 Jul 2026",
             )
         if command[:3] == ["xcrun", "notarytool", "submit"]:
+            if self.fail_submit:
+                return MODULE.CommandResult(1, "", "network interrupted")
             if self.mutate_during_submit:
                 submitted = Path(command[3])
                 original = submitted.read_bytes()
@@ -87,6 +93,16 @@ class FakeReleaseRunner:
                 submitted.write_bytes(b"swapped")
                 submitted.write_bytes(original)
                 submitted.chmod(0o400)
+            return MODULE.CommandResult(
+                0,
+                json.dumps(
+                    {
+                        "id": SUBMISSION_ID,
+                        "status": self.notary_status,
+                    }
+                ),
+            )
+        if command[:3] == ["xcrun", "notarytool", "wait"]:
             return MODULE.CommandResult(
                 0,
                 json.dumps(
@@ -127,6 +143,46 @@ class FakeReleaseRunner:
 
 
 class DirectNotaryTransactionTests(unittest.TestCase):
+    def source_kwargs(
+        self,
+        root: Path,
+        *,
+        commit: str = "a",
+    ) -> dict[str, object]:
+        snapshot = MODULE.SOURCE.ReleaseSourceSnapshot(
+            project_root=root.resolve(),
+            payload={
+                "schemaVersion": 1,
+                "project": "NeAntik",
+                "repositoryClaim": "AffPapa/neantik",
+                "git": {
+                    "objectFormat": "sha1",
+                    "commit": commit * 40,
+                    "tree": "b" * 40,
+                    "worktreeState": "clean",
+                },
+                "digestAlgorithm": "sha256",
+                "closure": [],
+                "closureSHA256": "c" * 64,
+            },
+            files=(),
+        )
+        return {
+            "source_snapshot": snapshot,
+            "source_assertion": lambda _snapshot: None,
+            "runtime_build_evidence": {
+                "schemaVersion": 1,
+                "status": "candidate-bound-reviewed-source",
+                "binding": "candidate-manifest-critical-files",
+                "buildArgumentsSHA256": "1" * 64,
+                "runtimeCandidateLockSHA256": "2" * 64,
+                "runtimeVerificationSHA256": "3" * 64,
+                "sourceContractSHA256": "4" * 64,
+                "sourceProvenanceSHA256": "5" * 64,
+                "reviewedToolchainLockSHA256": "6" * 64,
+            },
+        }
+
     def fixture(self, root: Path) -> dict[str, Path]:
         resources = root / "Resources"
         resources.mkdir()
@@ -186,6 +242,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 notary_profile="test-profile",
                 runner=runner,
                 phase_hook=mutate_live_app,
+                **self.source_kwargs(root),
             )
             archive = Path(result["archive"])
             with zipfile.ZipFile(archive) as final_zip:
@@ -217,6 +274,9 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             accepted_receipts = list(
                 receipt_path.parent.glob("*.accepted.json")
             )
+            accepted_receipt = json.loads(
+                accepted_receipts[0].read_text(encoding="utf-8")
+            )
 
         submit = next(
             command
@@ -235,6 +295,36 @@ class DirectNotaryTransactionTests(unittest.TestCase):
         self.assertEqual(receipt["appleSubmission"]["id"], SUBMISSION_ID)
         self.assertEqual(receipt["finalArchive"]["sha256"], result["sha256"])
         self.assertEqual(receipt["publicationState"], "transaction-verified")
+        self.assertEqual(receipt["schemaVersion"], 2)
+        self.assertEqual(receipt["receiptType"], "direct-release")
+        self.assertEqual(accepted_receipt["schemaVersion"], 2)
+        self.assertEqual(
+            accepted_receipt["receiptType"],
+            "apple-accepted",
+        )
+        self.assertEqual(
+            receipt["candidateInputs"],
+            accepted_receipt["candidateInputs"],
+        )
+        self.assertTrue(
+            all(
+                set(value) == {"sha256", "size"}
+                for value in receipt["candidateInputs"].values()
+            )
+        )
+        self.assertEqual(
+            receipt["releaseSource"]["git"]["commit"],
+            "a" * 40,
+        )
+        self.assertEqual(
+            receipt["runtimeBuildEvidence"]["binding"],
+            "candidate-manifest-critical-files",
+        )
+        self.assertEqual(
+            receipt["runtimeBuildEvidence"]["schemaVersion"],
+            1,
+        )
+        self.assertNotIn("toolchainUsed", receipt["runtimeBuildEvidence"])
         self.assertEqual(receipt_path.parent.name, ".notary-receipts")
         self.assertEqual(receipt_mode, 0o700)
         self.assertEqual(archive_mode, 0o400)
@@ -267,6 +357,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                     release_channel="public-alpha",
                     notary_profile="test-profile",
                     runner=runner,
+                    **self.source_kwargs(root),
                 )
 
             self.assertFalse(
@@ -341,6 +432,39 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             result.stderr,
         )
 
+    def test_default_runner_isolates_local_python_gates(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "scripts").mkdir()
+            gate = root / "scripts" / "release_gate.py"
+            gate.write_text("print('PASS')\n", encoding="utf-8")
+            completed = subprocess.CompletedProcess(
+                args=[],
+                returncode=0,
+                stdout="PASS\n",
+                stderr="",
+            )
+            with mock.patch.object(
+                MODULE.subprocess,
+                "run",
+                return_value=completed,
+            ) as run:
+                result = MODULE.default_runner([str(gate)], root)
+            command = run.call_args.args[0]
+            environment = run.call_args.kwargs["env"]
+            self.assertEqual(
+                command[:3],
+                [sys.executable, "-I", "-B"],
+            )
+            self.assertEqual(command[3], str(gate))
+            self.assertEqual(
+                environment["PYTHONDONTWRITEBYTECODE"],
+                "1",
+            )
+            self.assertEqual(environment["PYTHONNOUSERSITE"], "1")
+            self.assertNotIn("PYTHONPATH", environment)
+            self.assertEqual(result.output, "PASS")
+
     def test_rejected_notary_or_final_gate_never_publishes(self) -> None:
         for runner in (
             FakeReleaseRunner(notary_status="Invalid"),
@@ -362,6 +486,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                             release_channel="public-alpha",
                             notary_profile="test-profile",
                             runner=runner,
+                            **self.source_kwargs(root),
                         )
                     self.assertFalse(
                         (
@@ -400,6 +525,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                     notary_profile="test-profile",
                     runner=runner,
                     phase_hook=mutate_input,
+                    **self.source_kwargs(root),
                 )
 
             self.assertFalse(
@@ -483,6 +609,497 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             self.assertEqual(
                 sentinel.read_text(encoding="utf-8"),
                 "keep",
+            )
+
+    def test_submit_unknown_state_is_retained_and_never_resubmitted(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            first_runner = FakeReleaseRunner(fail_submit=True)
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "submission",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=first_runner,
+                    **self.source_kwargs(root),
+                )
+            active = MODULE.STATE.find_active_transaction(
+                root / "dist",
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            )
+            self.assertIsNotNone(active)
+            assert active is not None
+            self.assertEqual(active[1][-1].stage, "submit-intent")
+
+            second_runner = FakeReleaseRunner()
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "effect is unknown",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=second_runner,
+                    **self.source_kwargs(root),
+                )
+            self.assertFalse(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "submit"]
+                    for command in second_runner.commands
+                )
+            )
+
+    def test_sidecar_crash_resumes_exact_transaction_without_resubmit(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+
+            def crash_after_sidecar(
+                phase: str,
+                _context: dict[str, Path],
+            ) -> None:
+                if phase == "sidecar-published":
+                    raise RuntimeError("simulated crash boundary")
+
+            with self.assertRaisesRegex(RuntimeError, "simulated"):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=FakeReleaseRunner(),
+                    phase_hook=crash_after_sidecar,
+                    **self.source_kwargs(root),
+                )
+            archive = (
+                root / "dist" / "NeAntik-1.2.3-arm64-notarized.zip"
+            )
+            checksum = archive.with_name(archive.name + ".sha256")
+            self.assertFalse(archive.exists())
+            self.assertTrue(checksum.exists())
+            active = MODULE.STATE.find_active_transaction(
+                root / "dist",
+                archive.name,
+            )
+            self.assertIsNotNone(active)
+            assert active is not None
+            self.assertEqual(active[1][-1].stage, "final-verified")
+
+            second_runner = FakeReleaseRunner()
+            recovered = MODULE.run_transaction(
+                project_root=root,
+                app=paths["app"],
+                manifest=paths["manifest"],
+                evidence=paths["evidence"],
+                attestation=paths["attestation"],
+                release_channel="public-alpha",
+                notary_profile="test-profile",
+                runner=second_runner,
+                **self.source_kwargs(root),
+            )
+            self.assertFalse(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "submit"]
+                    for command in second_runner.commands
+                )
+            )
+            self.assertEqual(
+                Path(recovered["archive"]).resolve(),
+                archive.resolve(),
+            )
+            self.assertTrue(archive.exists())
+            self.assertTrue(checksum.exists())
+            self.assertIsNone(
+                MODULE.STATE.find_active_transaction(
+                    root / "dist",
+                    archive.name,
+                )
+            )
+
+    def test_activation_fsync_failure_cleans_canonical_transaction(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            original_fsync = MODULE.os.fsync
+            injected = False
+
+            def fail_after_activation(descriptor: int) -> None:
+                nonlocal injected
+                active_exists = any(
+                    (root / "dist").glob(".neantik-notary.*")
+                )
+                if active_exists and not injected:
+                    injected = True
+                    raise OSError("simulated dist fsync failure")
+                original_fsync(descriptor)
+
+            with mock.patch.object(
+                MODULE.os,
+                "fsync",
+                side_effect=fail_after_activation,
+            ):
+                with self.assertRaisesRegex(
+                    MODULE.DirectNotaryTransactionError,
+                    "failed",
+                ):
+                    MODULE.run_transaction(
+                        project_root=root,
+                        app=paths["app"],
+                        manifest=paths["manifest"],
+                        evidence=paths["evidence"],
+                        attestation=paths["attestation"],
+                        release_channel="public-alpha",
+                        notary_profile="test-profile",
+                        runner=FakeReleaseRunner(),
+                        **self.source_kwargs(root),
+                    )
+
+            self.assertTrue(injected)
+            self.assertEqual(
+                list((root / "dist").glob(".neantik-notary.*")),
+                [],
+            )
+
+    def test_publication_hooks_cannot_mutate_committed_artifacts(
+        self,
+    ) -> None:
+        cases = (
+            (
+                "sidecar-published",
+                "NeAntik-1.2.3-arm64-notarized.zip.sha256",
+            ),
+            (
+                "archive-published",
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            ),
+            (
+                "published",
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            ),
+        )
+        for phase_to_mutate, public_name in cases:
+            with self.subTest(phase=phase_to_mutate):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    paths = self.fixture(root)
+
+                    def mutate_public_artifact(
+                        phase: str,
+                        _context: dict[str, Path],
+                    ) -> None:
+                        if phase != phase_to_mutate:
+                            return
+                        public = root / "dist" / public_name
+                        public.chmod(0o600)
+                        public.write_bytes(b"ATTACKER-BYTES")
+
+                    with self.assertRaisesRegex(
+                        MODULE.DirectNotaryTransactionError,
+                        "changed",
+                    ):
+                        MODULE.run_transaction(
+                            project_root=root,
+                            app=paths["app"],
+                            manifest=paths["manifest"],
+                            evidence=paths["evidence"],
+                            attestation=paths["attestation"],
+                            release_channel="public-alpha",
+                            notary_profile="test-profile",
+                            runner=FakeReleaseRunner(),
+                            phase_hook=mutate_public_artifact,
+                            **self.source_kwargs(root),
+                        )
+                    self.assertEqual(
+                        (root / "dist" / public_name).read_bytes(),
+                        b"ATTACKER-BYTES",
+                    )
+                    active = MODULE.STATE.find_active_transaction(
+                        root / "dist",
+                        "NeAntik-1.2.3-arm64-notarized.zip",
+                    )
+                    self.assertIsNotNone(active)
+
+    def test_known_submission_resumes_by_id_without_second_submit(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+
+            def crash_after_submission_id(
+                phase: str,
+                _context: dict[str, Path],
+            ) -> None:
+                if phase == "submission-known":
+                    raise RuntimeError("known submission crash")
+
+            with self.assertRaisesRegex(RuntimeError, "known submission"):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=FakeReleaseRunner(),
+                    phase_hook=crash_after_submission_id,
+                    **self.source_kwargs(root),
+                )
+            active = MODULE.STATE.find_active_transaction(
+                root / "dist",
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            )
+            self.assertIsNotNone(active)
+            assert active is not None
+            self.assertEqual(active[1][-1].stage, "submission-known")
+
+            recovery_runner = FakeReleaseRunner()
+            result = MODULE.run_transaction(
+                project_root=root,
+                app=paths["app"],
+                manifest=paths["manifest"],
+                evidence=paths["evidence"],
+                attestation=paths["attestation"],
+                release_channel="public-alpha",
+                notary_profile="test-profile",
+                runner=recovery_runner,
+                **self.source_kwargs(root),
+            )
+            self.assertTrue(Path(result["archive"]).exists())
+            self.assertFalse(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "submit"]
+                    for command in recovery_runner.commands
+                )
+            )
+            self.assertTrue(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "wait"]
+                    for command in recovery_runner.commands
+                )
+            )
+
+    def test_recovery_rejects_a_different_clean_git_commit(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+
+            def crash_after_submission_id(
+                phase: str,
+                _context: dict[str, Path],
+            ) -> None:
+                if phase == "submission-known":
+                    raise RuntimeError("known submission crash")
+
+            with self.assertRaises(RuntimeError):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=FakeReleaseRunner(),
+                    phase_hook=crash_after_submission_id,
+                    **self.source_kwargs(root),
+                )
+            recovery_runner = FakeReleaseRunner()
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "does not match",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=recovery_runner,
+                    **self.source_kwargs(root, commit="d"),
+                )
+            self.assertFalse(
+                any(
+                    command[:3]
+                    in (
+                        ["xcrun", "notarytool", "submit"],
+                        ["xcrun", "notarytool", "wait"],
+                        ["xcrun", "notarytool", "info"],
+                    )
+                    for command in recovery_runner.commands
+                )
+            )
+
+    def test_public_zip_crash_is_adopted_without_apple_or_stapler(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+
+            def crash_after_archive(
+                phase: str,
+                _context: dict[str, Path],
+            ) -> None:
+                if phase == "archive-published":
+                    raise RuntimeError("archive commit crash")
+
+            with self.assertRaisesRegex(RuntimeError, "archive commit"):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=FakeReleaseRunner(),
+                    phase_hook=crash_after_archive,
+                    **self.source_kwargs(root),
+                )
+            archive = (
+                root / "dist" / "NeAntik-1.2.3-arm64-notarized.zip"
+            )
+            self.assertTrue(archive.exists())
+            active = MODULE.STATE.find_active_transaction(
+                root / "dist",
+                archive.name,
+            )
+            self.assertIsNotNone(active)
+            assert active is not None
+            self.assertEqual(active[1][-1].stage, "sidecar-committed")
+
+            recovery_runner = FakeReleaseRunner()
+            result = MODULE.run_transaction(
+                project_root=root,
+                app=paths["app"],
+                manifest=paths["manifest"],
+                evidence=paths["evidence"],
+                attestation=paths["attestation"],
+                release_channel="public-alpha",
+                notary_profile="test-profile",
+                runner=recovery_runner,
+                **self.source_kwargs(root),
+            )
+            self.assertTrue(Path(result["archive"]).exists())
+            self.assertFalse(
+                any(
+                    tuple(command[:3])
+                    in {
+                        ("xcrun", "notarytool", "submit"),
+                        ("xcrun", "notarytool", "wait"),
+                        ("xcrun", "stapler", "staple"),
+                    }
+                    for command in recovery_runner.commands
+                )
+            )
+
+    def test_process_death_after_sidecar_is_resumable(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            code = """
+import os
+import sys
+from pathlib import Path
+from scripts.tests.test_notarize_direct_transaction import (
+    DirectNotaryTransactionTests,
+    FakeReleaseRunner,
+    MODULE,
+)
+root = Path(sys.argv[1])
+paths = {
+    "app": root / "dist" / "NeAntik.app",
+    "manifest": root / "dist" / "direct-candidate-manifest.json",
+    "evidence": root / "dist" / "fingerprint-audit.json",
+    "attestation": root / "dist" / "fingerprint-audit-summary.json",
+}
+def crash(phase, _context):
+    if phase == "sidecar-published":
+        os._exit(97)
+MODULE.run_transaction(
+    project_root=root,
+    app=paths["app"],
+    manifest=paths["manifest"],
+    evidence=paths["evidence"],
+    attestation=paths["attestation"],
+    release_channel="public-alpha",
+    notary_profile="test-profile",
+    runner=FakeReleaseRunner(),
+    phase_hook=crash,
+    **DirectNotaryTransactionTests().source_kwargs(root),
+)
+"""
+            completed = subprocess.run(
+                [sys.executable, "-c", code, str(root)],
+                cwd=SCRIPTS.parent,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(completed.returncode, 97)
+            archive = (
+                root / "dist" / "NeAntik-1.2.3-arm64-notarized.zip"
+            )
+            self.assertFalse(archive.exists())
+            self.assertTrue(
+                archive.with_name(archive.name + ".sha256").exists()
+            )
+
+            recovery_runner = FakeReleaseRunner()
+            result = MODULE.run_transaction(
+                project_root=root,
+                app=paths["app"],
+                manifest=paths["manifest"],
+                evidence=paths["evidence"],
+                attestation=paths["attestation"],
+                release_channel="public-alpha",
+                notary_profile="test-profile",
+                runner=recovery_runner,
+                **self.source_kwargs(root),
+            )
+            self.assertTrue(Path(result["archive"]).exists())
+            self.assertFalse(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "submit"]
+                    for command in recovery_runner.commands
+                )
             )
 
 

@@ -19,7 +19,18 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     ;;
 esac
 
-exec python3 "$PROJECT_DIR/scripts/notarize_direct_transaction.py" \
+RELEASE_PYTHON="/opt/homebrew/bin/python3"
+if [[ ! -x "$RELEASE_PYTHON" ]] ||
+   ! "$RELEASE_PYTHON" -I -B -c \
+     'import platform,sys; raise SystemExit(0 if sys.version_info >= (3,11) and platform.machine() == "arm64" else 1)'
+then
+  echo "ARM64 Python 3.11+ is required at /opt/homebrew/bin/python3." >&2
+  exit 69
+fi
+
+exec "$RELEASE_PYTHON" -I -B \
+  "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+  "$PROJECT_DIR/scripts/notarize_direct_transaction.py" \
   --project-root "$PROJECT_DIR" \
   --app "$APP_PATH" \
   --manifest "$CANDIDATE_MANIFEST" \
