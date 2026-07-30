@@ -38,6 +38,43 @@ class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
                 checksum,
             )
 
+    def test_archive_contract_can_use_pinned_info_plist(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_info(root, version="9.9.9")
+            pinned_root = root / "private-inputs"
+            write_info(pinned_root, version="1.2.3")
+            pinned_info = pinned_root / "Resources" / "Info.plist"
+            archive = (
+                root
+                / "dist"
+                / "NeAntik-1.2.3-arm64-notarized.zip"
+            )
+            archive.parent.mkdir(parents=True)
+            archive.write_bytes(b"zip")
+            checksum = MODULE.sha256_file(archive)
+            archive.with_suffix(".zip.sha256").write_text(
+                f"{checksum}  {archive.name}\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                MODULE.assert_archive_contract(
+                    archive,
+                    project_root=root,
+                    info_plist=pinned_info,
+                ),
+                checksum,
+            )
+            with self.assertRaisesRegex(
+                MODULE.DirectNotarizedArchiveError,
+                "archive name",
+            ):
+                MODULE.assert_archive_contract(
+                    archive,
+                    project_root=root,
+                )
+
     def test_archive_contract_rejects_engineering_archive_name(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

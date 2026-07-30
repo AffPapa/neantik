@@ -116,6 +116,8 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/enroll-direct-fingerprint-authority.sh",
     "scripts/run-exact-command-with-timeout.py",
     "scripts/release_input_snapshot.py",
+    "scripts/release_transaction.py",
+    "scripts/notarize_direct_transaction.py",
     "scripts/verify-direct-hosted-download.py",
     "scripts/fingerprint_evidence_schema8.py",
     "scripts/verify-fingerprint-evidence-envelope.py",
@@ -123,6 +125,8 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/verify-direct-update-policy.py",
     "scripts/verify-public-fingerprint-corpus.py",
     "scripts/verify-public-workflow-references.py",
+    "scripts/tests/test_release_transaction.py",
+    "scripts/tests/test_notarize_direct_transaction.py",
 }
 
 

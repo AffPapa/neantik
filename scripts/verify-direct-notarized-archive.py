@@ -43,8 +43,14 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def read_expected_app_contract(project_root: Path) -> ExpectedAppContract:
-    with (project_root / "Resources" / "Info.plist").open("rb") as file:
+def read_expected_app_contract(
+    project_root: Path,
+    *,
+    info_plist: Path | None = None,
+) -> ExpectedAppContract:
+    with (
+        info_plist or project_root / "Resources" / "Info.plist"
+    ).open("rb") as file:
         info = plistlib.load(file)
     required = {
         "CFBundleIdentifier": info.get("CFBundleIdentifier"),
@@ -77,8 +83,15 @@ def read_expected_app_contract(project_root: Path) -> ExpectedAppContract:
     )
 
 
-def expected_archive(project_root: Path) -> Path:
-    contract = read_expected_app_contract(project_root)
+def expected_archive(
+    project_root: Path,
+    *,
+    info_plist: Path | None = None,
+) -> Path:
+    contract = read_expected_app_contract(
+        project_root,
+        info_plist=info_plist,
+    )
     return (
         project_root
         / "dist"
@@ -86,8 +99,16 @@ def expected_archive(project_root: Path) -> Path:
     )
 
 
-def assert_archive_contract(archive: Path, *, project_root: Path) -> str:
-    expected = expected_archive(project_root)
+def assert_archive_contract(
+    archive: Path,
+    *,
+    project_root: Path,
+    info_plist: Path | None = None,
+) -> str:
+    expected = expected_archive(
+        project_root,
+        info_plist=info_plist,
+    )
     if archive.name != expected.name:
         raise DirectNotarizedArchiveError(
             f"archive name must be {expected.name}, got {archive.name}"
@@ -249,10 +270,18 @@ def verify_archive(
     *,
     archive: Path,
     project_root: Path = PROJECT_ROOT,
+    expected_info_plist: Path | None = None,
     runner=default_runner,
 ) -> dict[str, str]:
-    expected = read_expected_app_contract(project_root)
-    checksum = assert_archive_contract(archive, project_root=project_root)
+    expected = read_expected_app_contract(
+        project_root,
+        info_plist=expected_info_plist,
+    )
+    checksum = assert_archive_contract(
+        archive,
+        project_root=project_root,
+        info_plist=expected_info_plist,
+    )
     assert_zip_has_no_finder_metadata(archive)
     with tempfile.TemporaryDirectory(prefix="nevision-notarized-verify-") as temporary:
         app = extract_archive(archive, Path(temporary), runner=runner)
@@ -277,11 +306,27 @@ def main() -> int:
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--archive", type=Path)
+    parser.add_argument("--expected-info-plist", type=Path)
     args = parser.parse_args()
     project_root = args.project_root.resolve()
-    archive = (args.archive or expected_archive(project_root)).resolve()
+    expected_info_plist = (
+        args.expected_info_plist.resolve()
+        if args.expected_info_plist
+        else None
+    )
+    archive = (
+        args.archive
+        or expected_archive(
+            project_root,
+            info_plist=expected_info_plist,
+        )
+    ).resolve()
     try:
-        result = verify_archive(archive=archive, project_root=project_root)
+        result = verify_archive(
+            archive=archive,
+            project_root=project_root,
+            expected_info_plist=expected_info_plist,
+        )
     except (OSError, zipfile.BadZipFile, DirectNotarizedArchiveError) as error:
         print(f"Direct notarized archive verification failed: {error}", file=sys.stderr)
         return 1

@@ -62,9 +62,23 @@ manifest/output paths. The app keeps raw schema-7 observations in memory and
 writes one authenticated schema-8 privacy aggregate; release tooling rejects
 raw diagnostic reports.
 `release-direct.sh` only verifies and notarizes it; it never rebuilds or
-re-signs after the GUI run. The release channel is explicit:
+re-signs after the GUI run. Notarization pins the manifest, schema-8 evidence,
+attestation and Info.plist to a private owner-only transaction. The live app is
+packaged exactly once. Apple receives that sealed private ZIP; after the same
+submission ID is independently confirmed `Accepted`, only a fresh app
+extracted from that ZIP is stapled. A new final ZIP is built from the staged
+app, reverified, and published without replacement after its durable SHA-256
+sidecar. The final ZIP path appears last and is the release commit point. A
+private hash-bound receipt records both the Apple-submitted and final
+archive hashes. The release channel is explicit:
 `public-alpha` accepts the documented alpha threshold, while `production`
 requires strict coherent production qualification.
+
+Publication is fail-closed but not yet automatically resumable across power
+loss. A crash after the checksum commit and before the ZIP commit can leave an
+orphan `.sha256` with no public ZIP. That state is not a valid release and the
+next run refuses to overwrite it; recovery must verify the private Accepted
+receipt and exact inode/hash before removing or resuming the orphan.
 
 After uploading the versioned ZIP without changing public links, repeat the
 complete archive and Gatekeeper gate against fresh downloaded bytes:

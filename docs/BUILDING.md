@@ -86,6 +86,11 @@ complete bundle and public binding. Every enrollment attempt receives a new
 private state directory. Ad-hoc builds intentionally skip this release
 manifest. The second phase refuses to rebuild or re-sign the candidate and
 requires one-shot authenticated GUI evidence created after that manifest.
+It pins the manifest, evidence, attestation and Info.plist in a private
+transaction, packages the live app once, and submits only that sealed ZIP.
+After Apple returns and independently confirms `Accepted`, stapling targets a
+fresh app extracted from the accepted ZIP. The final ZIP is verified in the
+transaction and published without replacement after its durable checksum.
 Raw schema-7 diagnostic reports are never accepted. `production` requires
 strict production qualification; `public-alpha` never silently upgrades that
 verdict. Only upload after authenticated schema-8 GUI evidence, notarization,

@@ -7,6 +7,7 @@ PREPARE = SCRIPTS / "prepare-direct-runtime-candidate.sh"
 PREPARE_MANAGER = SCRIPTS / "prepare-direct-manager-update.sh"
 RELEASE = SCRIPTS / "release-direct.sh"
 NOTARIZE = SCRIPTS / "notarize-direct-candidate.sh"
+NOTARY_TRANSACTION = SCRIPTS / "notarize_direct_transaction.py"
 ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 
 
@@ -75,9 +76,13 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL:?", text)
         self.assertIn("NEANTIK_RELEASE_CHANNEL", text)
         self.assertIn("direct-candidate-manifest.py", text)
-        self.assertGreaterEqual(text.count("direct-candidate-manifest.py"), 2)
+        self.assertEqual(text.count("direct-candidate-manifest.py"), 1)
         self.assertIn("notarize-direct-candidate.sh", text)
-        self.assertIn("verify-direct-notarized-archive.py", text)
+        self.assertNotIn("verify-direct-notarized-archive.py", text)
+        self.assertIn(
+            "verify-direct-notarized-archive.py",
+            NOTARY_TRANSACTION.read_text(encoding="utf-8"),
+        )
         self.assertNotIn("sign-runtime.sh", text)
         self.assertNotIn("package-integrated-app.sh", text)
         self.assertNotIn("codesign --force", text)
@@ -88,16 +93,46 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         )
 
     def test_notarization_requires_authenticated_schema8_evidence(self) -> None:
-        text = NOTARIZE.read_text(encoding="utf-8")
+        wrapper = NOTARIZE.read_text(encoding="utf-8")
+        text = NOTARY_TRANSACTION.read_text(encoding="utf-8")
 
         self.assertIn("verify-fingerprint-evidence-envelope.py", text)
-        self.assertIn("--manifest \"$CANDIDATE_MANIFEST\"", text)
-        self.assertIn("--envelope \"$REPORT_PATH\"", text)
+        self.assertIn("snapshot_candidate_inputs", text)
+        self.assertIn("--integrated-app", text)
+        self.assertIn("observe_sealed_phase", text)
+        self.assertIn('"notarytool",\n                    "submit"', text)
+        self.assertIn('"notarytool",\n                "info"', text)
+        self.assertIn('"stapler", "staple", str(staged_app)', text)
+        self.assertIn("publish_release_pair", text)
+        self.assertIn('"publicationState": "transaction-verified"', text)
+        self.assertIn("refusing overwrite", text)
+        self.assertIn("Authority=Developer ID Application:", text)
+        self.assertIn("Timestamp=", text)
+        self.assertIn("verify-runtime-security-baseline.py", text)
+        self.assertIn("--allow-public-alpha-tuples", text)
+        self.assertIn("verify-runtime-security-reference.py", text)
+        self.assertIn("verify-direct-update-policy.py", text)
+        self.assertIn("verify-public-fingerprint-corpus.py", text)
         self.assertNotIn("verify-gui-fingerprint-report.py", text)
-        self.assertGreaterEqual(text.count("direct-candidate-manifest.py"), 2)
+        self.assertNotIn("rm -f", wrapper)
+        self.assertNotIn("notarytool submit", wrapper)
+        self.assertNotIn("stapler", wrapper)
+        self.assertIn("notarize_direct_transaction.py", wrapper)
         self.assertLess(
-            text.index("verify-fingerprint-evidence-envelope.py"),
-            text.index("notarytool submit"),
+            text.index("submission ZIP packaging"),
+            text.index('"notarytool",\n                    "submit"'),
+        )
+        self.assertLess(
+            text.index('"notarytool",\n                    "submit"'),
+            text.index('"stapler", "staple", str(staged_app)'),
+        )
+        self.assertLess(
+            text.index('"stapler", "staple", str(staged_app)'),
+            text.index("final ZIP packaging"),
+        )
+        self.assertLess(
+            text.index("final notarized archive verification"),
+            text.index("publish_release_pair"),
         )
 
 
