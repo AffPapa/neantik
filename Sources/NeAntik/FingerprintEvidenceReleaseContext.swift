@@ -8,6 +8,11 @@ struct FingerprintEvidenceReleaseRequest: Equatable, Sendable {
     let evidenceOutputURL: URL
 }
 
+enum FingerprintEvidenceReleaseLoadResult {
+    case audit(FingerprintEvidenceReleaseContext)
+    case recovered(URL)
+}
+
 enum FingerprintEvidenceReleaseError: LocalizedError, Equatable {
     case invalidManifest
     case unsafeManifest
@@ -39,6 +44,7 @@ enum FingerprintEvidenceReleaseError: LocalizedError, Equatable {
 
 protocol FingerprintEvidenceChallengeClaiming: Sendable {
     func claim(identifier: String, requestDigest: Data) throws
+    func claimedDigest(identifier: String) throws -> Data?
 }
 
 struct KeychainFingerprintEvidenceChallengeClaimStore:
@@ -47,13 +53,25 @@ struct KeychainFingerprintEvidenceChallengeClaimStore:
     private static let service =
         "app.neantik.fingerprint-evidence.consumed-challenge.v1"
     private let addItem: ([String: Any]) -> OSStatus
+    private let copyItem:
+        ([String: Any]) -> (status: OSStatus, data: Data?)
 
     init(
         addItem: @escaping ([String: Any]) -> OSStatus = {
             SecItemAdd($0 as CFDictionary, nil)
+        },
+        copyItem: @escaping ([String: Any]) ->
+            (status: OSStatus, data: Data?) = {
+                var result: CFTypeRef?
+                let status = SecItemCopyMatching(
+                    $0 as CFDictionary,
+                    &result
+                )
+                return (status, result as? Data)
         }
     ) {
         self.addItem = addItem
+        self.copyItem = copyItem
     }
 
     func claim(identifier: String, requestDigest: Data) throws {
@@ -76,6 +94,29 @@ struct KeychainFingerprintEvidenceChallengeClaimStore:
                 .operationFailed(Int(status))
         }
     }
+
+    func claimedDigest(identifier: String) throws -> Data? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.service,
+            kSecAttrAccount as String: identifier,
+            kSecUseDataProtectionKeychain as String: true,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        let result = copyItem(query)
+        if result.status == errSecItemNotFound {
+            return nil
+        }
+        guard result.status == errSecSuccess,
+              let data = result.data,
+              data.count == 32
+        else {
+            throw FingerprintEvidenceReleaseError
+                .operationFailed(Int(result.status))
+        }
+        return data
+    }
 }
 
 struct FingerprintEvidenceCandidateMetadata: Equatable, Sendable {
@@ -92,9 +133,11 @@ final class FingerprintEvidenceReleaseContext {
     let metadata: FingerprintEvidenceCandidateMetadata
 
     private let binding: FingerprintEvidenceManifestBinding
-    private let signer: any FingerprintEvidenceSigning
+    private let signerProvider:
+        @Sendable () throws -> any FingerprintEvidenceSigning
     private let abandonAuthority: (UUID) throws -> Void
     private let claimStore: any FingerprintEvidenceChallengeClaiming
+    private let recoveryStore: any FingerprintEvidenceRecoveryStoring
     private let output: any FingerprintEvidenceEnrollmentOutput
     private var attempted = false
 
@@ -107,7 +150,7 @@ final class FingerprintEvidenceReleaseContext {
                 SecureEnclaveFingerprintEvidenceAuthority(),
         claimStore: any FingerprintEvidenceChallengeClaiming =
             KeychainFingerprintEvidenceChallengeClaimStore()
-    ) throws -> FingerprintEvidenceReleaseContext {
+    ) throws -> FingerprintEvidenceReleaseLoadResult {
         let manifest = try readStableRegularFile(
             request.candidateManifestURL,
             maximumBytes:
@@ -143,30 +186,63 @@ final class FingerprintEvidenceReleaseContext {
                 in: manifest
             )
         let validated = try binding.validated()
-        let signer = try authority.existingSigner(
-            sessionID: binding.sessionID,
-            expectedPublicKeyX963:
-                validated.publicKey.x963Representation
-        )
         let output: any FingerprintEvidenceEnrollmentOutput
         do {
             output =
-                try ReservedFingerprintEvidenceEnrollmentOutput(
-                    url: request.evidenceOutputURL
+                try AtomicFingerprintEvidenceReleaseOutput(
+                    url: request.evidenceOutputURL,
+                    allowIdenticalExisting: true
                 )
         } catch {
             throw FingerprintEvidenceReleaseError.outputUnavailable
         }
-        return FingerprintEvidenceReleaseContext(
+        let context = FingerprintEvidenceReleaseContext(
             request: request,
             candidateManifest: manifest,
             metadata: parsed.metadata,
             binding: binding,
-            signer: signer,
+            signerProvider: {
+                try authority.existingSigner(
+                    sessionID: binding.sessionID,
+                    expectedPublicKeyX963:
+                        validated.publicKey.x963Representation
+                )
+            },
             abandonAuthority: {
                 try authority.abandon(sessionID: $0)
             },
             claimStore: claimStore,
+            recoveryStore:
+                FileFingerprintEvidenceRecoveryStore(),
+            output: output
+        )
+        if let recovered = try context.recoverPersistedEnvelope() {
+            return .recovered(recovered)
+        }
+        return .audit(context)
+    }
+
+    convenience init(
+        request: FingerprintEvidenceReleaseRequest,
+        candidateManifest: Data,
+        metadata: FingerprintEvidenceCandidateMetadata,
+        binding: FingerprintEvidenceManifestBinding,
+        signer: any FingerprintEvidenceSigning,
+        abandonAuthority: @escaping (UUID) throws -> Void,
+        claimStore: any FingerprintEvidenceChallengeClaiming,
+        recoveryStore: any FingerprintEvidenceRecoveryStoring =
+            DiscardingFingerprintEvidenceRecoveryStore(),
+        output: any FingerprintEvidenceEnrollmentOutput
+    ) {
+        self.init(
+            request: request,
+            candidateManifest: candidateManifest,
+            metadata: metadata,
+            binding: binding,
+            signerProvider: { signer },
+            abandonAuthority: abandonAuthority,
+            claimStore: claimStore,
+            recoveryStore: recoveryStore,
             output: output
         )
     }
@@ -176,18 +252,22 @@ final class FingerprintEvidenceReleaseContext {
         candidateManifest: Data,
         metadata: FingerprintEvidenceCandidateMetadata,
         binding: FingerprintEvidenceManifestBinding,
-        signer: any FingerprintEvidenceSigning,
+        signerProvider:
+            @escaping @Sendable () throws ->
+                any FingerprintEvidenceSigning,
         abandonAuthority: @escaping (UUID) throws -> Void,
         claimStore: any FingerprintEvidenceChallengeClaiming,
+        recoveryStore: any FingerprintEvidenceRecoveryStoring,
         output: any FingerprintEvidenceEnrollmentOutput
     ) {
         self.request = request
         self.candidateManifest = candidateManifest
         self.metadata = metadata
         self.binding = binding
-        self.signer = signer
+        self.signerProvider = signerProvider
         self.abandonAuthority = abandonAuthority
         self.claimStore = claimStore
+        self.recoveryStore = recoveryStore
         self.output = output
     }
 
@@ -200,6 +280,9 @@ final class FingerprintEvidenceReleaseContext {
                 .challengeAlreadyConsumed
         }
         attempted = true
+        if let recovered = try recoverPersistedEnvelope() {
+            return recovered
+        }
         try validateCandidateCoherence(report)
         let payload = try FingerprintReleaseEvidencePayload(
             report: report,
@@ -208,30 +291,120 @@ final class FingerprintEvidenceReleaseContext {
         let requestDigest = SHA256.hash(
             data: candidateManifest + payload
         )
+        let identifier = claimIdentifier()
+
+        guard !output.hasExistingEntry else {
+            throw FingerprintEvidenceReleaseError.outputUnavailable
+        }
         try claimStore.claim(
-            identifier: claimIdentifier(),
+            identifier: identifier,
             requestDigest: Data(requestDigest)
         )
-        let envelope = try FingerprintEvidenceEnvelopeCodec.make(
-            payload: payload,
-            candidateManifest: candidateManifest,
-            signer: signer
-        )
-        let envelopeData =
-            try FingerprintEvidenceEnvelopeCodec.encode(envelope)
-        guard try FingerprintEvidenceEnvelopeCodec.verify(
-            envelopeData,
-            candidateManifest: candidateManifest
-        ) == payload else {
-            throw FingerprintEvidenceError.invalidSignature
-        }
+        let envelopeData: Data
+        do {
+            let signer = try signerProvider()
+            let envelope = try FingerprintEvidenceEnvelopeCodec.make(
+                payload: payload,
+                candidateManifest: candidateManifest,
+                signer: signer
+            )
+            envelopeData =
+                try FingerprintEvidenceEnvelopeCodec.encode(envelope)
+            guard try FingerprintEvidenceEnvelopeCodec.verify(
+                envelopeData,
+                candidateManifest: candidateManifest
+            ) == payload else {
+                throw FingerprintEvidenceError.invalidSignature
+            }
 
-        // A challenge is intentionally one-shot. Destroy the signing key before
-        // publication; any later failure burns the candidate instead of
-        // allowing a second, different report to be signed.
+            // Persist the exact signed bytes before destroying the key.
+            // Recovery publishes only these bytes and never signs again.
+            try recoveryStore.storeEnvelope(
+                envelopeData,
+                identifier: identifier
+            )
+        } catch {
+            // The claim is already consumed. Best-effort destruction prevents
+            // a failed candidate from retaining usable signing authority.
+            try? abandonAuthority(binding.sessionID)
+            throw error
+        }
         try abandonAuthority(binding.sessionID)
         try output.commit(envelopeData)
         return request.evidenceOutputURL
+    }
+
+    func recoverPersistedEnvelope() throws -> URL? {
+        let identifier = claimIdentifier()
+        guard let recoveredEnvelope =
+                try recoveryStore.loadEnvelope(identifier: identifier)
+        else {
+            return nil
+        }
+        let recoveredPayload =
+            try FingerprintEvidenceEnvelopeCodec.verify(
+                recoveredEnvelope,
+                candidateManifest: candidateManifest
+            )
+        try validateRecoveredPayload(recoveredPayload)
+        let requestDigest = Data(
+            SHA256.hash(data: candidateManifest + recoveredPayload)
+        )
+        if let claimed = try claimStore.claimedDigest(
+            identifier: identifier
+        ) {
+            guard claimed == requestDigest else {
+                throw FingerprintEvidenceError.bindingMismatch
+            }
+        } else {
+            try claimStore.claim(
+                identifier: identifier,
+                requestDigest: requestDigest
+            )
+        }
+        try abandonAuthority(binding.sessionID)
+        try output.commit(recoveredEnvelope)
+        return request.evidenceOutputURL
+    }
+
+    private func validateRecoveredPayload(_ data: Data) throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let payload =
+                try? decoder.decode(
+                    FingerprintReleaseEvidencePayload.self,
+                    from: data
+                ),
+              try payload.encodedCanonical() == data,
+              payload.schemaVersion ==
+                FingerprintReleaseEvidencePayload.currentSchemaVersion,
+              payload.kind ==
+                FingerprintReleaseEvidencePayload.kindName,
+              payload.releaseChannel == metadata.releaseChannel,
+              payload.managerVersion == metadata.managerVersion,
+              payload.managerBuild == metadata.managerBuild,
+              payload.runtimeExecutableSHA256 ==
+                metadata.runtimeExecutableSHA256,
+              payload.runtimeFrameworkSHA256 ==
+                metadata.runtimeFrameworkSHA256,
+              payload.runtimeCodeSignatureValid,
+              payload.executionMode ==
+                FingerprintAuditExecutionMode.browser.rawValue,
+              payload.profileSequenceValid,
+              payload.identitySequenceValid
+        else {
+            throw FingerprintEvidenceError.bindingMismatch
+        }
+        switch metadata.releaseChannel {
+        case .publicAlpha:
+            guard payload.publicAlphaQualified else {
+                throw FingerprintEvidenceError.bindingMismatch
+            }
+        case .production:
+            guard payload.productionQualified else {
+                throw FingerprintEvidenceError.bindingMismatch
+            }
+        }
     }
 
     private func validateCandidateCoherence(
@@ -418,7 +591,7 @@ final class FingerprintEvidenceReleaseContext {
             }
     }
 
-    private static func readStableRegularFile(
+    static func readStableRegularFile(
         _ url: URL,
         maximumBytes: Int
     ) throws -> Data {

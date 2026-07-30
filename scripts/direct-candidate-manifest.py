@@ -354,6 +354,21 @@ def verify_manifest(
     release_channel: str,
 ) -> str:
     payload, raw = load_manifest_with_bytes(manifest)
+    return verify_manifest_payload(
+        app,
+        payload,
+        raw,
+        release_channel=release_channel,
+    )
+
+
+def verify_manifest_payload(
+    app: Path,
+    payload: dict[str, Any],
+    raw: bytes,
+    *,
+    release_channel: str,
+) -> str:
     if payload.get("releaseChannel") != release_channel:
         raise CandidateManifestError(
             "Candidate manifest release channel does not match the requested channel"
@@ -373,6 +388,18 @@ def verify_manifest(
 
 def verify_evidence_follows_manifest(manifest: Path, evidence: Path) -> None:
     manifest_payload, manifest_raw = load_manifest_with_bytes(manifest)
+    verify_evidence_follows_manifest_payload(
+        manifest_payload,
+        manifest_raw,
+        evidence,
+    )
+
+
+def verify_evidence_follows_manifest_payload(
+    manifest_payload: dict[str, Any],
+    manifest_raw: bytes,
+    evidence: Path,
+) -> None:
     try:
         verified = EVIDENCE_SCHEMA.verify_fingerprint_evidence(
             candidate_manifest_raw=manifest_raw,
@@ -480,14 +507,17 @@ def main() -> int:
                 ),
             )
         else:
-            digest = verify_manifest(
+            payload, raw = load_manifest_with_bytes(args.manifest)
+            digest = verify_manifest_payload(
                 args.app,
-                args.manifest,
+                payload,
+                raw,
                 release_channel=args.release_channel,
             )
             if args.fingerprint_evidence is not None:
-                verify_evidence_follows_manifest(
-                    args.manifest,
+                verify_evidence_follows_manifest_payload(
+                    payload,
+                    raw,
                     args.fingerprint_evidence,
                 )
     except (

@@ -31,8 +31,13 @@ enum FingerprintEvidenceEnrollmentError: LocalizedError, Equatable {
 
 protocol FingerprintEvidenceEnrollmentOutput: AnyObject {
     var isCommitted: Bool { get }
+    var hasExistingEntry: Bool { get }
     func commit(_ data: Data) throws
     func rollback()
+}
+
+extension FingerprintEvidenceEnrollmentOutput {
+    var hasExistingEntry: Bool { false }
 }
 
 struct FingerprintEvidenceEnrollmentRunner {

@@ -32,14 +32,18 @@ struct NeAntikApp: App {
             self.launchIntent = launchIntent
             if let request {
                 do {
-                    fingerprintEvidenceReleaseContext =
-                        try FingerprintEvidenceReleaseContext.load(
+                    switch try FingerprintEvidenceReleaseContext.load(
                             request: request,
                             executableURL: URL(
                                 fileURLWithPath:
                                     CommandLine.arguments[0]
                             )
-                        )
+                        ) {
+                    case let .audit(context):
+                        fingerprintEvidenceReleaseContext = context
+                    case .recovered:
+                        Darwin.exit(EXIT_SUCCESS)
+                    }
                 } catch {
                     Self.writeControlErrorAndExit(
                         "Не удалось подготовить защищённую проверку выпуска.\n",

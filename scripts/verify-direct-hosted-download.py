@@ -33,6 +33,15 @@ assert CANDIDATE_SPEC and CANDIDATE_SPEC.loader
 CANDIDATE = importlib.util.module_from_spec(CANDIDATE_SPEC)
 sys.modules[CANDIDATE_SPEC.name] = CANDIDATE
 CANDIDATE_SPEC.loader.exec_module(CANDIDATE)
+SNAPSHOT_SCRIPT = PROJECT_ROOT / "scripts" / "release_input_snapshot.py"
+SNAPSHOT_SPEC = importlib.util.spec_from_file_location(
+    "release_input_snapshot_for_hosted_download",
+    SNAPSHOT_SCRIPT,
+)
+assert SNAPSHOT_SPEC and SNAPSHOT_SPEC.loader
+SNAPSHOT = importlib.util.module_from_spec(SNAPSHOT_SPEC)
+sys.modules[SNAPSHOT_SPEC.name] = SNAPSHOT
+SNAPSHOT_SPEC.loader.exec_module(SNAPSHOT)
 
 
 class HostedDownloadError(RuntimeError):
@@ -255,10 +264,11 @@ def verify_release_evidence_contract(
         )
 
 
-def verify_hosted_download(
+def _verify_pinned_hosted_download(
     *,
-    project_root: Path = PROJECT_ROOT,
-    archive: Path | None = None,
+    project_root: Path,
+    archive: Path,
+    archive_name: str,
     download_url: str | None = None,
     downloader: Downloader | None = None,
     archive_verifier: ArchiveVerifier | None = None,
@@ -270,47 +280,6 @@ def verify_hosted_download(
     release_evidence_verifier: ReleaseEvidenceVerifier | None = None,
     legacy_archive_only: bool = False,
 ) -> dict[str, str | int]:
-    project_root = project_root.resolve()
-    archive_name = expected_archive_name(project_root)
-    expected_archive = project_root / "dist" / archive_name
-    archive_input = (
-        project_root / "dist" / archive_name
-        if archive is None
-        else archive
-    )
-    if archive_input.is_symlink():
-        raise HostedDownloadError(
-            f"local archive must not be a symlink: {archive_input}"
-        )
-    archive = archive_input.resolve()
-    if archive != expected_archive.resolve():
-        raise HostedDownloadError(
-            f"local archive must be the final dist artifact: {expected_archive}"
-        )
-    if archive.name != archive_name:
-        raise HostedDownloadError(
-            f"local archive must be named {archive_name!r}, got {archive.name!r}"
-        )
-    if not archive.is_file() or archive.is_symlink():
-        raise HostedDownloadError(
-            f"local archive is missing or unsafe: {archive}"
-        )
-    release_inputs = (
-        candidate_manifest,
-        release_channel,
-        fingerprint_evidence,
-        fingerprint_attestation,
-    )
-    if legacy_archive_only:
-        if any(value is not None for value in release_inputs):
-            raise HostedDownloadError(
-                "legacy archive-only mode cannot accept new-release evidence"
-            )
-    elif any(value is None for value in release_inputs):
-        raise HostedDownloadError(
-            "new releases require candidate manifest, release channel, "
-            "authenticated fingerprint evidence and public attestation together"
-        )
     if candidate_manifest is not None:
         if not candidate_manifest.is_file() or candidate_manifest.is_symlink():
             raise HostedDownloadError(
@@ -396,12 +365,26 @@ def verify_hosted_download(
             release_channel,
         )
     with tempfile.TemporaryDirectory(prefix="neantik-hosted-zip-") as temporary:
-        downloaded = Path(temporary) / archive_name
+        download_root = Path(temporary)
+        downloaded = download_root / archive_name
         downloader(download_url, downloaded, expected_size)
         if not downloaded.is_file() or downloaded.is_symlink():
             raise HostedDownloadError("download did not produce a regular archive")
-        remote_sha256 = sha256_file(downloaded)
-        remote_size = downloaded.stat().st_size
+        pinned_root = download_root / "pinned"
+        pinned_root.mkdir(mode=0o700)
+        try:
+            downloaded_snapshot = SNAPSHOT.snapshot_release_input(
+                downloaded,
+                pinned_root / archive_name,
+                maximum_bytes=16 * 1_024 * 1_024 * 1_024,
+            )
+        except SNAPSHOT.ReleaseInputSnapshotError as error:
+            raise HostedDownloadError(
+                "downloaded release snapshot failed"
+            ) from error
+        pinned_download = downloaded_snapshot.pinned
+        remote_sha256 = downloaded_snapshot.sha256
+        remote_size = downloaded_snapshot.size
         if remote_sha256 != expected_sha256:
             raise HostedDownloadError(
                 "downloaded SHA-256 differs from local final archive: "
@@ -412,18 +395,35 @@ def verify_hosted_download(
                 "downloaded size differs from local final archive: "
                 f"{remote_size} != {expected_size}"
             )
-        downloaded.with_suffix(downloaded.suffix + ".sha256").write_text(
+        pinned_sidecar = pinned_download.with_suffix(
+            pinned_download.suffix + ".sha256"
+        )
+        pinned_sidecar.write_text(
             f"{remote_sha256}  {archive_name}\n",
             encoding="utf-8",
         )
-        archive_verifier(downloaded)
+        pinned_sidecar.chmod(0o600)
+        archive_verifier(pinned_download)
         if candidate_manifest is not None:
             assert release_channel is not None and candidate_verifier is not None
             candidate_verifier(
-                downloaded,
+                pinned_download,
                 candidate_manifest,
                 release_channel,
             )
+        try:
+            SNAPSHOT.assert_snapshot_source_unchanged(
+                downloaded_snapshot,
+                maximum_bytes=16 * 1_024 * 1_024 * 1_024,
+            )
+            SNAPSHOT.assert_snapshot_copy_unchanged(
+                downloaded_snapshot,
+                maximum_bytes=16 * 1_024 * 1_024 * 1_024,
+            )
+        except SNAPSHOT.ReleaseInputSnapshotError as error:
+            raise HostedDownloadError(
+                "downloaded release changed during verification"
+            ) from error
 
     return {
         "archiveName": archive_name,
@@ -436,6 +436,178 @@ def verify_hosted_download(
             else "legacy-hosted-zip-byte-identical-and-gatekeeper-verified"
         ),
     }
+
+
+def verify_hosted_download(
+    *,
+    project_root: Path = PROJECT_ROOT,
+    archive: Path | None = None,
+    download_url: str | None = None,
+    downloader: Downloader | None = None,
+    archive_verifier: ArchiveVerifier | None = None,
+    candidate_manifest: Path | None = None,
+    release_channel: str | None = None,
+    candidate_verifier: CandidateVerifier | None = None,
+    fingerprint_evidence: Path | None = None,
+    fingerprint_attestation: Path | None = None,
+    release_evidence_verifier: ReleaseEvidenceVerifier | None = None,
+    legacy_archive_only: bool = False,
+) -> dict[str, str | int]:
+    project_root_lexical = project_root.absolute()
+    archive_name = expected_archive_name(project_root_lexical)
+    archive_input_lexical = (
+        project_root_lexical / "dist" / archive_name
+        if archive is None
+        else archive.absolute()
+    )
+    expected_input_lexical = (
+        project_root_lexical / "dist" / archive_name
+    )
+    if archive_input_lexical != expected_input_lexical:
+        raise HostedDownloadError(
+            "local archive must be the final dist artifact"
+        )
+    project_root = project_root.resolve()
+    expected_archive = project_root / "dist" / archive_name
+    archive_input = expected_archive if archive is None else archive
+    archive_lexical = expected_archive
+    expected_lexical = expected_archive.absolute()
+    if archive_lexical != expected_lexical:
+        raise HostedDownloadError(
+            f"local archive must be the final dist artifact: {expected_archive}"
+        )
+    if (
+        (project_root_lexical / "dist").is_symlink()
+        or archive_input_lexical.is_symlink()
+    ):
+        raise HostedDownloadError(
+            f"local archive must not be a symlink: {archive_input}"
+        )
+    archive_source = archive_lexical
+    if archive_source.name != archive_name:
+        raise HostedDownloadError(
+            f"local archive must be named {archive_name!r}, "
+            f"got {archive_source.name!r}"
+        )
+    release_inputs = (
+        candidate_manifest,
+        release_channel,
+        fingerprint_evidence,
+        fingerprint_attestation,
+    )
+    if legacy_archive_only:
+        if any(value is not None for value in release_inputs):
+            raise HostedDownloadError(
+                "legacy archive-only mode cannot accept new-release evidence"
+            )
+    elif any(value is None for value in release_inputs):
+        raise HostedDownloadError(
+            "new releases require candidate manifest, release channel, "
+            "authenticated fingerprint evidence and public attestation together"
+        )
+
+    snapshot_limits = {
+        "archive": 16 * 1_024 * 1_024 * 1_024,
+        "sidecar": 4 * 1_024,
+        "manifest": CANDIDATE.MAXIMUM_MANIFEST_BYTES,
+        "evidence": 8 * 1_024 * 1_024,
+        "attestation": 1 * 1_024 * 1_024,
+    }
+    with tempfile.TemporaryDirectory(
+        prefix="neantik-hosted-input-set-"
+    ) as temporary:
+        transaction_root = Path(temporary)
+        source_snapshots: list[
+            tuple[SNAPSHOT.ReleaseInputSnapshot, int]
+        ] = []
+        try:
+            archive_snapshot = SNAPSHOT.snapshot_release_input(
+                archive_source,
+                transaction_root / archive_name,
+                maximum_bytes=snapshot_limits["archive"],
+            )
+            sidecar_snapshot = SNAPSHOT.snapshot_release_input(
+                archive_source.with_suffix(
+                    archive_source.suffix + ".sha256"
+                ),
+                transaction_root / (archive_name + ".sha256"),
+                maximum_bytes=snapshot_limits["sidecar"],
+            )
+            source_snapshots.extend(
+                (
+                    (archive_snapshot, snapshot_limits["archive"]),
+                    (sidecar_snapshot, snapshot_limits["sidecar"]),
+                )
+            )
+            pinned_manifest = None
+            pinned_evidence = None
+            pinned_attestation = None
+            if candidate_manifest is not None:
+                assert fingerprint_evidence is not None
+                assert fingerprint_attestation is not None
+                manifest_snapshot = SNAPSHOT.snapshot_release_input(
+                    candidate_manifest,
+                    transaction_root / "direct-candidate-manifest.json",
+                    maximum_bytes=snapshot_limits["manifest"],
+                )
+                evidence_snapshot = SNAPSHOT.snapshot_release_input(
+                    fingerprint_evidence,
+                    transaction_root / "fingerprint-evidence-schema8.json",
+                    maximum_bytes=snapshot_limits["evidence"],
+                )
+                attestation_snapshot = SNAPSHOT.snapshot_release_input(
+                    fingerprint_attestation,
+                    transaction_root / "fingerprint-attestation.json",
+                    maximum_bytes=snapshot_limits["attestation"],
+                )
+                source_snapshots.extend(
+                    (
+                        (manifest_snapshot, snapshot_limits["manifest"]),
+                        (evidence_snapshot, snapshot_limits["evidence"]),
+                        (
+                            attestation_snapshot,
+                            snapshot_limits["attestation"],
+                        ),
+                    )
+                )
+                pinned_manifest = manifest_snapshot.pinned
+                pinned_evidence = evidence_snapshot.pinned
+                pinned_attestation = attestation_snapshot.pinned
+        except SNAPSHOT.ReleaseInputSnapshotError as error:
+            raise HostedDownloadError(
+                "release input snapshot failed"
+            ) from error
+
+        result = _verify_pinned_hosted_download(
+            project_root=project_root,
+            archive=archive_snapshot.pinned,
+            archive_name=archive_name,
+            download_url=download_url,
+            downloader=downloader,
+            archive_verifier=archive_verifier,
+            candidate_manifest=pinned_manifest,
+            release_channel=release_channel,
+            candidate_verifier=candidate_verifier,
+            fingerprint_evidence=pinned_evidence,
+            fingerprint_attestation=pinned_attestation,
+            release_evidence_verifier=release_evidence_verifier,
+            legacy_archive_only=legacy_archive_only,
+        )
+        try:
+            for snapshot, maximum_bytes in source_snapshots:
+                SNAPSHOT.assert_snapshot_source_unchanged(
+                    snapshot,
+                    maximum_bytes=maximum_bytes,
+                )
+                SNAPSHOT.assert_snapshot_copy_unchanged(
+                    snapshot,
+                    maximum_bytes=maximum_bytes,
+                )
+        except SNAPSHOT.ReleaseInputSnapshotError as error:
+            raise HostedDownloadError(
+                "release input changed during hosted verification"
+            ) from error
+        return result
 
 
 def main() -> int:

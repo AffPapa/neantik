@@ -111,10 +111,19 @@ creates or rotates one. Immediately before signing, the app claims the
 candidate challenge with an atomic add-only `WhenUnlockedThisDeviceOnly` Data
 Protection Keychain item. Key lookup requires exactly one matching private
 Secure Enclave key. After signature self-verification, the authority is
-deleted before the reserved output is committed. A duplicate claim,
-interrupted signing, failed key deletion or failed output commit burns that
-candidate; preparation must create a new manifest/challenge instead of
-retrying the old one.
+not used again. The exact signed envelope is first committed to a private
+owner-only recovery receipt under Application Support, then the authority is
+deleted, and only those byte-identical receipt bytes may be atomically
+published to the requested output. Recovery verifies the envelope against the
+same manifest plus the exact Keychain claim digest; it runs during candidate
+loading, before the GUI and before any signer lookup, and never needs a newly
+captured report. Recovery therefore survives process relaunch after the
+Secure Enclave key was deleted. Recovery directories are created and traversed
+through no-follow directory descriptors, and every new directory entry plus
+the final receipt is fsynced before the authority is deleted. A duplicate claim
+or interruption before a complete receipt burns the candidate. A failure
+during key deletion or output publication can resume only from the durable
+signed receipt.
 
 The final signed manager has one strict headless enrollment intent. The
 release script reserves a new private `0700` attempt directory, then executes
@@ -126,13 +135,17 @@ symlinked outputs, unsafe parents, ad-hoc builds, unavailable user sessions,
 timeouts and any Keychain/Secure Enclave error stop preparation. No key,
 challenge, session or binding content is printed.
 
-The release-mode app reserves a new `0600` non-symlink output, reads the
+The release-mode app requires a new non-symlink output path, reads the
 manifest and executable through bounded stable-file checks, verifies the exact
 schema-3 root and all ten critical-file entries, and checks its running
 executable hash and bundle version/build before opening the GUI. It keeps the
 raw schema-7 report only in memory, signs the derived aggregate, self-verifies
-the envelope, and commits it once. Diagnostic mode may still save raw reports
-under Application Support, but release scripts cannot collect them.
+the envelope, commits a private `0600` recovery receipt and atomically
+publishes a byte-identical `0600` output without overwrite. If that receipt
+already exists on relaunch, the app validates and publishes it immediately,
+without opening the GUI or loading the destroyed signer. Diagnostic mode
+may still save raw reports under Application Support, but release scripts
+cannot collect them.
 
 This source and its deterministic tests do not prove a physical Secure
 Enclave, non-exportability on the release Mac, persistence across relaunch or
