@@ -126,9 +126,7 @@ struct FingerprintAuditView: View {
             VStack(spacing: 12) {
                 Picker("Профиль A", selection: $firstID) {
                     ForEach(profiles) { profile in
-                        Text(
-                            "\(profile.name) · \(profile.identity.displayCode)"
-                        )
+                        Text(profileLabel(profile))
                         .tag(profile.id)
                     }
                 }
@@ -136,9 +134,7 @@ struct FingerprintAuditView: View {
 
                 Picker("Профиль B", selection: $secondID) {
                     ForEach(profiles) { profile in
-                        Text(
-                            "\(profile.name) · \(profile.identity.displayCode)"
-                        )
+                        Text(profileLabel(profile))
                         .tag(profile.id)
                     }
                 }
@@ -238,12 +234,14 @@ struct FingerprintAuditView: View {
                         value: "\(report.unstableKeys.count)"
                     )
                     LabeledContent(
-                        report.firstInitial.profileName,
-                        value: report.firstInitial.identityCode
+                        "Профиль A",
+                        value: firstProfile.map(profileLabel) ??
+                            report.firstInitial.profileName
                     )
                     LabeledContent(
-                        report.second.profileName,
-                        value: report.second.identityCode
+                        "Профиль B",
+                        value: secondProfile.map(profileLabel) ??
+                            report.second.profileName
                     )
                 }
                 .padding(.vertical, 4)
@@ -352,6 +350,16 @@ struct FingerprintAuditView: View {
                 .padding(.vertical, 4)
             }
         }
+    }
+
+    private func profileLabel(_ profile: BrowserProfile) -> String {
+        let matchingName = profiles.filter { $0.name == profile.name }
+        guard matchingName.count > 1,
+              let index = profiles.firstIndex(where: { $0.id == profile.id })
+        else {
+            return profile.name
+        }
+        return "\(profile.name) · профиль \(index + 1)"
     }
 
     private func localizedIssue(_ issue: String) -> String {

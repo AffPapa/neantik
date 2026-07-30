@@ -46,6 +46,7 @@ class ReleaseSourceSnapshot:
 
 RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("runtime/apple-device-tuples.json", "reviewed-policy"),
+    ("runtime/browser-identity-issuance.json", "reviewed-policy"),
     ("runtime/chromium-150-source-contract.json", "reviewed-policy"),
     ("runtime/chromium-150-toolchain-lock.json", "reviewed-toolchain-lock"),
     ("runtime/nevision-patches/series.json", "reviewed-policy"),
@@ -61,6 +62,7 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/release_source_receipt.py", "source-provenance"),
     ("scripts/release_transaction.py", "transaction"),
     ("scripts/run-isolated-release-python.py", "execution-bootstrap"),
+    ("scripts/verify-browser-identity-issuance.py", "fingerprint-gate"),
     ("scripts/verify-direct-notarized-archive.py", "release-gate"),
     ("scripts/verify-direct-telemetry-disabled.py", "privacy-gate"),
     ("scripts/verify-direct-update-policy.py", "release-gate"),

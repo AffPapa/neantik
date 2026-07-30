@@ -80,8 +80,9 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("run-isolated-release-python.py", text)
         self.assertEqual(
             text.count("run-isolated-release-python.py"),
-            3,
+            4,
         )
+        self.assertIn("verify-browser-identity-issuance.py", text)
         self.assertIn("notary_transaction_inspector.py", text)
         self.assertIn("--release-gate", text)
         self.assertIn("--expected-archive-name", text)
@@ -96,6 +97,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertNotIn("package-integrated-app.sh", text)
         self.assertNotIn("codesign --force", text)
         self.assertNotIn("rm -rf", text)
+        self.assertLess(
+            text.index("verify-browser-identity-issuance.py"),
+            text.index("direct-candidate-manifest.py"),
+        )
         self.assertLess(
             text.index("direct-candidate-manifest.py"),
             text.index("notary_transaction_inspector.py"),

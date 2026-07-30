@@ -297,24 +297,34 @@ struct BrowserLaunchBuilderTests {
 
     @Test
     func compatibleRuntimeReceivesStableProfileIdentity() {
+        let observedAt = Date(timeIntervalSince1970: 1_700_000_000)
         let profile = BrowserProfile(
             name: "Private",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: ""
+            ),
             identity: BrowserIdentity(
                 seed: 123_456_789,
                 timezoneIdentifier: "Europe/Berlin",
-                localeIdentifier: "de-DE"
+                localeIdentifier: "de-DE",
+                proxyContextEvidence: .ipAPI(observedAt: observedAt)
             )
         )
 
         let firstLaunch = BrowserLaunchBuilder.arguments(
             profile: profile,
             browserDataDirectory: URL(fileURLWithPath: "/tmp/private"),
-            runtimeCapabilities: .fingerprintIdentity
+            runtimeCapabilities: .fingerprintIdentity,
+            now: observedAt
         )
         let secondLaunch = BrowserLaunchBuilder.arguments(
             profile: profile,
             browserDataDirectory: URL(fileURLWithPath: "/tmp/private"),
-            runtimeCapabilities: .fingerprintIdentity
+            runtimeCapabilities: .fingerprintIdentity,
+            now: observedAt.addingTimeInterval(60)
         )
 
         #expect(firstLaunch.contains("--fingerprint=123456789"))
@@ -322,7 +332,12 @@ struct BrowserLaunchBuilderTests {
         #expect(firstLaunch.contains("--fingerprinting-client-rects-noise"))
         #expect(firstLaunch.contains("--fingerprinting-canvas-measuretext-noise"))
         #expect(firstLaunch.contains("--fingerprinting-canvas-image-data-noise"))
-        #expect(firstLaunch.contains("--disable-features=WebGPUService"))
+        #expect(
+            firstLaunch.contains {
+                $0.hasPrefix("--disable-features=") &&
+                    $0.contains("WebGPUService")
+            }
+        )
         #expect(
             firstLaunch.contains("--fingerprint-timezone=Europe/Berlin")
         )
@@ -359,11 +374,19 @@ struct BrowserLaunchBuilderTests {
     }
 
     @Test
-    func newBrowserIdentitiesUseRuntimeCompatibleSeeds() {
+    func newBrowserIdentitiesUseReviewedIssuancePolicy() {
+        #expect(BrowserIdentityIssuancePolicy.isContractValid())
         for _ in 0..<256 {
             let identity = BrowserIdentity()
             #expect((1...BrowserIdentity.maximumRuntimeSeed).contains(identity.seed))
             #expect(identity.seed == identity.runtimeSeed)
+            #expect(
+                identity.issuanceVersion ==
+                    BrowserIdentityIssuancePolicy.currentVersion
+            )
+            #expect(
+                BrowserIdentityIssuancePolicy.isCurrentSeed(identity.seed)
+            )
             #expect(
                 identity.catalogVersion ==
                     BrowserIdentityCatalog.currentVersion
@@ -391,12 +414,39 @@ struct BrowserLaunchBuilderTests {
 
         #expect(identity.catalogVersion == 1)
         #expect(
+            identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.legacyVersion
+        )
+        #expect(
             identity.deviceTupleID ==
                 BrowserIdentityCatalog.tupleID(forRuntimeSeed: 123)
         )
         #expect(object["catalogVersion"] as? Int == 1)
         #expect(
+            object["issuanceVersion"] as? Int ==
+                BrowserIdentityIssuancePolicy.legacyVersion
+        )
+        #expect(
             object["deviceTupleID"] as? String == identity.deviceTupleID
+        )
+    }
+
+    @Test
+    func currentIssuanceRoundTripPreservesSeedTupleAndVersion() throws {
+        let original = BrowserIdentity()
+        let encoded = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(
+            BrowserIdentity.self,
+            from: encoded
+        )
+
+        #expect(decoded == original)
+        #expect(
+            decoded.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.currentVersion
+        )
+        #expect(
+            BrowserIdentityIssuancePolicy.isCurrentSeed(decoded.seed)
         )
     }
 
@@ -407,6 +457,22 @@ struct BrowserLaunchBuilderTests {
                 BrowserIdentity.self,
                 from: Data(
                     #"{"seed":123,"catalogVersion":2,"deviceTupleID":"macbook-air-m1"}"#.utf8
+                )
+            )
+        }
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(
+                BrowserIdentity.self,
+                from: Data(
+                    #"{"seed":123,"issuanceVersion":99}"#.utf8
+                )
+            )
+        }
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(
+                BrowserIdentity.self,
+                from: Data(
+                    #"{"seed":42,"issuanceVersion":2}"#.utf8
                 )
             )
         }
@@ -447,11 +513,118 @@ struct BrowserLaunchBuilderTests {
     }
 
     @Test
-    func profilesHaveDistinctBrowserIdentities() {
-        let first = BrowserProfile(name: "First")
-        let second = BrowserProfile(name: "Second")
+    func issuancePolicyUsesAtLeastTwentyNineBitsOfCandidates() {
+        #expect(
+            BrowserIdentityIssuancePolicy.candidateCount >=
+                (UInt64(1) << 29)
+        )
+        for cohortIndex in
+            BrowserIdentityIssuancePolicy.commonTupleResidues.indices {
+            let first = BrowserIdentityIssuancePolicy.seed(
+                cohortIndex: cohortIndex,
+                ordinal: 0
+            )
+            let last = BrowserIdentityIssuancePolicy.seed(
+                cohortIndex: cohortIndex,
+                ordinal:
+                    BrowserIdentityIssuancePolicy.membersPerCohort - 1
+            )
+            let overflow = BrowserIdentityIssuancePolicy.seed(
+                cohortIndex: cohortIndex,
+                ordinal:
+                    BrowserIdentityIssuancePolicy.membersPerCohort
+            )
+            #expect(first != nil)
+            #expect(last != nil)
+            #expect(overflow == nil)
+            #expect(
+                first.map(BrowserIdentityIssuancePolicy.isCurrentSeed) ==
+                    true
+            )
+            #expect(
+                last.map(BrowserIdentityIssuancePolicy.isCurrentSeed) ==
+                    true
+            )
+        }
+    }
 
-        #expect(first.identity.seed != second.identity.seed)
+    @Test
+    func staleOrUnprovenProxyContextIsNotAppliedAtLaunch() {
+        let observedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let proxy = ProxyConfiguration(
+            kind: .https,
+            host: "proxy.example",
+            port: 443,
+            username: ""
+        )
+        let stale = BrowserProfile(
+            name: "Stale",
+            proxy: proxy,
+            identity: BrowserIdentity(
+                seed: 123,
+                timezoneIdentifier: "Europe/Berlin",
+                localeIdentifier: "de-DE",
+                proxyContextEvidence: .ipAPI(observedAt: observedAt)
+            )
+        )
+        let legacy = BrowserProfile(
+            name: "Legacy",
+            proxy: proxy,
+            identity: BrowserIdentity(
+                seed: 124,
+                timezoneIdentifier: "Europe/Berlin",
+                localeIdentifier: "de-DE"
+            )
+        )
+        let direct = BrowserProfile(
+            name: "Direct",
+            identity: BrowserIdentity(
+                seed: 125,
+                timezoneIdentifier: "Europe/Berlin",
+                localeIdentifier: "de-DE",
+                proxyContextEvidence: .ipAPI(observedAt: observedAt)
+            )
+        )
+
+        for profile in [stale, legacy, direct] {
+            let arguments = BrowserLaunchBuilder.arguments(
+                profile: profile,
+                browserDataDirectory: URL(fileURLWithPath: "/tmp/context"),
+                runtimeCapabilities: .fingerprintIdentity,
+                now: observedAt.addingTimeInterval(31 * 24 * 60 * 60)
+            )
+            #expect(
+                !arguments.contains {
+                    $0.hasPrefix("--fingerprint-timezone=") ||
+                        $0.hasPrefix("--timezone=") ||
+                        $0.hasPrefix("--fingerprint-locale=") ||
+                        $0.hasPrefix("--lang=") ||
+                        $0.hasPrefix("--accept-lang=")
+                }
+            )
+        }
+
+        let afterExpiry = observedAt.addingTimeInterval(
+            31 * 24 * 60 * 60
+        )
+        #expect(
+            BrowserLaunchBuilder.requiresProxyContextRetest(
+                profile: stale,
+                now: afterExpiry
+            )
+        )
+        #expect(
+            BrowserLaunchBuilder.requiresProxyContextRetest(
+                profile: legacy,
+                now: afterExpiry
+            )
+        )
+        #expect(
+            !BrowserLaunchBuilder.requiresProxyContextRetest(
+                profile: direct,
+                now: afterExpiry
+            )
+        )
     }
 
     @Test
@@ -474,6 +647,39 @@ struct BrowserLaunchBuilderTests {
         #expect(identity.seed == 1)
         #expect(identity.timezoneIdentifier == nil)
         #expect(identity.localeIdentifier == nil)
+    }
+
+    @Test
+    func currentIssuanceRejectsFoldedOrNullMetadata() {
+        let foldedSeed = Data(
+            """
+            {
+              "seed": 2147483650,
+              "issuanceVersion": 2
+            }
+            """.utf8
+        )
+        let nullVersion = Data(
+            """
+            {
+              "seed": 2,
+              "issuanceVersion": null
+            }
+            """.utf8
+        )
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(
+                BrowserIdentity.self,
+                from: foldedSeed
+            )
+        }
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(
+                BrowserIdentity.self,
+                from: nullVersion
+            )
+        }
     }
 
     @Test

@@ -28,6 +28,10 @@ then
   exit 69
 fi
 
+"$RELEASE_PYTHON" -I -B \
+  "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+  "$PROJECT_DIR/scripts/verify-browser-identity-issuance.py"
+
 exec "$RELEASE_PYTHON" -I -B \
   "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
   "$PROJECT_DIR/scripts/notarize_direct_transaction.py" \

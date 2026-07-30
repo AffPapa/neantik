@@ -61,6 +61,8 @@ jobs:
         run: python3 scripts/verify-public-fingerprint-corpus.py
       - name: Apple device tuple catalog
         run: python3 scripts/verify-apple-device-tuples.py
+      - name: Browser identity issuance contract
+        run: python3 scripts/verify-browser-identity-issuance.py
       - name: Runtime patch manifest
         run: python3 scripts/verify-nevision-patchset-manifest.py --release
       - name: Runtime integration notices

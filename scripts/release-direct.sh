@@ -47,6 +47,9 @@ fi
 
 "$RELEASE_PYTHON" -I -B \
   "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+  "$PROJECT_DIR/scripts/verify-browser-identity-issuance.py"
+"$RELEASE_PYTHON" -I -B \
+  "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
   "$PROJECT_DIR/scripts/direct-candidate-manifest.py" verify \
   --app "$APP_PATH" \
   --manifest "$CANDIDATE_MANIFEST" \

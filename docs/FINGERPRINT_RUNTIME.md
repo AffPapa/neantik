@@ -13,16 +13,34 @@ A compatible runtime must support:
 --fingerprint-platform=macos
 ```
 
-NeAntik generates one stable seed in `1...2147483647` per profile. It does not
+NeAntik persists one stable seed in `1...2147483647` per profile. It does not
 rotate that seed between launches, because a returning session with a
 constantly changing device identity is internally inconsistent.
+
+Only newly created profiles use issuance policy version `2`. The system CSPRNG
+selects uniformly between four reviewed Apple Silicon tuple residues and then
+uniformly between the `195225786` valid seeds in that residue. The resulting
+space contains `780903144` candidates (about 29.54 bits), rather than a small
+public seed dictionary. The canonical cross-language contract is
+`runtime/browser-identity-issuance.json`.
+
+The four tuples are a conservative reviewed product policy, not evidence that
+they represent current market share. A stable seed is not anonymous: it makes
+one profile repeatable and therefore linkable between visits. The policy does
+not hide NeAntik-specific runtime behavior or guarantee a populated anonymity
+set. Issuance v2 reduces the hardware tuple set only: the 780,903,144 full seed
+values still make Canvas, Audio, WebGL and ClientRects effectively distinct at
+public-alpha population sizes. Shared full-fingerprint cohorts remain a
+separate production design problem.
 
 The current owned runtime parses this switch through Chromium's signed `int`
 command-line conversion. NeAntik therefore never generates a high-bit
 `UInt32` seed. Profiles written by older builds are repaired once on load:
 high-bit values are folded into the supported positive range and any resulting
 collisions are resolved before the repaired metadata is persisted. The launch
-builder applies the same conversion defensively.
+builder applies the same conversion defensively. Collision repair walks the
+same catalog residue, so it cannot silently rotate the profile to another
+apparent hardware tuple.
 
 Each profile also persists identity catalog version `1` and the tuple ID
 derived from its runtime-compatible seed. Catalog v1 is immutable: its tuple
@@ -30,6 +48,18 @@ order and count must not change. An unknown catalog version or a stored tuple
 that no longer matches the seed fails closed instead of silently rotating the
 profile fingerprint. A future catalog requires a new version and an explicit
 user-visible migration.
+
+Identity issuance has a separate version. Missing `issuanceVersion` is always
+legacy version `1`; it is never interpreted as the newest policy. Existing,
+imported and deterministic migration identities remain version `1`. Unknown
+versions and version-2 seeds outside the four reviewed residues fail closed.
+Editing proxy settings preserves the original issuance version, seed and
+tuple.
+
+Opening version-2 metadata in an older manager can drop the unknown
+`issuanceVersion` field on a later edit. The seed and tuple stay unchanged, but
+the next current manager will conservatively treat that profile as legacy
+version 1. It must not infer issuance provenance from seed membership alone.
 
 Profile metadata writes are atomic and keep one owner-only previous revision.
 If the current JSON becomes undecodable, NeAntik restores the valid previous
@@ -83,6 +113,15 @@ location, DNS, WebRTC, timezone, language, screen geometry, extensions,
 behavior, and authenticated accounts can still link sessions. NeAntik should
 present consistency checks as future privacy controls and must not promise that
 any third-party service cannot correlate a user.
+
+Proxy-derived timezone and locale values are applied only when a proxy is
+still configured and the local `ipapi.co` evidence is valid and no older than
+30 days. Clock skew up to five minutes is tolerated. Direct profiles send no
+timezone or locale override. A proxied profile with saved geographic values
+but missing, more-than-five-minutes future-dated or stale evidence is blocked
+from launch until the user retests the proxy; this prevents a silent
+fingerprint transition. NeAntik does not silently contact the location service
+during launch.
 
 When a proxy is active, NeAntik currently applies Chromium's proxy leak
 controls:

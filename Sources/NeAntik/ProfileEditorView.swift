@@ -359,15 +359,14 @@ struct ProfileEditorView: View {
             let proxy = try makeProxy()
             profile.proxy = proxy
             let locationMatchesProxy = proxy != nil && proxy == detectedProxy
-            profile.identity = BrowserIdentity(
-                seed: profile.identity.seed,
+            profile.identity = profile.identity.replacingProxyContext(
                 timezoneIdentifier: locationMatchesProxy
                     ? detectedTimezone
                     : nil,
                 localeIdentifier: locationMatchesProxy
                     ? detectedLocale
                     : nil,
-                proxyContextEvidence: locationMatchesProxy
+                evidence: locationMatchesProxy
                     ? detectedProxyContextEvidence
                     : nil
             )

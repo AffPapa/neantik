@@ -38,9 +38,67 @@ class RepairProfileMetadataTests(unittest.TestCase):
         ]
         repaired, changes = MODULE.repair_profiles(profiles)
         self.assertEqual(repaired[0]["identity"]["seed"], 1)
-        self.assertEqual(repaired[1]["identity"]["seed"], 2)
+        self.assertEqual(repaired[1]["identity"]["seed"], 12)
         self.assertEqual(repaired[1]["startURL"], "https://example.org")
         self.assertEqual(len(changes), 1)
+
+    def test_current_issuance_collision_preserves_reviewed_tuple(self) -> None:
+        profiles = [
+            {
+                "name": "A",
+                "identity": {"seed": 123, "issuanceVersion": 2},
+            },
+            {
+                "name": "B",
+                "identity": {"seed": 123, "issuanceVersion": 2},
+            },
+        ]
+        repaired, changes = MODULE.repair_profiles(profiles)
+        self.assertEqual(repaired[0]["identity"]["seed"], 123)
+        self.assertEqual(repaired[1]["identity"]["seed"], 134)
+        self.assertEqual(
+            repaired[0]["identity"]["seed"] % 11,
+            repaired[1]["identity"]["seed"] % 11,
+        )
+        self.assertEqual(
+            repaired[1]["identity"]["issuanceVersion"],
+            2,
+        )
+        self.assertEqual(len(changes), 1)
+
+    def test_rejects_unknown_or_out_of_policy_current_issuance(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unsupported"):
+            MODULE.repair_profiles(
+                [{"identity": {"seed": 123, "issuanceVersion": 99}}]
+            )
+        with self.assertRaisesRegex(ValueError, "outside issuance policy"):
+            MODULE.repair_profiles(
+                [{"identity": {"seed": 42, "issuanceVersion": 2}}]
+            )
+        with self.assertRaisesRegex(ValueError, "outside issuance policy"):
+            MODULE.repair_profiles(
+                [
+                    {
+                        "identity": {
+                            "seed": 2_147_483_650,
+                            "issuanceVersion": 2,
+                        }
+                    }
+                ]
+            )
+
+    def test_boolean_metadata_does_not_pass_as_an_integer(self) -> None:
+        repaired, changes = MODULE.repair_profiles(
+            [{"name": "Boolean seed", "identity": {"seed": True}}]
+        )
+        self.assertIs(type(repaired[0]["identity"]["seed"]), int)
+        self.assertEqual(repaired[0]["identity"]["seed"], 1)
+        self.assertEqual(changes, ["Boolean seed: seed True -> 1"])
+
+        with self.assertRaisesRegex(ValueError, "invalid issuanceVersion"):
+            MODULE.repair_profiles(
+                [{"identity": {"seed": 123, "issuanceVersion": True}}]
+            )
 
     def test_apply_writes_backup_and_private_permissions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

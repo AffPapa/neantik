@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "legacyIssuanceVersion": 1,
+  "currentIssuanceVersion": 2,
+  "identityCatalogVersion": 1,
+  "seedRange": {
+    "minimum": 1,
+    "maximum": 2147483647
+  },
+  "selection": "system-csprng-uniform-cohort-and-ordinal",
+  "allowedTupleIDs": [
+    "macbook-air-m1",
+    "macbook-air-m2",
+    "macbook-air-m3",
+    "macbook-air-m4"
+  ],
+  "allowedTupleResidues": [
+    0,
+    2,
+    5,
+    8
+  ],
+  "membersPerCohort": 195225786,
+  "candidateCount": 780903144,
+  "boundary": "Only newly created profiles use issuance version 2. Missing issuanceVersion decodes as legacy version 1; explicit null and malformed version-2 metadata fail closed. Valid existing, imported and migrated profiles keep their exact seed and catalog mapping. Legacy high-bit or colliding seeds require one-time repair that preserves the hardware-tuple residue. The four tuple set is a reviewed product policy, not a claim of market prevalence, anonymity, a shared full-fingerprint cohort or third-party acceptance."
+}

@@ -709,7 +709,15 @@ struct ProfileStoreTests {
         )
 
         #expect(first.identity.seed == 42)
-        #expect(second.identity.seed == 43)
+        #expect(second.identity.seed == 53)
+        #expect(
+            first.identity.deviceTupleID ==
+                second.identity.deviceTupleID
+        )
+        #expect(
+            second.identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.legacyVersion
+        )
         #expect(
             Set(store.profiles.map(\.identity.seed)).count ==
                 store.profiles.count
@@ -721,7 +729,85 @@ struct ProfileStoreTests {
                 reloaded.profiles.count
         )
         #expect(
-            reloaded.profile(withID: second.id)?.identity.seed == 43
+            reloaded.profile(withID: second.id)?.identity.seed == 53
+        )
+    }
+
+    @Test
+    func currentIssuanceCollisionStaysInTheSameReviewedCohort() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let identity = BrowserIdentity()
+        let first = try store.upsert(
+            BrowserProfile(name: "First current", identity: identity)
+        )
+        let second = try store.upsert(
+            BrowserProfile(name: "Second current", identity: identity)
+        )
+        let tupleCount = UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        let residue = identity.seed % tupleCount
+        let wrappedSeed = residue == 0 ? tupleCount : residue
+        let expectedSecondSeed =
+            identity.seed <= BrowserIdentity.maximumRuntimeSeed - tupleCount
+                ? identity.seed + tupleCount
+                : wrappedSeed
+
+        #expect(first.identity.seed == identity.seed)
+        #expect(second.identity.seed == expectedSecondSeed)
+        #expect(first.identity.seed != second.identity.seed)
+        #expect(
+            first.identity.deviceTupleID ==
+                second.identity.deviceTupleID
+        )
+        #expect(
+            second.identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.currentVersion
+        )
+        #expect(
+            BrowserIdentityIssuancePolicy.isCurrentSeed(
+                second.identity.seed
+            )
+        )
+
+        let reloaded = ProfileStore(paths: AppPaths(rootDirectory: root))
+        #expect(reloaded.lastError == nil)
+        #expect(
+            reloaded.profile(withID: second.id)?.identity ==
+                second.identity
+        )
+    }
+
+    @Test
+    func editingProxyContextPreservesCurrentIssuance() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let original = try store.upsert(
+            BrowserProfile(name: "Current identity")
+        )
+        var edited = original
+        edited.identity = edited.identity.replacingProxyContext(
+            timezoneIdentifier: "Europe/Berlin",
+            localeIdentifier: "de-DE",
+            evidence: .ipAPI(
+                observedAt: Date(timeIntervalSince1970: 1_700_000_000)
+            )
+        )
+        let saved = try store.upsert(edited)
+
+        #expect(saved.identity.seed == original.identity.seed)
+        #expect(
+            saved.identity.deviceTupleID ==
+                original.identity.deviceTupleID
+        )
+        #expect(
+            saved.identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.currentVersion
         )
     }
 

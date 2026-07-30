@@ -35,7 +35,9 @@ final class ProfileStore: ObservableObject {
                 let load = try Self.readProfilesWithRecovery(
                     paths: paths
                 )
-                let normalized = Self.normalizedForIsolation(load.profiles)
+                let normalized = try Self.normalizedForIsolation(
+                    load.profiles
+                )
                 profiles = normalized.profiles
                 if FileManager.default.fileExists(
                     atPath: paths.profilesFile.path
@@ -112,17 +114,18 @@ final class ProfileStore: ObservableObject {
         let requestedSeed = value.identity.runtimeSeed
         if requestedSeed != value.identity.seed ||
             usedSeeds.contains(requestedSeed) {
-            value.identity = BrowserIdentity(
-                seed: usedSeeds.contains(requestedSeed)
-                    ? Self.nextAvailableSeed(
+            let replacementSeed = try usedSeeds.contains(requestedSeed)
+                ? Self.nextAvailableSeed(
                         after: requestedSeed,
                         excluding: usedSeeds
                     )
-                    : requestedSeed,
-                timezoneIdentifier: value.identity.timezoneIdentifier,
-                localeIdentifier: value.identity.localeIdentifier,
-                proxyContextEvidence: value.identity.proxyContextEvidence
-            )
+                : requestedSeed
+            guard let replacementIdentity =
+                value.identity.replacingSeed(replacementSeed)
+            else {
+                throw BrowserIdentityAllocationError()
+            }
+            value.identity = replacementIdentity
         }
         let profileDirectory = paths.profileDirectory(for: value.id)
         let profileDirectoryExisted = FileManager.default.fileExists(
@@ -372,7 +375,7 @@ final class ProfileStore: ObservableObject {
 
     private func reloadLatestProfilesForMutation() throws {
         let load = try Self.readProfilesWithRecovery(paths: paths)
-        let normalized = Self.normalizedForIsolation(load.profiles)
+        let normalized = try Self.normalizedForIsolation(load.profiles)
         profiles = normalized.profiles
         sortProfiles()
         if normalized.changed {
@@ -505,7 +508,7 @@ final class ProfileStore: ObservableObject {
 
     private static func normalizedForIsolation(
         _ profiles: [BrowserProfile]
-    ) -> (profiles: [BrowserProfile], changed: Bool) {
+    ) throws -> (profiles: [BrowserProfile], changed: Bool) {
         var values = profiles
         var usedIDs = Set<UUID>()
         var usedSeeds = Set<UInt32>()
@@ -525,18 +528,18 @@ final class ProfileStore: ObservableObject {
             let identity = values[index].identity
             let requestedSeed = identity.runtimeSeed
             let replacementSeed = usedSeeds.contains(requestedSeed)
-                ? nextAvailableSeed(
+                ? try nextAvailableSeed(
                     after: requestedSeed,
                     excluding: usedSeeds
                 )
                 : requestedSeed
             if replacementSeed != identity.seed {
-                values[index].identity = BrowserIdentity(
-                    seed: replacementSeed,
-                    timezoneIdentifier: identity.timezoneIdentifier,
-                    localeIdentifier: identity.localeIdentifier,
-                    proxyContextEvidence: identity.proxyContextEvidence
-                )
+                guard let replacementIdentity =
+                    identity.replacingSeed(replacementSeed)
+                else {
+                    throw BrowserIdentityAllocationError()
+                }
+                values[index].identity = replacementIdentity
                 changed = true
             }
             usedSeeds.insert(replacementSeed)
@@ -547,16 +550,31 @@ final class ProfileStore: ObservableObject {
     private static func nextAvailableSeed(
         after seed: UInt32,
         excluding usedSeeds: Set<UInt32>
-    ) -> UInt32 {
-        var candidate = seed == BrowserIdentity.maximumRuntimeSeed
-            ? 1
-            : seed + 1
-        while usedSeeds.contains(candidate) {
-            candidate = candidate == BrowserIdentity.maximumRuntimeSeed
-                ? 1
-                : candidate + 1
+    ) throws -> UInt32 {
+        let tupleCount = UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        let residue = seed % tupleCount
+        let firstSeed = residue == 0 ? tupleCount : residue
+        var candidate =
+            seed <= BrowserIdentity.maximumRuntimeSeed - tupleCount
+                ? seed + tupleCount
+                : firstSeed
+        while candidate != seed {
+            if !usedSeeds.contains(candidate) {
+                return candidate
+            }
+            candidate =
+                candidate <=
+                    BrowserIdentity.maximumRuntimeSeed - tupleCount
+                    ? candidate + tupleCount
+                    : firstSeed
         }
-        return candidate
+        throw BrowserIdentityAllocationError()
+    }
+}
+
+private struct BrowserIdentityAllocationError: LocalizedError {
+    var errorDescription: String? {
+        "Не удалось создать отдельный идентификатор профиля. Удали ненужный профиль или обратись в поддержку; существующие данные не изменены."
     }
 }
 

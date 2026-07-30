@@ -157,6 +157,90 @@ enum BrowserIdentityCatalog {
     }
 }
 
+enum BrowserIdentityIssuancePolicy {
+    static let legacyVersion = 1
+    static let currentVersion = 2
+    static let commonTupleIDs = [
+        "macbook-air-m1",
+        "macbook-air-m2",
+        "macbook-air-m3",
+        "macbook-air-m4"
+    ]
+    static let commonTupleResidues: [UInt32] = [0, 2, 5, 8]
+    static let membersPerCohort: UInt32 = 195_225_786
+    static let candidateCount: UInt64 = 780_903_144
+
+    static func supports(_ version: Int) -> Bool {
+        version == legacyVersion || version == currentVersion
+    }
+
+    static func isCurrentSeed(_ seed: UInt32) -> Bool {
+        guard (1...BrowserIdentity.maximumRuntimeSeed).contains(seed)
+        else {
+            return false
+        }
+        return commonTupleResidues.contains(
+            seed % UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        )
+    }
+
+    static func seed(
+        cohortIndex: Int,
+        ordinal: UInt32
+    ) -> UInt32? {
+        guard commonTupleResidues.indices.contains(cohortIndex),
+              ordinal < membersPerCohort
+        else {
+            return nil
+        }
+        let tupleCount = UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        let residue = commonTupleResidues[cohortIndex]
+        let value = residue == 0
+            ? (ordinal + 1) * tupleCount
+            : ordinal * tupleCount + residue
+        guard (1...BrowserIdentity.maximumRuntimeSeed).contains(value)
+        else {
+            return nil
+        }
+        return value
+    }
+
+    static func newSeed() -> UInt32 {
+        var generator = SystemRandomNumberGenerator()
+        return newSeed(using: &generator)
+    }
+
+    static func newSeed<Generator: RandomNumberGenerator>(
+        using generator: inout Generator
+    ) -> UInt32 {
+        let cohortIndex = Int.random(
+            in: commonTupleResidues.indices,
+            using: &generator
+        )
+        let ordinal = UInt32.random(
+            in: 0..<membersPerCohort,
+            using: &generator
+        )
+        // Both random domains and the immutable catalog contract are bounded,
+        // so this construction cannot fail without source drift.
+        return seed(cohortIndex: cohortIndex, ordinal: ordinal)!
+    }
+
+    static func isContractValid() -> Bool {
+        guard commonTupleIDs.count == commonTupleResidues.count,
+              UInt64(commonTupleIDs.count) *
+                UInt64(membersPerCohort) == candidateCount
+        else {
+            return false
+        }
+        return zip(commonTupleIDs, commonTupleResidues).allSatisfy {
+            tupleID, residue in
+            BrowserIdentityCatalog.tupleIDs.indices.contains(Int(residue)) &&
+                BrowserIdentityCatalog.tupleIDs[Int(residue)] == tupleID
+        }
+    }
+}
+
 struct BrowserIdentity: Codable, Equatable, Sendable {
     static let maximumRuntimeSeed = UInt32(Int32.max)
 
@@ -164,6 +248,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
     let timezoneIdentifier: String?
     let localeIdentifier: String?
     let catalogVersion: Int
+    let issuanceVersion: Int
     let deviceTupleID: String
     let proxyContextEvidence: ProxyContextEvidence?
 
@@ -173,16 +258,23 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         localeIdentifier: String? = nil,
         proxyContextEvidence: ProxyContextEvidence? = nil
     ) {
-        let value = seed ??
-            UInt32.random(in: 1...Self.maximumRuntimeSeed)
-        self.seed = Self.runtimeCompatibleSeed(value)
+        let value: UInt32
+        if let seed {
+            value = Self.runtimeCompatibleSeed(seed)
+            issuanceVersion =
+                BrowserIdentityIssuancePolicy.legacyVersion
+        } else {
+            value = BrowserIdentityIssuancePolicy.newSeed()
+            issuanceVersion =
+                BrowserIdentityIssuancePolicy.currentVersion
+        }
+        self.seed = value
         catalogVersion = BrowserIdentityCatalog.currentVersion
         deviceTupleID = BrowserIdentityCatalog.tupleID(
-            forRuntimeSeed: Self.runtimeCompatibleSeed(value)
+            forRuntimeSeed: value
         )
-        self.timezoneIdentifier = timezoneIdentifier.flatMap {
-            TimeZone(identifier: $0) == nil ? nil : $0
-        }
+        self.timezoneIdentifier =
+            Self.validatedTimezone(timezoneIdentifier)
         self.localeIdentifier = localeIdentifier.flatMap(Self.normalizedLocale)
         self.proxyContextEvidence = proxyContextEvidence.flatMap {
             $0.isValid ? $0 : nil
@@ -194,6 +286,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         case timezoneIdentifier
         case localeIdentifier
         case catalogVersion
+        case issuanceVersion
         case deviceTupleID
         case proxyContextEvidence
     }
@@ -216,6 +309,39 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
             )
         }
         catalogVersion = decodedCatalogVersion
+        let decodedIssuanceVersion =
+            if container.contains(.issuanceVersion) {
+                try container.decode(
+                    Int.self,
+                    forKey: .issuanceVersion
+                )
+            } else {
+                BrowserIdentityIssuancePolicy.legacyVersion
+            }
+        guard BrowserIdentityIssuancePolicy.supports(
+            decodedIssuanceVersion
+        ) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .issuanceVersion,
+                in: container,
+                debugDescription:
+                    "Unsupported browser identity issuance version \(decodedIssuanceVersion)."
+            )
+        }
+        if decodedIssuanceVersion ==
+            BrowserIdentityIssuancePolicy.currentVersion &&
+            (
+                seed != Self.runtimeCompatibleSeed(seed) ||
+                    !BrowserIdentityIssuancePolicy.isCurrentSeed(seed)
+            ) {
+            throw DecodingError.dataCorruptedError(
+                forKey: .seed,
+                in: container,
+                debugDescription:
+                    "Browser identity seed is outside its issuance policy."
+            )
+        }
+        issuanceVersion = decodedIssuanceVersion
         let expectedTupleID = BrowserIdentityCatalog.tupleID(
             forRuntimeSeed: Self.runtimeCompatibleSeed(seed)
         )
@@ -231,12 +357,12 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
             )
         }
         deviceTupleID = expectedTupleID
-        timezoneIdentifier = try container.decodeIfPresent(
-            String.self,
-            forKey: .timezoneIdentifier
-        ).flatMap {
-            TimeZone(identifier: $0) == nil ? nil : $0
-        }
+        timezoneIdentifier = Self.validatedTimezone(
+            try container.decodeIfPresent(
+                String.self,
+                forKey: .timezoneIdentifier
+            )
+        )
         localeIdentifier = try container.decodeIfPresent(
             String.self,
             forKey: .localeIdentifier
@@ -256,6 +382,64 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
 
     var runtimeSeed: UInt32 {
         Self.runtimeCompatibleSeed(seed)
+    }
+
+    func replacingSeed(_ value: UInt32) -> BrowserIdentity? {
+        let replacement = Self.runtimeCompatibleSeed(value)
+        if issuanceVersion ==
+            BrowserIdentityIssuancePolicy.currentVersion &&
+            !BrowserIdentityIssuancePolicy.isCurrentSeed(replacement) {
+            return nil
+        }
+        return BrowserIdentity(
+            validatedSeed: replacement,
+            issuanceVersion: issuanceVersion,
+            timezoneIdentifier: timezoneIdentifier,
+            localeIdentifier: localeIdentifier,
+            proxyContextEvidence: proxyContextEvidence
+        )
+    }
+
+    func replacingProxyContext(
+        timezoneIdentifier: String?,
+        localeIdentifier: String?,
+        evidence: ProxyContextEvidence?
+    ) -> BrowserIdentity {
+        BrowserIdentity(
+            validatedSeed: runtimeSeed,
+            issuanceVersion: issuanceVersion,
+            timezoneIdentifier: timezoneIdentifier,
+            localeIdentifier: localeIdentifier,
+            proxyContextEvidence: evidence
+        )
+    }
+
+    private init(
+        validatedSeed: UInt32,
+        issuanceVersion: Int,
+        timezoneIdentifier: String?,
+        localeIdentifier: String?,
+        proxyContextEvidence: ProxyContextEvidence?
+    ) {
+        seed = validatedSeed
+        self.issuanceVersion = issuanceVersion
+        catalogVersion = BrowserIdentityCatalog.currentVersion
+        deviceTupleID = BrowserIdentityCatalog.tupleID(
+            forRuntimeSeed: validatedSeed
+        )
+        self.timezoneIdentifier =
+            Self.validatedTimezone(timezoneIdentifier)
+        self.localeIdentifier =
+            localeIdentifier.flatMap(Self.normalizedLocale)
+        self.proxyContextEvidence = proxyContextEvidence.flatMap {
+            $0.isValid ? $0 : nil
+        }
+    }
+
+    private static func validatedTimezone(_ value: String?) -> String? {
+        value.flatMap {
+            TimeZone(identifier: $0) == nil ? nil : $0
+        }
     }
 
     private static func normalizedLocale(_ value: String) -> String? {
@@ -297,6 +481,12 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
 
     var displayCode: String {
         String(format: "NA-%08X", runtimeSeed)
+    }
+
+    var issuanceSummary: String {
+        issuanceVersion == BrowserIdentityIssuancePolicy.currentVersion
+            ? "Параметры устройства подобраны автоматически"
+            : "Совместимость старого профиля"
     }
 }
 
@@ -456,7 +646,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
 
     var privacySummary: String {
         supportsFingerprintIdentity
-            ? "Разделение отпечатков готово"
+            ? "Доступна проверка отпечатка"
             : "Только изоляция данных"
     }
 
@@ -477,6 +667,7 @@ enum NeAntikError: LocalizedError {
     case profileAlreadyRunning
     case invalidProfile
     case invalidProxy
+    case proxyContextNeedsRetest
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -492,6 +683,8 @@ enum NeAntikError: LocalizedError {
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .invalidProxy:
             "Укажи корректный хост и порт прокси."
+        case .proxyContextNeedsRetest:
+            "Контекст прокси устарел или не подтверждён. Открой профиль, снова проверь прокси и сохрани изменения перед запуском."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case .processLaunchFailed:

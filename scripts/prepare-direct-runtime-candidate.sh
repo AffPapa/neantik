@@ -88,6 +88,7 @@ fi
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py"
+"$PROJECT_DIR/scripts/verify-browser-identity-issuance.py"
 "$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 "$PROJECT_DIR/scripts/preflight-distribution.sh" direct
 

@@ -203,6 +203,21 @@ enum BrowserLaunchPurpose: Equatable, Sendable {
 }
 
 enum BrowserLaunchBuilder {
+    static func requiresProxyContextRetest(
+        profile: BrowserProfile,
+        now: Date = Date()
+    ) -> Bool {
+        guard profile.proxy != nil,
+              profile.identity.timezoneIdentifier != nil ||
+                profile.identity.localeIdentifier != nil
+        else {
+            return false
+        }
+        return profile.identity.proxyContextEvidence?.isFresh(
+            relativeTo: now
+        ) != true
+    }
+
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
         "--proxy-server",
@@ -233,6 +248,7 @@ enum BrowserLaunchBuilder {
         runtimeCapabilities: BrowserRuntimeCapabilities = [],
         additionalArguments: [String] = [],
         startURLOverride: URL? = nil,
+        now: Date = Date(),
         purpose: BrowserLaunchPurpose = .normal
     ) -> [String] {
         var arguments = [
@@ -257,12 +273,19 @@ enum BrowserLaunchBuilder {
         if runtimeCapabilities.contains(.platformOverride) {
             arguments.append("--fingerprint-platform=macos")
         }
+        let hasFreshProxyContext =
+            profile.proxy != nil &&
+            profile.identity.proxyContextEvidence?.isFresh(
+                relativeTo: now
+            ) == true
         if runtimeCapabilities.contains(.fingerprintSeed),
+           hasFreshProxyContext,
            let timezone = profile.identity.timezoneIdentifier {
             arguments.append("--fingerprint-timezone=\(timezone)")
             arguments.append("--timezone=\(timezone)")
         }
         if runtimeCapabilities.contains(.fingerprintSeed),
+           hasFreshProxyContext,
            let locale = profile.identity.localeIdentifier {
             arguments.append("--fingerprint-locale=\(locale)")
             arguments.append("--lang=\(locale)")
@@ -1307,6 +1330,11 @@ final class BrowserProcessManager: ObservableObject {
         }
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
+        }
+        guard !BrowserLaunchBuilder.requiresProxyContextRetest(
+            profile: profile
+        ) else {
+            throw NeAntikError.proxyContextNeedsRetest
         }
 
         let browserDataDirectory =

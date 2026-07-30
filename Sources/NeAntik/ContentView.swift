@@ -1102,8 +1102,8 @@ private struct ProfileDetailView: View {
                 GroupBox("Отпечаток профиля") {
                     VStack(alignment: .leading, spacing: 10) {
                         LabeledContent(
-                            "Идентификатор",
-                            value: profile.identity.displayCode
+                            "Политика",
+                            value: profile.identity.issuanceSummary
                         )
                         if let timezone = profile.identity.timezoneIdentifier {
                             LabeledContent("Часовой пояс", value: timezone)
@@ -1120,7 +1120,7 @@ private struct ProfileDetailView: View {
                             )
                             if !evidence.isFresh() {
                                 Text(
-                                    "Данные старше 30 дней. Перепроверь прокси перед важной сессией; при запуске NeAntik сам не обращается к сервису геолокации."
+                                    "Данные старше 30 дней. Часовой пояс и язык не применяются при запуске, пока ты снова не проверишь прокси."
                                 )
                                 .font(.caption)
                                 .foregroundStyle(.orange)
@@ -1128,15 +1128,15 @@ private struct ProfileDetailView: View {
                         } else if profile.identity.timezoneIdentifier != nil ||
                                     profile.identity.localeIdentifier != nil {
                             Text(
-                                "Часовой пояс сохранён старой версией без даты проверки. NeAntik не обновляет его через сеть автоматически."
+                                "Часовой пояс сохранён старой версией без даты проверки и не применяется при запуске. Перепроверь прокси, чтобы обновить контекст."
                             )
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         }
                         Text(
                             runtimeSupportsFingerprint
-                                ? "NeAntik передаёт этот стабильный идентификатор встроенному Chromium. Запусти проверку отпечатка, чтобы увидеть результат глазами сайта."
-                                : "Идентификатор сохранён, но выбранный браузер изолирует только локальные данные. Выбери совместимый движок, чтобы применить отпечаток."
+                                ? "NeAntik передаёт встроенному Chromium стабильные параметры этого профиля. Запусти проверку отпечатка, чтобы увидеть результат глазами сайта."
+                                : "Параметры профиля сохранены, но выбранный браузер изолирует только локальные данные. Выбери совместимый движок, чтобы применить отпечаток."
                         )
                         .font(.caption)
                         .foregroundStyle(

@@ -36,7 +36,9 @@ The same release is mirrored at <https://cpa.tg/neantik/>.
 - keeps proxy passwords in macOS Keychain;
 - prevents a second launch of the same profile;
 - provides deterministic per-profile browser-surface isolation in the bundled
-  patched Chromium runtime;
+  patched Chromium runtime; newly created profiles are distributed with the
+  system CSPRNG across four reviewed Apple Silicon cohorts, while existing
+  profiles are never rotated automatically;
 - includes an A → B → A audit for stability and separation;
 - keeps Direct telemetry disabled.
 
@@ -55,6 +57,13 @@ bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 Version `0.3.12` is qualified for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
+
+The four cohorts are a reviewed product policy, not market-share evidence or
+an anonymity guarantee. A stable profile fingerprint intentionally links
+repeat visits within that profile; cookies, accounts, proxies, locale,
+behavior, and other signals can also link sessions. The current policy narrows
+the hardware tuple set; it does not make Canvas, Audio, WebGL, or ClientRects
+identical across different users.
 
 ## Source layout
 
