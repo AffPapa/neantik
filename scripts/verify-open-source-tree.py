@@ -69,6 +69,7 @@ REQUIRED_PUBLIC_PATHS = {
     "CONTRIBUTING.md",
     "LICENSE",
     "SECURITY.md",
+    "Sources/NeAntik/BrowserProcessInventory.swift",
     "Sources/NeAntik/FingerprintEvidenceEnrollment.swift",
     "Sources/NeAntik/FingerprintEvidenceEnvelope.swift",
     "Sources/NeAntik/FingerprintEvidenceRecoveryStore.swift",
@@ -79,6 +80,7 @@ REQUIRED_PUBLIC_PATHS = {
     "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json",
     "Tests/Fixtures/fingerprint-conformance/manifest.json",
     "Tests/NeAntikTests/FingerprintEvidenceEnrollmentTests.swift",
+    "Tests/NeAntikTests/BrowserProcessInventoryTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceEnvelopeTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceReleaseContextTests.swift",
     "Tests/NeAntikTests/SecureEnclaveFingerprintEvidenceSignerTests.swift",
@@ -209,6 +211,7 @@ def verify_required_contracts() -> None:
     ).read_text(encoding="utf-8")
     for marker in [
         "UpdateManifestTests",
+        "BrowserProcessInventoryTests",
         "FingerprintEvidenceEnrollmentTests",
         "SecureEnclaveFingerprintEvidenceSignerTests",
         "generate-runtime-integration-notices.py --check",

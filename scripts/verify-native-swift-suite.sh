@@ -11,6 +11,7 @@ SUITE="$1"
 case "$SUITE" in
   AppPathsTests|\
   BrowserLaunchBuilderTests|\
+  BrowserProcessInventoryTests|\
   BrowserProcessManagerTests|\
   BrowserRuntimeInspectorTests|\
   BrowserRuntimePreflightTests|\
@@ -51,6 +52,7 @@ mkdir -p \
   "$SWIFT_TEST_ROOT/build"
 
 echo "Running NeAntik Swift suite: $SUITE"
+TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
 
 (
   cd "$PROJECT_DIR"
@@ -60,6 +62,13 @@ echo "Running NeAntik Swift suite: $SUITE"
       --disable-sandbox \
       --scratch-path "$SWIFT_TEST_ROOT/build" \
       --filter "$SUITE"
-)
+) 2>&1 | tee "$TEST_OUTPUT"
+
+if ! grep -Eq \
+  'Test run with [1-9][0-9]* tests? in [1-9][0-9]* suites? passed' \
+  "$TEST_OUTPUT"; then
+  echo "Swift suite did not execute a positive test count: $SUITE" >&2
+  exit 1
+fi
 
 echo "NeAntik Swift suite verified: $SUITE"

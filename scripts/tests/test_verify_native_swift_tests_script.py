@@ -14,6 +14,10 @@ CI_WORKFLOW = (
     / "workflows"
     / "ci.yml"
 )
+OPEN_SOURCE_VERIFIER = (
+    Path(__file__).resolve().parents[1]
+    / "verify-open-source-tree.py"
+)
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
@@ -73,6 +77,29 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertGreater(len(matrix_suites), 0)
         for suite in matrix_suites:
             self.assertIn(suite, runner)
+
+    def test_suite_runner_requires_a_positive_test_count(self) -> None:
+        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("Swift suite did not execute a positive test count", runner)
+        self.assertRegex(
+            runner,
+            r"Test run with \[1-9\]\[0-9\]\* tests\?",
+        )
+
+    def test_process_inventory_source_and_tests_are_public_contracts(
+        self,
+    ) -> None:
+        verifier = OPEN_SOURCE_VERIFIER.read_text(encoding="utf-8")
+
+        self.assertIn(
+            '"Sources/NeAntik/BrowserProcessInventory.swift"',
+            verifier,
+        )
+        self.assertIn(
+            '"Tests/NeAntikTests/BrowserProcessInventoryTests.swift"',
+            verifier,
+        )
 
 if __name__ == "__main__":
     unittest.main()

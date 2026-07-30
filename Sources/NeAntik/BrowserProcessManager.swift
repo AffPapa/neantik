@@ -142,6 +142,7 @@ private struct BrowserProfileLeaseUnavailableError: LocalizedError {
 
 enum BrowserProfileProcessState: Equatable, Sendable {
     case stopped
+    case checking
     case managed
     case externalVerified
     case externalManualOnly
@@ -153,7 +154,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
     }
 
     var canRequestStop: Bool {
-        self != .externalManualOnly &&
+        self != .checking &&
+            self != .externalManualOnly &&
             self != .externalUnverified &&
             self != .recoveryRequired
     }
@@ -162,6 +164,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         switch self {
         case .stopped:
             "Остановлен"
+        case .checking:
+            "Проверка…"
         case .managed:
             "Запущен"
         case .externalVerified:
@@ -179,6 +183,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         switch self {
         case .stopped, .managed:
             nil
+        case .checking:
+            "NeAntik проверяет, свободны ли данные профиля. Дождись завершения проверки."
         case .externalVerified:
             "Профиль запущен другим экземпляром NeAntik. Его можно безопасно остановить здесь."
         case .externalManualOnly:
@@ -392,6 +398,52 @@ private struct BrowserLeaseReadResult: Sendable {
     let identity: PrivateFileEntryIdentity?
 }
 
+private enum BrowserLeaseEntryInventoryAnchor: Equatable, Sendable {
+    case missing
+    case present(PrivateFileEntryIdentity)
+    case unavailable
+}
+
+private enum BrowserStartingOwnerInventoryAnchor:
+    Equatable, Sendable
+{
+    case notApplicable
+    case alive(pid_t)
+    case dead(pid_t)
+    case unavailable
+}
+
+private struct BrowserLeaseInventoryAnchor: Equatable, Sendable {
+    let entry: BrowserLeaseEntryInventoryAnchor
+    let startingOwner: BrowserStartingOwnerInventoryAnchor
+
+    static let unavailable = BrowserLeaseInventoryAnchor(
+        entry: .unavailable,
+        startingOwner: .unavailable
+    )
+}
+
+private struct BrowserProcessReconcileEvidence: Sendable {
+    let leaseAnchors: [UUID: BrowserLeaseInventoryAnchor]
+    let inventory: BrowserProcessInventory
+}
+
+private struct BrowserLeaseAnchorValidation {
+    var matchingProfileIDs = Set<UUID>()
+    var changedProfileIDs = Set<UUID>()
+    var unavailableProfileIDs = Set<UUID>()
+
+    var isClean: Bool {
+        changedProfileIDs.isEmpty &&
+            unavailableProfileIDs.isEmpty
+    }
+}
+
+private struct QueuedBrowserReconcile {
+    let profiles: [BrowserProfile]
+    let retryCount: Int
+}
+
 @MainActor
 final class BrowserProcessManager: ObservableObject {
     @Published private(set) var runningProfileIDs = Set<UUID>()
@@ -403,6 +455,8 @@ final class BrowserProcessManager: ObservableObject {
     private let processLivenessValidator: (pid_t) -> Bool
     private let browserDataProcessInspector:
         (URL) -> BrowserDataProcessInspection
+    private let processInventoryProvider:
+        (@Sendable () -> BrowserProcessInventory)?
     private let processSignaler: (pid_t, Int32) -> Int32
     private let managedProcessTerminator: (Process) -> Void
     private let allowsExternalProcessSignaling: Bool
@@ -421,6 +475,12 @@ final class BrowserProcessManager: ObservableObject {
     private var tombstoneObservationTasks: [UUID: Task<Void, Never>] = [:]
     private var tombstoneRecoveryMessages: [UUID: String] = [:]
     private var passiveObservationsEnabled = true
+    private var reconcileTask: Task<Void, Never>?
+    private var reconcileGeneration: UInt64 = 0
+    private var queuedReconcile: QueuedBrowserReconcile?
+    private var lastReconciledProfiles: [BrowserProfile] = []
+    private var pendingReconciliationProfileIDs = Set<UUID>()
+    private var passiveInventoryObservationTask: Task<Void, Never>?
 
     init(paths: AppPaths) {
         self.paths = paths
@@ -432,6 +492,13 @@ final class BrowserProcessManager: ObservableObject {
         }
         self.browserDataProcessInspector = {
             BrowserProcessManager.inspectBrowserDataProcess($0)
+        }
+        let provider = DarwinBrowserProcessInventoryProvider()
+        let coordinator = BrowserProcessInventoryCaptureCoordinator {
+            provider.capture()
+        }
+        self.processInventoryProvider = {
+            coordinator.capture()
         }
         self.processSignaler = { Darwin.kill($0, $1) }
         self.managedProcessTerminator = { $0.terminate() }
@@ -468,6 +535,7 @@ final class BrowserProcessManager: ObservableObject {
         }
         self.processLivenessValidator = processLivenessValidator
         self.browserDataProcessInspector = browserDataProcessInspector
+        self.processInventoryProvider = nil
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
         self.allowsExternalProcessSignaling =
@@ -494,6 +562,8 @@ final class BrowserProcessManager: ObservableObject {
             (URL) -> BrowserDataProcessInspection = {
                 BrowserProcessManager.inspectBrowserDataProcess($0)
             },
+        processInventoryProvider:
+            (@Sendable () -> BrowserProcessInventory)? = nil,
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
         now: @escaping () -> Date = Date.init
@@ -502,6 +572,17 @@ final class BrowserProcessManager: ObservableObject {
         self.processIdentityInspector = processIdentityInspector
         self.processLivenessValidator = processLivenessValidator
         self.browserDataProcessInspector = browserDataProcessInspector
+        if let processInventoryProvider {
+            let coordinator =
+                BrowserProcessInventoryCaptureCoordinator(
+                    provider: processInventoryProvider
+                )
+            self.processInventoryProvider = {
+                coordinator.capture()
+            }
+        } else {
+            self.processInventoryProvider = nil
+        }
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
         self.allowsExternalProcessSignaling =
@@ -513,6 +594,162 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func reconcile(profiles: [BrowserProfile]) {
+        lastReconciledProfiles = profiles
+        if profiles.isEmpty {
+            reconcileGeneration &+= 1
+            reconcileTask?.cancel()
+            queuedReconcile = nil
+            reconcile(
+                profiles: [],
+                processIdentityInspector: { _ in .unknown },
+                browserDataProcessInspector: { _ in .unknown },
+                expectedLeaseAnchors: [:]
+            )
+            return
+        }
+        guard let processInventoryProvider else {
+            reconcile(
+                profiles: profiles,
+                processIdentityInspector: processIdentityInspector,
+                browserDataProcessInspector: browserDataProcessInspector,
+                expectedLeaseAnchors: [:]
+            )
+            return
+        }
+
+        reconcileGeneration &+= 1
+        passiveObservationsEnabled = true
+        cancelPassiveObservationTasks()
+        let profileIDs = Set(profiles.map(\.id))
+        pendingReconciliationProfileIDs.formUnion(profileIDs)
+        runningProfileIDs.formUnion(profileIDs)
+        if reconcileTask != nil {
+            queuedReconcile = QueuedBrowserReconcile(
+                profiles: profiles,
+                retryCount: 0
+            )
+            return
+        }
+        startInventoryReconcile(
+            profiles: profiles,
+            generation: reconcileGeneration,
+            retryCount: 0,
+            processInventoryProvider: processInventoryProvider
+        )
+    }
+
+    private func startInventoryReconcile(
+        profiles: [BrowserProfile],
+        generation: UInt64,
+        retryCount: Int,
+        processInventoryProvider:
+            @escaping @Sendable () -> BrowserProcessInventory
+    ) {
+        let paths = paths
+        let profileIDs = profiles.map(\.id)
+        reconcileTask = Task { [weak self] in
+            let evidence = await Task.detached(priority: .utility) {
+                Self.captureReconcileEvidence(
+                    paths: paths,
+                    profileIDs: profileIDs,
+                    processInventoryProvider:
+                        processInventoryProvider
+                )
+            }.value
+            guard let self else {
+                return
+            }
+            reconcileTask = nil
+            let anchorValidation =
+                leaseAnchorValidation(evidence.leaseAnchors)
+            if !Task.isCancelled,
+               generation == reconcileGeneration,
+               passiveObservationsEnabled,
+               anchorValidation.isClean {
+                reconcile(
+                    profiles: profiles,
+                    processIdentityInspector:
+                        evidence.inventory.inspectProcess,
+                    browserDataProcessInspector:
+                        evidence.inventory.inspectBrowserDataProcess,
+                    expectedLeaseAnchors: evidence.leaseAnchors
+                )
+            } else if passiveObservationsEnabled,
+                      generation == reconcileGeneration {
+                if anchorValidation.unavailableProfileIDs.isEmpty,
+                   !anchorValidation.changedProfileIDs.isEmpty,
+                   retryCount < 2
+                {
+                    reconcileGeneration &+= 1
+                    queuedReconcile = QueuedBrowserReconcile(
+                        profiles: profiles,
+                        retryCount: retryCount + 1
+                    )
+                } else if !anchorValidation.isClean {
+                    let stableProfiles = profiles.filter {
+                        anchorValidation.matchingProfileIDs
+                            .contains($0.id)
+                    }
+                    reconcile(
+                        profiles: stableProfiles,
+                        processIdentityInspector:
+                            evidence.inventory.inspectProcess,
+                        browserDataProcessInspector:
+                            evidence.inventory
+                                .inspectBrowserDataProcess,
+                        expectedLeaseAnchors:
+                            evidence.leaseAnchors.filter {
+                                anchorValidation
+                                    .matchingProfileIDs
+                                    .contains($0.key)
+                            }
+                    )
+                    let blockedProfileIDs =
+                        anchorValidation.changedProfileIDs.union(
+                            anchorValidation
+                                .unavailableProfileIDs
+                        )
+                    markReconciliationUnavailable(
+                        profiles: profiles.filter {
+                            blockedProfileIDs.contains($0.id)
+                        }
+                    )
+                }
+            }
+            startQueuedInventoryReconcileIfNeeded(
+                processInventoryProvider: processInventoryProvider
+            )
+        }
+    }
+
+    private func startQueuedInventoryReconcileIfNeeded(
+        processInventoryProvider:
+            @escaping @Sendable () -> BrowserProcessInventory
+    ) {
+        guard reconcileTask == nil,
+              passiveObservationsEnabled,
+              let queued = queuedReconcile
+        else {
+            return
+        }
+        queuedReconcile = nil
+        startInventoryReconcile(
+            profiles: queued.profiles,
+            generation: reconcileGeneration,
+            retryCount: queued.retryCount,
+            processInventoryProvider: processInventoryProvider
+        )
+    }
+
+    private func reconcile(
+        profiles: [BrowserProfile],
+        processIdentityInspector:
+            (BrowserProcessLock) -> BrowserProcessIdentityInspection,
+        browserDataProcessInspector: @escaping
+            (URL) -> BrowserDataProcessInspection,
+        expectedLeaseAnchors:
+            [UUID: BrowserLeaseInventoryAnchor]
+    ) {
         externalStopTasks.values.forEach { $0.cancel() }
         externalStopTasks.removeAll()
         passiveObservationsEnabled = true
@@ -527,6 +764,7 @@ final class BrowserProcessManager: ObservableObject {
         externalUnverifiedProfileIDs.removeAll()
         recoveryProfileIDs.removeAll()
         recoveryRecords.removeAll()
+        pendingReconciliationProfileIDs.removeAll()
         runningProfileIDs = Set(
             processes.compactMap { key, process in
                 process.isRunning ? key : nil
@@ -534,12 +772,22 @@ final class BrowserProcessManager: ObservableObject {
         )
 
         for profile in profiles {
-            reconcileProfile(profileID: profile.id)
+            reconcileProfile(
+                profileID: profile.id,
+                processIdentityInspector: processIdentityInspector,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
+                expectedLeaseAnchor:
+                    expectedLeaseAnchors[profile.id]
+            )
         }
     }
 
     func suspendPassiveObservations() {
         passiveObservationsEnabled = false
+        reconcileGeneration &+= 1
+        reconcileTask?.cancel()
+        queuedReconcile = nil
         cancelPassiveObservationTasks()
     }
 
@@ -550,6 +798,103 @@ final class BrowserProcessManager: ObservableObject {
         recoveryObservationTasks.removeAll()
         tombstoneObservationTasks.values.forEach { $0.cancel() }
         tombstoneObservationTasks.removeAll()
+        passiveInventoryObservationTask?.cancel()
+        passiveInventoryObservationTask = nil
+    }
+
+    nonisolated private static func captureReconcileEvidence(
+        paths: AppPaths,
+        profileIDs: [UUID],
+        processInventoryProvider:
+            @Sendable () -> BrowserProcessInventory
+    ) -> BrowserProcessReconcileEvidence {
+        var anchors: [UUID: BrowserLeaseInventoryAnchor] = [:]
+        anchors.reserveCapacity(profileIDs.count)
+        for profileID in profileIDs {
+            anchors[profileID] = captureLeaseAnchor(
+                paths: paths,
+                profileID: profileID
+            )
+        }
+        return BrowserProcessReconcileEvidence(
+            leaseAnchors: anchors,
+            inventory: processInventoryProvider()
+        )
+    }
+
+    private func leaseAnchorValidation(
+        _ expected: [UUID: BrowserLeaseInventoryAnchor]
+    ) -> BrowserLeaseAnchorValidation {
+        var validation = BrowserLeaseAnchorValidation()
+        for (profileID, anchor) in expected {
+            guard anchor != BrowserLeaseInventoryAnchor.unavailable else {
+                validation.unavailableProfileIDs.insert(profileID)
+                continue
+            }
+            let current = Self.captureLeaseAnchor(
+                paths: paths,
+                profileID: profileID
+            )
+            guard current != BrowserLeaseInventoryAnchor.unavailable else {
+                validation.unavailableProfileIDs.insert(profileID)
+                continue
+            }
+            guard current == anchor else {
+                validation.changedProfileIDs.insert(profileID)
+                continue
+            }
+            validation.matchingProfileIDs.insert(profileID)
+        }
+        return validation
+    }
+
+    private func markReconciliationUnavailable(
+        profiles: [BrowserProfile]
+    ) {
+        let profileIDs = Set(profiles.map(\.id))
+        pendingReconciliationProfileIDs.subtract(profileIDs)
+        recoveryProfileIDs.formUnion(profileIDs)
+        runningProfileIDs.formUnion(profileIDs)
+        lastError =
+            "NeAntik не смог безопасно проверить файлы запуска. Профили остаются заблокированными; проверь доступ к папке данных и повтори попытку."
+    }
+
+    nonisolated private static func captureLeaseAnchor(
+        paths: AppPaths,
+        profileID: UUID
+    ) -> BrowserLeaseInventoryAnchor {
+        do {
+            return try paths.withProcessLockGuard(for: profileID) {
+                let lockURL = paths.lockFile(for: profileID)
+                let identity = try paths.privateFileEntryIdentity(
+                    lockURL
+                )
+                let entry: BrowserLeaseEntryInventoryAnchor =
+                    identity.map { .present($0) } ?? .missing
+                guard identity != nil,
+                      try paths.privateFileEntryKind(lockURL) == .regular,
+                      let data = try? Data(contentsOf: lockURL),
+                      let lock = try? decodeLock(data),
+                      lock.phase == .starting,
+                      let managerPID = lock.managerPID,
+                      managerPID > 0
+                else {
+                    return BrowserLeaseInventoryAnchor(
+                        entry: entry,
+                        startingOwner: .notApplicable
+                    )
+                }
+                return BrowserLeaseInventoryAnchor(
+                    entry: entry,
+                    startingOwner:
+                        isProcessAlive(managerPID)
+                            ? .alive(managerPID)
+                            : .dead(managerPID)
+                )
+            }
+        } catch {
+            return .unavailable
+        }
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
@@ -561,6 +906,9 @@ final class BrowserProcessManager: ObservableObject {
         }
         if externalUnverifiedProfileIDs.contains(profileID) {
             return .externalUnverified
+        }
+        if pendingReconciliationProfileIDs.contains(profileID) {
+            return .checking
         }
         if !allowsExternalProcessSignaling &&
             externalLocks[profileID] != nil
@@ -640,6 +988,22 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func reconcileProfile(profileID: UUID) {
+        reconcileProfile(
+            profileID: profileID,
+            processIdentityInspector: processIdentityInspector,
+            browserDataProcessInspector: browserDataProcessInspector,
+            expectedLeaseAnchor: nil
+        )
+    }
+
+    private func reconcileProfile(
+        profileID: UUID,
+        processIdentityInspector:
+            (BrowserProcessLock) -> BrowserProcessIdentityInspection,
+        browserDataProcessInspector: @escaping
+            (URL) -> BrowserDataProcessInspection,
+        expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
+    ) {
         tombstoneObservationTasks[profileID]?.cancel()
         tombstoneObservationTasks.removeValue(forKey: profileID)
         if let message = tombstoneRecoveryMessages.removeValue(
@@ -705,6 +1069,8 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: nil,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Папка профиля не прошла проверку безопасности. Профиль заблокирован, чтобы не повредить данные браузера."
             )
@@ -724,10 +1090,24 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: nil,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Файл состояния запуска недоступен. Профиль заблокирован до безопасной проверки."
             )
             return
+        }
+        if let expectedLeaseAnchor {
+            let observedEntry = readResult.identity.map {
+                BrowserLeaseEntryInventoryAnchor.present($0)
+            } ?? .missing
+            guard observedEntry == expectedLeaseAnchor.entry else {
+                recoveryProfileIDs.insert(profileID)
+                runningProfileIDs.insert(profileID)
+                lastError =
+                    "Файл состояния запуска изменился во время проверки. Повторный запуск заблокирован; вернись в NeAntik и повтори проверку."
+                return
+            }
         }
 
         let data: Data
@@ -741,6 +1121,8 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: nil,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Файл состояния запуска имеет небезопасный тип. NeAntik не будет запускать этот профиль повторно."
             )
@@ -752,6 +1134,8 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: nil,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Файл состояния запуска нельзя прочитать. Профиль заблокирован до безопасной проверки."
             )
@@ -770,6 +1154,8 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: data,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Файл состояния запуска повреждён. NeAntik проверяет, закрыт ли браузер, прежде чем разблокировать профиль."
             )
@@ -789,6 +1175,8 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: data,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Файл состояния запуска не соответствует этому профилю. Профиль остаётся заблокированным для защиты данных."
             )
@@ -796,6 +1184,23 @@ final class BrowserProcessManager: ObservableObject {
         }
 
         if lock.phase == .starting {
+            if case .alive = expectedLeaseAnchor?.startingOwner {
+                registerRecovery(
+                    profileID: profileID,
+                    lockURL: lockURL,
+                    expectedBrowserDataDirectory:
+                        browserDataDirectory,
+                    removableSnapshot: data,
+                    blockingManagerPID: lock.managerPID,
+                    startingCreatedAt: lock.createdAt,
+                    browserDataProcessInspector:
+                        browserDataProcessInspector,
+                    deferInitialResolution: true,
+                    message:
+                        "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
+                )
+                return
+            }
             let blockingManagerPID: pid_t?
             if let managerPID = lock.managerPID,
                processLivenessValidator(managerPID)
@@ -811,6 +1216,8 @@ final class BrowserProcessManager: ObservableObject {
                 removableSnapshot: data,
                 blockingManagerPID: blockingManagerPID,
                 startingCreatedAt: lock.createdAt,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
             )
@@ -824,6 +1231,8 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: data,
                 blockingManagerPID: nil,
+                browserDataProcessInspector:
+                    browserDataProcessInspector,
                 message:
                     "Файл состояния запуска содержит неверный процесс. Профиль остаётся заблокированным до безопасной проверки."
             )
@@ -854,7 +1263,8 @@ final class BrowserProcessManager: ObservableObject {
                 if !removeLockIfSnapshotMatches(
                     profileID: profileID,
                     lockURL: lockURL,
-                    snapshot: data
+                    snapshot: data,
+                    expectedIdentity: readResult.identity
                 ) {
                     registerRecovery(
                         profileID: profileID,
@@ -862,6 +1272,8 @@ final class BrowserProcessManager: ObservableObject {
                         expectedBrowserDataDirectory: browserDataDirectory,
                         removableSnapshot: data,
                         blockingManagerPID: nil,
+                        browserDataProcessInspector:
+                            browserDataProcessInspector,
                         message:
                             "Файл состояния запуска изменился во время проверки. Профиль остаётся заблокированным."
                     )
@@ -873,6 +1285,8 @@ final class BrowserProcessManager: ObservableObject {
                     expectedBrowserDataDirectory: browserDataDirectory,
                     removableSnapshot: data,
                     blockingManagerPID: nil,
+                    browserDataProcessInspector:
+                        browserDataProcessInspector,
                     message:
                         "NeAntik не может доказать, что данные профиля свободны. Повторный запуск заблокирован."
                 )
@@ -1172,8 +1586,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private nonisolated static func isProcessAlive(_ pid: pid_t) -> Bool {
-        guard pid > 0 else { return false }
-        return Darwin.kill(pid, 0) == 0 || errno == EPERM
+        DarwinBrowserProcessInventoryProvider.isProcessAlive(pid)
     }
 
     private func observeExternalProcess(
@@ -1217,6 +1630,9 @@ final class BrowserProcessManager: ObservableObject {
         removableSnapshot: Data?,
         blockingManagerPID: pid_t?,
         startingCreatedAt: Date? = nil,
+        browserDataProcessInspector:
+            ((URL) -> BrowserDataProcessInspection)? = nil,
+        deferInitialResolution: Bool = false,
         message: String
     ) {
         externalLocks.removeValue(forKey: profileID)
@@ -1239,8 +1655,18 @@ final class BrowserProcessManager: ObservableObject {
         )
         recoveryRecords[profileID] = record
         lastError = message
-        if resolveRecoveryIfSafe(profileID: profileID, record: record) {
-            return
+        let effectiveBrowserDataProcessInspector =
+            browserDataProcessInspector ??
+            self.browserDataProcessInspector
+        if !deferInitialResolution {
+            if resolveRecoveryIfSafe(
+                profileID: profileID,
+                record: record,
+                browserDataProcessInspector:
+                    effectiveBrowserDataProcessInspector
+            ) {
+                return
+            }
         }
         observeRecovery(profileID: profileID, record: record)
     }
@@ -1249,6 +1675,12 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         record: BrowserProcessRecoveryRecord
     ) {
+        if processInventoryProvider != nil {
+            recoveryObservationTasks[profileID]?.cancel()
+            recoveryObservationTasks.removeValue(forKey: profileID)
+            ensurePassiveInventoryObservation()
+            return
+        }
         recoveryObservationTasks[profileID]?.cancel()
         guard passiveObservationsEnabled else {
             recoveryObservationTasks.removeValue(forKey: profileID)
@@ -1272,6 +1704,79 @@ final class BrowserProcessManager: ObservableObject {
                     record: record
                 ) {
                     return
+                }
+            }
+        }
+    }
+
+    private func ensurePassiveInventoryObservation() {
+        guard passiveObservationsEnabled,
+              passiveInventoryObservationTask == nil
+        else {
+            return
+        }
+        passiveInventoryObservationTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let interval = self?
+                    .observationIntervalNanoseconds
+                else {
+                    return
+                }
+                do {
+                    try await Task.sleep(nanoseconds: interval)
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled,
+                      let processInventoryProvider =
+                          self?.processInventoryProvider
+                else {
+                    return
+                }
+                guard let self else { return }
+                let recordsBeforeCapture = Array(recoveryRecords)
+                let ownerWasAlive = Dictionary(
+                    uniqueKeysWithValues:
+                        recordsBeforeCapture.compactMap {
+                            profileID, record in
+                            record.blockingManagerPID.map {
+                                (
+                                    profileID,
+                                    self.processLivenessValidator($0)
+                                )
+                            }
+                        }
+                )
+                let inventory = await Task.detached(priority: .utility) {
+                    processInventoryProvider()
+                }.value
+                guard !Task.isCancelled,
+                      passiveObservationsEnabled
+                else {
+                    return
+                }
+                let records = Array(recoveryRecords)
+                guard !records.isEmpty else {
+                    passiveInventoryObservationTask = nil
+                    return
+                }
+                for (profileID, record) in records {
+                    guard recoveryRecords[profileID] == record else {
+                        continue
+                    }
+                    if let managerPID = record.blockingManagerPID {
+                        guard ownerWasAlive[profileID] == false,
+                              !processLivenessValidator(managerPID)
+                        else {
+                            continue
+                        }
+                    }
+                    _ = resolveRecoveryIfSafe(
+                        profileID: profileID,
+                        record: record,
+                        browserDataProcessInspector:
+                            inventory.inspectBrowserDataProcess
+                    )
                 }
             }
         }
@@ -1313,18 +1818,27 @@ final class BrowserProcessManager: ObservableObject {
 
     private func resolveRecoveryIfSafe(
         profileID: UUID,
-        record: BrowserProcessRecoveryRecord
+        record: BrowserProcessRecoveryRecord,
+        browserDataProcessInspector:
+            ((URL) -> BrowserDataProcessInspection)? = nil
     ) -> Bool {
+        let effectiveBrowserDataProcessInspector =
+            browserDataProcessInspector ??
+            self.browserDataProcessInspector
         switch recoveryEntryChange(
             profileID: profileID,
             record: record
         ) {
         case .changed:
             clearRecoveryState(profileID: profileID, record: record)
-            reconcileProfile(profileID: profileID)
+            if processInventoryProvider != nil {
+                reconcile(profiles: lastReconciledProfiles)
+            } else {
+                reconcileProfile(profileID: profileID)
+            }
             return true
         case .missing:
-            guard browserDataProcessInspector(
+            guard effectiveBrowserDataProcessInspector(
                 record.expectedBrowserDataDirectory
             ) == .absent else {
                 return false
@@ -1353,7 +1867,7 @@ final class BrowserProcessManager: ObservableObject {
                 return false
             }
         }
-        guard browserDataProcessInspector(
+        guard effectiveBrowserDataProcessInspector(
             record.expectedBrowserDataDirectory
         ) == .absent else {
             return false
@@ -1383,6 +1897,10 @@ final class BrowserProcessManager: ObservableObject {
         }
         if lastError == record.message {
             lastError = nil
+        }
+        if recoveryRecords.isEmpty {
+            passiveInventoryObservationTask?.cancel()
+            passiveInventoryObservationTask = nil
         }
     }
 
@@ -1555,11 +2073,18 @@ final class BrowserProcessManager: ObservableObject {
     private func removeLockIfSnapshotMatches(
         profileID: UUID,
         lockURL: URL,
-        snapshot: Data
+        snapshot: Data,
+        expectedIdentity: PrivateFileEntryIdentity?
     ) -> Bool {
         do {
             return try paths.withProcessLockGuard(for: profileID) {
-                removeLockIfSnapshotMatchesWhileGuardHeld(
+                guard expectedIdentity != nil,
+                      try paths.privateFileEntryIdentity(lockURL) ==
+                        expectedIdentity
+                else {
+                    return false
+                }
+                return removeLockIfSnapshotMatchesWhileGuardHeld(
                     lockURL: lockURL,
                     snapshot: snapshot
                 )
@@ -1624,7 +2149,9 @@ final class BrowserProcessManager: ObservableObject {
         return try encoder.encode(lock)
     }
 
-    private static func decodeLock(_ data: Data) throws -> BrowserProcessLock {
+    nonisolated private static func decodeLock(
+        _ data: Data
+    ) throws -> BrowserProcessLock {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(BrowserProcessLock.self, from: data)
@@ -1682,57 +2209,17 @@ final class BrowserProcessManager: ObservableObject {
     private nonisolated static func inspectProcess(
         _ lock: BrowserProcessLock
     ) -> BrowserProcessIdentityInspection {
-        guard isProcessAlive(lock.pid) else {
-            return .unrelated
-        }
-        guard let process = processArguments(pid: lock.pid) else {
-            return .unknown
-        }
-        let expectedExecutable = URL(
-            fileURLWithPath: lock.executablePath
-        ).standardizedFileURL.path
-        let observedExecutables = [
-            process.executablePath,
-            process.arguments.first
-        ].compactMap { value in
-            value.map {
-                URL(fileURLWithPath: $0).standardizedFileURL.path
-            }
-        }
-        guard observedExecutables.contains(expectedExecutable),
-              process.arguments.contains(
-                  "--user-data-dir=\(lock.browserDataPath)"
-              )
-        else {
-            return .unrelated
-        }
-        return .expected
+        DarwinBrowserProcessInventoryProvider()
+            .capture()
+            .inspectProcess(lock)
     }
 
     private nonisolated static func inspectBrowserDataProcess(
         _ browserDataDirectory: URL
     ) -> BrowserDataProcessInspection {
-        guard let processIDs = sameUserProcessIDs() else {
-            return .unknown
-        }
-        let expectedPath =
-            browserDataDirectory.standardizedFileURL.path
-        var inspectionWasUnavailable = false
-        for pid in processIDs where pid != getpid() {
-            guard let process = processArguments(pid: pid) else {
-                if isProcessAlive(pid) {
-                    inspectionWasUnavailable = true
-                }
-                continue
-            }
-            if arguments(
-                process.arguments,
-                useBrowserDataPath: expectedPath
-            ) {
-                return .found
-            }
-        }
-        return inspectionWasUnavailable ? .unknown : .absent
+        DarwinBrowserProcessInventoryProvider()
+            .capture()
+            .inspectBrowserDataProcess(browserDataDirectory)
     }
 
     nonisolated static func arguments(
@@ -1763,150 +2250,4 @@ final class BrowserProcessManager: ObservableObject {
         return false
     }
 
-    private nonisolated static func sameUserProcessIDs() -> [pid_t]? {
-        var managementInformationBase = [
-            CTL_KERN,
-            KERN_PROC,
-            KERN_PROC_UID,
-            Int32(getuid())
-        ]
-        var requiredBytes = 0
-        guard managementInformationBase.withUnsafeMutableBufferPointer({
-            sysctl(
-                $0.baseAddress,
-                u_int($0.count),
-                nil,
-                &requiredBytes,
-                nil,
-                0
-            )
-        }) == 0, requiredBytes > 0 else {
-            return nil
-        }
-
-        let entrySize = MemoryLayout<kinfo_proc>.stride
-        var entries = [kinfo_proc](
-            repeating: kinfo_proc(),
-            count: requiredBytes / entrySize + 32
-        )
-        var actualBytes = entries.count * entrySize
-        let readResult = managementInformationBase
-            .withUnsafeMutableBufferPointer { base in
-                entries.withUnsafeMutableBytes { bytes in
-                    sysctl(
-                        base.baseAddress,
-                        u_int(base.count),
-                        bytes.baseAddress,
-                        &actualBytes,
-                        nil,
-                        0
-                    )
-                }
-            }
-        guard readResult == 0, actualBytes >= 0 else {
-            return nil
-        }
-        return entries
-            .prefix(actualBytes / entrySize)
-            .map(\.kp_proc.p_pid)
-    }
-
-    private nonisolated static func processArguments(
-        pid: pid_t
-    ) -> (executablePath: String, arguments: [String])? {
-        var argumentMaximum = Int32()
-        var argumentMaximumSize = MemoryLayout<Int32>.size
-        guard sysctlbyname(
-            "kern.argmax",
-            &argumentMaximum,
-            &argumentMaximumSize,
-            nil,
-            0
-        ) == 0, argumentMaximum > 0 else {
-            return nil
-        }
-
-        var buffer = [UInt8](
-            repeating: 0,
-            count: Int(argumentMaximum)
-        )
-        var bufferSize = buffer.count
-        var managementInformationBase = [
-            CTL_KERN,
-            KERN_PROCARGS2,
-            pid
-        ]
-        let readResult = managementInformationBase
-            .withUnsafeMutableBufferPointer { base in
-                buffer.withUnsafeMutableBytes { bytes in
-                    sysctl(
-                        base.baseAddress,
-                        u_int(base.count),
-                        bytes.baseAddress,
-                        &bufferSize,
-                        nil,
-                        0
-                    )
-                }
-            }
-        guard readResult == 0,
-              bufferSize > MemoryLayout<Int32>.size
-        else {
-            return nil
-        }
-        buffer.removeSubrange(bufferSize..<buffer.count)
-
-        var argumentCount = Int32()
-        withUnsafeMutableBytes(of: &argumentCount) { destination in
-            destination.copyBytes(
-                from: buffer.prefix(MemoryLayout<Int32>.size)
-            )
-        }
-        guard argumentCount > 0 else {
-            return nil
-        }
-
-        var index = MemoryLayout<Int32>.size
-        guard let executablePath = readNullTerminatedString(
-            buffer,
-            index: &index
-        ) else {
-            return nil
-        }
-        while index < buffer.count, buffer[index] == 0 {
-            index += 1
-        }
-
-        var arguments: [String] = []
-        arguments.reserveCapacity(Int(argumentCount))
-        for _ in 0..<Int(argumentCount) {
-            guard let argument = readNullTerminatedString(
-                buffer,
-                index: &index
-            ) else {
-                return nil
-            }
-            arguments.append(argument)
-        }
-        return (executablePath, arguments)
-    }
-
-    private nonisolated static func readNullTerminatedString(
-        _ buffer: [UInt8],
-        index: inout Int
-    ) -> String? {
-        guard index < buffer.count else {
-            return nil
-        }
-        let start = index
-        while index < buffer.count, buffer[index] != 0 {
-            index += 1
-        }
-        guard index < buffer.count else {
-            return nil
-        }
-        let value = String(decoding: buffer[start..<index], as: UTF8.self)
-        index += 1
-        return value
-    }
 }

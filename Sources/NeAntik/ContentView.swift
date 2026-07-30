@@ -335,7 +335,15 @@ struct ContentView: View {
                                 Label("Изменить", systemImage: "slider.horizontal.3")
                             }
                             .disabled(processState.isRunning)
-                            if processState.isRunning &&
+                            if processState == .checking {
+                                Button {} label: {
+                                    Label(
+                                        "Проверка…",
+                                        systemImage: "hourglass"
+                                    )
+                                }
+                                .disabled(true)
+                            } else if processState.isRunning &&
                                 processState.canRequestStop {
                                 Button {
                                     processes.stop(profileID: profile.id)
@@ -408,7 +416,9 @@ struct ContentView: View {
                     Label(
                         processState.isRunning
                             ? (
-                                processState.canRequestStop
+                                processState == .checking
+                                    ? "Проверка…"
+                                    : processState.canRequestStop
                                     ? "Остановить выбранный"
                                     : "Закрой браузер вручную"
                             )
@@ -416,7 +426,9 @@ struct ContentView: View {
                         systemImage:
                             processState.isRunning
                                 ? (
-                                    processState.canRequestStop
+                                    processState == .checking
+                                        ? "hourglass"
+                                        : processState.canRequestStop
                                         ? "stop.fill"
                                         : "hand.raised.fill"
                                 )
@@ -884,6 +896,7 @@ private struct ProfileRow: View {
                         Circle()
                             .stroke(
                                 processState == .externalUnverified
+                                    || processState == .checking
                                     ? Color.orange
                                     : Color.green,
                                 lineWidth: 2
@@ -955,7 +968,9 @@ private struct ProfileDetailView: View {
                         Label(
                             isRunning
                                 ? (
-                                    processState.canRequestStop
+                                    processState == .checking
+                                        ? "Проверка…"
+                                        : processState.canRequestStop
                                         ? "Остановить"
                                         : "Закрыть вручную"
                                 )
@@ -963,7 +978,9 @@ private struct ProfileDetailView: View {
                             systemImage:
                                 isRunning
                                     ? (
-                                        processState.canRequestStop
+                                        processState == .checking
+                                            ? "hourglass"
+                                            : processState.canRequestStop
                                             ? "stop.fill"
                                             : "hand.raised.fill"
                                     )
@@ -983,6 +1000,9 @@ private struct ProfileDetailView: View {
                                     ? "NeAntik проверяет локальный браузер"
                                     : ""
                             )
+                    )
+                    .accessibilityHint(
+                        processState.guidance ?? ""
                     )
 
                     Button(action: onEdit) {
@@ -1006,7 +1026,10 @@ private struct ProfileDetailView: View {
                         )
                         .frame(maxWidth: .infinity)
                     }
-                    .disabled(!canRunFingerprintAudit)
+                    .disabled(
+                        !canRunFingerprintAudit ||
+                            processState == .checking
+                    )
                     .help(
                         canRunFingerprintAudit
                             ? "Сравнить два профиля в проверке A → B → A"
@@ -1048,6 +1071,16 @@ private struct ProfileDetailView: View {
                         Label("Удалить", systemImage: "trash")
                             .frame(maxWidth: .infinity)
                     }
+                    .disabled(isRunning)
+                    .help(
+                        isRunning
+                            ? (
+                                processState == .checking
+                                    ? "Дождись завершения проверки"
+                                    : "Сначала останови профиль"
+                            )
+                            : "Удалить профиль"
+                    )
                 }
                 .buttonStyle(.bordered)
                 if let clipboardNotice {
