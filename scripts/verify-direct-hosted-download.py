@@ -182,32 +182,7 @@ def verify_archive_candidate_manifest(
         prefix="neantik-hosted-candidate-"
     ) as temporary:
         extraction_root = Path(temporary)
-        completed = subprocess.run(
-            ["ditto", "-x", "-k", str(archive), str(extraction_root)],
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
-        if completed.returncode != 0:
-            raise HostedDownloadError(
-                "cannot extract hosted candidate archive:\n"
-                + completed.stdout.strip()
-            )
-        app = extraction_root / "NeAntik.app"
-        if not app.is_dir() or app.is_symlink():
-            raise HostedDownloadError(
-                "hosted archive must contain one top-level NeAntik.app"
-            )
-        unexpected_apps = [
-            path
-            for path in extraction_root.glob("*.app")
-            if path.name != "NeAntik.app"
-        ]
-        if unexpected_apps:
-            raise HostedDownloadError(
-                "hosted archive contains an unexpected top-level app"
-            )
+        app = extract_candidate_app(archive, extraction_root)
         try:
             CANDIDATE.verify_manifest(
                 app,
@@ -218,6 +193,39 @@ def verify_archive_candidate_manifest(
             raise HostedDownloadError(
                 f"hosted app does not match candidate manifest: {error}"
             ) from error
+
+
+def extract_candidate_app(
+    archive: Path,
+    extraction_root: Path,
+) -> Path:
+    completed = subprocess.run(
+        ["ditto", "-x", "-k", str(archive), str(extraction_root)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise HostedDownloadError(
+            "cannot extract hosted candidate archive:\n"
+            + completed.stdout.strip()
+        )
+    app = extraction_root / "NeAntik.app"
+    if not app.is_dir() or app.is_symlink():
+        raise HostedDownloadError(
+            "hosted archive must contain one top-level NeAntik.app"
+        )
+    unexpected_apps = [
+        path
+        for path in extraction_root.glob("*.app")
+        if path.name != "NeAntik.app"
+    ]
+    if unexpected_apps:
+        raise HostedDownloadError(
+            "hosted archive contains an unexpected top-level app"
+        )
+    return app
 
 
 Downloader = Callable[[str, Path, int], None]
@@ -233,35 +241,47 @@ def verify_release_evidence_contract(
     release_channel: str,
     *,
     project_root: Path,
+    candidate_archive: Path,
 ) -> None:
-    app = project_root / "dist" / "NeAntik.app"
-    completed = subprocess.run(
-        [
-            sys.executable,
-            str(project_root / "scripts" / "verify-public-artifact-privacy.py"),
-            str(attestation),
-            "--private-evidence",
-            str(evidence),
-            "--attestation",
-            str(attestation),
-            "--integrated-app",
-            str(app),
-            "--candidate-manifest",
-            str(manifest),
-            "--release-channel",
-            release_channel,
-        ],
-        cwd=project_root,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise HostedDownloadError(
-            "authenticated fingerprint release evidence verification failed:\n"
-            + completed.stdout.strip()
+    with tempfile.TemporaryDirectory(
+        prefix="neantik-hosted-evidence-app-"
+    ) as temporary:
+        app = extract_candidate_app(
+            candidate_archive,
+            Path(temporary),
         )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(
+                    project_root
+                    / "scripts"
+                    / "verify-public-artifact-privacy.py"
+                ),
+                str(attestation),
+                "--private-evidence",
+                str(evidence),
+                "--attestation",
+                str(attestation),
+                "--integrated-app",
+                str(app),
+                "--candidate-manifest",
+                str(manifest),
+                "--release-channel",
+                release_channel,
+            ],
+            cwd=project_root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise HostedDownloadError(
+                "authenticated fingerprint release evidence "
+                "verification failed:\n"
+                + completed.stdout.strip()
+            )
 
 
 def _verify_pinned_hosted_download(
@@ -311,14 +331,9 @@ def _verify_pinned_hosted_download(
                         attestation,
                         channel,
                         project_root=project_root,
+                        candidate_archive=archive,
                     )
             )
-        )
-        release_evidence_verifier(
-            candidate_manifest,
-            fingerprint_evidence.resolve(),
-            fingerprint_attestation.resolve(),
-            release_channel,
         )
 
     download_url = download_url or os.environ.get(
@@ -362,6 +377,13 @@ def _verify_pinned_hosted_download(
         candidate_verifier(
             archive,
             candidate_manifest,
+            release_channel,
+        )
+        assert release_evidence_verifier is not None
+        release_evidence_verifier(
+            candidate_manifest,
+            fingerprint_evidence.resolve(),
+            fingerprint_attestation.resolve(),
             release_channel,
         )
     with tempfile.TemporaryDirectory(prefix="neantik-hosted-zip-") as temporary:

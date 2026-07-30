@@ -205,6 +205,55 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             all(check[2] == "public-alpha" for check in candidate_checks)
         )
 
+    def test_default_evidence_gate_uses_pinned_archive_not_live_app(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = self.make_fixture(root, version="1.2.3")
+            archive_bytes = archive.read_bytes()
+            manifest = root / "dist" / "direct-candidate-manifest.json"
+            manifest.write_text("{}\n", encoding="utf-8")
+            evidence = root / "dist" / "fingerprint-audit.json"
+            evidence.write_text("{}\n", encoding="utf-8")
+            attestation = root / "dist" / "fingerprint-audit-summary.json"
+            attestation.write_text("{}\n", encoding="utf-8")
+
+            with mock.patch.object(
+                MODULE,
+                "verify_release_evidence_contract",
+            ) as evidence_gate:
+                MODULE.verify_hosted_download(
+                    project_root=root,
+                    archive=archive,
+                    download_url=(
+                        "https://downloads.example/"
+                        "NeAntik-1.2.3-arm64-notarized.zip"
+                    ),
+                    downloader=lambda _url, destination, _size:
+                        destination.write_bytes(archive_bytes),
+                    archive_verifier=lambda _candidate: None,
+                    candidate_manifest=manifest,
+                    release_channel="public-alpha",
+                    fingerprint_evidence=evidence,
+                    fingerprint_attestation=attestation,
+                    candidate_verifier=lambda *_args: None,
+                )
+
+            self.assertEqual(evidence_gate.call_count, 1)
+            candidate_archive = (
+                evidence_gate.call_args.kwargs["candidate_archive"]
+            )
+            self.assertNotEqual(candidate_archive, archive.resolve())
+            self.assertIn(
+                "neantik-hosted-input-set-",
+                str(candidate_archive),
+            )
+            self.assertNotIn(
+                str(root / "dist" / "NeAntik.app"),
+                str(evidence_gate.call_args),
+            )
+
     def test_manifest_swap_after_evidence_check_fails_on_source_drift(
         self,
     ) -> None:
