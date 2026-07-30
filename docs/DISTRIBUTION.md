@@ -87,6 +87,12 @@ The initial GitHub workflow builds and tests unsigned source only. Signed
 release artifacts are produced on the trusted local Apple Silicon builder and
 uploaded after verification.
 
+For schema-8 evidence, the final Developer ID-signed candidate must enroll its
+candidate-scoped Secure Enclave authority before candidate-manifest schema 3
+is finalized. The manifest pins that public key; the same protected key must
+sign the GUI envelope. CI and injected-backend tests are not hardware
+acceptance evidence, and Direct publication has no software-signing fallback.
+
 ## Creating the DMG
 
 After `dist/NeAntik.app` has passed the normal signed release gate, run:

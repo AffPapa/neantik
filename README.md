@@ -65,6 +65,13 @@ production-согласованность всех fingerprint- и сетевы�
 A → B → A, Developer ID, notarization, stapling, Gatekeeper и повторная
 проверка скачанного артефакта.
 
+Код production signer для Secure Enclave и его unit-тесты сами по себе не
+делают опубликованную `0.3.12` квалифицированной по schema 8. Новая версия
+должна пройти enrollment и подпись на физическом Secure Enclave точного
+Developer ID-кандидата, а затем collector/notarization/hosted gates без
+software fallback. Подробности:
+[fingerprint evidence schema 8](docs/security/fingerprint-evidence-schema-8.md).
+
 Уязвимости следует сообщать по правилам [SECURITY.md](SECURITY.md).
 
 ## Структура репозитория

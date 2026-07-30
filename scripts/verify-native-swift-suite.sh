@@ -17,6 +17,7 @@ case "$SUITE" in
   FingerprintAuditLoopbackSTUNServerTests|\
   FingerprintAuditTests|\
   FingerprintEvidenceEnvelopeTests|\
+  SecureEnclaveFingerprintEvidenceSignerTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
   ProfileEditorPasswordTests|\

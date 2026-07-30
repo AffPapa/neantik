@@ -89,19 +89,42 @@ transport hashes. Its Swift/CryptoKit signature is verified through
 Python/OpenSSL, and a separately generated OpenSSL low-S signature over the
 same transcript is verified by Swift.
 
+`SecureEnclaveFingerprintEvidenceSignerTests` verifies the production
+signer's lifecycle and fail-closed API with an injected in-memory P-256
+backend. These deterministic tests do not access Keychain or Secure Enclave.
+Together with the cross-language fixture they prove the code contract, not
+operation of physical hardware in a signed release candidate.
+
 ## Release boundary
 
-The software P-256 signer exists only in debug builds for unit tests. A Direct
-release must fail closed until all of these are implemented and verified:
+The software P-256 signer exists only in debug builds for unit tests. The
+production implementation requests a non-exportable P-256 private key from
+Secure Enclave, stores only its reference in Data Protection Keychain as
+`WhenUnlockedThisDeviceOnly` with `privateKeyUsage`, and has no software
+fallback. Audit code loads an already enrolled, manifest-pinned key and never
+creates or rotates one. Enrollment first claims a unique candidate session
+with an atomic `WhenUnlockedThisDeviceOnly` Data Protection Keychain
+reservation; key lookup requires exactly one matching private Secure Enclave
+key. The reservation remains until explicit candidate abandonment, so a
+failed or interrupted enrollment cannot silently reuse the same challenge.
 
-- a non-exportable Secure Enclave or equivalently protected
-  `ThisDeviceOnly` production signer;
-- authority enrollment before finalizing the immutable candidate manifest;
+This source and its deterministic tests do not prove a physical Secure
+Enclave, non-exportability on the release Mac, persistence across relaunch or
+update, access-control behavior, or continuity of the Developer ID identity.
+A Direct release must therefore fail closed until all of these are verified:
+
+- real enrollment by the exact final Developer ID-signed Apple Silicon
+  candidate before finalizing the immutable candidate manifest;
+- create, reload, sign, verify and exact-key deletion on that release Mac;
 - already-sanitized payload creation inside the signed manager;
 - production-candidate release-gate integration beyond the checked CI
   two-direction Swift/CryptoKit-to-OpenSSL fixture contract;
 - collector, notarization and hosted-release gates that require schema 8;
 - replay/single-use handling and unchanged schema-7 semantic/privacy checks.
+
+Unsupported or unavailable Secure Enclave, locked or denied Keychain, a
+missing/corrupt key, or a manifest mismatch is a hard failure. None may select
+a software signer.
 
 Schema 8 does not attest a remote device, prove an uncompromised macOS host or
 provide anonymity. It proves only the stated candidate/key/challenge/payload

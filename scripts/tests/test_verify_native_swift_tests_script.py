@@ -52,6 +52,14 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
 
         self.assertIn("- FingerprintEvidenceEnvelopeTests", workflow)
         self.assertIn("FingerprintEvidenceEnvelopeTests|\\", runner)
+        self.assertIn(
+            "- SecureEnclaveFingerprintEvidenceSignerTests",
+            workflow,
+        )
+        self.assertIn(
+            "SecureEnclaveFingerprintEvidenceSignerTests|\\",
+            runner,
+        )
 
     def test_ci_matrix_suites_are_allowed_by_runner(self) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")

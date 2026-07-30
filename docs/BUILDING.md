@@ -83,3 +83,11 @@ of the complete bundle. The second phase refuses to rebuild or re-sign it and
 requires GUI evidence created after that manifest. `production` requires strict
 production qualification; `public-alpha` never silently upgrades that verdict.
 Only upload after notarization, stapling, Gatekeeper, and SHA-256 pass.
+
+`./scripts/verify-native-swift-suite.sh
+SecureEnclaveFingerprintEvidenceSignerTests` checks deterministic lifecycle
+and fail-closed behavior with an injected backend only. It is not a hardware
+acceptance test. Before schema-8 release evidence is accepted, the exact final
+Developer ID-signed candidate must create, reload, sign, verify and delete its
+candidate-scoped key on a supported Apple Silicon Mac. The release must stop
+without that result; never export or request the private key.

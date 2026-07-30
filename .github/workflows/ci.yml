@@ -26,6 +26,7 @@ jobs:
           - FingerprintAuditLoopbackSTUNServerTests
           - FingerprintAuditTests
           - FingerprintEvidenceEnvelopeTests
+          - SecureEnclaveFingerprintEvidenceSignerTests
           - KeychainStoreTests
           - LaunchIntentTests
           - ProfileEditorPasswordTests
