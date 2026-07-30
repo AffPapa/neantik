@@ -135,10 +135,40 @@ verify_runtime_unchanged
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
   --app "$CANDIDATE_APP" \
   --allow-legacy-runtime-branding
+if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
+  echo "LOCAL QA ONLY: schema-3 release enrollment was intentionally skipped."
+  echo "$CANDIDATE_APP"
+  exit 0
+fi
+PRIVATE_RELEASE_BASE="$PROJECT_DIR/dist/private"
+if [[ -L "$PRIVATE_RELEASE_BASE" ||
+      (-e "$PRIVATE_RELEASE_BASE" && ! -d "$PRIVATE_RELEASE_BASE") ]]; then
+  echo "Private release state path is unsafe." >&2
+  exit 65
+fi
+/bin/mkdir -p "$PRIVATE_RELEASE_BASE"
+if [[ -L "$PRIVATE_RELEASE_BASE" ||
+      "$(/usr/bin/stat -f '%u' "$PRIVATE_RELEASE_BASE")" != "$EUID" ]]; then
+  echo "Private release state directory is unsafe." >&2
+  exit 65
+fi
+/bin/chmod 0700 "$PRIVATE_RELEASE_BASE"
+PRIVATE_RELEASE_DIR="$(
+  /usr/bin/mktemp -d \
+    "$PRIVATE_RELEASE_BASE/fingerprint-enrollment.XXXXXX"
+)"
+/bin/chmod 0700 "$PRIVATE_RELEASE_DIR"
+FINGERPRINT_ENROLLMENT="$PRIVATE_RELEASE_DIR/fingerprint-enrollment.json"
+"$PROJECT_DIR/scripts/enroll-direct-fingerprint-authority.sh" \
+  "$CANDIDATE_APP" \
+  "$FINGERPRINT_ENROLLMENT"
+codesign --verify --deep --strict --verbose=2 "$CANDIDATE_APP"
+verify_runtime_unchanged
 python3 "$PROJECT_DIR/scripts/direct-candidate-manifest.py" create \
   --app "$CANDIDATE_APP" \
   --manifest "$CANDIDATE_MANIFEST" \
-  --release-channel "$NEANTIK_RELEASE_CHANNEL"
+  --release-channel "$NEANTIK_RELEASE_CHANNEL" \
+  --fingerprint-enrollment "$FINGERPRINT_ENROLLMENT"
 
 echo "$CANDIDATE_APP"
 echo "$CANDIDATE_MANIFEST"

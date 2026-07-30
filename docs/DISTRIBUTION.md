@@ -52,10 +52,14 @@ A public release must:
 
 The release is deliberately two-phase. First,
 `prepare-direct-runtime-candidate.sh` creates and signs one exact
-`dist/NeAntik.app`, then writes `dist/direct-candidate-manifest.json` with a
-full bundle inventory. A fresh GUI A → B → A audit must be collected from that
-exact candidate. `release-direct.sh` only verifies and notarizes it; it never
-rebuilds or re-signs after the GUI run. The release channel is explicit:
+`dist/NeAntik.app`, runs its strict headless Secure Enclave enrollment from the
+signed-in user's Terminal, then writes the compact schema-3
+`dist/direct-candidate-manifest.json` with a full bundle inventory and the
+validated public binding. Every attempt uses a new private `0700` state
+directory; its binding and log are never public artifacts. A fresh GUI
+A → B → A audit must be collected from that exact candidate.
+`release-direct.sh` only verifies and notarizes it; it never rebuilds or
+re-signs after the GUI run. The release channel is explicit:
 `public-alpha` accepts the documented alpha threshold, while `production`
 requires strict coherent production qualification.
 

@@ -78,11 +78,16 @@ export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm
 ./scripts/release-direct.sh
 ```
 
-The first phase signs one exact candidate and writes a non-overwriting manifest
-of the complete bundle. The second phase refuses to rebuild or re-sign it and
-requires GUI evidence created after that manifest. `production` requires strict
-production qualification; `public-alpha` never silently upgrades that verdict.
-Only upload after notarization, stapling, Gatekeeper, and SHA-256 pass.
+The first phase signs one exact candidate, invokes that exact signed executable
+in a strict headless mode to create and self-test a candidate-scoped Secure
+Enclave authority, then writes a non-overwriting schema-3 manifest of the
+complete bundle and public binding. Every enrollment attempt receives a new
+private state directory. Ad-hoc builds intentionally skip this release
+manifest. The second phase refuses to rebuild or re-sign the candidate and
+requires GUI evidence created after that manifest. `production` requires
+strict production qualification; `public-alpha` never silently upgrades that
+verdict. Only upload after authenticated schema-8 GUI evidence, notarization,
+stapling, Gatekeeper, and SHA-256 pass.
 
 `./scripts/verify-native-swift-suite.sh
 SecureEnclaveFingerprintEvidenceSignerTests` checks deterministic lifecycle

@@ -4,7 +4,9 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 PREPARE = SCRIPTS / "prepare-direct-runtime-candidate.sh"
+PREPARE_MANAGER = SCRIPTS / "prepare-direct-manager-update.sh"
 RELEASE = SCRIPTS / "release-direct.sh"
+ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
@@ -23,9 +25,49 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("verify-public-fingerprint-corpus.py", text)
         self.assertIn("sign-runtime.sh", text)
         self.assertIn("package-integrated-app.sh", text)
+        self.assertIn("enroll-direct-fingerprint-authority.sh", text)
         self.assertIn("direct-candidate-manifest.py", text)
+        self.assertIn("--fingerprint-enrollment", text)
+        self.assertIn("/usr/bin/mktemp -d", text)
+        self.assertIn("fingerprint-enrollment.XXXXXX", text)
         self.assertIn('APP_PATH="$PROJECT_DIR/dist/NeAntik.app"', text)
         self.assertNotIn("notarytool submit", text)
+        self.assertLess(
+            text.index("enroll-direct-fingerprint-authority.sh"),
+            text.index("direct-candidate-manifest.py"),
+        )
+
+    def test_manager_candidate_enrolls_only_after_final_signature(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding="utf-8")
+        enrollment = text.index(
+            "enroll-direct-fingerprint-authority.sh"
+        )
+        manifest = text.index("direct-candidate-manifest.py")
+        final_signing = text.rindex("codesign \\\n")
+
+        self.assertLess(final_signing, enrollment)
+        self.assertLess(enrollment, manifest)
+        self.assertIn("--fingerprint-enrollment", text)
+        self.assertIn("/usr/bin/mktemp -d", text)
+        self.assertIn("fingerprint-enrollment.XXXXXX", text)
+        self.assertIn(
+            "LOCAL QA ONLY: schema-3 release enrollment was intentionally skipped.",
+            text,
+        )
+
+    def test_enrollment_helper_is_exact_private_and_bounded(self) -> None:
+        text = ENROLL.read_text(encoding="utf-8")
+
+        self.assertIn('stat -f \'%u\' /dev/console', text)
+        self.assertIn('launchctl print "gui/$EUID"', text)
+        self.assertIn("Authority=Developer ID Application:", text)
+        self.assertIn("Timestamp=", text)
+        self.assertIn("run-exact-command-with-timeout.py", text)
+        self.assertIn("--timeout 60", text)
+        self.assertIn("--neantik-enroll-fingerprint-evidence", text)
+        self.assertIn("--output \"$OUTPUT_PATH\"", text)
+        self.assertNotIn("cat \"$LOG_PATH\"", text)
+        self.assertNotIn("open -", text)
 
     def test_release_only_verifies_and_notarizes_prepared_candidate(self) -> None:
         text = RELEASE.read_text(encoding="utf-8")

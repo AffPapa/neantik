@@ -25,6 +25,7 @@ jobs:
           - BrowserRuntimePreflightTests
           - FingerprintAuditLoopbackSTUNServerTests
           - FingerprintAuditTests
+          - FingerprintEvidenceEnrollmentTests
           - FingerprintEvidenceEnvelopeTests
           - SecureEnclaveFingerprintEvidenceSignerTests
           - KeychainStoreTests
@@ -67,6 +68,9 @@ jobs:
       - name: Public workflow dependency closure
         run: python3 scripts/verify-public-workflow-references.py
       - name: Authenticated fingerprint evidence contract
-        run: python3 -m unittest scripts.tests.test_fingerprint_evidence_schema8
+        run: >-
+          python3 -m unittest
+          scripts.tests.test_fingerprint_evidence_schema8
+          scripts.tests.test_direct_candidate_manifest
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'

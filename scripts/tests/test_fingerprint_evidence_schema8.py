@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -46,6 +47,69 @@ def der_signature(r: int, s: int) -> bytes:
 
 
 class FingerprintEvidenceSchema8Tests(unittest.TestCase):
+    def test_manifest_binding_validation_is_exact_and_on_curve(self) -> None:
+        _, manifest, _, _ = fixture_bytes()
+        binding = json.loads(manifest)["fingerprintEvidence"]
+        self.assertEqual(
+            MODULE.validate_manifest_binding(binding),
+            binding,
+        )
+        public_key = base64.b64decode(
+            binding["publicKeyX963"],
+            validate=True,
+        )
+        off_curve = b"\x04" + (b"\x00" * 64)
+        invalid_bindings = []
+        for changes in (
+            {"schemaVersion": True},
+            {"algorithm": "P256"},
+            {"authorityKeyID": hashlib.sha256(public_key).hexdigest().upper()},
+            {"authorityKeyID": "0" * 64},
+            {"sessionID": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"},
+            {"challenge": base64.b64encode(b"a" * 31).decode("ascii")},
+            {
+                "publicKeyX963": base64.b64encode(off_curve).decode("ascii"),
+                "authorityKeyID": hashlib.sha256(off_curve).hexdigest(),
+            },
+        ):
+            candidate = dict(binding)
+            candidate.update(changes)
+            invalid_bindings.append(candidate)
+        missing = dict(binding)
+        missing.pop("challenge")
+        invalid_bindings.append(missing)
+        extra = dict(binding)
+        extra["unknown"] = True
+        invalid_bindings.append(extra)
+
+        for index, candidate in enumerate(invalid_bindings):
+            with self.subTest(index=index):
+                with self.assertRaises(
+                    MODULE.FingerprintEvidenceVerificationError
+                ):
+                    MODULE.validate_manifest_binding(candidate)
+
+    def test_off_curve_manifest_fails_before_openssl(self) -> None:
+        _, manifest, envelope, _ = fixture_bytes()
+        value = json.loads(manifest)
+        off_curve = b"\x04" + (b"\x00" * 64)
+        value["fingerprintEvidence"]["publicKeyX963"] = (
+            base64.b64encode(off_curve).decode("ascii")
+        )
+        value["fingerprintEvidence"]["authorityKeyID"] = (
+            hashlib.sha256(off_curve).hexdigest()
+        )
+        with mock.patch.object(MODULE, "_verify_with_openssl") as verifier:
+            with self.assertRaisesRegex(
+                MODULE.FingerprintEvidenceVerificationError,
+                "not on",
+            ):
+                MODULE.verify_fingerprint_evidence(
+                    candidate_manifest_raw=MODULE.canonical_json_bytes(value),
+                    envelope_raw=envelope,
+                )
+        verifier.assert_not_called()
+
     def test_swift_cryptokit_fixture_verifies_with_openssl(self) -> None:
         fixture, manifest, envelope, payload = fixture_bytes()
         result = MODULE.verify_fingerprint_evidence(
@@ -285,6 +349,44 @@ class FingerprintEvidenceSchema8Tests(unittest.TestCase):
                             maximum_bytes=MODULE.MAXIMUM_MANIFEST_BYTES,
                             label="Candidate manifest",
                         )
+
+    def test_bounded_reader_rejects_same_size_metadata_race(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "candidate.json"
+            path.write_bytes(b"{}")
+            real = path.stat()
+            initial = types.SimpleNamespace(
+                st_mode=real.st_mode,
+                st_nlink=real.st_nlink,
+                st_size=real.st_size,
+                st_dev=real.st_dev,
+                st_ino=real.st_ino,
+                st_mtime_ns=real.st_mtime_ns,
+                st_ctime_ns=real.st_ctime_ns,
+            )
+            changed = types.SimpleNamespace(
+                st_mode=real.st_mode,
+                st_nlink=real.st_nlink,
+                st_size=real.st_size,
+                st_dev=real.st_dev,
+                st_ino=real.st_ino,
+                st_mtime_ns=real.st_mtime_ns + 1,
+                st_ctime_ns=real.st_ctime_ns,
+            )
+            with mock.patch.object(
+                MODULE.os,
+                "fstat",
+                side_effect=[initial, changed],
+            ):
+                with self.assertRaisesRegex(
+                    MODULE.FingerprintEvidenceVerificationError,
+                    "changed",
+                ):
+                    MODULE.read_bounded_regular_file(
+                        path,
+                        maximum_bytes=MODULE.MAXIMUM_MANIFEST_BYTES,
+                        label="Candidate manifest",
+                    )
 
     def test_cli_cannot_override_openssl_and_sanitizes_read_errors(
         self,

@@ -19,6 +19,7 @@ from typing import Any
 
 MAXIMUM_PAYLOAD_BYTES = 4 * 1024 * 1024
 MAXIMUM_MANIFEST_BYTES = 1 * 1024 * 1024
+MAXIMUM_ENROLLMENT_BINDING_BYTES = 4 * 1024
 MAXIMUM_ENVELOPE_BYTES = ((MAXIMUM_PAYLOAD_BYTES + 2) // 3) * 4 + 4096
 TRANSCRIPT_DOMAIN = b"NeAntik GUI fingerprint evidence v8\x00"
 ALGORITHM = "P256-SHA256"
@@ -34,6 +35,14 @@ P256_ORDER = int(
     16,
 )
 P256_HALF_ORDER = P256_ORDER // 2
+P256_FIELD_PRIME = int(
+    "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF",
+    16,
+)
+P256_CURVE_B = int(
+    "5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B",
+    16,
+)
 P256_SPKI_PREFIX = bytes.fromhex(
     "3059301306072a8648ce3d020106082a8648ce3d030107034200"
 )
@@ -253,6 +262,7 @@ def read_bounded_regular_file(
         metadata = os.fstat(descriptor)
         if (
             not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_nlink != 1
             or metadata.st_size < 1
             or metadata.st_size > maximum_bytes
         ):
@@ -269,7 +279,18 @@ def read_bounded_regular_file(
             remaining -= len(chunk)
         extra = os.read(descriptor, 1)
         raw = b"".join(chunks)
-        if remaining or extra or len(raw) != metadata.st_size:
+        final_metadata = os.fstat(descriptor)
+        if (
+            remaining
+            or extra
+            or len(raw) != metadata.st_size
+            or final_metadata.st_dev != metadata.st_dev
+            or final_metadata.st_ino != metadata.st_ino
+            or final_metadata.st_nlink != metadata.st_nlink
+            or final_metadata.st_size != metadata.st_size
+            or final_metadata.st_mtime_ns != metadata.st_mtime_ns
+            or final_metadata.st_ctime_ns != metadata.st_ctime_ns
+        ):
             raise FingerprintEvidenceVerificationError(
                 f"{label} changed while it was being read."
             )
@@ -283,6 +304,95 @@ def read_bounded_regular_file(
     finally:
         if descriptor is not None:
             os.close(descriptor)
+
+
+def validate_p256_public_key_x963(public_key_x963: bytes) -> bytes:
+    if len(public_key_x963) != 65 or public_key_x963[0] != 0x04:
+        raise FingerprintEvidenceVerificationError(
+            "Manifest P-256 public key is not an uncompressed X9.63 point."
+        )
+    x = int.from_bytes(public_key_x963[1:33], "big")
+    y = int.from_bytes(public_key_x963[33:65], "big")
+    if (
+        x >= P256_FIELD_PRIME
+        or y >= P256_FIELD_PRIME
+        or (
+            (y * y)
+            - (
+                (x * x * x)
+                - (3 * x)
+                + P256_CURVE_B
+            )
+        )
+        % P256_FIELD_PRIME
+        != 0
+    ):
+        raise FingerprintEvidenceVerificationError(
+            "Manifest P-256 public key is not on the P-256 curve."
+        )
+    return public_key_x963
+
+
+def validate_manifest_binding(value: Any) -> dict[str, Any]:
+    binding = _require_exact_keys(
+        value,
+        BINDING_KEYS,
+        "Fingerprint binding",
+    )
+    _require_exact_integer(
+        binding.get("schemaVersion"),
+        1,
+        "Fingerprint binding schemaVersion",
+    )
+    _require_exact_string(
+        binding.get("algorithm"),
+        ALGORITHM,
+        "Fingerprint binding algorithm",
+    )
+    public_key_x963 = validate_p256_public_key_x963(
+        _canonical_base64(
+            binding.get("publicKeyX963"),
+            expected_bytes=65,
+            maximum_text_bytes=128,
+            label="Manifest public key",
+        )
+    )
+    authority_key_id = _canonical_lower_hex(
+        binding.get("authorityKeyID"),
+        bytes_count=32,
+        label="Manifest authority key ID",
+    )
+    expected_key_id = hashlib.sha256(public_key_x963).hexdigest()
+    if not hmac.compare_digest(authority_key_id, expected_key_id):
+        raise FingerprintEvidenceVerificationError(
+            "Manifest authority key ID does not match its public key."
+        )
+    _canonical_wire_uuid(
+        binding.get("sessionID"),
+        "Manifest sessionID",
+    )
+    _canonical_base64(
+        binding.get("challenge"),
+        expected_bytes=32,
+        maximum_text_bytes=64,
+        label="Manifest challenge",
+    )
+    return dict(binding)
+
+
+def load_enrollment_binding(path: Path) -> dict[str, Any]:
+    raw = read_bounded_regular_file(
+        path,
+        maximum_bytes=MAXIMUM_ENROLLMENT_BINDING_BYTES,
+        label="Fingerprint enrollment binding",
+    )
+    return validate_manifest_binding(
+        load_canonical_json(
+            raw,
+            maximum_bytes=MAXIMUM_ENROLLMENT_BINDING_BYTES,
+            label="Fingerprint enrollment binding",
+        )
+    )
 
 
 def _validate_iso8601_date(value: Any, label: str) -> None:
@@ -484,10 +594,7 @@ def parse_strict_p256_der(signature: bytes) -> tuple[int, int]:
 
 
 def _public_key_pem(public_key_x963: bytes) -> bytes:
-    if len(public_key_x963) != 65 or public_key_x963[0] != 0x04:
-        raise FingerprintEvidenceVerificationError(
-            "Manifest P-256 public key is not an uncompressed X9.63 point."
-        )
+    validate_p256_public_key_x963(public_key_x963)
     spki = P256_SPKI_PREFIX + public_key_x963
     encoded = base64.b64encode(spki).decode("ascii")
     lines = [encoded[index : index + 64] for index in range(0, len(encoded), 64)]
@@ -569,41 +676,14 @@ def verify_fingerprint_evidence(
         3,
         "Candidate manifest schemaVersion",
     )
-    binding = _require_exact_keys(
-        manifest.get("fingerprintEvidence"),
-        BINDING_KEYS,
-        "Candidate manifest fingerprintEvidence",
+    binding = validate_manifest_binding(
+        manifest.get("fingerprintEvidence")
     )
-    _require_exact_integer(
-        binding.get("schemaVersion"),
-        1,
-        "Fingerprint binding schemaVersion",
+    public_key_x963 = base64.b64decode(
+        binding["publicKeyX963"],
+        validate=True,
     )
-    _require_exact_string(
-        binding.get("algorithm"),
-        ALGORITHM,
-        "Fingerprint binding algorithm",
-    )
-    public_key_x963 = _canonical_base64(
-        binding.get("publicKeyX963"),
-        expected_bytes=65,
-        maximum_text_bytes=128,
-        label="Manifest public key",
-    )
-    if public_key_x963[0] != 0x04:
-        raise FingerprintEvidenceVerificationError(
-            "Manifest public key must use uncompressed X9.63 form."
-        )
-    authority_key_id = _canonical_lower_hex(
-        binding.get("authorityKeyID"),
-        bytes_count=32,
-        label="Manifest authority key ID",
-    )
-    expected_key_id = hashlib.sha256(public_key_x963).hexdigest()
-    if not hmac.compare_digest(authority_key_id, expected_key_id):
-        raise FingerprintEvidenceVerificationError(
-            "Manifest authority key ID does not match its public key."
-        )
+    authority_key_id = str(binding["authorityKeyID"])
     session_id = _canonical_wire_uuid(
         binding.get("sessionID"),
         "Manifest sessionID",

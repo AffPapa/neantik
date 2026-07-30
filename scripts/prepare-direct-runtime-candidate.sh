@@ -120,10 +120,36 @@ codesign \
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
 
+PRIVATE_RELEASE_BASE="$PROJECT_DIR/dist/private"
+if [[ -L "$PRIVATE_RELEASE_BASE" ||
+      (-e "$PRIVATE_RELEASE_BASE" && ! -d "$PRIVATE_RELEASE_BASE") ]]; then
+  echo "Private release state path is unsafe." >&2
+  exit 65
+fi
+/bin/mkdir -p "$PRIVATE_RELEASE_BASE"
+if [[ -L "$PRIVATE_RELEASE_BASE" ||
+      "$(/usr/bin/stat -f '%u' "$PRIVATE_RELEASE_BASE")" != "$EUID" ]]; then
+  echo "Private release state directory is unsafe." >&2
+  exit 65
+fi
+/bin/chmod 0700 "$PRIVATE_RELEASE_BASE"
+PRIVATE_RELEASE_DIR="$(
+  /usr/bin/mktemp -d \
+    "$PRIVATE_RELEASE_BASE/fingerprint-enrollment.XXXXXX"
+)"
+/bin/chmod 0700 "$PRIVATE_RELEASE_DIR"
+FINGERPRINT_ENROLLMENT="$PRIVATE_RELEASE_DIR/fingerprint-enrollment.json"
+"$PROJECT_DIR/scripts/enroll-direct-fingerprint-authority.sh" \
+  "$APP_PATH" \
+  "$FINGERPRINT_ENROLLMENT"
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+"$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
+
 python3 "$PROJECT_DIR/scripts/direct-candidate-manifest.py" create \
   --app "$APP_PATH" \
   --manifest "$CANDIDATE_MANIFEST" \
-  --release-channel "$NEANTIK_RELEASE_CHANNEL"
+  --release-channel "$NEANTIK_RELEASE_CHANNEL" \
+  --fingerprint-enrollment "$FINGERPRINT_ENROLLMENT"
 
 echo "$APP_PATH"
 echo "$CANDIDATE_MANIFEST"

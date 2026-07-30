@@ -1,8 +1,9 @@
 # Authenticated GUI fingerprint evidence (schema 8)
 
-Status: implementation in progress. This document describes the cryptographic
-envelope contract. It is not evidence that a public build has passed the GUI
-audit.
+Status: candidate enrollment and schema-3 manifest binding are implemented;
+authenticated GUI persistence and all release consumers are still in
+progress. This document is not evidence that a public build has passed the
+GUI audit.
 
 ## Purpose
 
@@ -107,6 +108,16 @@ with an atomic `WhenUnlockedThisDeviceOnly` Data Protection Keychain
 reservation; key lookup requires exactly one matching private Secure Enclave
 key. The reservation remains until explicit candidate abandonment, so a
 failed or interrupted enrollment cannot silently reuse the same challenge.
+
+The final signed manager has one strict headless enrollment intent. The
+release script reserves a new private `0700` attempt directory, then executes
+the exact `Contents/MacOS/NeAntik` binary without a shell. The app generates
+the session UUID and 32-byte challenge internally, creates and reloads the
+Secure Enclave key, completes a local sign/verify self-test, and durably writes
+only the compact six-field public binding as a new `0600` file. Existing or
+symlinked outputs, unsafe parents, ad-hoc builds, unavailable user sessions,
+timeouts and any Keychain/Secure Enclave error stop preparation. No key,
+challenge, session or binding content is printed.
 
 This source and its deterministic tests do not prove a physical Secure
 Enclave, non-exportability on the release Mac, persistence across relaunch or

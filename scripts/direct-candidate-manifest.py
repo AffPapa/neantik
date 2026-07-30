@@ -4,10 +4,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.util
-import json
 import os
 import plistlib
-import re
 import stat
 import sys
 from datetime import datetime, timezone
@@ -26,13 +24,69 @@ GUI_VERIFIER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
 
-SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+EVIDENCE_SCHEMA_PATH = (
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+)
+EVIDENCE_SCHEMA_SPEC = importlib.util.spec_from_file_location(
+    "fingerprint_evidence_schema8_for_candidate_manifest",
+    EVIDENCE_SCHEMA_PATH,
+)
+assert EVIDENCE_SCHEMA_SPEC and EVIDENCE_SCHEMA_SPEC.loader
+EVIDENCE_SCHEMA = importlib.util.module_from_spec(EVIDENCE_SCHEMA_SPEC)
+sys.modules[EVIDENCE_SCHEMA_SPEC.name] = EVIDENCE_SCHEMA
+EVIDENCE_SCHEMA_SPEC.loader.exec_module(EVIDENCE_SCHEMA)
+
 RELEASE_CHANNELS = {"public-alpha", "production"}
 POST_PREPARATION_MUTABLE_PATHS = {"Contents/CodeResources"}
+MAXIMUM_MANIFEST_BYTES = EVIDENCE_SCHEMA.MAXIMUM_MANIFEST_BYTES
 
 
 class CandidateManifestError(ValueError):
     pass
+
+
+def validated_fingerprint_evidence_binding(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        return EVIDENCE_SCHEMA.validate_manifest_binding(payload)
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise CandidateManifestError(
+            "Fingerprint evidence binding is invalid"
+        ) from error
+
+
+def load_fingerprint_evidence_binding(path: Path) -> dict[str, Any]:
+    try:
+        return EVIDENCE_SCHEMA.load_enrollment_binding(path)
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise CandidateManifestError(
+            "Fingerprint enrollment binding is invalid"
+        ) from error
+
+
+def load_canonical_object(
+    path: Path,
+    *,
+    maximum_bytes: int,
+    label: str,
+) -> tuple[dict[str, Any], bytes]:
+    try:
+        raw = EVIDENCE_SCHEMA.read_bounded_regular_file(
+            path,
+            maximum_bytes=maximum_bytes,
+            label=label,
+        )
+        payload = EVIDENCE_SCHEMA.load_canonical_json(
+            raw,
+            maximum_bytes=maximum_bytes,
+            label=label,
+        )
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise CandidateManifestError(f"{label} is invalid") from error
+    if not isinstance(payload, dict):
+        raise CandidateManifestError(f"{label} must be a JSON object")
+    return payload, raw
 
 
 def sha256_file(path: Path) -> str:
@@ -142,6 +196,7 @@ def manifest_payload(
     app: Path,
     *,
     release_channel: str,
+    fingerprint_evidence: dict[str, Any],
     prepared_at: str | None = None,
 ) -> dict[str, Any]:
     if release_channel not in RELEASE_CHANNELS:
@@ -185,7 +240,7 @@ def manifest_payload(
     evidence_root = "Contents/Resources/NeAntikRuntimeEvidence"
 
     return {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "kind": "neantik-direct-prepared-candidate",
         "releaseChannel": release_channel,
         "preparedAt": prepared_at
@@ -228,6 +283,9 @@ def manifest_payload(
         },
         "bundleInventory": bundle_inventory(app),
         "postPreparationMutablePaths": sorted(POST_PREPARATION_MUTABLE_PATHS),
+        "fingerprintEvidence": validated_fingerprint_evidence_binding(
+            fingerprint_evidence
+        ),
         "boundary": (
             "This manifest binds every regular file, symlink and permission "
             "bit in one prepared Direct candidate except the exact stapler "
@@ -237,23 +295,28 @@ def manifest_payload(
 
 
 def encoded_manifest(payload: dict[str, Any]) -> bytes:
-    return (
-        json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
-    ).encode("utf-8")
-
-
-def load_manifest(path: Path) -> dict[str, Any]:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise CandidateManifestError(f"Cannot read candidate manifest: {error}") from error
-    if not isinstance(payload, dict):
-        raise CandidateManifestError("Candidate manifest must be a JSON object")
+        return EVIDENCE_SCHEMA.canonical_json_bytes(payload)
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise CandidateManifestError(
+            "Candidate manifest cannot be encoded canonically"
+        ) from error
+
+
+def load_manifest_with_bytes(
+    path: Path,
+) -> tuple[dict[str, Any], bytes]:
+    payload, raw = load_canonical_object(
+        path,
+        maximum_bytes=MAXIMUM_MANIFEST_BYTES,
+        label="Candidate manifest",
+    )
     expected_keys = {
         "boundary",
         "bundle",
         "bundleInventory",
         "criticalFiles",
+        "fingerprintEvidence",
         "kind",
         "preparedAt",
         "postPreparationMutablePaths",
@@ -264,8 +327,9 @@ def load_manifest(path: Path) -> dict[str, Any]:
         raise CandidateManifestError(
             "Candidate manifest has an invalid exact key set"
         )
-    if payload.get("schemaVersion") != 2:
-        raise CandidateManifestError("Candidate manifest schemaVersion must be 2")
+    if payload.get("schemaVersion") != 3:
+        raise CandidateManifestError("Candidate manifest schemaVersion must be 3")
+    validated_fingerprint_evidence_binding(payload["fingerprintEvidence"])
     if payload.get("postPreparationMutablePaths") != sorted(
         POST_PREPARATION_MUTABLE_PATHS
     ):
@@ -275,6 +339,11 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if payload.get("kind") != "neantik-direct-prepared-candidate":
         raise CandidateManifestError("Candidate manifest kind is invalid")
     GUI_VERIFIER.parse_iso8601(payload.get("preparedAt"), "preparedAt")
+    return payload, raw
+
+
+def load_manifest(path: Path) -> dict[str, Any]:
+    payload, _ = load_manifest_with_bytes(path)
     return payload
 
 
@@ -284,7 +353,7 @@ def verify_manifest(
     *,
     release_channel: str,
 ) -> str:
-    payload = load_manifest(manifest)
+    payload, raw = load_manifest_with_bytes(manifest)
     if payload.get("releaseChannel") != release_channel:
         raise CandidateManifestError(
             "Candidate manifest release channel does not match the requested channel"
@@ -292,13 +361,14 @@ def verify_manifest(
     expected = manifest_payload(
         app,
         release_channel=release_channel,
+        fingerprint_evidence=payload["fingerprintEvidence"],
         prepared_at=str(payload["preparedAt"]),
     )
     if payload != expected:
         raise CandidateManifestError(
             "Prepared candidate changed after its manifest was created"
         )
-    return hashlib.sha256(encoded_manifest(payload)).hexdigest()
+    return hashlib.sha256(raw).hexdigest()
 
 
 def verify_evidence_follows_manifest(manifest: Path, evidence: Path) -> None:
@@ -357,6 +427,14 @@ def main() -> int:
         required=True,
     )
     parser.add_argument(
+        "--fingerprint-enrollment",
+        type=Path,
+        help=(
+            "Canonical public binding emitted after the exact signed app "
+            "enrolls its candidate-scoped protected key."
+        ),
+    )
+    parser.add_argument(
         "--fingerprint-evidence",
         type=Path,
         help=(
@@ -367,9 +445,19 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.mode == "create":
+            if args.fingerprint_enrollment is None:
+                raise CandidateManifestError(
+                    "Create requires --fingerprint-enrollment"
+                )
             digest = write_manifest(
                 args.manifest,
-                manifest_payload(args.app, release_channel=args.release_channel),
+                manifest_payload(
+                    args.app,
+                    release_channel=args.release_channel,
+                    fingerprint_evidence=load_fingerprint_evidence_binding(
+                        args.fingerprint_enrollment
+                    ),
+                ),
             )
         else:
             digest = verify_manifest(
