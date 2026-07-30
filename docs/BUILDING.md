@@ -73,8 +73,9 @@ export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm
   /absolute/path/to/chromium/src \
   /absolute/path/to/runtime-candidate-lock.json
 
-# Run a fresh GUI A → B → A audit from dist/NeAntik.app, then collect it
-# against dist/direct-candidate-manifest.json and the same release channel.
+# Launch the exact app with its manifest and a new schema-8 output path.
+# Run GUI A → B → A; the app signs only a privacy-safe aggregate.
+# Then collect that explicit schema-8 file against the same manifest/channel.
 ./scripts/release-direct.sh
 ```
 
@@ -84,7 +85,8 @@ Enclave authority, then writes a non-overwriting schema-3 manifest of the
 complete bundle and public binding. Every enrollment attempt receives a new
 private state directory. Ad-hoc builds intentionally skip this release
 manifest. The second phase refuses to rebuild or re-sign the candidate and
-requires GUI evidence created after that manifest. `production` requires
+requires one-shot authenticated GUI evidence created after that manifest.
+Raw schema-7 diagnostic reports are never accepted. `production` requires
 strict production qualification; `public-alpha` never silently upgrades that
 verdict. Only upload after authenticated schema-8 GUI evidence, notarization,
 stapling, Gatekeeper, and SHA-256 pass.
@@ -92,7 +94,7 @@ stapling, Gatekeeper, and SHA-256 pass.
 `./scripts/verify-native-swift-suite.sh
 SecureEnclaveFingerprintEvidenceSignerTests` checks deterministic lifecycle
 and fail-closed behavior with an injected backend only. It is not a hardware
-acceptance test. Before schema-8 release evidence is accepted, the exact final
+acceptance test. Before a candidate is published, the exact final
 Developer ID-signed candidate must create, reload, sign, verify and delete its
 candidate-scoped key on a supported Apple Silicon Mac. The release must stop
 without that result; never export or request the private key.

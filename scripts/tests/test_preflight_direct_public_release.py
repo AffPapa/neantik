@@ -1,4 +1,5 @@
 import importlib.util
+import base64
 import json
 import os
 import plistlib
@@ -6,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "preflight-direct-public-release.py"
@@ -67,20 +69,31 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
             root = Path(temporary)
             integrated, runtime, args_gn, gui_report, runtime_lock = write_fixture_project(root)
 
-            results = MODULE.verify_direct_public_release_plan(
-                project_root=root,
-                integrated_app=integrated,
-                runtime_app=runtime,
-                args_gn=args_gn,
-                gui_fingerprint_report=gui_report,
-                runtime_lock=runtime_lock,
-                download_url="https://downloads.neantik.app/NeAntik-1.2.3-arm64-notarized.zip",
-                env={
-                    "NEANTIK_SIGNING_IDENTITY": "Developer ID Application: Example (TEAMID)",
-                    "NEANTIK_NOTARY_PROFILE": "nevision-notary",
-                    "NEANTIK_RELEASE_CHANNEL": "public-alpha",
+            with mock.patch.object(
+                MODULE.GUI_VERIFIER,
+                "expected_runtime_evidence_from_app",
+                return_value={
+                    "managerVersion": "0.3.12",
+                    "managerBuild": "15",
+                    "runtimeVersion": "150.0.7871.186",
+                    "runtimeExecutableSHA256": "a" * 64,
+                    "runtimeFrameworkSHA256": "b" * 64,
                 },
-            )
+            ):
+                results = MODULE.verify_direct_public_release_plan(
+                    project_root=root,
+                    integrated_app=integrated,
+                    runtime_app=runtime,
+                    args_gn=args_gn,
+                    gui_fingerprint_report=gui_report,
+                    runtime_lock=runtime_lock,
+                    download_url="https://downloads.neantik.app/NeAntik-1.2.3-arm64-notarized.zip",
+                    env={
+                        "NEANTIK_SIGNING_IDENTITY": "Developer ID Application: Example (TEAMID)",
+                        "NEANTIK_NOTARY_PROFILE": "nevision-notary",
+                        "NEANTIK_RELEASE_CHANNEL": "public-alpha",
+                    },
+                )
 
         self.assertTrue(all(result.passed for result in results))
         archive_gate = next(
@@ -96,10 +109,6 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
             integrated, runtime, args_gn, gui_report, runtime_lock = (
                 write_fixture_project(root)
             )
-            report = json.loads(gui_report.read_text(encoding="utf-8"))
-            report["firstInitial"]["values"]["worker_platform"] = "Win32"
-            report["firstRepeat"]["values"]["worker_platform"] = "Win32"
-            gui_report.write_text(json.dumps(report), encoding="utf-8")
             results = MODULE.verify_direct_public_release_plan(
                 project_root=root,
                 integrated_app=integrated,
@@ -124,7 +133,10 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
             if not result.passed
         }
         self.assertIn("GUI fingerprint qualification", blocked)
-        self.assertIn("worker_platform", blocked["GUI fingerprint qualification"])
+        self.assertIn(
+            "authenticated GUI evidence",
+            blocked["GUI fingerprint qualification"],
+        )
 
     def test_rejects_no_metal_args_and_wrong_download_url(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -456,20 +468,24 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
         encoding="utf-8",
     )
     gui_report = root / "dist" / "fingerprint-audit.json"
-    report = VERIFIER_FIXTURES.production_report(
-        runtime_version="150.0.7871.186"
+    schema8_fixture = json.loads(
+        (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema8-swift.json"
+        ).read_text(encoding="utf-8")
     )
-    report["managerVersion"] = "1.2.3"
-    report["managerBuild"] = "7"
-    report["runtimeExecutableSHA256"] = MODULE.GUI_VERIFIER.sha256_file(
-        executable
+    gui_report.write_bytes(
+        base64.b64decode(
+            schema8_fixture["envelopeBase64"],
+            validate=True,
+        )
     )
-    report["runtimeFrameworkSHA256"] = MODULE.GUI_VERIFIER.sha256_file(
-        framework
-    )
-    gui_report.write_text(
-        json.dumps(report),
-        encoding="utf-8",
+    (root / "dist" / "direct-candidate-manifest.json").write_bytes(
+        base64.b64decode(
+            schema8_fixture["manifestBase64"],
+            validate=True,
+        )
     )
     runtime_report = root / "artifacts" / "runtime-report.json"
     runtime_report.parent.mkdir(parents=True)

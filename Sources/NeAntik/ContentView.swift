@@ -47,6 +47,8 @@ struct ContentView: View {
     let credentialCleanup: DeletedProfileCredentialCleanup
     let runtimeLocator: BrowserRuntimeLocator
     let launchIntent: NeAntikLaunchIntent
+    let fingerprintEvidenceReleaseContext:
+        FingerprintEvidenceReleaseContext?
     private let updateChannel = UpdateChannelConfiguration.fromBundle()
 
     @State private var selection: UUID?
@@ -143,7 +145,9 @@ struct ContentView: View {
                     initialFirstID: selection,
                     runtime: runtime,
                     processes: processes,
-                    paths: store.paths
+                    paths: store.paths,
+                    releaseContext:
+                        fingerprintEvidenceReleaseContext
                 )
             } else {
                 ContentUnavailableView(

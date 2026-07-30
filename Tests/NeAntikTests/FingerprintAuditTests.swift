@@ -552,18 +552,18 @@ struct FingerprintAuditTests {
     func qualifiesOnlyCompleteBrowserEvidence() {
         let first = capture(
             name: "First",
-            values: productionValues(
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
                 canvas: "canvas-a",
-                webGLPixels: "webgl-a",
-                renderer: "Apple M2"
+                webGLPixels: "webgl-a"
             )
         )
         let second = capture(
             name: "Second",
-            values: productionValues(
+            identityCode: "NA-00000008",
+            values: coherentM4Values(
                 canvas: "canvas-b",
-                webGLPixels: "webgl-b",
-                renderer: "Apple M4"
+                webGLPixels: "webgl-b"
             )
         )
         let result = report(
@@ -572,6 +572,7 @@ struct FingerprintAuditTests {
             repeatCapture: capture(
                 id: first.profileID,
                 name: first.profileName,
+                identityCode: first.identityCode,
                 values: first.values
             )
         )
@@ -629,10 +630,9 @@ struct FingerprintAuditTests {
         )
         firstValues.removeValue(forKey: "worker_device_memory")
         let first = capture(name: "First", values: firstValues)
-        var secondValues = productionValues(
+        var secondValues = coherentM4Values(
             canvas: "canvas-b",
-            webGLPixels: "webgl-b",
-            renderer: "Apple M4"
+            webGLPixels: "webgl-b"
         )
         secondValues.removeValue(forKey: "worker_device_memory")
         let result = report(
@@ -744,11 +744,15 @@ struct FingerprintAuditTests {
             intlLocale: String,
             localeCore: String
         ) -> [String: String] {
-            var values = productionValues(
-                canvas: canvas,
-                webGLPixels: webGLPixels,
-                renderer: renderer
-            )
+            var values = renderer.contains("M2")
+                ? coherentM2Values(
+                    canvas: canvas,
+                    webGLPixels: webGLPixels
+                )
+                : coherentM4Values(
+                    canvas: canvas,
+                    webGLPixels: webGLPixels
+                )
             values["languages"] = languages
             values["worker_languages"] = languages
             values["intl_locale"] = intlLocale
@@ -777,6 +781,7 @@ struct FingerprintAuditTests {
         ] {
             let first = capture(
                 name: "First",
+                identityCode: "NA-00000002",
                 values: canonicalizedValues(
                     canvas: "canvas-a",
                     webGLPixels: "webgl-a",
@@ -790,6 +795,7 @@ struct FingerprintAuditTests {
                 first: first,
                 second: capture(
                     name: "Second",
+                    identityCode: "NA-00000008",
                     values: canonicalizedValues(
                         canvas: "canvas-b",
                         webGLPixels: "webgl-b",
@@ -802,6 +808,7 @@ struct FingerprintAuditTests {
                 repeatCapture: capture(
                     id: first.profileID,
                     name: first.profileName,
+                    identityCode: first.identityCode,
                     values: first.values
                 )
             )
@@ -941,10 +948,9 @@ struct FingerprintAuditTests {
                 renderer: "Apple M2"
             )
         )
-        var secondValues = productionValues(
+        var secondValues = coherentM4Values(
             canvas: "canvas-b",
-            webGLPixels: "webgl-b",
-            renderer: "Apple M4"
+            webGLPixels: "webgl-b"
         )
         secondValues["network_route"] = "proxied"
         secondValues["webrtc_stun_requests"] = "0"
@@ -1042,10 +1048,9 @@ struct FingerprintAuditTests {
 
     @Test
     func proxiedRelayOnlyWebRTCCandidatePassesNetworkGate() {
-        var secondValues = productionValues(
+        var secondValues = coherentM4Values(
             canvas: "canvas-b",
-            webGLPixels: "webgl-b",
-            renderer: "Apple M4"
+            webGLPixels: "webgl-b"
         )
         secondValues["network_route"] = "proxied"
         secondValues["webrtc_stun_requests"] = "0"
@@ -1053,18 +1058,23 @@ struct FingerprintAuditTests {
             #"{"total":1,"host":0,"srflx":0,"prflx":0,"relay":1,"unknown":0}"#
         let first = capture(
             name: "First",
-            values: productionValues(
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
                 canvas: "canvas-a",
-                webGLPixels: "webgl-a",
-                renderer: "Apple M2"
+                webGLPixels: "webgl-a"
             )
         )
         let result = report(
             first: first,
-            second: capture(name: "Second", values: secondValues),
+            second: capture(
+                name: "Second",
+                identityCode: "NA-00000008",
+                values: secondValues
+            ),
             repeatCapture: capture(
                 id: first.profileID,
                 name: first.profileName,
+                identityCode: first.identityCode,
                 values: first.values
             )
         )
@@ -1084,10 +1094,10 @@ struct FingerprintAuditTests {
         secondValues["webrtc_stun_requests"] = "1"
         let first = capture(
             name: "First",
-            values: productionValues(
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
                 canvas: "canvas-a",
-                webGLPixels: "webgl-a",
-                renderer: "Apple M2"
+                webGLPixels: "webgl-a"
             )
         )
         let result = report(
@@ -1130,15 +1140,16 @@ struct FingerprintAuditTests {
             firstInitial: first,
             second: capture(
                 name: "Second",
-                values: productionValues(
+                identityCode: "NA-00000008",
+                values: coherentM4Values(
                     canvas: "canvas-b",
-                    webGLPixels: "webgl-b",
-                    renderer: "Apple M4"
+                    webGLPixels: "webgl-b"
                 )
             ),
             firstRepeat: capture(
                 id: first.profileID,
                 name: first.profileName,
+                identityCode: first.identityCode,
                 values: first.values
             )
         )
@@ -1292,6 +1303,43 @@ struct FingerprintAuditTests {
             result.productionReleaseIssues.contains(
                 "The report does not use the current immutable identity catalog."
             )
+        )
+    }
+
+    @Test
+    func malformedIdentityCodeCannotQualifyDeviceTuple() {
+        let first = capture(
+            name: "First",
+            identityCode: "NA-NOTHEX!",
+            values: coherentM2Values(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a"
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-BADCODE",
+                values: coherentM4Values(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                identityCode: first.identityCode,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.deviceTupleConsistencyIssues.contains {
+                $0.contains("cannot be mapped")
+            }
         )
     }
 
@@ -1511,25 +1559,26 @@ struct FingerprintAuditTests {
     func diagnosticReportCanNeverQualifyForProduction() {
         let first = capture(
             name: "First",
-            values: productionValues(
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
                 canvas: "canvas-a",
-                webGLPixels: "webgl-a",
-                renderer: "Apple M2"
+                webGLPixels: "webgl-a"
             )
         )
         let browserReport = report(
             first: first,
             second: capture(
                 name: "Second",
-                values: productionValues(
+                identityCode: "NA-00000008",
+                values: coherentM4Values(
                     canvas: "canvas-b",
-                    webGLPixels: "webgl-b",
-                    renderer: "Apple M4"
+                    webGLPixels: "webgl-b"
                 )
             ),
             repeatCapture: capture(
                 id: first.profileID,
                 name: first.profileName,
+                identityCode: first.identityCode,
                 values: first.values
             )
         )
@@ -1816,6 +1865,36 @@ struct FingerprintAuditTests {
         values["hardware_concurrency"] = String(cores)
         values["worker_hardware_concurrency"] = String(cores)
         return values
+    }
+
+    private func coherentM2Values(
+        canvas: String,
+        webGLPixels: String
+    ) -> [String: String] {
+        coherentTupleValues(
+            canvas: canvas,
+            webGLPixels: webGLPixels,
+            gpu: "M2",
+            cores: 8,
+            screen: "1280x832x1280x807x24x2",
+            platformVersion: "15.4.0",
+            runtimeVersion: "1"
+        )
+    }
+
+    private func coherentM4Values(
+        canvas: String,
+        webGLPixels: String
+    ) -> [String: String] {
+        coherentTupleValues(
+            canvas: canvas,
+            webGLPixels: webGLPixels,
+            gpu: "M4",
+            cores: 10,
+            screen: "1280x832x1280x807x24x2",
+            platformVersion: "15.1.0",
+            runtimeVersion: "1"
+        )
     }
 
     private func capture(

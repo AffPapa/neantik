@@ -115,7 +115,7 @@ struct FingerprintEvidenceEnvelopeTests {
     }
 
     @Test
-    func lowercaseUUIDsAndUnknownPayloadFieldsFailWireParity() throws {
+    func lowercaseManifestUUIDsAndUnknownPayloadFieldsFailWireParity() throws {
         let fixture = makeFixture()
         let lowercaseManifest = Data(
             String(data: fixture.manifest, encoding: .utf8)!
@@ -133,52 +133,36 @@ struct FingerprintEvidenceEnvelopeTests {
             )
         }
 
-        let lowercasePayload = Data(
-            String(data: fixture.payload, encoding: .utf8)!
-                .replacingOccurrences(
-                    of: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
-                    with: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-                )
-                .utf8
-        )
-        #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
-            try FingerprintEvidenceEnvelopeCodec.make(
-                payload: lowercasePayload,
-                candidateManifest: fixture.manifest,
-                signer: fixture.signer
-            )
-        }
-
-        var report = try #require(
+        var payloadObject = try #require(
             JSONSerialization.jsonObject(with: fixture.payload)
                 as? [String: Any]
         )
-        report["unknown"] = true
-        let unknownReport = try JSONSerialization.data(
-            withJSONObject: report,
+        payloadObject["unknown"] = true
+        let unknownPayload = try JSONSerialization.data(
+            withJSONObject: payloadObject,
             options: [.sortedKeys, .withoutEscapingSlashes]
         )
         #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
             try FingerprintEvidenceEnvelopeCodec.make(
-                payload: unknownReport,
+                payload: unknownPayload,
                 candidateManifest: fixture.manifest,
                 signer: fixture.signer
             )
         }
 
-        var capture = try #require(
-            report["firstInitial"] as? [String: Any]
+        payloadObject.removeValue(forKey: "unknown")
+        var surfaces = try #require(
+            payloadObject["criticalSurfaces"] as? [String: Any]
         )
-        report.removeValue(forKey: "unknown")
-        capture["unknown"] = true
-        report["firstInitial"] = capture
-        let unknownCapture = try JSONSerialization.data(
-            withJSONObject: report,
+        surfaces["unknown"] = "stable-different"
+        payloadObject["criticalSurfaces"] = surfaces
+        let unknownSurface = try JSONSerialization.data(
+            withJSONObject: payloadObject,
             options: [.sortedKeys, .withoutEscapingSlashes]
         )
         #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
             try FingerprintEvidenceEnvelopeCodec.make(
-                payload: unknownCapture,
+                payload: unknownSurface,
                 candidateManifest: fixture.manifest,
                 signer: fixture.signer
             )
@@ -188,36 +172,18 @@ struct FingerprintEvidenceEnvelopeTests {
             "1970-01-01T00:00:03.123Z",
             "1970-01-01T07:00:03+07:00"
         ] {
-            var invalidReport = try #require(
+            var invalidPayload = try #require(
                 JSONSerialization.jsonObject(with: fixture.payload)
                     as? [String: Any]
             )
-            invalidReport["createdAt"] = invalidTimestamp
-            let invalidReportData = try JSONSerialization.data(
-                withJSONObject: invalidReport,
+            invalidPayload["createdAt"] = invalidTimestamp
+            let invalidPayloadData = try JSONSerialization.data(
+                withJSONObject: invalidPayload,
                 options: [.sortedKeys, .withoutEscapingSlashes]
             )
             #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
                 try FingerprintEvidenceEnvelopeCodec.make(
-                    payload: invalidReportData,
-                    candidateManifest: fixture.manifest,
-                    signer: fixture.signer
-                )
-            }
-
-            var invalidCapture = try #require(
-                invalidReport["firstInitial"] as? [String: Any]
-            )
-            invalidReport["createdAt"] = "1970-01-01T00:00:03Z"
-            invalidCapture["capturedAt"] = invalidTimestamp
-            invalidReport["firstInitial"] = invalidCapture
-            let invalidCaptureData = try JSONSerialization.data(
-                withJSONObject: invalidReport,
-                options: [.sortedKeys, .withoutEscapingSlashes]
-            )
-            #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
-                try FingerprintEvidenceEnvelopeCodec.make(
-                    payload: invalidCaptureData,
+                    payload: invalidPayloadData,
                     candidateManifest: fixture.manifest,
                     signer: fixture.signer
                 )
@@ -582,58 +548,85 @@ struct FingerprintEvidenceEnvelopeTests {
         return try! JSONSerialization.data(
             withJSONObject: [
                 "schemaVersion": schemaVersion,
-                "releasePath": "Contents/MacOS/NeAntik",
-                "fingerprintEvidence": bindingObject
+                "kind": "neantik-direct-prepared-candidate",
+                "releaseChannel": "public-alpha",
+                "preparedAt": "1970-01-01T00:00:00Z",
+                "bundle": [
+                    "name": "NeAntik.app",
+                    "identifier": "app.neantik.desktop",
+                    "version": "0.3.12",
+                    "build": "15"
+                ],
+                "criticalFiles": [
+                    "managerExecutable": [
+                        "bundlePath": "Contents/MacOS/NeAntik",
+                        "sha256": String(repeating: "c", count: 64)
+                    ],
+                    "runtimeExecutable": [
+                        "bundlePath": "runtime",
+                        "sha256": String(repeating: "a", count: 64)
+                    ],
+                    "runtimeFramework": [
+                        "bundlePath": "framework",
+                        "sha256": String(repeating: "b", count: 64)
+                    ]
+                ],
+                "bundleInventory": [],
+                "postPreparationMutablePaths": [
+                    "Contents/CodeResources"
+                ],
+                "fingerprintEvidence": bindingObject,
+                "boundary": "test candidate boundary"
             ],
             options: [.sortedKeys, .withoutEscapingSlashes]
         )
     }
 
     private func payload() -> Data {
-        let firstID = UUID(
-            uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"
-        )!
-        let secondID = UUID(
-            uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB"
-        )!
-        let first = FingerprintCapture(
-            profileID: firstID,
-            profileName: "Профиль A",
-            identityCode: "NA-00000001",
-            capturedAt: Date(timeIntervalSince1970: 1),
-            values: ["canvas": "a"]
+        try! JSONSerialization.data(
+            withJSONObject: [
+                "schemaVersion": 1,
+                "kind": "neantik-fingerprint-release-result",
+                "createdAt": "1970-01-01T00:00:03Z",
+                "releaseChannel": "public-alpha",
+                "managerVersion": "0.3.12",
+                "managerBuild": "15",
+                "runtimeName": "NeAntik Browser",
+                "runtimeVersion": "150.0.7871.186",
+                "runtimeFlavor": "fingerprintChromium",
+                "runtimeCodeSignatureValid": true,
+                "runtimeExecutableSHA256":
+                    String(repeating: "a", count: 64),
+                "runtimeFrameworkSHA256":
+                    String(repeating: "b", count: 64),
+                "auditSchemaVersion": 7,
+                "identityCatalogVersion": 1,
+                "executionMode": "browser",
+                "verdict": "verified",
+                "criticalSurfaces": [
+                    "canvas": "stable-different",
+                    "webgl_pixels": "stable-different",
+                    "audio": "stable-same",
+                    "client_rects": "stable-same"
+                ],
+                "changedCriticalKeys": [
+                    "canvas", "webgl_pixels"
+                ],
+                "unavailableRequiredKeys": ["worker_canvas"],
+                "unstableRequiredKeys": [],
+                "profileSequenceValid": true,
+                "identitySequenceValid": true,
+                "crossRealmConsistent": false,
+                "deviceTupleConsistent": false,
+                "networkPrivacyControlled": false,
+                "publicAlphaQualified": true,
+                "productionQualified": false,
+                "limitations": [
+                    "strict-coherence-not-qualified"
+                ]
+            ],
+            options: [.sortedKeys, .withoutEscapingSlashes]
         )
-        let second = FingerprintCapture(
-            profileID: secondID,
-            profileName: "Профиль B",
-            identityCode: "NA-00000002",
-            capturedAt: Date(timeIntervalSince1970: 2),
-            values: ["canvas": "b"]
-        )
-        let report = FingerprintAuditReport(
-            id: UUID(
-                uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC"
-            )!,
-            createdAt: Date(timeIntervalSince1970: 3),
-            managerVersion: "0.3.12",
-            managerBuild: "15",
-            runtimeName: "NeAntik Browser",
-            runtimeVersion: "150.0.7871.186",
-            runtimeFlavor: .fingerprintChromium,
-            runtimeCodeSignatureValid: true,
-            runtimeExecutableSHA256: String(repeating: "a", count: 64),
-            runtimeFrameworkSHA256: String(repeating: "b", count: 64),
-            firstInitial: first,
-            second: second,
-            firstRepeat: first
-        )
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [
-            .sortedKeys,
-            .withoutEscapingSlashes
-        ]
-        return try! encoder.encode(report)
     }
 
     private func replacing(

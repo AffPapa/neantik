@@ -25,6 +25,17 @@ assert SPEC and SPEC.loader
 GUI_VERIFIER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
+EVIDENCE_SCHEMA_PATH = (
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+)
+EVIDENCE_SPEC = importlib.util.spec_from_file_location(
+    "fingerprint_evidence_schema8_for_preflight",
+    EVIDENCE_SCHEMA_PATH,
+)
+assert EVIDENCE_SPEC and EVIDENCE_SPEC.loader
+EVIDENCE_SCHEMA = importlib.util.module_from_spec(EVIDENCE_SPEC)
+sys.modules[EVIDENCE_SPEC.name] = EVIDENCE_SCHEMA
+EVIDENCE_SPEC.loader.exec_module(EVIDENCE_SCHEMA)
 
 
 VERSION_RE = re.compile(r"^(?P<parts>[0-9]+(?:\.[0-9]+){1,3})")
@@ -130,12 +141,20 @@ def verify_direct_public_release_plan(
     runtime_lock: Path,
     download_url: str | None,
     release_channel: str | None = None,
+    candidate_manifest: Path | None = None,
     env: dict[str, str] | None = None,
 ) -> list[GateResult]:
     env = env if env is not None else os.environ
     effective_release_channel = (
         release_channel or env.get("NEANTIK_RELEASE_CHANNEL", "")
     ).strip()
+    candidate_manifest = (
+        candidate_manifest
+        if candidate_manifest is not None
+        else gui_fingerprint_report.with_name(
+            "direct-candidate-manifest.json"
+        )
+    )
     info_plist = read_plist(project_root / "Resources" / "Info.plist")
     version = str(info_plist["CFBundleShortVersionString"])
     expected_archive_name = f"NeAntik-{version}-arm64-notarized.zip"
@@ -321,30 +340,68 @@ def verify_direct_public_release_plan(
     def gui_report() -> str:
         if not gui_fingerprint_report.is_file():
             raise FileNotFoundError(f"GUI report is missing: {gui_fingerprint_report}")
+        if not candidate_manifest.is_file():
+            raise FileNotFoundError(
+                f"Candidate manifest is missing: {candidate_manifest}"
+            )
+        verified = EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=(
+                EVIDENCE_SCHEMA.read_bounded_regular_file(
+                    candidate_manifest,
+                    maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_MANIFEST_BYTES,
+                    label="Candidate manifest",
+                )
+            ),
+            envelope_raw=EVIDENCE_SCHEMA.read_bounded_regular_file(
+                gui_fingerprint_report,
+                maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_ENVELOPE_BYTES,
+                label="Fingerprint evidence envelope",
+            ),
+        )
+        payload = EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
         expected_runtime = GUI_VERIFIER.expected_runtime_evidence_from_app(
             integrated_app
         )
-        summary = GUI_VERIFIER.verification_summary(
-            GUI_VERIFIER.load_report(gui_fingerprint_report),
-            expected_runtime=expected_runtime,
-        )
+        for payload_key, expected_key in (
+            ("managerVersion", "managerVersion"),
+            ("managerBuild", "managerBuild"),
+            ("runtimeVersion", "runtimeVersion"),
+            ("runtimeExecutableSHA256", "runtimeExecutableSHA256"),
+            ("runtimeFrameworkSHA256", "runtimeFrameworkSHA256"),
+        ):
+            if payload[payload_key] != expected_runtime[expected_key]:
+                raise ValueError(
+                    "authenticated GUI evidence does not match exact app"
+                )
+        if payload["releaseChannel"] != effective_release_channel:
+            raise ValueError(
+                "authenticated GUI evidence release channel mismatch"
+            )
         if effective_release_channel == "production":
-            if not summary.get("productionQualified", False):
-                raise ValueError("; ".join(summary["productionIssues"]))
-            return "production-qualified GUI A -> B -> A report"
+            if not payload["productionQualified"]:
+                raise ValueError(
+                    "authenticated GUI evidence is not production-qualified"
+                )
+            return "production-qualified authenticated GUI A -> B -> A evidence"
         if effective_release_channel == "public-alpha":
-            if not summary["qualified"]:
-                raise ValueError("; ".join(summary["issues"]))
+            if not payload["publicAlphaQualified"]:
+                raise ValueError(
+                    "authenticated GUI evidence is not public-alpha-qualified"
+                )
         else:
             raise ValueError(
                 "release channel must be validated before GUI qualification"
             )
-        if not summary.get("productionQualified", False):
+        if not payload["productionQualified"]:
             return (
-                "public-alpha GUI A -> B -> A report; "
+                "public-alpha authenticated GUI A -> B -> A evidence; "
                 "strict coherent production hardening remains incomplete"
             )
-        return "production-qualified GUI A -> B -> A report"
+        return "production-qualified authenticated GUI A -> B -> A evidence"
 
     def signing_env() -> str:
         identity = env.get("NEANTIK_SIGNING_IDENTITY", "").strip()
@@ -455,6 +512,11 @@ def main() -> int:
         default=PROJECT_ROOT / "dist" / "fingerprint-audit.json",
     )
     parser.add_argument(
+        "--candidate-manifest",
+        type=Path,
+        default=PROJECT_ROOT / "dist" / "direct-candidate-manifest.json",
+    )
+    parser.add_argument(
         "--runtime-lock",
         type=Path,
         default=PROJECT_ROOT / "runtime" / "fingerprint-chromium.lock.json",
@@ -482,6 +544,7 @@ def main() -> int:
         runtime_app=(args.runtime_app or default_runtime_app(integrated_app)).resolve(),
         args_gn=(args.args_gn or default_args_gn(integrated_app)).resolve(),
         gui_fingerprint_report=args.gui_fingerprint_report.resolve(),
+        candidate_manifest=args.candidate_manifest.resolve(),
         runtime_lock=args.runtime_lock.resolve(),
         download_url=args.download_url,
         release_channel=args.release_channel,

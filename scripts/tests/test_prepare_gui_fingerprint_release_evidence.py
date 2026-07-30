@@ -51,7 +51,7 @@ class PrepareGuiFingerprintReleaseEvidenceTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertIn("diagnostic mode", " ".join(status["issues"]))
 
-    def test_collects_qualified_report_when_requested(self) -> None:
+    def test_refuses_to_collect_raw_schema7_report_for_release(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             integrated_app = VERIFIER_FIXTURES.write_integrated_app_fixture(
@@ -76,18 +76,20 @@ class PrepareGuiFingerprintReleaseEvidenceTests(unittest.TestCase):
             output = root / "dist" / "fingerprint-audit.json"
             runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
 
-            status = MODULE.prepare(
-                source=source,
-                audits_dir=root,
-                output=output,
-                collect=True,
-                runtime_lock=runtime_lock,
-                integrated_app=integrated_app,
-            )
+            with self.assertRaisesRegex(
+                MODULE.GuiEvidencePreparationError,
+                "diagnostic only",
+            ):
+                MODULE.prepare(
+                    source=source,
+                    audits_dir=root,
+                    output=output,
+                    collect=True,
+                    runtime_lock=runtime_lock,
+                    integrated_app=integrated_app,
+                )
 
-            self.assertTrue(status["qualified"])
-            self.assertEqual(Path(status["collectedTo"]), output)
-            self.assertEqual(os.stat(output).st_mode & 0o777, 0o600)
+            self.assertFalse(output.exists())
 
     def test_text_handoff_includes_next_step_for_qualified_uncollected_report(self) -> None:
         status = {

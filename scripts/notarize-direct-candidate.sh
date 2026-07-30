@@ -15,7 +15,6 @@ ARCHIVE_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"
 CHECKSUM_PATH="$ARCHIVE_PATH.sha256"
 NOTARY_LOG_DIR="$PROJECT_DIR/dist/notary"
 SECURITY_BASELINE_ARGS=()
-GUI_QUALIFICATION_ARGS=()
 
 : "${NEANTIK_NOTARY_PROFILE:?Set NEANTIK_NOTARY_PROFILE to a notarytool Keychain profile}"
 case "${NEANTIK_RELEASE_CHANNEL:-}" in
@@ -23,7 +22,6 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     SECURITY_BASELINE_ARGS+=(--allow-public-alpha-tuples)
     ;;
   production)
-    GUI_QUALIFICATION_ARGS+=(--require-production)
     ;;
   *)
     echo "Set NEANTIK_RELEASE_CHANNEL to public-alpha or production." >&2
@@ -58,10 +56,9 @@ python3 "$PROJECT_DIR/scripts/direct-candidate-manifest.py" verify \
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py"
 "$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
-python3 "$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py" \
-  "$REPORT_PATH" \
-  --integrated-app "$APP_PATH" \
-  "${GUI_QUALIFICATION_ARGS[@]}"
+python3 "$PROJECT_DIR/scripts/verify-fingerprint-evidence-envelope.py" \
+  --manifest "$CANDIDATE_MANIFEST" \
+  --envelope "$REPORT_PATH"
 python3 "$PROJECT_DIR/scripts/verify-public-artifact-privacy.py" \
   "$SUMMARY_PATH" \
   --private-evidence "$REPORT_PATH" \

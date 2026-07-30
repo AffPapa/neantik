@@ -264,23 +264,24 @@ NeAntik re-inspects the signature, version, architecture, and both binary
 hashes before and after A -> B -> A. If the runtime changes during the check,
 the audit aborts instead of saving ambiguous evidence.
 
-After a normal user-session GUI run, prepare release evidence with:
+For a Direct candidate, launch the exact signed manager with canonical
+manifest/output paths and then collect only its authenticated schema-8 output:
 
 ```bash
-scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source /absolute/path/to/fingerprint-audit.json
-scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source /absolute/path/to/fingerprint-audit.json \
-  --collect
-scripts/verify-gui-fingerprint-report.py \
-  dist/fingerprint-audit.json \
-  --runtime-lock runtime/fingerprint-chromium.lock.json
+open -n /absolute/path/to/NeAntik.app --args \
+  --neantik-release-fingerprint-audit \
+  --candidate-manifest /absolute/path/to/direct-candidate-manifest.json \
+  --output /absolute/private/path/to/fingerprint-evidence-schema8.json
+scripts/collect-gui-fingerprint-evidence.py \
+  --source /absolute/private/path/to/fingerprint-evidence-schema8.json \
+  --integrated-app /absolute/path/to/NeAntik.app \
+  --candidate-manifest /absolute/path/to/direct-candidate-manifest.json \
+  --output dist/fingerprint-audit.json \
+  --summary-output dist/fingerprint-audit-summary.json
 ```
 
-The first command explains whether the report qualifies and why. The second
-copies it into `dist/fingerprint-audit.json` only when the independent GUI
-verifier passes. The final verifier command additionally binds the report to
-the pinned runtime verification report through `runtime/fingerprint-chromium.lock.json`.
+Raw schema-7 reports saved under Application Support or produced by the runtime
+audit kit remain private diagnostics and are rejected by release tooling.
 
 ## Headless engineering diagnostic
 

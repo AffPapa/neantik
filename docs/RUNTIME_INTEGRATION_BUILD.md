@@ -163,25 +163,17 @@ profiles.
 
 The package also includes `verify-gui-fingerprint-report.py`. The Finder
 launcher runs it automatically after the browser audit, and the same verifier is
-now part of the aggregate Direct public-readiness gate:
+used only for private diagnostic reports:
 
 ```bash
 scripts/verify-gui-fingerprint-report.py \
   /absolute/path/to/fingerprint-audit.json \
   --runtime-lock runtime/fingerprint-chromium.lock.json
-scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source /absolute/path/to/fingerprint-audit.json \
-  --runtime-lock runtime/fingerprint-chromium.lock.json
-scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source /absolute/path/to/fingerprint-audit.json \
-  --runtime-lock runtime/fingerprint-chromium.lock.json \
-  --collect
-scripts/verify-direct-public-readiness.py \
-  --gui-fingerprint-report /absolute/path/to/fingerprint-audit.json
-scripts/verify-direct-public-readiness.py \
-  --gui-fingerprint-report /absolute/path/to/fingerprint-audit.json \
-  --json
 ```
+
+Raw schema-7 reports cannot enter the Direct release matrix. A release uses
+the exact prepared manager, schema-3 manifest and an explicit new schema-8
+output; the signed manager derives and signs the public-safe aggregate.
 
 The Codex environment cannot perform this GUI gate: Chromium processes inherit
 the `com.openai.codex` coalition and abort inside Apple's

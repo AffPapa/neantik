@@ -5,10 +5,13 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         "--neantik-release-fingerprint-audit"
     static let fingerprintEnrollmentArgument =
         "--neantik-enroll-fingerprint-evidence"
+    static let candidateManifestArgument = "--candidate-manifest"
     static let outputArgument = "--output"
 
     enum Mode: Equatable, Sendable {
-        case interactive(opensFingerprintAudit: Bool)
+        case interactive(
+            releaseFingerprintAudit: FingerprintEvidenceReleaseRequest?
+        )
         case fingerprintEnrollment(outputURL: URL)
         case invalidControlArguments
     }
@@ -16,10 +19,19 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     let mode: Mode
 
     var opensFingerprintAudit: Bool {
-        if case let .interactive(opensFingerprintAudit) = mode {
-            return opensFingerprintAudit
+        if case let .interactive(releaseFingerprintAudit) = mode {
+            return releaseFingerprintAudit != nil
         }
         return false
+    }
+
+    var releaseFingerprintAuditRequest:
+        FingerprintEvidenceReleaseRequest?
+    {
+        if case let .interactive(request) = mode {
+            return request
+        }
+        return nil
     }
 
     static func parse(arguments: [String]) -> Self {
@@ -43,26 +55,49 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
                 )
             )
         }
-        if arguments.count == 2,
-           arguments[1] == releaseFingerprintAuditArgument
+        if arguments.count == 6,
+           isCanonicalAbsoluteExecutablePath(arguments[0]),
+           arguments[1] == releaseFingerprintAuditArgument,
+           arguments[2] == candidateManifestArgument,
+           isCanonicalAbsoluteFilePath(arguments[3]),
+           arguments[4] == outputArgument,
+           isCanonicalAbsoluteFilePath(arguments[5]),
+           arguments[3] != arguments[5]
         {
             return Self(
-                mode: .interactive(opensFingerprintAudit: true)
+                mode: .interactive(
+                    releaseFingerprintAudit:
+                        FingerprintEvidenceReleaseRequest(
+                            candidateManifestURL: URL(
+                                fileURLWithPath: arguments[3]
+                            ),
+                            evidenceOutputURL: URL(
+                                fileURLWithPath: arguments[5]
+                            )
+                        )
+                )
             )
         }
         if arguments.contains(where: {
             $0 == outputArgument ||
+                $0 == candidateManifestArgument ||
                 $0.hasPrefix(fingerprintEnrollmentArgument) ||
                 $0.hasPrefix(releaseFingerprintAuditArgument)
         }) {
             return Self(mode: .invalidControlArguments)
         }
         return Self(
-            mode: .interactive(opensFingerprintAudit: false)
+            mode: .interactive(releaseFingerprintAudit: nil)
         )
     }
 
     private static func isCanonicalAbsoluteOutputPath(
+        _ path: String
+    ) -> Bool {
+        isCanonicalAbsoluteFilePath(path)
+    }
+
+    private static func isCanonicalAbsoluteFilePath(
         _ path: String
     ) -> Bool {
         guard path.hasPrefix("/"),

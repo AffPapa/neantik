@@ -25,6 +25,17 @@ assert SPEC and SPEC.loader
 GUI_VERIFIER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
+EVIDENCE_SCHEMA_PATH = (
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+)
+EVIDENCE_SPEC = importlib.util.spec_from_file_location(
+    "fingerprint_evidence_schema8_for_collector",
+    EVIDENCE_SCHEMA_PATH,
+)
+assert EVIDENCE_SPEC and EVIDENCE_SPEC.loader
+EVIDENCE_SCHEMA = importlib.util.module_from_spec(EVIDENCE_SPEC)
+sys.modules[EVIDENCE_SPEC.name] = EVIDENCE_SCHEMA
+EVIDENCE_SPEC.loader.exec_module(EVIDENCE_SCHEMA)
 
 
 class EvidenceCollectionError(ValueError):
@@ -166,6 +177,48 @@ def public_attestation(
         "unstableRequiredKeys": summary.get("unstableRequiredKeys"),
         "publicAlphaIssues": summary.get("issues"),
         "productionIssues": summary.get("productionIssues"),
+    }
+
+
+def authenticated_public_attestation(
+    payload: dict[str, Any],
+    verified: Any,
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": 3,
+        "kind": "neantik-gui-fingerprint-attestation",
+        "releaseChannel": payload["releaseChannel"],
+        "candidateManifestSHA256":
+            verified.candidate_manifest_sha256,
+        "authenticatedEvidenceID":
+            verified.authenticated_evidence_id,
+        "payloadSHA256": verified.payload_sha256,
+        "transportSHA256": verified.transport_sha256,
+        "privateEvidenceSHA256": verified.transport_sha256,
+        "createdAt": payload["createdAt"],
+        "managerVersion": payload["managerVersion"],
+        "managerBuild": payload["managerBuild"],
+        "runtimeName": payload["runtimeName"],
+        "runtimeVersion": payload["runtimeVersion"],
+        "runtimeFlavor": payload["runtimeFlavor"],
+        "runtimeCodeSignatureValid":
+            payload["runtimeCodeSignatureValid"],
+        "runtimeExecutableSHA256":
+            payload["runtimeExecutableSHA256"],
+        "runtimeFrameworkSHA256":
+            payload["runtimeFrameworkSHA256"],
+        "auditSchemaVersion": payload["auditSchemaVersion"],
+        "identityCatalogVersion":
+            payload["identityCatalogVersion"],
+        "verdict": payload["verdict"],
+        "changedCriticalKeys": payload["changedCriticalKeys"],
+        "unavailableRequiredKeys":
+            payload["unavailableRequiredKeys"],
+        "unstableRequiredKeys": payload["unstableRequiredKeys"],
+        "publicAlphaQualified":
+            payload["publicAlphaQualified"],
+        "productionQualified": payload["productionQualified"],
+        "limitations": payload["limitations"],
     }
 
 
@@ -424,6 +477,39 @@ def collect_evidence(
         raise EvidenceCollectionError(
             "Release channel must be public-alpha or production."
         )
+    if (
+        summary_output is not None
+        and summary_output.resolve() == output.resolve()
+    ):
+        raise EvidenceCollectionError(
+            "Private evidence and public attestation paths must be distinct."
+        )
+    if source is not None and source.resolve() in {
+        output.resolve(),
+        summary_output.resolve() if summary_output is not None else None,
+    }:
+        raise EvidenceCollectionError(
+            "Source evidence, private output and public attestation paths "
+            "must be distinct."
+        )
+    if integrated_app is not None:
+        if candidate_manifest is None:
+            raise EvidenceCollectionError(
+                "A Direct candidate requires its schema-3 manifest."
+            )
+        if source is None:
+            raise EvidenceCollectionError(
+                "A Direct candidate requires an explicit schema-8 envelope."
+            )
+        return collect_authenticated_evidence(
+            source=source,
+            output=output,
+            candidate_manifest=candidate_manifest,
+            integrated_app=integrated_app,
+            summary_output=summary_output,
+            not_before=not_before,
+            release_channel=release_channel,
+        )
     candidate_manifest_sha256 = "0" * 64
     if candidate_manifest is not None:
         if not candidate_manifest.is_file() or candidate_manifest.is_symlink():
@@ -433,13 +519,6 @@ def collect_evidence(
         candidate_manifest_sha256 = hashlib.sha256(
             candidate_manifest.read_bytes()
         ).hexdigest()
-    if (
-        summary_output is not None
-        and summary_output.resolve() == output.resolve()
-    ):
-        raise EvidenceCollectionError(
-            "Private evidence and public attestation paths must be distinct."
-        )
     source_report = select_source_report(source=source, audits_dir=audits_dir)
     report = GUI_VERIFIER.load_report(source_report)
     report_id = report.get("id")
@@ -535,6 +614,129 @@ def collect_evidence(
         "privateEvidenceSHA256": private_evidence_sha256,
         "candidateManifestSHA256": candidate_manifest_sha256,
         "releaseQualification": release_channel,
+    }
+
+
+def collect_authenticated_evidence(
+    *,
+    source: Path,
+    output: Path,
+    candidate_manifest: Path,
+    integrated_app: Path,
+    summary_output: Path | None,
+    not_before: datetime | None,
+    release_channel: str,
+) -> dict[str, Any]:
+    if source.resolve() == output.resolve():
+        raise EvidenceCollectionError(
+            "Schema-8 source and collected output must be distinct."
+        )
+    try:
+        manifest_raw = EVIDENCE_SCHEMA.read_bounded_regular_file(
+            candidate_manifest,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_MANIFEST_BYTES,
+            label="Candidate manifest",
+        )
+        envelope_raw = EVIDENCE_SCHEMA.read_bounded_regular_file(
+            source,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_ENVELOPE_BYTES,
+            label="Fingerprint evidence envelope",
+        )
+        verified = EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=manifest_raw,
+            envelope_raw=envelope_raw,
+        )
+        payload = EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise EvidenceCollectionError(
+            "Authenticated schema-8 fingerprint evidence is invalid."
+        ) from error
+    if payload["releaseChannel"] != release_channel:
+        raise EvidenceCollectionError(
+            "Authenticated evidence release channel does not match."
+        )
+    if (
+        release_channel == "production"
+        and not payload["productionQualified"]
+    ):
+        raise EvidenceCollectionError(
+            "Authenticated evidence is not production-qualified."
+        )
+    if (
+        release_channel == "public-alpha"
+        and not payload["publicAlphaQualified"]
+    ):
+        raise EvidenceCollectionError(
+            "Authenticated evidence is not public-alpha-qualified."
+        )
+    created_at = GUI_VERIFIER.parse_iso8601(
+        payload["createdAt"],
+        "createdAt",
+    )
+    if (
+        not_before is not None
+        and created_at <= not_before.astimezone(timezone.utc)
+    ):
+        raise EvidenceCollectionError(
+            "Authenticated evidence predates the current GUI attempt."
+        )
+    if created_at > datetime.now(timezone.utc).replace(
+        microsecond=0
+    ) + timedelta(seconds=MAX_REPORT_FUTURE_SKEW_SECONDS):
+        raise EvidenceCollectionError(
+            "Authenticated evidence timestamp is implausibly in the future."
+        )
+    expected_runtime = (
+        GUI_VERIFIER.expected_runtime_evidence_from_app(integrated_app)
+    )
+    for payload_key, expected_key in (
+        ("managerVersion", "managerVersion"),
+        ("managerBuild", "managerBuild"),
+        ("runtimeVersion", "runtimeVersion"),
+        ("runtimeExecutableSHA256", "runtimeExecutableSHA256"),
+        ("runtimeFrameworkSHA256", "runtimeFrameworkSHA256"),
+    ):
+        expected = expected_runtime.get(expected_key)
+        if expected is not None and payload[payload_key] != expected:
+            raise EvidenceCollectionError(
+                "Authenticated evidence runtime does not match the exact app."
+            )
+    write_private_bytes(output, envelope_raw)
+    if summary_output is not None:
+        invalidate_stale_attestation(summary_output)
+        write_private_json(
+            summary_output,
+            authenticated_public_attestation(payload, verified),
+        )
+    return {
+        "source": str(source),
+        "output": str(output),
+        "integratedApp": str(integrated_app),
+        "summaryOutput": (
+            str(summary_output) if summary_output is not None else None
+        ),
+        "authenticatedEvidenceID":
+            verified.authenticated_evidence_id,
+        "privateEvidenceSHA256": verified.transport_sha256,
+        "candidateManifestSHA256":
+            verified.candidate_manifest_sha256,
+        "releaseQualification": release_channel,
+        "summary": {
+            "qualified": payload["publicAlphaQualified"],
+            "productionQualified": payload["productionQualified"],
+            "changedCriticalKeys": payload["changedCriticalKeys"],
+            "unstableRequiredKeys":
+                payload["unstableRequiredKeys"],
+            "executionMode": payload["executionMode"],
+            "runtimeName": payload["runtimeName"],
+            "runtimeVersion": payload["runtimeVersion"],
+            "runtimeFlavor": payload["runtimeFlavor"],
+            "createdAt": payload["createdAt"],
+        },
     }
 
 

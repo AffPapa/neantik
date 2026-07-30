@@ -16,6 +16,12 @@ from urllib.parse import unquote, urlparse
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LEGACY_ARCHIVE_ALLOWLIST = {
+    (
+        "NeAntik-0.3.12-arm64-notarized.zip",
+        "b8a791056a8857339e1a52e48a81181f49525d2737cf985886b0b1aa05b8fc73",
+    ),
+}
 CANDIDATE_MANIFEST_SCRIPT = (
     PROJECT_ROOT / "scripts" / "direct-candidate-manifest.py"
 )
@@ -208,6 +214,45 @@ def verify_archive_candidate_manifest(
 Downloader = Callable[[str, Path, int], None]
 ArchiveVerifier = Callable[[Path], None]
 CandidateVerifier = Callable[[Path, Path, str], None]
+ReleaseEvidenceVerifier = Callable[[Path, Path, Path, str], None]
+
+
+def verify_release_evidence_contract(
+    manifest: Path,
+    evidence: Path,
+    attestation: Path,
+    release_channel: str,
+    *,
+    project_root: Path,
+) -> None:
+    app = project_root / "dist" / "NeAntik.app"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(project_root / "scripts" / "verify-public-artifact-privacy.py"),
+            str(attestation),
+            "--private-evidence",
+            str(evidence),
+            "--attestation",
+            str(attestation),
+            "--integrated-app",
+            str(app),
+            "--candidate-manifest",
+            str(manifest),
+            "--release-channel",
+            release_channel,
+        ],
+        cwd=project_root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise HostedDownloadError(
+            "authenticated fingerprint release evidence verification failed:\n"
+            + completed.stdout.strip()
+        )
 
 
 def verify_hosted_download(
@@ -220,6 +265,10 @@ def verify_hosted_download(
     candidate_manifest: Path | None = None,
     release_channel: str | None = None,
     candidate_verifier: CandidateVerifier | None = None,
+    fingerprint_evidence: Path | None = None,
+    fingerprint_attestation: Path | None = None,
+    release_evidence_verifier: ReleaseEvidenceVerifier | None = None,
+    legacy_archive_only: bool = False,
 ) -> dict[str, str | int]:
     project_root = project_root.resolve()
     archive_name = expected_archive_name(project_root)
@@ -246,9 +295,21 @@ def verify_hosted_download(
         raise HostedDownloadError(
             f"local archive is missing or unsafe: {archive}"
         )
-    if (candidate_manifest is None) != (release_channel is None):
+    release_inputs = (
+        candidate_manifest,
+        release_channel,
+        fingerprint_evidence,
+        fingerprint_attestation,
+    )
+    if legacy_archive_only:
+        if any(value is not None for value in release_inputs):
+            raise HostedDownloadError(
+                "legacy archive-only mode cannot accept new-release evidence"
+            )
+    elif any(value is None for value in release_inputs):
         raise HostedDownloadError(
-            "candidate manifest and release channel must be provided together"
+            "new releases require candidate manifest, release channel, "
+            "authenticated fingerprint evidence and public attestation together"
         )
     if candidate_manifest is not None:
         if not candidate_manifest.is_file() or candidate_manifest.is_symlink():
@@ -262,6 +323,33 @@ def verify_hosted_download(
             )
         candidate_verifier = (
             candidate_verifier or verify_archive_candidate_manifest
+        )
+        assert fingerprint_evidence is not None
+        assert fingerprint_attestation is not None
+        for label, path in (
+            ("fingerprint evidence", fingerprint_evidence),
+            ("fingerprint attestation", fingerprint_attestation),
+        ):
+            if not path.is_file() or path.is_symlink():
+                raise HostedDownloadError(f"{label} is missing or unsafe")
+        release_evidence_verifier = (
+            release_evidence_verifier
+            or (
+                lambda manifest, evidence, attestation, channel:
+                    verify_release_evidence_contract(
+                        manifest,
+                        evidence,
+                        attestation,
+                        channel,
+                        project_root=project_root,
+                    )
+            )
+        )
+        release_evidence_verifier(
+            candidate_manifest,
+            fingerprint_evidence.resolve(),
+            fingerprint_attestation.resolve(),
+            release_channel,
         )
 
     download_url = download_url or os.environ.get(
@@ -279,6 +367,14 @@ def verify_hosted_download(
         raise HostedDownloadError(
             "local archive SHA-256 differs from its sidecar: "
             f"{local_sha256} != {expected_sha256}"
+        )
+    if (
+        legacy_archive_only
+        and (archive_name, expected_sha256) not in LEGACY_ARCHIVE_ALLOWLIST
+    ):
+        raise HostedDownloadError(
+            "legacy archive-only mode is restricted to allowlisted "
+            "historical release name and SHA-256 pairs"
         )
     expected_size = archive.stat().st_size
     if expected_size <= 0:
@@ -335,9 +431,9 @@ def verify_hosted_download(
         "sha256": expected_sha256,
         "sizeBytes": expected_size,
         "status": (
-            "hosted-zip-byte-identical-gatekeeper-and-candidate-verified"
+            "hosted-zip-byte-identical-gatekeeper-candidate-and-evidence-verified"
             if candidate_manifest is not None
-            else "hosted-zip-byte-identical-and-gatekeeper-verified"
+            else "legacy-hosted-zip-byte-identical-and-gatekeeper-verified"
         ),
     }
 
@@ -368,6 +464,24 @@ def main() -> int:
         choices=("public-alpha", "production"),
         help="Qualification channel bound by the candidate manifest.",
     )
+    parser.add_argument(
+        "--fingerprint-evidence",
+        type=Path,
+        help="Private authenticated schema-8 evidence for this candidate.",
+    )
+    parser.add_argument(
+        "--fingerprint-attestation",
+        type=Path,
+        help="Public-safe attestation derived from the schema-8 evidence.",
+    )
+    parser.add_argument(
+        "--legacy-archive-only",
+        action="store_true",
+        help=(
+            "Historical compatibility only. Skips candidate and schema-8 "
+            "evidence binding; forbidden for new releases."
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     try:
@@ -377,6 +491,9 @@ def main() -> int:
             download_url=args.download_url,
             candidate_manifest=args.candidate_manifest,
             release_channel=args.release_channel,
+            fingerprint_evidence=args.fingerprint_evidence,
+            fingerprint_attestation=args.fingerprint_attestation,
+            legacy_archive_only=args.legacy_archive_only,
         )
     except (OSError, HostedDownloadError) as error:
         print(f"Direct hosted ZIP verification failed: {error}", file=sys.stderr)

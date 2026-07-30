@@ -166,7 +166,7 @@ class FingerprintEvidenceSchema8Tests(unittest.TestCase):
         _, manifest, envelope, _ = fixture_bytes()
         value = json.loads(envelope)
         payload = json.loads(base64.b64decode(value["payload"]))
-        payload["managerBuild"] = "16"
+        payload["runtimeName"] = "Tampered Browser"
         value["payload"] = base64.b64encode(
             MODULE.canonical_json_bytes(payload)
         ).decode("ascii")
@@ -293,23 +293,30 @@ class FingerprintEvidenceSchema8Tests(unittest.TestCase):
                         envelope_raw=envelope,
                     )
 
-    def test_minimal_schema_marker_is_not_a_schema7_report(self) -> None:
+    def test_minimal_schema_marker_is_not_a_release_payload(self) -> None:
         with self.assertRaisesRegex(
             MODULE.FingerprintEvidenceVerificationError,
             "key set",
         ):
-            MODULE._validate_schema7_payload({"auditSchemaVersion": 7})
+            MODULE._validate_release_payload({"schemaVersion": 1})
 
-    def test_schema7_rejects_unknown_fields_and_loose_timestamps(self) -> None:
+    def test_release_payload_rejects_private_fields_and_loose_timestamps(
+        self,
+    ) -> None:
         _, _, _, payload = fixture_bytes()
         report = json.loads(payload)
         invalid_reports = []
         with_unknown_report = dict(report)
         with_unknown_report["unknown"] = True
         invalid_reports.append(with_unknown_report)
-        with_unknown_capture = json.loads(payload)
-        with_unknown_capture["firstInitial"]["unknown"] = True
-        invalid_reports.append(with_unknown_capture)
+        with_private_profile = dict(report)
+        with_private_profile["profileName"] = "Личный профиль"
+        invalid_reports.append(with_private_profile)
+        with_unknown_surface = json.loads(payload)
+        with_unknown_surface["criticalSurfaces"]["profileSeed"] = (
+            "stable-different"
+        )
+        invalid_reports.append(with_unknown_surface)
         for invalid_date in (
             "2026-07-30Z",
             "2026-W31-4T00:00:00Z",
@@ -323,7 +330,24 @@ class FingerprintEvidenceSchema8Tests(unittest.TestCase):
                 with self.assertRaises(
                     MODULE.FingerprintEvidenceVerificationError
                 ):
-                    MODULE._validate_schema7_payload(report_value)
+                    MODULE._validate_release_payload(report_value)
+
+    def test_legacy_raw_schema7_payload_is_rejected(self) -> None:
+        legacy = {
+            "id": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+            "createdAt": "2026-07-30T00:00:00Z",
+            "auditSchemaVersion": 7,
+            "runtimeName": "NeAntik Browser",
+            "runtimeFlavor": "fingerprintChromium",
+            "firstInitial": {},
+            "second": {},
+            "firstRepeat": {},
+        }
+        with self.assertRaisesRegex(
+            MODULE.FingerprintEvidenceVerificationError,
+            "key set",
+        ):
+            MODULE._validate_release_payload(legacy)
 
     def test_bounded_reader_rejects_oversized_symlink_and_nonregular(
         self,

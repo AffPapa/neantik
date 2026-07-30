@@ -14,14 +14,33 @@ struct LaunchIntentTests {
 
     @Test
     func releaseArgumentOpensFingerprintAudit() {
+        let manifest =
+            "/private/tmp/neantik-release/direct-candidate-manifest.json"
+        let output =
+            "/private/tmp/neantik-release/fingerprint-evidence-schema8.json"
         let intent = NeAntikLaunchIntent.parse(
             arguments: [
                 "/Applications/NeAntik.app/Contents/MacOS/NeAntik",
-                NeAntikLaunchIntent.releaseFingerprintAuditArgument
+                NeAntikLaunchIntent.releaseFingerprintAuditArgument,
+                NeAntikLaunchIntent.candidateManifestArgument,
+                manifest,
+                NeAntikLaunchIntent.outputArgument,
+                output
             ]
         )
 
         #expect(intent.opensFingerprintAudit)
+        #expect(
+            intent.releaseFingerprintAuditRequest ==
+                FingerprintEvidenceReleaseRequest(
+                    candidateManifestURL: URL(
+                        fileURLWithPath: manifest
+                    ),
+                    evidenceOutputURL: URL(
+                        fileURLWithPath: output
+                    )
+                )
+        )
     }
 
     @Test
@@ -84,6 +103,26 @@ struct LaunchIntentTests {
                 output,
                 "/private/tmp/a",
                 NeAntikLaunchIntent.releaseFingerprintAuditArgument
+            ],
+            [
+                executable,
+                NeAntikLaunchIntent.releaseFingerprintAuditArgument
+            ],
+            [
+                executable,
+                NeAntikLaunchIntent.releaseFingerprintAuditArgument,
+                NeAntikLaunchIntent.candidateManifestArgument,
+                "relative.json",
+                NeAntikLaunchIntent.outputArgument,
+                "/private/tmp/evidence.json"
+            ],
+            [
+                executable,
+                NeAntikLaunchIntent.releaseFingerprintAuditArgument,
+                NeAntikLaunchIntent.candidateManifestArgument,
+                "/private/tmp/manifest.json",
+                NeAntikLaunchIntent.outputArgument,
+                "/private/tmp/manifest.json"
             ]
         ]
 

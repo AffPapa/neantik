@@ -57,7 +57,10 @@ signed-in user's Terminal, then writes the compact schema-3
 `dist/direct-candidate-manifest.json` with a full bundle inventory and the
 validated public binding. Every attempt uses a new private `0700` state
 directory; its binding and log are never public artifacts. A fresh GUI
-A → B → A audit must be collected from that exact candidate.
+A → B → A audit must be run by that exact candidate with explicit canonical
+manifest/output paths. The app keeps raw schema-7 observations in memory and
+writes one authenticated schema-8 privacy aggregate; release tooling rejects
+raw diagnostic reports.
 `release-direct.sh` only verifies and notarizes it; it never rebuilds or
 re-signs after the GUI run. The release channel is explicit:
 `public-alpha` accepts the documented alpha threshold, while `production`
@@ -69,6 +72,8 @@ complete archive and Gatekeeper gate against fresh downloaded bytes:
 ```bash
 python3 scripts/verify-direct-hosted-download.py \
   --candidate-manifest dist/direct-candidate-manifest.json \
+  --fingerprint-evidence dist/fingerprint-audit.json \
+  --fingerprint-attestation dist/fingerprint-audit-summary.json \
   --release-channel public-alpha \
   --download-url https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.zip
 ```
@@ -76,10 +81,12 @@ python3 scripts/verify-direct-hosted-download.py \
 The verifier rejects credentials, query strings, fragments, wrong filenames,
 SHA-256 or size changes, and any downloaded archive that fails the same local
 notarized-app, integrated-runtime, stapling, and Gatekeeper checks. For every
-new release, the candidate manifest and release channel are mandatory together;
+new release, the candidate manifest, release channel, authenticated schema-8
+evidence and public-safe attestation are mandatory together;
 the verifier extracts both local and freshly downloaded ZIPs and proves their
-`NeAntik.app` bundle matches the prepared candidate. Omitting both flags remains
-available only for historical artifacts created before this manifest contract.
+`NeAntik.app` bundle matches the prepared candidate. Historical artifacts
+created before this contract require the explicit `--legacy-archive-only`
+compatibility flag; that flag is forbidden for new releases.
 
 ## Signing boundary
 

@@ -92,24 +92,11 @@ def prepare(
         release_channel=release_channel,
     )
     if collect:
-        if integrated_app is None:
-            raise GuiEvidencePreparationError(
-                "--collect requires --integrated-app for exact candidate "
-                "binding."
-            )
-        result = COLLECTOR.collect_evidence(
-            source=Path(status["source"]),
-            audits_dir=audits_dir,
-            output=output,
-            runtime_lock=runtime_lock,
-            integrated_app=integrated_app,
-            candidate_manifest=candidate_manifest,
-            summary_output=output.with_name(
-                "fingerprint-audit-summary.json"
-            ),
-            release_channel=release_channel,
+        raise GuiEvidencePreparationError(
+            "Raw schema-7 reports are diagnostic only. Direct release "
+            "evidence must be produced and signed as schema 8 by the exact "
+            "prepared NeAntik.app."
         )
-        status["collectedTo"] = result["output"]
     return status
 
 
@@ -215,7 +202,10 @@ def main() -> int:
     parser.add_argument(
         "--collect",
         action="store_true",
-        help="Copy the qualified report into the release evidence output path.",
+        help=(
+            "Deprecated fail-closed option. Raw schema-7 reports are "
+            "diagnostic only; Direct release evidence is schema 8."
+        ),
     )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()

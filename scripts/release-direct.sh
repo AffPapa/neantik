@@ -49,4 +49,4 @@ python3 "$PROJECT_DIR/scripts/direct-candidate-manifest.py" verify \
 "$PROJECT_DIR/scripts/verify-direct-notarized-archive.py"
 
 echo "$ARCHIVE_PATH"
-echo "Next: upload the versioned archive, then run scripts/verify-direct-hosted-download.py with the candidate manifest and release channel."
+echo "Next: upload the versioned archive, then run scripts/verify-direct-hosted-download.py with --candidate-manifest, --release-channel, --fingerprint-evidence and --fingerprint-attestation."

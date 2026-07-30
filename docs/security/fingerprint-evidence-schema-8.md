@@ -1,16 +1,20 @@
 # Authenticated GUI fingerprint evidence (schema 8)
 
-Status: candidate enrollment and schema-3 manifest binding are implemented;
-authenticated GUI persistence and all release consumers are still in
-progress. This document is not evidence that a public build has passed the
-GUI audit.
+Status: the source implementation, deterministic cross-language contract,
+one-shot persistence, collector, notarization and hosted-release gates are
+implemented. Physical Secure Enclave and fresh GUI A → B → A acceptance still
+have to be run for every exact Developer ID candidate. This document is not
+evidence that a public build has passed those hardware and GUI gates.
 
 ## Purpose
 
-Schema 7 remains the semantic contract for the browser observations in a
-direct-control plus A → B → A run. Schema 8 wraps the exact, already
-privacy-sanitized schema-7 JSON bytes so that the release pipeline can detect
-post-capture edits, a report from another candidate and replay against another
+Schema 7 remains the private diagnostic contract for browser observations in
+a direct-control plus A → B → A run. It contains profile-scoped data and must
+never become release evidence. The signed manager derives a separate, strictly
+typed aggregate payload without profile UUIDs or names, identity codes or
+seeds, proxy data, URLs, cookies, or raw browser-surface values. Schema 8
+authenticates only that privacy-safe aggregate so the release pipeline can
+detect post-capture edits, evidence from another candidate and reuse of a
 one-time challenge.
 
 The full envelope is private release evidence. Base64 is encoding, not
@@ -65,18 +69,18 @@ The outer JSON has schema version 8, kind
 payload and authentication metadata derived from the manifest. Swift emits
 compact sorted-key JSON. Verification caps raw bytes before decoding, requires
 that canonical representation, rejects unknown keys and verifies the
-signature before accepting the inner schema-7 object. The inner payload must
-also be compact sorted-key canonical JSON and decode as a complete current
-`FingerprintAuditReport`. Report and capture UUIDs use uppercase canonical
-wire form, and all report/capture timestamps use exact UTC-second
-`YYYY-MM-DDTHH:MM:SSZ` form. Unknown schema-7 report or capture keys are
-rejected. The existing schema-7 semantic and privacy gates still run
-independently after authentication.
+signature before accepting the inner aggregate. The inner payload must also
+be compact sorted-key canonical JSON with an exact key set and exact UTC-second
+timestamp. It records only candidate/runtime provenance, verdict, per-surface
+stability states, sorted unavailable/unstable key names, sequence and
+coherence booleans, and qualification limitations. Unknown keys and raw
+schema-7 payloads are rejected. The private schema-7 semantic gate runs inside
+the manager before derivation; release consumers accept only schema 8.
 
 ## Independent verifier
 
 `scripts/verify-fingerprint-evidence-envelope.py` independently implements the
-bounded duplicate-safe parser, complete schema-7 structure check, exact
+bounded duplicate-safe parser, exact aggregate structure check, exact
 transcript and strict low-S DER contract with Python's standard library. CLI
 inputs must be non-symlink regular files and are size-checked before reading.
 The verifier invokes only the fixed `/usr/bin/openssl` executable without a
@@ -103,11 +107,14 @@ production implementation requests a non-exportable P-256 private key from
 Secure Enclave, stores only its reference in Data Protection Keychain as
 `WhenUnlockedThisDeviceOnly` with `privateKeyUsage`, and has no software
 fallback. Audit code loads an already enrolled, manifest-pinned key and never
-creates or rotates one. Enrollment first claims a unique candidate session
-with an atomic `WhenUnlockedThisDeviceOnly` Data Protection Keychain
-reservation; key lookup requires exactly one matching private Secure Enclave
-key. The reservation remains until explicit candidate abandonment, so a
-failed or interrupted enrollment cannot silently reuse the same challenge.
+creates or rotates one. Immediately before signing, the app claims the
+candidate challenge with an atomic add-only `WhenUnlockedThisDeviceOnly` Data
+Protection Keychain item. Key lookup requires exactly one matching private
+Secure Enclave key. After signature self-verification, the authority is
+deleted before the reserved output is committed. A duplicate claim,
+interrupted signing, failed key deletion or failed output commit burns that
+candidate; preparation must create a new manifest/challenge instead of
+retrying the old one.
 
 The final signed manager has one strict headless enrollment intent. The
 release script reserves a new private `0700` attempt directory, then executes
@@ -119,6 +126,14 @@ symlinked outputs, unsafe parents, ad-hoc builds, unavailable user sessions,
 timeouts and any Keychain/Secure Enclave error stop preparation. No key,
 challenge, session or binding content is printed.
 
+The release-mode app reserves a new `0600` non-symlink output, reads the
+manifest and executable through bounded stable-file checks, verifies the exact
+schema-3 root and all ten critical-file entries, and checks its running
+executable hash and bundle version/build before opening the GUI. It keeps the
+raw schema-7 report only in memory, signs the derived aggregate, self-verifies
+the envelope, and commits it once. Diagnostic mode may still save raw reports
+under Application Support, but release scripts cannot collect them.
+
 This source and its deterministic tests do not prove a physical Secure
 Enclave, non-exportability on the release Mac, persistence across relaunch or
 update, access-control behavior, or continuity of the Developer ID identity.
@@ -127,11 +142,11 @@ A Direct release must therefore fail closed until all of these are verified:
 - real enrollment by the exact final Developer ID-signed Apple Silicon
   candidate before finalizing the immutable candidate manifest;
 - create, reload, sign, verify and exact-key deletion on that release Mac;
-- already-sanitized payload creation inside the signed manager;
-- production-candidate release-gate integration beyond the checked CI
-  two-direction Swift/CryptoKit-to-OpenSSL fixture contract;
-- collector, notarization and hosted-release gates that require schema 8;
-- replay/single-use handling and unchanged schema-7 semantic/privacy checks.
+- privacy-safe aggregate creation inside the signed manager;
+- authenticated schema-8 collector, notarization and hosted-release gates;
+- local attestation-to-evidence binding plus exact downloaded
+  archive-to-candidate verification;
+- a fresh physical-hardware and GUI acceptance run for that exact candidate.
 
 Unsupported or unavailable Secure Enclave, locked or denied Keychain, a
 missing/corrupt key, or a manifest mismatch is a hard failure. None may select

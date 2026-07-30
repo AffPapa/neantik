@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,12 +22,21 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DirectHostedDownloadOSSTests(unittest.TestCase):
-    def make_fixture(self, root: Path) -> Path:
+    def make_fixture(
+        self,
+        root: Path,
+        *,
+        version: str = "0.3.12",
+    ) -> Path:
         (root / "Resources").mkdir()
         (root / "dist").mkdir()
         with (root / "Resources" / "Info.plist").open("wb") as file:
-            plistlib.dump({"CFBundleShortVersionString": "1.2.3"}, file)
-        archive = root / "dist" / "NeAntik-1.2.3-arm64-notarized.zip"
+            plistlib.dump({"CFBundleShortVersionString": version}, file)
+        archive = (
+            root
+            / "dist"
+            / f"NeAntik-{version}-arm64-notarized.zip"
+        )
         archive.write_bytes(b"notarized NeAntik fixture")
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         archive.with_suffix(".zip.sha256").write_text(
@@ -55,18 +65,31 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
                 )
                 verified.append(candidate)
 
-            result = MODULE.verify_hosted_download(
-                project_root=root,
-                archive=archive,
-                download_url=(
-                    "https://github.com/AffPapa/neantik/releases/download/v1.2.3/"
-                    "NeAntik-1.2.3-arm64-notarized.zip"
-                ),
-                downloader=downloader,
-                archive_verifier=verifier,
+            legacy_pair = (
+                archive.name,
+                hashlib.sha256(archive.read_bytes()).hexdigest(),
             )
+            with mock.patch.object(
+                MODULE,
+                "LEGACY_ARCHIVE_ALLOWLIST",
+                {legacy_pair},
+            ):
+                result = MODULE.verify_hosted_download(
+                    project_root=root,
+                    archive=archive,
+                    download_url=(
+                        "https://github.com/AffPapa/neantik/releases/download/v0.3.12/"
+                        "NeAntik-0.3.12-arm64-notarized.zip"
+                    ),
+                    downloader=downloader,
+                    archive_verifier=verifier,
+                    legacy_archive_only=True,
+                )
 
-        self.assertEqual(result["status"], "hosted-zip-byte-identical-and-gatekeeper-verified")
+        self.assertEqual(
+            result["status"],
+            "legacy-hosted-zip-byte-identical-and-gatekeeper-verified",
+        )
         self.assertEqual(len(verified), 2)
         self.assertEqual(verified[0], archive.resolve())
         self.assertNotEqual(verified[0].parent, verified[1].parent)
@@ -84,29 +107,45 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             ) -> None:
                 destination.write_bytes(b"changed hosted bytes")
 
-            with self.assertRaisesRegex(
-                MODULE.HostedDownloadError,
-                "downloaded SHA-256 differs",
+            legacy_pair = (
+                archive.name,
+                hashlib.sha256(archive.read_bytes()).hexdigest(),
+            )
+            with mock.patch.object(
+                MODULE,
+                "LEGACY_ARCHIVE_ALLOWLIST",
+                {legacy_pair},
             ):
-                MODULE.verify_hosted_download(
-                    project_root=root,
-                    archive=archive,
-                    download_url=(
-                        "https://downloads.example/NeAntik-1.2.3-arm64-notarized.zip"
-                    ),
-                    downloader=changed_download,
-                    archive_verifier=lambda candidate: verified.append(candidate),
-                )
+                with self.assertRaisesRegex(
+                    MODULE.HostedDownloadError,
+                    "downloaded SHA-256 differs",
+                ):
+                    MODULE.verify_hosted_download(
+                        project_root=root,
+                        archive=archive,
+                        download_url=(
+                            "https://downloads.example/"
+                            "NeAntik-0.3.12-arm64-notarized.zip"
+                        ),
+                        downloader=changed_download,
+                        archive_verifier=lambda candidate: verified.append(candidate),
+                        legacy_archive_only=True,
+                    )
 
         self.assertEqual(verified, [archive.resolve()])
 
     def test_new_release_reverifies_local_and_downloaded_exact_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            archive = self.make_fixture(root)
+            archive = self.make_fixture(root, version="1.2.3")
             manifest = root / "dist" / "direct-candidate-manifest.json"
             manifest.write_text("{}\n", encoding="utf-8")
+            evidence = root / "dist" / "fingerprint-audit.json"
+            evidence.write_text("{}\n", encoding="utf-8")
+            attestation = root / "dist" / "fingerprint-audit-summary.json"
+            attestation.write_text("{}\n", encoding="utf-8")
             candidate_checks: list[tuple[Path, Path, str]] = []
+            evidence_checks: list[tuple[Path, Path, Path, str]] = []
 
             def downloader(
                 _url: str,
@@ -126,17 +165,24 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
                 archive_verifier=lambda _candidate: None,
                 candidate_manifest=manifest,
                 release_channel="public-alpha",
+                fingerprint_evidence=evidence,
+                fingerprint_attestation=attestation,
                 candidate_verifier=lambda candidate, bound_manifest, channel:
                     candidate_checks.append(
                         (candidate, bound_manifest, channel)
+                    ),
+                release_evidence_verifier=lambda bound_manifest, private, public, channel:
+                    evidence_checks.append(
+                        (bound_manifest, private, public, channel)
                     ),
             )
 
         self.assertEqual(
             result["status"],
-            "hosted-zip-byte-identical-gatekeeper-and-candidate-verified",
+            "hosted-zip-byte-identical-gatekeeper-candidate-and-evidence-verified",
         )
         self.assertEqual(len(candidate_checks), 2)
+        self.assertEqual(len(evidence_checks), 1)
         self.assertEqual(candidate_checks[0][0], archive.resolve())
         self.assertNotEqual(
             candidate_checks[0][0].parent,
@@ -152,7 +198,7 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             archive = self.make_fixture(root)
             with self.assertRaisesRegex(
                 MODULE.HostedDownloadError,
-                "provided together",
+                "new releases require",
             ):
                 MODULE.verify_hosted_download(
                     project_root=root,
@@ -164,6 +210,27 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
                     candidate_manifest=root / "candidate.json",
                     downloader=lambda _url, _destination, _size: None,
                     archive_verifier=lambda _candidate: None,
+                )
+
+    def test_new_release_cannot_use_legacy_archive_only_bypass(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = self.make_fixture(root, version="1.2.3")
+
+            with self.assertRaisesRegex(
+                MODULE.HostedDownloadError,
+                "allowlisted historical",
+            ):
+                MODULE.verify_hosted_download(
+                    project_root=root,
+                    archive=archive,
+                    download_url=(
+                        "https://downloads.example/"
+                        "NeAntik-1.2.3-arm64-notarized.zip"
+                    ),
+                    downloader=lambda _url, _destination, _size: None,
+                    archive_verifier=lambda _candidate: None,
+                    legacy_archive_only=True,
                 )
 
     def test_url_contract_rejects_credentials_query_fragment_and_wrong_name(self) -> None:
@@ -214,6 +281,8 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
         self.assertNotIn("verify-site-release-manifest", text)
         self.assertNotIn("cpa.tg", text)
         self.assertIn("direct-candidate-manifest.py", text)
+        self.assertIn("verify-public-artifact-privacy.py", text)
+        self.assertIn("--legacy-archive-only", text)
         self.assertIn('["ditto", "-x", "-k"', text)
 
 

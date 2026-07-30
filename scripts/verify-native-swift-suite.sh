@@ -18,6 +18,7 @@ case "$SUITE" in
   FingerprintAuditTests|\
   FingerprintEvidenceEnrollmentTests|\
   FingerprintEvidenceEnvelopeTests|\
+  FingerprintEvidenceReleaseContextTests|\
   SecureEnclaveFingerprintEvidenceSignerTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\

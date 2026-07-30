@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import importlib.util
 import hashlib
 import json
@@ -9,6 +10,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-public-artifact-privacy.py"
@@ -489,6 +491,126 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                     MODULE.PublicArtifactPrivacyError
                 ):
                     MODULE.validate_public_attestation(candidate)
+
+    def test_authenticated_attestation_reverifies_exact_schema8(self) -> None:
+        fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema8-swift.json"
+        )
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        manifest_raw = base64.b64decode(
+            fixture["manifestBase64"],
+            validate=True,
+        )
+        envelope_raw = base64.b64decode(
+            fixture["envelopeBase64"],
+            validate=True,
+        )
+        verified = MODULE.EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=manifest_raw,
+            envelope_raw=envelope_raw,
+        )
+        payload = MODULE.EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=MODULE.EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
+        attestation = MODULE.expected_authenticated_public_attestation(
+            payload,
+            verified,
+        )
+        expected_runtime = {
+            "managerVersion": payload["managerVersion"],
+            "managerBuild": payload["managerBuild"],
+            "runtimeVersion": payload["runtimeVersion"],
+            "runtimeExecutableSHA256":
+                payload["runtimeExecutableSHA256"],
+            "runtimeFrameworkSHA256":
+                payload["runtimeFrameworkSHA256"],
+        }
+        with mock.patch.object(
+            MODULE.GUI_VERIFIER,
+            "expected_runtime_evidence_from_app",
+            return_value=expected_runtime,
+        ):
+            result = (
+                MODULE.verify_evidence_attestation_payload_binding(
+                    private_payload=envelope_raw,
+                    public_payload=attestation,
+                    integrated_app=Path("/private/tmp/NeAntik.app"),
+                    release_channel="public-alpha",
+                    candidate_manifest_sha256=hashlib.sha256(
+                        manifest_raw
+                    ).hexdigest(),
+                    candidate_manifest_raw=manifest_raw,
+                )
+            )
+        self.assertEqual(
+            result,
+            fixture["expected"]["transportSHA256"],
+        )
+
+        tampered = dict(attestation)
+        tampered["payloadSHA256"] = "0" * 64
+        with mock.patch.object(
+            MODULE.GUI_VERIFIER,
+            "expected_runtime_evidence_from_app",
+            return_value=expected_runtime,
+        ):
+            with self.assertRaisesRegex(
+                MODULE.PublicArtifactPrivacyError,
+                "do not match",
+            ):
+                MODULE.verify_evidence_attestation_payload_binding(
+                    private_payload=envelope_raw,
+                    public_payload=tampered,
+                    integrated_app=Path(
+                        "/private/tmp/NeAntik.app"
+                    ),
+                    release_channel="public-alpha",
+                    candidate_manifest_sha256=hashlib.sha256(
+                        manifest_raw
+                    ).hexdigest(),
+                    candidate_manifest_raw=manifest_raw,
+                )
+
+    def test_candidate_bound_release_rejects_legacy_schema2_raw_report(
+        self,
+    ) -> None:
+        report = VERIFIER_FIXTURES.production_report()
+        summary = MODULE.GUI_VERIFIER.verification_summary(
+            report,
+            expected_runtime=None,
+        )
+        private_payload = json.dumps(report).encode("utf-8")
+        manifest_raw = b"{}"
+        attestation = MODULE.expected_public_attestation(
+            report,
+            summary,
+            private_evidence_sha256=hashlib.sha256(
+                private_payload
+            ).hexdigest(),
+            candidate_manifest_sha256=hashlib.sha256(
+                manifest_raw
+            ).hexdigest(),
+            release_channel="public-alpha",
+        )
+
+        with self.assertRaisesRegex(
+            MODULE.PublicArtifactPrivacyError,
+            "requires authenticated schema-8",
+        ):
+            MODULE.verify_evidence_attestation_payload_binding(
+                private_payload=private_payload,
+                public_payload=attestation,
+                integrated_app=Path("/private/tmp/NeAntik.app"),
+                release_channel="public-alpha",
+                candidate_manifest_sha256=hashlib.sha256(
+                    manifest_raw
+                ).hexdigest(),
+                candidate_manifest_raw=manifest_raw,
+            )
 
     def test_zip_and_directory_have_same_privacy_verdict(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

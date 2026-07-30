@@ -434,7 +434,10 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("profile A, repeat capture", firstRepeat)
         ]
         guard captures.allSatisfy({ Self.canMapDeviceTuple($0.1) }) else {
-            return []
+            return [
+                "The report identity cannot be mapped to the immutable "
+                    + "Apple device tuple catalog."
+            ]
         }
         return captures.flatMap { label, capture in
             Self.deviceTupleIssues(
@@ -1237,12 +1240,18 @@ final class FingerprintAuditCoordinator: ObservableObject {
 
     private let paths: AppPaths
     private let processes: BrowserProcessManager
+    private let releaseContext: FingerprintEvidenceReleaseContext?
     private var task: Task<Void, Never>?
     private var activeProfileID: UUID?
 
-    init(paths: AppPaths, processes: BrowserProcessManager) {
+    init(
+        paths: AppPaths,
+        processes: BrowserProcessManager,
+        releaseContext: FingerprintEvidenceReleaseContext? = nil
+    ) {
         self.paths = paths
         self.processes = processes
+        self.releaseContext = releaseContext
         do {
             try FingerprintAuditReportStore(
                 paths: paths
@@ -1358,9 +1367,17 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     second: secondCapture,
                     firstRepeat: firstRepeat
                 )
-                let savedURL = try FingerprintAuditReportStore(
-                    paths: paths
-                ).save(newReport)
+                let savedURL: URL
+                if let releaseContext {
+                    phase = "Подписываем отчёт выпуска"
+                    savedURL = try releaseContext.persist(
+                        report: newReport
+                    )
+                } else {
+                    savedURL = try FingerprintAuditReportStore(
+                        paths: paths
+                    ).save(newReport)
+                }
                 report = newReport
                 reportURL = savedURL
                 phase = newReport.verdict.title

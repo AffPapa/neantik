@@ -32,8 +32,8 @@ when a run fails. It also runs `verify-gui-fingerprint-report.py` against the
 saved JSON so a diagnostic/headless report cannot be mistaken for production
 GUI release evidence.
 
-After a successful user-context GUI run, copy a qualified report into the
-release evidence path from the main NeAntik project:
+After a successful user-context GUI run, inspect the private diagnostic report
+from the main NeAntik project:
 
 ```bash
 scripts/export-gui-fingerprint-audit-runbook.py \
@@ -42,27 +42,23 @@ scripts/export-gui-fingerprint-audit-runbook.py \
 scripts/export-gui-fingerprint-audit-runbook.py \
   --format json \
   --output dist/GUI-FINGERPRINT-AUDIT-RUNBOOK.json
-scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source /absolute/path/to/fingerprint-audit.json
-scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source /absolute/path/to/fingerprint-audit.json \
-  --collect
 scripts/verify-gui-fingerprint-report.py \
-  dist/fingerprint-audit.json \
+  /absolute/path/to/fingerprint-audit.json \
   --runtime-lock runtime/fingerprint-chromium.lock.json
 ```
 
 The runbook is an owner handoff for obtaining real GUI evidence. It records the
-audit-kit archive hash and the exact collect/verify commands. The final manual
+audit-kit archive hash and the exact diagnostic verification commands. The
+manual
 verifier binds the GUI JSON to the pinned runtime verification report through
 `runtime/fingerprint-chromium.lock.json`, but the runbook is not a qualified
 report by itself.
 
-Without `--source`, the preparation command scans
-`~/Library/Application Support/NeAntik/FingerprintAudits/` and selects the
-newest `audit-*.json`. It prints qualification status, changed critical keys,
-rejection reasons, and next steps. With `--collect`, it fails closed:
-unqualified reports are not copied to `dist/fingerprint-audit.json`.
+Raw schema-7 files from this kit are diagnostic only. They must never be copied
+to `dist/fingerprint-audit.json` or used as Direct release evidence. A release
+must run A → B → A inside the exact prepared `NeAntik.app`; that signed app
+derives and signs a privacy-safe schema-8 aggregate bound to its schema-3
+candidate manifest.
 
 The audit has two deliberately different outcomes:
 
@@ -81,11 +77,6 @@ The audit has two deliberately different outcomes:
 - `Run-NeAntik-Runtime-Audit.command` — Finder-launchable audit command.
 - `verify-gui-fingerprint-report.py` — independent JSON verifier for the
   production GUI A → B → A report.
-- `collect-gui-fingerprint-evidence.py` — fail-closed collector that copies a
-  qualified GUI report into the Direct release evidence path.
-- `prepare-gui-fingerprint-release-evidence.py` — operator handoff that checks
-  the newest or specified GUI report and optionally collects it for the Direct
-  release matrix.
 - `evidence/` — exact source lock, GN arguments, and runtime verification.
 - `licenses/` — Chromium and patch-source licenses.
 
@@ -107,13 +98,8 @@ only the JSON gate:
 ./verify-gui-fingerprint-report.py ./fingerprint-audit.json
 ```
 
-To prepare the report for the release matrix from the main project:
-
-```bash
-./scripts/prepare-gui-fingerprint-release-evidence.py \
-  --source ./fingerprint-audit.json \
-  --collect
-```
+Do not prepare this raw report for the release matrix. Start a fresh
+candidate-bound schema-8 run from the exact prepared manager instead.
 
 ## Current release boundary
 

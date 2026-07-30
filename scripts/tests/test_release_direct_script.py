@@ -6,6 +6,7 @@ SCRIPTS = Path(__file__).resolve().parents[1]
 PREPARE = SCRIPTS / "prepare-direct-runtime-candidate.sh"
 PREPARE_MANAGER = SCRIPTS / "prepare-direct-manager-update.sh"
 RELEASE = SCRIPTS / "release-direct.sh"
+NOTARIZE = SCRIPTS / "notarize-direct-candidate.sh"
 ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 
 
@@ -84,6 +85,19 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertLess(
             text.index("direct-candidate-manifest.py"),
             text.index("notarize-direct-candidate.sh"),
+        )
+
+    def test_notarization_requires_authenticated_schema8_evidence(self) -> None:
+        text = NOTARIZE.read_text(encoding="utf-8")
+
+        self.assertIn("verify-fingerprint-evidence-envelope.py", text)
+        self.assertIn("--manifest \"$CANDIDATE_MANIFEST\"", text)
+        self.assertIn("--envelope \"$REPORT_PATH\"", text)
+        self.assertNotIn("verify-gui-fingerprint-report.py", text)
+        self.assertGreaterEqual(text.count("direct-candidate-manifest.py"), 2)
+        self.assertLess(
+            text.index("verify-fingerprint-evidence-envelope.py"),
+            text.index("notarytool submit"),
         )
 
 

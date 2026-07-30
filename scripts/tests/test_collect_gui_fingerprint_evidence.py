@@ -1,4 +1,5 @@
 import importlib.util
+import base64
 import json
 import os
 import sys
@@ -207,6 +208,104 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
                     private_evidence=output,
                     attestation=summary_output,
                 )
+
+    def test_direct_candidate_collects_only_authenticated_schema8(self) -> None:
+        fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema8-swift.json"
+        )
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        manifest_raw = base64.b64decode(
+            fixture["manifestBase64"],
+            validate=True,
+        )
+        envelope_raw = base64.b64decode(
+            fixture["envelopeBase64"],
+            validate=True,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "finished-schema8.json"
+            manifest = root / "direct-candidate-manifest.json"
+            output = root / "dist" / "fingerprint-audit.json"
+            summary = root / "dist" / "fingerprint-audit-summary.json"
+            source.write_bytes(envelope_raw)
+            manifest.write_bytes(manifest_raw)
+            expected_runtime = {
+                "managerVersion": "0.3.12",
+                "managerBuild": "15",
+                "runtimeVersion": "150.0.7871.186",
+                "runtimeExecutableSHA256": "a" * 64,
+                "runtimeFrameworkSHA256": "b" * 64,
+            }
+            with mock.patch.object(
+                MODULE.GUI_VERIFIER,
+                "expected_runtime_evidence_from_app",
+                return_value=expected_runtime,
+            ):
+                result = MODULE.collect_evidence(
+                    source=source,
+                    audits_dir=root,
+                    output=output,
+                    runtime_lock=root / "unused-lock.json",
+                    integrated_app=root / "NeAntik.app",
+                    candidate_manifest=manifest,
+                    summary_output=summary,
+                    release_channel="public-alpha",
+                )
+
+            self.assertEqual(output.read_bytes(), envelope_raw)
+            self.assertEqual(os.stat(output).st_mode & 0o777, 0o600)
+            attestation = json.loads(summary.read_text(encoding="utf-8"))
+            self.assertEqual(attestation["schemaVersion"], 3)
+            self.assertEqual(
+                attestation["authenticatedEvidenceID"],
+                fixture["expected"]["authenticatedEvidenceID"],
+            )
+            self.assertEqual(
+                attestation["privateEvidenceSHA256"],
+                fixture["expected"]["transportSHA256"],
+            )
+            self.assertEqual(
+                result["privateEvidenceSHA256"],
+                fixture["expected"]["transportSHA256"],
+            )
+            for forbidden in (
+                "profileName",
+                "profileID",
+                "identityCode",
+                "values",
+                "challenge",
+                "signatureDER",
+            ):
+                self.assertNotIn(
+                    forbidden,
+                    summary.read_text(encoding="utf-8"),
+                )
+
+            source.write_text(
+                json.dumps(VERIFIER_FIXTURES.production_report()),
+                encoding="utf-8",
+            )
+            with mock.patch.object(
+                MODULE.GUI_VERIFIER,
+                "expected_runtime_evidence_from_app",
+                return_value=expected_runtime,
+            ):
+                with self.assertRaisesRegex(
+                    MODULE.EvidenceCollectionError,
+                    "schema-8",
+                ):
+                    MODULE.collect_evidence(
+                        source=source,
+                        audits_dir=root,
+                        output=root / "dist" / "second.json",
+                        runtime_lock=root / "unused-lock.json",
+                        integrated_app=root / "NeAntik.app",
+                        candidate_manifest=manifest,
+                        release_channel="public-alpha",
+                    )
 
     def test_private_writer_does_not_follow_predictable_temp_symlink(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -435,6 +534,35 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
             self.assertTrue(output.is_file())
             self.assertFalse(summary.exists())
 
+    def test_authenticated_collection_rejects_overlapping_paths_before_write(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "schema8.json"
+            source.write_text("{}", encoding="utf-8")
+            runtime_lock = root / "runtime-lock.json"
+
+            for output, summary in (
+                (root / "same.json", root / "same.json"),
+                (source, root / "summary.json"),
+                (root / "private.json", source),
+            ):
+                with self.subTest(output=output, summary=summary):
+                    with self.assertRaisesRegex(
+                        MODULE.EvidenceCollectionError,
+                        "paths must be distinct",
+                    ):
+                        MODULE.collect_evidence(
+                            source=source,
+                            audits_dir=root,
+                            output=output,
+                            runtime_lock=runtime_lock,
+                            integrated_app=root / "NeAntik.app",
+                            candidate_manifest=root / "manifest.json",
+                            summary_output=summary,
+                        )
+
     def test_rejects_sensitive_extra_fields_without_writing_output(self) -> None:
         mutations = (
             ("top", "cookies"),
@@ -470,7 +598,7 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
 
                     self.assertFalse(output.exists())
 
-    def test_binds_collection_to_exact_distributed_app(self) -> None:
+    def test_direct_app_without_schema3_manifest_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             integrated_app = VERIFIER_FIXTURES.write_integrated_app_fixture(root)
@@ -489,16 +617,17 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
             output = root / "dist" / "fingerprint-audit.json"
             runtime_lock = VERIFIER_FIXTURES.write_runtime_lock_fixture(root)
 
-            result = MODULE.collect_evidence(
-                source=source,
-                audits_dir=root,
-                output=output,
-                runtime_lock=runtime_lock,
-                integrated_app=integrated_app,
-            )
-
-            self.assertTrue(result["summary"]["qualified"])
-            self.assertEqual(result["integratedApp"], str(integrated_app))
+            with self.assertRaisesRegex(
+                MODULE.EvidenceCollectionError,
+                "schema-3 manifest",
+            ):
+                MODULE.collect_evidence(
+                    source=source,
+                    audits_dir=root,
+                    output=output,
+                    runtime_lock=runtime_lock,
+                    integrated_app=integrated_app,
+                )
 
     def test_production_collection_rejects_public_alpha_only_report(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

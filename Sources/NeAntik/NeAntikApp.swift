@@ -13,6 +13,8 @@ struct NeAntikApp: App {
     private let credentialCleanup: DeletedProfileCredentialCleanup
     private let runtimeLocator = BrowserRuntimeLocator()
     private let launchIntent: NeAntikLaunchIntent
+    private let fingerprintEvidenceReleaseContext:
+        FingerprintEvidenceReleaseContext?
 
     init() {
         let launchIntent = NeAntikLaunchIntent.parse(
@@ -26,8 +28,27 @@ struct NeAntikApp: App {
                 "Неверные параметры защищённого режима NeAntik.\n",
                 code: EX_USAGE
             )
-        case .interactive:
+        case let .interactive(request):
             self.launchIntent = launchIntent
+            if let request {
+                do {
+                    fingerprintEvidenceReleaseContext =
+                        try FingerprintEvidenceReleaseContext.load(
+                            request: request,
+                            executableURL: URL(
+                                fileURLWithPath:
+                                    CommandLine.arguments[0]
+                            )
+                        )
+                } catch {
+                    Self.writeControlErrorAndExit(
+                        "Не удалось подготовить защищённую проверку выпуска.\n",
+                        code: EX_DATAERR
+                    )
+                }
+            } else {
+                fingerprintEvidenceReleaseContext = nil
+            }
         }
 
         let paths = AppPaths()
@@ -57,7 +78,9 @@ struct NeAntikApp: App {
                 keychain: keychain,
                 credentialCleanup: credentialCleanup,
                 runtimeLocator: runtimeLocator,
-                launchIntent: launchIntent
+                launchIntent: launchIntent,
+                fingerprintEvidenceReleaseContext:
+                    fingerprintEvidenceReleaseContext
             )
         }
         .windowResizability(.contentMinSize)

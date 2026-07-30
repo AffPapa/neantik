@@ -372,11 +372,31 @@ def verify_manifest(
 
 
 def verify_evidence_follows_manifest(manifest: Path, evidence: Path) -> None:
-    payload = load_manifest(manifest)
-    report = GUI_VERIFIER.load_report(evidence)
-    prepared_at = GUI_VERIFIER.parse_iso8601(payload.get("preparedAt"), "preparedAt")
+    manifest_payload, manifest_raw = load_manifest_with_bytes(manifest)
+    try:
+        verified = EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=manifest_raw,
+            envelope_raw=EVIDENCE_SCHEMA.read_bounded_regular_file(
+                evidence,
+                maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_ENVELOPE_BYTES,
+                label="Fingerprint evidence envelope",
+            ),
+        )
+        release_payload = EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise CandidateManifestError(
+            "Authenticated GUI fingerprint evidence is invalid"
+        ) from error
+    prepared_at = GUI_VERIFIER.parse_iso8601(
+        manifest_payload.get("preparedAt"),
+        "preparedAt",
+    )
     report_created_at = GUI_VERIFIER.parse_iso8601(
-        report.get("createdAt"),
+        release_payload.get("createdAt"),
         "createdAt",
     )
     if report_created_at < prepared_at:

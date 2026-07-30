@@ -375,7 +375,7 @@ class DirectCandidateManifestTests(unittest.TestCase):
                     release_channel="production",
                 )
 
-    def test_rejects_gui_evidence_created_before_candidate(self) -> None:
+    def test_rejects_legacy_raw_gui_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             app = prepared_fixture(root)
@@ -394,8 +394,40 @@ class DirectCandidateManifestTests(unittest.TestCase):
                 json.dumps(FIXTURES.production_report()),
                 encoding="utf-8",
             )
-            with self.assertRaisesRegex(MODULE.CandidateManifestError, "predates"):
+            with self.assertRaisesRegex(
+                MODULE.CandidateManifestError,
+                "Authenticated",
+            ):
                 MODULE.verify_evidence_follows_manifest(manifest, evidence)
+
+    def test_accepts_exact_candidate_bound_schema8_evidence(self) -> None:
+        fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema8-swift.json"
+        )
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root / "candidate.json"
+            evidence = root / "fingerprint-audit.json"
+            manifest.write_bytes(
+                base64.b64decode(
+                    fixture["manifestBase64"],
+                    validate=True,
+                )
+            )
+            evidence.write_bytes(
+                base64.b64decode(
+                    fixture["envelopeBase64"],
+                    validate=True,
+                )
+            )
+
+            MODULE.verify_evidence_follows_manifest(
+                manifest,
+                evidence,
+            )
 
 
 if __name__ == "__main__":

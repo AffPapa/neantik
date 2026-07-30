@@ -16,7 +16,8 @@ struct FingerprintAuditView: View {
         initialFirstID: UUID?,
         runtime: BrowserRuntime,
         processes: BrowserProcessManager,
-        paths: AppPaths
+        paths: AppPaths,
+        releaseContext: FingerprintEvidenceReleaseContext? = nil
     ) {
         self.profiles = profiles
         self.runtime = runtime
@@ -33,7 +34,8 @@ struct FingerprintAuditView: View {
         _coordinator = StateObject(
             wrappedValue: FingerprintAuditCoordinator(
                 paths: paths,
-                processes: processes
+                processes: processes,
+                releaseContext: releaseContext
             )
         )
     }

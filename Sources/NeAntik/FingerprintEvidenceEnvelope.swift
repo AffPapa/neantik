@@ -181,6 +181,11 @@ enum FingerprintEvidenceEnvelopeCodec {
             throw FingerprintEvidenceError.manifestTooLarge
         }
         let binding = try manifestBinding(in: candidateManifest)
+        let releaseChannel =
+            try manifestReleaseChannel(in: candidateManifest)
+        guard releasePayloadChannel(in: payload) == releaseChannel else {
+            throw FingerprintEvidenceError.bindingMismatch
+        }
         let validated = try binding.validated()
         guard signer.publicKeyX963 == validated.publicKey.x963Representation
         else {
@@ -239,6 +244,8 @@ enum FingerprintEvidenceEnvelopeCodec {
             throw FingerprintEvidenceError.manifestTooLarge
         }
         let binding = try manifestBinding(in: candidateManifest)
+        let releaseChannel =
+            try manifestReleaseChannel(in: candidateManifest)
         let validated = try binding.validated()
         guard envelope.schemaVersion ==
                 FingerprintEvidenceEnvelope.currentSchemaVersion,
@@ -290,6 +297,9 @@ enum FingerprintEvidenceEnvelopeCodec {
         guard isCurrentAuditPayload(payload) else {
             throw FingerprintEvidenceError.malformedEnvelope
         }
+        guard releasePayloadChannel(in: payload) == releaseChannel else {
+            throw FingerprintEvidenceError.bindingMismatch
+        }
         return payload
     }
 
@@ -322,6 +332,29 @@ enum FingerprintEvidenceEnvelopeCodec {
                 throw FingerprintEvidenceError.invalidManifestBinding
             }
             return container.fingerprintEvidence
+        } catch {
+            throw FingerprintEvidenceError.invalidManifestBinding
+        }
+    }
+
+    static func manifestReleaseChannel(
+        in candidateManifest: Data
+    ) throws -> FingerprintEvidenceReleaseChannel {
+        guard hasExactBindingKeys(candidateManifest) else {
+            throw FingerprintEvidenceError.invalidManifestBinding
+        }
+        do {
+            let container = try JSONDecoder().decode(
+                CandidateManifestBindingContainer.self,
+                from: candidateManifest
+            )
+            guard container.schemaVersion == 3,
+                  container.kind ==
+                    "neantik-direct-prepared-candidate"
+            else {
+                throw FingerprintEvidenceError.invalidManifestBinding
+            }
+            return container.releaseChannel
         } catch {
             throw FingerprintEvidenceError.invalidManifestBinding
         }
@@ -367,6 +400,20 @@ enum FingerprintEvidenceEnvelopeCodec {
               ),
               canonical == data,
               let dictionary = object as? [String: Any],
+              Set(dictionary.keys) == [
+                  "boundary", "bundle", "bundleInventory",
+                  "criticalFiles", "fingerprintEvidence", "kind",
+                  "preparedAt", "postPreparationMutablePaths",
+                  "releaseChannel", "schemaVersion"
+              ],
+              dictionary["schemaVersion"] as? Int == 3,
+              dictionary["kind"] as? String ==
+                "neantik-direct-prepared-candidate",
+              let channel =
+                dictionary["releaseChannel"] as? String,
+              FingerprintEvidenceReleaseChannel(
+                  rawValue: channel
+              ) != nil,
               let binding =
                 dictionary["fingerprintEvidence"] as? [String: Any],
               Set(binding.keys) == [
@@ -389,6 +436,25 @@ enum FingerprintEvidenceEnvelopeCodec {
               String(data: data, encoding: .utf8) != nil,
               let object = try? JSONSerialization.jsonObject(with: data),
               let dictionary = object as? [String: Any],
+              Set(dictionary.keys) == [
+                  "schemaVersion", "kind", "createdAt",
+                  "releaseChannel", "managerVersion", "managerBuild",
+                  "runtimeName", "runtimeVersion", "runtimeFlavor",
+                  "runtimeCodeSignatureValid",
+                  "runtimeExecutableSHA256",
+                  "runtimeFrameworkSHA256", "auditSchemaVersion",
+                  "identityCatalogVersion", "executionMode",
+                  "verdict", "criticalSurfaces",
+                  "changedCriticalKeys", "unavailableRequiredKeys",
+                  "unstableRequiredKeys", "profileSequenceValid",
+                  "identitySequenceValid", "crossRealmConsistent",
+                  "deviceTupleConsistent", "networkPrivacyControlled",
+                  "publicAlphaQualified", "productionQualified",
+                  "limitations"
+              ],
+              isCanonicalUTCSecondTimestamp(
+                  dictionary["createdAt"]
+              ),
               let canonical = try? JSONSerialization.data(
                   withJSONObject: object,
                   options: [.sortedKeys, .withoutEscapingSlashes]
@@ -399,16 +465,88 @@ enum FingerprintEvidenceEnvelopeCodec {
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        guard let report = try? decoder.decode(
-            FingerprintAuditReport.self,
+        guard let payload = try? decoder.decode(
+            FingerprintReleaseEvidencePayload.self,
             from: data
         ),
-        hasUppercaseCanonicalPayloadUUIDs(dictionary)
+              payload.schemaVersion ==
+                FingerprintReleaseEvidencePayload
+                    .currentSchemaVersion,
+              payload.kind ==
+                FingerprintReleaseEvidencePayload.kindName,
+              payload.auditSchemaVersion ==
+                FingerprintAuditReport.currentAuditSchemaVersion,
+              payload.identityCatalogVersion ==
+                BrowserIdentityCatalog.currentVersion,
+              payload.executionMode ==
+                FingerprintAuditExecutionMode.browser.rawValue,
+              payload.verdict ==
+                FingerprintAuditVerdict.verified.rawValue,
+              payload.runtimeCodeSignatureValid,
+              isLowerSHA256(payload.runtimeExecutableSHA256),
+              isLowerSHA256(payload.runtimeFrameworkSHA256),
+              !payload.managerVersion.isEmpty,
+              !payload.managerBuild.isEmpty,
+              !payload.runtimeName.isEmpty,
+              !payload.runtimeVersion.isEmpty,
+              payload.profileSequenceValid,
+              payload.identitySequenceValid,
+              payload.publicAlphaQualified,
+              Set(payload.criticalSurfaces.keys) ==
+                Set(FingerprintAuditReport.criticalKeys),
+              payload.criticalSurfaces["webgl_pixels"] ==
+                .stableDifferent,
+              payload.criticalSurfaces.values.filter({
+                  $0 == .stableDifferent
+              }).count >= 2,
+              payload.changedCriticalKeys ==
+                payload.changedCriticalKeys.sorted(),
+              payload.changedCriticalKeys ==
+                payload.criticalSurfaces.compactMap({
+                    $0.value == .stableDifferent ? $0.key : nil
+                }).sorted(),
+              payload.unavailableRequiredKeys ==
+                payload.unavailableRequiredKeys.sorted(),
+              payload.unstableRequiredKeys ==
+                payload.unstableRequiredKeys.sorted(),
+              Set(payload.changedCriticalKeys).isSubset(
+                  of: Set(FingerprintAuditReport.criticalKeys)
+              ),
+              payload.releaseChannel != .production ||
+                (
+                    payload.productionQualified &&
+                    payload.crossRealmConsistent &&
+                    payload.deviceTupleConsistent &&
+                    payload.networkPrivacyControlled &&
+                    payload.unavailableRequiredKeys.isEmpty &&
+                    payload.unstableRequiredKeys.isEmpty &&
+                    payload.limitations.isEmpty
+                ),
+              payload.productionQualified
+                ? payload.limitations.isEmpty
+                : payload.limitations ==
+                    ["strict-coherence-not-qualified"]
         else {
             return false
         }
-        return report.auditSchemaVersion ==
-            FingerprintAuditReport.currentAuditSchemaVersion
+        return true
+    }
+
+    private static func releasePayloadChannel(
+        in data: Data
+    ) -> FingerprintEvidenceReleaseChannel? {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(
+            FingerprintReleaseEvidencePayload.self,
+            from: data
+        ).releaseChannel
+    }
+
+    private static func isLowerSHA256(_ value: String) -> Bool {
+        value.utf8.count == 64 && value.utf8.allSatisfy {
+            (48...57).contains($0) || (97...102).contains($0)
+        }
     }
 
     private static func canonicalLowSSignatureDER(
@@ -622,5 +760,7 @@ enum FingerprintEvidenceEnvelopeCodec {
 
 private struct CandidateManifestBindingContainer: Decodable {
     let schemaVersion: Int
+    let kind: String
+    let releaseChannel: FingerprintEvidenceReleaseChannel
     let fingerprintEvidence: FingerprintEvidenceManifestBinding
 }

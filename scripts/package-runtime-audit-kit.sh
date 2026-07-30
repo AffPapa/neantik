@@ -105,10 +105,6 @@ cp "$PROJECT_DIR/scripts/Run-NeAntik-Runtime-Audit.command" "$PACKAGE_DIR/"
 chmod 0755 "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 cp "$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py" "$PACKAGE_DIR/"
 chmod 0755 "$PACKAGE_DIR/verify-gui-fingerprint-report.py"
-cp "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" "$PACKAGE_DIR/"
-chmod 0755 "$PACKAGE_DIR/collect-gui-fingerprint-evidence.py"
-cp "$PROJECT_DIR/scripts/prepare-gui-fingerprint-release-evidence.py" "$PACKAGE_DIR/"
-chmod 0755 "$PACKAGE_DIR/prepare-gui-fingerprint-release-evidence.py"
 cp "$PROJECT_DIR/docs/RUNTIME_AUDIT_KIT_README.md" "$PACKAGE_DIR/README.md"
 cp "$CANDIDATE_LOCK" \
   "$EVIDENCE_DIR/fingerprint-chromium.lock.json"
@@ -133,8 +129,7 @@ codesign --verify --strict --verbose=2 \
   "$PACKAGE_DIR/NeAntikRuntimeAudit"
 bash -n "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 python3 -m py_compile "$PACKAGE_DIR/verify-gui-fingerprint-report.py"
-python3 -m py_compile "$PACKAGE_DIR/collect-gui-fingerprint-evidence.py"
-python3 -m py_compile "$PACKAGE_DIR/prepare-gui-fingerprint-release-evidence.py"
+python3 "$PACKAGE_DIR/verify-gui-fingerprint-report.py" --help >/dev/null
 find "$PACKAGE_DIR" -name __pycache__ -type d -prune -exec rm -rf {} +
 grep -Fq 'umask 077' "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 grep -Fq 'fingerprint-audit-terminal.log' \
@@ -164,8 +159,7 @@ codesign --verify --strict --verbose=2 \
   "$ROUNDTRIP_PACKAGE/NeAntikRuntimeAudit"
 bash -n "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
 python3 -m py_compile "$ROUNDTRIP_PACKAGE/verify-gui-fingerprint-report.py"
-python3 -m py_compile "$ROUNDTRIP_PACKAGE/collect-gui-fingerprint-evidence.py"
-python3 -m py_compile "$ROUNDTRIP_PACKAGE/prepare-gui-fingerprint-release-evidence.py"
+python3 "$ROUNDTRIP_PACKAGE/verify-gui-fingerprint-report.py" --help >/dev/null
 grep -Fq 'fingerprint-audit-terminal.log' \
   "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
 grep -Fq -- '--runtime-lock "$RUNTIME_LOCK"' \
