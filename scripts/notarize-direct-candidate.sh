@@ -19,9 +19,18 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     ;;
 esac
 
-find "$PROJECT_DIR/scripts" \
-  \( -name __pycache__ -type d -prune -exec rm -rf {} + \) -o \
-  \( -name '*.pyc' -type f -delete \)
+# The source receipt rejects executable bytecode beside any tracked Python
+# source. Tests may create these caches outside scripts/, so derive the exact
+# cleanup scope from Git instead of maintaining a fragile hard-coded list.
+git -C "$PROJECT_DIR" ls-files -z -- '*.py' |
+  while IFS= read -r -d '' tracked_python; do
+    python_parent="$PROJECT_DIR/$(dirname "$tracked_python")"
+    python_cache="$python_parent/__pycache__"
+    if [[ -d "$python_cache" ]]; then
+      find "$python_cache" -depth -delete
+    fi
+    find "$python_parent" -maxdepth 1 -type f -name '*.pyc' -delete
+  done
 
 RELEASE_PYTHON="/opt/homebrew/bin/python3"
 if [[ ! -x "$RELEASE_PYTHON" ]] ||
