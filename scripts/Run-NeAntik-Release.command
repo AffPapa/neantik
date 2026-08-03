@@ -15,10 +15,6 @@ EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_
 export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-62831D7DD86D5EDE0C44130F980325C4BFBC1B43}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"
-if [[ -z "${NEANTIK_SOURCE_PROVENANCE:-}" && -f "$DEFAULT_SOURCE_PROVENANCE" ]]; then
-  export NEANTIK_SOURCE_PROVENANCE="$DEFAULT_SOURCE_PROVENANCE"
-fi
-
 pause_on_error() {
   local exit_code=$?
   trap - ERR
@@ -31,6 +27,83 @@ pause_on_error() {
   exit "$exit_code"
 }
 trap pause_on_error ERR
+
+cache_runtime_source_evidence() {
+  local cached_dir="$ATTEMPT_STATE_ROOT/runtime-source-evidence"
+  local configured_provenance="${NEANTIK_SOURCE_PROVENANCE:-}"
+  local configured_lock="${NEANTIK_RUNTIME_CANDIDATE_LOCK:-}"
+  local -a evidence_dirs
+
+  if [[ -n "$configured_provenance" || -n "$configured_lock" ]]; then
+    if [[ -z "$configured_provenance" || -z "$configured_lock" ||
+          "$configured_provenance" != /* || "$configured_lock" != /* ||
+          ! -f "$configured_provenance" || ! -f "$configured_lock" ]]; then
+      echo "Runtime source evidence variables must name two existing absolute files." >&2
+      return 66
+    fi
+    if ! "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+        "$configured_provenance" >/dev/null 2>&1 ||
+      ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+        "$configured_lock" "$configured_provenance" >/dev/null 2>&1; then
+      echo "Configured runtime source evidence did not pass verification." >&2
+      return 66
+    fi
+    mkdir -p "$cached_dir"
+    cp "$configured_provenance" "$cached_dir/source-provenance.json"
+    cp "$configured_lock" "$cached_dir/runtime-candidate-lock.json"
+    chmod 0600 \
+      "$cached_dir/source-provenance.json" \
+      "$cached_dir/runtime-candidate-lock.json"
+    export NEANTIK_SOURCE_PROVENANCE="$cached_dir/source-provenance.json"
+    export NEANTIK_RUNTIME_CANDIDATE_LOCK="$cached_dir/runtime-candidate-lock.json"
+    echo "Runtime source evidence: verified and cached for this release attempt."
+    return 0
+  else
+    evidence_dirs=(
+      "$(dirname "$DEFAULT_SOURCE_PROVENANCE")"
+      "$APP_PATH/Contents/Resources/NeAntikRuntimeEvidence"
+      "$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence"
+    )
+    evidence_dirs+=(
+      "${(@f)$(find "$PROJECT_DIR/artifacts/neantik/private-release-attempts" \
+        -type f -name source-provenance.json -print 2>/dev/null |
+        sed 's#/source-provenance\.json$##' |
+        sort -r)}"
+    )
+  fi
+
+  local evidence_dir
+  for evidence_dir in "${evidence_dirs[@]}"; do
+    [[ -n "$evidence_dir" ]] || continue
+    local provenance="$evidence_dir/source-provenance.json"
+    local lock="$evidence_dir/runtime-candidate-lock.json"
+    if [[ ! -f "$lock" ]]; then
+      lock="$evidence_dir/fingerprint-chromium.lock.json"
+    fi
+    [[ -f "$provenance" && -f "$lock" ]] || continue
+    if ! "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+        "$provenance" >/dev/null 2>&1 ||
+      ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+        "$lock" "$provenance" >/dev/null 2>&1; then
+      continue
+    fi
+
+    mkdir -p "$cached_dir"
+    cp "$provenance" "$cached_dir/source-provenance.json"
+    cp "$lock" "$cached_dir/runtime-candidate-lock.json"
+    chmod 0600 \
+      "$cached_dir/source-provenance.json" \
+      "$cached_dir/runtime-candidate-lock.json"
+    export NEANTIK_SOURCE_PROVENANCE="$cached_dir/source-provenance.json"
+    export NEANTIK_RUNTIME_CANDIDATE_LOCK="$cached_dir/runtime-candidate-lock.json"
+    echo "Runtime source evidence: verified and cached for this release attempt."
+    return 0
+  done
+
+  echo "Не найдено проверенное доказательство происхождения встроенного Chromium." >&2
+  echo "Сначала восстановите runtime evidence; release gate не был ослаблен." >&2
+  return 66
+}
 
 run_logged_stage() {
   local label="$1"
@@ -65,6 +138,7 @@ echo
 mkdir -p "$ATTEMPT_STATE_ROOT"
 chmod 0700 "$ATTEMPT_STATE_ROOT"
 echo "Private attempt state: $ATTEMPT_STATE_ROOT"
+cache_runtime_source_evidence
 
 if [[ -d "$APP_PATH" && -f "$CANDIDATE_MANIFEST" &&
       ! -L "$CANDIDATE_MANIFEST" ]]; then
