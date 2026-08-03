@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 import SwiftUI
 
 struct FingerprintAuditView: View {
@@ -136,6 +137,25 @@ struct FingerprintAuditView: View {
                 return
             }
             releaseAuditTerminationScheduled = true
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                NSApplication.shared.terminate(nil)
+            }
+        }
+        .onChange(of: coordinator.errorMessage) { _, message in
+            guard isReleaseAudit,
+                  let message,
+                  !releaseAuditTerminationScheduled
+            else {
+                return
+            }
+            releaseAuditTerminationScheduled = true
+            if let data = (
+                "Автоматическая проверка отпечатка остановлена: " +
+                    "\(message)\n"
+            ).data(using: .utf8) {
+                try? FileHandle.standardError.write(contentsOf: data)
+            }
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 350_000_000)
                 NSApplication.shared.terminate(nil)
