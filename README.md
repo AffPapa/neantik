@@ -190,3 +190,21 @@ fingerprint seed или proxy-конфигурации.
 Исходники NeAntik распространяются по MPL-2.0. Производные файлы Chromium
 сохраняют свои upstream-лицензии и notices. Название и логотип регулируются
 [TRADEMARKS.md](TRADEMARKS.md).
+
+## Выпуск на AffPapa
+
+Codex и Claude используют один ограниченный release-клиент. Проверить доступ,
+текущий релиз и публичные файлы одной командой:
+
+```bash
+./scripts/neantik-affpapa-release doctor
+```
+
+Опубликовать уже подготовленный release-каталог:
+
+```bash
+./scripts/neantik-affpapa-release publish /absolute/path/to/release-dir
+```
+
+Ручные SSH/SCP/SFTP для этого не нужны и запрещены серверным forced-command.
+Полный контракт: [ops/affpapa/README.md](ops/affpapa/README.md).

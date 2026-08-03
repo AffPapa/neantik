@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "product": "NeAntik",
+  "releaseVersion": "0.3.14",
+  "updatedAt": "2026-08-04",
+  "changelog": [
+    {
+      "version": "0.3.14",
+      "build": 17,
+      "date": "4 августа 2026",
+      "label": "Public Alpha",
+      "items": [
+        "Проверка профиля стала одним понятным действием с результатом «пройдена / не пройдена»",
+        "Добавлены локальные иконки, цвета, теги, поиск и фильтрация профилей",
+        "Исправлен запуск удалённых профилей без создания пустых BrowserData-каталогов",
+        "Уменьшена лишняя работа в горячем пути запуска и безопасно очищаются пустые временные каталоги проверки",
+        "Релизная A → B → A проверка автоматизирована и привязана к точной подписанной сборке",
+        "Доступны нотарифицированные DMG и ZIP для Apple Silicon"
+      ]
+    },
+    {
+      "version": "0.3.13",
+      "build": 16,
+      "date": "30 июля 2026",
+      "label": "Public Alpha",
+      "items": [
+        "Chromium 150.0.7871.186 ARM64/Metal — обновлён public alpha release",
+        "GUI fingerprint A → B → A проходит public-alpha gate",
+        "Direct telemetry выключена",
+        "Скачка ZIP напрямую с affpapa.org",
+        "release.json для внешних интеграций"
+      ]
+    },
+    {
+      "version": "0.3.12",
+      "build": 15,
+      "date": "28 июля 2026",
+      "items": [
+        "Встроен проверенный Chromium 150.0.7871.186 ARM64 с Metal",
+        "Совместимость окон: минимум 760 × 520",
+        "Улучшена миграция профилей и обработка Keychain",
+        "Исправлены индикаторы состояния профиля",
+        "Русская локализация",
+        "Реализована проверка A → B → A",
+        "Developer ID, Apple notarization и Gatekeeper verified"
+      ]
+    },
+    {
+      "version": "0.3.1",
+      "build": 4,
+      "date": "25 июля 2026",
+      "items": [
+        "Защита от PID reuse не остановит чужой Chrome",
+        "Owner-only 0600/0700 для metadata, отчётов и lock-файлов",
+        "Rollback при ошибке записи на диск",
+        "Строгая валидация DNS, IPv4 и IPv6 proxy hosts",
+        "Отключение QUIC в proxy-режиме",
+        "Одноразовые browser-data directories для fingerprint check",
+        "Proxy-пароли не попадают в process arguments",
+        "Пройдены автоматические тесты Direct-сборки"
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "build": 3,
+      "date": "24 июля 2026",
+      "items": [
+        "Встроенный fingerprint check A → B → A",
+        "Canvas, WebGL, Audio, ClientRects, GPU, Client Hints, fonts и WebRTC",
+        "Verdicts: verified, partial, unchanged, unstable",
+        "Runtime manifest: Standard, Fingerprint и Cloak flavors",
+        "Preflight: path, executable, Mach-O, signature и version",
+        "Проверяемая Direct Distribution сборка для macOS"
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "build": 2,
+      "date": "24 июля 2026",
+      "items": [
+        "Постоянный fingerprint seed для каждого профиля",
+        "Различение stock Chrome и fingerprint-compatible runtime",
+        "Проверка proxy: exit IP, город, страна, timezone и locale",
+        "DNS и WebRTC leak controls",
+        "Проверка ARM64: Intel-only runtime не предлагается"
+      ]
+    },
+    {
+      "version": "0.1",
+      "build": 1,
+      "date": "24 июля 2026",
+      "label": "Prototype",
+      "items": [
+        "Первый SwiftUI MVP для Apple Silicon",
+        "Создание, редактирование и удаление профилей",
+        "Отдельный Chromium data directory на профиль",
+        "Постоянные cookies, local storage и sessions",
+        "HTTP/HTTPS и SOCKS5 proxy, пароли в Keychain",
+        "Process locks и browser logs"
+      ]
+    }
+  ]
+}

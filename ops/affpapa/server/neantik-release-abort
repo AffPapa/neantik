@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Clear only the restricted NeAntik staging directory.
+set -euo pipefail
+
+STAGING="/var/www/hrband/storage/app/neantik-release-staging"
+LOG="/var/log/neantik-deploy.log"
+LOCKFILE="/var/lock/neantik-deploy.lock"
+
+log_entry() {
+    printf '%s | %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >> "$LOG"
+}
+
+[[ $# -eq 0 ]] || {
+    echo "Usage: neantik-release-abort" >&2
+    exit 2
+}
+[[ -d "$STAGING" ]] || {
+    echo "FAIL: staging directory does not exist" >&2
+    exit 1
+}
+
+exec 9>"$LOCKFILE"
+flock -w 30 9 || {
+    echo "FAIL: deploy, rollback, or upload is in progress" >&2
+    exit 1
+}
+
+before=$(find "$STAGING" -mindepth 1 -maxdepth 1 | wc -l)
+find "$STAGING" -mindepth 1 -maxdepth 1 -delete
+after=$(find "$STAGING" -mindepth 1 -maxdepth 1 | wc -l)
+[[ "$after" -eq 0 ]] || {
+    echo "FAIL: staging cleanup is incomplete" >&2
+    exit 1
+}
+
+log_entry "STAGING ABORT: removed $before entries (user=${SUDO_USER:-?})"
+echo "OK: staging cleared ($before entries removed)"

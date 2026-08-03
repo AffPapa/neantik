@@ -1,0 +1,284 @@
+#!/usr/bin/env bash
+# One least-privilege AffPapa release client for local Claude and Codex.
+set -euo pipefail
+
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+WORKSPACE_ROOT=$(cd "$PROJECT_ROOT/.." && pwd)
+KEY="$WORKSPACE_ROOT/.secrets/ssh/neantik_affpapa_ed25519"
+KNOWN_HOSTS="$WORKSPACE_ROOT/.secrets/ssh/neantik_affpapa_known_hosts"
+VALIDATOR="$PROJECT_ROOT/ops/affpapa/server/neantik-validate-release"
+HOST="neantik-deploy@167.233.230.87"
+EXPECTED_KEY_FP="SHA256:VM+qNg4wh4bdPfBMN+0vUyeXvazmPdrlT84SfAhLs18"
+EXPECTED_HOST_FP="SHA256:Q/dEY6G+KRaAk1sDgOAaaVxLZxIrQZElszGwVyn5OU8"
+
+SSH_OPTIONS=(
+    -i "$KEY"
+    -o BatchMode=yes
+    -o IdentitiesOnly=yes
+    -o StrictHostKeyChecking=yes
+    -o UserKnownHostsFile="$KNOWN_HOSTS"
+    -o ControlMaster=no
+    -o ControlPath=none
+    -o ControlPersist=no
+    -o ConnectTimeout=20
+)
+
+usage() {
+    cat <<'EOF'
+NeAntik AffPapa Direct release client
+
+Команды:
+  doctor                   одной командой проверить доступ и live-релиз
+  status                   показать live/staging/backups
+  check                    проверить уже загруженный staging без публикации
+  dry-run                  полный no-change preflight staging
+  abort                    безопасно очистить только NeAntik staging
+  prepare <release-dir>    проверить и загрузить кандидат, затем server check
+  publish <release-dir>    prepare + deploy + live verification
+  upload <file>            загрузить один разрешённый файл
+  rollback-check           проверить доступность отката без изменений
+  rollback                 откатить последний NeAntik release backup
+  verify-live              проверить текущие HTML/JSON/DMG/ZIP headers
+
+release-dir должен содержать:
+  release.json
+  content.json
+  NeAntik-<version>-arm64-notarized.dmg
+  NeAntik-<version>-arm64-notarized.dmg.sha256
+  NeAntik-<version>-arm64-notarized.zip
+  NeAntik-<version>-arm64-notarized.zip.sha256
+EOF
+}
+
+fail() {
+    echo "Ошибка: $*" >&2
+    exit 1
+}
+
+preflight_access() {
+    [[ -f "$KEY" ]] || fail "не найден deploy key: $KEY"
+    [[ -f "$KNOWN_HOSTS" ]] || fail "не найден pinned known_hosts: $KNOWN_HOSTS"
+    [[ -x "$VALIDATOR" ]] || fail "не найден validator: $VALIDATOR"
+    local key_fp host_fp
+    local key_mode known_hosts_mode
+    key_fp=$(ssh-keygen -lf "$KEY" | awk '{print $2}')
+    host_fp=$(ssh-keygen -lf "$KNOWN_HOSTS" | awk '{print $2}')
+    key_mode=$(stat -f '%Lp' "$KEY")
+    known_hosts_mode=$(stat -f '%Lp' "$KNOWN_HOSTS")
+    [[ "$key_fp" == "$EXPECTED_KEY_FP" ]] || fail "неверный deploy key fingerprint"
+    [[ "$host_fp" == "$EXPECTED_HOST_FP" ]] || fail "неверный host-key fingerprint"
+    [[ "$key_mode" == "600" ]] || fail "deploy key должен иметь права 0600"
+    [[ "$known_hosts_mode" == "600" ]] ||
+        fail "pinned known_hosts должен иметь права 0600"
+}
+
+remote() {
+    # Arguments are selected from the exact command allowlist below.
+    # shellcheck disable=SC2029
+    ssh "${SSH_OPTIONS[@]}" "$HOST" "$@"
+}
+
+upload_file() {
+    local path="$1"
+    [[ -f "$path" ]] || fail "файл не найден: $path"
+    [[ -s "$path" ]] || fail "пустой файл: $path"
+    local name
+    name=$(basename "$path")
+    remote "neantik-upload $name" <"$path"
+}
+
+release_files() {
+    python3 - "$1/release.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).parent
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(root / "release.json")
+print(root / "content.json")
+for artifact in sorted(manifest["artifacts"], key=lambda item: item["format"]):
+    path = root / artifact["filename"]
+    print(path)
+    print(Path(str(path) + ".sha256"))
+PY
+}
+
+verify_local_artifacts() {
+    local directory="$1"
+    local dmg zip
+    dmg=$(python3 - "$directory/release.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+root = Path(sys.argv[1]).parent
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(root / next(item["filename"] for item in manifest["artifacts"] if item["format"] == "dmg"))
+PY
+)
+    zip=$(python3 - "$directory/release.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+root = Path(sys.argv[1]).parent
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(root / next(item["filename"] for item in manifest["artifacts"] if item["format"] == "zip"))
+PY
+)
+    "$PROJECT_ROOT/scripts/verify-direct-notarized-dmg.sh" "$dmg"
+    python3 "$PROJECT_ROOT/scripts/verify-direct-notarized-archive.py" \
+        --project-root "$PROJECT_ROOT" \
+        --archive "$zip"
+}
+
+prepare_release() {
+    local directory="$1"
+    [[ -d "$directory" ]] || fail "каталог кандидата не найден: $directory"
+    directory=$(cd "$directory" && pwd)
+    local live_manifest
+    live_manifest=$(mktemp /tmp/neantik-live-release.XXXXXX.json)
+    curl -fsS --max-time 30 \
+        https://affpapa.org/neantik/release.json \
+        -o "$live_manifest"
+    if ! python3 "$VALIDATOR" "$directory" "$live_manifest"; then
+        rm -f "$live_manifest"
+        return 1
+    fi
+    rm -f "$live_manifest"
+    verify_local_artifacts "$directory"
+
+    remote neantik-release-abort
+    local uploaded=0
+    while IFS= read -r file; do
+        if ! upload_file "$file"; then
+            remote neantik-release-abort || true
+            return 1
+        fi
+        uploaded=$((uploaded + 1))
+    done < <(release_files "$directory")
+    [[ "$uploaded" -eq 6 ]] || {
+        remote neantik-release-abort || true
+        fail "ожидалось 6 release-файлов, загружено $uploaded"
+    }
+    if ! remote "neantik-release-deploy --check"; then
+        remote neantik-release-abort || true
+        return 1
+    fi
+    echo "PASS: кандидат проверен и оставлен в staging."
+}
+
+verify_live() {
+    local release_json content_json
+    release_json=$(mktemp /tmp/neantik-live-release.XXXXXX.json)
+    content_json=$(mktemp /tmp/neantik-live-content.XXXXXX.json)
+    curl -fsS --max-time 30 https://affpapa.org/neantik -o /dev/null
+    curl -fsS --max-time 30 https://affpapa.org/neantik/release.json -o "$release_json"
+    curl -fsS --max-time 30 https://affpapa.org/neantik/content.json -o "$content_json"
+    python3 - "$release_json" "$content_json" <<'PY'
+import json
+import sys
+
+release = json.load(open(sys.argv[1], encoding="utf-8"))
+content = json.load(open(sys.argv[2], encoding="utf-8"))
+assert release["version"] == content["releaseVersion"]
+assert release["build"] == content["changelog"][0]["build"]
+assert release["version"] == content["changelog"][0]["version"]
+print(f"PASS: live {release['version']} (build {release['build']})")
+for artifact in release["artifacts"]:
+    print(artifact["format"], artifact["url"], artifact["sizeBytes"], artifact["sha256"])
+PY
+    while IFS=$'\t' read -r url expected_size; do
+        local total
+        total=$(curl -fsSI --max-time 30 -H "Range: bytes=0-0" "$url" |
+            tr -d '\r' |
+            awk -F/ 'tolower($1) ~ /^content-range:/ {print $2}')
+        [[ "$total" == "$expected_size" ]] ||
+            fail "Content-Range $total не совпадает с $expected_size для $url"
+    done < <(python3 - "$release_json" <<'PY'
+import json
+import sys
+for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
+    print(f"{artifact['url']}\t{artifact['sizeBytes']}")
+PY
+)
+    rm -f "$release_json" "$content_json"
+    echo "PASS: landing, release.json, content.json, DMG и ZIP доступны."
+}
+
+doctor() {
+    echo "NeAntik AffPapa deploy doctor"
+    echo "PASS: локальный ключ и host key закреплены по fingerprint."
+    remote neantik-release-status
+    if remote "uname -a" >/dev/null 2>&1; then
+        fail "restricted SSH неожиданно разрешил произвольную команду"
+    fi
+    echo "PASS: shell и произвольные SSH-команды запрещены."
+    verify_live
+    echo "PASS: Claude/Codex могут работать через единый restricted release client."
+}
+
+main() {
+    preflight_access
+    local command="${1:-}"
+    case "$command" in
+        doctor)
+            [[ $# -eq 1 ]] || fail "doctor не принимает аргументы"
+            doctor
+            ;;
+        status)
+            [[ $# -eq 1 ]] || fail "status не принимает аргументы"
+            remote neantik-release-status
+            ;;
+        check)
+            [[ $# -eq 1 ]] || fail "check не принимает аргументы"
+            remote "neantik-release-deploy --check"
+            ;;
+        dry-run)
+            [[ $# -eq 1 ]] || fail "dry-run не принимает аргументы"
+            remote "neantik-release-deploy --dry-run"
+            ;;
+        abort)
+            [[ $# -eq 1 ]] || fail "abort не принимает аргументы"
+            remote neantik-release-abort
+            ;;
+        prepare)
+            [[ $# -eq 2 ]] || fail "использование: prepare <release-dir>"
+            prepare_release "$2"
+            ;;
+        publish)
+            [[ $# -eq 2 ]] || fail "использование: publish <release-dir>"
+            prepare_release "$2"
+            if ! remote neantik-release-deploy; then
+                remote neantik-release-abort || true
+                return 1
+            fi
+            verify_live
+            ;;
+        upload)
+            [[ $# -eq 2 ]] || fail "использование: upload <file>"
+            upload_file "$2"
+            ;;
+        rollback-check)
+            [[ $# -eq 1 ]] || fail "rollback-check не принимает аргументы"
+            remote "neantik-release-rollback --check"
+            ;;
+        rollback)
+            [[ $# -eq 1 ]] || fail "rollback не принимает аргументы"
+            remote neantik-release-rollback
+            verify_live
+            ;;
+        verify-live)
+            [[ $# -eq 1 ]] || fail "verify-live не принимает аргументы"
+            verify_live
+            ;;
+        -h|--help|help|"")
+            usage
+            ;;
+        *)
+            usage >&2
+            fail "неизвестная команда: $command"
+            ;;
+    esac
+}
+
+main "$@"

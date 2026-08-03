@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# neantik-upload — receive a single file into staging via stdin.
+# Root-owned, called by neantik-ssh-dispatcher via sudo.
+# Usage: neantik-upload <filename>
+# Serializes the complete receive with deploy/rollback. Enforces staging quotas.
+# Blade upload is NOT allowed — template is root-owned.
+set -euo pipefail
+
+STAGING="/var/www/hrband/storage/app/neantik-release-staging"
+LOG="/var/log/neantik-deploy.log"
+LOCKFILE="/var/lock/neantik-deploy.lock"
+MAX_RELEASE_JSON=$((16 * 1024))
+MAX_CONTENT_JSON=$((64 * 1024))
+MAX_BINARY=$((300 * 1024 * 1024))
+MAX_SIDECAR=256
+MAX_STAGING_FILES=6
+MAX_STAGING_BYTES=$((650 * 1024 * 1024))
+
+log_entry() {
+    printf '%s | %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >> "$LOG"
+}
+
+fail() {
+    printf 'UPLOAD FAIL: %s\n' "$1" >&2
+    log_entry "UPLOAD FAIL: $1 (user=${SUDO_USER:-?})"
+    exit 1
+}
+
+# --- Argument validation ---
+[[ $# -eq 1 ]] || fail "usage: neantik-upload <filename>"
+FNAME="$1"
+
+[[ "$FNAME" =~ / ]] && fail "slash in filename"
+[[ "$FNAME" =~ \.\. ]] && fail ".. in filename"
+[[ "$FNAME" =~ [[:cntrl:]] ]] && fail "control character in filename"
+[[ "$FNAME" =~ [[:space:]] ]] && fail "whitespace in filename"
+[[ "$FNAME" =~ ^[A-Za-z0-9._-]+$ ]] || fail "unsafe characters in filename: $FNAME"
+[[ "$FNAME" =~ ^\. ]] && fail "hidden file"
+
+# Strict allowlist (NO blade)
+SEMVER_RE='^NeAntik-[0-9]+\.[0-9]+\.[0-9]+-arm64-notarized\.(dmg|zip|dmg\.sha256|zip\.sha256)$'
+case "$FNAME" in
+    release.json) MAX_SIZE=$MAX_RELEASE_JSON ;;
+    content.json) MAX_SIZE=$MAX_CONTENT_JSON ;;
+    *)
+        if [[ "$FNAME" =~ $SEMVER_RE ]]; then
+            case "$FNAME" in
+                *.dmg.sha256|*.zip.sha256) MAX_SIZE=$MAX_SIDECAR ;;
+                *.dmg|*.zip)               MAX_SIZE=$MAX_BINARY ;;
+            esac
+        else
+            fail "filename not in allowlist: $FNAME"
+        fi
+        ;;
+esac
+
+# --- Serialize uploads with deploy/rollback before receiving bytes ---
+exec 9>"$LOCKFILE"
+if ! flock -w 30 9; then
+    fail "deploy, rollback, or another upload is in progress"
+fi
+
+# --- Receive file into a hidden temporary ---
+umask 077
+TMPFILE=$(mktemp "${STAGING}/.upload-XXXXXX")
+trap 'rm -f "$TMPFILE"' EXIT
+
+LIMIT=$((MAX_SIZE + 1))
+dd bs=65536 iflag=fullblock count="$(( (LIMIT + 65535) / 65536 ))" \
+    of="$TMPFILE" 2>/dev/null || true
+
+WRITTEN=$(stat -c %s "$TMPFILE" 2>/dev/null)
+if (( WRITTEN > MAX_SIZE )); then
+    fail "file exceeds size limit ($MAX_SIZE bytes), got >= $WRITTEN"
+fi
+if (( WRITTEN == 0 )); then
+    fail "empty file"
+fi
+
+DEPLOY_UID=$(id -u neantik-deploy)
+DEPLOY_GID=$(id -g neantik-deploy)
+chown "${DEPLOY_UID}:${DEPLOY_GID}" "$TMPFILE"
+chmod 600 "$TMPFILE"
+
+# --- Staging quotas ---
+CURRENT_FILES=$(find "$STAGING" -maxdepth 1 -type f -not -name '.*' 2>/dev/null | wc -l)
+CURRENT_BYTES=$(find "$STAGING" -maxdepth 1 -type f -not -name '.*' -printf '%s\n' 2>/dev/null | awk '{ total += $1 } END { print total + 0 }')
+
+if [[ -f "$STAGING/$FNAME" ]]; then
+    OLD_SIZE=$(stat -c %s "$STAGING/$FNAME" 2>/dev/null || echo 0)
+    PROJECTED_BYTES=$(( CURRENT_BYTES - OLD_SIZE + WRITTEN ))
+else
+    PROJECTED_FILES=$((CURRENT_FILES + 1))
+    PROJECTED_BYTES=$((CURRENT_BYTES + WRITTEN))
+    if (( PROJECTED_FILES > MAX_STAGING_FILES )); then
+        fail "staging file limit reached ($MAX_STAGING_FILES files)"
+    fi
+fi
+
+if (( PROJECTED_BYTES > MAX_STAGING_BYTES )); then
+    fail "staging size limit reached (${MAX_STAGING_BYTES} bytes)"
+fi
+
+# --- Atomic rename ---
+DEST="${STAGING}/${FNAME}"
+mv -f "$TMPFILE" "$DEST"
+trap - EXIT
+
+# Release lock
+exec 9>&-
+
+log_entry "UPLOAD OK: $FNAME ($WRITTEN bytes, user=${SUDO_USER:-?})"
+printf 'OK: %s (%d bytes)\n' "$FNAME" "$WRITTEN"

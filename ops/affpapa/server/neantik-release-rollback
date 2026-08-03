@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# neantik-release-rollback — restore previous NeAntik release from backup.
+# Root-owned, /usr/local/sbin/neantik-release-rollback.
+# Uses flock, atomic file restore, mandatory smoke gate.
+# Any smoke failure → non-zero exit, no "ROLLBACK OK" logged.
+set -euo pipefail
+
+LIVE_ROOT="/var/www/hrband"
+BACKUPS="/var/www/hrband/storage/app/neantik-release-backups"
+LOG="/var/log/neantik-deploy.log"
+LOCKFILE="/var/lock/neantik-deploy.lock"
+RELEASE_JSON_LIVE="$LIVE_ROOT/public/neantik/release.json"
+CONTENT_JSON_LIVE="$LIVE_ROOT/public/neantik/content.json"
+DOWNLOADS_LIVE="$LIVE_ROOT/public/neantik/downloads"
+# The origin vhost has an incomplete local CA chain. TLS verification is
+# bypassed only for the host pinned to loopback.
+CURL_RESOLVE=(--insecure --resolve "affpapa.org:443:127.0.0.1")
+
+CHECK_MODE=0
+case "${1:-}" in
+    --check|--dry-run) CHECK_MODE=1 ;;
+    "")                ;;
+    *)                 echo "Usage: neantik-release-rollback [--check|--dry-run]" >&2; exit 2 ;;
+esac
+
+log_entry() {
+    printf '%s | %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >> "$LOG"
+}
+
+fail() {
+    printf 'FAIL: %s\n' "$1" >&2
+    log_entry "ROLLBACK FAIL: $1 (user=${SUDO_USER:-?})"
+    exit 1
+}
+
+# --- flock ---
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    fail "another deploy/rollback is running (lock: $LOCKFILE)"
+fi
+
+# --- Find latest backup ---
+LATEST=""
+if [[ -d "$BACKUPS" ]]; then
+    LATEST=$(find "$BACKUPS" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort -r | head -1)
+fi
+[[ -n "$LATEST" ]] || fail "no backups found in $BACKUPS"
+[[ -f "$LATEST/release.json" ]] || fail "backup has no release.json"
+[[ -f "$LATEST/content.json" ]] || fail "backup has no content.json"
+[[ -f "$LATEST/backup.sha256" ]] || fail "backup has no integrity manifest"
+(cd "$LATEST" && sha256sum -c backup.sha256 >/dev/null) || fail "backup integrity verification failed"
+
+RESTORE_VER=$(python3 -c "import json; print(json.load(open('$LATEST/release.json'))['version'])" 2>/dev/null || echo "?")
+
+echo "=== NeAntik Rollback ==="
+echo "Backup: $(basename "$LATEST")"
+echo "Restore to: v$RESTORE_VER"
+echo ""
+echo "Backup contents:"
+# shellcheck disable=SC2010
+ls -lh "$LATEST" | grep -v '^total' || true
+
+if [[ "$CHECK_MODE" -eq 1 ]]; then
+    echo ""
+    echo "=== DRY-RUN — no changes made ==="
+    log_entry "ROLLBACK DRY-RUN: would restore v$RESTORE_VER from $(basename "$LATEST") (user=${SUDO_USER:-?})"
+    exit 0
+fi
+
+echo ""
+echo "Restoring..."
+
+restore_file() {
+    local src="$1"
+    local dest="$2"
+    local tmpfile
+    tmpfile=$(mktemp "${dest}.restore-XXXXXX")
+    cp -p "$src" "$tmpfile"
+    chown deploy:deploy "$tmpfile"
+    chmod 644 "$tmpfile"
+    mv -f "$tmpfile" "$dest"
+}
+
+# Remove downloads introduced after this backup so rollback restores the exact
+# previous NeAntik artifact set while preserving every file present in backup.
+for current in "$DOWNLOADS_LIVE"/NeAntik-*; do
+    [[ -f "$current" ]] || continue
+    current_name=$(basename "$current")
+    if [[ ! -f "$LATEST/$current_name" ]]; then
+        rm -f -- "$current"
+        echo "  OK: removed post-backup artifact $current_name"
+    fi
+done
+
+# Restore downloads
+for f in "$LATEST"/NeAntik-*; do
+    [[ -f "$f" ]] || continue
+    restore_file "$f" "$DOWNLOADS_LIVE/$(basename "$f")"
+    echo "  OK: $(basename "$f") restored"
+done
+
+# Restore page data, then release.json as the public pointer.
+restore_file "$LATEST/content.json" "$CONTENT_JSON_LIVE"
+echo "  OK: content.json restored"
+restore_file "$LATEST/release.json" "$RELEASE_JSON_LIVE"
+echo "  OK: release.json restored"
+
+# === Mandatory smoke gate — failures are fatal ===
+echo ""
+echo "=== Post-rollback smoke ==="
+SMOKE_FAIL=0
+
+HTTP_LAND=$(curl -sf "${CURL_RESOLVE[@]}" -o /dev/null -w '%{http_code}' "https://affpapa.org/neantik" 2>/dev/null || echo "000")
+if [[ "$HTTP_LAND" != "200" ]]; then
+    echo "  CRITICAL: landing returned $HTTP_LAND after rollback" >&2
+    log_entry "ROLLBACK SMOKE FAIL: landing $HTTP_LAND (user=${SUDO_USER:-?})"
+    SMOKE_FAIL=1
+else
+    echo "  OK: landing 200"
+fi
+
+HTTP_RJ=$(curl -sf "${CURL_RESOLVE[@]}" -o /dev/null -w '%{http_code}' "https://affpapa.org/neantik/release.json" 2>/dev/null || echo "000")
+if [[ "$HTTP_RJ" != "200" ]]; then
+    echo "  CRITICAL: release.json returned $HTTP_RJ after rollback" >&2
+    log_entry "ROLLBACK SMOKE FAIL: release.json $HTTP_RJ (user=${SUDO_USER:-?})"
+    SMOKE_FAIL=1
+else
+    echo "  OK: release.json 200"
+fi
+
+HTTP_CONTENT=$(curl -sf "${CURL_RESOLVE[@]}" -o /dev/null -w '%{http_code}' "https://affpapa.org/neantik/content.json" 2>/dev/null || echo "000")
+if [[ "$HTTP_CONTENT" != "200" ]]; then
+    echo "  CRITICAL: content.json returned $HTTP_CONTENT after rollback" >&2
+    log_entry "ROLLBACK SMOKE FAIL: content.json $HTTP_CONTENT (user=${SUDO_USER:-?})"
+    SMOKE_FAIL=1
+else
+    echo "  OK: content.json 200"
+fi
+
+SERVED_RELEASE_SHA=$(curl -sf "${CURL_RESOLVE[@]}" "https://affpapa.org/neantik/release.json" | sha256sum | cut -d' ' -f1 || echo "missing")
+LOCAL_RELEASE_SHA=$(sha256sum "$RELEASE_JSON_LIVE" | cut -d' ' -f1)
+if [[ "$SERVED_RELEASE_SHA" != "$LOCAL_RELEASE_SHA" ]]; then
+    echo "  CRITICAL: served release.json does not match restored file" >&2
+    SMOKE_FAIL=1
+fi
+
+SERVED_CONTENT_SHA=$(curl -sf "${CURL_RESOLVE[@]}" "https://affpapa.org/neantik/content.json" | sha256sum | cut -d' ' -f1 || echo "missing")
+LOCAL_CONTENT_SHA=$(sha256sum "$CONTENT_JSON_LIVE" | cut -d' ' -f1)
+if [[ "$SERVED_CONTENT_SHA" != "$LOCAL_CONTENT_SHA" ]]; then
+    echo "  CRITICAL: served content.json does not match restored file" >&2
+    SMOKE_FAIL=1
+fi
+
+for fmt in dmg zip; do
+    readarray -t ARTIFACT_FIELDS < <(python3 - "$RELEASE_JSON_LIVE" "$fmt" <<'PY'
+import json
+import sys
+manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+artifact = next(item for item in manifest["artifacts"] if item["format"] == sys.argv[2])
+print(artifact["filename"])
+print(artifact["sha256"])
+print(artifact["sizeBytes"])
+print(artifact["url"])
+PY
+)
+    FILENAME="${ARTIFACT_FIELDS[0]}"
+    EXPECTED_SHA="${ARTIFACT_FIELDS[1]}"
+    EXPECTED_SIZE="${ARTIFACT_FIELDS[2]}"
+    DOWNLOAD_URL="${ARTIFACT_FIELDS[3]}"
+    ACTUAL_SHA=$(sha256sum "$DOWNLOADS_LIVE/$FILENAME" | cut -d' ' -f1)
+    if [[ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]]; then
+        echo "  CRITICAL: restored $FILENAME SHA mismatch" >&2
+        SMOKE_FAIL=1
+    fi
+    RANGE_TOTAL=$(curl -sf "${CURL_RESOLVE[@]}" -I -H "Range: bytes=0-0" "$DOWNLOAD_URL" | tr -d '\r' | awk -F/ 'tolower($1) ~ /^content-range:/ {print $2}' || echo "")
+    if [[ "$RANGE_TOTAL" != "$EXPECTED_SIZE" ]]; then
+        echo "  CRITICAL: served $FILENAME size $RANGE_TOTAL != $EXPECTED_SIZE" >&2
+        SMOKE_FAIL=1
+    fi
+done
+
+if [[ "$SMOKE_FAIL" -eq 1 ]]; then
+    log_entry "ROLLBACK INCOMPLETE: v$RESTORE_VER restored but smoke failed (user=${SUDO_USER:-?})"
+    echo ""
+    echo "=== ROLLBACK INCOMPLETE: smoke gate failed ===" >&2
+    exit 1
+fi
+
+log_entry "ROLLBACK OK: restored v$RESTORE_VER from $(basename "$LATEST") (user=${SUDO_USER:-?})"
+
+echo ""
+echo "=== ROLLBACK COMPLETE: v$RESTORE_VER ==="

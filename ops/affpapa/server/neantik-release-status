@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# neantik-release-status — show current NeAntik release state.
+# Root-owned, /usr/local/sbin/neantik-release-status.
+set -euo pipefail
+
+LIVE_ROOT="/var/www/hrband"
+RELEASE_JSON="$LIVE_ROOT/public/neantik/release.json"
+CONTENT_JSON="$LIVE_ROOT/public/neantik/content.json"
+BLADE="$LIVE_ROOT/resources/views/affpapa/neantik.blade.php"
+DOWNLOADS="$LIVE_ROOT/public/neantik/downloads"
+IMAGES="$LIVE_ROOT/public/img/neantik"
+STAGING="/var/www/hrband/storage/app/neantik-release-staging"
+BACKUPS="/var/www/hrband/storage/app/neantik-release-backups"
+LOG="/var/log/neantik-deploy.log"
+
+echo "=== NeAntik Release Status ==="
+echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo
+
+# Current version from release.json
+if [[ -f "$RELEASE_JSON" ]]; then
+    ver=$(python3 -c "import json,sys; d=json.load(open('$RELEASE_JSON')); print(d.get('version','?'))" 2>/dev/null || echo "?")
+    build=$(python3 -c "import json,sys; d=json.load(open('$RELEASE_JSON')); print(d.get('build','?'))" 2>/dev/null || echo "?")
+    status=$(python3 -c "import json,sys; d=json.load(open('$RELEASE_JSON')); print(d.get('status','?'))" 2>/dev/null || echo "?")
+    echo "Live version:  $ver (build $build, $status)"
+else
+    echo "Live version:  release.json NOT FOUND"
+fi
+
+# Page data is non-executable and must track the public release.
+if [[ -f "$CONTENT_JSON" ]]; then
+    content_ver=$(python3 -c "import json; print(json.load(open('$CONTENT_JSON')).get('releaseVersion','?'))" 2>/dev/null || echo "?")
+    content_updated=$(python3 -c "import json; print(json.load(open('$CONTENT_JSON')).get('updatedAt','?'))" 2>/dev/null || echo "?")
+    echo "Page content:  $content_ver (updated $content_updated)"
+else
+    echo "Page content:  content.json NOT FOUND"
+fi
+[[ -f "$BLADE" ]] && echo "Page template: root-owned Blade present" || echo "Page template: NOT FOUND"
+
+# Downloads
+echo
+echo "Downloads:"
+if [[ -d "$DOWNLOADS" ]]; then
+    # shellcheck disable=SC2010
+    ls -lhS "$DOWNLOADS" 2>/dev/null | grep -v '^total' || echo "  (empty)"
+else
+    echo "  (none)"
+fi
+
+# Images
+echo
+echo "Images:"
+if [[ -d "$IMAGES" ]]; then
+    # shellcheck disable=SC2010
+    ls -lh "$IMAGES" 2>/dev/null | grep -v '^total' || echo "  (empty)"
+else
+    echo "  (none)"
+fi
+
+# Staging
+echo
+echo "Staging:"
+if [[ -d "$STAGING" ]]; then
+    staging_count=$(find "$STAGING" -maxdepth 1 -type f 2>/dev/null | wc -l)
+    echo "  Files in staging: $staging_count"
+    if [[ "$staging_count" -gt 0 ]]; then
+        # shellcheck disable=SC2010
+        ls -lh "$STAGING" 2>/dev/null | grep -v '^total' || true
+    fi
+else
+    echo "  (not created)"
+fi
+
+# Backups
+echo
+echo "Backups:"
+if [[ -d "$BACKUPS" ]]; then
+    backup_list=$(find "$BACKUPS" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort -r | head -5)
+    if [[ -n "$backup_list" ]]; then
+        echo "$backup_list" | while IFS= read -r d; do
+            echo "  $(basename "$d")"
+        done
+    else
+        echo "  (none)"
+    fi
+else
+    echo "  (none)"
+fi
+
+# Last 5 log entries
+echo
+echo "Recent log:"
+if [[ -f "$LOG" ]]; then
+    tail -5 "$LOG" || true
+else
+    echo "  (no log yet)"
+fi
