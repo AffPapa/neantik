@@ -41,35 +41,6 @@ APP_SIZE_KB="$(du -sk "$APP_PATH" | awk '{print $1}')"
 (( APP_SIZE_KB >= 100000 )) ||
   fail "app is unexpectedly small (${APP_SIZE_KB} KB); refusing to create an empty DMG"
 
-codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-xcrun stapler validate "$APP_PATH"
-spctl --assess --type execute --verbose=4 "$APP_PATH"
-
-APP_SIGNATURE="$(codesign --display --verbose=4 "$APP_PATH" 2>&1)"
-if ! print -r -- "$APP_SIGNATURE" |
-  grep -q '^Authority=Developer ID Application:'; then
-  fail "app is not signed by Developer ID Application"
-fi
-if ! print -r -- "$APP_SIGNATURE" | grep -q '^Timestamp='; then
-  fail "app signature has no trusted timestamp"
-fi
-
-DEFAULT_IDENTITY="$(
-  print -r -- "$APP_SIGNATURE" |
-    sed -n 's/^Authority=//p' |
-    grep '^Developer ID Application:' |
-    head -n 1
-)"
-[[ -n "$DEFAULT_IDENTITY" ]] ||
-  fail "could not derive the Developer ID Application identity from NeAntik.app"
-SIGNING_IDENTITY="$DEFAULT_IDENTITY"
-
-INSTALLED_IDENTITIES="$(security find-identity -v -p codesigning 2>&1)"
-if ! print -r -- "$INSTALLED_IDENTITIES" |
-  grep -Fq "$SIGNING_IDENTITY"; then
-  fail "the app's Developer ID signing identity is not available in this Keychain"
-fi
-
 TEMP_ROOT="$(mktemp -d -t neantik-dmg-release)"
 STAGING_DIR="$TEMP_ROOT/staging"
 MOUNT_POINT="$TEMP_ROOT/mount"
@@ -83,6 +54,44 @@ cleanup() {
   rm -rf "$TEMP_ROOT"
 }
 trap cleanup EXIT
+
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+xcrun stapler validate "$APP_PATH"
+spctl --assess --type execute --verbose=4 "$APP_PATH"
+
+APP_SIGNATURE="$(codesign --display --verbose=4 "$APP_PATH" 2>&1)"
+if ! print -r -- "$APP_SIGNATURE" |
+  grep -q '^Authority=Developer ID Application:'; then
+  fail "app is not signed by Developer ID Application"
+fi
+if ! print -r -- "$APP_SIGNATURE" | grep -q '^Timestamp='; then
+  fail "app signature has no trusted timestamp"
+fi
+
+CERTIFICATE_PREFIX="$TEMP_ROOT/signing-certificate"
+codesign \
+  --display \
+  --extract-certificates="$CERTIFICATE_PREFIX" \
+  "$APP_PATH" >/dev/null 2>&1
+LEAF_CERTIFICATE="${CERTIFICATE_PREFIX}0"
+[[ -f "$LEAF_CERTIFICATE" ]] ||
+  fail "could not extract the Developer ID signing certificate from NeAntik.app"
+SIGNING_IDENTITY="$(
+  shasum -a 1 "$LEAF_CERTIFICATE" |
+    awk '{print toupper($1)}'
+)"
+print -r -- "$SIGNING_IDENTITY" |
+  grep -Eq '^[0-9A-F]{40}$' ||
+  fail "the extracted Developer ID signing certificate hash is invalid"
+
+INSTALLED_IDENTITIES="$(security find-identity -v -p codesigning 2>&1)"
+if ! print -r -- "$INSTALLED_IDENTITIES" |
+  awk -v hash="$SIGNING_IDENTITY" '
+    $2 == hash && /Developer ID Application:/ { found = 1 }
+    END { exit !found }
+  '; then
+  fail "the app's Developer ID signing identity is not available in this Keychain"
+fi
 
 mkdir -p "$STAGING_DIR" "$MOUNT_POINT" "$NOTARY_LOG_DIR"
 ditto --norsrc "$APP_PATH" "$STAGING_DIR/NeAntik.app"

@@ -15,8 +15,11 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
         self.assertLess(text.index("DMG_SIZE >= 50000000"), text.index("notarytool submit"))
         self.assertIn("codesign --verify --deep --strict", text)
         self.assertIn("Developer ID Application:", text)
-        self.assertIn("could not derive the Developer ID Application identity", text)
-        self.assertIn('SIGNING_IDENTITY="$DEFAULT_IDENTITY"', text)
+        self.assertIn("--extract-certificates=", text)
+        self.assertIn('shasum -a 1 "$LEAF_CERTIFICATE"', text)
+        self.assertIn("toupper($1)", text)
+        self.assertIn("^[0-9A-F]{40}$", text)
+        self.assertNotIn('SIGNING_IDENTITY="$DEFAULT_IDENTITY"', text)
         self.assertNotIn("NEANTIK_SIGNING_IDENTITY", text)
         self.assertIn("DMG has no usable Developer ID Application signature", text)
         self.assertLess(
