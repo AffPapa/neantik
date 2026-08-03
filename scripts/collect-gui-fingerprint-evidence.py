@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import copy
+import hashlib
 import importlib.util
 import json
 import os
-import shutil
+import secrets
+import stat
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -21,10 +25,24 @@ assert SPEC and SPEC.loader
 GUI_VERIFIER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
+EVIDENCE_SCHEMA_PATH = (
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+)
+EVIDENCE_SPEC = importlib.util.spec_from_file_location(
+    "fingerprint_evidence_schema8_for_collector",
+    EVIDENCE_SCHEMA_PATH,
+)
+assert EVIDENCE_SPEC and EVIDENCE_SPEC.loader
+EVIDENCE_SCHEMA = importlib.util.module_from_spec(EVIDENCE_SPEC)
+sys.modules[EVIDENCE_SPEC.name] = EVIDENCE_SCHEMA
+EVIDENCE_SPEC.loader.exec_module(EVIDENCE_SCHEMA)
 
 
 class EvidenceCollectionError(ValueError):
     pass
+
+
+MAX_REPORT_FUTURE_SKEW_SECONDS = 120
 
 
 def default_audits_dir() -> Path:
@@ -62,6 +80,386 @@ def select_source_report(*, source: Path | None, audits_dir: Path) -> Path:
     return candidates[0]
 
 
+def sanitized_release_report(report: dict[str, Any]) -> dict[str, Any]:
+    sanitized = copy.deepcopy(report)
+    sanitized["id"] = "00000000-0000-4000-8000-000000000000"
+    public_profiles = {
+        "webrtcDirectControl": (
+            "00000000-0000-4000-8000-000000000003",
+            "Контроль WebRTC",
+            0x30000000,
+        ),
+        "firstInitial": (
+            "00000000-0000-4000-8000-000000000001",
+            "Профиль A",
+            0x10000000,
+        ),
+        "second": (
+            "00000000-0000-4000-8000-000000000002",
+            "Профиль B",
+            0x20000000,
+        ),
+        "firstRepeat": (
+            "00000000-0000-4000-8000-000000000001",
+            "Профиль A",
+            0x10000000,
+        ),
+    }
+    for capture_key, (
+        public_profile_id,
+        public_profile_name,
+        synthetic_base,
+    ) in public_profiles.items():
+        capture = sanitized.get(capture_key)
+        if not isinstance(capture, dict):
+            continue
+        identity_code = capture.get("identityCode")
+        if (
+            not isinstance(identity_code, str)
+            or not identity_code.startswith("NA-")
+        ):
+            raise EvidenceCollectionError(
+                f"Cannot sanitize identity code in {capture_key}."
+            )
+        try:
+            original_seed = int(identity_code[3:], 16)
+        except ValueError as error:
+            raise EvidenceCollectionError(
+                f"Cannot sanitize identity code in {capture_key}."
+            ) from error
+        tuple_count = len(GUI_VERIFIER.APPLE_DEVICE_TUPLES)
+        tuple_index = original_seed % tuple_count
+        synthetic_seed = synthetic_base + (
+            tuple_index - synthetic_base % tuple_count
+        ) % tuple_count
+        capture["profileID"] = public_profile_id
+        capture["profileName"] = public_profile_name
+        capture["identityCode"] = f"NA-{synthetic_seed:08X}"
+    return sanitized
+
+
+def public_attestation(
+    report: dict[str, Any],
+    summary: dict[str, Any],
+    *,
+    private_evidence_sha256: str,
+    candidate_manifest_sha256: str = "0" * 64,
+    release_channel: str = "public-alpha",
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": 2,
+        "kind": "neantik-gui-fingerprint-attestation",
+        "releaseChannel": release_channel,
+        "candidateManifestSHA256": candidate_manifest_sha256,
+        "createdAt": report.get("createdAt"),
+        "managerVersion": report.get("managerVersion"),
+        "managerBuild": report.get("managerBuild"),
+        "runtimeName": report.get("runtimeName"),
+        "runtimeVersion": report.get("runtimeVersion"),
+        "runtimeFlavor": report.get("runtimeFlavor"),
+        "runtimeCodeSignatureValid": report.get(
+            "runtimeCodeSignatureValid"
+        ),
+        "runtimeExecutableSHA256": report.get(
+            "runtimeExecutableSHA256"
+        ),
+        "runtimeFrameworkSHA256": report.get(
+            "runtimeFrameworkSHA256"
+        ),
+        "privateEvidenceSHA256": private_evidence_sha256,
+        "auditSchemaVersion": summary.get("auditSchemaVersion"),
+        "identityCatalogVersion": summary.get(
+            "identityCatalogVersion"
+        ),
+        "qualified": summary.get("qualified"),
+        "productionQualified": summary.get("productionQualified"),
+        "changedCriticalKeys": summary.get("changedCriticalKeys"),
+        "unstableRequiredKeys": summary.get("unstableRequiredKeys"),
+        "publicAlphaIssues": summary.get("issues"),
+        "productionIssues": summary.get("productionIssues"),
+    }
+
+
+def authenticated_public_attestation(
+    payload: dict[str, Any],
+    verified: Any,
+) -> dict[str, Any]:
+    return {
+        "schemaVersion": 3,
+        "kind": "neantik-gui-fingerprint-attestation",
+        "releaseChannel": payload["releaseChannel"],
+        "candidateManifestSHA256":
+            verified.candidate_manifest_sha256,
+        "authenticatedEvidenceID":
+            verified.authenticated_evidence_id,
+        "payloadSHA256": verified.payload_sha256,
+        "transportSHA256": verified.transport_sha256,
+        "privateEvidenceSHA256": verified.transport_sha256,
+        "createdAt": payload["createdAt"],
+        "managerVersion": payload["managerVersion"],
+        "managerBuild": payload["managerBuild"],
+        "runtimeName": payload["runtimeName"],
+        "runtimeVersion": payload["runtimeVersion"],
+        "runtimeFlavor": payload["runtimeFlavor"],
+        "runtimeCodeSignatureValid":
+            payload["runtimeCodeSignatureValid"],
+        "runtimeExecutableSHA256":
+            payload["runtimeExecutableSHA256"],
+        "runtimeFrameworkSHA256":
+            payload["runtimeFrameworkSHA256"],
+        "auditSchemaVersion": payload["auditSchemaVersion"],
+        "identityCatalogVersion":
+            payload["identityCatalogVersion"],
+        "verdict": payload["verdict"],
+        "changedCriticalKeys": payload["changedCriticalKeys"],
+        "unavailableRequiredKeys":
+            payload["unavailableRequiredKeys"],
+        "unstableRequiredKeys": payload["unstableRequiredKeys"],
+        "publicAlphaQualified":
+            payload["publicAlphaQualified"],
+        "productionQualified": payload["productionQualified"],
+        "limitations": payload["limitations"],
+    }
+
+
+def encoded_private_json(value: dict[str, Any]) -> bytes:
+    return (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def write_private_bytes(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    descriptor: int | None = None
+    temporary: Path | None = None
+    for _ in range(32):
+        candidate = path.with_name(
+            f".{path.name}.{secrets.token_hex(16)}.tmp"
+        )
+        try:
+            descriptor = os.open(candidate, flags, 0o600)
+        except FileExistsError:
+            continue
+        temporary = candidate
+        break
+    if descriptor is None or temporary is None:
+        raise EvidenceCollectionError(
+            f"Cannot allocate a private temporary file for {path.name}."
+        )
+
+    replaced = False
+    try:
+        os.fchmod(descriptor, 0o600)
+        view = memoryview(payload)
+        offset = 0
+        while offset < len(view):
+            written = os.write(descriptor, view[offset:])
+            if written <= 0:
+                raise OSError("Cannot complete private evidence write.")
+            offset += written
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        os.replace(temporary, path)
+        replaced = True
+        directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        directory_descriptor = os.open(path.parent, directory_flags)
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if not replaced:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def write_private_json(path: Path, value: dict[str, Any]) -> bytes:
+    payload = encoded_private_json(value)
+    write_private_bytes(path, payload)
+    return payload
+
+
+def invalidate_stale_attestation(path: Path) -> None:
+    try:
+        os.lstat(path)
+    except FileNotFoundError:
+        return
+    try:
+        os.unlink(path)
+    except IsADirectoryError as error:
+        raise EvidenceCollectionError(
+            f"Public attestation path is not a file: {path}"
+        ) from error
+
+
+def parse_not_before(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    text = value.strip()
+    if not text:
+        raise EvidenceCollectionError("--not-before must not be empty.")
+    try:
+        epoch = float(text)
+    except ValueError:
+        try:
+            parsed = GUI_VERIFIER.parse_iso8601(text, "--not-before")
+        except GUI_VERIFIER.FingerprintReportError as error:
+            raise EvidenceCollectionError(str(error)) from error
+        return parsed.astimezone(timezone.utc)
+    try:
+        return datetime.fromtimestamp(epoch, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError) as error:
+        raise EvidenceCollectionError("--not-before epoch is invalid.") from error
+
+
+def verify_attestation_binding(
+    *,
+    private_evidence: Path,
+    attestation: Path,
+) -> str:
+    try:
+        private_payload = private_evidence.read_bytes()
+        public_payload = json.loads(attestation.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise EvidenceCollectionError(
+            f"Cannot read evidence/attestation binding inputs: {error}"
+        ) from error
+    if not isinstance(public_payload, dict):
+        raise EvidenceCollectionError("Public attestation must be a JSON object.")
+    expected_sha = hashlib.sha256(private_payload).hexdigest()
+    if public_payload.get("privateEvidenceSHA256") != expected_sha:
+        raise EvidenceCollectionError(
+            "Public attestation does not match the exact private evidence bytes."
+        )
+    try:
+        report = json.loads(private_payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise EvidenceCollectionError(
+            "Private fingerprint evidence is not valid UTF-8 JSON."
+        ) from error
+    if not isinstance(report, dict):
+        raise EvidenceCollectionError(
+            "Private fingerprint evidence must be a JSON object."
+        )
+    summary = GUI_VERIFIER.verification_summary(
+        report,
+        expected_runtime=None,
+    )
+    if not summary.get("qualified"):
+        raise EvidenceCollectionError(
+            "Private fingerprint evidence is not semantically qualified."
+        )
+    expected_attestation = public_attestation(
+        report,
+        summary,
+        private_evidence_sha256=expected_sha,
+        candidate_manifest_sha256=str(
+            public_payload.get("candidateManifestSHA256", "")
+        ),
+        release_channel=str(
+            public_payload.get("releaseChannel", "")
+        ),
+    )
+    if public_payload != expected_attestation:
+        raise EvidenceCollectionError(
+            "Public attestation fields do not match private evidence semantics."
+        )
+    return expected_sha
+
+
+def existing_report_ids(audits_dir: Path) -> set[str]:
+    report_ids: set[str] = set()
+    for path in candidate_reports(audits_dir):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict) and isinstance(payload.get("id"), str):
+            report_ids.add(payload["id"])
+    return report_ids
+
+
+def load_report_id_baseline(path: Path) -> set[str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise EvidenceCollectionError(
+            f"Cannot read report-ID baseline: {error}"
+        ) from error
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {"schemaVersion", "reportIDs"}
+        or payload.get("schemaVersion") != 1
+        or not isinstance(payload.get("reportIDs"), list)
+        or not all(isinstance(item, str) for item in payload["reportIDs"])
+    ):
+        raise EvidenceCollectionError("Report-ID baseline is invalid.")
+    return set(payload["reportIDs"])
+
+
+def quarantine_regular_file(path: Path, destination: Path) -> None:
+    try:
+        status = os.lstat(path)
+    except FileNotFoundError:
+        return
+    if not stat.S_ISREG(status.st_mode):
+        raise EvidenceCollectionError(
+            f"Cannot quarantine unsafe release evidence path: {path}"
+        )
+    os.replace(path, destination)
+
+
+def prepare_attempt_state(
+    *,
+    audits_dir: Path,
+    output: Path,
+    summary_output: Path | None,
+    state_dir: Path,
+) -> Path:
+    if state_dir.exists() or state_dir.is_symlink():
+        raise EvidenceCollectionError(
+            f"Attempt state directory already exists or is unsafe: {state_dir}"
+        )
+    state_dir.mkdir(parents=True, mode=0o700)
+    os.chmod(state_dir, 0o700)
+    quarantine_regular_file(
+        output,
+        state_dir / f"previous-{output.name}",
+    )
+    if summary_output is not None:
+        quarantine_regular_file(
+            summary_output,
+            state_dir / f"previous-{summary_output.name}",
+        )
+    baseline = state_dir / "report-ids.json"
+    write_private_json(
+        baseline,
+        {
+            "schemaVersion": 1,
+            "reportIDs": sorted(existing_report_ids(audits_dir)),
+        },
+    )
+    return baseline
+
+
 def collect_evidence(
     *,
     source: Path | None,
@@ -69,9 +467,86 @@ def collect_evidence(
     output: Path,
     runtime_lock: Path,
     integrated_app: Path | None = None,
+    candidate_manifest: Path | None = None,
+    summary_output: Path | None = None,
+    not_before: datetime | None = None,
+    baseline_report_ids: set[str] | None = None,
+    release_channel: str = "public-alpha",
+    persist_outputs: bool = True,
 ) -> dict[str, Any]:
+    if release_channel not in {"public-alpha", "production"}:
+        raise EvidenceCollectionError(
+            "Release channel must be public-alpha or production."
+        )
+    if (
+        summary_output is not None
+        and summary_output.resolve() == output.resolve()
+    ):
+        raise EvidenceCollectionError(
+            "Private evidence and public attestation paths must be distinct."
+        )
+    if source is not None and source.resolve() in {
+        output.resolve(),
+        summary_output.resolve() if summary_output is not None else None,
+    }:
+        raise EvidenceCollectionError(
+            "Source evidence, private output and public attestation paths "
+            "must be distinct."
+        )
+    if integrated_app is not None:
+        if candidate_manifest is None:
+            raise EvidenceCollectionError(
+                "A Direct candidate requires its schema-3 manifest."
+            )
+        if source is None:
+            raise EvidenceCollectionError(
+                "A Direct candidate requires an explicit schema-8 envelope."
+            )
+        return collect_authenticated_evidence(
+            source=source,
+            output=output,
+            candidate_manifest=candidate_manifest,
+            integrated_app=integrated_app,
+            summary_output=summary_output,
+            not_before=not_before,
+            release_channel=release_channel,
+            persist_outputs=persist_outputs,
+        )
+    candidate_manifest_sha256 = "0" * 64
+    if candidate_manifest is not None:
+        if not candidate_manifest.is_file() or candidate_manifest.is_symlink():
+            raise EvidenceCollectionError(
+                "Candidate manifest must be a regular non-symlinked file."
+            )
+        candidate_manifest_sha256 = hashlib.sha256(
+            candidate_manifest.read_bytes()
+        ).hexdigest()
     source_report = select_source_report(source=source, audits_dir=audits_dir)
     report = GUI_VERIFIER.load_report(source_report)
+    report_id = report.get("id")
+    if (
+        baseline_report_ids is not None
+        and isinstance(report_id, str)
+        and report_id in baseline_report_ids
+    ):
+        raise EvidenceCollectionError(
+            "Source report ID existed before the current GUI attempt."
+        )
+    report_created_at = GUI_VERIFIER.parse_iso8601(
+        report.get("createdAt"),
+        "createdAt",
+    )
+    if not_before is not None:
+        if report_created_at <= not_before.astimezone(timezone.utc):
+            raise EvidenceCollectionError(
+                "Source report predates the current GUI collection attempt."
+            )
+    if report_created_at > datetime.now(timezone.utc).replace(
+        microsecond=0
+    ) + timedelta(seconds=MAX_REPORT_FUTURE_SKEW_SECONDS):
+        raise EvidenceCollectionError(
+            "Source report timestamp is implausibly far in the future."
+        )
     if integrated_app is not None:
         expected_runtime = GUI_VERIFIER.expected_runtime_evidence_from_app(
             integrated_app
@@ -85,25 +560,192 @@ def collect_evidence(
         report,
         expected_runtime=expected_runtime,
     )
-    if not summary["qualified"]:
-        issues = "; ".join(summary["issues"])
+    if report.get("auditSchemaVersion") != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION:
         raise EvidenceCollectionError(
-            f"Source report is not public-alpha-qualified: {issues}"
+            "Source report does not use the current fingerprint audit schema."
+        )
+    qualification_issues = GUI_VERIFIER.qualification_issues(
+        summary,
+        require_production=release_channel == "production",
+    )
+    if qualification_issues:
+        issues = "; ".join(qualification_issues)
+        raise EvidenceCollectionError(
+            f"Source report is not {release_channel}-qualified: {issues}"
         )
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = output.with_name(f".{output.name}.tmp")
-    shutil.copyfile(source_report, temporary)
-    os.chmod(temporary, 0o600)
-    os.replace(temporary, output)
-    os.chmod(output, 0o600)
+    sanitized = sanitized_release_report(report)
+    sanitized_summary = GUI_VERIFIER.verification_summary(
+        sanitized,
+        expected_runtime=expected_runtime,
+    )
+    sanitized_qualification_issues = GUI_VERIFIER.qualification_issues(
+        sanitized_summary,
+        require_production=release_channel == "production",
+    )
+    if sanitized_qualification_issues:
+        raise EvidenceCollectionError(
+            "Sanitized release report failed the required fingerprint "
+            "qualification."
+    )
+    private_payload = encoded_private_json(sanitized)
+    private_evidence_sha256 = hashlib.sha256(private_payload).hexdigest()
+    if persist_outputs:
+        write_private_bytes(output, private_payload)
+    if persist_outputs and summary_output is not None:
+        invalidate_stale_attestation(summary_output)
+        write_private_json(
+            summary_output,
+            public_attestation(
+                sanitized,
+                sanitized_summary,
+                private_evidence_sha256=private_evidence_sha256,
+                candidate_manifest_sha256=candidate_manifest_sha256,
+                release_channel=release_channel,
+            ),
+        )
     return {
         "source": str(source_report),
-        "output": str(output),
+        "output": str(output) if persist_outputs else None,
         "integratedApp": (
             str(integrated_app) if integrated_app is not None else None
         ),
-        "summary": summary,
+        "summaryOutput": (
+            str(summary_output)
+            if persist_outputs and summary_output is not None
+            else None
+        ),
+        "summary": sanitized_summary,
+        "privateEvidenceSHA256": private_evidence_sha256,
+        "candidateManifestSHA256": candidate_manifest_sha256,
+        "releaseQualification": release_channel,
+    }
+
+
+def collect_authenticated_evidence(
+    *,
+    source: Path,
+    output: Path,
+    candidate_manifest: Path,
+    integrated_app: Path,
+    summary_output: Path | None,
+    not_before: datetime | None,
+    release_channel: str,
+    persist_outputs: bool = True,
+) -> dict[str, Any]:
+    if source.resolve() == output.resolve():
+        raise EvidenceCollectionError(
+            "Schema-8 source and collected output must be distinct."
+        )
+    try:
+        manifest_raw = EVIDENCE_SCHEMA.read_bounded_regular_file(
+            candidate_manifest,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_MANIFEST_BYTES,
+            label="Candidate manifest",
+        )
+        envelope_raw = EVIDENCE_SCHEMA.read_bounded_regular_file(
+            source,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_ENVELOPE_BYTES,
+            label="Fingerprint evidence envelope",
+        )
+        verified = EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=manifest_raw,
+            envelope_raw=envelope_raw,
+        )
+        payload = EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
+    except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
+        raise EvidenceCollectionError(
+            "Authenticated schema-8 fingerprint evidence is invalid."
+        ) from error
+    if payload["releaseChannel"] != release_channel:
+        raise EvidenceCollectionError(
+            "Authenticated evidence release channel does not match."
+        )
+    if (
+        release_channel == "production"
+        and not payload["productionQualified"]
+    ):
+        raise EvidenceCollectionError(
+            "Authenticated evidence is not production-qualified."
+        )
+    if (
+        release_channel == "public-alpha"
+        and not payload["publicAlphaQualified"]
+    ):
+        raise EvidenceCollectionError(
+            "Authenticated evidence is not public-alpha-qualified."
+        )
+    created_at = GUI_VERIFIER.parse_iso8601(
+        payload["createdAt"],
+        "createdAt",
+    )
+    if (
+        not_before is not None
+        and created_at <= not_before.astimezone(timezone.utc)
+    ):
+        raise EvidenceCollectionError(
+            "Authenticated evidence predates the current GUI attempt."
+        )
+    if created_at > datetime.now(timezone.utc).replace(
+        microsecond=0
+    ) + timedelta(seconds=MAX_REPORT_FUTURE_SKEW_SECONDS):
+        raise EvidenceCollectionError(
+            "Authenticated evidence timestamp is implausibly in the future."
+        )
+    expected_runtime = (
+        GUI_VERIFIER.expected_runtime_evidence_from_app(integrated_app)
+    )
+    for payload_key, expected_key in (
+        ("managerVersion", "managerVersion"),
+        ("managerBuild", "managerBuild"),
+        ("runtimeVersion", "runtimeVersion"),
+        ("runtimeExecutableSHA256", "runtimeExecutableSHA256"),
+        ("runtimeFrameworkSHA256", "runtimeFrameworkSHA256"),
+    ):
+        expected = expected_runtime.get(expected_key)
+        if expected is not None and payload[payload_key] != expected:
+            raise EvidenceCollectionError(
+                "Authenticated evidence runtime does not match the exact app."
+            )
+    if persist_outputs:
+        write_private_bytes(output, envelope_raw)
+    if persist_outputs and summary_output is not None:
+        invalidate_stale_attestation(summary_output)
+        write_private_json(
+            summary_output,
+            authenticated_public_attestation(payload, verified),
+        )
+    return {
+        "source": str(source),
+        "output": str(output) if persist_outputs else None,
+        "integratedApp": str(integrated_app),
+        "summaryOutput": (
+            str(summary_output)
+            if persist_outputs and summary_output is not None
+            else None
+        ),
+        "authenticatedEvidenceID":
+            verified.authenticated_evidence_id,
+        "privateEvidenceSHA256": verified.transport_sha256,
+        "candidateManifestSHA256":
+            verified.candidate_manifest_sha256,
+        "releaseQualification": release_channel,
+        "summary": {
+            "qualified": payload["publicAlphaQualified"],
+            "productionQualified": payload["productionQualified"],
+            "changedCriticalKeys": payload["changedCriticalKeys"],
+            "unstableRequiredKeys":
+                payload["unstableRequiredKeys"],
+            "executionMode": payload["executionMode"],
+            "runtimeName": payload["runtimeName"],
+            "runtimeVersion": payload["runtimeVersion"],
+            "runtimeFlavor": payload["runtimeFlavor"],
+            "createdAt": payload["createdAt"],
+        },
     }
 
 
@@ -129,7 +771,18 @@ def main() -> int:
         "--output",
         type=Path,
         default=PROJECT_ROOT / "dist" / "fingerprint-audit.json",
-        help="Release evidence output path.",
+        help="Private, verifier-readable release evidence output path.",
+    )
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=PROJECT_ROOT
+        / "dist"
+        / "fingerprint-audit-summary.json",
+        help=(
+            "Aggregate public-safe attestation path. It contains no captures, "
+            "profile identifiers, identity codes or browser-surface values."
+        ),
     )
     parser.add_argument(
         "--runtime-lock",
@@ -148,16 +801,88 @@ def main() -> int:
             "Direct release collection must provide this option."
         ),
     )
+    parser.add_argument(
+        "--candidate-manifest",
+        type=Path,
+        help=(
+            "Immutable manifest created before the GUI run. Required when "
+            "--integrated-app is used for a Direct candidate."
+        ),
+    )
+    parser.add_argument(
+        "--not-before",
+        help=(
+            "Reject reports created before this ISO-8601 timestamp or Unix epoch. "
+            "Release automation sets it immediately before opening the GUI."
+        ),
+    )
+    parser.add_argument(
+        "--report-id-baseline",
+        type=Path,
+        help="Reject any report ID recorded before the current GUI attempt.",
+    )
+    parser.add_argument(
+        "--release-channel",
+        choices=("public-alpha", "production"),
+        default=os.environ.get(
+            "NEANTIK_RELEASE_CHANNEL",
+            "public-alpha",
+        ),
+        help="Required Direct fingerprint qualification.",
+    )
+    parser.add_argument(
+        "--prepare-attempt-state",
+        type=Path,
+        help=(
+            "Quarantine old output/summary and snapshot existing report IDs "
+            "into this new private directory, then exit."
+        ),
+    )
+    parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help=(
+            "Verify source, candidate binding and qualification without "
+            "writing or replacing release evidence files."
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
     try:
+        if args.prepare_attempt_state is not None:
+            baseline = prepare_attempt_state(
+                audits_dir=args.audits_dir,
+                output=args.output,
+                summary_output=args.summary_output,
+                state_dir=args.prepare_attempt_state,
+            )
+            print(f"Prepared private GUI attempt state: {baseline}")
+            return 0
+        if (
+            args.integrated_app is not None
+            and args.candidate_manifest is None
+        ):
+            raise EvidenceCollectionError(
+                "--integrated-app requires --candidate-manifest for a Direct "
+                "candidate."
+            )
         result = collect_evidence(
             source=args.source,
             audits_dir=args.audits_dir,
             output=args.output,
             runtime_lock=args.runtime_lock,
             integrated_app=args.integrated_app,
+            candidate_manifest=args.candidate_manifest,
+            summary_output=args.summary_output,
+            not_before=parse_not_before(args.not_before),
+            baseline_report_ids=(
+                load_report_id_baseline(args.report_id_baseline)
+                if args.report_id_baseline is not None
+                else None
+            ),
+            release_channel=args.release_channel,
+            persist_outputs=not args.verify_only,
         )
     except (OSError, GUI_VERIFIER.FingerprintReportError, EvidenceCollectionError) as error:
         print(f"GUI fingerprint evidence collection failed: {error}", file=sys.stderr)
@@ -166,9 +891,16 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
-        print("PASS: public-alpha GUI fingerprint evidence collected.")
+        action = "verified" if args.verify_only else "collected"
+        print(
+            "PASS: "
+            f"{result['releaseQualification']} GUI fingerprint evidence "
+            f"{action}."
+        )
         print(f"Source: {result['source']}")
-        print(f"Output: {result['output']}")
+        if not args.verify_only:
+            print(f"Output: {result['output']}")
+            print(f"Public-safe summary: {result['summaryOutput']}")
         print(
             "Changed critical keys: "
             + ", ".join(result["summary"]["changedCriticalKeys"])

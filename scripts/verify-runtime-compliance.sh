@@ -4,18 +4,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium.lock.json"
 
 usage() {
-  echo "Usage: $0 /absolute/path/to/compliance-directory" >&2
+  echo "Usage: $0 /absolute/path/to/compliance-directory /absolute/path/to/runtime-candidate-lock.json" >&2
 }
 
-if [[ $# -ne 1 || "$1" != /* || ! -d "$1" ]]; then
+if [[ $# -ne 2 ||
+      "$1" != /* ||
+      ! -d "$1" ||
+      "$2" != /* ||
+      ! -f "$2" ||
+      -L "$2" ]]; then
   usage
   exit 64
 fi
 
 COMPLIANCE_DIR="$1"
+LOCK_FILE="$2"
 MANIFEST="$COMPLIANCE_DIR/compliance-manifest.json"
 if [[ ! -f "$MANIFEST" ]]; then
   echo "Compliance manifest is missing." >&2

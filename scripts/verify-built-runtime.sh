@@ -4,12 +4,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
+PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
+DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
+SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
+SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
 
 usage() {
-  echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn]" >&2
+  echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
 }
 
-if [[ $# -lt 1 || $# -gt 3 || -z "${1:-}" ]]; then
+if [[ $# -lt 1 || $# -gt 5 || -z "${1:-}" ]]; then
   usage
   exit 64
 fi
@@ -17,6 +21,8 @@ fi
 APP_PATH="$1"
 REPORT_PATH="${2:-}"
 BUILD_ARGS_PATH="${3:-}"
+SOURCE_PROVENANCE_PATH="${4:-}"
+CANDIDATE_LOCK_PATH="${5:-}"
 
 if [[ "$APP_PATH" != /* || ! -d "$APP_PATH" ]]; then
   echo "Chromium.app must be an existing absolute path." >&2
@@ -66,22 +72,96 @@ if [[ -n "$BUILD_ARGS_PATH" ]]; then
   )"
 fi
 
+if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
+  if [[ "$CANDIDATE_LOCK_PATH" != /* ||
+        ! -f "$CANDIDATE_LOCK_PATH" ||
+        -L "$CANDIDATE_LOCK_PATH" ]]; then
+    echo "Candidate lock must be an absolute regular non-symlinked JSON file." >&2
+    exit 66
+  fi
+  LOCK_FILE="$CANDIDATE_LOCK_PATH"
+fi
 EXPECTED_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
 )"
 SOURCE_LOCK_SHA256="$(
   shasum -a 256 "$LOCK_FILE" | awk '{print $1}'
 )"
-OVERLAY_SHA256="$(
-  plutil -extract nevisionOverlay.scriptSHA256 raw -o - "$LOCK_FILE"
+CANDIDATE_LOCK_SHA256=""
+SOURCE_CONTRACT_SHA256="$(
+  shasum -a 256 "$SOURCE_CONTRACT_FILE" | awk '{print $1}'
 )"
-DEVICE_TUPLE_OVERLAY_SHA256="$(
-  plutil -extract nevisionDeviceTuples.scriptSHA256 raw -o - "$LOCK_FILE"
+SOURCE_PROVENANCE_SHA256=""
+if [[ -n "$REPORT_PATH" && -z "$SOURCE_PROVENANCE_PATH" ]]; then
+  echo "A new runtime report requires Chromium 150 source provenance." >&2
+  exit 66
+fi
+if [[ -n "$REPORT_PATH" && -z "$CANDIDATE_LOCK_PATH" ]]; then
+  echo "A new runtime report requires an explicit schema 4 candidate lock." >&2
+  exit 66
+fi
+if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
+  if [[ "$SOURCE_PROVENANCE_PATH" != /* ||
+        ! -f "$SOURCE_PROVENANCE_PATH" ||
+        -L "$SOURCE_PROVENANCE_PATH" ]]; then
+    echo "Source provenance must be an absolute regular non-symlinked JSON file." >&2
+    exit 66
+  fi
+  PROVENANCE_VERIFY_ARGS=("$SOURCE_PROVENANCE_PATH")
+  if [[ -n "$BUILD_ARGS_PATH" ]]; then
+    POSSIBLE_SOURCE_ROOT="$(
+      cd "$(dirname "$BUILD_ARGS_PATH")/../.." 2>/dev/null && pwd -P || true
+    )"
+    if [[ -n "$POSSIBLE_SOURCE_ROOT" &&
+          -f "$POSSIBLE_SOURCE_ROOT/chrome/VERSION" &&
+          -d "$(dirname "$(dirname "$POSSIBLE_SOURCE_ROOT")")/.git" ]]; then
+      PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
+    fi
+  fi
+  python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
+    "${PROVENANCE_VERIFY_ARGS[@]}"
+  SOURCE_PROVENANCE_SHA256="$(
+    shasum -a 256 "$SOURCE_PROVENANCE_PATH" | awk '{print $1}'
+  )"
+fi
+if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
+  if [[ -z "$SOURCE_PROVENANCE_PATH" ]]; then
+    echo "Candidate lock verification requires source provenance." >&2
+    exit 66
+  fi
+  python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
+    "$CANDIDATE_LOCK_PATH" \
+    "$SOURCE_PROVENANCE_PATH"
+  CANDIDATE_LOCK_SHA256="$SOURCE_LOCK_SHA256"
+fi
+for provenance_file in \
+  "$PATCH_SERIES_FILE" \
+  "$DEVICE_TUPLES_FILE" \
+  "$SECURITY_BASELINE_FILE" \
+  "$SOURCE_CONTRACT_FILE"; do
+  if [[ ! -f "$provenance_file" ]]; then
+    echo "Runtime provenance file is missing: $provenance_file" >&2
+    exit 66
+  fi
+done
+NEANTIK_PATCH_MANIFEST_SHA256="$(
+  shasum -a 256 "$PATCH_SERIES_FILE" | awk '{print $1}'
+)"
+APPLE_DEVICE_TUPLES_MANIFEST_SHA256="$(
+  shasum -a 256 "$DEVICE_TUPLES_FILE" | awk '{print $1}'
+)"
+SECURITY_BASELINE_SHA256="$(
+  shasum -a 256 "$SECURITY_BASELINE_FILE" | awk '{print $1}'
 )"
 EXECUTABLE_NAME="$(
   plutil -extract CFBundleExecutable raw -o - "$INFO_PLIST"
 )"
+if [[ -z "$EXECUTABLE_NAME" || "$EXECUTABLE_NAME" == */* ]]; then
+  echo "Chromium bundle executable name is invalid." >&2
+  exit 65
+fi
 EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/$EXECUTABLE_NAME"
+EXECUTABLE_BUNDLE_PATH="Contents/MacOS/$EXECUTABLE_NAME"
 
 if [[ ! -x "$EXECUTABLE_PATH" ]]; then
   echo "Chromium bundle executable is missing or not executable." >&2
@@ -160,12 +240,23 @@ if [[ -z "$FRAMEWORK_BINARY" ]]; then
   echo "Chromium-compatible Framework binary was not found." >&2
   exit 66
 fi
+FRAMEWORK_BUNDLE_PATH="${FRAMEWORK_BINARY#"$APP_PATH"/}"
+if [[ "$FRAMEWORK_BUNDLE_PATH" == "$FRAMEWORK_BINARY" ||
+      "$FRAMEWORK_BUNDLE_PATH" != Contents/Frameworks/* ]]; then
+  echo "Chromium Framework binary is outside the runtime bundle." >&2
+  exit 65
+fi
 
 for protocol_string in \
   "fingerprint-platform" \
   "fingerprint-timezone" \
   "fingerprint-locale" \
-  "apple-device-tuple"
+  "apple-device-tuple" \
+  "default_public_interface_only" \
+  "disable_non_proxied_udp" \
+  "DnsOverHttps" \
+  "AsyncDns" \
+  "WebGPUService"
 do
   if ! grep -aFq "$protocol_string" "$FRAMEWORK_BINARY"; then
     echo "Missing fingerprint protocol string: $protocol_string" >&2
@@ -175,7 +266,7 @@ done
 
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
-  SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
+  SERIES_FILE="$PATCH_SERIES_FILE"
   if [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
     if [[ ! -f "$SERIES_FILE" ]]; then
       echo "NeAntik patch series manifest is missing: $SERIES_FILE" >&2
@@ -192,11 +283,21 @@ source_root = Path(os.environ["SOURCE_ROOT"])
 series_file = Path(os.environ["SERIES_FILE"])
 series = json.loads(series_file.read_text(encoding="utf-8"))
 
+generated_postimages = {}
+for generated_input in series.get("generatedInputs", []):
+    generated_postimages.update(
+        generated_input.get("postimageSHA256", {})
+    )
+
 checked = 0
 for group in series.get("patchGroups", []):
     if not group.get("releaseRequired", False):
         continue
     for relative_path, expected_sha256 in group.get("postimageSHA256", {}).items():
+        expected_sha256 = generated_postimages.get(
+            relative_path,
+            expected_sha256,
+        )
         path = source_root / relative_path
         if not path.is_file():
             print(
@@ -242,17 +343,20 @@ if [[ -n "$REPORT_PATH" ]]; then
   mkdir -p "$(dirname "$REPORT_PATH")"
   REPORT_PATH="$REPORT_PATH" \
   EXPECTED_VERSION="$EXPECTED_VERSION" \
-  EXECUTABLE_PATH="$EXECUTABLE_PATH" \
+  EXECUTABLE_BUNDLE_PATH="$EXECUTABLE_BUNDLE_PATH" \
   EXECUTABLE_SHA256="$EXECUTABLE_SHA256" \
-  FRAMEWORK_PATH="$FRAMEWORK_BINARY" \
+  FRAMEWORK_BUNDLE_PATH="$FRAMEWORK_BUNDLE_PATH" \
   FRAMEWORK_SHA256="$FRAMEWORK_SHA256" \
   MACHO_COUNT="$MACHO_COUNT" \
   SIGNATURE_KIND="$SIGNATURE_KIND" \
   GPU_MODE="$GPU_MODE" \
   SOURCE_LOCK_SHA256="$SOURCE_LOCK_SHA256" \
-  OVERLAY_SHA256="$OVERLAY_SHA256" \
-  DEVICE_TUPLE_OVERLAY_SHA256="$DEVICE_TUPLE_OVERLAY_SHA256" \
-  BUILD_ARGS_PATH="$BUILD_ARGS_PATH" \
+  CANDIDATE_LOCK_SHA256="$CANDIDATE_LOCK_SHA256" \
+  NEANTIK_PATCH_MANIFEST_SHA256="$NEANTIK_PATCH_MANIFEST_SHA256" \
+  APPLE_DEVICE_TUPLES_MANIFEST_SHA256="$APPLE_DEVICE_TUPLES_MANIFEST_SHA256" \
+  SECURITY_BASELINE_SHA256="$SECURITY_BASELINE_SHA256" \
+  SOURCE_CONTRACT_SHA256="$SOURCE_CONTRACT_SHA256" \
+  SOURCE_PROVENANCE_SHA256="$SOURCE_PROVENANCE_SHA256" \
   BUILD_ARGS_SHA256="$BUILD_ARGS_SHA256" \
   python3 - <<'PY'
 import datetime
@@ -261,7 +365,7 @@ import os
 from pathlib import Path
 
 report = {
-    "schemaVersion": 1,
+    "schemaVersion": 3,
     "createdAt": datetime.datetime.now(
         datetime.timezone.utc
     ).isoformat().replace("+00:00", "Z"),
@@ -269,25 +373,29 @@ report = {
     "architecture": "arm64",
     "gpuMode": os.environ["GPU_MODE"],
     "sourceLockSHA256": os.environ["SOURCE_LOCK_SHA256"],
-    "nevisionOverlaySHA256": os.environ["OVERLAY_SHA256"],
-    "nevisionDeviceTupleOverlaySHA256":
-        os.environ["DEVICE_TUPLE_OVERLAY_SHA256"],
+    "candidateLockSHA256": os.environ["CANDIDATE_LOCK_SHA256"],
+    "sourceContractSHA256": os.environ["SOURCE_CONTRACT_SHA256"],
+    "sourceProvenanceSHA256": os.environ["SOURCE_PROVENANCE_SHA256"],
+    "neantikPatchManifestSHA256":
+        os.environ["NEANTIK_PATCH_MANIFEST_SHA256"],
+    "appleDeviceTuplesManifestSHA256":
+        os.environ["APPLE_DEVICE_TUPLES_MANIFEST_SHA256"],
+    "securityBaselineSHA256": os.environ["SECURITY_BASELINE_SHA256"],
     "machoCount": int(os.environ["MACHO_COUNT"]),
     "executable": {
-        "path": os.environ["EXECUTABLE_PATH"],
+        "path": os.environ["EXECUTABLE_BUNDLE_PATH"],
         "sha256": os.environ["EXECUTABLE_SHA256"],
     },
     "framework": {
-        "path": os.environ["FRAMEWORK_PATH"],
+        "path": os.environ["FRAMEWORK_BUNDLE_PATH"],
         "sha256": os.environ["FRAMEWORK_SHA256"],
     },
     "codeSignature": "verified",
     "codeSignatureKind": os.environ["SIGNATURE_KIND"],
     "fingerprintProtocolStrings": "verified",
 }
-if os.environ["BUILD_ARGS_PATH"]:
+if os.environ["BUILD_ARGS_SHA256"]:
     report["buildArguments"] = {
-        "path": os.environ["BUILD_ARGS_PATH"],
         "sha256": os.environ["BUILD_ARGS_SHA256"],
     }
 Path(os.environ["REPORT_PATH"]).write_text(

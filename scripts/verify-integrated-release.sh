@@ -32,10 +32,6 @@ ACTUAL_MANAGER_BUILD="$(
   plutil -extract CFBundleVersion raw -o - \
     "$APP_PATH/Contents/Info.plist"
 )"
-EXPECTED_RUNTIME_VERSION="$(
-  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
-    "$PROJECT_DIR/runtime/fingerprint-chromium.lock.json"
-)"
 if [[ "$ACTUAL_MANAGER_VERSION" != "$EXPECTED_MANAGER_VERSION" ||
       "$ACTUAL_MANAGER_BUILD" != "$EXPECTED_MANAGER_BUILD" ]]; then
   echo "Integrated manager version does not match project metadata." >&2
@@ -74,12 +70,10 @@ case "$RUNTIME_BUILD_MODE" in
     ;;
 esac
 
-if ! cmp -s \
-  "$PROJECT_DIR/runtime/fingerprint-chromium.lock.json" \
-  "$EVIDENCE/fingerprint-chromium.lock.json"; then
-  echo "Integrated source lock does not match the project lock." >&2
-  exit 65
-fi
+EXPECTED_RUNTIME_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$EVIDENCE/fingerprint-chromium.lock.json"
+)"
 
 if ! cmp -s \
   "$PROJECT_DIR/runtime/security-baseline.json" \
@@ -87,6 +81,33 @@ if ! cmp -s \
   echo "Integrated runtime security baseline does not match the project baseline." >&2
   exit 65
 fi
+
+if ! cmp -s \
+  "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+  "$EVIDENCE/neantik-patch-series.json"; then
+  echo "Integrated NeAntik patch series does not match the project manifest." >&2
+  exit 65
+fi
+
+if ! cmp -s \
+  "$PROJECT_DIR/runtime/apple-device-tuples.json" \
+  "$EVIDENCE/apple-device-tuples.json"; then
+  echo "Integrated Apple device tuples do not match the reviewed catalog." >&2
+  exit 65
+fi
+
+if ! cmp -s \
+  "$PROJECT_DIR/runtime/chromium-150-source-contract.json" \
+  "$EVIDENCE/chromium-150-source-contract.json"; then
+  echo "Integrated Chromium 150 source contract does not match the project contract." >&2
+  exit 65
+fi
+
+"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+  "$EVIDENCE/source-provenance.json"
+"$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+  "$EVIDENCE/fingerprint-chromium.lock.json" \
+  "$EVIDENCE/source-provenance.json"
 
 if ! cmp -s \
   "$PROJECT_DIR/Resources/NeAntik.icns" \
@@ -98,6 +119,10 @@ fi
 for required in \
   "$EVIDENCE/args.gn" \
   "$EVIDENCE/runtime-verification.json" \
+  "$EVIDENCE/neantik-patch-series.json" \
+  "$EVIDENCE/apple-device-tuples.json" \
+  "$EVIDENCE/chromium-150-source-contract.json" \
+  "$EVIDENCE/source-provenance.json" \
   "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md" \
   "$LICENSES/Chromium-LICENSE" \
   "$LICENSES/fingerprint-chromium-LICENSE" \
@@ -136,11 +161,15 @@ done
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$REPORT" \
-  "$EVIDENCE/args.gn"
+  "$EVIDENCE/args.gn" \
+  "$EVIDENCE/source-provenance.json" \
+  "$EVIDENCE/fingerprint-chromium.lock.json"
 "$PROJECT_DIR/scripts/verify-runtime-report-consistency.py" \
   "$EVIDENCE/runtime-verification.json" \
   "$REPORT"
-"$PROJECT_DIR/scripts/verify-runtime-compliance.sh" "$COMPLIANCE"
+"$PROJECT_DIR/scripts/verify-runtime-compliance.sh" \
+  "$COMPLIANCE" \
+  "$EVIDENCE/fingerprint-chromium.lock.json"
 
 if ! CODESIGN_VERIFY_OUTPUT="$(
   codesign --verify --deep --strict --verbose=2 "$APP_PATH" 2>&1

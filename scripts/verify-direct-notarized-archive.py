@@ -27,6 +27,14 @@ class CommandResult:
     output: str
 
 
+@dataclass(frozen=True)
+class ExpectedAppContract:
+    bundle_identifier: str
+    version: str
+    build: str
+    team_identifier: str
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as file:
@@ -35,18 +43,72 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def read_info_version(project_root: Path) -> str:
-    with (project_root / "Resources" / "Info.plist").open("rb") as file:
-        return str(plistlib.load(file)["CFBundleShortVersionString"])
+def read_expected_app_contract(
+    project_root: Path,
+    *,
+    info_plist: Path | None = None,
+) -> ExpectedAppContract:
+    with (
+        info_plist or project_root / "Resources" / "Info.plist"
+    ).open("rb") as file:
+        info = plistlib.load(file)
+    required = {
+        "CFBundleIdentifier": info.get("CFBundleIdentifier"),
+        "CFBundleShortVersionString": info.get("CFBundleShortVersionString"),
+        "CFBundleVersion": info.get("CFBundleVersion"),
+        "NeAntikDeveloperTeamIdentifier": info.get(
+            "NeAntikDeveloperTeamIdentifier"
+        ),
+    }
+    missing = [key for key, value in required.items() if not str(value or "").strip()]
+    if missing:
+        raise DirectNotarizedArchiveError(
+            "project app contract is missing: " + ", ".join(missing)
+        )
+    if str(required["CFBundleIdentifier"]) != "app.neantik.desktop":
+        raise DirectNotarizedArchiveError(
+            "project CFBundleIdentifier must be app.neantik.desktop"
+        )
+    team_identifier = str(required["NeAntikDeveloperTeamIdentifier"])
+    if not re.fullmatch(r"[A-Z0-9]{10}", team_identifier):
+        raise DirectNotarizedArchiveError(
+            "project NeAntikDeveloperTeamIdentifier must be a 10-character "
+            "Apple Team ID"
+        )
+    return ExpectedAppContract(
+        bundle_identifier=str(required["CFBundleIdentifier"]),
+        version=str(required["CFBundleShortVersionString"]),
+        build=str(required["CFBundleVersion"]),
+        team_identifier=team_identifier,
+    )
 
 
-def expected_archive(project_root: Path) -> Path:
-    version = read_info_version(project_root)
-    return project_root / "dist" / f"NeAntik-{version}-arm64-notarized.zip"
+def expected_archive(
+    project_root: Path,
+    *,
+    info_plist: Path | None = None,
+) -> Path:
+    contract = read_expected_app_contract(
+        project_root,
+        info_plist=info_plist,
+    )
+    return (
+        project_root
+        / "dist"
+        / f"NeAntik-{contract.version}-arm64-notarized.zip"
+    )
 
 
-def assert_archive_contract(archive: Path, *, project_root: Path) -> str:
-    expected = expected_archive(project_root)
+def assert_archive_contract(
+    archive: Path,
+    *,
+    project_root: Path,
+    info_plist: Path | None = None,
+) -> str:
+    expected = expected_archive(
+        project_root,
+        info_plist=info_plist,
+    )
     if archive.name != expected.name:
         raise DirectNotarizedArchiveError(
             f"archive name must be {expected.name}, got {archive.name}"
@@ -101,11 +163,60 @@ def run_checked(command: list[str], runner=default_runner) -> str:
     return result.output
 
 
-def parse_codesign_display(output: str) -> None:
+def is_local_policy_tool_unavailable(output: str) -> bool:
+    lowered = output.lower()
+    return (
+        "internal error in code signing subsystem" in lowered
+        or "klsdataunavailableerr" in lowered
+        or "lsdataunavailable" in lowered
+    )
+
+
+def run_policy_tool(
+    command: list[str],
+    *,
+    runner=default_runner,
+    allow_local_policy_tool_unavailable: bool = False,
+) -> str:
+    result = runner(command)
+    if result.returncode == 0:
+        return result.output
+    if allow_local_policy_tool_unavailable and is_local_policy_tool_unavailable(
+        result.output
+    ):
+        return "local-policy-tool-unavailable: " + result.output
+    raise DirectNotarizedArchiveError(
+        f"command failed: {' '.join(command)}\n{result.output}"
+    )
+
+
+def parse_codesign_display(
+    output: str,
+    *,
+    expected: ExpectedAppContract,
+) -> None:
     if not re.search(r"(?m)^CodeDirectory .*flags=.*runtime", output):
         raise DirectNotarizedArchiveError("Developer ID app is missing hardened runtime flag")
-    if not re.search(r"(?m)^Authority=Developer ID Application:", output):
-        raise DirectNotarizedArchiveError("app is not signed by Developer ID Application")
+    if not re.search(
+        rf"(?m)^Authority=Developer ID Application: .+ "
+        rf"\({re.escape(expected.team_identifier)}\)$",
+        output,
+    ):
+        raise DirectNotarizedArchiveError(
+            "app is not signed by the expected Developer ID Application team"
+        )
+    expected_identifier = f"Identifier={expected.bundle_identifier}"
+    if expected_identifier not in output.splitlines():
+        raise DirectNotarizedArchiveError(
+            "code signature identifier does not match "
+            f"{expected.bundle_identifier}"
+        )
+    expected_team = f"TeamIdentifier={expected.team_identifier}"
+    if expected_team not in output.splitlines():
+        raise DirectNotarizedArchiveError(
+            "code signature TeamIdentifier does not match "
+            f"{expected.team_identifier}"
+        )
     if not re.search(r"(?m)^Timestamp=", output):
         raise DirectNotarizedArchiveError("app signature is missing trusted timestamp")
 
@@ -130,17 +241,58 @@ def extract_archive(archive: Path, destination: Path, runner=default_runner) -> 
     return find_single_app(destination)
 
 
-def verify_app(app: Path, runner=default_runner) -> None:
+def verify_app_contract(app: Path, *, expected: ExpectedAppContract) -> None:
+    info_path = app / "Contents" / "Info.plist"
+    if not info_path.is_file():
+        raise DirectNotarizedArchiveError(
+            f"application Info.plist is missing: {info_path}"
+        )
+    with info_path.open("rb") as file:
+        info = plistlib.load(file)
+    actual = {
+        "CFBundleIdentifier": str(info.get("CFBundleIdentifier", "")),
+        "CFBundleShortVersionString": str(
+            info.get("CFBundleShortVersionString", "")
+        ),
+        "CFBundleVersion": str(info.get("CFBundleVersion", "")),
+        "NeAntikDeveloperTeamIdentifier": str(
+            info.get("NeAntikDeveloperTeamIdentifier", "")
+        ),
+    }
+    expected_values = {
+        "CFBundleIdentifier": expected.bundle_identifier,
+        "CFBundleShortVersionString": expected.version,
+        "CFBundleVersion": expected.build,
+        "NeAntikDeveloperTeamIdentifier": expected.team_identifier,
+    }
+    for key, expected_value in expected_values.items():
+        if actual[key] != expected_value:
+            raise DirectNotarizedArchiveError(
+                f"application {key} must be {expected_value}, got "
+                f"{actual[key] or 'missing'}"
+            )
+
+
+def verify_app(
+    app: Path,
+    *,
+    expected: ExpectedAppContract,
+    runner=default_runner,
+    allow_local_policy_tool_unavailable: bool = False,
+) -> None:
+    verify_app_contract(app, expected=expected)
     display = run_checked(["codesign", "--display", "--verbose=4", str(app)], runner=runner)
-    parse_codesign_display(display)
+    parse_codesign_display(display, expected=expected)
     run_checked(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(app)], runner=runner)
-    run_checked(
+    run_policy_tool(
         ["xcrun", "stapler", "validate", str(app)],
         runner=runner,
+        allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
     )
-    run_checked(
+    run_policy_tool(
         ["spctl", "--assess", "--type", "execute", "--verbose=4", str(app)],
         runner=runner,
+        allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
     )
 
 
@@ -148,17 +300,43 @@ def verify_archive(
     *,
     archive: Path,
     project_root: Path = PROJECT_ROOT,
+    expected_info_plist: Path | None = None,
     runner=default_runner,
+    allow_local_policy_tool_unavailable: bool = False,
 ) -> dict[str, str]:
-    checksum = assert_archive_contract(archive, project_root=project_root)
+    expected = read_expected_app_contract(
+        project_root,
+        info_plist=expected_info_plist,
+    )
+    checksum = assert_archive_contract(
+        archive,
+        project_root=project_root,
+        info_plist=expected_info_plist,
+    )
     assert_zip_has_no_finder_metadata(archive)
     with tempfile.TemporaryDirectory(prefix="nevision-notarized-verify-") as temporary:
         app = extract_archive(archive, Path(temporary), runner=runner)
-        verify_app(app, runner=runner)
+        verify_app(
+            app,
+            expected=expected,
+            runner=runner,
+            allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
+        )
+        run_checked(
+            [
+                str(project_root / "scripts" / "verify-integrated-release.sh"),
+                str(app),
+            ],
+            runner=runner,
+        )
     return {
         "archive": str(archive),
         "sha256": checksum,
-        "status": "notarized-archive-verified",
+        "status": (
+            "notarized-archive-verified-with-local-policy-tool-fallback"
+            if allow_local_policy_tool_unavailable
+            else "notarized-archive-verified"
+        ),
     }
 
 
@@ -168,11 +346,27 @@ def main() -> int:
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--archive", type=Path)
+    parser.add_argument("--expected-info-plist", type=Path)
     args = parser.parse_args()
     project_root = args.project_root.resolve()
-    archive = (args.archive or expected_archive(project_root)).resolve()
+    expected_info_plist = (
+        args.expected_info_plist.resolve()
+        if args.expected_info_plist
+        else None
+    )
+    archive = (
+        args.archive
+        or expected_archive(
+            project_root,
+            info_plist=expected_info_plist,
+        )
+    ).resolve()
     try:
-        result = verify_archive(archive=archive, project_root=project_root)
+        result = verify_archive(
+            archive=archive,
+            project_root=project_root,
+            expected_info_plist=expected_info_plist,
+        )
     except (OSError, zipfile.BadZipFile, DirectNotarizedArchiveError) as error:
         print(f"Direct notarized archive verification failed: {error}", file=sys.stderr)
         return 1

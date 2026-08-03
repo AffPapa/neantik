@@ -1,25 +1,51 @@
 import SwiftUI
 
-struct ProfileEditorView: View {
-    private static let colors = [
-        "#FF3B4D",
-        "#DC1635",
-        "#F97316",
-        "#EC4899",
-        "#6C7CFF",
-        "#8B5CF6",
-        "#EAB308",
-        "#10B981",
-        "#06B6D4"
-    ]
+enum ProxyPasswordUpdate: Equatable {
+    case keepExisting
+    case replace(String)
+    case delete
 
+    static func resolve(
+        currentHasUsername: Bool,
+        originalHadUsername: Bool,
+        enteredPassword: String,
+        originalPassword: String?,
+        readFailed: Bool
+    ) -> Self {
+        guard currentHasUsername else {
+            return .delete
+        }
+        guard originalHadUsername else {
+            return enteredPassword.isEmpty
+                ? .delete
+                : .replace(enteredPassword)
+        }
+        if readFailed {
+            return enteredPassword.isEmpty
+                ? .keepExisting
+                : .replace(enteredPassword)
+        }
+        if enteredPassword == (originalPassword ?? "") {
+            return .keepExisting
+        }
+        return enteredPassword.isEmpty
+            ? .delete
+            : .replace(enteredPassword)
+    }
+}
+
+struct ProfileEditorView: View {
     let original: BrowserProfile?
     let keychain: KeychainStore
-    let onSave: (BrowserProfile, String) throws -> Void
+    let onSave: (BrowserProfile, ProxyPasswordUpdate) throws -> Void
+    private let originalProxyPassword: String?
+    private let proxyPasswordReadFailed: Bool
 
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var colorHex: String
+    @State private var symbolName: String
+    @State private var tagsText: String
     @State private var startURL: String
     @State private var usesProxy: Bool
     @State private var proxyKind: ProxyKind
@@ -31,6 +57,7 @@ struct ProfileEditorView: View {
     @State private var detectedTimezone: String?
     @State private var detectedLocale: String?
     @State private var detectedLocation: String?
+    @State private var detectedProxyContextEvidence: ProxyContextEvidence?
     @State private var errorMessage: String?
     @State private var testMessage: String?
     @State private var isTesting = false
@@ -39,7 +66,7 @@ struct ProfileEditorView: View {
     init(
         original: BrowserProfile?,
         keychain: KeychainStore,
-        onSave: @escaping (BrowserProfile, String) throws -> Void
+        onSave: @escaping (BrowserProfile, ProxyPasswordUpdate) throws -> Void
     ) {
         self.original = original
         self.keychain = keychain
@@ -48,6 +75,8 @@ struct ProfileEditorView: View {
         let profile = original ?? BrowserProfile(name: "")
         _name = State(initialValue: profile.name)
         _colorHex = State(initialValue: profile.colorHex)
+        _symbolName = State(initialValue: profile.displaySymbolName)
+        _tagsText = State(initialValue: profile.tags.joined(separator: ", "))
         _startURL = State(initialValue: profile.startURL)
         _usesProxy = State(initialValue: profile.proxy != nil)
         _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
@@ -55,15 +84,22 @@ struct ProfileEditorView: View {
         _proxyPort = State(initialValue: profile.proxy.map { String($0.port) } ?? "")
         _proxyUsername = State(initialValue: profile.proxy?.username ?? "")
         if original == nil {
+            originalProxyPassword = nil
+            proxyPasswordReadFailed = false
             _proxyPassword = State(initialValue: "")
         } else {
             do {
+                let password = try keychain.proxyPassword(
+                    profileID: profile.id
+                )
+                originalProxyPassword = password
+                proxyPasswordReadFailed = false
                 _proxyPassword = State(
-                    initialValue: try keychain.proxyPassword(
-                        profileID: profile.id
-                    ) ?? ""
+                    initialValue: password ?? ""
                 )
             } catch {
+                originalProxyPassword = nil
+                proxyPasswordReadFailed = true
                 _proxyPassword = State(initialValue: "")
                 _errorMessage = State(
                     initialValue:
@@ -83,6 +119,9 @@ struct ProfileEditorView: View {
             initialValue: profile.identity.localeIdentifier
         )
         _detectedLocation = State(initialValue: nil)
+        _detectedProxyContextEvidence = State(
+            initialValue: profile.identity.proxyContextEvidence
+        )
     }
 
     var body: some View {
@@ -108,27 +147,83 @@ struct ProfileEditorView: View {
                     TextField("Стартовая страница", text: $startURL)
                         .accessibilityLabel("Стартовая страница")
 
-                    HStack {
+                }
+
+                Section("Внешний вид") {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(
+                                .adaptive(minimum: 42, maximum: 46),
+                                spacing: 10
+                            )
+                        ],
+                        alignment: .leading,
+                        spacing: 10
+                    ) {
+                        ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
+                            Button {
+                                symbolName = symbol
+                            } label: {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(
+                                        symbolName == symbol
+                                            ? Color.accentColor
+                                            : Color.secondary.opacity(0.12)
+                                    )
+                                    .frame(width: 42, height: 42)
+                                    .overlay {
+                                        Image(systemName: symbol)
+                                            .font(
+                                                .system(
+                                                    size: 18,
+                                                    weight: .medium
+                                                )
+                                            )
+                                            .foregroundStyle(
+                                                symbolName == symbol
+                                                    ? Color.white
+                                                    : Color.primary
+                                            )
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(
+                                "Иконка \(ProfileAppearance.title(for: symbol))"
+                            )
+                            .accessibilityValue(
+                                symbolName == symbol
+                                    ? "Выбрана"
+                                    : "Не выбрана"
+                            )
+                        }
+                    }
+
+                    HStack(spacing: 9) {
                         Text("Цвет")
                         Spacer()
-                        ForEach(Self.colors, id: \.self) { hex in
+                        ForEach(ProfileAppearance.colors, id: \.self) { hex in
                             Button {
                                 colorHex = hex
                             } label: {
                                 Circle()
                                     .fill(Color(hex: hex))
-                                    .frame(width: 21, height: 21)
+                                    .frame(width: 22, height: 22)
                                     .overlay {
                                         if colorHex == hex {
                                             Image(systemName: "checkmark")
-                                                .font(.system(size: 9, weight: .bold))
+                                                .font(
+                                                    .system(
+                                                        size: 9,
+                                                        weight: .bold
+                                                    )
+                                                )
                                                 .foregroundStyle(.white)
                                         }
                                     }
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(
-                                "Цвет профиля \(hex)"
+                                ProfileAppearance.title(forColor: hex)
                             )
                             .accessibilityValue(
                                 colorHex == hex
@@ -137,6 +232,20 @@ struct ProfileEditorView: View {
                             )
                         }
                     }
+                }
+
+                Section("Организация") {
+                    TextField(
+                        "Теги через запятую",
+                        text: $tagsText,
+                        prompt: Text("Например: работа, магазин")
+                    )
+                    .accessibilityLabel("Теги профиля")
+                    Text(
+                        "До \(BrowserProfile.maximumTagCount) тегов, каждый не длиннее \(BrowserProfile.maximumTagLength) символов. Теги хранятся только на этом Mac."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 Section("Сеть") {
@@ -196,7 +305,10 @@ struct ProfileEditorView: View {
                         .foregroundStyle(.secondary)
 
                         if !proxyUsername.isEmpty {
-                            Text("Chromium может попросить логин и пароль при первом запуске. NeAntik хранит пароль в Связке ключей, а не в файле профилей.")
+                            Text("Chromium может попросить логин и пароль при первом запуске. NeAntik не подставляет их автоматически: скопируй логин и пароль из карточки профиля. Пароль хранится только в Связке ключей.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("Проверка подтверждает доступность прокси и его внешний адрес, но не ввод логина в окне Chromium.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -210,6 +322,23 @@ struct ProfileEditorView: View {
                                 ]
                                 .compactMap { $0 }
                                 .joined(separator: " · ")
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+                        if let evidence = detectedProxyContextEvidence {
+                            Text(
+                                "Источник: \(evidence.source) · проверено \(evidence.observedAt.formatted(date: .abbreviated, time: .shortened)). При запуске повторного запроса нет."
+                            )
+                            .font(.caption)
+                            .foregroundStyle(
+                                evidence.isFresh()
+                                    ? Color.secondary
+                                    : Color.orange
+                            )
+                        } else if detectedTimezone != nil {
+                            Text(
+                                "Сохранено старой версией без даты проверки. Нажми «Проверить прокси», чтобы обновить контекст."
                             )
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -288,24 +417,47 @@ struct ProfileEditorView: View {
             var profile = original ?? BrowserProfile(name: cleanName)
             profile.name = cleanName
             profile.colorHex = colorHex
+            profile.symbolName = symbolName
+            profile.tags = try parsedTags()
             profile.startURL = cleanStartURL.absoluteString
             let proxy = try makeProxy()
             profile.proxy = proxy
             let locationMatchesProxy = proxy != nil && proxy == detectedProxy
-            profile.identity = BrowserIdentity(
-                seed: profile.identity.seed,
+            profile.identity = profile.identity.replacingProxyContext(
                 timezoneIdentifier: locationMatchesProxy
                     ? detectedTimezone
                     : nil,
                 localeIdentifier: locationMatchesProxy
                     ? detectedLocale
+                    : nil,
+                evidence: locationMatchesProxy
+                    ? detectedProxyContextEvidence
                     : nil
             )
-            try onSave(profile, proxyPassword)
+            let passwordUpdate = ProxyPasswordUpdate.resolve(
+                currentHasUsername: proxy?.username.isEmpty == false,
+                originalHadUsername:
+                    original?.proxy?.username.isEmpty == false,
+                enteredPassword: proxyPassword,
+                originalPassword: originalProxyPassword,
+                readFailed: proxyPasswordReadFailed
+            )
+            try onSave(profile, passwordUpdate)
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func parsedTags() throws -> [String] {
+        let values = tagsText.split(
+            separator: ",",
+            omittingEmptySubsequences: true
+        ).map(String.init)
+        guard let normalized = BrowserProfile.normalizedTags(values) else {
+            throw ProfileTagsValidationError()
+        }
+        return normalized
     }
 
     private func testProxy() {
@@ -331,6 +483,7 @@ struct ProfileEditorView: View {
                         detectedTimezone = result.timezoneIdentifier
                         detectedLocale = result.localeIdentifier
                         detectedLocation = location.isEmpty ? nil : location
+                        detectedProxyContextEvidence = .ipAPI()
                         isTesting = false
                     }
                 } catch {
@@ -344,5 +497,11 @@ struct ProfileEditorView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+}
+
+private struct ProfileTagsValidationError: LocalizedError {
+    var errorDescription: String? {
+        "Проверь теги: не больше \(BrowserProfile.maximumTagCount), до \(BrowserProfile.maximumTagLength) символов каждый."
     }
 }

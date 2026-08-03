@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "privacyBoundary": "synthetic-only",
+  "baseReport": "base-production-qualified.json",
+  "cases": [
+    {
+      "id": "production-qualified",
+      "mutations": [],
+      "publicAlphaQualified": true,
+      "productionQualified": true,
+      "issueContains": []
+    },
+    {
+      "id": "public-alpha-worker-mismatch",
+      "mutations": [
+        {
+          "path": "firstInitial.values.worker_platform",
+          "value": "Win32"
+        },
+        {
+          "path": "firstRepeat.values.worker_platform",
+          "value": "Win32"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "platform value disagrees with worker_platform"
+      ]
+    },
+    {
+      "id": "public-alpha-worker-memory-unavailable",
+      "mutations": [
+        {
+          "path": "firstInitial.values.worker_device_memory",
+          "value": "unavailable"
+        },
+        {
+          "path": "second.values.worker_device_memory",
+          "value": "unavailable"
+        },
+        {
+          "path": "firstRepeat.values.worker_device_memory",
+          "value": "unavailable"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "Required browser surfaces are unavailable: worker_device_memory."
+      ]
+    },
+    {
+      "id": "public-alpha-worker-memory-mismatch",
+      "mutations": [
+        {
+          "path": "firstInitial.values.worker_device_memory",
+          "value": "4"
+        },
+        {
+          "path": "firstRepeat.values.worker_device_memory",
+          "value": "4"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "device_memory value disagrees with worker_device_memory"
+      ]
+    },
+    {
+      "id": "public-alpha-locale-mismatch",
+      "mutations": [
+        {
+          "path": "firstInitial.values.languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstInitial.values.worker_languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstInitial.values.primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        },
+        {
+          "path": "firstInitial.values.worker_primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        },
+        {
+          "path": "firstRepeat.values.languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstRepeat.values.worker_languages",
+          "value": "ru-RU,ru"
+        },
+        {
+          "path": "firstRepeat.values.primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        },
+        {
+          "path": "firstRepeat.values.worker_primary_locale_core",
+          "value": "ru-Cyrl-RU"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "primary_locale_core disagrees with intl_locale_core",
+        "worker_primary_locale_core disagrees with worker_intl_locale_core"
+      ]
+    },
+    {
+      "id": "unstable-canvas",
+      "mutations": [
+        {
+          "path": "firstRepeat.values.canvas",
+          "value": "synthetic-canvas-unstable"
+        }
+      ],
+      "publicAlphaQualified": false,
+      "productionQualified": false,
+      "issueContains": [
+        "Required browser surfaces are unstable: canvas."
+      ]
+    },
+    {
+      "id": "diagnostic-mode",
+      "mutations": [
+        {
+          "path": "executionMode",
+          "value": "headless-single-process-diagnostic"
+        }
+      ],
+      "publicAlphaQualified": false,
+      "productionQualified": false,
+      "issueContains": [
+        "captured in diagnostic mode"
+      ]
+    },
+    {
+      "id": "device-memory-unavailable",
+      "mutations": [
+        {
+          "path": "firstInitial.values.device_memory",
+          "operation": "delete"
+        },
+        {
+          "path": "second.values.device_memory",
+          "operation": "delete"
+        },
+        {
+          "path": "firstRepeat.values.device_memory",
+          "operation": "delete"
+        }
+      ],
+      "publicAlphaQualified": false,
+      "productionQualified": false,
+      "issueContains": [
+        "Required browser surfaces are unavailable: device_memory."
+      ]
+    },
+    {
+      "id": "proxied-host-candidate-leak",
+      "mutations": [
+        {
+          "path": "second.values.network_route",
+          "value": "proxied"
+        },
+        {
+          "path": "second.values.webrtc_stun_requests",
+          "value": "0"
+        },
+        {
+          "path": "second.values.webrtc_candidate_summary",
+          "value": "{\"total\":1,\"host\":1,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "proxied route exposed a direct WebRTC candidate"
+      ]
+    },
+    {
+      "id": "proxied-stun-request-leak",
+      "mutations": [
+        {
+          "path": "second.values.network_route",
+          "value": "proxied"
+        }
+      ],
+      "publicAlphaQualified": true,
+      "productionQualified": false,
+      "issueContains": [
+        "proxied route sent a loopback STUN request"
+      ]
+    }
+  ]
+}

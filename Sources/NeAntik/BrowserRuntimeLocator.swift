@@ -1,16 +1,63 @@
 import Foundation
 
 struct BrowserRuntimeLocator: Sendable {
-    private typealias Candidate = (
-        name: String,
-        url: URL,
-        source: String,
-        flavor: BrowserRuntimeFlavor
-    )
+    private let runtimeInspector:
+        @Sendable (URL) -> BrowserRuntimeInspection
+    private let candidateOverrides: [Candidate]?
+
+    struct Candidate: Sendable {
+        let name: String
+        let url: URL
+        let source: String
+        let flavor: BrowserRuntimeFlavor
+    }
+
+    init(
+        runtimeInspector: @escaping @Sendable
+            (URL) -> BrowserRuntimeInspection = {
+                BrowserRuntimeInspector.inspect(executableURL: $0)
+            }
+    ) {
+        self.runtimeInspector = runtimeInspector
+        self.candidateOverrides = nil
+    }
+
+    init(
+        runtimeInspector: @escaping @Sendable
+            (URL) -> BrowserRuntimeInspection,
+        candidates: [Candidate]
+    ) {
+        self.runtimeInspector = runtimeInspector
+        self.candidateOverrides = candidates
+    }
 
     func availableRuntimes(
         preference: BrowserRuntimePreference? = nil
     ) -> [BrowserRuntime] {
+        var seen = Set<String>()
+        return runtimeCandidates(preference: preference).compactMap {
+            resolve(candidate: $0, seen: &seen)
+        }
+    }
+
+    func preferredRuntime(
+        preference: BrowserRuntimePreference? = nil
+    ) -> BrowserRuntime? {
+        var seen = Set<String>()
+        for candidate in runtimeCandidates(preference: preference) {
+            if let runtime = resolve(candidate: candidate, seen: &seen) {
+                return runtime
+            }
+        }
+        return nil
+    }
+
+    private func runtimeCandidates(
+        preference: BrowserRuntimePreference?
+    ) -> [Candidate] {
+        if let candidateOverrides {
+            return candidateOverrides
+        }
         var candidates: [Candidate] = []
 
         if let preference, !preference.path.isEmpty {
@@ -20,13 +67,13 @@ struct BrowserRuntimeLocator: Sendable {
             let flavor = declaredNeAntikFlavor(
                 for: executable
             ) ?? preference.flavor
-            candidates.append((
-                flavor == .fingerprintChromium
+            candidates.append(Candidate(
+                name: flavor == .fingerprintChromium
                     ? "NeAntik Browser"
                     : flavor.title,
-                executable,
-                "Выбран вручную",
-                flavor
+                url: executable,
+                source: "Выбран вручную",
+                flavor: flavor
             ))
         }
 
@@ -37,27 +84,27 @@ struct BrowserRuntimeLocator: Sendable {
                 "NeAntik Browser.app",
                 isDirectory: true
             )
-            candidates.append((
-                "NeAntik Browser",
-                normalizedExecutable(neAntikApp),
-                "Встроен",
-                .fingerprintChromium
+            candidates.append(Candidate(
+                name: "NeAntik Browser",
+                url: normalizedExecutable(neAntikApp),
+                source: "Встроен",
+                flavor: .fingerprintChromium
             ))
             let chromiumApp = resources.appendingPathComponent(
                 "Chromium.app",
                 isDirectory: true
             )
-            candidates.append((
-                "Встроенный Chromium",
-                normalizedExecutable(chromiumApp),
-                "Встроен",
-                .standard
+            candidates.append(Candidate(
+                name: "Встроенный Chromium",
+                url: normalizedExecutable(chromiumApp),
+                source: "Встроен",
+                flavor: .standard
             ))
         }
 
         let home = FileManager.default.homeDirectoryForCurrentUser
         let installedCandidates: [Candidate] = [
-            (
+            Candidate(
                 name: "Chromium",
                 url: URL(
                     fileURLWithPath:
@@ -66,7 +113,7 @@ struct BrowserRuntimeLocator: Sendable {
                 source: "Программы",
                 flavor: .standard
             ),
-            (
+            Candidate(
                 name: "Google Chrome",
                 url: URL(
                     fileURLWithPath:
@@ -75,7 +122,7 @@ struct BrowserRuntimeLocator: Sendable {
                 source: "Программы",
                 flavor: .standard
             ),
-            (
+            Candidate(
                 name: "Chromium",
                 url: home.appendingPathComponent(
                     "Applications/Chromium.app/Contents/MacOS/Chromium"
@@ -83,7 +130,7 @@ struct BrowserRuntimeLocator: Sendable {
                 source: "Программы пользователя",
                 flavor: .standard
             ),
-            (
+            Candidate(
                 name: "Google Chrome",
                 url: home.appendingPathComponent(
                     "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -94,60 +141,30 @@ struct BrowserRuntimeLocator: Sendable {
         ]
         candidates.append(contentsOf: installedCandidates)
 
-        var seen = Set<String>()
-        return candidates.compactMap { candidate in
-            let path = candidate.url.standardizedFileURL.path
-            guard seen.insert(path).inserted,
-                  FileManager.default.isExecutableFile(atPath: path)
-            else {
-                return nil
-            }
-            let inspection = BrowserRuntimeInspector.inspect(
-                executableURL: candidate.url
-            )
-            guard inspection.supportsAppleSilicon else {
-                return nil
-            }
-            return BrowserRuntime(
-                name: candidate.name,
-                executableURL: candidate.url,
-                source: candidate.source,
-                flavor: candidate.flavor,
-                inspection: inspection
-            )
-        }
+        return candidates
     }
 
-    func preferredRuntime(
-        preference: BrowserRuntimePreference? = nil
+    private func resolve(
+        candidate: Candidate,
+        seen: inout Set<String>
     ) -> BrowserRuntime? {
-        if let preference, !preference.path.isEmpty {
-            let executable = normalizedExecutable(
-                URL(fileURLWithPath: preference.path)
-            )
-            if FileManager.default.isExecutableFile(
-                atPath: executable.path
-            ) {
-                let inspection = BrowserRuntimeInspector.inspect(
-                    executableURL: executable
-                )
-                if inspection.supportsAppleSilicon {
-                    let flavor = declaredNeAntikFlavor(
-                        for: executable
-                    ) ?? preference.flavor
-                    return BrowserRuntime(
-                        name: flavor == .fingerprintChromium
-                            ? "NeAntik Browser"
-                            : flavor.title,
-                        executableURL: executable,
-                        source: "Выбран вручную",
-                        flavor: flavor,
-                        inspection: inspection
-                    )
-                }
-            }
+        let path = candidate.url.standardizedFileURL.path
+        guard seen.insert(path).inserted,
+              FileManager.default.isExecutableFile(atPath: path)
+        else {
+            return nil
         }
-        return availableRuntimes(preference: preference).first
+        let inspection = runtimeInspector(candidate.url)
+        guard inspection.supportsAppleSilicon else {
+            return nil
+        }
+        return BrowserRuntime(
+            name: candidate.name,
+            executableURL: candidate.url,
+            source: candidate.source,
+            flavor: candidate.flavor,
+            inspection: inspection
+        )
     }
 
     private func cloakRuntimes() -> [Candidate] {
@@ -170,13 +187,13 @@ struct BrowserRuntimeLocator: Sendable {
                 ) == .orderedDescending
             }
             .map {
-                (
-                    "Cloak Chromium",
-                    $0.appendingPathComponent(
+                Candidate(
+                    name: "Cloak Chromium",
+                    url: $0.appendingPathComponent(
                         "Chromium.app/Contents/MacOS/Chromium"
                     ),
-                    "External · Cloak",
-                    .cloak
+                    source: "External · Cloak",
+                    flavor: .cloak
                 )
             }
     }

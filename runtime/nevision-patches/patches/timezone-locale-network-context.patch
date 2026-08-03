@@ -14,25 +14,28 @@ diff --git a/third_party/blink/renderer/core/core_initializer.cc b/third_party/b
 index 948451b578..20030b4876 100644
 --- a/third_party/blink/renderer/core/core_initializer.cc
 +++ b/third_party/blink/renderer/core/core_initializer.cc
-@@ -30,6 +30,10 @@
+@@ -30,6 +30,11 @@
  
  #include "third_party/blink/renderer/core/core_initializer.h"
  
 +#include <memory>
 +
 +#include "base/command_line.h"
++#include "base/no_destructor.h"
 +#include "components/ungoogled/ungoogled_switches.h"
  #include "third_party/blink/public/platform/platform.h"
  #include "third_party/blink/public/web/blink.h"
  #include "third_party/blink/renderer/bindings/core/v8/binding_security.h"
-@@ -76,6 +80,35 @@
+@@ -76,6 +81,37 @@
  
  namespace blink {
  
 +std::unique_ptr<TimeZoneController::TimeZoneOverride>&
 +NeAntikTimeZoneOverrideHandle() {
-+  static std::unique_ptr<TimeZoneController::TimeZoneOverride> handle;
-+  return handle;
++  static base::NoDestructor<
++      std::unique_ptr<TimeZoneController::TimeZoneOverride>>
++      handle;
++  return *handle;
 +}
 +
 +void ApplyNeAntikTimeZoneOverrideFromCommandLine() {
@@ -61,7 +64,7 @@ index 948451b578..20030b4876 100644
  CoreInitializer* CoreInitializer::instance_ = nullptr;
  
  // Function defined in third_party/blink/public/web/blink.h.
-@@ -173,6 +205,7 @@ void CoreInitializer::Initialize() {
+@@ -173,6 +208,7 @@ void CoreInitializer::Initialize() {
    ScriptStateImpl::Init();
  
    TimeZoneController::Init();

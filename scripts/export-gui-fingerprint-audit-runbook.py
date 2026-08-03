@@ -112,10 +112,6 @@ def build_runbook(
                 "dist/fingerprint-audit.json "
                 "--runtime-lock runtime/fingerprint-chromium.lock.json"
             ),
-            "runReleaseMatrix": (
-                "scripts/verify-nevision-release-matrix.py "
-                "--gui-fingerprint-report dist/fingerprint-audit.json"
-            ),
         },
         "blockedUntil": [
             "A real user-context GUI report exists",

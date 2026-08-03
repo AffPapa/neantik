@@ -15,12 +15,19 @@ FIELDS = (
     "architecture",
     "gpuMode",
     "sourceLockSHA256",
-    "nevisionOverlaySHA256",
+    "candidateLockSHA256",
+    "sourceContractSHA256",
+    "sourceProvenanceSHA256",
+    "neantikPatchManifestSHA256",
+    "appleDeviceTuplesManifestSHA256",
+    "securityBaselineSHA256",
     "machoCount",
     "codeSignature",
     "codeSignatureKind",
     "fingerprintProtocolStrings",
+    "executable.path",
     "executable.sha256",
+    "framework.path",
     "framework.sha256",
     "buildArguments.sha256",
 )
@@ -49,9 +56,49 @@ def field(value: dict[str, Any], dotted: str) -> Any:
     return current
 
 
+def validate_paths(report: dict[str, Any]) -> None:
+    path_contracts = (
+        ("executable.path", "Contents/MacOS/"),
+        ("framework.path", "Contents/Frameworks/"),
+    )
+    for dotted, prefix in path_contracts:
+        recorded = field(report, dotted)
+        if not isinstance(recorded, str):
+            fail(f"Runtime report {dotted} must be a string.")
+        path = Path(recorded)
+        if (
+            path.is_absolute()
+            or not recorded.startswith(prefix)
+            or ".." in path.parts
+            or "." in path.parts
+        ):
+            fail(
+                f"Runtime report {dotted} must be a canonical "
+                "bundle-relative path."
+            )
+    build_arguments = field(report, "buildArguments")
+    if (
+        not isinstance(build_arguments, dict)
+        or set(build_arguments) != {"sha256"}
+    ):
+        fail("Runtime report buildArguments must contain only sha256.")
+
+
 def verify(packaged_path: Path, fresh_path: Path) -> None:
     packaged = load(packaged_path)
     fresh = load(fresh_path)
+    if field(packaged, "schemaVersion") != 3:
+        fail(
+            "Packaged runtime verification report must use source provenance "
+            "schema 3."
+        )
+    if field(fresh, "schemaVersion") != 3:
+        fail(
+            "Fresh runtime verification report must use source provenance "
+            "schema 3."
+        )
+    validate_paths(packaged)
+    validate_paths(fresh)
     mismatches = [
         dotted
         for dotted in FIELDS

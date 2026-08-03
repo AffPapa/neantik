@@ -1,58 +1,64 @@
-# NeAntik privacy policy
+# Политика конфиденциальности NeAntik
 
-Effective date: July 29, 2026
+Дата вступления в силу: 29 июля 2026 года
 
-NeAntik is a local browser-profile application for Apple Silicon Macs. It has
-no NeAntik account, cloud synchronization, advertising SDK, cross-app
-tracking, or enabled product telemetry.
+NeAntik — локальное приложение для браузерных профилей на Mac с Apple Silicon.
+У него нет аккаунта NeAntik, облачной синхронизации, рекламных SDK,
+межпрограммного отслеживания или включённой продуктовой телеметрии.
 
-## Data stored on the Mac
+## Данные на Mac
 
-NeAntik stores profile names, start pages, non-secret proxy configuration,
-runtime preference, fingerprint seeds, and local audit reports on the Mac.
-Each profile has a separate persistent browser-data directory. Proxy passwords
-are stored in macOS Keychain rather than profile metadata.
+NeAntik хранит на Mac имена профилей, стартовые страницы, несекретные настройки
+прокси, выбор runtime, fingerprint identity и локальные отчёты проверки.
+У каждого профиля отдельная постоянная папка браузерных данных. Пароли прокси
+хранятся в Связке ключей macOS, а не в метаданных профиля.
 
-Deleting a profile moves its browser data to the macOS Trash and removes its
-NeAntik metadata and associated Keychain secret. Legacy NeVision storage and
-Keychain identifiers are migrated conservatively so an update does not hide or
-destroy existing profiles.
+Сырые отчёты fingerprint-проверки остаются только на Mac с правами владельца.
+NeAntik хранит не более трёх последних отчётов. Публичная attestation содержит
+только агрегированный результат и хэши проверенного runtime — без имён и ID
+профилей, identity code и сырых значений Canvas, WebGL, Audio или WebRTC.
 
-## Telemetry
+Удаление профиля перемещает его браузерные данные в Корзину macOS и удаляет
+метаданные NeAntik и связанный секрет Keychain. Старые хранилища и Keychain
+идентификаторы NeVision мигрируют консервативно, чтобы обновление не скрывало и
+не уничтожало существующие профили.
 
-The Direct release does not send product telemetry:
+## Телеметрия
 
-- the telemetry endpoint is empty;
-- no telemetry consent switch is exposed;
-- no stable installation identifier is created;
-- the privacy manifest declares no collected data.
+Direct-версия не отправляет продуктовую телеметрию:
 
-NeAntik does not receive browsing history, sites, URLs, cookies, website data,
-profile names or IDs, start pages, proxy hosts or credentials, exit IPs,
-fingerprint seeds or audit results, Apple ID, email, serial numbers,
-keystrokes, clipboard contents, or local file paths.
+- endpoint телеметрии пуст;
+- переключателя согласия в интерфейсе нет;
+- стабильный идентификатор установки не создаётся;
+- privacy manifest объявляет отсутствие собираемых данных.
 
-Future telemetry cannot be enabled until a separately reviewed server,
-privacy-preserving contract, public policy, consent UI, retention policy, and
-release gate are complete. It must be optional and off by default.
+NeAntik не получает историю, сайты, URL, cookies, данные страниц, имена или ID
+профилей, стартовые страницы, адреса или credentials прокси, exit IP,
+fingerprint identity/seed или результаты проверки, Apple ID, email, серийный
+номер, нажатия клавиш, содержимое буфера обмена или локальные пути.
 
-## Network activity
+Будущую телеметрию нельзя включать без отдельно проверенного сервера,
+privacy-контракта, публичной политики, интерфейса согласия, срока хранения и
+release gate. Она должна быть необязательной и выключенной по умолчанию.
 
-When you browse a website, that website receives ordinary browser requests. A
-user-selected proxy handles that profile's traffic and may have its own privacy
-policy. Chromium, macOS security services, DNS/network providers, and Apple
-notarization or update infrastructure may process requests under their own
-terms. They are not NeAntik telemetry.
+## Сетевая активность
 
-The proxy test contacts the configured proxy and a documented egress-IP
-endpoint. Credentials are supplied to the local `curl` process through an
-in-memory stdin configuration rather than command-line arguments.
+Во время просмотра сайт получает обычные браузерные запросы. Выбранный
+пользователем прокси обрабатывает трафик профиля и может иметь собственную
+политику. Chromium, службы безопасности macOS, DNS/сетевые провайдеры и
+инфраструктура notarization или обновлений Apple могут обрабатывать запросы по
+своим правилам. Это не телеметрия NeAntik.
 
-## Security reports
+Проверка прокси обращается к настроенному прокси и документированному endpoint
+выходного IP. Credentials передаются локальному `curl` через конфигурацию в
+stdin, а не через аргументы командной строки.
 
-Use GitHub private vulnerability reporting for security issues. Remove personal
-data, URLs, cookies, profile names, proxy information, and fingerprint seeds
-from diagnostic material. Never send Apple credentials, certificate private
-keys, Keychain exports, or real proxy passwords.
+## Сообщения о безопасности
 
-General non-sensitive bugs may be reported through GitHub Issues.
+Используйте приватную форму GitHub из [SECURITY.md](../SECURITY.md). Удаляйте
+из диагностики персональные данные, URL, cookies, имена профилей, информацию о
+прокси и fingerprint identity. Никогда не отправляйте Apple credentials,
+закрытые ключи сертификатов, Keychain export или настоящие пароли прокси.
+
+Обычные ошибки без чувствительных подробностей можно сообщать через GitHub
+Issues.

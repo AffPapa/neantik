@@ -4,6 +4,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
+SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
+
+LOCKED_RUNTIME_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
+)"
+if [[ "$LOCKED_RUNTIME_VERSION" == 150.* && -f "$SOURCE_CONTRACT" ]]; then
+  echo "Legacy source-pair preparation is blocked for Chromium 150." >&2
+  echo "Use the pinned runtime/chromium-150-rebase-plan.json bootstrap and build-runtime.sh; the legacy lock still describes Chromium 144 packaging metadata." >&2
+  exit 65
+fi
 
 if [[ $# -ne 1 || -z "${1:-}" ]]; then
   echo "Usage: $0 /absolute/path/to/nevision-chromium-build" >&2

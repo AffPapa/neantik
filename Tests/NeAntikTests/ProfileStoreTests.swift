@@ -174,31 +174,351 @@ struct ProfileStoreTests {
     }
 
     @Test
-    func restoresProfileAndBrowserDataWhenDeleteFollowupFails() throws {
+    func credentialCleanupFailureNeverResurrectsDeletedProfile() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let paths = AppPaths(rootDirectory: root)
-        let store = ProfileStore(paths: paths)
+        let localTrash = root.appendingPathComponent(
+            "CommittedTrash",
+            isDirectory: true
+        )
+        let store = ProfileStore(
+            paths: paths,
+            trashDirectory: { source in
+                try FileManager.default.moveItem(
+                    at: source,
+                    to: localTrash
+                )
+                return localTrash
+            }
+        )
         let profile = try store.upsert(
             BrowserProfile(name: "Keep after credential failure")
         )
         let marker = paths.browserDataDirectory(for: profile.id)
             .appendingPathComponent("session-marker")
         try Data("keep".utf8).write(to: marker)
+        let backend = ProfileDeleteKeychainBackend()
+        backend.set(
+            "current-secret",
+            service: KeychainStore.currentService,
+            profileID: profile.id
+        )
+        backend.set(
+            "legacy-secret",
+            service: KeychainStore.legacyService,
+            profileID: profile.id
+        )
+        backend.deleteFailureService = KeychainStore.legacyService
+        let keychain = KeychainStore(backend: backend)
+        let processManager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
 
-        #expect(throws: (any Error).self) {
-            try store.delete(profile) { _ in
-                throw CocoaError(.fileWriteUnknown)
+        #expect(throws: ProfileCredentialCleanupPendingError.self) {
+            try store.delete(
+                profile,
+                processManager: processManager
+            ) { _ in
+                try keychain.deleteProxyPassword(profileID: profile.id)
             }
         }
 
-        #expect(store.profile(withID: profile.id) != nil)
-        #expect(FileManager.default.fileExists(atPath: marker.path))
+        #expect(store.profile(withID: profile.id) == nil)
+        #expect(!FileManager.default.fileExists(atPath: marker.path))
+        #expect(
+            FileManager.default.fileExists(
+                atPath: localTrash.appendingPathComponent(
+                    "BrowserData/session-marker"
+                ).path
+            )
+        )
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileDeletionTombstone(
+                    for: profile.id
+                ).path
+            )
+        )
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileCredentialCleanupMarker(
+                    for: profile.id
+                ).path
+            )
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profile.id
+            ) == nil
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.legacyService,
+                profileID: profile.id
+            ) == "legacy-secret"
+        )
         let reloaded = ProfileStore(paths: paths)
-        #expect(reloaded.profile(withID: profile.id) != nil)
-        #expect(FileManager.default.fileExists(atPath: marker.path))
+        #expect(reloaded.profile(withID: profile.id) == nil)
+        #expect(throws: BrowserProfileDeletedError.self) {
+            try reloaded.upsert(profile)
+        }
+    }
+
+    @Test
+    func deletionTombstoneBlocksStaleLaunchAndMarkLaunched() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let localTrash = root.appendingPathComponent(
+            "TestTrash",
+            isDirectory: true
+        )
+        let trash: (URL) throws -> URL = { source in
+            try FileManager.default.createDirectory(
+                at: localTrash,
+                withIntermediateDirectories: true
+            )
+            let destination = localTrash.appendingPathComponent(
+                UUID().uuidString,
+                isDirectory: true
+            )
+            try FileManager.default.moveItem(
+                at: source,
+                to: destination
+            )
+            return destination
+        }
+        let restore: (URL, URL) throws -> Void = { source, destination in
+            try FileManager.default.moveItem(
+                at: source,
+                to: destination
+            )
+        }
+        let deletingStore = ProfileStore(
+            paths: paths,
+            trashDirectory: trash,
+            restoreTrashedDirectory: restore
+        )
+        let profile = try deletingStore.upsert(
+            BrowserProfile(name: "Deleted elsewhere")
+        )
+        let staleStore = ProfileStore(
+            paths: paths,
+            trashDirectory: trash,
+            restoreTrashedDirectory: restore
+        )
+        let processManager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        try deletingStore.delete(
+            profile,
+            processManager: processManager
+        )
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileCredentialCleanupMarker(for: profile.id)
+            ) == .missing
+        )
+
+        let staleManager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let runtime = BrowserRuntime(
+            name: "Never launched",
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Test"
+        )
+        #expect(throws: NeAntikError.self) {
+            try staleManager.launch(profile: profile, runtime: runtime)
+        }
+        staleStore.markLaunched(profile.id)
+        #expect(staleStore.profile(withID: profile.id) == nil)
+        #expect(staleStore.lastError == nil)
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileDeletionTombstone(
+                    for: profile.id
+                ).path
+            )
+        )
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
+        )
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: profile.id) == nil)
+    }
+
+    @Test
+    func staleUnrelatedMutationReloadsAndMergesLatestMetadata() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let initialStore = ProfileStore(paths: paths)
+        let first = try initialStore.upsert(
+            BrowserProfile(name: "First")
+        )
+        let staleStore = ProfileStore(paths: paths)
+        let freshStore = ProfileStore(paths: paths)
+        let second = try freshStore.upsert(
+            BrowserProfile(name: "Second")
+        )
+        var editedFirst = first
+        editedFirst.name = "First edited"
+
+        _ = try staleStore.upsert(editedFirst)
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.count == 2)
+        #expect(reloaded.profile(withID: first.id)?.name == "First edited")
+        #expect(reloaded.profile(withID: second.id)?.name == "Second")
+    }
+
+    @Test
+    func unknownTrashLocationLeavesTombstoneAndBlocksLaunch() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let hiddenRecovery = root.appendingPathComponent(
+            "HiddenRecovery",
+            isDirectory: true
+        )
+        let store = ProfileStore(
+            paths: paths,
+            trashDirectory: { source in
+                try FileManager.default.moveItem(
+                    at: source,
+                    to: hiddenRecovery
+                )
+                throw ProfileStoreTestError()
+            }
+        )
+        let profile = try store.upsert(
+            BrowserProfile(name: "Unknown Trash result")
+        )
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        do {
+            try store.delete(profile, processManager: manager)
+            Issue.record("Удаление должно было завершиться ошибкой")
+        } catch let error as ProfileDeleteRollbackError {
+            #expect(error.rollbackError != nil)
+            #expect(error.recoveryTrashURL == nil)
+            #expect(!error.localizedDescription.contains(root.path))
+        }
+
+        #expect(FileManager.default.fileExists(atPath: hiddenRecovery.path))
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileDeletionTombstone(
+                    for: profile.id
+                ).path
+            )
+        )
+        let runtime = BrowserRuntime(
+            name: "Never launched",
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Test"
+        )
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        manager.reconcile(profiles: [profile])
+        #expect(
+            manager.processState(for: profile.id) == .recoveryRequired
+        )
+    }
+
+    @Test
+    func failedTrashRestoreReportsRecoveryLocationAndKeepsBlocked()
+        throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let knownTrash = root.appendingPathComponent(
+            "KnownTrash",
+            isDirectory: true
+        )
+        let store = ProfileStore(
+            paths: paths,
+            trashDirectory: { source in
+                try FileManager.default.moveItem(
+                    at: source,
+                    to: knownTrash
+                )
+                return knownTrash
+            },
+            restoreTrashedDirectory: { _, _ in
+                throw ProfileStoreTestError()
+            },
+            afterDeleteMetadataPersist: {
+                throw ProfileStoreTestError()
+            }
+        )
+        let profile = try store.upsert(
+            BrowserProfile(name: "Restore failure")
+        )
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        do {
+            try store.delete(profile, processManager: manager)
+            Issue.record("Откат должен был завершиться ошибкой")
+        } catch let error as ProfileDeleteRollbackError {
+            #expect(error.rollbackError != nil)
+            #expect(error.recoveryTrashURL == knownTrash)
+            #expect(!error.localizedDescription.contains(root.path))
+        }
+
+        #expect(FileManager.default.fileExists(atPath: knownTrash.path))
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileDeletionTombstone(
+                    for: profile.id
+                ).path
+            )
+        )
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileCredentialCleanupMarker(for: profile.id)
+            ) == .missing
+        )
+        let runtime = BrowserRuntime(
+            name: "Never launched",
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Test"
+        )
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        manager.reconcile(profiles: [profile])
+        #expect(
+            manager.processState(for: profile.id) == .recoveryRequired
+        )
     }
 
     @Test
@@ -226,6 +546,83 @@ struct ProfileStoreTests {
                 atPath: paths.profileDirectory(for: attempted.id).path
             )
         )
+    }
+
+    @Test
+    func recoversPreviousRevisionWithoutTouchingBrowserData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let original = try store.upsert(
+            BrowserProfile(name: "Previous revision")
+        )
+        let marker = paths.browserDataDirectory(for: original.id)
+            .appendingPathComponent("session-marker")
+        try Data("keep".utf8).write(to: marker)
+
+        var edited = original
+        edited.name = "Newest revision"
+        _ = try store.upsert(edited)
+        let corruptData = Data("{ partial-write".utf8)
+        try paths.writePrivateFile(corruptData, to: paths.profilesFile)
+
+        let recovered = ProfileStore(paths: paths)
+
+        #expect(
+            recovered.profile(withID: original.id)?.name ==
+                "Previous revision"
+        )
+        #expect(recovered.lastError?.contains("Recovery") == true)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        let recoveryFiles = try FileManager.default.contentsOfDirectory(
+            at: paths.profilesRecoveryDirectory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(recoveryFiles.count == 1)
+        #expect(try Data(contentsOf: recoveryFiles[0]) == corruptData)
+        let backupMode = try FileManager.default.attributesOfItem(
+            atPath: paths.profilesBackupFile.path
+        )[.posixPermissions] as? NSNumber
+        let rejectedMode = try FileManager.default.attributesOfItem(
+            atPath: recoveryFiles[0].path
+        )[.posixPermissions] as? NSNumber
+        #expect(backupMode?.intValue == 0o600)
+        #expect(rejectedMode?.intValue == 0o600)
+    }
+
+    @Test
+    func symlinkedRecoverySnapshotBlocksProfileOverwrite() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let original = try store.upsert(BrowserProfile(name: "Original"))
+        try FileManager.default.removeItem(at: paths.profilesBackupFile)
+        let protectedData = Data("outside".utf8)
+        try protectedData.write(to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: paths.profilesBackupFile,
+            withDestinationURL: outside
+        )
+
+        var edited = original
+        edited.name = "Must not persist"
+        #expect(throws: (any Error).self) {
+            try store.upsert(edited)
+        }
+
+        #expect(store.profile(withID: original.id)?.name == "Original")
+        #expect(try Data(contentsOf: outside) == protectedData)
     }
 
     @Test
@@ -312,7 +709,15 @@ struct ProfileStoreTests {
         )
 
         #expect(first.identity.seed == 42)
-        #expect(second.identity.seed == 43)
+        #expect(second.identity.seed == 53)
+        #expect(
+            first.identity.deviceTupleID ==
+                second.identity.deviceTupleID
+        )
+        #expect(
+            second.identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.legacyVersion
+        )
         #expect(
             Set(store.profiles.map(\.identity.seed)).count ==
                 store.profiles.count
@@ -324,7 +729,85 @@ struct ProfileStoreTests {
                 reloaded.profiles.count
         )
         #expect(
-            reloaded.profile(withID: second.id)?.identity.seed == 43
+            reloaded.profile(withID: second.id)?.identity.seed == 53
+        )
+    }
+
+    @Test
+    func currentIssuanceCollisionStaysInTheSameReviewedCohort() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let identity = BrowserIdentity()
+        let first = try store.upsert(
+            BrowserProfile(name: "First current", identity: identity)
+        )
+        let second = try store.upsert(
+            BrowserProfile(name: "Second current", identity: identity)
+        )
+        let tupleCount = UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        let residue = identity.seed % tupleCount
+        let wrappedSeed = residue == 0 ? tupleCount : residue
+        let expectedSecondSeed =
+            identity.seed <= BrowserIdentity.maximumRuntimeSeed - tupleCount
+                ? identity.seed + tupleCount
+                : wrappedSeed
+
+        #expect(first.identity.seed == identity.seed)
+        #expect(second.identity.seed == expectedSecondSeed)
+        #expect(first.identity.seed != second.identity.seed)
+        #expect(
+            first.identity.deviceTupleID ==
+                second.identity.deviceTupleID
+        )
+        #expect(
+            second.identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.currentVersion
+        )
+        #expect(
+            BrowserIdentityIssuancePolicy.isCurrentSeed(
+                second.identity.seed
+            )
+        )
+
+        let reloaded = ProfileStore(paths: AppPaths(rootDirectory: root))
+        #expect(reloaded.lastError == nil)
+        #expect(
+            reloaded.profile(withID: second.id)?.identity ==
+                second.identity
+        )
+    }
+
+    @Test
+    func editingProxyContextPreservesCurrentIssuance() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let original = try store.upsert(
+            BrowserProfile(name: "Current identity")
+        )
+        var edited = original
+        edited.identity = edited.identity.replacingProxyContext(
+            timezoneIdentifier: "Europe/Berlin",
+            localeIdentifier: "de-DE",
+            evidence: .ipAPI(
+                observedAt: Date(timeIntervalSince1970: 1_700_000_000)
+            )
+        )
+        let saved = try store.upsert(edited)
+
+        #expect(saved.identity.seed == original.identity.seed)
+        #expect(
+            saved.identity.deviceTupleID ==
+                original.identity.deviceTupleID
+        )
+        #expect(
+            saved.identity.issuanceVersion ==
+                BrowserIdentityIssuancePolicy.currentVersion
         )
     }
 
@@ -462,5 +945,48 @@ struct ProfileStoreTests {
 
         let reloaded = ProfileStore(paths: paths)
         #expect(reloaded.profiles == repaired.profiles)
+    }
+}
+
+private struct ProfileStoreTestError: Error {}
+
+private final class ProfileDeleteKeychainBackend:
+    KeychainBackend,
+    @unchecked Sendable
+{
+    var deleteFailureService: String?
+    private var values: [String: Data] = [:]
+
+    func data(service: String, profileID: UUID) throws -> Data? {
+        values[key(service: service, profileID: profileID)]
+    }
+
+    func upsert(
+        _ data: Data,
+        service: String,
+        profileID: UUID
+    ) throws {
+        values[key(service: service, profileID: profileID)] = data
+    }
+
+    func delete(service: String, profileID: UUID) throws {
+        if deleteFailureService == service {
+            throw ProfileStoreTestError()
+        }
+        values.removeValue(forKey: key(service: service, profileID: profileID))
+    }
+
+    func set(_ value: String, service: String, profileID: UUID) {
+        values[key(service: service, profileID: profileID)] =
+            Data(value.utf8)
+    }
+
+    func string(service: String, profileID: UUID) -> String? {
+        values[key(service: service, profileID: profileID)]
+            .flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    private func key(service: String, profileID: UUID) -> String {
+        "\(service)|\(profileID.uuidString)"
     }
 }

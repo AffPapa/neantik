@@ -20,18 +20,27 @@ jobs:
         suite:
           - AppPathsTests
           - BrowserLaunchBuilderTests
+          - BrowserProcessInventoryTests
           - BrowserProcessManagerTests
           - BrowserRuntimeInspectorTests
           - BrowserRuntimePreflightTests
+          - FingerprintAuditLoopbackSTUNServerTests
           - FingerprintAuditTests
+          - FingerprintEvidenceEnrollmentTests
+          - FingerprintEvidenceEnvelopeTests
+          - FingerprintEvidenceReleaseContextTests
+          - SecureEnclaveFingerprintEvidenceSignerTests
           - KeychainStoreTests
           - LaunchIntentTests
+          - ProfileEditorPasswordTests
+          - ProfileOrganizationTests
           - ProfileStoreTests
           - ProxyTesterTests
           - RuntimePreferenceStoreTests
           - TelemetryTests
+          - UpdateManifestTests
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Run Swift suite
         run: ./scripts/verify-native-swift-suite.sh "${{ matrix.suite }}"
 
@@ -42,18 +51,31 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract
         run: python3 scripts/verify-direct-telemetry-disabled.py
       - name: Russian UI contract
         run: python3 scripts/verify-direct-ui-localization.py
+      - name: Public fingerprint conformance corpus
+        run: python3 scripts/verify-public-fingerprint-corpus.py
       - name: Apple device tuple catalog
         run: python3 scripts/verify-apple-device-tuples.py
+      - name: Browser identity issuance contract
+        run: python3 scripts/verify-browser-identity-issuance.py
       - name: Runtime patch manifest
         run: python3 scripts/verify-nevision-patchset-manifest.py --release
+      - name: Runtime integration notices
+        run: python3 scripts/generate-runtime-integration-notices.py --check
       - name: Open-source publication boundary
         run: python3 scripts/verify-open-source-tree.py
+      - name: Public workflow dependency closure
+        run: python3 scripts/verify-public-workflow-references.py
+      - name: Authenticated fingerprint evidence contract
+        run: >-
+          python3 -m unittest
+          scripts.tests.test_fingerprint_evidence_schema8
+          scripts.tests.test_direct_candidate_manifest
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'

@@ -5,16 +5,22 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 usage() {
-  echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn" >&2
+  echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn /absolute/path/to/runtime-candidate-lock.json" >&2
 }
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 3 ]]; then
   usage
   exit 64
 fi
 
 RUNTIME_APP="$1"
 BUILD_ARGS="$2"
+CANDIDATE_LOCK="$3"
+SOURCE_ROOT="$(
+  cd "$(dirname "$BUILD_ARGS")/../.." 2>/dev/null && pwd -P || true
+)"
+SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
+EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
 
 if [[ "$RUNTIME_APP" != /* || ! -d "$RUNTIME_APP" ]]; then
   echo "NeAntik Browser.app must be an existing absolute path." >&2
@@ -24,6 +30,27 @@ if [[ "$BUILD_ARGS" != /* || ! -f "$BUILD_ARGS" ]]; then
   echo "args.gn must be an existing absolute path." >&2
   exit 66
 fi
+if [[ "$CANDIDATE_LOCK" != /* ||
+      ! -f "$CANDIDATE_LOCK" ||
+      -L "$CANDIDATE_LOCK" ]]; then
+  echo "Runtime audit kit requires an explicit schema 4 candidate lock." >&2
+  exit 66
+fi
+if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
+      "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
+  echo "Runtime audit candidate lock does not belong to args.gn build root." >&2
+  exit 65
+fi
+if [[ -z "$SOURCE_ROOT" ||
+      ! -f "$SOURCE_ROOT/chrome/VERSION" ||
+      ! -f "$SOURCE_PROVENANCE" ||
+      -L "$SOURCE_PROVENANCE" ]]; then
+  echo "Runtime audit kit requires generated Chromium 150 source provenance." >&2
+  exit 66
+fi
+"$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+  "$CANDIDATE_LOCK" \
+  "$SOURCE_PROVENANCE"
 
 RUNTIME_PLIST="$RUNTIME_APP/Contents/Info.plist"
 RUNTIME_VERSION="$(
@@ -65,7 +92,9 @@ mkdir -p "$PACKAGE_DIR" "$EVIDENCE_DIR" "$LICENSES_DIR"
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$VERIFY_REPORT" \
-  "$BUILD_ARGS"
+  "$BUILD_ARGS" \
+  "$SOURCE_PROVENANCE" \
+  "$CANDIDATE_LOCK"
 
 ditto "$RUNTIME_APP" "$PACKAGE_DIR/NeAntik Browser.app"
 "$PROJECT_DIR/scripts/build-runtime-audit-cli.sh" \
@@ -76,25 +105,20 @@ cp "$PROJECT_DIR/scripts/Run-NeAntik-Runtime-Audit.command" "$PACKAGE_DIR/"
 chmod 0755 "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 cp "$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py" "$PACKAGE_DIR/"
 chmod 0755 "$PACKAGE_DIR/verify-gui-fingerprint-report.py"
-cp "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" "$PACKAGE_DIR/"
-chmod 0755 "$PACKAGE_DIR/collect-gui-fingerprint-evidence.py"
-cp "$PROJECT_DIR/scripts/prepare-gui-fingerprint-release-evidence.py" "$PACKAGE_DIR/"
-chmod 0755 "$PACKAGE_DIR/prepare-gui-fingerprint-release-evidence.py"
 cp "$PROJECT_DIR/docs/RUNTIME_AUDIT_KIT_README.md" "$PACKAGE_DIR/README.md"
-cp "$PROJECT_DIR/runtime/fingerprint-chromium.lock.json" \
+cp "$CANDIDATE_LOCK" \
   "$EVIDENCE_DIR/fingerprint-chromium.lock.json"
+cp "$PROJECT_DIR/runtime/security-baseline.json" \
+  "$EVIDENCE_DIR/security-baseline.json"
+cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+  "$EVIDENCE_DIR/neantik-patch-series.json"
+cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
+  "$EVIDENCE_DIR/apple-device-tuples.json"
+cp "$PROJECT_DIR/runtime/chromium-150-source-contract.json" \
+  "$EVIDENCE_DIR/chromium-150-source-contract.json"
+cp "$SOURCE_PROVENANCE" "$EVIDENCE_DIR/source-provenance.json"
 cp "$BUILD_ARGS" "$EVIDENCE_DIR/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE_DIR/runtime-verification.json"
-python3 - "$EVIDENCE_DIR/fingerprint-chromium.lock.json" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-lock = json.loads(path.read_text(encoding="utf-8"))
-lock.setdefault("verification", {})["runtimeReport"] = "evidence/runtime-verification.json"
-path.write_text(json.dumps(lock, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-PY
 cp "$PROJECT_DIR/runtime/licenses/Chromium-LICENSE" "$LICENSES_DIR/"
 cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" "$LICENSES_DIR/"
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" "$LICENSES_DIR/"
@@ -105,8 +129,7 @@ codesign --verify --strict --verbose=2 \
   "$PACKAGE_DIR/NeAntikRuntimeAudit"
 bash -n "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 python3 -m py_compile "$PACKAGE_DIR/verify-gui-fingerprint-report.py"
-python3 -m py_compile "$PACKAGE_DIR/collect-gui-fingerprint-evidence.py"
-python3 -m py_compile "$PACKAGE_DIR/prepare-gui-fingerprint-release-evidence.py"
+python3 "$PACKAGE_DIR/verify-gui-fingerprint-report.py" --help >/dev/null
 find "$PACKAGE_DIR" -name __pycache__ -type d -prune -exec rm -rf {} +
 grep -Fq 'umask 077' "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 grep -Fq 'fingerprint-audit-terminal.log' \
@@ -129,27 +152,20 @@ ROUNDTRIP_PACKAGE="$ROUNDTRIP_ROOT/$PACKAGE_NAME"
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$ROUNDTRIP_PACKAGE/NeAntik Browser.app" \
   "$ROUNDTRIP_PACKAGE/evidence/runtime-verification.json" \
-  "$ROUNDTRIP_PACKAGE/evidence/args.gn"
+  "$ROUNDTRIP_PACKAGE/evidence/args.gn" \
+  "$ROUNDTRIP_PACKAGE/evidence/source-provenance.json" \
+  "$ROUNDTRIP_PACKAGE/evidence/fingerprint-chromium.lock.json"
 codesign --verify --strict --verbose=2 \
   "$ROUNDTRIP_PACKAGE/NeAntikRuntimeAudit"
 bash -n "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
 python3 -m py_compile "$ROUNDTRIP_PACKAGE/verify-gui-fingerprint-report.py"
-python3 -m py_compile "$ROUNDTRIP_PACKAGE/collect-gui-fingerprint-evidence.py"
-python3 -m py_compile "$ROUNDTRIP_PACKAGE/prepare-gui-fingerprint-release-evidence.py"
+python3 "$ROUNDTRIP_PACKAGE/verify-gui-fingerprint-report.py" --help >/dev/null
 grep -Fq 'fingerprint-audit-terminal.log' \
   "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
 grep -Fq -- '--runtime-lock "$RUNTIME_LOCK"' \
   "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
 grep -Fq 'production-qualified A -> B -> A report' \
   "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
-python3 - "$ROUNDTRIP_PACKAGE/evidence/fingerprint-chromium.lock.json" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-lock = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-assert lock["verification"]["runtimeReport"] == "evidence/runtime-verification.json"
-PY
 grep -Fq 'Independent production GUI report verification' \
   "$ROUNDTRIP_PACKAGE/Run-NeAntik-Runtime-Audit.command"
 

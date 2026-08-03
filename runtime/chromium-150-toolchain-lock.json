@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "rust": {
+    "version": "2026-04-09",
+    "filename": "rust-nightly-2026-04-09-aarch64-apple-darwin.tar.xz",
+    "url": "https://static.rust-lang.org/dist/2026-04-09/rust-nightly-aarch64-apple-darwin.tar.xz",
+    "officialSHA256URL": "https://static.rust-lang.org/dist/2026-04-09/rust-nightly-aarch64-apple-darwin.tar.xz.sha256",
+    "sha256": "03d5e8cf7331c6ed8a779eba0c24ab6a2b218d4d21c31624db05549865737540",
+    "size": 204172328,
+    "architecture": "arm64"
+  }
+}

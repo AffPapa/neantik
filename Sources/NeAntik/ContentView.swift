@@ -6,6 +6,37 @@ private struct EditorRequest: Identifiable {
     let profile: BrowserProfile?
 }
 
+private struct ClipboardNotice: Equatable {
+    let profileID: UUID
+    let message: String
+}
+
+struct ClipboardLeaseState: Equatable {
+    private(set) var changeCount: Int?
+
+    mutating func cancel() {
+        changeCount = nil
+    }
+
+    mutating func begin(changeCount: Int) {
+        self.changeCount = changeCount
+    }
+
+    mutating func consumeIfOwned(
+        currentChangeCount: Int,
+        expectedChangeCount: Int? = nil
+    ) -> Bool {
+        guard let activeChangeCount = changeCount,
+              expectedChangeCount == nil ||
+                expectedChangeCount == activeChangeCount
+        else {
+            return false
+        }
+        changeCount = nil
+        return currentChangeCount == activeChangeCount
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
@@ -13,8 +44,12 @@ struct ContentView: View {
     @ObservedObject var telemetry: TelemetryController
 
     let keychain: KeychainStore
+    let credentialCleanup: DeletedProfileCredentialCleanup
     let runtimeLocator: BrowserRuntimeLocator
     let launchIntent: NeAntikLaunchIntent
+    let fingerprintEvidenceReleaseContext:
+        FingerprintEvidenceReleaseContext?
+    private let updateChannel = UpdateChannelConfiguration.fromBundle()
 
     @State private var selection: UUID?
     @State private var editorRequest: EditorRequest?
@@ -23,11 +58,36 @@ struct ContentView: View {
     @State private var localError: String?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
-    @State private var clipboardLeaseChangeCount: Int?
+    @State private var clipboardLease = ClipboardLeaseState()
+    @State private var clipboardNotice: ClipboardNotice?
+    @State private var clipboardClearTask: Task<Void, Never>?
+    @State private var clipboardNoticeTask: Task<Void, Never>?
     @State private var handledReleaseAuditIntent = false
+    @State private var releaseAuditProfiles: [BrowserProfile] = []
+    @State private var profileSearchText = ""
+    @State private var selectedProfileTag: String?
 
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
+    }
+
+    private var fingerprintAuditProfiles: [BrowserProfile] {
+        if fingerprintEvidenceReleaseContext != nil {
+            return releaseAuditProfiles
+        }
+        return store.profiles
+    }
+
+    private var visibleProfiles: [BrowserProfile] {
+        ProfileListProjection.filtered(
+            store.profiles,
+            searchText: profileSearchText,
+            tag: selectedProfileTag
+        )
+    }
+
+    private var availableProfileTags: [String] {
+        ProfileListProjection.allTags(in: store.profiles)
     }
 
     private var runtime: BrowserRuntime? {
@@ -60,16 +120,20 @@ struct ContentView: View {
             ProfileEditorView(
                 original: request.profile,
                 keychain: keychain
-            ) { profile, password in
-                let saved = try store.upsert(profile) { saved in
-                    if saved.proxy?.username.isEmpty == false,
-                       !password.isEmpty {
+            ) { profile, passwordUpdate in
+                let saved: BrowserProfile
+                switch passwordUpdate {
+                case .delete:
+                    saved = try store.upsert(profile)
+                    try keychain.deleteProxyPassword(
+                        profileID: saved.id
+                    )
+                case .keepExisting:
+                    saved = try store.upsert(profile)
+                case let .replace(password):
+                    saved = try store.upsert(profile) { saved in
                         try keychain.saveProxyPassword(
                             password,
-                            profileID: saved.id
-                        )
-                    } else {
-                        try keychain.deleteProxyPassword(
                             profileID: saved.id
                         )
                     }
@@ -97,20 +161,30 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingFingerprintAudit) {
-            if let runtime, store.profiles.count >= 2 {
+            let auditProfiles = fingerprintAuditProfiles
+            if let runtime, auditProfiles.count >= 2 {
                 FingerprintAuditView(
-                    profiles: store.profiles,
-                    initialFirstID: selection,
+                    profiles: auditProfiles,
+                    initialFirstID:
+                        fingerprintEvidenceReleaseContext == nil
+                        ? selection
+                        : auditProfiles.first?.id,
                     runtime: runtime,
                     processes: processes,
-                    paths: store.paths
+                    paths: store.paths,
+                    releaseContext:
+                        fingerprintEvidenceReleaseContext
                 )
             } else {
                 ContentUnavailableView(
-                    "Проверка отпечатка недоступна",
+                    fingerprintEvidenceReleaseContext == nil
+                        ? "Проверка профиля недоступна"
+                        : "Проверка отпечатка недоступна",
                     systemImage: "exclamationmark.triangle",
                     description: Text(
-                        "Создай минимум два профиля и выбери совместимый браузер."
+                        fingerprintEvidenceReleaseContext == nil
+                            ? "Создай минимум два профиля и выбери совместимый браузер."
+                            : "Встроенный браузер не готов к релизной проверке."
                     )
                 )
                 .frame(width: 520, height: 360)
@@ -123,7 +197,10 @@ struct ContentView: View {
         ) { profile in
             Button("Переместить в Корзину", role: .destructive) {
                 do {
-                    try store.delete(profile) { deletedProfile in
+                    try store.delete(
+                        profile,
+                        processManager: processes
+                    ) { deletedProfile in
                         try keychain.deleteProxyPassword(
                             profileID: deletedProfile.id
                         )
@@ -200,13 +277,58 @@ struct ContentView: View {
         }
         .onReceive(
             NotificationCenter.default.publisher(
+                for: NSApplication.willResignActiveNotification
+            )
+        ) { _ in
+            processes.suspendPassiveObservations()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: NSApplication.didBecomeActiveNotification
+            )
+        ) { _ in
+            processes.reconcile(profiles: store.profiles)
+        }
+        .onReceive(
+            NSWorkspace.shared.notificationCenter.publisher(
+                for: NSWorkspace.didWakeNotification
+            )
+        ) { _ in
+            if NSApplication.shared.isActive {
+                processes.reconcile(profiles: store.profiles)
+            } else {
+                processes.suspendPassiveObservations()
+            }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
                 for: NSApplication.willTerminateNotification
             )
         ) { _ in
+            cancelClipboardTasks()
             clearClipboardIfLeaseIsActive()
         }
         .task(id: runtimePreferences.preference) {
             await resolveRuntime()
+        }
+        .task {
+            await recoverDeletedProfileCredentials()
+        }
+    }
+
+    private func recoverDeletedProfileCredentials() async {
+        let summary = await credentialCleanup.runOnce(
+            metadataIsTrusted: store.hasTrustedMetadata,
+            excluding: Set(store.profiles.map(\.id))
+        )
+        guard !Task.isCancelled,
+              summary.failedCount > 0 || summary.inspectionFailed
+        else {
+            return
+        }
+        if localError == nil {
+            localError =
+                "Не удалось завершить очистку некоторых ранее удалённых паролей прокси. NeAntik безопасно повторит попытку при следующем запуске."
         }
     }
 
@@ -225,12 +347,26 @@ struct ContentView: View {
                         editorRequest = EditorRequest(profile: nil)
                     }
                 }
+            } else if visibleProfiles.isEmpty {
+                ContentUnavailableView {
+                    Label("Ничего не найдено", systemImage: "magnifyingglass")
+                } description: {
+                    Text("Измени поиск или выбери другой тег.")
+                } actions: {
+                    Button("Сбросить фильтры") {
+                        profileSearchText = ""
+                        selectedProfileTag = nil
+                    }
+                }
             } else {
                 List(selection: $selection) {
-                    ForEach(store.profiles) { profile in
+                    ForEach(visibleProfiles) { profile in
+                        let processState = processes.processState(
+                            for: profile.id
+                        )
                         ProfileRow(
                             profile: profile,
-                            isRunning: processes.runningProfileIDs.contains(profile.id)
+                            processState: processState
                         )
                         .tag(profile.id)
                         .contextMenu {
@@ -239,15 +375,30 @@ struct ContentView: View {
                             } label: {
                                 Label("Изменить", systemImage: "slider.horizontal.3")
                             }
-                            .disabled(
-                                processes.runningProfileIDs.contains(profile.id)
-                            )
-                            if processes.runningProfileIDs.contains(profile.id) {
+                            .disabled(processState.isRunning)
+                            if processState == .checking {
+                                Button {} label: {
+                                    Label(
+                                        "Проверка…",
+                                        systemImage: "hourglass"
+                                    )
+                                }
+                                .disabled(true)
+                            } else if processState.isRunning &&
+                                processState.canRequestStop {
                                 Button {
                                     processes.stop(profileID: profile.id)
                                 } label: {
                                     Label("Остановить", systemImage: "stop.fill")
                                 }
+                            } else if processState.isRunning {
+                                Button {} label: {
+                                    Label(
+                                        "Закрой браузер вручную",
+                                        systemImage: "hand.raised.fill"
+                                    )
+                                }
+                                .disabled(true)
                             } else {
                                 Button {
                                     launch(profile)
@@ -263,6 +414,8 @@ struct ContentView: View {
 
             Divider()
             runtimeStatus
+            Divider()
+            updateStatus
             if telemetry.isConfigured {
                 Divider()
                 telemetryStatus
@@ -292,28 +445,70 @@ struct ContentView: View {
                 .accessibilityLabel("Создать профиль")
             }
 
+            TextField(
+                "Найти профиль",
+                text: $profileSearchText,
+                prompt: Text("Поиск по имени и тегам")
+            )
+            .textFieldStyle(.roundedBorder)
+            .accessibilityLabel("Поиск профилей")
+
+            if !availableProfileTags.isEmpty {
+                Picker("Тег", selection: $selectedProfileTag) {
+                    Text("Все теги").tag(nil as String?)
+                    ForEach(availableProfileTags, id: \.self) { tag in
+                        Text(tag).tag(Optional(tag))
+                    }
+                }
+                .pickerStyle(.menu)
+                .accessibilityLabel("Фильтр профилей по тегу")
+            }
+
             if let profile = selectedProfile {
+                let processState = processes.processState(for: profile.id)
                 Button {
-                    if processes.runningProfileIDs.contains(profile.id) {
+                    if processState.isRunning {
                         processes.stop(profileID: profile.id)
                     } else {
                         launch(profile)
                     }
                 } label: {
                     Label(
-                        processes.runningProfileIDs.contains(profile.id)
-                            ? "Остановить выбранный"
+                        processState.isRunning
+                            ? (
+                                processState == .checking
+                                    ? "Проверка…"
+                                    : processState.canRequestStop
+                                    ? "Остановить выбранный"
+                                    : "Закрой браузер вручную"
+                            )
                             : "Запустить выбранный",
-                        systemImage: processes.runningProfileIDs.contains(profile.id)
-                            ? "stop.fill"
-                            : "play.fill"
+                        systemImage:
+                            processState.isRunning
+                                ? (
+                                    processState == .checking
+                                        ? "hourglass"
+                                        : processState.canRequestStop
+                                        ? "stop.fill"
+                                        : "hand.raised.fill"
+                                )
+                                : "play.fill"
                     )
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(
-                    !processes.runningProfileIDs.contains(profile.id) &&
-                        isResolvingRuntime
+                    (!processState.isRunning && isResolvingRuntime) ||
+                        (processState.isRunning &&
+                            !processState.canRequestStop)
+                )
+                .help(
+                    processState.guidance ??
+                        (
+                            processState.isRunning
+                                ? "Остановить профиль"
+                                : "Запустить профиль"
+                        )
                 )
             }
         }
@@ -327,7 +522,7 @@ struct ContentView: View {
         if let profile = selectedProfile {
             ProfileDetailView(
                 profile: profile,
-                isRunning: processes.runningProfileIDs.contains(profile.id),
+                processState: processes.processState(for: profile.id),
                 isResolvingRuntime: isResolvingRuntime,
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
                 runtimeSupportsFingerprint: runtime?.supportsFingerprintIdentity == true,
@@ -335,6 +530,10 @@ struct ContentView: View {
                     runtime?.supportsFingerprintIdentity == true &&
                     runtimePreflight?.isReady == true &&
                     store.profiles.count >= 2,
+                clipboardNotice:
+                    clipboardNotice?.profileID == profile.id
+                        ? clipboardNotice?.message
+                        : nil,
                 onStart: { launch(profile) },
                 onStop: { processes.stop(profileID: profile.id) },
                 onEdit: {
@@ -361,6 +560,20 @@ struct ContentView: View {
                         store.paths.profileDirectory(for: profile.id)
                     ])
                 },
+                onCopyProxyUsername: {
+                    guard let username = profile.proxy?.username,
+                          !username.isEmpty
+                    else {
+                        localError = "Для этого профиля не указан логин прокси."
+                        return
+                    }
+                    copyToClipboard(
+                        username,
+                        profileID: profile.id,
+                        successMessage:
+                            "Логин прокси скопирован. Буфер очистится через 60 секунд."
+                    )
+                },
                 onCopyProxyPassword: {
                     do {
                         guard let password = try keychain.proxyPassword(profileID: profile.id),
@@ -369,17 +582,12 @@ struct ContentView: View {
                             localError = "Для этого профиля не сохранён пароль прокси."
                             return
                         }
-                        NSPasteboard.general.clearContents()
-                        guard NSPasteboard.general.setString(
+                        copyToClipboard(
                             password,
-                            forType: .string
-                        ) else {
-                            localError = "Не удалось скопировать пароль прокси."
-                            return
-                        }
-                        let changeCount = NSPasteboard.general.changeCount
-                        clipboardLeaseChangeCount = changeCount
-                        clearClipboardLater(changeCount: changeCount)
+                            profileID: profile.id,
+                            successMessage:
+                                "Пароль прокси скопирован. Буфер очистится через 60 секунд."
+                        )
                     } catch {
                         localError = error.localizedDescription
                     }
@@ -507,6 +715,36 @@ struct ContentView: View {
         .padding(12)
     }
 
+    private var updateStatus: some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "checkmark.shield")
+                .foregroundStyle(updateChannel.isEnabled ? .orange : .secondary)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(
+                    updateChannel.isEnabled
+                        ? "Подписанный канал обновлений"
+                        : "Обновления вручную"
+                )
+                .font(.caption)
+                .fontWeight(.medium)
+
+                Text(
+                    updateChannel.isEnabled
+                        ? "Принимаются только Ed25519-подписанные Direct-манифесты. Автозагрузка и автоустановка выключены."
+                        : "Канал ещё не настроен. NeAntik ничего не проверяет и не скачивает в фоне."
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .accessibilityElement(children: .combine)
+    }
+
     private var runtimeStatusColor: Color {
         guard let runtime else { return .orange }
         if runtimePreflight?.isReady == false {
@@ -594,11 +832,6 @@ struct ContentView: View {
         }
         handledReleaseAuditIntent = true
 
-        guard store.profiles.count >= 2 else {
-            localError =
-                "Для проверки релиза нужны минимум два профиля. Создай второй профиль и запусти подготовленную команду ещё раз."
-            return
-        }
         guard runtime?.supportsFingerprintIdentity == true,
               runtimePreflight?.isReady == true
         else {
@@ -608,84 +841,206 @@ struct ContentView: View {
             return
         }
 
-        if selection == nil {
-            selection = store.profiles.first?.id
+        if releaseAuditProfiles.count < 2 {
+            releaseAuditProfiles = Self.makeReleaseAuditProfiles()
         }
+        selection = releaseAuditProfiles.first?.id
         showingFingerprintAudit = true
     }
 
+    private static func makeReleaseAuditProfiles() -> [BrowserProfile] {
+        [
+            BrowserProfile(
+                id: UUID(
+                    uuidString:
+                        "E4D67C71-6F7F-4B63-8F64-82B4F5734B01"
+                )!,
+                name: "Проверка A",
+                colorHex: "#5E7CE2",
+                startURL: "http://neantik.local",
+                identity: BrowserIdentity()
+            ),
+            BrowserProfile(
+                id: UUID(
+                    uuidString:
+                        "F43E42A6-97F4-4B70-A191-70501BC95D02"
+                )!,
+                name: "Проверка B",
+                colorHex: "#30D158",
+                startURL: "http://neantik.local",
+                identity: BrowserIdentity()
+            )
+        ]
+    }
+
     private func clearClipboardLater(changeCount: Int) {
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
+        clipboardClearTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 60_000_000_000)
+            } catch {
+                return
+            }
             clearClipboardIfLeaseIsActive(changeCount: changeCount)
         }
     }
 
+    private func copyToClipboard(
+        _ value: String,
+        profileID: UUID,
+        successMessage: String
+    ) {
+        cancelClipboardTasks()
+        clipboardLease.cancel()
+        clipboardNotice = nil
+
+        let item = NSPasteboardItem()
+        guard item.setString(value, forType: .string) else {
+            localError = "Не удалось подготовить данные прокси для копирования."
+            return
+        }
+        item.setString(
+            "",
+            forType: NSPasteboard.PasteboardType(
+                "org.nspasteboard.TransientType"
+            )
+        )
+        item.setString(
+            "",
+            forType: NSPasteboard.PasteboardType(
+                "org.nspasteboard.ConcealedType"
+            )
+        )
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        guard pasteboard.writeObjects([item]) else {
+            localError = "Не удалось скопировать данные прокси."
+            return
+        }
+        let changeCount = pasteboard.changeCount
+        clipboardLease.begin(changeCount: changeCount)
+        let notice = ClipboardNotice(
+            profileID: profileID,
+            message: successMessage
+        )
+        clipboardNotice = notice
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: successMessage,
+                .priority: NSAccessibilityPriorityLevel.medium.rawValue
+            ]
+        )
+        clearClipboardLater(changeCount: changeCount)
+        clipboardNoticeTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 4_000_000_000)
+            } catch {
+                return
+            }
+            if clipboardNotice == notice {
+                clipboardNotice = nil
+            }
+        }
+    }
+
+    private func cancelClipboardTasks() {
+        clipboardClearTask?.cancel()
+        clipboardClearTask = nil
+        clipboardNoticeTask?.cancel()
+        clipboardNoticeTask = nil
+    }
+
     private func clearClipboardIfLeaseIsActive(changeCount: Int? = nil) {
-        guard let activeChangeCount = clipboardLeaseChangeCount,
-              changeCount == nil || changeCount == activeChangeCount
-        else {
-            return
+        let pasteboard = NSPasteboard.general
+        if clipboardLease.consumeIfOwned(
+            currentChangeCount: pasteboard.changeCount,
+            expectedChangeCount: changeCount
+        ) {
+            pasteboard.clearContents()
         }
-        defer {
-            clipboardLeaseChangeCount = nil
-        }
-        guard NSPasteboard.general.changeCount == activeChangeCount else {
-            return
-        }
-        NSPasteboard.general.clearContents()
     }
 }
 
 private struct ProfileRow: View {
     let profile: BrowserProfile
-    let isRunning: Bool
+    let processState: BrowserProfileProcessState
 
     var body: some View {
         HStack(spacing: 10) {
-            Circle()
+            RoundedRectangle(cornerRadius: 8)
                 .fill(Color(hex: profile.colorHex))
-                .frame(width: 11, height: 11)
+                .frame(width: 30, height: 30)
                 .overlay {
-                    if isRunning {
-                        Circle()
-                            .stroke(.green, lineWidth: 2)
-                            .padding(-3)
+                    Image(systemName: profile.displaySymbolName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                    if processState.isRunning {
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                processState == .externalUnverified
+                                    || processState == .checking
+                                    ? Color.orange
+                                    : Color.green,
+                                lineWidth: 2
+                            )
+                            .padding(-2)
                     }
                 }
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.name)
                     .lineLimit(1)
-                Text(profile.proxy?.displayName ?? "Без прокси")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 5) {
+                    Text(profile.proxy?.displayName ?? "Без прокси")
+                        .lineLimit(1)
+                    if let tag = profile.tags.first {
+                        Text(tag)
+                            .lineLimit(1)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(.quaternary)
+                            .clipShape(Capsule())
+                    }
+                    if profile.tags.count > 1 {
+                        Text("+\(profile.tags.count - 1)")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityValue(isRunning ? "Запущен" : "Остановлен")
+        .accessibilityValue(processState.title)
     }
 }
 
 private struct ProfileDetailView: View {
     let profile: BrowserProfile
-    let isRunning: Bool
+    let processState: BrowserProfileProcessState
     let isResolvingRuntime: Bool
     let browserDataPath: String
     let runtimeSupportsFingerprint: Bool
     let canRunFingerprintAudit: Bool
+    let clipboardNotice: String?
     let onStart: () -> Void
     let onStop: () -> Void
     let onEdit: () -> Void
     let onFingerprintAudit: () -> Void
     let onDelete: () -> Void
     let onReveal: () -> Void
+    let onCopyProxyUsername: () -> Void
     let onCopyProxyPassword: () -> Void
 
     private var actionColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 118), spacing: 10, alignment: .leading)]
+    }
+
+    private var isRunning: Bool {
+        processState.isRunning
     }
 
     var body: some View {
@@ -709,17 +1064,43 @@ private struct ProfileDetailView: View {
                         isRunning ? onStop() : onStart()
                     } label: {
                         Label(
-                            isRunning ? "Остановить" : "Запустить",
-                            systemImage: isRunning ? "stop.fill" : "play.fill"
+                            isRunning
+                                ? (
+                                    processState == .checking
+                                        ? "Проверка…"
+                                        : processState.canRequestStop
+                                        ? "Остановить"
+                                        : "Закрыть вручную"
+                                )
+                                : "Запустить",
+                            systemImage:
+                                isRunning
+                                    ? (
+                                        processState == .checking
+                                            ? "hourglass"
+                                            : processState.canRequestStop
+                                            ? "stop.fill"
+                                            : "hand.raised.fill"
+                                    )
+                                    : "play.fill"
                         )
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(!isRunning && isResolvingRuntime)
+                    .disabled(
+                        (!isRunning && isResolvingRuntime) ||
+                            (isRunning && !processState.canRequestStop)
+                    )
                     .help(
-                        !isRunning && isResolvingRuntime
-                            ? "NeAntik проверяет локальный браузер"
-                            : ""
+                        processState.guidance ??
+                            (
+                                !isRunning && isResolvingRuntime
+                                    ? "NeAntik проверяет локальный браузер"
+                                    : ""
+                            )
+                    )
+                    .accessibilityHint(
+                        processState.guidance ?? ""
                     )
 
                     Button(action: onEdit) {
@@ -738,29 +1119,77 @@ private struct ProfileDetailView: View {
                     }
                     Button(action: onFingerprintAudit) {
                         Label(
-                            "Отпечаток",
-                            systemImage: "waveform.path.ecg.rectangle"
+                            "Проверить профиль",
+                            systemImage: "checkmark.shield"
                         )
                         .frame(maxWidth: .infinity)
                     }
-                    .disabled(!canRunFingerprintAudit)
+                    .disabled(
+                        !canRunFingerprintAudit ||
+                            processState == .checking
+                    )
                     .help(
                         canRunFingerprintAudit
-                            ? "Сравнить два профиля в проверке A → B → A"
+                            ? "Проверить стабильность и различие профиля"
                             : "Нужны два профиля и готовый совместимый движок"
                     )
                     if let proxy = profile.proxy, !proxy.username.isEmpty {
-                        Button(action: onCopyProxyPassword) {
-                            Label("Пароль", systemImage: "key")
-                                .frame(maxWidth: .infinity)
+                        Button(action: onCopyProxyUsername) {
+                            Label(
+                                "Копировать логин",
+                                systemImage: "person.text.rectangle"
+                            )
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .frame(maxWidth: .infinity)
                         }
+                        .help(
+                            "Скопировать логин прокси на 60 секунд"
+                        )
+                        .accessibilityHint(
+                            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
+                        )
+                        Button(action: onCopyProxyPassword) {
+                            Label(
+                                "Копировать пароль",
+                                systemImage: "key"
+                            )
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .frame(maxWidth: .infinity)
+                        }
+                        .help(
+                            "Скопировать пароль из Связки ключей на 60 секунд"
+                        )
+                        .accessibilityHint(
+                            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
+                        )
                     }
                     Button(role: .destructive, action: onDelete) {
                         Label("Удалить", systemImage: "trash")
                             .frame(maxWidth: .infinity)
                     }
+                    .disabled(isRunning)
+                    .help(
+                        isRunning
+                            ? (
+                                processState == .checking
+                                    ? "Дождись завершения проверки"
+                                    : "Сначала останови профиль"
+                            )
+                            : "Удалить профиль"
+                    )
                 }
                 .buttonStyle(.bordered)
+                if let clipboardNotice {
+                    Label(
+                        clipboardNotice,
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(clipboardNotice)
+                }
 
                 GroupBox("Стартовая страница") {
                     LabeledContent("URL", value: profile.startURL)
@@ -771,8 +1200,8 @@ private struct ProfileDetailView: View {
                 GroupBox("Отпечаток профиля") {
                     VStack(alignment: .leading, spacing: 10) {
                         LabeledContent(
-                            "Идентификатор",
-                            value: profile.identity.displayCode
+                            "Политика",
+                            value: profile.identity.issuanceSummary
                         )
                         if let timezone = profile.identity.timezoneIdentifier {
                             LabeledContent("Часовой пояс", value: timezone)
@@ -780,10 +1209,32 @@ private struct ProfileDetailView: View {
                         if let locale = profile.identity.localeIdentifier {
                             LabeledContent("Язык", value: locale)
                         }
+                        if let evidence =
+                            profile.identity.proxyContextEvidence {
+                            LabeledContent(
+                                "Контекст сети",
+                                value:
+                                    "\(evidence.source) · \(evidence.observedAt.formatted(date: .abbreviated, time: .omitted))"
+                            )
+                            if !evidence.isFresh() {
+                                Text(
+                                    "Данные старше 30 дней. Часовой пояс и язык не применяются при запуске, пока ты снова не проверишь прокси."
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            }
+                        } else if profile.identity.timezoneIdentifier != nil ||
+                                    profile.identity.localeIdentifier != nil {
+                            Text(
+                                "Часовой пояс сохранён старой версией без даты проверки и не применяется при запуске. Перепроверь прокси, чтобы обновить контекст."
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
                         Text(
                             runtimeSupportsFingerprint
-                                ? "NeAntik передаёт этот стабильный идентификатор встроенному Chromium. Запусти проверку отпечатка, чтобы увидеть результат глазами сайта."
-                                : "Идентификатор сохранён, но выбранный браузер изолирует только локальные данные. Выбери совместимый движок, чтобы применить отпечаток."
+                                ? "NeAntik передаёт встроенному Chromium стабильные параметры этого профиля. Нажми «Проверить профиль», чтобы убедиться, что всё работает."
+                                : "Параметры профиля сохранены, но выбранный браузер изолирует только локальные данные. Выбери совместимый движок, чтобы применить отпечаток."
                         )
                         .font(.caption)
                         .foregroundStyle(
@@ -841,10 +1292,13 @@ private struct ProfileDetailView: View {
             .fill(Color(hex: profile.colorHex).gradient)
             .frame(width: 64, height: 64)
             .overlay {
-                Image(systemName: "globe")
+                Image(systemName: profile.displaySymbolName)
                     .font(.system(size: 28, weight: .medium))
                     .foregroundStyle(.white)
             }
+            .accessibilityLabel(
+                "Иконка профиля: \(ProfileAppearance.title(for: profile.displaySymbolName))"
+            )
     }
 
     private var profileTitle: some View {
@@ -855,11 +1309,31 @@ private struct ProfileDetailView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)
             Label(
-                isRunning ? "Запущен" : "Остановлен",
+                processState.title,
                 systemImage: isRunning ? "circle.fill" : "circle"
             )
             .font(.subheadline)
-            .foregroundStyle(isRunning ? .green : .secondary)
+            .foregroundStyle(
+                processState == .externalUnverified
+                    ? Color.orange
+                    : (isRunning ? Color.green : Color.secondary)
+            )
+            if let guidance = processState.guidance {
+                Text(guidance)
+                    .font(.caption)
+                    .foregroundStyle(
+                        processState == .externalUnverified
+                            ? Color.orange
+                            : Color.secondary
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !profile.tags.isEmpty {
+                Text(profile.tags.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
     }
 }

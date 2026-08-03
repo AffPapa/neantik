@@ -19,9 +19,24 @@ identity.
 - Proxy verification through `curl` with credentials supplied over stdin.
 - Keychain password storage.
 - Crash-safe profile locks and local logs.
+- A bounded same-user process inventory captured outside the UI actor. One
+  foreground reconciliation or passive recovery tick reads each process at
+  most once; foreground and passive captures are globally serialized. It
+  retains only the kernel executable path, process birth identity and absolute
+  profile-data paths, securely scrubs the raw argv/environment buffer with
+  `memset_s`, keeps inaccessible state fail-closed, and never persists or logs
+  process arguments.
 - Persistent per-profile fingerprint seed.
+- New-profile identity issuance version 2 uses the system CSPRNG across
+  780,903,144 positive signed-32-bit seeds in four reviewed Apple Silicon
+  cohorts. Missing issuance metadata remains legacy version 1; existing,
+  imported and migrated profiles never rotate automatically unless a legacy
+  high-bit value or local collision requires one-time repair.
 - One-time repair of legacy seeds outside the runtime's positive signed-32-bit
-  input range.
+  input range. Collision repair preserves the existing device-tuple residue
+  instead of silently changing the apparent hardware cohort.
+- The four-cohort policy narrows hardware tuples but does not yet create shared
+  full-fingerprint cohorts; strict production entropy reduction remains open.
 - Capability-aware launch of a compatible external Chromium runtime.
 - A local three-pass fingerprint audit that compares two profiles and repeats
   the first profile to detect instability.
@@ -51,8 +66,16 @@ identity.
 - The profile creation form has no nonessential settings.
 - The main screen exposes create, edit, start, stop, reveal, and delete.
 - Proxy credentials are absent from `profiles.json` and process arguments.
+- Foreground profile reconciliation does not perform the process-table or
+  full argument-buffer scan on the main thread. A stale or cancelled
+  inventory generation cannot unlock a profile. Lease identity and a
+  starting manager's liveness are observed before and after the inventory;
+  unavailable anchors stop in a visible fail-closed state instead of polling.
 - Stock Chrome never receives fingerprint flags.
 - A compatible runtime receives a stable seed and macOS platform identity.
+- Proxy-derived timezone and locale overrides are sent only while their
+  explicit local evidence is fresh; stale, missing and direct-profile context
+  is omitted rather than asserted.
 - The fingerprint audit distinguishes verified, partial, unchanged, and
   unstable runtime behavior from measured browser output.
 - A production-qualified fingerprint report must come from normal browser

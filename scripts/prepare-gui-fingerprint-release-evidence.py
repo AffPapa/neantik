@@ -30,13 +30,22 @@ def analyze(
     source: Path | None,
     audits_dir: Path,
     runtime_lock: Path,
+    integrated_app: Path | None = None,
+    release_channel: str = "public-alpha",
 ) -> dict[str, Any]:
     selected = COLLECTOR.select_source_report(source=source, audits_dir=audits_dir)
     report = COLLECTOR.GUI_VERIFIER.load_report(selected)
-    expected_runtime = COLLECTOR.GUI_VERIFIER.expected_runtime_evidence(
-        COLLECTOR.GUI_VERIFIER.load_runtime_lock(runtime_lock),
-        lock_path=runtime_lock,
-    )
+    if integrated_app is not None:
+        expected_runtime = (
+            COLLECTOR.GUI_VERIFIER.expected_runtime_evidence_from_app(
+                integrated_app
+            )
+        )
+    else:
+        expected_runtime = COLLECTOR.GUI_VERIFIER.expected_runtime_evidence(
+            COLLECTOR.GUI_VERIFIER.load_runtime_lock(runtime_lock),
+            lock_path=runtime_lock,
+        )
     summary = COLLECTOR.GUI_VERIFIER.verification_summary(
         report,
         expected_runtime=expected_runtime,
@@ -47,6 +56,13 @@ def analyze(
         "runtimeVerificationCreatedAt": expected_runtime.get("runtimeVerificationCreatedAt"),
         "qualified": summary["qualified"],
         "issues": summary["issues"],
+        "productionQualified": summary["productionQualified"],
+        "productionIssues": summary["productionIssues"],
+        "releaseQualification": release_channel,
+        "releaseQualified": not COLLECTOR.GUI_VERIFIER.qualification_issues(
+            summary,
+            require_production=release_channel == "production",
+        ),
         "changedCriticalKeys": summary["changedCriticalKeys"],
         "unstableRequiredKeys": summary["unstableRequiredKeys"],
         "executionMode": summary["executionMode"],
@@ -64,16 +80,23 @@ def prepare(
     output: Path,
     collect: bool,
     runtime_lock: Path,
+    integrated_app: Path | None = None,
+    candidate_manifest: Path | None = None,
+    release_channel: str = "public-alpha",
 ) -> dict[str, Any]:
-    status = analyze(source=source, audits_dir=audits_dir, runtime_lock=runtime_lock)
+    status = analyze(
+        source=source,
+        audits_dir=audits_dir,
+        runtime_lock=runtime_lock,
+        integrated_app=integrated_app,
+        release_channel=release_channel,
+    )
     if collect:
-        result = COLLECTOR.collect_evidence(
-            source=Path(status["source"]),
-            audits_dir=audits_dir,
-            output=output,
-            runtime_lock=runtime_lock,
+        raise GuiEvidencePreparationError(
+            "Raw schema-7 reports are diagnostic only. Direct release "
+            "evidence must be produced and signed as schema 8 by the exact "
+            "prepared NeAntik.app."
         )
-        status["collectedTo"] = result["output"]
     return status
 
 
@@ -88,8 +111,15 @@ def format_text(status: dict[str, Any], *, output: Path, collect: bool) -> str:
         f"Execution mode: {status.get('executionMode') or 'unknown'}",
         f"Changed critical keys: {', '.join(status['changedCriticalKeys']) or 'none'}",
     ]
-    if status["qualified"]:
-        lines.append("Status: qualified production GUI A -> B -> A report")
+    if status["releaseQualified"]:
+        lines.append(
+            "Status: qualified "
+            f"{status['releaseQualification']} GUI A -> B -> A report"
+        )
+        if not status["productionQualified"]:
+            lines.append(
+                "Strict coherent production hardening remains incomplete."
+            )
         if collect:
             lines.append(f"Collected release evidence: {status['collectedTo']}")
         else:
@@ -97,15 +127,23 @@ def format_text(status: dict[str, Any], *, output: Path, collect: bool) -> str:
                 f"Next: rerun with --collect to copy this report to {output}"
             )
     else:
-        lines.append("Status: not qualified for Direct release")
+        lines.append(
+            "Status: not qualified for "
+            f"{status['releaseQualification']} Direct release"
+        )
         lines.append("Issues:")
-        for issue in status["issues"]:
+        issues = (
+            status["productionIssues"]
+            if status["releaseQualification"] == "production"
+            else status["issues"]
+        )
+        for issue in issues:
             lines.append(f"- {issue}")
         lines.extend(
             [
                 "Next:",
                 "1. Run the runtime audit kit from Finder in a normal user session.",
-                "2. Keep fingerprint-audit.json and fingerprint-audit-terminal.log.",
+                "2. Keep fingerprint-audit.json and fingerprint-audit-terminal.log private; never attach or publish either raw file.",
                 "3. Re-run this command with --source /absolute/path/to/fingerprint-audit.json.",
             ]
         )
@@ -143,9 +181,31 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--integrated-app",
+        type=Path,
+        help=(
+            "Exact prepared NeAntik.app. Required with --collect for a "
+            "Direct candidate."
+        ),
+    )
+    parser.add_argument(
+        "--candidate-manifest",
+        type=Path,
+        default=PROJECT_ROOT / "dist" / "direct-candidate-manifest.json",
+        help="Immutable manifest created before this GUI run.",
+    )
+    parser.add_argument(
+        "--release-channel",
+        choices=("public-alpha", "production"),
+        default="public-alpha",
+    )
+    parser.add_argument(
         "--collect",
         action="store_true",
-        help="Copy the qualified report into the release evidence output path.",
+        help=(
+            "Deprecated fail-closed option. Raw schema-7 reports are "
+            "diagnostic only; Direct release evidence is schema 8."
+        ),
     )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
@@ -157,9 +217,13 @@ def main() -> int:
             output=args.output,
             collect=args.collect,
             runtime_lock=args.runtime_lock,
+            integrated_app=args.integrated_app,
+            candidate_manifest=args.candidate_manifest,
+            release_channel=args.release_channel,
         )
     except (
         OSError,
+        GuiEvidencePreparationError,
         COLLECTOR.GUI_VERIFIER.FingerprintReportError,
         COLLECTOR.EvidenceCollectionError,
     ) as error:
@@ -184,7 +248,7 @@ def main() -> int:
         print(json.dumps(status, indent=2, ensure_ascii=False))
     else:
         print(format_text(status, output=args.output, collect=args.collect))
-    return 0 if status["qualified"] else 1
+    return 0 if status["releaseQualified"] else 1
 
 
 if __name__ == "__main__":

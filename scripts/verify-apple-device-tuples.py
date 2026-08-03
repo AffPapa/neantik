@@ -22,7 +22,10 @@ class DeviceTuple:
     id: str
     gpuModel: str
     hardwareConcurrency: int
+    physicalMemoryGB: int
+    webDeviceMemoryGB: int
     screen: str
+    deviceScaleFactor: int
     platformVersion: str
 
 
@@ -31,7 +34,10 @@ SWIFT_TUPLE_RE = re.compile(
     r'id:\s*"(?P<id>[^"]+)",\s*'
     r'gpuModel:\s*"(?P<gpuModel>[^"]+)",\s*'
     r"hardwareConcurrency:\s*(?P<hardwareConcurrency>\d+),\s*"
+    r"physicalMemoryGB:\s*(?P<physicalMemoryGB>\d+),\s*"
+    r"webDeviceMemoryGB:\s*(?P<webDeviceMemoryGB>\d+),\s*"
     r'screen:\s*"(?P<screen>[^"]+)",\s*'
+    r"deviceScaleFactor:\s*(?P<deviceScaleFactor>\d+),\s*"
     r'platformVersion:\s*"(?P<platformVersion>[^"]+)"\s*'
     r"\)",
     re.MULTILINE,
@@ -42,11 +48,20 @@ PYTHON_TUPLE_RE = re.compile(
     r'"(?P<id>[^"]+)",\s*'
     r'"(?P<gpu_model>[^"]+)",\s*'
     r"(?P<hardwareConcurrency>\d+),\s*"
+    r"(?P<physicalMemoryGB>\d+),\s*"
+    r"(?P<webDeviceMemoryGB>\d+),\s*"
     r'"(?P<screen>[^"]+)",\s*'
+    r"(?P<deviceScaleFactor>\d+),\s*"
     r'"(?P<platformVersion>[^"]+)"\s*'
     r"\)",
     re.MULTILINE,
 )
+
+IDENTITY_CATALOG_RE = re.compile(
+    r"static let tupleIDs = \[(?P<body>.*?)\]",
+    re.DOTALL,
+)
+SWIFT_STRING_RE = re.compile(r'"([^"]+)"')
 
 
 def tuple_from_mapping(value: dict[str, Any], *, label: str) -> DeviceTuple:
@@ -55,7 +70,10 @@ def tuple_from_mapping(value: dict[str, Any], *, label: str) -> DeviceTuple:
             id=str(value["id"]),
             gpuModel=str(value["gpuModel"]),
             hardwareConcurrency=int(value["hardwareConcurrency"]),
+            physicalMemoryGB=int(value["physicalMemoryGB"]),
+            webDeviceMemoryGB=int(value["webDeviceMemoryGB"]),
             screen=str(value["screen"]),
+            deviceScaleFactor=int(value["deviceScaleFactor"]),
             platformVersion=str(value["platformVersion"]),
         )
     except (KeyError, TypeError, ValueError) as error:
@@ -73,8 +91,20 @@ def validate_tuple(item: DeviceTuple, *, label: str) -> None:
         raise DeviceTupleError(
             f"{label} hardwareConcurrency is outside the reviewed Mac range: {item.hardwareConcurrency}"
         )
+    if item.physicalMemoryGB < item.webDeviceMemoryGB:
+        raise DeviceTupleError(
+            f"{label} physicalMemoryGB cannot be below webDeviceMemoryGB"
+        )
+    if item.webDeviceMemoryGB not in {4, 8}:
+        raise DeviceTupleError(
+            f"{label} webDeviceMemoryGB must use a reviewed browser cohort"
+        )
     if not re.fullmatch(r"\d+x\d+x\d+x\d+x24x2", item.screen):
         raise DeviceTupleError(f"{label} screen tuple is invalid: {item.screen}")
+    if item.deviceScaleFactor != 2:
+        raise DeviceTupleError(
+            f"{label} deviceScaleFactor must match the reviewed Retina cohort"
+        )
     if not re.fullmatch(r"15\.\d+\.\d+", item.platformVersion):
         raise DeviceTupleError(
             f"{label} platformVersion must remain a reviewed macOS 15 Client Hint value: {item.platformVersion}"
@@ -112,7 +142,10 @@ def parse_swift_tuples(path: Path) -> list[DeviceTuple]:
             id=match.group("id"),
             gpuModel=match.group("gpuModel"),
             hardwareConcurrency=int(match.group("hardwareConcurrency")),
+            physicalMemoryGB=int(match.group("physicalMemoryGB")),
+            webDeviceMemoryGB=int(match.group("webDeviceMemoryGB")),
             screen=match.group("screen"),
+            deviceScaleFactor=int(match.group("deviceScaleFactor")),
             platformVersion=match.group("platformVersion"),
         )
         for match in SWIFT_TUPLE_RE.finditer(text)
@@ -131,13 +164,36 @@ def parse_python_tuples(path: Path) -> list[DeviceTuple]:
             id=match.group("id"),
             gpuModel=match.group("gpu_model"),
             hardwareConcurrency=int(match.group("hardwareConcurrency")),
+            physicalMemoryGB=int(match.group("physicalMemoryGB")),
+            webDeviceMemoryGB=int(match.group("webDeviceMemoryGB")),
             screen=match.group("screen"),
+            deviceScaleFactor=int(match.group("deviceScaleFactor")),
             platformVersion=match.group("platformVersion"),
         )
         for match in PYTHON_TUPLE_RE.finditer(text)
     ]
     validate_collection(parsed, label="Python")
     return parsed
+
+
+def parse_identity_catalog_ids(path: Path) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise DeviceTupleError(
+            f"cannot read Swift identity catalog source: {path}"
+        ) from error
+    match = IDENTITY_CATALOG_RE.search(text)
+    if match is None:
+        raise DeviceTupleError("Swift identity catalog tupleIDs are missing")
+    ids = SWIFT_STRING_RE.findall(match.group("body"))
+    if not ids:
+        raise DeviceTupleError("Swift identity catalog tupleIDs are empty")
+    if len(ids) != len(set(ids)):
+        raise DeviceTupleError(
+            "Swift identity catalog contains duplicate tuple ids"
+        )
+    return ids
 
 
 def validate_collection(items: list[DeviceTuple], *, label: str) -> None:
@@ -169,20 +225,28 @@ def verify_consistency(
     manifest_path: Path,
     swift_path: Path,
     python_path: Path,
+    models_path: Path = PROJECT_ROOT / "Sources" / "NeAntik" / "Models.swift",
 ) -> dict[str, Any]:
     manifest = load_manifest(manifest_path)
     swift = parse_swift_tuples(swift_path)
     python = parse_python_tuples(python_path)
+    identity_ids = parse_identity_catalog_ids(models_path)
+    manifest_ids = [item.id for item in manifest]
     issues = [
         *compare(swift, manifest, label="Swift"),
         *compare(python, manifest, label="Python"),
     ]
+    if identity_ids != manifest_ids:
+        issues.append(
+            "Swift identity catalog tuple order does not match the immutable manifest"
+        )
     return {
         "schemaVersion": 1,
         "tupleCount": len(manifest),
         "manifest": str(manifest_path),
         "swift": str(swift_path),
         "python": str(python_path),
+        "models": str(models_path),
         "consistent": not issues,
         "issues": issues,
     }
@@ -207,6 +271,11 @@ def main() -> int:
         type=Path,
         default=PROJECT_ROOT / "scripts" / "verify-gui-fingerprint-report.py",
     )
+    parser.add_argument(
+        "--models",
+        type=Path,
+        default=PROJECT_ROOT / "Sources" / "NeAntik" / "Models.swift",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     try:
@@ -214,6 +283,7 @@ def main() -> int:
             manifest_path=args.manifest,
             swift_path=args.swift,
             python_path=args.python,
+            models_path=args.models,
         )
     except DeviceTupleError as error:
         print(f"Apple device tuple verification failed: {error}", file=sys.stderr)

@@ -19,7 +19,7 @@ CRITICAL_KEYS = [
     "audio",
     "client_rects",
 ]
-PRODUCTION_STABLE_CONTEXT_KEYS = [
+PUBLIC_ALPHA_STABLE_CONTEXT_KEYS = [
     "webgl_vendor",
     "webgl_renderer",
     "webgl_extensions",
@@ -35,8 +35,70 @@ PRODUCTION_STABLE_CONTEXT_KEYS = [
     "languages",
     "timezone",
 ]
-PRODUCTION_REQUIRED_KEYS = CRITICAL_KEYS + PRODUCTION_STABLE_CONTEXT_KEYS
+PRODUCTION_EXTENDED_CONTEXT_KEYS = [
+    "audio_repeat",
+    "canvas_repeat",
+    "client_rects_repeat",
+    "webgl_pixels_repeat",
+    "webgl_shader_precision",
+    "css_screen_match",
+    "intl_locale",
+    "primary_locale_core",
+    "intl_locale_core",
+    "worker_canvas",
+    "worker_webgl_pixels",
+    "worker_webgl_vendor",
+    "worker_webgl_renderer",
+    "worker_webgl_extensions",
+    "worker_webgl_shader_precision",
+    "worker_user_agent",
+    "worker_platform",
+    "worker_languages",
+    "worker_timezone",
+    "worker_intl_locale",
+    "worker_primary_locale_core",
+    "worker_intl_locale_core",
+    "worker_hardware_concurrency",
+    "worker_device_memory",
+    "worker_client_hints",
+    "network_route",
+    "webrtc_probe",
+    "webrtc_complete",
+    "webrtc_stun_requests",
+    "webrtc_candidate_summary",
+]
+PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
+PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
+CURRENT_AUDIT_SCHEMA_VERSION = 7
+CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+REPORT_KEYS = {
+    "id",
+    "createdAt",
+    "managerVersion",
+    "managerBuild",
+    "auditSchemaVersion",
+    "identityCatalogVersion",
+    "executionMode",
+    "runtimeName",
+    "runtimeVersion",
+    "runtimeFlavor",
+    "runtimeCodeSignatureValid",
+    "runtimeExecutableSHA256",
+    "runtimeFrameworkSHA256",
+    "webrtcDirectControl",
+    "firstInitial",
+    "second",
+    "firstRepeat",
+}
+CAPTURE_KEYS = {
+    "capturedAt",
+    "profileID",
+    "profileName",
+    "identityCode",
+    "values",
+}
+VALUE_KEYS = set(PRODUCTION_REQUIRED_KEYS)
 
 
 @dataclass(frozen=True)
@@ -44,22 +106,25 @@ class AppleDeviceTuple:
     id: str
     gpu_model: str
     hardware_concurrency: int
+    physical_memory_gb: int
+    web_device_memory_gb: int
     screen: str
+    device_scale_factor: int
     platform_version: str
 
 
 APPLE_DEVICE_TUPLES = [
-    AppleDeviceTuple("macbook-air-m1", "M1", 8, "1280x800x1280x775x24x2", "15.5.0"),
-    AppleDeviceTuple("macbook-pro-m1-pro", "M1 Pro", 10, "1512x982x1512x957x24x2", "15.4.1"),
-    AppleDeviceTuple("macbook-air-m2", "M2", 8, "1280x832x1280x807x24x2", "15.4.0"),
-    AppleDeviceTuple("macbook-pro-m2-max", "M2 Max", 12, "1728x1117x1728x1092x24x2", "15.3.2"),
-    AppleDeviceTuple("macbook-pro-m2-pro", "M2 Pro", 12, "1512x982x1512x957x24x2", "15.3.1"),
-    AppleDeviceTuple("macbook-air-m3", "M3", 8, "1280x832x1280x807x24x2", "15.3.0"),
-    AppleDeviceTuple("macbook-pro-m3-max", "M3 Max", 16, "1728x1117x1728x1092x24x2", "15.2.0"),
-    AppleDeviceTuple("macbook-pro-m3-pro", "M3 Pro", 12, "1512x982x1512x957x24x2", "15.1.1"),
-    AppleDeviceTuple("macbook-air-m4", "M4", 10, "1280x832x1280x807x24x2", "15.1.0"),
-    AppleDeviceTuple("macbook-pro-m4-max", "M4 Max", 16, "1728x1117x1728x1092x24x2", "15.0.1"),
-    AppleDeviceTuple("macbook-pro-m4-pro", "M4 Pro", 14, "1512x982x1512x957x24x2", "15.5.0"),
+    AppleDeviceTuple("macbook-air-m1", "M1", 8, 8, 8, "1280x800x1280x775x24x2", 2, "15.5.0"),
+    AppleDeviceTuple("macbook-pro-m1-pro", "M1 Pro", 10, 16, 8, "1512x982x1512x957x24x2", 2, "15.4.1"),
+    AppleDeviceTuple("macbook-air-m2", "M2", 8, 8, 8, "1280x832x1280x807x24x2", 2, "15.4.0"),
+    AppleDeviceTuple("macbook-pro-m2-max", "M2 Max", 12, 32, 8, "1728x1117x1728x1092x24x2", 2, "15.3.2"),
+    AppleDeviceTuple("macbook-pro-m2-pro", "M2 Pro", 12, 16, 8, "1512x982x1512x957x24x2", 2, "15.3.1"),
+    AppleDeviceTuple("macbook-air-m3", "M3", 8, 8, 8, "1280x832x1280x807x24x2", 2, "15.3.0"),
+    AppleDeviceTuple("macbook-pro-m3-max", "M3 Max", 16, 36, 8, "1728x1117x1728x1092x24x2", 2, "15.2.0"),
+    AppleDeviceTuple("macbook-pro-m3-pro", "M3 Pro", 12, 18, 8, "1512x982x1512x957x24x2", 2, "15.1.1"),
+    AppleDeviceTuple("macbook-air-m4", "M4", 10, 16, 8, "1280x832x1280x807x24x2", 2, "15.1.0"),
+    AppleDeviceTuple("macbook-pro-m4-max", "M4 Max", 16, 36, 8, "1728x1117x1728x1092x24x2", 2, "15.0.1"),
+    AppleDeviceTuple("macbook-pro-m4-pro", "M4 Pro", 14, 24, 8, "1512x982x1512x957x24x2", 2, "15.5.0"),
 ]
 
 
@@ -141,22 +206,67 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _distributed_path(runtime_app: Path, recorded_path: object, label: str) -> Path:
-    if not isinstance(recorded_path, str) or "/Contents/" not in recorded_path:
+def _require_canonical_evidence_path(
+    recorded_path: object,
+    canonical_path: str,
+    label: str,
+) -> None:
+    if not isinstance(recorded_path, str) or recorded_path != canonical_path:
         raise FingerprintReportError(
-            f"Embedded runtime verification report has invalid {label} path"
+            "Embedded runtime verification report has a non-canonical "
+            f"{label} path"
         )
-    relative = Path("Contents") / recorded_path.split("/Contents/", 1)[1]
-    candidate = runtime_app / relative
+
+
+def _runtime_executable(runtime_app: Path, runtime_info: dict[object, object]) -> Path:
+    executable_name = runtime_info.get("CFBundleExecutable")
+    if (
+        not isinstance(executable_name, str)
+        or not executable_name
+        or Path(executable_name).name != executable_name
+    ):
+        raise FingerprintReportError(
+            "Distributed runtime has an invalid CFBundleExecutable"
+        )
+    executable = runtime_app / "Contents" / "MacOS" / executable_name
     try:
-        candidate.resolve().relative_to(runtime_app.resolve())
+        executable.resolve().relative_to(runtime_app.resolve())
     except (OSError, ValueError) as error:
         raise FingerprintReportError(
-            f"Embedded runtime verification report escapes the runtime bundle: {label}"
+            "Distributed runtime executable escapes the runtime bundle"
         ) from error
-    if not candidate.is_file():
-        raise FingerprintReportError(f"Distributed runtime {label} is missing: {candidate}")
-    return candidate
+    if not executable.is_file():
+        raise FingerprintReportError(
+            f"Distributed runtime executable is missing: {executable}"
+        )
+    return executable
+
+
+def _runtime_framework(runtime_app: Path) -> Path:
+    frameworks_root = runtime_app / "Contents" / "Frameworks"
+    try:
+        candidates = sorted(
+            path
+            for path in frameworks_root.rglob("* Framework")
+            if path.is_file() and not path.is_symlink()
+        )
+    except OSError as error:
+        raise FingerprintReportError(
+            f"Cannot inspect distributed runtime Frameworks: {error}"
+        ) from error
+    if len(candidates) != 1:
+        raise FingerprintReportError(
+            "Distributed runtime must contain exactly one canonical "
+            "Chromium Framework binary"
+        )
+    framework = candidates[0]
+    try:
+        framework.resolve().relative_to(runtime_app.resolve())
+    except (OSError, ValueError) as error:
+        raise FingerprintReportError(
+            "Distributed runtime Framework escapes the runtime bundle"
+        ) from error
+    return framework
 
 
 def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
@@ -166,13 +276,13 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         / "Resources"
         / "NeAntik Browser.app"
     )
-    evidence_path = (
+    evidence_root = (
         integrated_app
         / "Contents"
         / "Resources"
         / "NeAntikRuntimeEvidence"
-        / "runtime-verification.json"
     )
+    evidence_path = evidence_root / "runtime-verification.json"
     try:
         with (integrated_app / "Contents" / "Info.plist").open("rb") as file:
             manager_info = plistlib.load(file)
@@ -187,15 +297,75 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must be a JSON object"
         )
+    if evidence.get("schemaVersion") != 3:
+        raise FingerprintReportError(
+            "Embedded runtime verification report must use provenance schema 3"
+        )
+    provenance_files = {
+        "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
+        "candidateLockSHA256":
+            evidence_root / "fingerprint-chromium.lock.json",
+        "sourceContractSHA256":
+            evidence_root / "chromium-150-source-contract.json",
+        "sourceProvenanceSHA256":
+            evidence_root / "source-provenance.json",
+        "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",
+        "appleDeviceTuplesManifestSHA256": evidence_root / "apple-device-tuples.json",
+        "securityBaselineSHA256": evidence_root / "security-baseline.json",
+    }
+    for report_key, path in provenance_files.items():
+        recorded = evidence.get(report_key)
+        if not isinstance(recorded, str) or not SHA256_RE.fullmatch(recorded):
+            raise FingerprintReportError(
+                f"Embedded runtime verification report has invalid {report_key}"
+            )
+        if sha256_file(path) != recorded:
+            raise FingerprintReportError(
+                f"Embedded runtime provenance does not match {path.name}"
+            )
+    args_path = evidence_root / "args.gn"
     try:
-        executable = _distributed_path(
-            runtime_app,
+        build_arguments = evidence["buildArguments"]
+        if (
+            not isinstance(build_arguments, dict)
+            or set(build_arguments) != {"sha256"}
+        ):
+            raise FingerprintReportError(
+                "Embedded runtime buildArguments must contain only sha256"
+            )
+        recorded_args_sha = str(build_arguments["sha256"])
+    except (KeyError, TypeError) as error:
+        raise FingerprintReportError(
+            f"Embedded runtime provenance is missing expected key: {error}"
+        ) from error
+    immutable_provenance = {
+        "buildArguments.sha256": (
+            recorded_args_sha,
+            sha256_file(args_path),
+        ),
+    }
+    for label, (recorded, expected) in immutable_provenance.items():
+        if (
+            not isinstance(recorded, str)
+            or not SHA256_RE.fullmatch(recorded)
+            or recorded != expected
+        ):
+            raise FingerprintReportError(
+                f"Embedded runtime provenance mismatch: {label}"
+            )
+    executable = _runtime_executable(runtime_app, runtime_info)
+    framework = _runtime_framework(runtime_app)
+    executable_bundle_path = executable.relative_to(runtime_app).as_posix()
+    framework_bundle_path = framework.relative_to(runtime_app).as_posix()
+    try:
+        _require_canonical_evidence_path(
             evidence["executable"]["path"],
+            executable_bundle_path,
             "executable",
         )
-        framework = _distributed_path(
-            runtime_app,
+        _require_canonical_evidence_path(
             evidence["framework"]["path"],
+            framework_bundle_path,
             "framework",
         )
         created_at = str(evidence["createdAt"])
@@ -258,6 +428,47 @@ def values(capture_object: dict[str, Any]) -> dict[str, str]:
     return capture_object["values"]
 
 
+def exact_schema_issues(report: dict[str, Any]) -> list[str]:
+    issues: list[str] = []
+    unknown_report_keys = sorted(set(report) - REPORT_KEYS)
+    if unknown_report_keys:
+        issues.append(
+            "The report contains unsupported top-level fields: "
+            + ", ".join(unknown_report_keys)
+            + "."
+        )
+
+    for capture_key in (
+        "webrtcDirectControl",
+        "firstInitial",
+        "second",
+        "firstRepeat",
+    ):
+        capture_object = report.get(capture_key)
+        if capture_object is None and capture_key == "webrtcDirectControl":
+            continue
+        if not isinstance(capture_object, dict):
+            continue
+        unknown_capture_keys = sorted(set(capture_object) - CAPTURE_KEYS)
+        if unknown_capture_keys:
+            issues.append(
+                f"The {capture_key} capture contains unsupported fields: "
+                + ", ".join(unknown_capture_keys)
+                + "."
+            )
+        capture_values = capture_object.get("values")
+        if not isinstance(capture_values, dict):
+            continue
+        unknown_value_keys = sorted(set(capture_values) - VALUE_KEYS)
+        if unknown_value_keys:
+            issues.append(
+                f"The {capture_key} values contain unsupported fields: "
+                + ", ".join(unknown_value_keys)
+                + "."
+            )
+    return issues
+
+
 def parse_iso8601(value: object, field: str) -> datetime:
     if not isinstance(value, str) or not value.strip():
         raise FingerprintReportError(f"{field} must be a non-empty ISO-8601 timestamp")
@@ -297,7 +508,9 @@ def timestamp_issues(
         return issues
 
     if any(capture_times[index][1] > capture_times[index + 1][1] for index in range(len(capture_times) - 1)):
-        issues.append("Capture timestamps are not ordered as A → B → A.")
+        issues.append(
+            "Capture timestamps are not ordered as direct control → A → B → A."
+        )
     if any(captured_at > report_created_at for _, captured_at in capture_times):
         issues.append("A capture timestamp is later than the report createdAt timestamp.")
     if expected_runtime is not None:
@@ -309,9 +522,13 @@ def timestamp_issues(
         except FingerprintReportError as error:
             issues.append(str(error))
         else:
-            if report_created_at < runtime_created_at:
+            if report_created_at < runtime_created_at or any(
+                captured_at < runtime_created_at
+                for _, captured_at in capture_times
+            ):
                 issues.append(
-                    "The report was created before the pinned runtime verification report."
+                    "The report or a capture predates the pinned runtime "
+                    "verification report."
                 )
     return issues
 
@@ -343,18 +560,281 @@ def unavailable_required_keys(
     first: dict[str, str],
     second: dict[str, str],
     repeat: dict[str, str],
+    *,
+    required_keys: list[str] = PRODUCTION_REQUIRED_KEYS,
 ) -> list[str]:
     return [
         key
-        for key in PRODUCTION_REQUIRED_KEYS
+        for key in required_keys
         if not is_available(first.get(key))
         or not is_available(second.get(key))
         or not is_available(repeat.get(key))
     ]
 
 
-def unstable_required_keys(first: dict[str, str], repeat: dict[str, str]) -> list[str]:
-    return [key for key in PRODUCTION_REQUIRED_KEYS if first.get(key) != repeat.get(key)]
+def unstable_required_keys(
+    first: dict[str, str],
+    repeat: dict[str, str],
+    *,
+    required_keys: list[str] = PRODUCTION_REQUIRED_KEYS,
+) -> list[str]:
+    return [key for key in required_keys if first.get(key) != repeat.get(key)]
+
+
+def parsed_client_hints(value: str | None) -> dict[str, Any] | None:
+    if not is_available(value):
+        return None
+    try:
+        parsed = json.loads(value or "")
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def normalized_audit_locale(value: str) -> str | None:
+    components = value.strip().replace("_", "-").split("-")
+    if (
+        not components
+        or any(not component for component in components)
+        or not 2 <= len(components[0]) <= 8
+        or not components[0].isascii()
+        or not components[0].isalpha()
+    ):
+        return None
+    normalized = [components[0].lower()]
+    index = 1
+    if len(components[0]) <= 3:
+        extlang_count = 0
+        while (
+            index < len(components)
+            and extlang_count < 3
+            and len(components[index]) == 3
+            and components[index].isascii()
+            and components[index].isalpha()
+        ):
+            normalized.append(components[index].lower())
+            index += 1
+            extlang_count += 1
+    if (
+        index < len(components)
+        and len(components[index]) == 4
+        and components[index].isascii()
+        and components[index].isalpha()
+    ):
+        normalized.append(components[index].title())
+        index += 1
+    if index < len(components):
+        region = components[index]
+        if len(region) == 2 and region.isascii() and region.isalpha():
+            normalized.append(region.upper())
+            index += 1
+        elif len(region) == 3 and region.isascii() and region.isdigit():
+            normalized.append(region)
+            index += 1
+    while index < len(components):
+        variant = components[index]
+        if not (
+            variant.isascii()
+            and variant.isalnum()
+            and (
+                5 <= len(variant) <= 8
+                or (
+                    len(variant) == 4
+                    and variant[0].isdigit()
+                )
+            )
+        ):
+            break
+        index += 1
+    while index < len(components):
+        singleton = components[index]
+        if (
+            len(singleton) != 1
+            or not singleton.isascii()
+            or not singleton.isalnum()
+        ):
+            return None
+        index += 1
+        extension_count = 0
+        minimum_length = 1 if singleton.lower() == "x" else 2
+        while index < len(components) and len(components[index]) != 1:
+            subtag = components[index]
+            if (
+                not minimum_length <= len(subtag) <= 8
+                or not subtag.isascii()
+                or not subtag.isalnum()
+            ):
+                return None
+            extension_count += 1
+            index += 1
+        if extension_count == 0:
+            return None
+    # Intl.DateTimeFormat may legitimately minimize script, region, and
+    # variant subtags in resolvedOptions().locale. Compare only the validated
+    # primary language until a future schema captures Intl.Locale.maximize().
+    return normalized[0]
+
+
+def primary_audit_locale(languages: str) -> str | None:
+    return normalized_audit_locale(languages.split(",", 1)[0])
+
+
+def cross_realm_consistency_issues(
+    label: str,
+    capture_object: dict[str, Any],
+) -> list[str]:
+    v = values(capture_object)
+    issues: list[str] = []
+
+    for first, second in (
+        ("audio", "audio_repeat"),
+        ("canvas", "canvas_repeat"),
+        ("canvas", "worker_canvas"),
+        ("client_rects", "client_rects_repeat"),
+        ("webgl_pixels", "webgl_pixels_repeat"),
+        ("webgl_pixels", "worker_webgl_pixels"),
+        ("webgl_vendor", "worker_webgl_vendor"),
+        ("webgl_renderer", "worker_webgl_renderer"),
+        ("webgl_extensions", "worker_webgl_extensions"),
+        ("webgl_shader_precision", "worker_webgl_shader_precision"),
+        ("user_agent", "worker_user_agent"),
+        ("platform", "worker_platform"),
+        ("languages", "worker_languages"),
+        ("timezone", "worker_timezone"),
+        ("intl_locale", "worker_intl_locale"),
+        ("primary_locale_core", "worker_primary_locale_core"),
+        ("intl_locale_core", "worker_intl_locale_core"),
+        ("hardware_concurrency", "worker_hardware_concurrency"),
+        ("device_memory", "worker_device_memory"),
+    ):
+        if is_available(v.get(first)) and is_available(v.get(second)) and v.get(first) != v.get(second):
+            issues.append(f"The {label} {first} value disagrees with {second}.")
+
+    for languages_key, locale_key, primary_core_key, locale_core_key in (
+        (
+            "languages",
+            "intl_locale",
+            "primary_locale_core",
+            "intl_locale_core",
+        ),
+        (
+            "worker_languages",
+            "worker_intl_locale",
+            "worker_primary_locale_core",
+            "worker_intl_locale_core",
+        ),
+    ):
+        languages = v.get(languages_key)
+        locale = v.get(locale_key)
+        primary_core = v.get(primary_core_key)
+        locale_core = v.get(locale_core_key)
+        if not all(
+            is_available(value)
+            for value in (languages, locale, primary_core, locale_core)
+        ):
+            continue
+        if (
+            primary_audit_locale(languages or "") is None
+            or normalized_audit_locale(locale or "") is None
+            or normalized_audit_locale(primary_core or "") is None
+            or normalized_audit_locale(locale_core or "") is None
+        ):
+            issues.append(
+                f"The {label} locale evidence contains not supported "
+                "locale identifiers."
+            )
+            continue
+        if primary_core != locale_core:
+            issues.append(
+                f"The {label} {primary_core_key} disagrees with "
+                f"{locale_core_key}."
+            )
+
+    if (
+        is_available(v.get("css_screen_match"))
+        and v.get("css_screen_match") != "width:1|height:1|resolution:1"
+    ):
+        issues.append(f"The {label} CSS media queries disagree with the Screen API.")
+
+    top_hints = parsed_client_hints(v.get("client_hints"))
+    worker_hints = parsed_client_hints(v.get("worker_client_hints"))
+    if top_hints is not None and worker_hints is not None:
+        for key in (
+            "architecture",
+            "bitness",
+            "mobile",
+            "model",
+            "platform",
+            "platformVersion",
+            "uaFullVersion",
+            "wow64",
+        ):
+            if top_hints.get(key) != worker_hints.get(key):
+                issues.append(
+                    f"The {label} Client Hints {key} value disagrees between the page and worker."
+                )
+    return issues
+
+
+def network_privacy_issues(
+    label: str,
+    capture_object: dict[str, Any],
+) -> list[str]:
+    v = values(capture_object)
+    route = v.get("network_route")
+    if route not in {"direct", "proxied"}:
+        return [f"The {label} configured network route is invalid."]
+    if v.get("webrtc_probe") != "loopback-stun-v1":
+        return [f"The {label} WebRTC probe contract is invalid."]
+    if v.get("webrtc_complete") != "true":
+        return [f"The {label} WebRTC gathering did not complete."]
+    request_text = v.get("webrtc_stun_requests")
+    if (
+        not isinstance(request_text, str)
+        or not re.fullmatch(r"0|[1-9][0-9]{0,2}", request_text)
+        or int(request_text) > 256
+    ):
+        return [f"The {label} STUN request count is invalid."]
+    request_count = int(request_text)
+    try:
+        summary = json.loads(v.get("webrtc_candidate_summary", ""))
+    except json.JSONDecodeError:
+        summary = None
+    expected_keys = {"total", "host", "srflx", "prflx", "relay", "unknown"}
+    if not isinstance(summary, dict) or set(summary) != expected_keys:
+        return [f"The {label} WebRTC candidate summary is invalid."]
+    counts = [summary.get(key) for key in expected_keys]
+    if (
+        not all(isinstance(value, int) and not isinstance(value, bool) for value in counts)
+        or any(value < 0 or value > 256 for value in counts)
+        or summary["total"]
+        != summary["host"]
+        + summary["srflx"]
+        + summary["prflx"]
+        + summary["relay"]
+        + summary["unknown"]
+    ):
+        return [f"The {label} WebRTC candidate summary is invalid."]
+    issues: list[str] = []
+    if summary["unknown"] > 0:
+        issues.append(
+            f"The {label} WebRTC candidate summary contains unknown candidate types."
+        )
+    if route == "direct" and request_count == 0:
+        issues.append(
+            f"The {label} direct route did not reach the loopback STUN control."
+        )
+    if route == "proxied" and request_count != 0:
+        issues.append(
+            f"The {label} proxied route sent a loopback STUN request."
+        )
+    if route == "proxied" and any(
+        summary[key] > 0 for key in ("host", "srflx", "prflx")
+    ):
+        issues.append(
+            f"The {label} proxied route exposed a direct WebRTC candidate."
+        )
+    return issues
 
 
 def tuple_for_identity(identity_code: object) -> AppleDeviceTuple | None:
@@ -380,7 +860,7 @@ def device_tuple_issues(
 
     expected_values = {
         "hardware_concurrency": str(tuple_.hardware_concurrency),
-        "device_memory": "8",
+        "device_memory": str(tuple_.web_device_memory_gb),
         "screen": tuple_.screen,
         "platform": "MacIntel",
         "webgl_vendor": "Google Inc. (Apple)",
@@ -430,10 +910,38 @@ def production_release_issues(
     second = values(second_capture)
     repeat = values(repeat_capture)
 
-    unavailable = unavailable_required_keys(first, second, repeat)
+    if report.get("auditSchemaVersion", 1) != CURRENT_AUDIT_SCHEMA_VERSION:
+        issues.append("The report does not use the current strict fingerprint audit schema.")
+    if report.get("identityCatalogVersion") != CURRENT_IDENTITY_CATALOG_VERSION:
+        issues.append("The report does not use the current immutable identity catalog.")
+
+    try:
+        direct_control = capture(report, "webrtcDirectControl")
+    except FingerprintReportError:
+        issues.append(
+            "The report does not contain a WebRTC direct positive control."
+        )
+    else:
+        issues.extend(
+            network_privacy_issues(
+                "WebRTC direct control",
+                direct_control,
+            )
+        )
+
+    unavailable = unavailable_required_keys(
+        first,
+        second,
+        repeat,
+        required_keys=PRODUCTION_EXTENDED_CONTEXT_KEYS,
+    )
     if unavailable:
         issues.append("Required browser surfaces are unavailable: " + ", ".join(unavailable) + ".")
-    unstable = unstable_required_keys(first, repeat)
+    unstable = unstable_required_keys(
+        first,
+        repeat,
+        required_keys=PRODUCTION_EXTENDED_CONTEXT_KEYS,
+    )
     if unstable:
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
 
@@ -460,6 +968,13 @@ def production_release_issues(
                 runtime_version=runtime_version,
             )
         )
+    for label, capture_object in (
+        ("profile A, first capture", first_capture),
+        ("profile B", second_capture),
+        ("profile A, repeat capture", repeat_capture),
+    ):
+        issues.extend(cross_realm_consistency_issues(label, capture_object))
+        issues.extend(network_privacy_issues(label, capture_object))
     return issues
 
 
@@ -475,15 +990,22 @@ def public_alpha_release_issues(
     second = values(second_capture)
     repeat = values(repeat_capture)
 
-    issues: list[str] = []
+    issues = exact_schema_issues(report)
+    ordered_captures: list[tuple[str, dict[str, Any]]] = []
+    direct_control = report.get("webrtcDirectControl")
+    if isinstance(direct_control, dict):
+        ordered_captures.append(("webrtcDirectControl", direct_control))
+    ordered_captures.extend(
+        [
+            ("firstInitial", first_capture),
+            ("second", second_capture),
+            ("firstRepeat", repeat_capture),
+        ]
+    )
     issues.extend(
         timestamp_issues(
             report,
-            [
-                ("firstInitial", first_capture),
-                ("second", second_capture),
-                ("firstRepeat", repeat_capture),
-            ],
+            ordered_captures,
             expected_runtime=expected_runtime,
         )
     )
@@ -535,10 +1057,19 @@ def public_alpha_release_issues(
     if unstable_critical or len(changed_critical) < 2:
         issues.append("The critical-surface verdict is not verified.")
 
-    unavailable = unavailable_required_keys(first, second, repeat)
+    unavailable = unavailable_required_keys(
+        first,
+        second,
+        repeat,
+        required_keys=PUBLIC_ALPHA_REQUIRED_KEYS,
+    )
     if unavailable:
         issues.append("Required browser surfaces are unavailable: " + ", ".join(unavailable) + ".")
-    unstable = unstable_required_keys(first, repeat)
+    unstable = unstable_required_keys(
+        first,
+        repeat,
+        required_keys=PUBLIC_ALPHA_REQUIRED_KEYS,
+    )
     if unstable:
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
     if "webgl_pixels" not in changed_critical:
@@ -564,6 +1095,10 @@ def verification_summary(
         "issues": issues,
         "productionQualified": not production_issues,
         "productionIssues": production_issues,
+        "networkEvidenceScope": "configured-route-webrtc-only",
+        "effectiveHTTPRouteObserved": False,
+        "auditSchemaVersion": report.get("auditSchemaVersion", 1),
+        "identityCatalogVersion": report.get("identityCatalogVersion"),
         "changedCriticalKeys": changed_critical_keys(first, second, repeat),
         "unstableRequiredKeys": unstable_required_keys(first, repeat),
         "changedKeys": changed_keys(first, second),
@@ -573,6 +1108,16 @@ def verification_summary(
         "runtimeFlavor": report.get("runtimeFlavor"),
         "createdAt": report.get("createdAt"),
     }
+
+
+def qualification_issues(
+    summary: dict[str, Any],
+    *,
+    require_production: bool,
+) -> list[str]:
+    if require_production:
+        return list(summary["productionIssues"])
+    return list(summary["issues"])
 
 
 def main() -> int:
@@ -601,6 +1146,14 @@ def main() -> int:
             "version/build inside the distributed NeAntik app."
         ),
     )
+    parser.add_argument(
+        "--require-production",
+        action="store_true",
+        help=(
+            "Require strict coherent production qualification instead of the "
+            "documented Direct public-alpha threshold."
+        ),
+    )
     args = parser.parse_args()
     try:
         if args.integrated_app:
@@ -618,19 +1171,45 @@ def main() -> int:
     except FingerprintReportError as error:
         raise SystemExit(str(error)) from error
 
+    issues = qualification_issues(
+        summary,
+        require_production=args.require_production,
+    )
+    qualified = not issues
     if args.json:
+        summary["requiredQualification"] = (
+            "production" if args.require_production else "public-alpha"
+        )
+        summary["requiredQualificationPassed"] = qualified
         print(json.dumps(summary, indent=2, ensure_ascii=False))
-    elif summary["qualified"]:
-        print("PASS: public-alpha GUI A -> B -> A fingerprint report is qualified.")
-        if not summary["productionQualified"]:
+    elif qualified:
+        if args.require_production:
+            print(
+                "PASS: strict coherent production GUI A -> B -> A "
+                "fingerprint report is qualified."
+            )
+        else:
+            print(
+                "PASS: public-alpha GUI A -> B -> A fingerprint report is "
+                "qualified."
+            )
+        if not args.require_production and not summary["productionQualified"]:
             print("NOTE: strict coherent production hardening is still incomplete.")
             for issue in summary["productionIssues"]:
                 print(f"- {issue}")
     else:
-        print("FAIL: public-alpha GUI A -> B -> A fingerprint report is not qualified.")
-        for issue in summary["issues"]:
+        label = (
+            "strict coherent production"
+            if args.require_production
+            else "public-alpha"
+        )
+        print(
+            f"FAIL: {label} GUI A -> B -> A fingerprint report is not "
+            "qualified."
+        )
+        for issue in issues:
             print(f"- {issue}")
-    return 0 if summary["qualified"] else 1
+    return 0 if qualified else 1
 
 
 if __name__ == "__main__":

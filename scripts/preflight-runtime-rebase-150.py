@@ -101,12 +101,12 @@ def assert_safe_build_root(build_root: Path, preserved: Path) -> None:
         raise RebasePreflightError("Build root must be an absolute path")
     resolved = build_root.resolve(strict=False)
     preserved_resolved = preserved.resolve(strict=False)
-    home = Path.home().resolve(strict=False)
     project_root = Path(__file__).resolve().parents[1]
+    user_home = Path.home().resolve()
     forbidden = {
         Path("/"),
         Path("/Users"),
-        home,
+        user_home,
         project_root,
         project_root.parent,
         Path("/private/tmp"),

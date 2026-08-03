@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import plistlib
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_BLOCK = re.compile(
-    r"export const latestRelease = \{(?P<body>.*?)\} as const;",
-    re.DOTALL,
-)
-FIELD = re.compile(r'^\s*(?P<key>\w+):\s*"(?P<value>[^"]+)"', re.MULTILINE)
+RELEASE_FILENAME = re.compile(r"^v(?P<version>\d+(?:\.\d+){2})\.json$")
 
 
 class VersionBumpError(ValueError):
     pass
+
+
+@dataclass(frozen=True)
+class PublishedRelease:
+    version: str
+    build: int
+    source: Path
 
 
 def version_tuple(value: str) -> tuple[int, ...]:
@@ -31,23 +36,84 @@ def read_candidate(project_root: Path) -> tuple[str, int]:
     return str(info["CFBundleShortVersionString"]), int(info["CFBundleVersion"])
 
 
-def read_published(project_root: Path) -> tuple[str, int]:
-    text = (
-        project_root / "TelemetryDashboard" / "content" / "release.ts"
-    ).read_text(encoding="utf-8")
-    match = RELEASE_BLOCK.search(text)
-    if not match:
-        raise VersionBumpError("latestRelease block is missing")
-    fields = {
-        item.group("key"): item.group("value")
-        for item in FIELD.finditer(match.group("body"))
-    }
+def read_release_contract(path: Path) -> PublishedRelease:
     try:
-        return fields["version"], int(fields["build"])
-    except (KeyError, ValueError) as error:
+        metadata = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeError) as error:
         raise VersionBumpError(
-            "latestRelease version/build is invalid"
+            f"release contract {path.name} is malformed JSON"
         ) from error
+    if not isinstance(metadata, dict):
+        raise VersionBumpError(
+            f"release contract {path.name} must contain a JSON object"
+        )
+
+    filename_match = RELEASE_FILENAME.fullmatch(path.name)
+    if not filename_match:
+        raise VersionBumpError(f"invalid release contract filename: {path.name}")
+    filename_version = filename_match.group("version")
+
+    schema_version = metadata.get("schemaVersion")
+    version = metadata.get("version")
+    tag = metadata.get("tag")
+    build = metadata.get("build")
+    if schema_version != 1:
+        raise VersionBumpError(
+            f"release contract {path.name} has unsupported schemaVersion"
+        )
+    if not isinstance(version, str):
+        raise VersionBumpError(
+            f"release contract {path.name} has invalid version"
+        )
+    version_tuple(version)
+    if version != filename_version:
+        raise VersionBumpError(
+            f"release contract {path.name} version does not match its filename"
+        )
+    if tag != f"v{version}":
+        raise VersionBumpError(
+            f"release contract {path.name} tag does not match its version"
+        )
+    if isinstance(build, bool) or not isinstance(build, int) or build <= 0:
+        raise VersionBumpError(
+            f"release contract {path.name} has invalid build"
+        )
+    return PublishedRelease(version=version, build=build, source=path)
+
+
+def read_published(project_root: Path) -> tuple[str, int]:
+    releases_root = project_root / "releases"
+    if not releases_root.is_dir():
+        raise VersionBumpError("releases directory is missing")
+
+    contract_paths = sorted(releases_root.glob("v*.json"))
+    if not contract_paths:
+        raise VersionBumpError("no checked-in release contracts found")
+
+    releases = [read_release_contract(path) for path in contract_paths]
+    versions: set[tuple[int, ...]] = set()
+    builds: set[int] = set()
+    for release in releases:
+        parsed_version = version_tuple(release.version)
+        if parsed_version in versions:
+            raise VersionBumpError(
+                f"duplicate release version: {release.version}"
+            )
+        if release.build in builds:
+            raise VersionBumpError(f"duplicate release build: {release.build}")
+        versions.add(parsed_version)
+        builds.add(release.build)
+
+    ordered = sorted(releases, key=lambda release: version_tuple(release.version))
+    for previous, current in zip(ordered, ordered[1:]):
+        if current.build <= previous.build:
+            raise VersionBumpError(
+                "release contracts are non-monotonic: "
+                f"{current.version} build {current.build} must be greater than "
+                f"{previous.version} build {previous.build}"
+            )
+    latest = ordered[-1]
+    return latest.version, latest.build
 
 
 def verify(project_root: Path = PROJECT_ROOT) -> dict[str, object]:

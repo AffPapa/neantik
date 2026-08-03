@@ -125,6 +125,14 @@ def verify(
 
     verification = lock.get("verification")
     if not isinstance(verification, dict):
+        if allow_public_alpha_tuples and lock.get("status") == "source-qualified":
+            return (
+                f"Runtime security baseline verified for public alpha: Chromium {runtime_raw} >= "
+                f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
+                f"security fixes {security_fix_count}; source-only runtime lock has no "
+                "coherent Apple device tuple verification object; GUI fingerprint evidence "
+                "must remain bound by the Direct release gate."
+            )
         fail("Runtime source lock has no verification object.")
     tuple_status = verification.get("coherentAppleDeviceTuples")
     if tuple_status != "verified":

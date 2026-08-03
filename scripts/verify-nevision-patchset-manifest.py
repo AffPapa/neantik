@@ -76,14 +76,34 @@ def assert_patch_scope_allowed(patch_path: Path, forbidden_scopes: list[str], gr
 
 
 def apply_check(source_root: Path, patch_path: Path) -> None:
+    repository = subprocess.run(
+        ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    apply_root = source_root
+    directory_options: list[str] = []
+    if repository.returncode == 0:
+        apply_root = Path(repository.stdout.strip()).resolve()
+        try:
+            relative_root = source_root.resolve().relative_to(apply_root)
+        except ValueError as error:
+            raise PatchsetManifestError(
+                f"source root escapes detected Git worktree: {source_root}"
+            ) from error
+        if relative_root != Path("."):
+            directory_options = [f"--directory={relative_root.as_posix()}"]
     completed = subprocess.run(
         [
             "git",
             "-C",
-            str(source_root),
+            str(apply_root),
             "apply",
             "--check",
             "--whitespace=nowarn",
+            *directory_options,
             str(patch_path),
         ],
         text=True,
@@ -91,7 +111,7 @@ def apply_check(source_root: Path, patch_path: Path) -> None:
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if completed.returncode != 0:
+    if completed.returncode != 0 or "Skipped patch" in completed.stdout:
         raise PatchsetManifestError(
             f"patch does not apply cleanly with git apply --check: {patch_path.name}\n"
             + completed.stdout.strip()
@@ -113,6 +133,99 @@ def verify_source_evidence_paths(
             raise PatchsetManifestError(
                 f"{group_id}.sourceEvidence is missing: {relative}"
             )
+
+
+def verify_generated_inputs(
+    *,
+    project_root: Path,
+    generated_inputs: object,
+) -> list[dict[str, object]]:
+    if not isinstance(generated_inputs, list) or not generated_inputs:
+        raise PatchsetManifestError(
+            "generatedInputs must be a non-empty list"
+        )
+    diagnostics: list[dict[str, object]] = []
+    seen_ids: set[str] = set()
+    for index, value in enumerate(generated_inputs):
+        if not isinstance(value, dict):
+            raise PatchsetManifestError(
+                f"generatedInputs[{index}] must be an object"
+            )
+        input_id = require_string(
+            value.get("id"),
+            f"generatedInputs[{index}].id",
+        )
+        if input_id in seen_ids:
+            raise PatchsetManifestError(
+                f"duplicate generated input id: {input_id}"
+            )
+        seen_ids.add(input_id)
+        resolved: dict[str, Path] = {}
+        for path_field, hash_field in (
+            ("catalogPath", "catalogSHA256"),
+            ("generatorPath", "generatorSHA256"),
+        ):
+            relative_value = require_string(
+                value.get(path_field),
+                f"{input_id}.{path_field}",
+            )
+            relative = assert_safe_relative_path(
+                relative_value,
+                field=f"{input_id}.{path_field}",
+            )
+            path = project_root / relative
+            if not path.is_file():
+                raise PatchsetManifestError(
+                    f"{input_id}.{path_field} is missing: {relative_value}"
+                )
+            expected = value.get(hash_field)
+            if not isinstance(expected, str) or not re.fullmatch(
+                r"[0-9a-f]{64}",
+                expected,
+            ):
+                raise PatchsetManifestError(
+                    f"{input_id}.{hash_field} must be a SHA-256 string"
+                )
+            actual = sha256(path)
+            if actual != expected:
+                raise PatchsetManifestError(
+                    f"{input_id}.{hash_field} mismatch: {actual} != {expected}"
+                )
+            resolved[path_field] = path
+        postimages = value.get("postimageSHA256")
+        if not isinstance(postimages, dict) or not postimages:
+            raise PatchsetManifestError(
+                f"{input_id}.postimageSHA256 must be a non-empty object"
+            )
+        for relative, digest in postimages.items():
+            if not isinstance(relative, str):
+                raise PatchsetManifestError(
+                    f"{input_id}.postimageSHA256 paths must be strings"
+                )
+            assert_safe_relative_path(
+                relative,
+                field=f"{input_id}.postimageSHA256",
+            )
+            if not isinstance(digest, str) or not re.fullmatch(
+                r"[0-9a-f]{64}",
+                digest,
+            ):
+                raise PatchsetManifestError(
+                    f"{input_id}.postimageSHA256 must map paths to SHA-256 strings"
+                )
+        diagnostics.append(
+            {
+                "id": input_id,
+                "catalogPath": str(
+                    resolved["catalogPath"].relative_to(project_root)
+                ),
+                "generatorPath": str(
+                    resolved["generatorPath"].relative_to(project_root)
+                ),
+                "postimageCount": len(postimages),
+            }
+        )
+    return diagnostics
 
 
 def verify_manifest(
@@ -153,6 +266,10 @@ def verify_manifest(
     if len(set(forbidden_scope_values)) != len(forbidden_scope_values):
         raise PatchsetManifestError("forbiddenScopes must be unique")
     forbidden_scopes = [str(item) for item in forbidden_scope_values]
+    generated_input_diagnostics = verify_generated_inputs(
+        project_root=manifest_path.resolve().parents[2],
+        generated_inputs=manifest.get("generatedInputs"),
+    )
 
     groups = manifest.get("patchGroups")
     if not isinstance(groups, list) or not groups:
@@ -287,6 +404,8 @@ def verify_manifest(
         "groupCount": len(groups),
         "portedCount": ported_count,
         "plannedCount": planned_count,
+        "generatedInputCount": len(generated_input_diagnostics),
+        "generatedInputs": generated_input_diagnostics,
         "releaseReady": not planned_for_release,
         "missingForRelease": planned_for_release,
         "groups": group_diagnostics,

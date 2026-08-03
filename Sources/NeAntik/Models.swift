@@ -106,47 +106,273 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
     }
 }
 
+struct ProxyContextEvidence: Codable, Equatable, Sendable {
+    static let supportedSource = "ipapi.co"
+    static let freshnessLifetime: TimeInterval = 30 * 24 * 60 * 60
+
+    let source: String
+    let observedAt: Date
+
+    static func ipAPI(observedAt: Date = Date()) -> ProxyContextEvidence {
+        ProxyContextEvidence(
+            source: supportedSource,
+            observedAt: observedAt
+        )
+    }
+
+    var isValid: Bool {
+        source == Self.supportedSource &&
+            observedAt.timeIntervalSinceReferenceDate.isFinite
+    }
+
+    func isFresh(relativeTo now: Date = Date()) -> Bool {
+        guard isValid else { return false }
+        let age = now.timeIntervalSince(observedAt)
+        return age >= -5 * 60 && age <= Self.freshnessLifetime
+    }
+}
+
+enum BrowserIdentityCatalog {
+    static let currentVersion = 1
+
+    // Version 1 is immutable. Reordering, removing, or appending entries would
+    // change seed modulo selection for existing profiles. A future catalog
+    // must use a new version and an explicit user-visible identity migration.
+    static let tupleIDs = [
+        "macbook-air-m1",
+        "macbook-pro-m1-pro",
+        "macbook-air-m2",
+        "macbook-pro-m2-max",
+        "macbook-pro-m2-pro",
+        "macbook-air-m3",
+        "macbook-pro-m3-max",
+        "macbook-pro-m3-pro",
+        "macbook-air-m4",
+        "macbook-pro-m4-max",
+        "macbook-pro-m4-pro"
+    ]
+
+    static func tupleID(forRuntimeSeed seed: UInt32) -> String {
+        tupleIDs[Int(seed % UInt32(tupleIDs.count))]
+    }
+}
+
+enum BrowserIdentityIssuancePolicy {
+    static let legacyVersion = 1
+    static let currentVersion = 2
+    static let commonTupleIDs = [
+        "macbook-air-m1",
+        "macbook-air-m2",
+        "macbook-air-m3",
+        "macbook-air-m4"
+    ]
+    static let commonTupleResidues: [UInt32] = [0, 2, 5, 8]
+    static let membersPerCohort: UInt32 = 195_225_786
+    static let candidateCount: UInt64 = 780_903_144
+
+    static func supports(_ version: Int) -> Bool {
+        version == legacyVersion || version == currentVersion
+    }
+
+    static func isCurrentSeed(_ seed: UInt32) -> Bool {
+        guard (1...BrowserIdentity.maximumRuntimeSeed).contains(seed)
+        else {
+            return false
+        }
+        return commonTupleResidues.contains(
+            seed % UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        )
+    }
+
+    static func seed(
+        cohortIndex: Int,
+        ordinal: UInt32
+    ) -> UInt32? {
+        guard commonTupleResidues.indices.contains(cohortIndex),
+              ordinal < membersPerCohort
+        else {
+            return nil
+        }
+        let tupleCount = UInt32(BrowserIdentityCatalog.tupleIDs.count)
+        let residue = commonTupleResidues[cohortIndex]
+        let value = residue == 0
+            ? (ordinal + 1) * tupleCount
+            : ordinal * tupleCount + residue
+        guard (1...BrowserIdentity.maximumRuntimeSeed).contains(value)
+        else {
+            return nil
+        }
+        return value
+    }
+
+    static func newSeed() -> UInt32 {
+        var generator = SystemRandomNumberGenerator()
+        return newSeed(using: &generator)
+    }
+
+    static func newSeed<Generator: RandomNumberGenerator>(
+        using generator: inout Generator
+    ) -> UInt32 {
+        let cohortIndex = Int.random(
+            in: commonTupleResidues.indices,
+            using: &generator
+        )
+        let ordinal = UInt32.random(
+            in: 0..<membersPerCohort,
+            using: &generator
+        )
+        // Both random domains and the immutable catalog contract are bounded,
+        // so this construction cannot fail without source drift.
+        return seed(cohortIndex: cohortIndex, ordinal: ordinal)!
+    }
+
+    static func isContractValid() -> Bool {
+        guard commonTupleIDs.count == commonTupleResidues.count,
+              UInt64(commonTupleIDs.count) *
+                UInt64(membersPerCohort) == candidateCount
+        else {
+            return false
+        }
+        return zip(commonTupleIDs, commonTupleResidues).allSatisfy {
+            tupleID, residue in
+            BrowserIdentityCatalog.tupleIDs.indices.contains(Int(residue)) &&
+                BrowserIdentityCatalog.tupleIDs[Int(residue)] == tupleID
+        }
+    }
+}
+
 struct BrowserIdentity: Codable, Equatable, Sendable {
     static let maximumRuntimeSeed = UInt32(Int32.max)
 
     let seed: UInt32
     let timezoneIdentifier: String?
     let localeIdentifier: String?
+    let catalogVersion: Int
+    let issuanceVersion: Int
+    let deviceTupleID: String
+    let proxyContextEvidence: ProxyContextEvidence?
 
     init(
         seed: UInt32? = nil,
         timezoneIdentifier: String? = nil,
-        localeIdentifier: String? = nil
+        localeIdentifier: String? = nil,
+        proxyContextEvidence: ProxyContextEvidence? = nil
     ) {
-        let value = seed ??
-            UInt32.random(in: 1...Self.maximumRuntimeSeed)
-        self.seed = Self.runtimeCompatibleSeed(value)
-        self.timezoneIdentifier = timezoneIdentifier.flatMap {
-            TimeZone(identifier: $0) == nil ? nil : $0
+        let value: UInt32
+        if let seed {
+            value = Self.runtimeCompatibleSeed(seed)
+            issuanceVersion =
+                BrowserIdentityIssuancePolicy.legacyVersion
+        } else {
+            value = BrowserIdentityIssuancePolicy.newSeed()
+            issuanceVersion =
+                BrowserIdentityIssuancePolicy.currentVersion
         }
+        self.seed = value
+        catalogVersion = BrowserIdentityCatalog.currentVersion
+        deviceTupleID = BrowserIdentityCatalog.tupleID(
+            forRuntimeSeed: value
+        )
+        self.timezoneIdentifier =
+            Self.validatedTimezone(timezoneIdentifier)
         self.localeIdentifier = localeIdentifier.flatMap(Self.normalizedLocale)
+        self.proxyContextEvidence = proxyContextEvidence.flatMap {
+            $0.isValid ? $0 : nil
+        }
     }
 
     private enum CodingKeys: String, CodingKey {
         case seed
         case timezoneIdentifier
         case localeIdentifier
+        case catalogVersion
+        case issuanceVersion
+        case deviceTupleID
+        case proxyContextEvidence
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSeed = try container.decode(UInt32.self, forKey: .seed)
         seed = decodedSeed == 0 ? 1 : decodedSeed
-        timezoneIdentifier = try container.decodeIfPresent(
-            String.self,
-            forKey: .timezoneIdentifier
-        ).flatMap {
-            TimeZone(identifier: $0) == nil ? nil : $0
+        let decodedCatalogVersion = try container.decodeIfPresent(
+            Int.self,
+            forKey: .catalogVersion
+        ) ?? BrowserIdentityCatalog.currentVersion
+        guard decodedCatalogVersion == BrowserIdentityCatalog.currentVersion
+        else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .catalogVersion,
+                in: container,
+                debugDescription:
+                    "Unsupported browser identity catalog version \(decodedCatalogVersion)."
+            )
         }
+        catalogVersion = decodedCatalogVersion
+        let decodedIssuanceVersion =
+            if container.contains(.issuanceVersion) {
+                try container.decode(
+                    Int.self,
+                    forKey: .issuanceVersion
+                )
+            } else {
+                BrowserIdentityIssuancePolicy.legacyVersion
+            }
+        guard BrowserIdentityIssuancePolicy.supports(
+            decodedIssuanceVersion
+        ) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .issuanceVersion,
+                in: container,
+                debugDescription:
+                    "Unsupported browser identity issuance version \(decodedIssuanceVersion)."
+            )
+        }
+        if decodedIssuanceVersion ==
+            BrowserIdentityIssuancePolicy.currentVersion &&
+            (
+                seed != Self.runtimeCompatibleSeed(seed) ||
+                    !BrowserIdentityIssuancePolicy.isCurrentSeed(seed)
+            ) {
+            throw DecodingError.dataCorruptedError(
+                forKey: .seed,
+                in: container,
+                debugDescription:
+                    "Browser identity seed is outside its issuance policy."
+            )
+        }
+        issuanceVersion = decodedIssuanceVersion
+        let expectedTupleID = BrowserIdentityCatalog.tupleID(
+            forRuntimeSeed: Self.runtimeCompatibleSeed(seed)
+        )
+        if let decodedTupleID = try container.decodeIfPresent(
+            String.self,
+            forKey: .deviceTupleID
+        ), decodedTupleID != expectedTupleID {
+            throw DecodingError.dataCorruptedError(
+                forKey: .deviceTupleID,
+                in: container,
+                debugDescription:
+                    "Browser identity tuple does not match its immutable seed."
+            )
+        }
+        deviceTupleID = expectedTupleID
+        timezoneIdentifier = Self.validatedTimezone(
+            try container.decodeIfPresent(
+                String.self,
+                forKey: .timezoneIdentifier
+            )
+        )
         localeIdentifier = try container.decodeIfPresent(
             String.self,
             forKey: .localeIdentifier
         ).flatMap(Self.normalizedLocale)
+        proxyContextEvidence = try container.decodeIfPresent(
+            ProxyContextEvidence.self,
+            forKey: .proxyContextEvidence
+        ).flatMap {
+            $0.isValid ? $0 : nil
+        }
     }
 
     static func runtimeCompatibleSeed(_ value: UInt32) -> UInt32 {
@@ -158,6 +384,64 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         Self.runtimeCompatibleSeed(seed)
     }
 
+    func replacingSeed(_ value: UInt32) -> BrowserIdentity? {
+        let replacement = Self.runtimeCompatibleSeed(value)
+        if issuanceVersion ==
+            BrowserIdentityIssuancePolicy.currentVersion &&
+            !BrowserIdentityIssuancePolicy.isCurrentSeed(replacement) {
+            return nil
+        }
+        return BrowserIdentity(
+            validatedSeed: replacement,
+            issuanceVersion: issuanceVersion,
+            timezoneIdentifier: timezoneIdentifier,
+            localeIdentifier: localeIdentifier,
+            proxyContextEvidence: proxyContextEvidence
+        )
+    }
+
+    func replacingProxyContext(
+        timezoneIdentifier: String?,
+        localeIdentifier: String?,
+        evidence: ProxyContextEvidence?
+    ) -> BrowserIdentity {
+        BrowserIdentity(
+            validatedSeed: runtimeSeed,
+            issuanceVersion: issuanceVersion,
+            timezoneIdentifier: timezoneIdentifier,
+            localeIdentifier: localeIdentifier,
+            proxyContextEvidence: evidence
+        )
+    }
+
+    private init(
+        validatedSeed: UInt32,
+        issuanceVersion: Int,
+        timezoneIdentifier: String?,
+        localeIdentifier: String?,
+        proxyContextEvidence: ProxyContextEvidence?
+    ) {
+        seed = validatedSeed
+        self.issuanceVersion = issuanceVersion
+        catalogVersion = BrowserIdentityCatalog.currentVersion
+        deviceTupleID = BrowserIdentityCatalog.tupleID(
+            forRuntimeSeed: validatedSeed
+        )
+        self.timezoneIdentifier =
+            Self.validatedTimezone(timezoneIdentifier)
+        self.localeIdentifier =
+            localeIdentifier.flatMap(Self.normalizedLocale)
+        self.proxyContextEvidence = proxyContextEvidence.flatMap {
+            $0.isValid ? $0 : nil
+        }
+    }
+
+    private static func validatedTimezone(_ value: String?) -> String? {
+        value.flatMap {
+            TimeZone(identifier: $0) == nil ? nil : $0
+        }
+    }
+
     private static func normalizedLocale(_ value: String) -> String? {
         let components = value.replacingOccurrences(
             of: "_",
@@ -165,19 +449,26 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         ).split(separator: "-", omittingEmptySubsequences: false)
         guard (1...2).contains(components.count),
               (2...3).contains(components[0].count),
-              components[0].allSatisfy(\.isLetter)
+              Self.isASCIILetters(components[0])
         else {
             return nil
         }
         if components.count == 2 {
             guard components[1].count == 2,
-                  components[1].allSatisfy(\.isLetter)
+                  Self.isASCIILetters(components[1])
             else {
                 return nil
             }
             return "\(components[0].lowercased())-\(components[1].uppercased())"
         }
         return components[0].lowercased()
+    }
+
+    private static func isASCIILetters(_ value: Substring) -> Bool {
+        value.utf8.count == value.count &&
+            value.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0)
+            }
     }
 
     static func migrated(profileID: UUID) -> BrowserIdentity {
@@ -191,14 +482,120 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
     var displayCode: String {
         String(format: "NA-%08X", runtimeSeed)
     }
+
+    var issuanceSummary: String {
+        issuanceVersion == BrowserIdentityIssuancePolicy.currentVersion
+            ? "Параметры устройства подобраны автоматически"
+            : "Совместимость старого профиля"
+    }
+}
+
+enum ProfileAppearance {
+    static let colors = [
+        "#FF3B4D",
+        "#DC1635",
+        "#F97316",
+        "#EC4899",
+        "#6C7CFF",
+        "#8B5CF6",
+        "#EAB308",
+        "#10B981",
+        "#06B6D4"
+    ]
+
+    static let symbols = [
+        "globe",
+        "briefcase.fill",
+        "cart.fill",
+        "megaphone.fill",
+        "chart.bar.fill",
+        "person.fill",
+        "star.fill",
+        "bolt.fill",
+        "shield.fill",
+        "bookmark.fill",
+        "folder.fill",
+        "shippingbox.fill"
+    ]
+
+    static func defaultColor(for id: UUID) -> String {
+        colors[Int(stableHash(id) % UInt32(colors.count))]
+    }
+
+    static func defaultSymbol(for id: UUID) -> String {
+        let hash = stableHash(id)
+        return symbols[
+            Int((hash / UInt32(colors.count)) % UInt32(symbols.count))
+        ]
+    }
+
+    static func displaySymbol(_ storedName: String, profileID: UUID) -> String {
+        symbols.contains(storedName) ? storedName : defaultSymbol(for: profileID)
+    }
+
+    static func title(for symbol: String) -> String {
+        switch symbol {
+        case "globe": "Интернет"
+        case "briefcase.fill": "Работа"
+        case "cart.fill": "Покупки"
+        case "megaphone.fill": "Реклама"
+        case "chart.bar.fill": "Аналитика"
+        case "person.fill": "Личный"
+        case "star.fill": "Избранное"
+        case "bolt.fill": "Быстрый"
+        case "shield.fill": "Защита"
+        case "bookmark.fill": "Закладки"
+        case "folder.fill": "Проект"
+        case "shippingbox.fill": "Магазин"
+        default: "Профиль"
+        }
+    }
+
+    static func title(forColor hex: String) -> String {
+        switch hex {
+        case "#FF3B4D": "Красный"
+        case "#DC1635": "Малиновый"
+        case "#F97316": "Оранжевый"
+        case "#EC4899": "Розовый"
+        case "#6C7CFF": "Синий"
+        case "#8B5CF6": "Фиолетовый"
+        case "#EAB308": "Жёлтый"
+        case "#10B981": "Зелёный"
+        case "#06B6D4": "Бирюзовый"
+        default: "Цвет профиля"
+        }
+    }
+
+    static func isSafeStoredSymbol(_ value: String) -> Bool {
+        !value.isEmpty &&
+            value.utf8.count <= 64 &&
+            value.unicodeScalars.allSatisfy {
+                CharacterSet(
+                    charactersIn:
+                        "abcdefghijklmnopqrstuvwxyz0123456789.-"
+                ).contains($0)
+            }
+    }
+
+    private static func stableHash(_ id: UUID) -> UInt32 {
+        var hash: UInt32 = 2_166_136_261
+        for byte in id.uuidString.utf8 {
+            hash = (hash ^ UInt32(byte)) &* 16_777_619
+        }
+        return hash
+    }
 }
 
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
+    static let maximumTagCount = 8
+    static let maximumTagLength = 24
 
     var id: UUID
     var name: String
     var colorHex: String
+    var symbolName: String
+    var tags: [String]
     var startURL: String
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
@@ -209,7 +606,9 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     init(
         id: UUID = UUID(),
         name: String,
-        colorHex: String = "#FF3B4D",
+        colorHex: String? = nil,
+        symbolName: String? = nil,
+        tags: [String] = [],
         startURL: String = "https://www.google.com",
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
@@ -219,7 +618,10 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     ) {
         self.id = id
         self.name = name
-        self.colorHex = colorHex
+        self.colorHex = colorHex ?? ProfileAppearance.defaultColor(for: id)
+        self.symbolName =
+            symbolName ?? ProfileAppearance.defaultSymbol(for: id)
+        self.tags = Self.normalizedTags(tags) ?? []
         self.startURL = startURL
         self.proxy = proxy
         self.identity = identity
@@ -236,10 +638,41 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             ) == nil
     }
 
+    static func normalizedTags(_ values: [String]) -> [String]? {
+        guard values.count <= maximumTagCount else { return nil }
+        var result: [String] = []
+        var seen = Set<String>()
+        for value in values {
+            let clean = value.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            guard !clean.isEmpty,
+                  clean.count <= maximumTagLength,
+                  clean.rangeOfCharacter(from: .controlCharacters) == nil
+            else {
+                return nil
+            }
+            let key = clean.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: Locale(identifier: "en_US_POSIX")
+            )
+            if seen.insert(key).inserted {
+                result.append(clean)
+            }
+        }
+        return result
+    }
+
+    var displaySymbolName: String {
+        ProfileAppearance.displaySymbol(symbolName, profileID: id)
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case name
         case colorHex
+        case symbolName
+        case tags
         case startURL
         case proxy
         case identity
@@ -252,7 +685,38 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
+        guard Self.isValidName(name) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .name,
+                in: container,
+                debugDescription: "Invalid profile name."
+            )
+        }
         colorHex = try container.decode(String.self, forKey: .colorHex)
+        let decodedSymbol = try container.decodeIfPresent(
+            String.self,
+            forKey: .symbolName
+        ) ?? ProfileAppearance.defaultSymbol(for: id)
+        guard ProfileAppearance.isSafeStoredSymbol(decodedSymbol) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .symbolName,
+                in: container,
+                debugDescription: "Invalid profile symbol."
+            )
+        }
+        symbolName = decodedSymbol
+        let decodedTags = try container.decodeIfPresent(
+            [String].self,
+            forKey: .tags
+        ) ?? []
+        guard let cleanTags = Self.normalizedTags(decodedTags) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .tags,
+                in: container,
+                debugDescription: "Invalid profile tags."
+            )
+        }
+        tags = cleanTags
         startURL = try container.decode(String.self, forKey: .startURL)
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
@@ -349,7 +813,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
 
     var privacySummary: String {
         supportsFingerprintIdentity
-            ? "Разделение отпечатков готово"
+            ? "Доступна проверка отпечатка"
             : "Только изоляция данных"
     }
 
@@ -370,6 +834,7 @@ enum NeAntikError: LocalizedError {
     case profileAlreadyRunning
     case invalidProfile
     case invalidProxy
+    case proxyContextNeedsRetest
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -385,6 +850,8 @@ enum NeAntikError: LocalizedError {
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .invalidProxy:
             "Укажи корректный хост и порт прокси."
+        case .proxyContextNeedsRetest:
+            "Контекст прокси устарел или не подтверждён. Открой профиль, снова проверь прокси и сохрани изменения перед запуском."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case .processLaunchFailed:

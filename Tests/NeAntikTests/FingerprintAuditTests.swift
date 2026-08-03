@@ -5,6 +5,131 @@ import Testing
 
 struct FingerprintAuditTests {
     @Test
+    func safeDiagnosticSummaryUsesOnlyAllowlistedProvenance() {
+        let profileID = UUID()
+        let secretProfileName = "PROFILE-NAME-MUST-NOT-LEAK"
+        let secretIdentityCode = "NA-DEADBEEF"
+        let secretSurfaceValue = "proxy-login:secret@example.test"
+        let first = FingerprintCapture(
+            profileID: profileID,
+            profileName: secretProfileName,
+            identityCode: secretIdentityCode,
+            capturedAt: Date(timeIntervalSince1970: 1),
+            values: [
+                "canvas": secretSurfaceValue,
+                "webgl_pixels": "webgl-a",
+                "audio": "audio-a",
+                "client_rects": "rects-a"
+            ]
+        )
+        let second = FingerprintCapture(
+            profileID: UUID(),
+            profileName: "SECOND-PROFILE-MUST-NOT-LEAK",
+            identityCode: "NA-CAFEBABE",
+            capturedAt: Date(timeIntervalSince1970: 2),
+            values: [
+                "canvas": "canvas-b",
+                "webgl_pixels": "webgl-b",
+                "audio": "audio-a",
+                "client_rects": "rects-a"
+            ]
+        )
+        let executableHash = String(repeating: "a", count: 64)
+        let frameworkHash = String(repeating: "b", count: 64)
+        let directControl = FingerprintCapture(
+            profileID: UUID(),
+            profileName: "CONTROL-NAME-MUST-NOT-LEAK",
+            identityCode: "NA-CONTROL-MUST-NOT-LEAK",
+            capturedAt: Date(timeIntervalSince1970: 0),
+            values: [
+                "network_route": "direct",
+                "webrtc_probe": secretSurfaceValue
+            ]
+        )
+        let report = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 3),
+            managerVersion: "0.3.12",
+            managerBuild: "15",
+            runtimeName: "NeAntik Browser",
+            runtimeVersion: "150.0.7871.186",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: executableHash,
+            runtimeFrameworkSHA256: frameworkHash,
+            webrtcDirectControl: directControl,
+            firstInitial: first,
+            second: second,
+            firstRepeat: first
+        )
+
+        let summary = report.safeDiagnosticSummary
+
+        #expect(summary.contains("Менеджер: 0.3.12 (15)"))
+        #expect(
+            summary.contains(
+                "Движок: Chromium с разделением отпечатков · 150.0.7871.186"
+            )
+        )
+        #expect(summary.contains(executableHash))
+        #expect(summary.contains(frameworkHash))
+        #expect(
+            summary.contains(
+                "Сетевое доказательство: настроенный маршрут и WebRTC-контроль"
+            )
+        )
+        #expect(
+            summary.contains(
+                "Фактический HTTP-маршрут: не измерялся"
+            )
+        )
+        #expect(!summary.contains(secretProfileName))
+        #expect(!summary.contains(secretIdentityCode))
+        #expect(!summary.contains(secretSurfaceValue))
+        #expect(!summary.contains(profileID.uuidString))
+        #expect(!summary.contains(second.profileName))
+        #expect(!summary.contains(second.identityCode))
+        #expect(!summary.contains(directControl.profileName))
+        #expect(!summary.contains(directControl.identityCode))
+    }
+
+    @Test
+    func safeDiagnosticSummaryRejectsMalformedMetadataAndHashes() {
+        let first = capture(
+            name: "First",
+            values: baseValues(canvas: "canvas-a")
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            managerVersion: "0.4\nINJECTED",
+            managerBuild: " ",
+            runtimeName: "Ignored runtime name",
+            runtimeVersion: "",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: false,
+            runtimeExecutableSHA256: "NOT-A-HASH",
+            runtimeFrameworkSHA256: nil,
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                values: baseValues(canvas: "canvas-b")
+            ),
+            firstRepeat: first
+        )
+
+        #expect(result.safeManagerVersionSummary == "0.4 INJECTED")
+        #expect(result.safeRuntimeExecutableHashSummary == "не подтверждён")
+        #expect(result.safeRuntimeFrameworkHashSummary == "не подтверждён")
+        #expect(
+            result.safeDiagnosticSummary.contains(
+                "Подпись движка: Подпись не подтверждена"
+            )
+        )
+        #expect(!result.safeDiagnosticSummary.contains("Ignored runtime name"))
+    }
+
+    @Test
     func verifiesStableDistinctCriticalSurfaces() {
         let first = capture(
             name: "First",
@@ -131,13 +256,26 @@ struct FingerprintAuditTests {
             "webgl_renderer",
             "webgpu_policy",
             "client_hints",
-            "webrtc_candidates",
+            "webrtc_candidate_summary",
+            "loopback-stun-v1",
+            "webrtc_complete",
+            "stunPort",
+            "audio_repeat",
+            "canvas_repeat",
+            "worker_canvas",
+            "worker_webgl_pixels",
+            "worker_client_hints",
+            "worker_device_memory",
+            "css_screen_match",
+            "webgl_shader_precision",
             "COMPILE_STATUS",
             "LINK_STATUS",
             "pixel readback failed"
         ] {
             #expect(expression.contains(marker))
         }
+        #expect(!expression.contains("candidate.candidate"))
+        #expect(!expression.contains("webrtc_candidates"))
     }
 
     @Test
@@ -220,6 +358,139 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func keepsOnlyThreePrivateReportsWithoutTouchingOtherEntries() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+        let paths = AppPaths(rootDirectory: root)
+        let store = FingerprintAuditReportStore(paths: paths)
+        let unrelated = paths.fingerprintAuditsDirectory
+            .appendingPathComponent("notes.json")
+        let external = root.appendingPathComponent("external.json")
+        let symlink = paths.fingerprintAuditsDirectory
+            .appendingPathComponent("audit-linked.json")
+        let directory = paths.fingerprintAuditsDirectory
+            .appendingPathComponent("audit-directory.json", isDirectory: true)
+
+        try paths.prepareBaseDirectories()
+        try paths.writePrivateFile(Data("keep".utf8), to: unrelated)
+        try paths.writePrivateFile(Data("external".utf8), to: external)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: false
+        )
+        try FileManager.default.createSymbolicLink(
+            at: symlink,
+            withDestinationURL: external
+        )
+
+        var savedURLs: [URL] = []
+        for offset in 0..<5 {
+            let first = capture(
+                name: "First",
+                values: baseValues(canvas: "a-\(offset)")
+            )
+            savedURLs.append(
+                try store.save(
+                    report(
+                        first: first,
+                        second: capture(
+                            name: "Second",
+                            values: baseValues(canvas: "b-\(offset)")
+                        ),
+                        repeatCapture: capture(
+                            id: first.profileID,
+                            name: first.profileName,
+                            values: first.values
+                        ),
+                        createdAt: Date(timeIntervalSince1970: Double(offset))
+                    )
+                )
+            )
+        }
+
+        let storedReports = try FileManager.default.contentsOfDirectory(
+            at: paths.fingerprintAuditsDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey]
+        ).filter { url in
+            let values = try? url.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey]
+            )
+            return url.lastPathComponent.hasPrefix("audit-")
+                && url.pathExtension == "json"
+                && values?.isRegularFile == true
+                && values?.isSymbolicLink != true
+        }
+        #expect(storedReports.count == 3)
+        #expect(FileManager.default.fileExists(atPath: savedURLs.last!.path))
+        #expect(FileManager.default.fileExists(atPath: unrelated.path))
+        #expect(FileManager.default.fileExists(atPath: external.path))
+        var isDirectory: ObjCBool = false
+        let directoryExists = FileManager.default.fileExists(
+            atPath: directory.path,
+            isDirectory: &isDirectory
+        )
+        #expect(directoryExists)
+        #expect(isDirectory.boolValue)
+        let symlinkDestination = try FileManager.default
+            .destinationOfSymbolicLink(atPath: symlink.path)
+        #expect(
+            symlinkDestination == external.path
+        )
+    }
+
+    @Test
+    func prunesHistoricalReportsBeforeAnotherAuditRuns() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+
+        for index in 0..<5 {
+            let url = paths.fingerprintAuditsDirectory
+                .appendingPathComponent(
+                    "audit-\(index)-\(UUID().uuidString).json"
+                )
+            try paths.writePrivateFile(
+                Data("{\"index\":\(index)}".utf8),
+                to: url
+            )
+            try FileManager.default.setAttributes(
+                [
+                    .modificationDate:
+                        Date(timeIntervalSince1970: Double(index))
+                ],
+                ofItemAtPath: url.path
+            )
+        }
+
+        try FingerprintAuditReportStore(
+            paths: paths
+        ).pruneStoredReports()
+
+        let remaining = try FileManager.default.contentsOfDirectory(
+            at: paths.fingerprintAuditsDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ).filter {
+            $0.lastPathComponent.hasPrefix("audit-")
+                && $0.pathExtension == "json"
+        }
+        #expect(remaining.count == 3)
+        #expect(
+            Set(remaining.map(\.lastPathComponent)).allSatisfy {
+                $0.hasPrefix("audit-2-")
+                    || $0.hasPrefix("audit-3-")
+                    || $0.hasPrefix("audit-4-")
+            }
+        )
+    }
+
+    @Test
     func recordsDiagnosticExecutionModeWithoutChangingBrowserDefault() throws {
         let first = capture(
             name: "First",
@@ -281,18 +552,18 @@ struct FingerprintAuditTests {
     func qualifiesOnlyCompleteBrowserEvidence() {
         let first = capture(
             name: "First",
-            values: productionValues(
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
                 canvas: "canvas-a",
-                webGLPixels: "webgl-a",
-                renderer: "Apple M2"
+                webGLPixels: "webgl-a"
             )
         )
         let second = capture(
             name: "Second",
-            values: productionValues(
+            identityCode: "NA-00000008",
+            values: coherentM4Values(
                 canvas: "canvas-b",
-                webGLPixels: "webgl-b",
-                renderer: "Apple M4"
+                webGLPixels: "webgl-b"
             )
         )
         let result = report(
@@ -301,6 +572,7 @@ struct FingerprintAuditTests {
             repeatCapture: capture(
                 id: first.profileID,
                 name: first.profileName,
+                identityCode: first.identityCode,
                 values: first.values
             )
         )
@@ -310,6 +582,765 @@ struct FingerprintAuditTests {
         #expect(result.productionUnstableKeys.isEmpty)
         #expect(result.productionReleaseIssues.isEmpty)
         #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func crossRealmMismatchFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["worker_platform"] = "Win32"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "platform value disagrees with worker_platform"
+                )
+            }
+        )
+    }
+
+    @Test
+    func missingWorkerMemoryFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues.removeValue(forKey: "worker_device_memory")
+        let first = capture(name: "First", values: firstValues)
+        var secondValues = coherentM4Values(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b"
+        )
+        secondValues.removeValue(forKey: "worker_device_memory")
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(result.productionUnavailableKeys == ["worker_device_memory"])
+    }
+
+    @Test
+    func workerMemoryMismatchFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["worker_device_memory"] = "4"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "device_memory value disagrees with worker_device_memory"
+                )
+            }
+        )
+    }
+
+    @Test
+    func localeMismatchFailsStrictProductionButNotPublicAlpha() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["languages"] = "ru-RU,ru"
+        firstValues["worker_languages"] = "ru-RU,ru"
+        firstValues["primary_locale_core"] = "ru-Cyrl-RU"
+        firstValues["worker_primary_locale_core"] = "ru-Cyrl-RU"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "primary_locale_core disagrees with intl_locale_core"
+                )
+            }
+        )
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains(
+                    "worker_primary_locale_core disagrees with worker_intl_locale_core"
+                )
+            }
+        )
+    }
+
+    @Test
+    func localeCanonicalizationAcceptsEquivalentIdentifiers() {
+        func canonicalizedValues(
+            canvas: String,
+            webGLPixels: String,
+            renderer: String,
+            languages: String,
+            intlLocale: String,
+            localeCore: String
+        ) -> [String: String] {
+            var values = renderer.contains("M2")
+                ? coherentM2Values(
+                    canvas: canvas,
+                    webGLPixels: webGLPixels
+                )
+                : coherentM4Values(
+                    canvas: canvas,
+                    webGLPixels: webGLPixels
+                )
+            values["languages"] = languages
+            values["worker_languages"] = languages
+            values["intl_locale"] = intlLocale
+            values["worker_intl_locale"] = intlLocale
+            values["primary_locale_core"] = localeCore
+            values["intl_locale_core"] = localeCore
+            values["worker_primary_locale_core"] = localeCore
+            values["worker_intl_locale_core"] = localeCore
+            return values
+        }
+
+        for (languages, intlLocale, localeCore) in [
+            ("en_us,en", "en-US", "en-Latn-US"),
+            ("es-419,es", "es-419", "es-Latn-419"),
+            ("zh-Hant,zh", "zh-Hant", "zh-Hant-TW"),
+            ("sr-Latn,sr", "sr-Latn", "sr-Latn-RS"),
+            ("en-US,en", "en-US-u-hc-h12", "en-Latn-US"),
+            ("de-DE-1996,de", "de-DE", "de-Latn-DE"),
+            ("sl-rozaj-biske,sl", "sl", "sl-Latn-SI"),
+            ("en-Latn-US,en", "en", "en-Latn-US"),
+            ("es-Latn-419,es", "es", "es-Latn-419"),
+            ("fil-Latn-PH,fil", "fil", "fil-Latn-PH"),
+            ("iw-IL,iw", "he-IL", "he-Hebr-IL"),
+            ("in-ID,in", "id-ID", "id-Latn-ID"),
+            ("ji,ji", "yi", "yi-Hebr-UA")
+        ] {
+            let first = capture(
+                name: "First",
+                identityCode: "NA-00000002",
+                values: canonicalizedValues(
+                    canvas: "canvas-a",
+                    webGLPixels: "webgl-a",
+                    renderer: "Apple M2",
+                    languages: languages,
+                    intlLocale: intlLocale,
+                    localeCore: localeCore
+                )
+            )
+            let result = report(
+                first: first,
+                second: capture(
+                    name: "Second",
+                    identityCode: "NA-00000008",
+                    values: canonicalizedValues(
+                        canvas: "canvas-b",
+                        webGLPixels: "webgl-b",
+                        renderer: "Apple M4",
+                        languages: languages,
+                        intlLocale: intlLocale,
+                        localeCore: localeCore
+                    )
+                ),
+                repeatCapture: capture(
+                    id: first.profileID,
+                    name: first.profileName,
+                    identityCode: first.identityCode,
+                    values: first.values
+                )
+            )
+
+            #expect(result.isProductionReleaseQualified)
+        }
+    }
+
+    @Test
+    func maximizedLocaleCoreRejectsRegionalOrScriptContradictions() {
+        for (languages, intlLocale, primaryCore, intlCore) in [
+            ("en-US,en", "en-GB", "en-Latn-US", "en-Latn-GB"),
+            ("pt-BR,pt", "pt-PT", "pt-Latn-BR", "pt-Latn-PT"),
+            ("zh-Hans-CN,zh", "zh-Hant-TW", "zh-Hans-CN", "zh-Hant-TW"),
+            ("sr-Latn-RS,sr", "sr-Cyrl-RS", "sr-Latn-RS", "sr-Cyrl-RS")
+        ] {
+            var firstValues = productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+            for prefix in ["", "worker_"] {
+                firstValues["\(prefix)languages"] = languages
+                firstValues["\(prefix)intl_locale"] = intlLocale
+                firstValues["\(prefix)primary_locale_core"] = primaryCore
+                firstValues["\(prefix)intl_locale_core"] = intlCore
+            }
+            let first = capture(name: "First", values: firstValues)
+            let result = report(
+                first: first,
+                second: capture(
+                    name: "Second",
+                    values: productionValues(
+                        canvas: "canvas-b",
+                        webGLPixels: "webgl-b",
+                        renderer: "Apple M4"
+                    )
+                ),
+                repeatCapture: capture(
+                    id: first.profileID,
+                    name: first.profileName,
+                    values: first.values
+                )
+            )
+
+            #expect(!result.isProductionReleaseQualified)
+            #expect(
+                result.crossRealmConsistencyIssues.contains {
+                    $0.contains(
+                        "primary_locale_core disagrees with intl_locale_core"
+                    )
+                }
+            )
+        }
+    }
+
+    @Test
+    func nonASCIILocaleIdentifiersFailStrictProduction() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["languages"] = "еn-US,en"
+        firstValues["worker_languages"] = "еn-US,en"
+        firstValues["intl_locale"] = "еn-US"
+        firstValues["worker_intl_locale"] = "еn-US"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.productionReleaseIssues.contains {
+                $0.contains("not supported locale identifiers")
+            }
+        )
+    }
+
+    @Test
+    func repeatedOfflineAudioMismatchFailsStrictProduction() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["audio_repeat"] = "audio-random"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.crossRealmConsistencyIssues.contains {
+                $0.contains("audio value disagrees with audio_repeat")
+            }
+        )
+    }
+
+    @Test
+    func proxiedRouteRejectsDirectWebRTCCandidate() {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        var secondValues = coherentM4Values(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b"
+        )
+        secondValues["network_route"] = "proxied"
+        secondValues["webrtc_stun_requests"] = "0"
+        secondValues["webrtc_candidate_summary"] =
+            #"{"total":1,"host":1,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains(
+                    "proxied route exposed a direct WebRTC candidate"
+                )
+            }
+        )
+    }
+
+    @Test
+    func rejectsMalformedWebRTCCandidateSummary() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["webrtc_candidate_summary"] =
+            #"{"total":1,"host":0,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains("WebRTC candidate summary is invalid")
+            }
+        )
+    }
+
+    @Test
+    func incompleteWebRTCGatheringFailsStrictProduction() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["webrtc_complete"] = "false"
+        let first = capture(name: "First", values: firstValues)
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains("WebRTC gathering did not complete")
+            }
+        )
+    }
+
+    @Test
+    func proxiedRelayOnlyWebRTCCandidatePassesNetworkGate() {
+        var secondValues = coherentM4Values(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b"
+        )
+        secondValues["network_route"] = "proxied"
+        secondValues["webrtc_stun_requests"] = "0"
+        secondValues["webrtc_candidate_summary"] =
+            #"{"total":1,"host":0,"srflx":0,"prflx":0,"relay":1,"unknown":0}"#
+        let first = capture(
+            name: "First",
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a"
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-00000008",
+                values: secondValues
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                identityCode: first.identityCode,
+                values: first.values
+            )
+        )
+
+        #expect(result.networkPrivacyIssues.isEmpty)
+        #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func proxiedSTUNRequestFailsStrictProduction() {
+        var secondValues = productionValues(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b",
+            renderer: "Apple M4"
+        )
+        secondValues["network_route"] = "proxied"
+        secondValues["webrtc_stun_requests"] = "1"
+        let first = capture(
+            name: "First",
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a"
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(name: "Second", values: secondValues),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.networkPrivacyIssues.contains {
+                $0.contains("proxied route sent a loopback STUN request")
+            }
+        )
+    }
+
+    @Test
+    func missingWebRTCDirectControlFailsStrictProduction() {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            runtimeName: "Test",
+            runtimeVersion: "1",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: String(repeating: "a", count: 64),
+            runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-00000008",
+                values: coherentM4Values(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b"
+                )
+            ),
+            firstRepeat: capture(
+                id: first.profileID,
+                name: first.profileName,
+                identityCode: first.identityCode,
+                values: first.values
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.productionReleaseIssues.contains(
+                "The report does not contain a WebRTC direct positive control."
+            )
+        )
+    }
+
+    @Test
+    func legacyAuditSchemaCannotQualifyForStrictProduction() throws {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let current = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+        let encoded = try JSONEncoder().encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object.removeValue(forKey: "auditSchemaVersion")
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let legacy = try JSONDecoder().decode(
+            FingerprintAuditReport.self,
+            from: data
+        )
+
+        #expect(legacy.effectiveAuditSchemaVersion == 1)
+        #expect(legacy.isPublicAlphaReleaseQualified)
+        #expect(!legacy.isProductionReleaseQualified)
+        #expect(
+            legacy.productionReleaseIssues.contains(
+                "The report does not use the current strict fingerprint audit schema."
+            )
+        )
+    }
+
+    @Test
+    func schemaSixCannotUseSchemaSevenProductionContract() throws {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let current = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+        let encoded = try JSONEncoder().encode(current)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object["auditSchemaVersion"] = 6
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let previous = try JSONDecoder().decode(
+            FingerprintAuditReport.self,
+            from: data
+        )
+
+        #expect(previous.effectiveAuditSchemaVersion == 6)
+        #expect(previous.isPublicAlphaReleaseQualified)
+        #expect(!previous.isProductionReleaseQualified)
+        #expect(
+            previous.productionReleaseIssues.contains(
+                "The report does not use the current strict fingerprint audit schema."
+            )
+        )
+    }
+
+    @Test
+    func identityCatalogDriftCannotQualifyForStrictProduction() {
+        let first = capture(
+            name: "First",
+            values: productionValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                renderer: "Apple M2"
+            )
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            identityCatalogVersion: 2,
+            runtimeName: "Test",
+            runtimeVersion: "1",
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: String(repeating: "a", count: 64),
+            runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                identityCode: "NA-13579BDF",
+                values: first.values
+            ),
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            firstRepeat: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.productionReleaseIssues.contains(
+                "The report does not use the current immutable identity catalog."
+            )
+        )
+    }
+
+    @Test
+    func malformedIdentityCodeCannotQualifyDeviceTuple() {
+        let first = capture(
+            name: "First",
+            identityCode: "NA-NOTHEX!",
+            values: coherentM2Values(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a"
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-BADCODE",
+                values: coherentM4Values(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                identityCode: first.identityCode,
+                values: first.values
+            )
+        )
+
+        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+        #expect(
+            result.deviceTupleConsistencyIssues.contains {
+                $0.contains("cannot be mapped")
+            }
+        )
     }
 
     @Test
@@ -344,6 +1375,11 @@ struct FingerprintAuditTests {
             runtimeCodeSignatureValid: true,
             runtimeExecutableSHA256: String(repeating: "a", count: 64),
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                identityCode: "NA-13579BDF",
+                values: firstValues
+            ),
             firstInitial: first,
             second: capture(
                 name: "Second",
@@ -491,6 +1527,7 @@ struct FingerprintAuditTests {
         secondValues["webgl_vendor"] = "unavailable"
         secondValues["webgl_renderer"] = "unavailable"
         secondValues["audio"] = "audio-b"
+        secondValues["audio_repeat"] = "audio-b"
         let first = capture(name: "First", values: firstValues)
         let result = report(
             first: first,
@@ -522,25 +1559,26 @@ struct FingerprintAuditTests {
     func diagnosticReportCanNeverQualifyForProduction() {
         let first = capture(
             name: "First",
-            values: productionValues(
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
                 canvas: "canvas-a",
-                webGLPixels: "webgl-a",
-                renderer: "Apple M2"
+                webGLPixels: "webgl-a"
             )
         )
         let browserReport = report(
             first: first,
             second: capture(
                 name: "Second",
-                values: productionValues(
+                identityCode: "NA-00000008",
+                values: coherentM4Values(
                     canvas: "canvas-b",
-                    webGLPixels: "webgl-b",
-                    renderer: "Apple M4"
+                    webGLPixels: "webgl-b"
                 )
             ),
             repeatCapture: capture(
                 id: first.profileID,
                 name: first.profileName,
+                identityCode: first.identityCode,
                 values: first.values
             )
         )
@@ -737,6 +1775,7 @@ struct FingerprintAuditTests {
             "canvas": canvas,
             "webgl_pixels": "webgl",
             "audio": "audio",
+            "audio_repeat": "audio",
             "client_rects": "rects"
         ]
     }
@@ -746,25 +1785,57 @@ struct FingerprintAuditTests {
         webGLPixels: String,
         renderer: String
     ) -> [String: String] {
-        [
+        let clientHints = "{\"platform\":\"macOS\"}"
+        return [
             "canvas": canvas,
+            "canvas_repeat": canvas,
             "webgl_pixels": webGLPixels,
+            "webgl_pixels_repeat": webGLPixels,
             "audio": "audio",
+            "audio_repeat": "audio",
             "client_rects": "rects",
+            "client_rects_repeat": "rects",
             "webgl_vendor": "Google Inc. (Apple)",
             "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
+            "webgl_shader_precision": "precision",
             "webgpu_policy": "disabled",
             "user_agent": "Mozilla/5.0",
             "platform": "MacIntel",
-            "client_hints": "{\"platform\":\"macOS\"}",
+            "client_hints": clientHints,
             "screen": "1512x982x1512x944x24x2",
+            "css_screen_match": "width:1|height:1|resolution:1",
             "hardware_concurrency": "8",
             "device_memory": "8",
             "touch_points": "0",
             "fonts": "Arial,Menlo",
             "languages": "en-US,en",
-            "timezone": "Europe/Berlin"
+            "timezone": "Europe/Berlin",
+            "intl_locale": "en-US",
+            "primary_locale_core": "en-Latn-US",
+            "intl_locale_core": "en-Latn-US",
+            "worker_canvas": canvas,
+            "worker_webgl_pixels": webGLPixels,
+            "worker_webgl_vendor": "Google Inc. (Apple)",
+            "worker_webgl_renderer": renderer,
+            "worker_webgl_extensions": "extensions",
+            "worker_webgl_shader_precision": "precision",
+            "worker_user_agent": "Mozilla/5.0",
+            "worker_platform": "MacIntel",
+            "worker_languages": "en-US,en",
+            "worker_timezone": "Europe/Berlin",
+            "worker_intl_locale": "en-US",
+            "worker_primary_locale_core": "en-Latn-US",
+            "worker_intl_locale_core": "en-Latn-US",
+            "worker_hardware_concurrency": "8",
+            "worker_device_memory": "8",
+            "worker_client_hints": clientHints,
+            "network_route": "direct",
+            "webrtc_probe": "loopback-stun-v1",
+            "webrtc_complete": "true",
+            "webrtc_stun_requests": "1",
+            "webrtc_candidate_summary":
+                #"{"total":0,"host":0,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
         ]
     }
 
@@ -788,9 +1859,42 @@ struct FingerprintAuditTests {
         values["client_hints"] = """
         {"architecture":"arm","bitness":"64","platform":"macOS","platformVersion":"\(platformVersion)","uaFullVersion":"\(runtimeVersion)"}
         """
+        values["worker_user_agent"] = values["user_agent"]
+        values["worker_client_hints"] = values["client_hints"]
         values["screen"] = screen
         values["hardware_concurrency"] = String(cores)
+        values["worker_hardware_concurrency"] = String(cores)
         return values
+    }
+
+    private func coherentM2Values(
+        canvas: String,
+        webGLPixels: String
+    ) -> [String: String] {
+        coherentTupleValues(
+            canvas: canvas,
+            webGLPixels: webGLPixels,
+            gpu: "M2",
+            cores: 8,
+            screen: "1280x832x1280x807x24x2",
+            platformVersion: "15.4.0",
+            runtimeVersion: "1"
+        )
+    }
+
+    private func coherentM4Values(
+        canvas: String,
+        webGLPixels: String
+    ) -> [String: String] {
+        coherentTupleValues(
+            canvas: canvas,
+            webGLPixels: webGLPixels,
+            gpu: "M4",
+            cores: 10,
+            screen: "1280x832x1280x807x24x2",
+            platformVersion: "15.1.0",
+            runtimeVersion: "1"
+        )
     }
 
     private func capture(
@@ -811,17 +1915,22 @@ struct FingerprintAuditTests {
     private func report(
         first: FingerprintCapture,
         second: FingerprintCapture,
-        repeatCapture: FingerprintCapture
+        repeatCapture: FingerprintCapture,
+        createdAt: Date = Date(timeIntervalSince1970: 2)
     ) -> FingerprintAuditReport {
         FingerprintAuditReport(
             id: UUID(),
-            createdAt: Date(timeIntervalSince1970: 2),
+            createdAt: createdAt,
             runtimeName: "Test",
             runtimeVersion: "1",
             runtimeFlavor: .fingerprintChromium,
             runtimeCodeSignatureValid: true,
             runtimeExecutableSHA256: String(repeating: "a", count: 64),
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                values: first.values
+            ),
             firstInitial: first,
             second: second,
             firstRepeat: repeatCapture

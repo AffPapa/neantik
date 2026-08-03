@@ -12,6 +12,10 @@ from typing import Any
 
 
 MAXIMUM_RUNTIME_SEED = 2_147_483_647
+IDENTITY_CATALOG_SIZE = 11
+LEGACY_ISSUANCE_VERSION = 1
+CURRENT_ISSUANCE_VERSION = 2
+CURRENT_ISSUANCE_RESIDUES = {0, 2, 5, 8}
 
 
 def runtime_seed(value: int) -> int:
@@ -20,10 +24,22 @@ def runtime_seed(value: int) -> int:
 
 
 def next_available(seed: int, used: set[int]) -> int:
-    candidate = 1 if seed == MAXIMUM_RUNTIME_SEED else seed + 1
-    while candidate in used:
-        candidate = 1 if candidate == MAXIMUM_RUNTIME_SEED else candidate + 1
-    return candidate
+    residue = seed % IDENTITY_CATALOG_SIZE
+    first = IDENTITY_CATALOG_SIZE if residue == 0 else residue
+    candidate = (
+        seed + IDENTITY_CATALOG_SIZE
+        if seed <= MAXIMUM_RUNTIME_SEED - IDENTITY_CATALOG_SIZE
+        else first
+    )
+    while candidate != seed:
+        if candidate not in used:
+            return candidate
+        candidate = (
+            candidate + IDENTITY_CATALOG_SIZE
+            if candidate <= MAXIMUM_RUNTIME_SEED - IDENTITY_CATALOG_SIZE
+            else first
+        )
+    raise ValueError("browser identity seed space is exhausted")
 
 
 def load_profiles(path: Path) -> list[dict[str, Any]]:
@@ -50,16 +66,42 @@ def repair_profiles(profiles: list[dict[str, Any]]) -> tuple[list[dict[str, Any]
         if not isinstance(identity, dict):
             identity = {}
             profile["identity"] = identity
-        raw_seed = identity.get("seed")
-        if not isinstance(raw_seed, int):
-            raw_seed = 1
+        original_seed = identity.get("seed")
+        seed_is_integer = type(original_seed) is int
+        raw_seed = original_seed if seed_is_integer else 1
         requested = runtime_seed(raw_seed)
+        issuance_version = identity.get(
+            "issuanceVersion",
+            LEGACY_ISSUANCE_VERSION,
+        )
+        if type(issuance_version) is not int:
+            raise ValueError(
+                f"profile at index {index} has invalid issuanceVersion"
+            )
+        if issuance_version not in {
+            LEGACY_ISSUANCE_VERSION,
+            CURRENT_ISSUANCE_VERSION,
+        }:
+            raise ValueError(
+                f"profile at index {index} has unsupported issuanceVersion"
+            )
+        if (
+            issuance_version == CURRENT_ISSUANCE_VERSION
+            and (
+                raw_seed != requested
+                or requested % IDENTITY_CATALOG_SIZE
+                not in CURRENT_ISSUANCE_RESIDUES
+            )
+        ):
+            raise ValueError(
+                f"profile at index {index} has a seed outside issuance policy"
+            )
         replacement = next_available(requested, used) if requested in used else requested
         used.add(replacement)
-        if replacement != raw_seed:
+        if replacement != raw_seed or not seed_is_integer:
             identity["seed"] = replacement
             name = profile.get("name") if isinstance(profile.get("name"), str) else f"#{index}"
-            changes.append(f"{name}: seed {raw_seed} -> {replacement}")
+            changes.append(f"{name}: seed {original_seed!r} -> {replacement}")
     return repaired, changes
 
 

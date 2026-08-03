@@ -4,6 +4,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
+SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
+
+LOCKED_RUNTIME_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
+)"
+if [[ "$LOCKED_RUNTIME_VERSION" == 150.* && -f "$SOURCE_CONTRACT" ]]; then
+  echo "Legacy source-lock verification is blocked for Chromium 150." >&2
+  echo "Use scripts/export-runtime-source-provenance.py and scripts/verify-runtime-source-provenance.py with the owned rebase source root." >&2
+  exit 65
+fi
 
 if [[ $# -ne 1 || -z "${1:-}" ]]; then
   echo "Usage: $0 /absolute/path/to/nevision-chromium-build" >&2

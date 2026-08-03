@@ -4,19 +4,19 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium.lock.json"
 
 usage() {
-  echo "Usage: $0 /absolute/path/to/chromium/src /absolute/output/directory" >&2
+  echo "Usage: $0 /absolute/path/to/chromium/src /absolute/output/directory /absolute/path/to/runtime-candidate-lock.json" >&2
 }
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 3 ]]; then
   usage
   exit 64
 fi
 
 SOURCE_ROOT="$1"
 OUTPUT_DIR="$2"
+LOCK_FILE="$3"
 
 if [[ "$SOURCE_ROOT" != /* || ! -d "$SOURCE_ROOT" ]]; then
   echo "Chromium source root must be an existing absolute path." >&2
@@ -25,6 +25,10 @@ fi
 if [[ "$OUTPUT_DIR" != /* ]]; then
   echo "Output directory must be absolute." >&2
   exit 64
+fi
+if [[ "$LOCK_FILE" != /* || ! -f "$LOCK_FILE" || -L "$LOCK_FILE" ]]; then
+  echo "Candidate lock must be an absolute regular non-symlinked file." >&2
+  exit 66
 fi
 
 VERSION="$(
@@ -120,7 +124,7 @@ Path(os.environ["MANIFEST_OUTPUT"]).write_text(
 PY
 
 chmod 644 "$MANIFEST_OUTPUT"
-"$SCRIPT_DIR/verify-runtime-compliance.sh" "$OUTPUT_DIR"
+"$SCRIPT_DIR/verify-runtime-compliance.sh" "$OUTPUT_DIR" "$LOCK_FILE"
 
 echo "NeAntik runtime compliance artifacts generated."
 echo "Version:  $VERSION"
