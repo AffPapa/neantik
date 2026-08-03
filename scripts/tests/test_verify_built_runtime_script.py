@@ -82,6 +82,14 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         self.assertLess(provenance, candidate)
         self.assertLess(candidate, ninja)
 
+    def test_protocol_markers_are_checked_in_one_streaming_pass(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn('handle.read(1024 * 1024)', script)
+        self.assertIn('"fingerprint-platform"', script)
+        self.assertIn('"WebGPUService"', script)
+        self.assertNotIn("for protocol_string in", script)
+
 
 if __name__ == "__main__":
     unittest.main()

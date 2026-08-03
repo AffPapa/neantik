@@ -566,6 +566,42 @@ enum ProfileAppearance {
         }
     }
 
+    static func usesDarkForeground(for hex: String) -> Bool {
+        guard let luminance = relativeLuminance(for: hex) else {
+            return false
+        }
+        let blackContrast = (luminance + 0.05) / 0.05
+        let whiteContrast = 1.05 / (luminance + 0.05)
+        return blackContrast >= whiteContrast
+    }
+
+    static func symbolContrastRatio(for hex: String) -> Double? {
+        guard let luminance = relativeLuminance(for: hex) else {
+            return nil
+        }
+        return usesDarkForeground(for: hex)
+            ? (luminance + 0.05) / 0.05
+            : 1.05 / (luminance + 0.05)
+    }
+
+    private static func relativeLuminance(for hex: String) -> Double? {
+        let value = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard value.count == 7, value.first == "#" else { return nil }
+        let components = stride(from: 1, through: 5, by: 2).compactMap {
+            UInt8(value.dropFirst($0).prefix(2), radix: 16)
+        }
+        guard components.count == 3 else { return nil }
+        let linear = components.map { component -> Double in
+            let channel = Double(component) / 255
+            return channel <= 0.04045
+                ? channel / 12.92
+                : pow((channel + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear[0] +
+            0.7152 * linear[1] +
+            0.0722 * linear[2]
+    }
+
     static func isSafeStoredSymbol(_ value: String) -> Bool {
         !value.isEmpty &&
             value.utf8.count <= 64 &&
@@ -843,7 +879,7 @@ enum NeAntikError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .browserNotFound:
-            "Chromium или Google Chrome не найден."
+            "Встроенный браузер NeAntik отсутствует или повреждён. Переустанови приложение из официального DMG или ZIP."
         case .profileAlreadyRunning:
             "Этот профиль уже запущен."
         case .invalidProfile:

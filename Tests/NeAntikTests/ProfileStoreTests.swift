@@ -64,6 +64,35 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func validExistingMetadataCreatesRecoverySnapshotOnFirstLoad() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let profile = BrowserProfile(name: "До первого изменения")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let validData = try encoder.encode([profile])
+        try paths.writePrivateFile(validData, to: paths.profilesFile)
+
+        let firstLoad = ProfileStore(paths: paths)
+        #expect(firstLoad.profile(withID: profile.id) != nil)
+        #expect(
+            try Data(contentsOf: paths.profilesBackupFile) == validData
+        )
+
+        try paths.writePrivateFile(
+            Data("{not-json".utf8),
+            to: paths.profilesFile
+        )
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.profile(withID: profile.id) != nil)
+        #expect(recovered.lastError?.contains("восстановил") == true)
+    }
+
+    @Test
     func migratesLegacyProfileToStableIdentity() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

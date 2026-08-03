@@ -1,6 +1,17 @@
 import Foundation
 
 enum ProfileListProjection {
+    static func normalizedSelection(
+        _ currentSelection: UUID?,
+        in visibleProfiles: [BrowserProfile]
+    ) -> UUID? {
+        if let currentSelection,
+           visibleProfiles.contains(where: { $0.id == currentSelection }) {
+            return currentSelection
+        }
+        return visibleProfiles.first?.id
+    }
+
     static func filtered(
         _ profiles: [BrowserProfile],
         searchText: String,

@@ -247,22 +247,48 @@ if [[ "$FRAMEWORK_BUNDLE_PATH" == "$FRAMEWORK_BINARY" ||
   exit 65
 fi
 
-for protocol_string in \
-  "fingerprint-platform" \
-  "fingerprint-timezone" \
-  "fingerprint-locale" \
-  "apple-device-tuple" \
-  "default_public_interface_only" \
-  "disable_non_proxied_udp" \
-  "DnsOverHttps" \
-  "AsyncDns" \
-  "WebGPUService"
-do
-  if ! grep -aFq "$protocol_string" "$FRAMEWORK_BINARY"; then
-    echo "Missing fingerprint protocol string: $protocol_string" >&2
-    exit 65
-  fi
-done
+if ! python3 - "$FRAMEWORK_BINARY" <<'PY'
+import sys
+from pathlib import Path
+
+framework = Path(sys.argv[1])
+required = {
+    value.encode("ascii")
+    for value in (
+        "fingerprint-platform",
+        "fingerprint-timezone",
+        "fingerprint-locale",
+        "apple-device-tuple",
+        "default_public_interface_only",
+        "disable_non_proxied_udp",
+        "DnsOverHttps",
+        "AsyncDns",
+        "WebGPUService",
+    )
+}
+overlap = max(map(len, required)) - 1
+tail = b""
+with framework.open("rb") as handle:
+    while required:
+        chunk = handle.read(1024 * 1024)
+        if not chunk:
+            break
+        haystack = tail + chunk
+        required = {needle for needle in required if needle not in haystack}
+        tail = haystack[-overlap:]
+
+if required:
+    for value in sorted(required):
+        print(
+            "Missing fingerprint protocol string: "
+            + value.decode("ascii"),
+            file=sys.stderr,
+        )
+    raise SystemExit(65)
+PY
+then
+  exit 65
+fi
 
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"

@@ -50,6 +50,8 @@ final class ProfileStore: ObservableObject {
                 if normalized.changed {
                     sortProfiles()
                     try persist()
+                } else {
+                    try ensureRecoverySnapshotIfNeeded()
                 }
                 lastError = load.warning ?? paths.migrationWarning
             }
@@ -461,6 +463,26 @@ final class ProfileStore: ObservableObject {
             )
         }
         try paths.writePrivateFile(data, to: paths.profilesFile)
+    }
+
+    private func ensureRecoverySnapshotIfNeeded() throws {
+        guard FileManager.default.fileExists(
+            atPath: paths.profilesFile.path
+        ) else {
+            return
+        }
+        if FileManager.default.fileExists(
+            atPath: paths.profilesBackupFile.path
+        ) {
+            try paths.validatePrivateFile(paths.profilesBackupFile)
+            return
+        }
+        try paths.validatePrivateFile(paths.profilesFile)
+        let data = try Data(contentsOf: paths.profilesFile)
+        try paths.writePrivateFile(
+            data,
+            to: paths.profilesBackupFile
+        )
     }
 
     private func requireStorage() throws {

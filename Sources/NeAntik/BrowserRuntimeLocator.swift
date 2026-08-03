@@ -4,6 +4,8 @@ struct BrowserRuntimeLocator: Sendable {
     private let runtimeInspector:
         @Sendable (URL) -> BrowserRuntimeInspection
     private let candidateOverrides: [Candidate]?
+    private let allowsExternalRuntimes: Bool
+    private let resourceURL: URL?
 
     struct Candidate: Sendable {
         let name: String
@@ -15,11 +17,17 @@ struct BrowserRuntimeLocator: Sendable {
     init(
         runtimeInspector: @escaping @Sendable
             (URL) -> BrowserRuntimeInspection = {
-                BrowserRuntimeInspector.inspect(executableURL: $0)
-            }
+                BrowserRuntimeInspector.inspectForStartup(
+                    executableURL: $0
+                )
+            },
+        allowsExternalRuntimes: Bool = false,
+        resourceURL: URL? = Bundle.main.resourceURL
     ) {
         self.runtimeInspector = runtimeInspector
         self.candidateOverrides = nil
+        self.allowsExternalRuntimes = allowsExternalRuntimes
+        self.resourceURL = resourceURL
     }
 
     init(
@@ -29,6 +37,8 @@ struct BrowserRuntimeLocator: Sendable {
     ) {
         self.runtimeInspector = runtimeInspector
         self.candidateOverrides = candidates
+        self.allowsExternalRuntimes = false
+        self.resourceURL = nil
     }
 
     func availableRuntimes(
@@ -60,7 +70,9 @@ struct BrowserRuntimeLocator: Sendable {
         }
         var candidates: [Candidate] = []
 
-        if let preference, !preference.path.isEmpty {
+        if allowsExternalRuntimes,
+           let preference,
+           !preference.path.isEmpty {
             let executable = normalizedExecutable(
                 URL(fileURLWithPath: preference.path)
             )
@@ -77,30 +89,28 @@ struct BrowserRuntimeLocator: Sendable {
             ))
         }
 
-        candidates.append(contentsOf: cloakRuntimes())
-
-        if let resources = Bundle.main.resourceURL {
+        if let resources = resourceURL {
             let neAntikApp = resources.appendingPathComponent(
                 "NeAntik Browser.app",
                 isDirectory: true
             )
-            candidates.append(Candidate(
-                name: "NeAntik Browser",
-                url: normalizedExecutable(neAntikApp),
-                source: "Встроен",
-                flavor: .fingerprintChromium
-            ))
-            let chromiumApp = resources.appendingPathComponent(
-                "Chromium.app",
-                isDirectory: true
-            )
-            candidates.append(Candidate(
-                name: "Встроенный Chromium",
-                url: normalizedExecutable(chromiumApp),
-                source: "Встроен",
-                flavor: .standard
-            ))
+            let executable = normalizedExecutable(neAntikApp)
+            if declaredNeAntikFlavor(for: executable) ==
+                .fingerprintChromium {
+                candidates.append(Candidate(
+                    name: "NeAntik Browser",
+                    url: executable,
+                    source: "Встроен",
+                    flavor: .fingerprintChromium
+                ))
+            }
         }
+
+        guard allowsExternalRuntimes else {
+            return candidates
+        }
+
+        candidates.append(contentsOf: cloakRuntimes())
 
         let home = FileManager.default.homeDirectoryForCurrentUser
         let installedCandidates: [Candidate] = [

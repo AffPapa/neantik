@@ -41,18 +41,18 @@ class DirectDMGVerificationScriptTests(unittest.TestCase):
         self.assertLess(verify_index, move_index)
         self.assertIn('mv "$TEMP_DMG.sha256" "$CHECKSUM_PATH"', text)
 
-    def test_hosted_wrapper_is_read_only_and_uses_canonical_github_asset(self) -> None:
+    def test_hosted_wrapper_is_read_only_and_version_driven(self) -> None:
         wrapper = (
             ROOT
             / "scripts"
-            / "Run-NeAntik-0.3.14-DMG-Hosted-Verification.command"
+            / "Run-NeAntik-DMG-Hosted-Verification.command"
         )
         text = wrapper.read_text()
         self.assertTrue(wrapper.stat().st_mode & stat.S_IXUSR)
         self.assertIn("verify-direct-hosted-dmg.sh", text)
         self.assertIn(
             "https://affpapa.org/neantik/downloads/"
-            "NeAntik-0.3.14-arm64-notarized.dmg",
+            "NeAntik-$VERSION-arm64-notarized.dmg",
             text,
         )
         self.assertIn("GitHub Release и сайт не изменялись", text)

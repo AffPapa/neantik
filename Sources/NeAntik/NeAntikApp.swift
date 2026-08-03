@@ -6,7 +6,6 @@ import SwiftUI
 struct NeAntikApp: App {
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
-    @StateObject private var runtimePreferences: RuntimePreferenceStore
     @StateObject private var telemetry: TelemetryController
 
     private let keychain: KeychainStore
@@ -64,9 +63,6 @@ struct NeAntikApp: App {
         )
         _store = StateObject(wrappedValue: ProfileStore(paths: paths))
         _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths))
-        _runtimePreferences = StateObject(
-            wrappedValue: RuntimePreferenceStore(paths: paths)
-        )
         _telemetry = StateObject(
             wrappedValue: TelemetryController(edition: .direct)
         )
@@ -77,7 +73,6 @@ struct NeAntikApp: App {
             ContentView(
                 store: store,
                 processes: processes,
-                runtimePreferences: runtimePreferences,
                 telemetry: telemetry,
                 keychain: keychain,
                 credentialCleanup: credentialCleanup,

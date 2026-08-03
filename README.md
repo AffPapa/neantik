@@ -10,17 +10,17 @@ Chromium runtime, собранный из зафиксированных исх�
 ## Скачать приложение
 
 Подписанное и нотарифицированное приложение опубликовано в
-[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.14).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.15).
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
 Текущий публичный alpha-релиз:
 
-- NeAntik `0.3.14`, build `17`;
+- NeAntik `0.3.15`, build `18`;
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- ZIP `NeAntik-0.3.14-arm64-notarized.zip`;
-- DMG `NeAntik-0.3.14-arm64-notarized.dmg`;
+- ZIP `NeAntik-0.3.15-arm64-notarized.zip`;
+- DMG `NeAntik-0.3.15-arm64-notarized.dmg`;
 - SHA-256 для обоих файлов публикуются рядом с ними в GitHub Release.
 
 Сайт продукта: [affpapa.org/neantik](https://affpapa.org/neantik).
@@ -57,7 +57,7 @@ NeAntik предназначен для приватности, разделен
 QA. Он не обещает полную анонимность или «необнаружимость» и не предназначен
 для обхода CAPTCHA, банов, антифрода или правил сторонних сервисов.
 
-Версия `0.3.14` выпускается для public-alpha изоляции профилей. Строгая
+Версия `0.3.15` выпускается для public-alpha изоляции профилей. Строгая
 production-согласованность всех fingerprint- и сетевых поверхностей остаётся
 открытым ограничением.
 

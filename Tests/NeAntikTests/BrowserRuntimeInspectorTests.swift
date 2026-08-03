@@ -82,4 +82,23 @@ struct BrowserRuntimeInspectorTests {
         #expect(inspection.architectures == ["x86_64"])
         #expect(!inspection.supportsAppleSilicon)
     }
+
+    @Test
+    func startupInspectionSkipsLargeRuntimeHashes() throws {
+        let executable = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: executable) }
+        try Data([
+            0xCF, 0xFA, 0xED, 0xFE,
+            0x0C, 0x00, 0x00, 0x01
+        ]).write(to: executable)
+
+        let inspection = BrowserRuntimeInspector.inspectForStartup(
+            executableURL: executable
+        )
+
+        #expect(inspection.architectures == ["arm64"])
+        #expect(inspection.executableSHA256 == nil)
+        #expect(inspection.frameworkSHA256 == nil)
+    }
 }

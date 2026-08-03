@@ -57,7 +57,7 @@ prepare_candidate() {
     "$SOURCE_APP"
 }
 
-echo "NeAntik 0.3.14 — защищённый локальный этап выпуска"
+echo "NeAntik $EXPECTED_VERSION — защищённый локальный этап выпуска"
 echo "Секреты не запрашиваются: подпись и notarization используют Keychain."
 echo "Этапы: сборка → проверка профилей → Apple notarization → готовый ZIP."
 echo
@@ -194,5 +194,5 @@ echo "[3/4] Отправляю кандидат в Apple notarization…"
 
 echo
 echo "[4/4] PASS: архив подписан, принят Apple и проверен Gatekeeper."
-echo "Готово: dist/NeAntik-0.3.14-arm64-notarized.zip"
+echo "Готово: dist/NeAntik-$EXPECTED_VERSION-arm64-notarized.zip"
 echo "Публикация сайта и загрузки выполняется отдельным hosted release gate."

@@ -3,7 +3,12 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DOWNLOAD_URL="${NEANTIK_DOWNLOAD_URL:-https://affpapa.org/neantik/downloads/NeAntik-0.3.14-arm64-notarized.zip}"
+VERSION="$(
+  /usr/libexec/PlistBuddy \
+    -c 'Print :CFBundleShortVersionString' \
+    "$PROJECT_DIR/Resources/Info.plist"
+)"
+DOWNLOAD_URL="${NEANTIK_DOWNLOAD_URL:-https://affpapa.org/neantik/downloads/NeAntik-$VERSION-arm64-notarized.zip}"
 
 pause_on_error() {
   local exit_code=$?
@@ -18,12 +23,12 @@ pause_on_error() {
 }
 trap pause_on_error ERR
 
-echo "NeAntik 0.3.14 — проверка опубликованного ZIP"
+echo "NeAntik $VERSION — проверка опубликованного ZIP"
 echo "Файл будет заново скачан с affpapa.org и проверен без изменения релиза."
 echo
 
 python3 "$PROJECT_DIR/scripts/verify-direct-hosted-download.py" \
-  --archive "$PROJECT_DIR/dist/NeAntik-0.3.14-arm64-notarized.zip" \
+  --archive "$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip" \
   --download-url "$DOWNLOAD_URL" \
   --candidate-manifest "$PROJECT_DIR/dist/direct-candidate-manifest.json" \
   --release-channel "${NEANTIK_RELEASE_CHANNEL:-public-alpha}" \
