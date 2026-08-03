@@ -1,0 +1,11 @@
+# Install as /etc/sudoers.d/neantik-deploy with mode 0440.
+Defaults:neantik-deploy env_reset
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-status ""
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-deploy ""
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-deploy --check
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-deploy --dry-run
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-abort ""
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-rollback ""
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-rollback --check
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-release-rollback --dry-run
+neantik-deploy ALL=(root) NOPASSWD: /usr/local/sbin/neantik-upload *

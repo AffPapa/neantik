@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# neantik-ssh-dispatcher — forced-command for neantik-deploy SSH.
+# /usr/local/sbin/neantik-ssh-dispatcher, owned by root.
+# Allows ONLY:
+#   neantik-release-status
+#   neantik-release-deploy [--check|--dry-run]
+#   neantik-release-abort
+#   neantik-release-rollback [--check|--dry-run]
+#   neantik-upload <strictly-validated filename>
+# Denies everything else including SFTP, scp, shell.
+set -euo pipefail
+
+CMD="${SSH_ORIGINAL_COMMAND:-}"
+
+# Filename allowlist for upload (no shell expansion — literal match)
+UPLOAD_RE='^neantik-upload (release\.json|content\.json|NeAntik-[0-9]+\.[0-9]+\.[0-9]+-arm64-notarized\.(dmg|zip|dmg\.sha256|zip\.sha256))$'
+
+case "$CMD" in
+    "neantik-release-status")
+        exec sudo /usr/local/sbin/neantik-release-status
+        ;;
+    "neantik-release-deploy")
+        exec sudo /usr/local/sbin/neantik-release-deploy
+        ;;
+    "neantik-release-deploy --check")
+        exec sudo /usr/local/sbin/neantik-release-deploy --check
+        ;;
+    "neantik-release-deploy --dry-run")
+        exec sudo /usr/local/sbin/neantik-release-deploy --dry-run
+        ;;
+    "neantik-release-abort")
+        exec sudo /usr/local/sbin/neantik-release-abort
+        ;;
+    "neantik-release-rollback")
+        exec sudo /usr/local/sbin/neantik-release-rollback
+        ;;
+    "neantik-release-rollback --check")
+        exec sudo /usr/local/sbin/neantik-release-rollback --check
+        ;;
+    "neantik-release-rollback --dry-run")
+        exec sudo /usr/local/sbin/neantik-release-rollback --dry-run
+        ;;
+    neantik-upload\ *)
+        if [[ "$CMD" =~ $UPLOAD_RE ]]; then
+            UPLOAD_FNAME="${CMD#neantik-upload }"
+            exec sudo /usr/local/sbin/neantik-upload "$UPLOAD_FNAME"
+        else
+            echo "DENIED: upload filename not allowed" >&2
+            logger -t neantik-deploy "DENIED upload: $CMD (from ${SSH_CLIENT:-unknown})"
+            exit 1
+        fi
+        ;;
+    "")
+        echo "NeAntik deploy access. Available commands:"
+        echo "  neantik-release-status"
+        echo "  neantik-release-deploy [--check|--dry-run]"
+        echo "  neantik-release-abort"
+        echo "  neantik-release-rollback [--check|--dry-run]"
+        echo "  neantik-upload <filename>"
+        exit 1
+        ;;
+    *)
+        echo "DENIED: command not allowed" >&2
+        logger -t neantik-deploy "DENIED command: $CMD (from ${SSH_CLIENT:-unknown})"
+        exit 1
+        ;;
+esac

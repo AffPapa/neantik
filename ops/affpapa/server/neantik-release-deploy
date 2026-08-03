@@ -1,0 +1,349 @@
+#!/usr/bin/env bash
+# neantik-release-deploy — deploy NeAntik release from staging snapshot.
+# Root-owned, /usr/local/sbin/neantik-release-deploy.
+# Uses flock, root-owned immutable snapshot, atomic publish, auto-rollback.
+# Canonical schema: runtime, source, artifacts[].
+# Blade is root-owned and NOT part of the deploy channel.
+set -euo pipefail
+
+LIVE_ROOT="/var/www/hrband"
+STAGING="/var/www/hrband/storage/app/neantik-release-staging"
+BACKUPS="/var/www/hrband/storage/app/neantik-release-backups"
+LOG="/var/log/neantik-deploy.log"
+LOCKFILE="/var/lock/neantik-deploy.lock"
+RELEASE_JSON_LIVE="$LIVE_ROOT/public/neantik/release.json"
+CONTENT_JSON_LIVE="$LIVE_ROOT/public/neantik/content.json"
+DOWNLOADS_LIVE="$LIVE_ROOT/public/neantik/downloads"
+VALIDATOR="/usr/local/sbin/neantik-validate-release"
+# The origin vhost has an incomplete local CA chain. TLS verification is
+# bypassed only for the host pinned to loopback; public-client checks remain
+# strict in scripts/neantik-affpapa-release.
+CURL_RESOLVE=(--insecure --resolve "affpapa.org:443:127.0.0.1")
+
+CHECK_MODE=0
+DRY_RUN=0
+case "${1:-}" in
+    --check)   CHECK_MODE=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    "")        ;;
+    *)         echo "Usage: neantik-release-deploy [--check|--dry-run]" >&2; exit 2 ;;
+esac
+
+log_entry() {
+    printf '%s | %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" >> "$LOG"
+}
+
+fail() {
+    printf 'FAIL: %s\n' "$1" >&2
+    log_entry "DEPLOY FAIL: $1 (user=${SUDO_USER:-?})"
+    exit 1
+}
+
+# Helper: read artifact field from release.json via Python
+rj_artifact() {
+    local rj="$1" fmt="$2" field="$3"
+    python3 -c "
+import json, sys
+arts = json.load(open('$rj'))['artifacts']
+for a in arts:
+    if a['format'] == '$fmt':
+        print(a['$field'])
+        sys.exit(0)
+sys.exit(1)
+"
+}
+
+# --- flock: only one deploy/rollback at a time ---
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    fail "another deploy/rollback is running (lock: $LOCKFILE)"
+fi
+
+# --- Staging must have release.json ---
+[[ -f "$STAGING/release.json" ]] || fail "release.json not found in staging"
+
+# --- Create root-owned snapshot (transaction directory) ---
+SNAPSHOT=$(mktemp -d /tmp/neantik-snapshot-XXXXXX)
+chmod 700 "$SNAPSHOT"
+chown root:root "$SNAPSHOT"
+trap 'rm -rf "$SNAPSHOT"' EXIT
+
+# Safe copy: only regular files, no symlinks/FIFO/devices, check nlink, owner, perms, size
+DEPLOY_UID=$(id -u neantik-deploy)
+DEPLOY_GID=$(id -g neantik-deploy)
+MAX_BINARY=$((300 * 1024 * 1024))
+
+for entry in "$STAGING"/*; do
+    [[ -e "$entry" ]] || continue
+    bname=$(basename "$entry")
+
+    [[ "$bname" =~ ^\. ]] && fail "hidden file in staging: $bname"
+
+    ftype=$(stat -c %F "$entry")
+    [[ "$ftype" == "regular file" ]] || fail "non-regular file in staging: $bname ($ftype)"
+
+    [[ -L "$entry" ]] && fail "symlink in staging: $bname"
+
+    nlink=$(stat -c %h "$entry")
+    [[ "$nlink" -eq 1 ]] || fail "hardlink count != 1 for $bname (nlink=$nlink)"
+
+    fuid=$(stat -c %u "$entry")
+    fgid=$(stat -c %g "$entry")
+    [[ "$fuid" -eq "$DEPLOY_UID" ]] || fail "$bname: owner uid $fuid != expected $DEPLOY_UID"
+    [[ "$fgid" -eq "$DEPLOY_GID" ]] || fail "$bname: owner gid $fgid != expected $DEPLOY_GID"
+
+    perms=$(stat -c %a "$entry")
+    case "$perms" in
+        600|640) ;;
+        *) fail "$bname: unsafe permissions $perms (expected 600 or 640)" ;;
+    esac
+
+    fsize=$(stat -c %s "$entry")
+    case "$bname" in
+        release.json)  [[ "$fsize" -le $((16 * 1024)) ]] || fail "$bname too large: $fsize" ;;
+        content.json)  [[ "$fsize" -le $((64 * 1024)) ]] || fail "$bname too large: $fsize" ;;
+        *.sha256)      [[ "$fsize" -le 256 ]] || fail "$bname too large: $fsize" ;;
+        *.dmg|*.zip)   [[ "$fsize" -le "$MAX_BINARY" ]] || fail "$bname too large: $fsize" ;;
+        *)             fail "unexpected file: $bname" ;;
+    esac
+
+    pre_stat=$(stat -c '%s %Y' "$entry")
+    pre_sha=$(sha256sum "$entry" | cut -d' ' -f1)
+
+    install -m 600 -o root -g root "$entry" "$SNAPSHOT/$bname"
+
+    post_stat=$(stat -c '%s %Y' "$entry")
+    post_sha=$(sha256sum "$entry" | cut -d' ' -f1)
+
+    if [[ "$pre_stat" != "$post_stat" ]]; then
+        fail "$bname: file changed during copy (stat mismatch)"
+    fi
+    if [[ "$pre_sha" != "$post_sha" ]]; then
+        fail "$bname: file changed during copy (SHA mismatch)"
+    fi
+
+    snap_sha=$(sha256sum "$SNAPSHOT/$bname" | cut -d' ' -f1)
+    if [[ "$snap_sha" != "$pre_sha" ]]; then
+        fail "$bname: snapshot copy SHA mismatch"
+    fi
+done
+
+# --- Run Python validator on snapshot ---
+python3 "$VALIDATOR" "$SNAPSHOT" "$RELEASE_JSON_LIVE" || fail "release.json validation failed"
+
+# --- Extract version from snapshot ---
+VERSION=$(python3 -c "import json; print(json.load(open('$SNAPSHOT/release.json'))['version'])")
+BUILD=$(python3 -c "import json; print(json.load(open('$SNAPSHOT/release.json'))['build'])")
+
+echo "=== NeAntik Deploy: v$VERSION (build $BUILD) ==="
+
+# --- Check / dry-run mode ---
+if [[ "$CHECK_MODE" -eq 1 ]]; then
+    echo ""
+    echo "=== CHECK MODE — all validations passed ==="
+    log_entry "DEPLOY CHECK: v$VERSION passed all validations (user=${SUDO_USER:-?})"
+    exit 0
+fi
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo ""
+    echo "=== DRY-RUN — all validations passed, no changes made ==="
+    log_entry "DEPLOY DRY-RUN: v$VERSION passed all validations (user=${SUDO_USER:-?})"
+    exit 0
+fi
+
+# --- Block overwriting same version with different bytes ---
+if [[ -f "$RELEASE_JSON_LIVE" ]]; then
+    LIVE_VER=$(python3 -c "import json; print(json.load(open('$RELEASE_JSON_LIVE'))['version'])" 2>/dev/null || echo "")
+    if [[ "$LIVE_VER" == "$VERSION" ]]; then
+        fail "cannot overwrite published version $VERSION — publish a new version instead"
+    fi
+fi
+
+# ===================================================================
+# DEPLOYMENT — from this point, any failure triggers full rollback
+# ===================================================================
+
+TS=$(date -u +%Y%m%dT%H%M%SZ)
+BACKUP_DIR="$BACKUPS/$TS-v$VERSION"
+mkdir "$BACKUP_DIR"
+chown root:root "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
+
+backup_file() {
+    local src="$1"
+    if [[ -f "$src" ]]; then
+        local dest
+        dest="$BACKUP_DIR/$(basename "$src")"
+        cp -p "$src" "$dest"
+        chown root:root "$dest"
+        chmod 600 "$dest"
+    fi
+}
+
+backup_file "$RELEASE_JSON_LIVE"
+backup_file "$CONTENT_JSON_LIVE"
+for f in "$DOWNLOADS_LIVE"/NeAntik-*; do
+    [[ -f "$f" ]] && backup_file "$f"
+done
+(cd "$BACKUP_DIR" && sha256sum -- * > backup.sha256)
+chown root:root "$BACKUP_DIR/backup.sha256"
+chmod 600 "$BACKUP_DIR/backup.sha256"
+echo "  OK: backup at $BACKUP_DIR"
+
+declare -a PUBLISHED_FILES=()
+
+do_rollback() {
+    echo "!!! ROLLING BACK !!!" >&2
+    log_entry "DEPLOY ROLLBACK START: v$VERSION (user=${SUDO_USER:-?})"
+
+    for bfile in "$BACKUP_DIR"/*; do
+        [[ -f "$bfile" ]] || continue
+        local bname
+        bname=$(basename "$bfile")
+
+        local dest=""
+        case "$bname" in
+            release.json) dest="$RELEASE_JSON_LIVE" ;;
+            content.json) dest="$CONTENT_JSON_LIVE" ;;
+            NeAntik-*)    dest="$DOWNLOADS_LIVE/$bname" ;;
+            *)            continue ;;
+        esac
+
+        local tmprest
+        tmprest=$(mktemp "${dest}.rollback-XXXXXX")
+        cp -p "$bfile" "$tmprest"
+        chown deploy:deploy "$tmprest"
+        chmod 644 "$tmprest"
+        mv -f "$tmprest" "$dest"
+    done
+
+    for pf in "${PUBLISHED_FILES[@]}"; do
+        local pfname
+        pfname=$(basename "$pf")
+        if [[ ! -f "$BACKUP_DIR/$pfname" ]]; then
+            rm -f "$pf"
+        fi
+    done
+
+    log_entry "DEPLOY ROLLBACK COMPLETE: v$VERSION (user=${SUDO_USER:-?})"
+    echo "!!! ROLLBACK COMPLETE !!!" >&2
+}
+
+publish_file() {
+    local src="$1"
+    local dest="$2"
+    local tmpfile
+    tmpfile=$(mktemp "${dest}.publish-XXXXXX")
+    cp -p "$src" "$tmpfile"
+    chown deploy:deploy "$tmpfile"
+    chmod 644 "$tmpfile"
+    mv -f "$tmpfile" "$dest"
+    PUBLISHED_FILES+=("$dest")
+}
+
+# --- Publish immutable downloads first ---
+for f in "$SNAPSHOT"/NeAntik-*; do
+    [[ -f "$f" ]] || continue
+    publish_file "$f" "$DOWNLOADS_LIVE/$(basename "$f")"
+    echo "  OK: $(basename "$f") published"
+done
+
+# --- Publish page data, then release.json as the atomic public pointer ---
+publish_file "$SNAPSHOT/content.json" "$CONTENT_JSON_LIVE"
+echo "  OK: content.json published"
+publish_file "$SNAPSHOT/release.json" "$RELEASE_JSON_LIVE"
+echo "  OK: release.json published"
+
+# ===================================================================
+# SMOKE GATE — all failures are fatal and trigger rollback
+# ===================================================================
+echo ""
+echo "=== Smoke gate ==="
+
+# 1. Landing page 200
+HTTP_LAND=$(curl -sf "${CURL_RESOLVE[@]}" -o /dev/null -w '%{http_code}' "https://affpapa.org/neantik" 2>/dev/null || echo "000")
+if [[ "$HTTP_LAND" != "200" ]]; then
+    do_rollback
+    fail "landing page returned $HTTP_LAND (expected 200)"
+fi
+echo "  OK: landing 200"
+
+# 2. release.json 200 + content match
+SMOKE_RJ=$(mktemp /tmp/neantik-smoke-rj-XXXXXX)
+HTTP_RJ=$(curl -sf "${CURL_RESOLVE[@]}" -o "$SMOKE_RJ" -w '%{http_code}' "https://affpapa.org/neantik/release.json" 2>/dev/null || echo "000")
+if [[ "$HTTP_RJ" != "200" ]]; then
+    rm -f "$SMOKE_RJ"
+    do_rollback
+    fail "release.json returned $HTTP_RJ (expected 200)"
+fi
+SERVED_SHA=$(sha256sum "$SMOKE_RJ" | cut -d' ' -f1)
+PUBLISHED_SHA=$(sha256sum "$RELEASE_JSON_LIVE" | cut -d' ' -f1)
+rm -f "$SMOKE_RJ"
+if [[ "$SERVED_SHA" != "$PUBLISHED_SHA" ]]; then
+    do_rollback
+    fail "release.json served content does not match published file"
+fi
+echo "  OK: release.json 200, content matches"
+
+# 3. content.json 200 + content match
+SMOKE_CONTENT=$(mktemp /tmp/neantik-smoke-content-XXXXXX)
+HTTP_CONTENT=$(curl -sf "${CURL_RESOLVE[@]}" -o "$SMOKE_CONTENT" -w '%{http_code}' "https://affpapa.org/neantik/content.json" 2>/dev/null || echo "000")
+if [[ "$HTTP_CONTENT" != "200" ]]; then
+    rm -f "$SMOKE_CONTENT"
+    do_rollback
+    fail "content.json returned $HTTP_CONTENT (expected 200)"
+fi
+SERVED_CONTENT_SHA=$(sha256sum "$SMOKE_CONTENT" | cut -d' ' -f1)
+PUBLISHED_CONTENT_SHA=$(sha256sum "$CONTENT_JSON_LIVE" | cut -d' ' -f1)
+rm -f "$SMOKE_CONTENT"
+if [[ "$SERVED_CONTENT_SHA" != "$PUBLISHED_CONTENT_SHA" ]]; then
+    do_rollback
+    fail "content.json served content does not match published file"
+fi
+echo "  OK: content.json 200, content matches"
+
+# 4. Downloads: 206 Range + Content-Range with sizeBytes (via artifacts[])
+for fmt in dmg zip; do
+    DL_URL=$(rj_artifact "$RELEASE_JSON_LIVE" "$fmt" "url")
+    EXPECTED_SIZE=$(rj_artifact "$RELEASE_JSON_LIVE" "$fmt" "sizeBytes")
+
+    RANGE_RESP=$(curl -sf "${CURL_RESOLVE[@]}" -I -H "Range: bytes=0-0" "$DL_URL" 2>/dev/null || echo "")
+    HTTP_DL=$(echo "$RANGE_RESP" | grep -i "^HTTP/" | tail -1 | awk '{print $2}')
+    if [[ "$HTTP_DL" != "206" ]]; then
+        do_rollback
+        fail "$fmt download returned $HTTP_DL (expected 206 for Range request)"
+    fi
+
+    CONTENT_RANGE=$(echo "$RANGE_RESP" | grep -i "^content-range:" | tr -d '\r')
+    if [[ -z "$CONTENT_RANGE" ]]; then
+        do_rollback
+        fail "$fmt download missing Content-Range header"
+    fi
+
+    RANGE_TOTAL=$(echo "$CONTENT_RANGE" | grep -oP '/\K[0-9]+' || echo "0")
+    if [[ "$RANGE_TOTAL" != "$EXPECTED_SIZE" ]]; then
+        do_rollback
+        fail "$fmt Content-Range total $RANGE_TOTAL != sizeBytes $EXPECTED_SIZE"
+    fi
+    echo "  OK: $fmt 206, size $RANGE_TOTAL matches"
+done
+
+# 5. Local published SHA matches release.json (via artifacts[])
+for fmt in dmg zip; do
+    EXPECTED_HASH=$(rj_artifact "$RELEASE_JSON_LIVE" "$fmt" "sha256")
+    FNAME=$(rj_artifact "$RELEASE_JSON_LIVE" "$fmt" "filename")
+    ACTUAL_HASH=$(sha256sum "$DOWNLOADS_LIVE/$FNAME" | cut -d' ' -f1)
+    if [[ "$ACTUAL_HASH" != "$EXPECTED_HASH" ]]; then
+        do_rollback
+        fail "$FNAME: published SHA $ACTUAL_HASH != release.json $EXPECTED_HASH"
+    fi
+    echo "  OK: $FNAME SHA matches"
+done
+
+echo ""
+echo "=== DEPLOY COMPLETE: v$VERSION (build $BUILD) ==="
+
+rm -f "$STAGING"/*
+
+log_entry "DEPLOY OK: v$VERSION build $BUILD (user=${SUDO_USER:-?})"

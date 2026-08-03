@@ -1,0 +1,625 @@
+#!/usr/bin/env python3
+"""Fail-closed validation for a NeAntik AffPapa release transaction."""
+
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+import json
+import os
+import re
+import stat
+import sys
+from pathlib import Path
+from typing import Any
+
+MAX_RELEASE_JSON_SIZE = 16 * 1024
+MAX_CONTENT_JSON_SIZE = 64 * 1024
+MAX_ARTIFACT_SIZE = 300 * 1024 * 1024
+
+REQUIRED_RELEASE_TOP = {
+    "schemaVersion",
+    "product",
+    "version",
+    "build",
+    "releaseDate",
+    "status",
+    "distribution",
+    "platform",
+    "runtime",
+    "source",
+    "artifacts",
+    "privacy",
+    "securityBaseline",
+    "limitations",
+}
+REQUIRED_CONTENT_TOP = {
+    "schemaVersion",
+    "product",
+    "releaseVersion",
+    "updatedAt",
+    "changelog",
+}
+EXPECTED_FORMATS = {"dmg", "zip"}
+ALLOWED_STATUSES = {"public-alpha", "public-beta", "stable"}
+ALLOWED_GITHUB_REPO = "https://github.com/AffPapa/neantik"
+ALLOWED_URL_PREFIX = "https://affpapa.org/neantik/downloads/"
+
+SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+DISPLAY_VERSION_RE = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?$"
+)
+RUNTIME_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+SAFE_BASENAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+FILENAME_RE = re.compile(
+    r"^NeAntik-(?P<ver>\d+\.\d+\.\d+)-arm64-notarized\.(?P<ext>dmg|zip)$"
+)
+PLACEHOLDER_PATTERNS = {
+    "вставить",
+    "insert",
+    "placeholder",
+    "todo",
+    "fixme",
+    "changeme",
+}
+
+
+class DuplicateKeyError(ValueError):
+    pass
+
+
+def no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise DuplicateKeyError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def parse_json(path: Path, max_size: int, label: str, errors: list[str]) -> Any:
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        errors.append(f"{label} is missing")
+        return None
+    if not stat.S_ISREG(metadata.st_mode):
+        errors.append(f"{label} must be a regular file")
+        return None
+    if metadata.st_size < 2 or metadata.st_size > max_size:
+        errors.append(
+            f"{label} size {metadata.st_size} is outside 2..{max_size} bytes"
+        )
+        return None
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        errors.append(f"{label} cannot be read as UTF-8: {exc}")
+        return None
+    lowered = text.casefold()
+    for placeholder in PLACEHOLDER_PATTERNS:
+        if placeholder in lowered:
+            errors.append(f"{label} contains placeholder marker: {placeholder}")
+    try:
+        return json.loads(text, object_pairs_hook=no_duplicate_keys)
+    except (json.JSONDecodeError, DuplicateKeyError) as exc:
+        errors.append(f"{label} is not strict JSON: {exc}")
+        return None
+
+
+def require_string(
+    data: dict[str, Any],
+    key: str,
+    errors: list[str],
+    context: str = "",
+    max_length: int = 512,
+) -> str:
+    value = data.get(key)
+    if not isinstance(value, str) or not value.strip():
+        errors.append(f"{context}{key} must be a non-empty string")
+        return ""
+    if len(value) > max_length:
+        errors.append(f"{context}{key} exceeds {max_length} characters")
+    if any(ord(char) < 32 and char not in "\t\n\r" for char in value):
+        errors.append(f"{context}{key} contains control characters")
+    return value
+
+
+def require_exact(
+    data: dict[str, Any],
+    key: str,
+    expected: Any,
+    errors: list[str],
+    context: str = "",
+) -> None:
+    if data.get(key) != expected:
+        errors.append(
+            f"{context}{key} must be {expected!r}, got {data.get(key)!r}"
+        )
+
+
+def parse_semver(value: str) -> tuple[int, int, int] | None:
+    match = SEMVER_RE.fullmatch(value)
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
+
+
+def validate_iso_date(value: str, label: str, errors: list[str]) -> None:
+    try:
+        dt.date.fromisoformat(value)
+    except ValueError:
+        errors.append(f"{label} must use YYYY-MM-DD, got {value!r}")
+
+
+def validate_release(
+    snapshot: Path,
+    live_json_path: Path | None,
+    errors: list[str],
+) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    data = parse_json(
+        snapshot / "release.json",
+        MAX_RELEASE_JSON_SIZE,
+        "release.json",
+        errors,
+    )
+    if not isinstance(data, dict):
+        errors.append("release.json root must be an object")
+        return {}, {}
+
+    missing = REQUIRED_RELEASE_TOP - set(data)
+    if missing:
+        errors.append(f"release.json missing required keys: {sorted(missing)}")
+
+    require_exact(data, "schemaVersion", 1, errors)
+    require_exact(data, "product", "NeAntik", errors)
+    require_exact(data, "distribution", "direct", errors)
+
+    version = require_string(data, "version", errors, max_length=32)
+    parsed_version = parse_semver(version)
+    if parsed_version is None:
+        errors.append(f"version is not valid semver: {version!r}")
+
+    build = data.get("build")
+    if not isinstance(build, int) or isinstance(build, bool) or build < 1:
+        errors.append(f"build must be a positive integer, got {build!r}")
+
+    status_value = require_string(data, "status", errors, max_length=32)
+    if status_value not in ALLOWED_STATUSES:
+        errors.append(
+            f"status must be one of {sorted(ALLOWED_STATUSES)}, got {status_value!r}"
+        )
+
+    release_date = require_string(data, "releaseDate", errors, max_length=10)
+    if release_date:
+        validate_iso_date(release_date, "releaseDate", errors)
+
+    platform = data.get("platform")
+    if not isinstance(platform, dict):
+        errors.append("platform must be an object")
+    else:
+        require_string(platform, "operatingSystem", errors, "platform.", 128)
+        require_exact(platform, "architecture", "arm64", errors, "platform.")
+        require_exact(
+            platform,
+            "hardware",
+            "Apple Silicon",
+            errors,
+            "platform.",
+        )
+
+    runtime = data.get("runtime")
+    runtime_version = ""
+    if not isinstance(runtime, dict):
+        errors.append("runtime must be an object")
+    else:
+        require_exact(runtime, "name", "Chromium", errors, "runtime.")
+        runtime_version = require_string(
+            runtime, "version", errors, "runtime.", 64
+        )
+        if runtime_version and not RUNTIME_VERSION_RE.fullmatch(runtime_version):
+            errors.append(
+                f"runtime.version must have four numeric components, got {runtime_version!r}"
+            )
+        require_exact(runtime, "gpu", "Metal", errors, "runtime.")
+
+    source = data.get("source")
+    if not isinstance(source, dict):
+        errors.append("source must be an object")
+    else:
+        require_exact(
+            source,
+            "repository",
+            ALLOWED_GITHUB_REPO,
+            errors,
+            "source.",
+        )
+        require_exact(source, "tag", f"v{version}", errors, "source.")
+        require_exact(
+            source,
+            "release",
+            f"{ALLOWED_GITHUB_REPO}/releases/tag/v{version}",
+            errors,
+            "source.",
+        )
+        commit = require_string(source, "commit", errors, "source.", 40)
+        if commit and not COMMIT_RE.fullmatch(commit):
+            errors.append("source.commit must be 40 lowercase hex characters")
+
+    privacy = data.get("privacy")
+    if not isinstance(privacy, dict):
+        errors.append("privacy must be an object")
+    else:
+        require_exact(privacy, "telemetry", "disabled", errors, "privacy.")
+        require_exact(privacy, "profileData", "local-only", errors, "privacy.")
+        require_exact(
+            privacy,
+            "proxyPasswords",
+            "macOS Keychain",
+            errors,
+            "privacy.",
+        )
+
+    baseline = data.get("securityBaseline")
+    if not isinstance(baseline, dict):
+        errors.append("securityBaseline must be an object")
+    else:
+        require_exact(
+            baseline,
+            "runtimeVersion",
+            runtime_version,
+            errors,
+            "securityBaseline.",
+        )
+        require_exact(
+            baseline,
+            "releaseChannel",
+            status_value,
+            errors,
+            "securityBaseline.",
+        )
+        require_string(
+            baseline,
+            "source",
+            errors,
+            "securityBaseline.",
+            128,
+        )
+
+    limitations = data.get("limitations")
+    if (
+        not isinstance(limitations, list)
+        or not limitations
+        or len(limitations) > 20
+    ):
+        errors.append("limitations must be a non-empty array with at most 20 items")
+    else:
+        for index, item in enumerate(limitations):
+            if not isinstance(item, str) or not item.strip() or len(item) > 500:
+                errors.append(
+                    f"limitations[{index}] must be a non-empty string up to 500 characters"
+                )
+
+    artifact_map: dict[str, dict[str, Any]] = {}
+    artifacts = data.get("artifacts")
+    if not isinstance(artifacts, list) or len(artifacts) != 2:
+        errors.append("artifacts must contain exactly two objects: DMG and ZIP")
+        artifacts = []
+
+    for index, artifact in enumerate(artifacts):
+        context = f"artifacts[{index}]."
+        if not isinstance(artifact, dict):
+            errors.append(f"{context[:-1]} must be an object")
+            continue
+        artifact_format = artifact.get("format")
+        if artifact_format not in EXPECTED_FORMATS:
+            errors.append(f"{context}format must be dmg or zip")
+            continue
+        if artifact_format in artifact_map:
+            errors.append(f"{context}format {artifact_format!r} is duplicated")
+            continue
+        artifact_map[artifact_format] = artifact
+
+        filename = require_string(
+            artifact, "filename", errors, context, max_length=160
+        )
+        if filename:
+            if not SAFE_BASENAME_RE.fullmatch(filename):
+                errors.append(f"{context}filename contains unsafe characters")
+            match = FILENAME_RE.fullmatch(filename)
+            if not match:
+                errors.append(f"{context}filename does not match release pattern")
+            else:
+                if match.group("ver") != version:
+                    errors.append(f"{context}filename version does not match release")
+                if match.group("ext") != artifact_format:
+                    errors.append(f"{context}filename extension does not match format")
+
+        require_exact(
+            artifact,
+            "url",
+            f"{ALLOWED_URL_PREFIX}{filename}",
+            errors,
+            context,
+        )
+        size_bytes = artifact.get("sizeBytes")
+        if (
+            not isinstance(size_bytes, int)
+            or isinstance(size_bytes, bool)
+            or size_bytes < 1
+            or size_bytes > MAX_ARTIFACT_SIZE
+        ):
+            errors.append(
+                f"{context}sizeBytes must be between 1 and {MAX_ARTIFACT_SIZE}"
+            )
+        expected_sha = artifact.get("sha256")
+        if not isinstance(expected_sha, str) or not SHA256_RE.fullmatch(
+            expected_sha
+        ):
+            errors.append(f"{context}sha256 must be 64 lowercase hex characters")
+        for signature_key in ("developerIdSigned", "notarized", "stapled"):
+            require_exact(
+                artifact,
+                signature_key,
+                True,
+                errors,
+                context,
+            )
+        require_exact(
+            artifact,
+            "gatekeeper",
+            "accepted",
+            errors,
+            context,
+        )
+
+    if set(artifact_map) != EXPECTED_FORMATS:
+        errors.append(
+            f"artifacts must contain exactly {sorted(EXPECTED_FORMATS)}"
+        )
+
+    if live_json_path and live_json_path.is_file():
+        live_errors: list[str] = []
+        live = parse_json(
+            live_json_path,
+            MAX_RELEASE_JSON_SIZE,
+            "live release.json",
+            live_errors,
+        )
+        if live_errors:
+            errors.extend(live_errors)
+        elif isinstance(live, dict):
+            live_version = parse_semver(str(live.get("version", "")))
+            live_build = live.get("build")
+            if (
+                parsed_version is not None
+                and live_version is not None
+                and parsed_version <= live_version
+            ):
+                errors.append(
+                    f"version {version} must be newer than live {live.get('version')}"
+                )
+            if (
+                isinstance(build, int)
+                and not isinstance(build, bool)
+                and isinstance(live_build, int)
+                and not isinstance(live_build, bool)
+                and build <= live_build
+            ):
+                errors.append(f"build {build} must be newer than live {live_build}")
+
+    return data, artifact_map
+
+
+def validate_content(
+    snapshot: Path,
+    release: dict[str, Any],
+    errors: list[str],
+) -> None:
+    content = parse_json(
+        snapshot / "content.json",
+        MAX_CONTENT_JSON_SIZE,
+        "content.json",
+        errors,
+    )
+    if not isinstance(content, dict):
+        errors.append("content.json root must be an object")
+        return
+
+    missing = REQUIRED_CONTENT_TOP - set(content)
+    if missing:
+        errors.append(f"content.json missing required keys: {sorted(missing)}")
+    require_exact(content, "schemaVersion", 1, errors, "content.")
+    require_exact(content, "product", "NeAntik", errors, "content.")
+    require_exact(
+        content,
+        "releaseVersion",
+        release.get("version"),
+        errors,
+        "content.",
+    )
+    updated_at = require_string(
+        content, "updatedAt", errors, "content.", max_length=10
+    )
+    if updated_at:
+        validate_iso_date(updated_at, "content.updatedAt", errors)
+
+    changelog = content.get("changelog")
+    if not isinstance(changelog, list) or not changelog or len(changelog) > 50:
+        errors.append(
+            "content.changelog must be a non-empty array with at most 50 releases"
+        )
+        return
+
+    seen_versions: set[str] = set()
+    for index, entry in enumerate(changelog):
+        context = f"content.changelog[{index}]."
+        if not isinstance(entry, dict):
+            errors.append(f"{context[:-1]} must be an object")
+            continue
+        entry_version = require_string(
+            entry, "version", errors, context, max_length=32
+        )
+        if entry_version and not DISPLAY_VERSION_RE.fullmatch(entry_version):
+            errors.append(f"{context}version has an invalid format")
+        if entry_version in seen_versions:
+            errors.append(f"{context}version {entry_version!r} is duplicated")
+        seen_versions.add(entry_version)
+
+        entry_build = entry.get("build")
+        if (
+            not isinstance(entry_build, int)
+            or isinstance(entry_build, bool)
+            or entry_build < 1
+        ):
+            errors.append(f"{context}build must be a positive integer")
+        require_string(entry, "date", errors, context, max_length=80)
+        label = entry.get("label")
+        if label is not None and (
+            not isinstance(label, str) or not label.strip() or len(label) > 80
+        ):
+            errors.append(f"{context}label must be a string up to 80 characters")
+
+        items = entry.get("items")
+        if not isinstance(items, list) or not items or len(items) > 30:
+            errors.append(f"{context}items must contain 1..30 strings")
+            continue
+        for item_index, item in enumerate(items):
+            if (
+                not isinstance(item, str)
+                or not item.strip()
+                or len(item) > 500
+            ):
+                errors.append(
+                    f"{context}items[{item_index}] must be a non-empty string up to 500 characters"
+                )
+                continue
+            if "<" in item or ">" in item:
+                errors.append(
+                    f"{context}items[{item_index}] must not contain HTML"
+                )
+
+    first = changelog[0] if changelog and isinstance(changelog[0], dict) else {}
+    if first.get("version") != release.get("version"):
+        errors.append("first changelog version must match release.version")
+    if first.get("build") != release.get("build"):
+        errors.append("first changelog build must match release.build")
+
+
+def validate_snapshot_files(
+    snapshot: Path,
+    release: dict[str, Any],
+    artifact_map: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> None:
+    version = str(release.get("version", ""))
+    expected_files = {"release.json", "content.json"}
+    for extension in ("dmg", "zip", "dmg.sha256", "zip.sha256"):
+        expected_files.add(
+            f"NeAntik-{version}-arm64-notarized.{extension}"
+        )
+
+    actual_files: set[str] = set()
+    for entry in snapshot.iterdir():
+        metadata = entry.lstat()
+        if not stat.S_ISREG(metadata.st_mode):
+            errors.append(f"snapshot entry is not a regular file: {entry.name}")
+            continue
+        if entry.name.startswith("."):
+            errors.append(f"snapshot contains hidden file: {entry.name}")
+            continue
+        actual_files.add(entry.name)
+
+    missing = expected_files - actual_files
+    unexpected = actual_files - expected_files
+    if missing:
+        errors.append(f"snapshot missing required files: {sorted(missing)}")
+    if unexpected:
+        errors.append(f"snapshot contains unexpected files: {sorted(unexpected)}")
+
+    for artifact_format, artifact in artifact_map.items():
+        filename = str(artifact.get("filename", ""))
+        artifact_path = snapshot / filename
+        if not artifact_path.is_file():
+            errors.append(f"{filename}: declared artifact missing from snapshot")
+            continue
+        metadata = artifact_path.lstat()
+        if not stat.S_ISREG(metadata.st_mode):
+            errors.append(f"{filename}: artifact must be a regular file")
+            continue
+        actual_size = metadata.st_size
+        expected_size = artifact.get("sizeBytes")
+        if actual_size != expected_size:
+            errors.append(
+                f"{filename}: actual size {actual_size} != sizeBytes {expected_size}"
+            )
+
+        digest = hashlib.sha256()
+        with artifact_path.open("rb") as source:
+            for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                digest.update(chunk)
+        actual_sha = digest.hexdigest()
+        expected_sha = artifact.get("sha256")
+        if actual_sha != expected_sha:
+            errors.append(
+                f"{filename}: SHA-256 {actual_sha} != release.json {expected_sha}"
+            )
+
+        sidecar_path = snapshot / f"{filename}.sha256"
+        if not sidecar_path.is_file():
+            errors.append(f"{filename}.sha256: sidecar missing")
+            continue
+        try:
+            sidecar_parts = sidecar_path.read_text(encoding="utf-8").split()
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{filename}.sha256 cannot be read: {exc}")
+            continue
+        if not sidecar_parts:
+            errors.append(f"{filename}.sha256 is empty")
+            continue
+        if len(sidecar_parts) > 2:
+            errors.append(f"{filename}.sha256 has unexpected extra fields")
+        if sidecar_parts[0].lower() != expected_sha:
+            errors.append(f"{filename}.sha256 hash does not match release.json")
+        if len(sidecar_parts) == 2 and sidecar_parts[1].lstrip("*") != filename:
+            errors.append(f"{filename}.sha256 filename does not match artifact")
+
+
+def validate(snapshot_dir: str, live_json: str | None) -> list[str]:
+    errors: list[str] = []
+    snapshot = Path(snapshot_dir)
+    if not snapshot.is_dir():
+        return ["snapshot path must be a directory"]
+
+    release, artifacts = validate_release(
+        snapshot,
+        Path(live_json) if live_json else None,
+        errors,
+    )
+    if release:
+        validate_content(snapshot, release, errors)
+        validate_snapshot_files(snapshot, release, artifacts, errors)
+    return errors
+
+
+def main() -> int:
+    if len(sys.argv) not in {2, 3}:
+        print(
+            f"Usage: {sys.argv[0]} <snapshot_dir> [live_release.json]",
+            file=sys.stderr,
+        )
+        return 2
+    errors = validate(sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else None)
+    if errors:
+        for error in errors:
+            print(f"VALIDATION ERROR: {error}", file=sys.stderr)
+        return 1
+    print("VALIDATION OK")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
