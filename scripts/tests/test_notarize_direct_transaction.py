@@ -303,6 +303,29 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             for command in runner.commands
             if command[:3] == ["xcrun", "stapler", "staple"]
         )
+        privacy_check = next(
+            command
+            for command in runner.commands
+            if any(
+                argument.endswith(
+                    "verify-public-artifact-privacy.py"
+                )
+                for argument in command
+            )
+        )
+        privacy_script_index = next(
+            index
+            for index, argument in enumerate(privacy_check)
+            if argument.endswith(
+                "verify-public-artifact-privacy.py"
+            )
+        )
+        self.assertEqual(
+            privacy_check[privacy_script_index + 1],
+            privacy_check[
+                privacy_check.index("--attestation") + 1
+            ],
+        )
         self.assertIn("/accepted/NeAntik.app", staple[3])
         self.assertEqual(receipt["appleSubmission"]["status"], "Accepted")
         self.assertEqual(receipt["appleSubmission"]["id"], SUBMISSION_ID)
