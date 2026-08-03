@@ -19,6 +19,10 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     ;;
 esac
 
+find "$PROJECT_DIR/scripts" \
+  \( -name __pycache__ -type d -prune -exec rm -rf {} + \) -o \
+  \( -name '*.pyc' -type f -delete \)
+
 RELEASE_PYTHON="/opt/homebrew/bin/python3"
 if [[ ! -x "$RELEASE_PYTHON" ]] ||
    ! "$RELEASE_PYTHON" -I -B -c \

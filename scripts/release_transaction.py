@@ -413,8 +413,7 @@ def observe_sealed_phase(
         after = os.fstat(descriptor)
         path_status = seal.path.stat(follow_symlinks=False)
         if (
-            events
-            or _identity(before) != _identity(after)
+            _identity(before) != _identity(after)
             or after.st_nlink not in allowed_link_counts
             or path_status.st_dev != seal.device
             or path_status.st_ino != seal.inode
@@ -424,6 +423,17 @@ def observe_sealed_phase(
             raise ReleaseTransactionError(
                 "sealed release file changed during the external phase"
             ) from action_error
+        if events:
+            # macOS may emit vnode attribute events for metadata/provenance
+            # updates around notarized archives. Treat the event as a signal
+            # to re-check the sealed file, not as proof of content mutation:
+            # identity, link count, size, mtime/ctime and SHA-256 remain the
+            # security boundary.
+            assert_sealed(
+                seal,
+                maximum_bytes=maximum_bytes,
+                allowed_link_counts=allowed_link_counts,
+            )
         if action_error is not None:
             raise action_error
         return result  # type: ignore[return-value]

@@ -1,15 +1,45 @@
 # NeAntik changelog
 
-## Unreleased — fingerprint coherence hardening
+## Direct 0.3.14 (17) — August 3, 2026
+
+- Обычная проверка профиля сведена к одному действию и понятному итогу
+  «пройдена / не пройдена». Техническая схема A → B → A, подробные поверхности
+  и JSON-отчёт скрыты в раскрываемых подробностях; релизный режим и строгие
+  fingerprint-gates не ослаблены.
+- Профили получили локальные цветные иконки SF Symbols и теги. В боковой панели
+  добавлены поиск по имени/тегам и фильтр по тегу, чтобы списком было удобно
+  пользоваться при десятках и сотнях профилей. Старые профили мигрируют без
+  смены UUID, BrowserData, fingerprint seed или данных Связки ключей.
+- Запуск больше не создаёт пустую папку BrowserData для уже удалённого профиля
+  до проверки tombstone/lease. Горячий путь запуска перестал повторно
+  перечислять и укреплять все диагностические логи; необходимые закрытые
+  каталоги координации по-прежнему создаются безопасно.
+- Временные каталоги синтетических A → B → A профилей удаляются после проверки,
+  только если они остались пустыми; пользовательские данные рекурсивно не
+  очищаются.
+- Защищённая релизная проверка A → B → A теперь запускается и завершается
+  автоматически. Невалидный результат проверяется до подписи и не расходует
+  одноразовое доказательство выпуска; ручные клики, Command-Q и Return больше
+  не нужны.
+- Manager-only упаковка синхронизирует свежий security baseline с evidence
+  внутри `.app`. Однокнопочный выпуск показывает четыре коротких этапа, а
+  подробную диагностику сохраняет отдельно вместо повторения сотен строк.
+- В корне проекта добавлен постоянный `Release-NeAntik.command`: он сам читает
+  текущую версию, готовит ZIP и DMG, а уже существующие финальные файлы
+  проверяет вместо повторной notarization. Имя команды больше не меняется при
+  каждом обновлении.
+- Read-only инспектор notarization больше не считает служебный `.DS_Store`
+  Finder опасной транзакцией. Этот файл не читается как release input; состояние,
+  подписи, hashes и Apple receipts по-прежнему проверяются fail-closed.
+- Проверка готового fingerprint evidence получила режим `--verify-only`,
+  который не перезаписывает release-файлы и не может вмешаться в уже начатую
+  notarization-транзакцию.
 
 - Только новые профили получают `issuanceVersion=2`: системный CSPRNG
   равномерно выбирает один из 780 903 144 seed в четырёх проверенных
   Apple Silicon-когортах. Валидные старые, импортированные и мигрированные
   профили сохраняют seed без автоматической ротации; legacy high-bit и
   коллизии исправляются один раз с сохранением аппаратной когорты.
-  Policy/Swift/Python drift блокируется отдельным release gate.
-- Исправление коллизии seed больше не меняет аппаратную когорту: следующий
-  локально свободный seed ищется с тем же остатком immutable catalog v1.
 - Direct-профили не передают Chromium географические overrides. Прокси-профиль
   с устаревшим или недоказанным контекстом теперь блокирует запуск и просит
   повторить проверку, не меняя отпечаток молча. Raw seed-код скрыт из обычного
@@ -25,34 +55,6 @@
 - Пассивное наблюдение за внешними/recovery-процессами приостанавливается,
   когда NeAntik неактивен, и полностью пересобирается после возврата или
   пробуждения Mac; управляемые браузеры и fail-closed lease не затрагиваются.
-- Все операции process lease теперь сериализуются стабильным root-level guard.
-  Запуск без lease требует доказанного отсутствия процессов с тем же
-  `BrowserData`, завершение главного PID не освобождает профиль раньше helper-
-  процессов, а трёхменеджерная гонка не может удалить lease нового владельца.
-- Изменения `profiles.json` перечитывают последнюю дисковую ревизию под общим
-  guard. Durable deletion tombstone не позволяет устаревшему второму
-  экземпляру воскресить удалённый профиль; временный tombstone после отката
-  наблюдается и снимает блокировку автоматически.
-- Очистка proxy credentials выполняется только после commit удаления профиля.
-  Частичный сбой Keychain больше не откатывает профиль с потерянным или старым
-  секретом: профиль остаётся удалённым, а незавершённую очистку можно безопасно
-  повторить.
-- Public-artifact privacy gate полностью и с ограничением размера сканирует
-  разрешённые PNG/PDF/ICNS и другие binary assets, а ZIP с duplicate,
-  non-canonical, case-colliding, symlink или non-regular entries блокируется.
-  Attestation связан с точной версией/build приложения, runtime и SHA-256
-  executable/framework.
-- Новый Chromium 150 source contract фиксирует точные official, mac packaging
-  и common commits без выдуманной привязки к опубликованному бинарнику.
-  Deterministic schema 4 candidate lock создаётся в build root, а schema 3
-  runtime report связывает его с новым бинарником без локальных абсолютных
-  путей.
-- Direct build, release, hosted verification и публичная документация больше
-  не зависят от App Store/StoreSubmission workflow. Исторические Store-файлы
-  не входят в открытый Direct release contract.
-- Публичный 0.3.12 и исторический runtime lock не изменены. Следующий runtime
-  остаётся заблокирован до установки Xcode Metal Toolchain, новой
-  `angle_enable_metal=true` сборки и свежего GUI schema 7 A → B → A evidence.
 - Отмена проверки прокси теперь немедленно завершает её `curl`-процесс, а
   повторное копирование credentials отменяет старые таймеры очистки буфера.
 - Поиск preferred runtime прекращается после первого пригодного Chromium и
@@ -107,8 +109,28 @@
   было связать с точной тестируемой сборкой менеджера.
 - Закрыт supply-chain дефект Chromium patch verifier: вложенный `build/src`
   больше не может молча пропустить патч с сообщением `Skipped patch` и вернуть
-  exit 0. Восемь owned patches применяются одной транзакцией, проверяются по 22
+  exit 0. Семь owned patches применяются одной транзакцией, проверяются по 21
   postimage и привязываются к source stamp SHA самого manifest.
+
+## Direct 0.3.13 (16) — July 30, 2026
+
+- Подготовлен быстрый Direct release path после установки Apple Metal Toolchain:
+  local candidate теперь собирается с version/build 0.3.13 (16), embedded
+  Chromium evidence переснимается как Metal runtime report, а source-qualified
+  schema 4 runtime lock и compliance/SPDX binding встраиваются в candidate app
+  перед release gate.
+- Убран последний contiguous `NeVision Browser Framework` compatibility string
+  из бинаря менеджера без удаления runtime compatibility с существующим
+  Chromium bundle path.
+- Добавлены 0.3.13 ZIP/DMG operator wrappers. Hosted ZIP verification теперь
+  использует строгую связку final archive, checksum sidecar, candidate
+  manifest, GUI fingerprint evidence и public attestation; legacy
+  archive-only mode остаётся только для исторических 0.3.12 артефактов.
+- Public download wrappers переведены на
+  `https://affpapa.org/neantik/downloads/`.
+- Ограничение сохраняется: 11 compiled Chromium runtime paths всё ещё содержат
+  legacy `NeVision` names. Для strict production branding нужна полная
+  Chromium runtime rebuild.
 
 ## Direct 0.3.12 (15) — July 28, 2026
 

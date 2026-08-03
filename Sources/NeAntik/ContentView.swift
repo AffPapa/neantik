@@ -63,9 +63,31 @@ struct ContentView: View {
     @State private var clipboardClearTask: Task<Void, Never>?
     @State private var clipboardNoticeTask: Task<Void, Never>?
     @State private var handledReleaseAuditIntent = false
+    @State private var releaseAuditProfiles: [BrowserProfile] = []
+    @State private var profileSearchText = ""
+    @State private var selectedProfileTag: String?
 
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
+    }
+
+    private var fingerprintAuditProfiles: [BrowserProfile] {
+        if fingerprintEvidenceReleaseContext != nil {
+            return releaseAuditProfiles
+        }
+        return store.profiles
+    }
+
+    private var visibleProfiles: [BrowserProfile] {
+        ProfileListProjection.filtered(
+            store.profiles,
+            searchText: profileSearchText,
+            tag: selectedProfileTag
+        )
+    }
+
+    private var availableProfileTags: [String] {
+        ProfileListProjection.allTags(in: store.profiles)
     }
 
     private var runtime: BrowserRuntime? {
@@ -139,10 +161,14 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingFingerprintAudit) {
-            if let runtime, store.profiles.count >= 2 {
+            let auditProfiles = fingerprintAuditProfiles
+            if let runtime, auditProfiles.count >= 2 {
                 FingerprintAuditView(
-                    profiles: store.profiles,
-                    initialFirstID: selection,
+                    profiles: auditProfiles,
+                    initialFirstID:
+                        fingerprintEvidenceReleaseContext == nil
+                        ? selection
+                        : auditProfiles.first?.id,
                     runtime: runtime,
                     processes: processes,
                     paths: store.paths,
@@ -151,10 +177,14 @@ struct ContentView: View {
                 )
             } else {
                 ContentUnavailableView(
-                    "Проверка отпечатка недоступна",
+                    fingerprintEvidenceReleaseContext == nil
+                        ? "Проверка профиля недоступна"
+                        : "Проверка отпечатка недоступна",
                     systemImage: "exclamationmark.triangle",
                     description: Text(
-                        "Создай минимум два профиля и выбери совместимый браузер."
+                        fingerprintEvidenceReleaseContext == nil
+                            ? "Создай минимум два профиля и выбери совместимый браузер."
+                            : "Встроенный браузер не готов к релизной проверке."
                     )
                 )
                 .frame(width: 520, height: 360)
@@ -317,9 +347,20 @@ struct ContentView: View {
                         editorRequest = EditorRequest(profile: nil)
                     }
                 }
+            } else if visibleProfiles.isEmpty {
+                ContentUnavailableView {
+                    Label("Ничего не найдено", systemImage: "magnifyingglass")
+                } description: {
+                    Text("Измени поиск или выбери другой тег.")
+                } actions: {
+                    Button("Сбросить фильтры") {
+                        profileSearchText = ""
+                        selectedProfileTag = nil
+                    }
+                }
             } else {
                 List(selection: $selection) {
-                    ForEach(store.profiles) { profile in
+                    ForEach(visibleProfiles) { profile in
                         let processState = processes.processState(
                             for: profile.id
                         )
@@ -402,6 +443,25 @@ struct ContentView: View {
                 .clipShape(Circle())
                 .help("Создать профиль")
                 .accessibilityLabel("Создать профиль")
+            }
+
+            TextField(
+                "Найти профиль",
+                text: $profileSearchText,
+                prompt: Text("Поиск по имени и тегам")
+            )
+            .textFieldStyle(.roundedBorder)
+            .accessibilityLabel("Поиск профилей")
+
+            if !availableProfileTags.isEmpty {
+                Picker("Тег", selection: $selectedProfileTag) {
+                    Text("Все теги").tag(nil as String?)
+                    ForEach(availableProfileTags, id: \.self) { tag in
+                        Text(tag).tag(Optional(tag))
+                    }
+                }
+                .pickerStyle(.menu)
+                .accessibilityLabel("Фильтр профилей по тегу")
             }
 
             if let profile = selectedProfile {
@@ -772,11 +832,6 @@ struct ContentView: View {
         }
         handledReleaseAuditIntent = true
 
-        guard store.profiles.count >= 2 else {
-            localError =
-                "Для проверки релиза нужны минимум два профиля. Создай второй профиль и запусти подготовленную команду ещё раз."
-            return
-        }
         guard runtime?.supportsFingerprintIdentity == true,
               runtimePreflight?.isReady == true
         else {
@@ -786,10 +841,36 @@ struct ContentView: View {
             return
         }
 
-        if selection == nil {
-            selection = store.profiles.first?.id
+        if releaseAuditProfiles.count < 2 {
+            releaseAuditProfiles = Self.makeReleaseAuditProfiles()
         }
+        selection = releaseAuditProfiles.first?.id
         showingFingerprintAudit = true
+    }
+
+    private static func makeReleaseAuditProfiles() -> [BrowserProfile] {
+        [
+            BrowserProfile(
+                id: UUID(
+                    uuidString:
+                        "E4D67C71-6F7F-4B63-8F64-82B4F5734B01"
+                )!,
+                name: "Проверка A",
+                colorHex: "#5E7CE2",
+                startURL: "http://neantik.local",
+                identity: BrowserIdentity()
+            ),
+            BrowserProfile(
+                id: UUID(
+                    uuidString:
+                        "F43E42A6-97F4-4B70-A191-70501BC95D02"
+                )!,
+                name: "Проверка B",
+                colorHex: "#30D158",
+                startURL: "http://neantik.local",
+                identity: BrowserIdentity()
+            )
+        ]
     }
 
     private func clearClipboardLater(changeCount: Int) {
@@ -888,12 +969,15 @@ private struct ProfileRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Circle()
+            RoundedRectangle(cornerRadius: 8)
                 .fill(Color(hex: profile.colorHex))
-                .frame(width: 11, height: 11)
+                .frame(width: 30, height: 30)
                 .overlay {
+                    Image(systemName: profile.displaySymbolName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
                     if processState.isRunning {
-                        Circle()
+                        RoundedRectangle(cornerRadius: 8)
                             .stroke(
                                 processState == .externalUnverified
                                     || processState == .checking
@@ -901,17 +985,31 @@ private struct ProfileRow: View {
                                     : Color.green,
                                 lineWidth: 2
                             )
-                            .padding(-3)
+                            .padding(-2)
                     }
                 }
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.name)
                     .lineLimit(1)
-                Text(profile.proxy?.displayName ?? "Без прокси")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 5) {
+                    Text(profile.proxy?.displayName ?? "Без прокси")
+                        .lineLimit(1)
+                    if let tag = profile.tags.first {
+                        Text(tag)
+                            .lineLimit(1)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(.quaternary)
+                            .clipShape(Capsule())
+                    }
+                    if profile.tags.count > 1 {
+                        Text("+\(profile.tags.count - 1)")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
@@ -1021,8 +1119,8 @@ private struct ProfileDetailView: View {
                     }
                     Button(action: onFingerprintAudit) {
                         Label(
-                            "Отпечаток",
-                            systemImage: "waveform.path.ecg.rectangle"
+                            "Проверить профиль",
+                            systemImage: "checkmark.shield"
                         )
                         .frame(maxWidth: .infinity)
                     }
@@ -1032,7 +1130,7 @@ private struct ProfileDetailView: View {
                     )
                     .help(
                         canRunFingerprintAudit
-                            ? "Сравнить два профиля в проверке A → B → A"
+                            ? "Проверить стабильность и различие профиля"
                             : "Нужны два профиля и готовый совместимый движок"
                     )
                     if let proxy = profile.proxy, !proxy.username.isEmpty {
@@ -1135,7 +1233,7 @@ private struct ProfileDetailView: View {
                         }
                         Text(
                             runtimeSupportsFingerprint
-                                ? "NeAntik передаёт встроенному Chromium стабильные параметры этого профиля. Запусти проверку отпечатка, чтобы увидеть результат глазами сайта."
+                                ? "NeAntik передаёт встроенному Chromium стабильные параметры этого профиля. Нажми «Проверить профиль», чтобы убедиться, что всё работает."
                                 : "Параметры профиля сохранены, но выбранный браузер изолирует только локальные данные. Выбери совместимый движок, чтобы применить отпечаток."
                         )
                         .font(.caption)
@@ -1194,10 +1292,13 @@ private struct ProfileDetailView: View {
             .fill(Color(hex: profile.colorHex).gradient)
             .frame(width: 64, height: 64)
             .overlay {
-                Image(systemName: "globe")
+                Image(systemName: profile.displaySymbolName)
                     .font(.system(size: 28, weight: .medium))
                     .foregroundStyle(.white)
             }
+            .accessibilityLabel(
+                "Иконка профиля: \(ProfileAppearance.title(for: profile.displaySymbolName))"
+            )
     }
 
     private var profileTitle: some View {
@@ -1226,6 +1327,12 @@ private struct ProfileDetailView: View {
                             : Color.secondary
                     )
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if !profile.tags.isEmpty {
+                Text(profile.tags.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
         }
     }

@@ -488,6 +488,8 @@ final class BrowserProcessManager: ObservableObject {
     private let now: () -> Date
     private var processes: [UUID: Process] = [:]
     private var managedLeaseOwners: [UUID: UUID] = [:]
+    private var managedBrowserDataDirectories: [UUID: URL] = [:]
+    private var transientEmptyProfileDirectoryIDs = Set<UUID>()
     private var externalLocks: [UUID: BrowserProcessLock] = [:]
     private var externalUnverifiedProfileIDs = Set<UUID>()
     private var recoveryProfileIDs = Set<UUID>()
@@ -1340,10 +1342,12 @@ final class BrowserProcessManager: ObservableObject {
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
+        let profileDirectoryExistedBeforeLaunch =
+            FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
 
-        try paths.prepareBaseDirectories()
         let logURL = paths.logFile(for: profile.id)
-        try prepareDiagnosticLog(logURL)
 
         let process = Process()
         process.executableURL = runtime.executableURL
@@ -1355,7 +1359,10 @@ final class BrowserProcessManager: ObservableObject {
             startURLOverride: startURLOverride,
             purpose: purpose
         )
-        process.currentDirectoryURL = paths.profileDirectory(for: profile.id)
+        process.currentDirectoryURL =
+            browserDataDirectoryOverride == nil
+                ? paths.profileDirectory(for: profile.id)
+                : browserDataDirectory
 
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
@@ -1413,8 +1420,14 @@ final class BrowserProcessManager: ObservableObject {
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
         }
         managedLeaseOwners[profile.id] = ownerToken
+        managedBrowserDataDirectories[profile.id] = browserDataDirectory
+        if browserDataDirectoryOverride != nil &&
+            !profileDirectoryExistedBeforeLaunch {
+            transientEmptyProfileDirectoryIDs.insert(profile.id)
+        }
 
         do {
+            try prepareDiagnosticLog(logURL)
             try process.run()
             processes[profile.id] = process
             runningProfileIDs.insert(profile.id)
@@ -1452,10 +1465,12 @@ final class BrowserProcessManager: ObservableObject {
             processes.removeValue(forKey: profile.id)
             runningProfileIDs.remove(profile.id)
             managedLeaseOwners.removeValue(forKey: profile.id)
+            managedBrowserDataDirectories.removeValue(forKey: profile.id)
             removeLockIfOwned(
                 profileID: profile.id,
                 ownerToken: ownerToken
             )
+            cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
             try? appendDiagnostic(
                 "browser_launch_failed",
                 to: logURL
@@ -1544,6 +1559,7 @@ final class BrowserProcessManager: ObservableObject {
         let externalLock = externalLocks[profileID]
         let lockURL = paths.lockFile(for: profileID)
         let browserDataDirectory =
+            managedBrowserDataDirectories.removeValue(forKey: profileID) ??
             paths.browserDataDirectory(for: profileID)
         let removableSnapshot = currentLeaseSnapshot(
             profileID: profileID,
@@ -1569,6 +1585,9 @@ final class BrowserProcessManager: ObservableObject {
                 removeLockIfOwned(
                     profileID: profileID,
                     ownerToken: managedOwner
+                )
+                cleanupTransientProfileDirectoryIfSafe(
+                    profileID: profileID
                 )
             } else if let externalLock {
                 removeLockIfMatches(
@@ -1930,6 +1949,34 @@ final class BrowserProcessManager: ObservableObject {
             passiveInventoryObservationTask?.cancel()
             passiveInventoryObservationTask = nil
         }
+        cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+    }
+
+    private func cleanupTransientProfileDirectoryIfSafe(
+        profileID: UUID
+    ) {
+        guard transientEmptyProfileDirectoryIDs.contains(profileID)
+        else {
+            return
+        }
+        let directory = paths.profileDirectory(for: profileID)
+        let lockURL = paths.lockFile(for: profileID)
+        do {
+            guard try paths.privateFileEntryKind(lockURL) == .missing,
+                  FileManager.default.fileExists(atPath: directory.path),
+                  try FileManager.default.contentsOfDirectory(
+                    at: directory,
+                    includingPropertiesForKeys: nil
+                  ).isEmpty
+            else {
+                return
+            }
+            try FileManager.default.removeItem(at: directory)
+            transientEmptyProfileDirectoryIDs.remove(profileID)
+        } catch {
+            // A non-empty or concurrently changed directory belongs to the
+            // user. Leaving it is safer than attempting recursive cleanup.
+        }
     }
 
     private func recoveryEntryChange(
@@ -2019,7 +2066,13 @@ final class BrowserProcessManager: ObservableObject {
                     inspection: inspection
                 )
             }
-            try paths.prepareProfileDirectories(for: profileID)
+            let canonicalBrowserDataDirectory =
+                paths.browserDataDirectory(for: profileID)
+                    .standardizedFileURL
+            if browserDataDirectory.standardizedFileURL ==
+                canonicalBrowserDataDirectory {
+                try paths.prepareProfileDirectories(for: profileID)
+            }
             try FileManager.default.createDirectory(
                 at: browserDataDirectory,
                 withIntermediateDirectories: true,

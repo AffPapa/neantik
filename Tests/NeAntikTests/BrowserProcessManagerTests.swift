@@ -102,6 +102,137 @@ struct BrowserProcessManagerTests {
     }
 
     @Test
+    func launchRecreatesMissingProfileDirectories() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 0.15\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Новый профиль")
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
+        )
+
+        try manager.launch(profile: profile, runtime: runtime)
+
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
+        )
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.browserDataDirectory(for: profile.id).path
+            )
+        )
+        #expect(manager.runningProfileIDs.contains(profile.id))
+
+        for _ in 0..<30 {
+            if !manager.runningProfileIDs.contains(profile.id) {
+                break
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+    }
+
+    @Test
+    func temporaryAuditLaunchDoesNotLeaveSyntheticProfileDirectory()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 0.1\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+
+        let paths = AppPaths(
+            rootDirectory: root.appendingPathComponent("data")
+        )
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Временная проверка")
+        let temporaryBrowserData = root.appendingPathComponent(
+            "temporary-browser-data",
+            isDirectory: true
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+
+        try manager.launch(
+            profile: profile,
+            runtime: runtime,
+            browserDataDirectoryOverride: temporaryBrowserData,
+            purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
+        )
+
+        #expect(
+            FileManager.default.fileExists(
+                atPath: temporaryBrowserData.path
+            )
+        )
+
+        for _ in 0..<30 {
+            if !manager.runningProfileIDs.contains(profile.id) {
+                break
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
+        )
+    }
+
+    @Test
     func reconcilesOnlyTheExactProfileProcess() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

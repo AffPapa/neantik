@@ -331,6 +331,29 @@ class NotaryTransactionInspectorTests(unittest.TestCase):
         self.assertEqual(report["summary"]["retiredCount"], 2)
         self.assertEqual(report["records"], [])
 
+    def test_finder_metadata_does_not_block_safe_retired_history(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir()
+            root = create_transaction(
+                dist,
+                category="retired",
+                stage="transaction-created",
+            )
+            retired = dist / ".notary-retired"
+            (retired / ".DS_Store").write_bytes(b"finder metadata")
+            (root / ".DS_Store").write_bytes(b"finder metadata")
+            report = MODULE.inspect_dist(
+                dist,
+                expected_archive_name=ARCHIVE,
+            )
+        self.assertTrue(report["safe"])
+        self.assertTrue(report["releaseReady"])
+        self.assertEqual(report["summary"]["retiredCount"], 1)
+        self.assertEqual(report["records"], [])
+
     def test_interrupted_retired_external_effect_blocks(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             dist = Path(temporary) / "dist"

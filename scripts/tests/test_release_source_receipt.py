@@ -215,6 +215,48 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
             (root / "dist" / "candidate.zip").write_bytes(b"candidate")
             MODULE.capture_release_source(root, closure=self.closure)
 
+    def test_nested_project_inside_parent_worktree_seals_closure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            self.git(parent, "init", "-q")
+            self.git(parent, "config", "user.name", "Test")
+            self.git(parent, "config", "user.email", "test@example.invalid")
+            (parent / "README.md").write_text(
+                "# Parent\n",
+                encoding="utf-8",
+            )
+            self.git(parent, "add", "README.md")
+            self.git(parent, "commit", "-qm", "parent")
+            root = parent / "nevision"
+            (root / "scripts").mkdir(parents=True)
+            (root / "scripts" / "release.py").write_text(
+                "print('release')\n",
+                encoding="utf-8",
+            )
+            (root / "policy.json").write_text(
+                '{"version":1}\n',
+                encoding="utf-8",
+            )
+
+            snapshot = MODULE.capture_release_source(
+                root,
+                closure=self.closure,
+            )
+
+            self.assertEqual(
+                snapshot.payload["git"]["worktreeState"],  # type: ignore[index]
+                "nested-source-closure-sealed",
+            )
+            self.assertEqual(
+                snapshot.payload["git"]["sourceRootRelativePath"],  # type: ignore[index]
+                "nevision",
+            )
+            self.assertEqual(
+                {seal.relative_path for seal in snapshot.files},
+                {"policy.json", "scripts/release.py"},
+            )
+            MODULE.assert_release_source_unchanged(snapshot)
+
     def test_ignored_python_bytecode_cache_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -102,9 +102,13 @@ final class ProfileStore: ObservableObject {
         }
         let previousProfiles = profiles
         var value = profile
-        guard BrowserProfile.isValidName(value.name) else {
+        guard BrowserProfile.isValidName(value.name),
+              ProfileAppearance.isSafeStoredSymbol(value.symbolName),
+              let cleanTags = BrowserProfile.normalizedTags(value.tags)
+        else {
             throw NeAntikError.invalidProfile
         }
+        value.tags = cleanTags
         value.updatedAt = Date()
         let usedSeeds = Set(
             profiles
@@ -418,9 +422,7 @@ final class ProfileStore: ObservableObject {
     }
 
     private func sortProfiles() {
-        profiles.sort {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
+        profiles.sort(by: ProfileListProjection.areInIncreasingOrder)
     }
 
     private func persist(

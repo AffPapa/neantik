@@ -10,21 +10,20 @@ Chromium runtime, собранный из зафиксированных исх�
 ## Скачать приложение
 
 Подписанное и нотарифицированное приложение опубликовано в
-[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.12).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.14).
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
 Текущий публичный alpha-релиз:
 
-- NeAntik `0.3.12`, build `15`;
+- NeAntik `0.3.14`, build `17`;
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- архив `NeAntik-0.3.12-arm64-notarized.zip`;
-- SHA-256:
-  `b8a791056a8857339e1a52e48a81181f49525d2737cf985886b0b1aa05b8fc73`.
+- ZIP `NeAntik-0.3.14-arm64-notarized.zip`;
+- DMG `NeAntik-0.3.14-arm64-notarized.dmg`;
+- SHA-256 для обоих файлов публикуются рядом с ними в GitHub Release.
 
 Сайт продукта: [affpapa.org/neantik](https://affpapa.org/neantik).
-Зеркало релиза: [cpa.tg/neantik](https://cpa.tg/neantik/).
 
 ## Что умеет NeAntik
 
@@ -58,7 +57,7 @@ NeAntik предназначен для приватности, разделен
 QA. Он не обещает полную анонимность или «необнаружимость» и не предназначен
 для обхода CAPTCHA, банов, антифрода или правил сторонних сервисов.
 
-Версия `0.3.12` квалифицирована для public-alpha изоляции профилей. Строгая
+Версия `0.3.14` выпускается для public-alpha изоляции профилей. Строгая
 production-согласованность всех fingerprint- и сетевых поверхностей остаётся
 открытым ограничением.
 
@@ -69,16 +68,10 @@ production-согласованность всех fingerprint- и сетевы�
 аппаратных конфигураций, но не объединяет Canvas, Audio, WebGL и ClientRects
 разных пользователей в общий отпечаток.
 
-Изменения в разделе `Unreleased` ещё не являются новым бинарным релизом. Для
-их публикации нужны новый Chromium build с Metal, свежая GUI-проверка
-A → B → A, Developer ID, notarization, stapling, Gatekeeper и повторная
-проверка скачанного артефакта.
-
-Код production signer для Secure Enclave и его unit-тесты сами по себе не
-делают опубликованную `0.3.12` квалифицированной по schema 8. Новая версия
-должна пройти enrollment и подпись на физическом Secure Enclave точного
-Developer ID-кандидата, а затем collector/notarization/hosted gates без
-software fallback. Подробности:
+Каждый бинарный релиз проходит GUI-проверку A → B → A, Developer ID,
+notarization, stapling, Gatekeeper и повторную проверку скачанного артефакта.
+Подпись fingerprint evidence выполняется на физическом Secure Enclave точного
+Developer ID-кандидата без software fallback. Подробности:
 [fingerprint evidence schema 8](docs/security/fingerprint-evidence-schema-8.md).
 
 Уязвимости следует сообщать по правилам [SECURITY.md](SECURITY.md).

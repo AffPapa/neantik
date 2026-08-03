@@ -168,3 +168,40 @@ class IsolatedReleasePythonTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertIn("CHILD-GOOD", completed.stdout)
             self.assertFalse((scripts / "__pycache__").exists())
+
+    def test_nested_project_inside_parent_git_worktree_is_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            subprocess.run(
+                ["git", "init"],
+                cwd=parent,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+            root = parent / "nevision"
+            root.mkdir()
+            (root / "dist").mkdir(mode=0o700)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            target = scripts / "release_entry.py"
+            target.write_text("print('NESTED-OK')\n", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-B",
+                    str(RUNNER),
+                    str(target),
+                ],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                timeout=10,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stdout.strip(), "NESTED-OK")

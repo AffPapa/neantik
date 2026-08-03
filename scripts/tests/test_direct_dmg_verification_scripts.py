@@ -45,14 +45,14 @@ class DirectDMGVerificationScriptTests(unittest.TestCase):
         wrapper = (
             ROOT
             / "scripts"
-            / "Run-NeAntik-0.3.12-DMG-Hosted-Verification.command"
+            / "Run-NeAntik-0.3.14-DMG-Hosted-Verification.command"
         )
         text = wrapper.read_text()
         self.assertTrue(wrapper.stat().st_mode & stat.S_IXUSR)
         self.assertIn("verify-direct-hosted-dmg.sh", text)
         self.assertIn(
-            "https://github.com/AffPapa/neantik/releases/download/v0.3.12/"
-            "NeAntik-0.3.12-arm64-notarized.dmg",
+            "https://affpapa.org/neantik/downloads/"
+            "NeAntik-0.3.14-arm64-notarized.dmg",
             text,
         )
         self.assertIn("GitHub Release и сайт не изменялись", text)

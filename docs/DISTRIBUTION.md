@@ -202,7 +202,7 @@ acceptance evidence, and Direct publication has no software-signing fallback.
 After `dist/NeAntik.app` has passed the normal signed release gate, run:
 
 ```bash
-./scripts/Run-NeAntik-0.3.12-DMG-Release.command
+./scripts/Run-NeAntik-0.3.14-DMG-Release.command
 ```
 
 The script derives the Developer ID identity from the signed application and

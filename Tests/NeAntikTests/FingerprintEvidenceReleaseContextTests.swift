@@ -552,7 +552,7 @@ struct FingerprintEvidenceReleaseContextTests {
     }
 
     @Test
-    func keychainClaimIsThisDeviceOnlyAndMapsDuplicateStrictly()
+    func keychainClaimIsThisDeviceOnlyWithoutDataProtectionEntitlementAndMapsDuplicateStrictly()
         throws
     {
         var captured: [String: Any] = [:]
@@ -580,8 +580,7 @@ struct FingerprintEvidenceReleaseContextTests {
                 kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String
         )
         #expect(
-            captured[kSecUseDataProtectionKeychain as String] as? Bool ==
-                true
+            captured[kSecUseDataProtectionKeychain as String] == nil
         )
         #expect(
             captured[kSecValueData as String] as? Data == digest
@@ -613,8 +612,7 @@ struct FingerprintEvidenceReleaseContextTests {
                 "claim-id"
         )
         #expect(
-            readQuery[kSecUseDataProtectionKeychain as String] as? Bool ==
-                true
+            readQuery[kSecUseDataProtectionKeychain as String] == nil
         )
         #expect(
             readQuery[kSecReturnData as String] as? Bool == true

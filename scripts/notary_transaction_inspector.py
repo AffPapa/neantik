@@ -53,6 +53,9 @@ _STAGES: tuple[tuple[str, str], ...] = (
 )
 _ALLOWED_ROOT_ENTRIES = frozenset(
     {
+        # Finder may add this inert metadata file when an operator opens the
+        # private release directory. It is never read as transaction input.
+        ".DS_Store",
         ".init-lease",
         ".init-marker.json",
         "accepted",
@@ -2010,6 +2013,8 @@ def inspect_dist(
                 maximum=_MAXIMUM_RETIRED_ENTRIES,
             )
             for name in retired_names:
+                if name == ".DS_Store":
+                    continue
                 records.append(
                     _inspect_transaction_directory(
                         retired_descriptor,

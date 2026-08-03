@@ -193,7 +193,15 @@ struct AppPaths: Sendable {
     }
 
     func prepareProfileDirectories(for id: UUID) throws {
-        try prepareBaseDirectories()
+        // This hot path runs for every profile launch. Legacy log hardening is
+        // intentionally kept in prepareBaseDirectories(), which runs during
+        // manager startup, instead of re-enumerating every log here. The two
+        // coordination parents are still created explicitly: launches must be
+        // safe even when a caller constructs AppPaths before app startup.
+        try createPrivateDirectory(rootDirectory)
+        try createPrivateDirectory(profilesDirectory)
+        try createPrivateDirectory(processLocksDirectory)
+        try createPrivateDirectory(logsDirectory)
         try createPrivateDirectory(profileDirectory(for: id))
         try createPrivateDirectory(browserDataDirectory(for: id))
     }

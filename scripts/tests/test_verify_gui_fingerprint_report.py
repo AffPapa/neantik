@@ -229,7 +229,9 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         report["webrtcDirectControl"]["capturedAt"] = (
             "2026-07-25T08:29:39Z"
         )
+
         issues = MODULE.production_release_issues(report)
+
         self.assertIn(
             "Capture timestamps are not ordered as direct control → A → B → A.",
             issues,
@@ -291,12 +293,18 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             summary["productionIssues"],
         )
         self.assertEqual(
-            MODULE.qualification_issues(summary, require_production=False),
+            MODULE.qualification_issues(
+                summary,
+                require_production=False,
+            ),
             [],
         )
         self.assertIn(
             "The profile A, first capture platform value disagrees with worker_platform.",
-            MODULE.qualification_issues(summary, require_production=True),
+            MODULE.qualification_issues(
+                summary,
+                require_production=True,
+            ),
         )
 
     def test_missing_worker_memory_fails_strict_but_not_public_alpha(self) -> None:

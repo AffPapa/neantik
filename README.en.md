@@ -16,16 +16,14 @@ archive contains source code, not `NeAntik.app`.
 
 Current release:
 
-- NeAntik `0.3.12` build `15`;
+- NeAntik `0.3.14` build `17`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- archive: `NeAntik-0.3.12-arm64-notarized.zip`;
-- SHA-256:
-  `b8a791056a8857339e1a52e48a81181f49525d2737cf985886b0b1aa05b8fc73`.
+- ZIP: `NeAntik-0.3.14-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.14-arm64-notarized.dmg`;
+- SHA-256 sidecars are published with both GitHub Release assets.
 
 Product website: <https://affpapa.org/neantik>.
-
-The same release is mirrored at <https://cpa.tg/neantik/>.
 
 ## What it does
 
@@ -54,7 +52,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.12` is qualified for public-alpha profile isolation. Strict
+Version `0.3.14` is released for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 

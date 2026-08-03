@@ -156,7 +156,6 @@ def bundle_inventory(app: Path) -> list[dict[str, str | int]]:
                     {
                         "bundlePath": relative,
                         "kind": "symlink",
-                        "mode": mode,
                         "target": os.readlink(path),
                     }
                 )

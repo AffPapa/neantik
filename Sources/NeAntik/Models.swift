@@ -490,12 +490,112 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
     }
 }
 
+enum ProfileAppearance {
+    static let colors = [
+        "#FF3B4D",
+        "#DC1635",
+        "#F97316",
+        "#EC4899",
+        "#6C7CFF",
+        "#8B5CF6",
+        "#EAB308",
+        "#10B981",
+        "#06B6D4"
+    ]
+
+    static let symbols = [
+        "globe",
+        "briefcase.fill",
+        "cart.fill",
+        "megaphone.fill",
+        "chart.bar.fill",
+        "person.fill",
+        "star.fill",
+        "bolt.fill",
+        "shield.fill",
+        "bookmark.fill",
+        "folder.fill",
+        "shippingbox.fill"
+    ]
+
+    static func defaultColor(for id: UUID) -> String {
+        colors[Int(stableHash(id) % UInt32(colors.count))]
+    }
+
+    static func defaultSymbol(for id: UUID) -> String {
+        let hash = stableHash(id)
+        return symbols[
+            Int((hash / UInt32(colors.count)) % UInt32(symbols.count))
+        ]
+    }
+
+    static func displaySymbol(_ storedName: String, profileID: UUID) -> String {
+        symbols.contains(storedName) ? storedName : defaultSymbol(for: profileID)
+    }
+
+    static func title(for symbol: String) -> String {
+        switch symbol {
+        case "globe": "Интернет"
+        case "briefcase.fill": "Работа"
+        case "cart.fill": "Покупки"
+        case "megaphone.fill": "Реклама"
+        case "chart.bar.fill": "Аналитика"
+        case "person.fill": "Личный"
+        case "star.fill": "Избранное"
+        case "bolt.fill": "Быстрый"
+        case "shield.fill": "Защита"
+        case "bookmark.fill": "Закладки"
+        case "folder.fill": "Проект"
+        case "shippingbox.fill": "Магазин"
+        default: "Профиль"
+        }
+    }
+
+    static func title(forColor hex: String) -> String {
+        switch hex {
+        case "#FF3B4D": "Красный"
+        case "#DC1635": "Малиновый"
+        case "#F97316": "Оранжевый"
+        case "#EC4899": "Розовый"
+        case "#6C7CFF": "Синий"
+        case "#8B5CF6": "Фиолетовый"
+        case "#EAB308": "Жёлтый"
+        case "#10B981": "Зелёный"
+        case "#06B6D4": "Бирюзовый"
+        default: "Цвет профиля"
+        }
+    }
+
+    static func isSafeStoredSymbol(_ value: String) -> Bool {
+        !value.isEmpty &&
+            value.utf8.count <= 64 &&
+            value.unicodeScalars.allSatisfy {
+                CharacterSet(
+                    charactersIn:
+                        "abcdefghijklmnopqrstuvwxyz0123456789.-"
+                ).contains($0)
+            }
+    }
+
+    private static func stableHash(_ id: UUID) -> UInt32 {
+        var hash: UInt32 = 2_166_136_261
+        for byte in id.uuidString.utf8 {
+            hash = (hash ^ UInt32(byte)) &* 16_777_619
+        }
+        return hash
+    }
+}
+
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
+    static let maximumTagCount = 8
+    static let maximumTagLength = 24
 
     var id: UUID
     var name: String
     var colorHex: String
+    var symbolName: String
+    var tags: [String]
     var startURL: String
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
@@ -506,7 +606,9 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     init(
         id: UUID = UUID(),
         name: String,
-        colorHex: String = "#FF3B4D",
+        colorHex: String? = nil,
+        symbolName: String? = nil,
+        tags: [String] = [],
         startURL: String = "https://www.google.com",
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
@@ -516,7 +618,10 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     ) {
         self.id = id
         self.name = name
-        self.colorHex = colorHex
+        self.colorHex = colorHex ?? ProfileAppearance.defaultColor(for: id)
+        self.symbolName =
+            symbolName ?? ProfileAppearance.defaultSymbol(for: id)
+        self.tags = Self.normalizedTags(tags) ?? []
         self.startURL = startURL
         self.proxy = proxy
         self.identity = identity
@@ -533,10 +638,41 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             ) == nil
     }
 
+    static func normalizedTags(_ values: [String]) -> [String]? {
+        guard values.count <= maximumTagCount else { return nil }
+        var result: [String] = []
+        var seen = Set<String>()
+        for value in values {
+            let clean = value.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            guard !clean.isEmpty,
+                  clean.count <= maximumTagLength,
+                  clean.rangeOfCharacter(from: .controlCharacters) == nil
+            else {
+                return nil
+            }
+            let key = clean.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: Locale(identifier: "en_US_POSIX")
+            )
+            if seen.insert(key).inserted {
+                result.append(clean)
+            }
+        }
+        return result
+    }
+
+    var displaySymbolName: String {
+        ProfileAppearance.displaySymbol(symbolName, profileID: id)
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case name
         case colorHex
+        case symbolName
+        case tags
         case startURL
         case proxy
         case identity
@@ -549,7 +685,38 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
+        guard Self.isValidName(name) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .name,
+                in: container,
+                debugDescription: "Invalid profile name."
+            )
+        }
         colorHex = try container.decode(String.self, forKey: .colorHex)
+        let decodedSymbol = try container.decodeIfPresent(
+            String.self,
+            forKey: .symbolName
+        ) ?? ProfileAppearance.defaultSymbol(for: id)
+        guard ProfileAppearance.isSafeStoredSymbol(decodedSymbol) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .symbolName,
+                in: container,
+                debugDescription: "Invalid profile symbol."
+            )
+        }
+        symbolName = decodedSymbol
+        let decodedTags = try container.decodeIfPresent(
+            [String].self,
+            forKey: .tags
+        ) ?? []
+        guard let cleanTags = Self.normalizedTags(decodedTags) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .tags,
+                in: container,
+                debugDescription: "Invalid profile tags."
+            )
+        }
+        tags = cleanTags
         startURL = try container.decode(String.self, forKey: .startURL)
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,

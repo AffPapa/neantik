@@ -1236,6 +1236,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
     @Published private(set) var phase = "Готово"
     @Published private(set) var report: FingerprintAuditReport?
     @Published private(set) var reportURL: URL?
+    @Published private(set) var releaseEvidenceIsReady = false
     @Published var errorMessage: String?
 
     private let paths: AppPaths
@@ -1301,6 +1302,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         phase = "Готовим проверку отпечатка"
         report = nil
         reportURL = nil
+        releaseEvidenceIsReady = false
         errorMessage = nil
 
         task = Task { @MainActor [weak self] in
@@ -1369,6 +1371,20 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 )
                 let savedURL: URL
                 if let releaseContext {
+                    let releaseQualified: Bool
+                    switch releaseContext.metadata.releaseChannel {
+                    case .publicAlpha:
+                        releaseQualified =
+                            newReport.isPublicAlphaReleaseQualified
+                    case .production:
+                        releaseQualified =
+                            newReport.isProductionReleaseQualified
+                    }
+                    guard releaseQualified else {
+                        throw NeAntikError.fingerprintAuditFailed(
+                            "Проверка не прошла обязательный уровень выпуска. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
+                        )
+                    }
                     phase = "Подписываем отчёт выпуска"
                     savedURL = try releaseContext.persist(
                         report: newReport
@@ -1380,6 +1396,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 }
                 report = newReport
                 reportURL = savedURL
+                releaseEvidenceIsReady = releaseContext != nil
                 phase = newReport.verdict.title
             } catch is CancellationError {
                 phase = "Отменено"

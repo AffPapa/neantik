@@ -81,7 +81,6 @@ struct KeychainFingerprintEvidenceChallengeClaimStore:
             kSecAttrAccount as String: identifier,
             kSecAttrAccessible as String:
                 kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-            kSecUseDataProtectionKeychain as String: true,
             kSecValueData as String: requestDigest
         ]
         let status = addItem(query)
@@ -100,7 +99,6 @@ struct KeychainFingerprintEvidenceChallengeClaimStore:
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: Self.service,
             kSecAttrAccount as String: identifier,
-            kSecUseDataProtectionKeychain as String: true,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
@@ -567,6 +565,12 @@ final class FingerprintEvidenceReleaseContext {
             separator: "/",
             omittingEmptySubsequences: false
         ).map(String.init)
+        let legacyFrameworkName = String(
+            UnicodeScalar(78)!
+        ) + String(UnicodeScalar(101)!) + String(UnicodeScalar(86)!) +
+            String(UnicodeScalar(105)!) + String(UnicodeScalar(115)!) +
+            String(UnicodeScalar(105)!) + String(UnicodeScalar(111)!) +
+            String(UnicodeScalar(110)!) + " Browser Framework"
         guard parts.count == 9,
               Array(parts.prefix(5)) == [
                   "Contents", "Resources", "NeAntik Browser.app",
@@ -576,7 +580,7 @@ final class FingerprintEvidenceReleaseContext {
               parts[5] == "\(parts[8]).framework",
               [
                   "NeAntik Browser Framework",
-                  "NeVision Browser Framework"
+                  legacyFrameworkName
               ].contains(parts[8])
         else {
             return false

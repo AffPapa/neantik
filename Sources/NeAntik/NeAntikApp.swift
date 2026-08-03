@@ -110,8 +110,10 @@ struct NeAntikApp: App {
             )
             Darwin.exit(EXIT_SUCCESS)
         } catch {
+            let detail = error.localizedDescription
             writeControlErrorAndExit(
-                "Secure Enclave не подготовил данные проверки выпуска.\n",
+                "Secure Enclave не подготовил данные проверки выпуска: " +
+                    "\(detail)\n",
                 code: EX_UNAVAILABLE
             )
         }

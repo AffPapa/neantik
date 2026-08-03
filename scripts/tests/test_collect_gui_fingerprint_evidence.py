@@ -629,6 +629,58 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
                     integrated_app=integrated_app,
                 )
 
+    def test_verify_only_authenticated_evidence_writes_nothing(self) -> None:
+        fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema8-swift.json"
+        )
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        manifest_raw = base64.b64decode(
+            fixture["manifestBase64"],
+            validate=True,
+        )
+        envelope_raw = base64.b64decode(
+            fixture["envelopeBase64"],
+            validate=True,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "fingerprint-evidence-schema8.json"
+            manifest = root / "direct-candidate-manifest.json"
+            output = root / "fingerprint-audit.json"
+            summary = root / "fingerprint-audit-summary.json"
+            source.write_bytes(envelope_raw)
+            manifest.write_bytes(manifest_raw)
+            expected_runtime = {
+                "managerVersion": "0.3.12",
+                "managerBuild": "15",
+                "runtimeVersion": "150.0.7871.186",
+                "runtimeExecutableSHA256": "a" * 64,
+                "runtimeFrameworkSHA256": "b" * 64,
+            }
+            with mock.patch.object(
+                MODULE.GUI_VERIFIER,
+                "expected_runtime_evidence_from_app",
+                return_value=expected_runtime,
+            ):
+                result = MODULE.collect_evidence(
+                    source=source,
+                    audits_dir=root,
+                    output=output,
+                    runtime_lock=root / "unused-lock.json",
+                    integrated_app=root / "NeAntik.app",
+                    candidate_manifest=manifest,
+                    summary_output=summary,
+                    release_channel="public-alpha",
+                    persist_outputs=False,
+                )
+
+            self.assertIsNone(result["output"])
+            self.assertIsNone(result["summaryOutput"])
+            self.assertFalse(output.exists())
+            self.assertFalse(summary.exists())
+
     def test_production_collection_rejects_public_alpha_only_report(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

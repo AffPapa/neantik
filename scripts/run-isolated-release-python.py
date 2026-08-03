@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import runpy
 import shutil
 import stat
@@ -14,6 +15,49 @@ from pathlib import Path
 def fail(message: str) -> int:
     print(f"Isolated release Python failed: {message}", file=sys.stderr)
     return 65
+
+
+def belongs_to_git_worktree(project_root: Path) -> bool:
+    if (project_root / ".git").exists():
+        return True
+    try:
+        inside = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(project_root),
+                "rev-parse",
+                "--is-inside-work-tree",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=5,
+        )
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return False
+        root = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(project_root),
+                "rev-parse",
+                "--show-toplevel",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=5,
+        )
+        if root.returncode != 0:
+            return False
+        git_root = Path(root.stdout.strip()).resolve()
+        project_root.resolve().relative_to(git_root)
+        return True
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
 
 
 def main() -> int:
@@ -33,7 +77,7 @@ def main() -> int:
         scripts_root.name != "scripts"
         or scripts_root.is_symlink()
         or project_root.is_symlink()
-        or not (project_root / ".git").exists()
+        or not belongs_to_git_worktree(project_root)
     ):
         return fail("the release script must belong to a Git worktree")
     try:

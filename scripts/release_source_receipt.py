@@ -425,8 +425,10 @@ def capture_release_source(
         .strip()
     ).resolve()
     if top_level != project_root:
-        raise ReleaseSourceReceiptError(
-            "release source must be the exact Git worktree root"
+        return _capture_nested_release_source(
+            project_root,
+            top_level=top_level,
+            closure=closure,
         )
     status = _run_git(
         project_root,
@@ -442,7 +444,7 @@ def capture_release_source(
             "release source worktree is not clean"
         )
     object_format = (
-        _run_git(project_root, ["rev-parse", "--show-object-format"])
+        _run_git(top_level, ["rev-parse", "--show-object-format"])
         .decode("ascii", errors="strict")
         .strip()
     )
@@ -619,11 +621,11 @@ def capture_release_source(
             )
         )
     final_commit = _strict_git_identifier(
-        _run_git(project_root, ["rev-parse", "HEAD"]),
+        _run_git(top_level, ["rev-parse", "HEAD"]),
         length=identifier_length,
     )
     final_tree = _strict_git_identifier(
-        _run_git(project_root, ["rev-parse", "HEAD^{tree}"]),
+        _run_git(top_level, ["rev-parse", "HEAD^{tree}"]),
         length=identifier_length,
     )
     final_status = _run_git(
@@ -653,6 +655,143 @@ def capture_release_source(
             "commit": commit,
             "tree": tree,
             "worktreeState": "clean",
+        },
+        "digestAlgorithm": "sha256",
+        "closure": entries,
+        "closureSHA256": closure_digest,
+    }
+    return ReleaseSourceSnapshot(
+        project_root=project_root,
+        payload=payload,
+        files=tuple(seals),
+        directories=tuple(
+            _seal_source_directory(path)
+            for path in sorted(directory_paths)
+        ),
+    )
+
+
+def _capture_nested_release_source(
+    project_root: Path,
+    *,
+    top_level: Path,
+    closure: tuple[tuple[str, str], ...],
+) -> ReleaseSourceSnapshot:
+    try:
+        relative_project_root = project_root.relative_to(top_level)
+    except ValueError as error:
+        raise ReleaseSourceReceiptError(
+            "release source escapes detected Git worktree"
+        ) from error
+    if not relative_project_root.parts:
+        raise ReleaseSourceReceiptError(
+            "release source must be the exact Git worktree root"
+        )
+    object_format = (
+        _run_git(top_level, ["rev-parse", "--show-object-format"])
+        .decode("ascii", errors="strict")
+        .strip()
+    )
+    identifier_length = {"sha1": 40, "sha256": 64}.get(object_format)
+    if identifier_length is None:
+        raise ReleaseSourceReceiptError(
+            "release source Git object format is unsupported"
+        )
+    try:
+        commit = _strict_git_identifier(
+            _run_git(top_level, ["rev-parse", "HEAD"]),
+            length=identifier_length,
+        )
+        tree = _strict_git_identifier(
+            _run_git(top_level, ["rev-parse", "HEAD^{tree}"]),
+            length=identifier_length,
+        )
+        worktree_state = "nested-source-closure-sealed"
+    except ReleaseSourceReceiptError:
+        commit = "unborn"
+        tree = "unborn"
+        worktree_state = "nested-source-closure-sealed-unborn-parent"
+    if (
+        tuple(sorted(path for path, _role in closure))
+        != tuple(path for path, _role in closure)
+        or len({path for path, _role in closure}) != len(closure)
+    ):
+        raise ReleaseSourceReceiptError(
+            "release source closure must be sorted and unique"
+        )
+    entries: list[dict[str, object]] = []
+    seals: list[SourceFileSeal] = []
+    directory_paths: set[Path] = {project_root}
+    total_size = 0
+    for relative_path, role in closure:
+        if (
+            not relative_path
+            or relative_path.startswith("/")
+            or ".." in Path(relative_path).parts
+            or not role
+        ):
+            raise ReleaseSourceReceiptError(
+                "release source closure entry is invalid"
+            )
+        path = project_root / relative_path
+        contents, file_status = _read_source_file(
+            project_root,
+            relative_path,
+        )
+        total_size += len(contents)
+        if total_size > _MAXIMUM_TOTAL_SOURCE_BYTES:
+            raise ReleaseSourceReceiptError(
+                "release source tracked files exceed the aggregate limit"
+            )
+        current_parent = path.parent
+        while current_parent != project_root:
+            directory_paths.add(current_parent)
+            current_parent = current_parent.parent
+        digest = hashlib.sha256(contents).hexdigest()
+        entries.append(
+            {
+                "path": relative_path,
+                "role": role,
+                "sha256": digest,
+                "size": len(contents),
+            }
+        )
+        seals.append(
+            SourceFileSeal(
+                path=path,
+                relative_path=relative_path,
+                sha256=digest,
+                size=len(contents),
+                device=file_status.st_dev,
+                inode=file_status.st_ino,
+                mtime_ns=file_status.st_mtime_ns,
+                ctime_ns=file_status.st_ctime_ns,
+            )
+        )
+    python_parents = {
+        (project_root / relative_path).parent
+        for relative_path, _role in closure
+        if relative_path.endswith(".py")
+    }
+    for parent in python_parents:
+        if (
+            os.path.lexists(parent / "__pycache__")
+            or any(parent.glob("*.pyc"))
+        ):
+            raise ReleaseSourceReceiptError(
+                "release source contains executable Python bytecode cache"
+            )
+    closure_digest = hashlib.sha256(_canonical_json(entries)).hexdigest()
+    payload: dict[str, object] = {
+        "schemaVersion": 1,
+        "project": "NeAntik",
+        "repositoryClaim": "AffPapa/neantik",
+        "git": {
+            "objectFormat": object_format,
+            "commit": commit,
+            "tree": tree,
+            "worktreeState": worktree_state,
+            "sourceRootRelativePath": relative_project_root.as_posix(),
         },
         "digestAlgorithm": "sha256",
         "closure": entries,

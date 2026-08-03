@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import plistlib
 import re
 import subprocess
 import sys
@@ -10,7 +11,6 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_METADATA = PROJECT_ROOT / "releases" / "v0.3.12.json"
 
 FORBIDDEN_PARTS = {
     ".build",
@@ -68,6 +68,7 @@ REQUIRED_PUBLIC_PATHS = {
     ".github/workflows/ci.yml",
     "CONTRIBUTING.md",
     "LICENSE",
+    "Release-NeAntik.command",
     "SECURITY.md",
     "Sources/NeAntik/BrowserProcessInventory.swift",
     "Sources/NeAntik/FingerprintEvidenceEnrollment.swift",
@@ -75,6 +76,7 @@ REQUIRED_PUBLIC_PATHS = {
     "Sources/NeAntik/FingerprintEvidenceRecoveryStore.swift",
     "Sources/NeAntik/FingerprintEvidenceReleaseContext.swift",
     "Sources/NeAntik/FingerprintReleaseEvidencePayload.swift",
+    "Sources/NeAntik/ProfileListProjection.swift",
     "Sources/NeAntik/SecureEnclaveFingerprintEvidenceSigner.swift",
     "Sources/NeAntik/UpdateManifest.swift",
     "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json",
@@ -83,6 +85,7 @@ REQUIRED_PUBLIC_PATHS = {
     "Tests/NeAntikTests/BrowserProcessInventoryTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceEnvelopeTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceReleaseContextTests.swift",
+    "Tests/NeAntikTests/ProfileOrganizationTests.swift",
     "Tests/NeAntikTests/SecureEnclaveFingerprintEvidenceSignerTests.swift",
     "Tests/NeAntikTests/UpdateManifestTests.swift",
     "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
@@ -92,6 +95,10 @@ REQUIRED_PUBLIC_PATHS = {
     "runtime/chromium-150-source-contract.json",
     "runtime/chromium-150-toolchain-lock.json",
     "runtime/browser-identity-issuance.json",
+    "scripts/Run-NeAntik-0.3.14-DMG-Hosted-Verification.command",
+    "scripts/Run-NeAntik-0.3.14-DMG-Release.command",
+    "scripts/Run-NeAntik-0.3.14-Hosted-Verification.command",
+    "scripts/Run-NeAntik-0.3.14-Release.command",
     "scripts/Run-NeAntik-Runtime-Audit.command",
     "scripts/generate-runtime-integration-notices.py",
     "scripts/export-runtime-source-provenance.py",
@@ -134,6 +141,7 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/verify-direct-update-policy.py",
     "scripts/verify-public-fingerprint-corpus.py",
     "scripts/verify-public-workflow-references.py",
+    "scripts/tests/test_release_launcher.py",
     "scripts/tests/test_release_transaction.py",
     "scripts/tests/test_release_source_receipt.py",
     "scripts/tests/test_notary_transaction_state.py",
@@ -185,19 +193,57 @@ def verify_files(files: list[Path]) -> None:
 
 
 def verify_release_metadata() -> None:
-    metadata = json.loads(RELEASE_METADATA.read_text(encoding="utf-8"))
+    metadata_files = sorted((PROJECT_ROOT / "releases").glob("v*.json"))
+    if not metadata_files:
+        fail("no public release metadata is present")
+
+    parsed_metadata = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in metadata_files
+    ]
+
+    def version_key(metadata: dict[str, object]) -> tuple[int, ...]:
+        version = str(metadata.get("version", ""))
+        if not re.fullmatch(r"\d+(?:\.\d+)+", version):
+            fail(f"invalid release version in releases/v{version}.json")
+        return tuple(int(part) for part in version.split("."))
+
+    metadata = max(parsed_metadata, key=version_key)
     archive = metadata["archive"]
     sidecar = PROJECT_ROOT / "releases" / f"{archive['name']}.sha256"
     expected = f"{archive['sha256']}  {archive['name']}\n"
     if sidecar.read_text(encoding="utf-8") != expected:
-        fail("release checksum sidecar does not match releases/v0.3.12.json")
+        fail(
+            "release checksum sidecar does not match "
+            f"releases/v{metadata['version']}.json"
+        )
 
     plist = PROJECT_ROOT / "Resources" / "Info.plist"
-    plist_text = plist.read_text(encoding="utf-8")
-    if f"<string>{metadata['version']}</string>" not in plist_text:
-        fail("release version does not match Resources/Info.plist")
-    if f"<string>{metadata['build']}</string>" not in plist_text:
+    with plist.open("rb") as file:
+        info = plistlib.load(file)
+    app_version = str(info.get("CFBundleShortVersionString", ""))
+    app_build = str(info.get("CFBundleVersion", ""))
+    if not re.fullmatch(r"\d+(?:\.\d+)+", app_version):
+        fail("Resources/Info.plist contains an invalid release version")
+    if not app_build.isdigit():
+        fail("Resources/Info.plist contains an invalid build number")
+
+    published_version = str(metadata["version"])
+    published_build = str(metadata["build"])
+    app_key = tuple(int(part) for part in app_version.split("."))
+    published_key = version_key(metadata)
+    if app_key < published_key:
+        fail("manager version is older than the latest public release metadata")
+    if app_key == published_key and app_build != published_build:
         fail("release build does not match Resources/Info.plist")
+    if app_key > published_key:
+        changelog = (PROJECT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        marker = f"## Direct {app_version} ({app_build})"
+        if marker not in changelog:
+            fail(
+                "newer release candidate is missing its version/build "
+                "changelog section"
+            )
 
 
 def verify_required_contracts() -> None:
@@ -216,6 +262,7 @@ def verify_required_contracts() -> None:
         "UpdateManifestTests",
         "BrowserProcessInventoryTests",
         "FingerprintEvidenceEnrollmentTests",
+        "ProfileOrganizationTests",
         "SecureEnclaveFingerprintEvidenceSignerTests",
         "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",

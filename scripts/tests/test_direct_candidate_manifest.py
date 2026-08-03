@@ -330,6 +330,47 @@ class DirectCandidateManifestTests(unittest.TestCase):
                     release_channel="public-alpha",
                 )
 
+    def test_symlink_target_is_bound_but_mode_is_zip_roundtrip_tolerant(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app = prepared_fixture(root)
+            target = app / "Contents/Resources/target"
+            target.write_text("target\n", encoding="utf-8")
+            link = app / "Contents/Resources/link"
+            link.symlink_to("target")
+            manifest = root / "candidate.json"
+            MODULE.write_manifest(
+                manifest,
+                MODULE.manifest_payload(
+                    app,
+                    release_channel="public-alpha",
+                    fingerprint_evidence=fingerprint_binding(),
+                ),
+            )
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            symlink_entries = [
+                entry for entry in payload["bundleInventory"]
+                if entry.get("kind") == "symlink"
+            ]
+            self.assertTrue(symlink_entries)
+            self.assertTrue(all("mode" not in entry for entry in symlink_entries))
+            MODULE.verify_manifest(
+                app,
+                manifest,
+                release_channel="public-alpha",
+            )
+            link.unlink()
+            link.symlink_to("other-target")
+            with self.assertRaisesRegex(
+                MODULE.CandidateManifestError,
+                "changed after",
+            ):
+                MODULE.verify_manifest(
+                    app,
+                    manifest,
+                    release_channel="public-alpha",
+                )
+
     def test_allows_only_documented_stapler_ticket_path_to_change(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

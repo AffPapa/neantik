@@ -35,18 +35,6 @@ enum ProxyPasswordUpdate: Equatable {
 }
 
 struct ProfileEditorView: View {
-    private static let colors = [
-        "#FF3B4D",
-        "#DC1635",
-        "#F97316",
-        "#EC4899",
-        "#6C7CFF",
-        "#8B5CF6",
-        "#EAB308",
-        "#10B981",
-        "#06B6D4"
-    ]
-
     let original: BrowserProfile?
     let keychain: KeychainStore
     let onSave: (BrowserProfile, ProxyPasswordUpdate) throws -> Void
@@ -56,6 +44,8 @@ struct ProfileEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var colorHex: String
+    @State private var symbolName: String
+    @State private var tagsText: String
     @State private var startURL: String
     @State private var usesProxy: Bool
     @State private var proxyKind: ProxyKind
@@ -85,6 +75,8 @@ struct ProfileEditorView: View {
         let profile = original ?? BrowserProfile(name: "")
         _name = State(initialValue: profile.name)
         _colorHex = State(initialValue: profile.colorHex)
+        _symbolName = State(initialValue: profile.displaySymbolName)
+        _tagsText = State(initialValue: profile.tags.joined(separator: ", "))
         _startURL = State(initialValue: profile.startURL)
         _usesProxy = State(initialValue: profile.proxy != nil)
         _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
@@ -155,27 +147,83 @@ struct ProfileEditorView: View {
                     TextField("Стартовая страница", text: $startURL)
                         .accessibilityLabel("Стартовая страница")
 
-                    HStack {
+                }
+
+                Section("Внешний вид") {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(
+                                .adaptive(minimum: 42, maximum: 46),
+                                spacing: 10
+                            )
+                        ],
+                        alignment: .leading,
+                        spacing: 10
+                    ) {
+                        ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
+                            Button {
+                                symbolName = symbol
+                            } label: {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(
+                                        symbolName == symbol
+                                            ? Color.accentColor
+                                            : Color.secondary.opacity(0.12)
+                                    )
+                                    .frame(width: 42, height: 42)
+                                    .overlay {
+                                        Image(systemName: symbol)
+                                            .font(
+                                                .system(
+                                                    size: 18,
+                                                    weight: .medium
+                                                )
+                                            )
+                                            .foregroundStyle(
+                                                symbolName == symbol
+                                                    ? Color.white
+                                                    : Color.primary
+                                            )
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(
+                                "Иконка \(ProfileAppearance.title(for: symbol))"
+                            )
+                            .accessibilityValue(
+                                symbolName == symbol
+                                    ? "Выбрана"
+                                    : "Не выбрана"
+                            )
+                        }
+                    }
+
+                    HStack(spacing: 9) {
                         Text("Цвет")
                         Spacer()
-                        ForEach(Self.colors, id: \.self) { hex in
+                        ForEach(ProfileAppearance.colors, id: \.self) { hex in
                             Button {
                                 colorHex = hex
                             } label: {
                                 Circle()
                                     .fill(Color(hex: hex))
-                                    .frame(width: 21, height: 21)
+                                    .frame(width: 22, height: 22)
                                     .overlay {
                                         if colorHex == hex {
                                             Image(systemName: "checkmark")
-                                                .font(.system(size: 9, weight: .bold))
+                                                .font(
+                                                    .system(
+                                                        size: 9,
+                                                        weight: .bold
+                                                    )
+                                                )
                                                 .foregroundStyle(.white)
                                         }
                                     }
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(
-                                "Цвет профиля \(hex)"
+                                ProfileAppearance.title(forColor: hex)
                             )
                             .accessibilityValue(
                                 colorHex == hex
@@ -184,6 +232,20 @@ struct ProfileEditorView: View {
                             )
                         }
                     }
+                }
+
+                Section("Организация") {
+                    TextField(
+                        "Теги через запятую",
+                        text: $tagsText,
+                        prompt: Text("Например: работа, магазин")
+                    )
+                    .accessibilityLabel("Теги профиля")
+                    Text(
+                        "До \(BrowserProfile.maximumTagCount) тегов, каждый не длиннее \(BrowserProfile.maximumTagLength) символов. Теги хранятся только на этом Mac."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 Section("Сеть") {
@@ -355,6 +417,8 @@ struct ProfileEditorView: View {
             var profile = original ?? BrowserProfile(name: cleanName)
             profile.name = cleanName
             profile.colorHex = colorHex
+            profile.symbolName = symbolName
+            profile.tags = try parsedTags()
             profile.startURL = cleanStartURL.absoluteString
             let proxy = try makeProxy()
             profile.proxy = proxy
@@ -383,6 +447,17 @@ struct ProfileEditorView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func parsedTags() throws -> [String] {
+        let values = tagsText.split(
+            separator: ",",
+            omittingEmptySubsequences: true
+        ).map(String.init)
+        guard let normalized = BrowserProfile.normalizedTags(values) else {
+            throw ProfileTagsValidationError()
+        }
+        return normalized
     }
 
     private func testProxy() {
@@ -422,5 +497,11 @@ struct ProfileEditorView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+}
+
+private struct ProfileTagsValidationError: LocalizedError {
+    var errorDescription: String? {
+        "Проверь теги: не больше \(BrowserProfile.maximumTagCount), до \(BrowserProfile.maximumTagLength) символов каждый."
     }
 }

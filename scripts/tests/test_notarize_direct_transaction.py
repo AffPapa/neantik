@@ -37,6 +37,7 @@ class FakeReleaseRunner:
         info_identifier: str = SUBMISSION_ID,
         fail_final_verifier: bool = False,
         fail_submit: bool = False,
+        history_submission_name: str | None = None,
     ) -> None:
         self.commands: list[list[str]] = []
         self.mutate_during_submit = mutate_during_submit
@@ -44,6 +45,7 @@ class FakeReleaseRunner:
         self.info_identifier = info_identifier
         self.fail_final_verifier = fail_final_verifier
         self.fail_submit = fail_submit
+        self.history_submission_name = history_submission_name
 
     def package(self, source: Path, destination: Path) -> None:
         with zipfile.ZipFile(
@@ -122,6 +124,17 @@ class FakeReleaseRunner:
                     }
                 ),
             )
+        if command[:3] == ["xcrun", "notarytool", "history"]:
+            history: dict[str, object] = {"history": []}
+            if self.history_submission_name is not None:
+                history["history"] = [
+                    {
+                        "id": SUBMISSION_ID,
+                        "name": self.history_submission_name,
+                        "status": self.notary_status,
+                    }
+                ]
+            return MODULE.CommandResult(0, json.dumps(history))
         if command[:3] == ["xcrun", "stapler", "staple"]:
             app = Path(command[3])
             signature = app / "Contents" / "_CodeSignature"
@@ -750,7 +763,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 "keep",
             )
 
-    def test_submit_unknown_state_is_retained_and_never_resubmitted(
+    def test_submit_unknown_state_is_retained_without_history_match(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -783,7 +796,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             second_runner = FakeReleaseRunner()
             with self.assertRaisesRegex(
                 MODULE.DirectNotaryTransactionError,
-                "effect is unknown",
+                "notary history",
             ):
                 MODULE.run_transaction(
                     project_root=root,
@@ -796,6 +809,69 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                     runner=second_runner,
                     **self.source_kwargs(root),
                 )
+            self.assertFalse(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "submit"]
+                    for command in second_runner.commands
+                )
+            )
+
+    def test_submit_intent_recovers_from_notary_history_without_resubmit(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            first_runner = FakeReleaseRunner(fail_submit=True)
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "submission",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=first_runner,
+                    **self.source_kwargs(root),
+                )
+            active = MODULE.STATE.find_active_transaction(
+                root / "dist",
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            )
+            self.assertIsNotNone(active)
+            assert active is not None
+            created = MODULE._receipt_data(active[1], "transaction-created")
+            submission_name = created["submissionName"]
+            self.assertIsInstance(submission_name, str)
+
+            second_runner = FakeReleaseRunner(
+                history_submission_name=submission_name,
+            )
+            result = MODULE.run_transaction(
+                project_root=root,
+                app=paths["app"],
+                manifest=paths["manifest"],
+                evidence=paths["evidence"],
+                attestation=paths["attestation"],
+                release_channel="public-alpha",
+                notary_profile="test-profile",
+                runner=second_runner,
+                **self.source_kwargs(root),
+            )
+
+            self.assertEqual(result["submissionId"], SUBMISSION_ID)
+            self.assertTrue(
+                any(
+                    command[:3]
+                    == ["xcrun", "notarytool", "history"]
+                    for command in second_runner.commands
+                )
+            )
             self.assertFalse(
                 any(
                     command[:3]

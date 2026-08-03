@@ -37,8 +37,9 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
 
     def test_wrapper_has_no_placeholder_identity_or_secret_prompt(self) -> None:
         text = (
-            ROOT / "scripts" / "Run-NeAntik-0.3.12-DMG-Release.command"
+            ROOT / "scripts" / "Run-NeAntik-0.3.14-DMG-Release.command"
         ).read_text()
+        self.assertIn("NeAntik 0.3.14", text)
         self.assertIn("release-direct-dmg.sh", text)
         self.assertIn("neantik-notary", text)
         self.assertNotIn("Developer ID Application: …", text)

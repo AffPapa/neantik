@@ -49,7 +49,9 @@ if [[ ! -f "$SOURCE_PROVENANCE" || -L "$SOURCE_PROVENANCE" ]]; then
   echo "Chromium source provenance is missing; rebuild/configure the owned Chromium 150 source first." >&2
   exit 66
 fi
-if [[ "$CANDIDATE_LOCK" != /* || ! -f "$CANDIDATE_LOCK" || -L "$CANDIDATE_LOCK" ]]; then
+if [[ "$CANDIDATE_LOCK" != /* ||
+      ! -f "$CANDIDATE_LOCK" ||
+      -L "$CANDIDATE_LOCK" ]]; then
   echo "Chromium candidate lock must be an absolute regular file." >&2
   exit 66
 fi

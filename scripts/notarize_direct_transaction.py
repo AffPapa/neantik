@@ -297,6 +297,57 @@ def parse_notary_submission(output: str) -> str:
     return identifier
 
 
+def find_notary_submission_in_history(
+    output: str,
+    *,
+    submission_name: str,
+) -> str:
+    try:
+        payload = json.loads(
+            output,
+            object_pairs_hook=_reject_duplicate_json_pairs,
+        )
+    except (json.JSONDecodeError, TypeError) as error:
+        raise DirectNotaryTransactionError(
+            "Apple notary history is not strict JSON"
+        ) from error
+
+    def walk(value: object) -> str | None:
+        if isinstance(value, dict):
+            identifier = value.get("id")
+            name = value.get("name") or value.get("submissionName")
+            if name == submission_name and isinstance(identifier, str):
+                try:
+                    canonical_identifier = str(uuid.UUID(identifier))
+                except ValueError as error:
+                    raise DirectNotaryTransactionError(
+                        "Apple notary history contains an invalid id"
+                    ) from error
+                if identifier != canonical_identifier:
+                    raise DirectNotaryTransactionError(
+                        "Apple notary history id is not canonical"
+                    )
+                return identifier
+            for child in value.values():
+                found = walk(child)
+                if found is not None:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = walk(child)
+                if found is not None:
+                    return found
+        return None
+
+    found = walk(payload)
+    if found is None:
+        raise DirectNotaryTransactionError(
+            "Apple submission effect is unknown and notary history does "
+            "not contain the retained submission name"
+        )
+    return found
+
+
 def assert_safe_archive_members(archive: Path) -> None:
     try:
         with zipfile.ZipFile(archive) as zip_file:
@@ -1248,12 +1299,6 @@ def resume_known_transaction(
             "unfinished pre-submission transaction requires "
             "operator cleanup"
         )
-    if latest == "submit-intent":
-        raise DirectNotaryTransactionError(
-            "Apple submission effect is unknown; refusing automatic "
-            "resubmission until notary history is reconciled"
-        )
-
     created = _receipt_data(receipts, "transaction-created")
     expected_inputs = {
         "infoPlist": inputs.info.sha256,
@@ -1300,6 +1345,54 @@ def resume_known_transaction(
     )
     source_assertion(release_source)
     assert_candidate_inputs_unchanged(inputs)
+
+    if latest == "submit-intent":
+        history_output = run_checked(
+            [
+                "xcrun",
+                "notarytool",
+                "history",
+                "--keychain-profile",
+                notary_profile,
+                "--output-format",
+                "json",
+            ],
+            cwd=project_root,
+            runner=runner,
+            label="Apple notarization history reconciliation",
+        )
+        submission_identifier = find_notary_submission_in_history(
+            history_output,
+            submission_name=created["submissionName"],
+        )
+        state_store.commit(
+            "submission-known",
+            {
+                "id": submission_identifier,
+                "submissionName": created["submissionName"],
+                "sha256": submitted_seal.sha256,
+                "size": submitted_seal.size,
+            },
+        )
+        resumed = STATE.find_active_transaction(dist, archive_name)
+        if resumed is None:
+            raise DirectNotaryTransactionError(
+                "reconciled Apple submission state is unavailable"
+            )
+        return resume_known_transaction(
+            resumed,
+            project_root=project_root,
+            dist=dist,
+            archive_name=archive_name,
+            inputs=inputs,
+            release_source=release_source,
+            runtime_build_evidence=runtime_build_evidence,
+            release_channel=release_channel,
+            notary_profile=notary_profile,
+            runner=runner,
+            hook=hook,
+            source_assertion=source_assertion,
+        )
 
     if latest == "submission-known":
         known = _receipt_data(receipts, "submission-known")

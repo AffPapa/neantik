@@ -24,6 +24,7 @@ case "$SUITE" in
   KeychainStoreTests|\
   LaunchIntentTests|\
   ProfileEditorPasswordTests|\
+  ProfileOrganizationTests|\
   ProfileStoreTests|\
   ProxyTesterTests|\
   RuntimePreferenceStoreTests|\

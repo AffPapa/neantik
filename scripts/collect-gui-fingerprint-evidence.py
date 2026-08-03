@@ -472,6 +472,7 @@ def collect_evidence(
     not_before: datetime | None = None,
     baseline_report_ids: set[str] | None = None,
     release_channel: str = "public-alpha",
+    persist_outputs: bool = True,
 ) -> dict[str, Any]:
     if release_channel not in {"public-alpha", "production"}:
         raise EvidenceCollectionError(
@@ -509,6 +510,7 @@ def collect_evidence(
             summary_output=summary_output,
             not_before=not_before,
             release_channel=release_channel,
+            persist_outputs=persist_outputs,
         )
     candidate_manifest_sha256 = "0" * 64
     if candidate_manifest is not None:
@@ -585,11 +587,12 @@ def collect_evidence(
         raise EvidenceCollectionError(
             "Sanitized release report failed the required fingerprint "
             "qualification."
-        )
+    )
     private_payload = encoded_private_json(sanitized)
-    write_private_bytes(output, private_payload)
     private_evidence_sha256 = hashlib.sha256(private_payload).hexdigest()
-    if summary_output is not None:
+    if persist_outputs:
+        write_private_bytes(output, private_payload)
+    if persist_outputs and summary_output is not None:
         invalidate_stale_attestation(summary_output)
         write_private_json(
             summary_output,
@@ -603,12 +606,14 @@ def collect_evidence(
         )
     return {
         "source": str(source_report),
-        "output": str(output),
+        "output": str(output) if persist_outputs else None,
         "integratedApp": (
             str(integrated_app) if integrated_app is not None else None
         ),
         "summaryOutput": (
-            str(summary_output) if summary_output is not None else None
+            str(summary_output)
+            if persist_outputs and summary_output is not None
+            else None
         ),
         "summary": sanitized_summary,
         "privateEvidenceSHA256": private_evidence_sha256,
@@ -626,6 +631,7 @@ def collect_authenticated_evidence(
     summary_output: Path | None,
     not_before: datetime | None,
     release_channel: str,
+    persist_outputs: bool = True,
 ) -> dict[str, Any]:
     if source.resolve() == output.resolve():
         raise EvidenceCollectionError(
@@ -705,8 +711,9 @@ def collect_authenticated_evidence(
             raise EvidenceCollectionError(
                 "Authenticated evidence runtime does not match the exact app."
             )
-    write_private_bytes(output, envelope_raw)
-    if summary_output is not None:
+    if persist_outputs:
+        write_private_bytes(output, envelope_raw)
+    if persist_outputs and summary_output is not None:
         invalidate_stale_attestation(summary_output)
         write_private_json(
             summary_output,
@@ -714,10 +721,12 @@ def collect_authenticated_evidence(
         )
     return {
         "source": str(source),
-        "output": str(output),
+        "output": str(output) if persist_outputs else None,
         "integratedApp": str(integrated_app),
         "summaryOutput": (
-            str(summary_output) if summary_output is not None else None
+            str(summary_output)
+            if persist_outputs and summary_output is not None
+            else None
         ),
         "authenticatedEvidenceID":
             verified.authenticated_evidence_id,
@@ -829,6 +838,14 @@ def main() -> int:
             "into this new private directory, then exit."
         ),
     )
+    parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help=(
+            "Verify source, candidate binding and qualification without "
+            "writing or replacing release evidence files."
+        ),
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -865,6 +882,7 @@ def main() -> int:
                 else None
             ),
             release_channel=args.release_channel,
+            persist_outputs=not args.verify_only,
         )
     except (OSError, GUI_VERIFIER.FingerprintReportError, EvidenceCollectionError) as error:
         print(f"GUI fingerprint evidence collection failed: {error}", file=sys.stderr)
@@ -873,14 +891,16 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
+        action = "verified" if args.verify_only else "collected"
         print(
             "PASS: "
             f"{result['releaseQualification']} GUI fingerprint evidence "
-            "collected."
+            f"{action}."
         )
         print(f"Source: {result['source']}")
-        print(f"Output: {result['output']}")
-        print(f"Public-safe summary: {result['summaryOutput']}")
+        if not args.verify_only:
+            print(f"Output: {result['output']}")
+            print(f"Public-safe summary: {result['summaryOutput']}")
         print(
             "Changed critical keys: "
             + ", ".join(result["summary"]["changedCriticalKeys"])

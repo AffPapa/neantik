@@ -145,6 +145,37 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
             ):
                 MODULE.verify(lock_path, baseline_path, date(2026, 7, 25))
 
+    def test_source_only_candidate_lock_is_allowed_for_public_alpha_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            lock_path = self.write_json(
+                root,
+                "lock.json",
+                {
+                    "status": "source-qualified",
+                    "fingerprintChromium": {
+                        "chromiumVersion": "150.0.7871.187"
+                    },
+                },
+            )
+            baseline_path = self.write_json(
+                root,
+                "baseline.json",
+                self.baseline(),
+            )
+            with self.assertRaisesRegex(
+                SystemExit,
+                "no verification object",
+            ):
+                MODULE.verify(lock_path, baseline_path, date(2026, 7, 25))
+            message = MODULE.verify(
+                lock_path,
+                baseline_path,
+                date(2026, 7, 25),
+                allow_public_alpha_tuples=True,
+            )
+            self.assertIn("source-only runtime lock", message)
+
 
 if __name__ == "__main__":
     unittest.main()

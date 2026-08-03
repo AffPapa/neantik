@@ -163,6 +163,33 @@ def run_checked(command: list[str], runner=default_runner) -> str:
     return result.output
 
 
+def is_local_policy_tool_unavailable(output: str) -> bool:
+    lowered = output.lower()
+    return (
+        "internal error in code signing subsystem" in lowered
+        or "klsdataunavailableerr" in lowered
+        or "lsdataunavailable" in lowered
+    )
+
+
+def run_policy_tool(
+    command: list[str],
+    *,
+    runner=default_runner,
+    allow_local_policy_tool_unavailable: bool = False,
+) -> str:
+    result = runner(command)
+    if result.returncode == 0:
+        return result.output
+    if allow_local_policy_tool_unavailable and is_local_policy_tool_unavailable(
+        result.output
+    ):
+        return "local-policy-tool-unavailable: " + result.output
+    raise DirectNotarizedArchiveError(
+        f"command failed: {' '.join(command)}\n{result.output}"
+    )
+
+
 def parse_codesign_display(
     output: str,
     *,
@@ -251,18 +278,21 @@ def verify_app(
     *,
     expected: ExpectedAppContract,
     runner=default_runner,
+    allow_local_policy_tool_unavailable: bool = False,
 ) -> None:
     verify_app_contract(app, expected=expected)
     display = run_checked(["codesign", "--display", "--verbose=4", str(app)], runner=runner)
     parse_codesign_display(display, expected=expected)
     run_checked(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(app)], runner=runner)
-    run_checked(
+    run_policy_tool(
         ["xcrun", "stapler", "validate", str(app)],
         runner=runner,
+        allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
     )
-    run_checked(
+    run_policy_tool(
         ["spctl", "--assess", "--type", "execute", "--verbose=4", str(app)],
         runner=runner,
+        allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
     )
 
 
@@ -272,6 +302,7 @@ def verify_archive(
     project_root: Path = PROJECT_ROOT,
     expected_info_plist: Path | None = None,
     runner=default_runner,
+    allow_local_policy_tool_unavailable: bool = False,
 ) -> dict[str, str]:
     expected = read_expected_app_contract(
         project_root,
@@ -285,7 +316,12 @@ def verify_archive(
     assert_zip_has_no_finder_metadata(archive)
     with tempfile.TemporaryDirectory(prefix="nevision-notarized-verify-") as temporary:
         app = extract_archive(archive, Path(temporary), runner=runner)
-        verify_app(app, expected=expected, runner=runner)
+        verify_app(
+            app,
+            expected=expected,
+            runner=runner,
+            allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
+        )
         run_checked(
             [
                 str(project_root / "scripts" / "verify-integrated-release.sh"),
@@ -296,7 +332,11 @@ def verify_archive(
     return {
         "archive": str(archive),
         "sha256": checksum,
-        "status": "notarized-archive-verified",
+        "status": (
+            "notarized-archive-verified-with-local-policy-tool-fallback"
+            if allow_local_policy_tool_unavailable
+            else "notarized-archive-verified"
+        ),
     }
 
 

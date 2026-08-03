@@ -33,6 +33,7 @@ jobs:
           - KeychainStoreTests
           - LaunchIntentTests
           - ProfileEditorPasswordTests
+          - ProfileOrganizationTests
           - ProfileStoreTests
           - ProxyTesterTests
           - RuntimePreferenceStoreTests
