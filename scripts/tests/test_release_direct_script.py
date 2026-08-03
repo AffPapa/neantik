@@ -146,6 +146,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertNotIn("stapler", wrapper)
         self.assertIn("notarize_direct_transaction.py", wrapper)
         self.assertIn("run-isolated-release-python.py", wrapper)
+        self.assertIn("git -C \"$PROJECT_DIR\" ls-files -z -- '*.py'", wrapper)
+        self.assertIn('python_cache="$python_parent/__pycache__"', wrapper)
+        self.assertIn('find "$python_cache" -depth -delete', wrapper)
+        self.assertNotIn('find "$PROJECT_DIR/scripts"', wrapper)
         self.assertIn("/opt/homebrew/bin/python3", wrapper)
         self.assertIn("Python 3.11", wrapper)
         self.assertLess(
