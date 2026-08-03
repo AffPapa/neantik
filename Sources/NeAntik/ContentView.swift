@@ -821,6 +821,7 @@ struct ContentView: View {
         }
         resolvedRuntime = value
         isResolvingRuntime = false
+        presentReleaseFingerprintAuditIfNeeded()
     }
 
     private func presentReleaseFingerprintAuditIfNeeded() {
@@ -841,6 +842,7 @@ struct ContentView: View {
             return
         }
 
+        NSApplication.shared.activate(ignoringOtherApps: true)
         if releaseAuditProfiles.count < 2 {
             releaseAuditProfiles = Self.makeReleaseAuditProfiles()
         }

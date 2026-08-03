@@ -20,7 +20,7 @@ if [[ ! -x "$RELEASE_SCRIPT" ]]; then
 fi
 
 echo "NeAntik $VERSION — единый Direct release"
-echo "App Store не используется."
+echo "Канал выпуска: Direct Distribution."
 echo
 
 if [[ -f "$ZIP_PATH" ]]; then

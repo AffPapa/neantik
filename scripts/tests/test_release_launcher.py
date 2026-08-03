@@ -12,7 +12,7 @@ class ReleaseLauncherTests(unittest.TestCase):
         self.assertIn("verify-direct-notarized-archive.py", text)
         self.assertIn("release-direct-dmg.sh", text)
         self.assertIn("verify-direct-notarized-dmg.sh", text)
-        self.assertIn("App Store не используется.", text)
+        self.assertIn("Канал выпуска: Direct Distribution.", text)
         self.assertIn("ZIP уже существует", text)
         self.assertIn("DMG уже существует", text)
         self.assertNotIn("app-store", text.lower())
