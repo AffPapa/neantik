@@ -35,6 +35,52 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
+    def test_single_public_file_is_verified_without_parent_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            public = root / "fingerprint-audit-summary.json"
+            private = root / "fingerprint-audit.json"
+            public.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "publicAlphaQualified": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            private.write_text(
+                json.dumps(
+                    {
+                        "profileName": "must-not-be-scanned",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = MODULE.verify_public_artifact_privacy(
+                artifact=public
+            )
+
+            self.assertEqual(result.scanned_entries, 1)
+            self.assertEqual(result.artifact, public.resolve())
+
+    def test_single_public_file_rejects_private_values(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            artifact = Path(temporary) / "release.json"
+            artifact.write_text(
+                json.dumps({"proxyPassword": "actual-secret"}),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                MODULE.PublicArtifactPrivacyError,
+                "private evidence",
+            ):
+                MODULE.verify_public_artifact_privacy(
+                    artifact=artifact
+                )
+
     def test_clean_directory_passes_without_scanning_sibling_private_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

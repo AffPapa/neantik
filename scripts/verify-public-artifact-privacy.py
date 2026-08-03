@@ -484,6 +484,36 @@ def iter_zip_entries(archive_path: Path) -> Iterator[ArtifactEntry]:
                 )
 
 
+def iter_regular_file_entry(path: Path) -> Iterator[ArtifactEntry]:
+    name = path.name
+    if is_text_entry(name):
+        if path.stat().st_size > MAX_TEXT_FILE_BYTES:
+            raise PublicArtifactPrivacyError(
+                "Text entry is too large for deterministic privacy verification: "
+                + name
+            )
+        with path.open("rb") as file:
+            payload = read_bounded_payload(
+                file,
+                limit=MAX_TEXT_FILE_BYTES,
+                name=name,
+                kind="Text",
+            )
+        yield ArtifactEntry(name=name, payload=payload)
+        return
+    size = path.stat().st_size
+    validate_binary_size(name, size)
+    with path.open("rb") as file:
+        payload = read_bounded_payload(
+            file,
+            limit=MAX_BINARY_FILE_BYTES,
+            name=name,
+            kind="Binary",
+        )
+    validate_safe_binary(name, payload)
+    yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+
+
 def iter_artifact_entries(artifact: Path) -> Iterator[ArtifactEntry]:
     if artifact.is_dir():
         yield from iter_directory_entries(artifact)
@@ -491,8 +521,11 @@ def iter_artifact_entries(artifact: Path) -> Iterator[ArtifactEntry]:
     if artifact.is_file() and zipfile.is_zipfile(artifact):
         yield from iter_zip_entries(artifact)
         return
+    if artifact.is_file():
+        yield from iter_regular_file_entry(artifact)
+        return
     raise PublicArtifactPrivacyError(
-        f"Expected a public artifact directory or ZIP archive: {artifact}"
+        f"Expected a public artifact file, directory or ZIP archive: {artifact}"
     )
 
 
@@ -1161,6 +1194,10 @@ def verify_evidence_attestation_binding(
 
 
 def verify_public_artifact_privacy(*, artifact: Path) -> VerificationResult:
+    if artifact.is_symlink():
+        raise PublicArtifactPrivacyError(
+            "Public artifact cannot be a symlink."
+        )
     artifact = artifact.resolve()
     findings: list[Finding] = []
     scanned_entries = 0
@@ -1202,8 +1239,8 @@ def verify_public_artifact_privacy(*, artifact: Path) -> VerificationResult:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Verify an explicitly selected public directory or ZIP without scanning "
-            "local private evidence."
+            "Verify an explicitly selected public file, directory or ZIP without "
+            "scanning local private evidence."
         )
     )
     parser.add_argument("artifact", type=Path)
