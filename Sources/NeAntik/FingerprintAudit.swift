@@ -1282,7 +1282,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
         guard runtime.supportsFingerprintIdentity else {
             errorMessage =
-                "Выбери Chromium с поддержкой разделения отпечатков."
+                "Встроенный браузер не поддерживает проверку отпечатка. Переустанови NeAntik из официального DMG или ZIP."
             return
         }
         let preflight = BrowserRuntimePreflightValidator.validate(runtime)

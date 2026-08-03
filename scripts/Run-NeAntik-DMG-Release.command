@@ -3,6 +3,11 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+VERSION="$(
+  /usr/libexec/PlistBuddy \
+    -c 'Print :CFBundleShortVersionString' \
+    "$PROJECT_DIR/Resources/Info.plist"
+)"
 
 pause_on_error() {
   local exit_code=$?
@@ -19,7 +24,7 @@ trap pause_on_error ERR
 
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 
-echo "NeAntik 0.3.14 — создание проверенного DMG"
+echo "NeAntik $VERSION — создание проверенного DMG"
 echo "Источник: $PROJECT_DIR/dist/NeAntik.app"
 echo "Подпись определяется из готового приложения."
 echo "Notarization использует профиль Keychain: $NEANTIK_NOTARY_PROFILE"

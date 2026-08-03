@@ -8,12 +8,12 @@ VERSION="$(
     -c 'Print :CFBundleShortVersionString' \
     "$PROJECT_DIR/Resources/Info.plist"
 )"
-RELEASE_SCRIPT="$PROJECT_DIR/scripts/Run-NeAntik-$VERSION-Release.command"
+RELEASE_SCRIPT="$PROJECT_DIR/scripts/Run-NeAntik-Release.command"
 ZIP_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"
 DMG_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.dmg"
 
 if [[ ! -x "$RELEASE_SCRIPT" ]]; then
-  echo "Не найден исполняемый release-сценарий для NeAntik $VERSION:" >&2
+  echo "Не найден единый release-сценарий NeAntik:" >&2
   echo "$RELEASE_SCRIPT" >&2
   echo "Публикация не запускалась." >&2
   exit 66

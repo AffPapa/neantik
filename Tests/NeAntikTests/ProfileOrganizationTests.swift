@@ -186,4 +186,54 @@ struct ProfileOrganizationTests {
         )
         #expect(result.count == 50)
     }
+
+    @Test
+    func hiddenSelectionMovesToFirstVisibleProfile() {
+        let first = BrowserProfile(name: "Альфа", tags: ["Работа"])
+        let second = BrowserProfile(name: "Бета", tags: ["Личный"])
+        let visible = ProfileListProjection.filtered(
+            [first, second],
+            searchText: "Бета",
+            tag: nil
+        )
+
+        #expect(
+            ProfileListProjection.normalizedSelection(
+                first.id,
+                in: visible
+            ) == second.id
+        )
+        #expect(
+            ProfileListProjection.normalizedSelection(
+                second.id,
+                in: visible
+            ) == second.id
+        )
+    }
+
+    @Test
+    func emptyProjectionClearsSelection() {
+        let profile = BrowserProfile(name: "Профиль")
+        #expect(
+            ProfileListProjection.normalizedSelection(
+                profile.id,
+                in: []
+            ) == nil
+        )
+    }
+
+    @Test
+    func profilePaletteMaintainsSymbolContrast() {
+        for color in ProfileAppearance.colors {
+            let ratio = ProfileAppearance.symbolContrastRatio(for: color)
+            #expect(ratio != nil)
+            #expect((ratio ?? 0) >= 3)
+        }
+        #expect(
+            ProfileAppearance.usesDarkForeground(for: "#EAB308")
+        )
+        #expect(
+            !ProfileAppearance.usesDarkForeground(for: "invalid")
+        )
+    }
 }

@@ -108,12 +108,14 @@ def verify_report(
 def build_report(
     *,
     project_root: Path = PROJECT_ROOT,
-    report_path: Path = DEFAULT_REPORT,
-    runtime_lock: Path = DEFAULT_RUNTIME_LOCK,
+    report_path: Path | None = None,
+    runtime_lock: Path | None = None,
     generated_at: str | None = None,
     verifier=verify_report,
 ) -> dict[str, Any]:
     project_root = project_root.resolve()
+    report_path = report_path or Path("dist/fingerprint-audit.json")
+    runtime_lock = runtime_lock or Path("runtime/fingerprint-chromium.lock.json")
     report_path = report_path if report_path.is_absolute() else project_root / report_path
     runtime_lock = runtime_lock if runtime_lock.is_absolute() else project_root / runtime_lock
     generated_at = generated_at or datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -278,22 +280,33 @@ def main() -> int:
         description="Export a persisted NeAntik Direct GUI fingerprint readiness snapshot.",
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-    parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
-    parser.add_argument("--runtime-lock", type=Path, default=DEFAULT_RUNTIME_LOCK)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--markdown", type=Path, default=DEFAULT_MARKDOWN)
+    parser.add_argument("--report", type=Path, default=Path("dist/fingerprint-audit.json"))
+    parser.add_argument(
+        "--runtime-lock",
+        type=Path,
+        default=Path("runtime/fingerprint-chromium.lock.json"),
+    )
+    parser.add_argument("--output", type=Path, default=Path("dist/GUI-FINGERPRINT-READINESS.json"))
+    parser.add_argument(
+        "--markdown",
+        type=Path,
+        default=Path("dist/GUI-FINGERPRINT-READINESS.md"),
+    )
     args = parser.parse_args()
+    project_root = args.project_root.resolve()
+    output = args.output if args.output.is_absolute() else project_root / args.output
+    markdown = args.markdown if args.markdown.is_absolute() else project_root / args.markdown
     try:
         report = build_report(
-            project_root=args.project_root,
+            project_root=project_root,
             report_path=args.report,
             runtime_lock=args.runtime_lock,
         )
-        write_outputs(report, output=args.output, markdown=args.markdown)
+        write_outputs(report, output=output, markdown=markdown)
     except (OSError, json.JSONDecodeError, GuiFingerprintReadinessExportError) as error:
         print(f"GUI fingerprint readiness export failed: {error}", file=sys.stderr)
         return 65
-    print(args.output)
+    print(output)
     print(
         "GUI fingerprint readiness snapshot: "
         f"ready={str(report['ready']).lower()}, blocked={report['blockedCount']}"

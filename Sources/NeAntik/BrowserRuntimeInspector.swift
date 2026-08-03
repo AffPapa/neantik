@@ -45,6 +45,18 @@ enum BrowserRuntimeInspector {
         )
     }
 
+    static func inspectForStartup(
+        executableURL: URL
+    ) -> BrowserRuntimeInspection {
+        BrowserRuntimeInspection(
+            version: bundleVersion(for: executableURL),
+            architectures: machOArchitectures(at: executableURL),
+            codeSignatureValid: codeSignatureValidity(
+                for: executableURL
+            )
+        )
+    }
+
     private static func bundleVersion(for executableURL: URL) -> String? {
         guard let bundleURL = appBundleURL(for: executableURL) else {
             return nil

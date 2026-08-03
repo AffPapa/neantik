@@ -26,13 +26,16 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 
 struct BrowserLaunchBuilderTests {
     private func testRuntimeLocator() -> BrowserRuntimeLocator {
-        BrowserRuntimeLocator { _ in
-            BrowserRuntimeInspection(
-                version: "150.0.7871.186",
-                architectures: ["arm64"],
-                codeSignatureValid: true
-            )
-        }
+        BrowserRuntimeLocator(
+            runtimeInspector: { _ in
+                BrowserRuntimeInspection(
+                    version: "150.0.7871.186",
+                    architectures: ["arm64"],
+                    codeSignatureValid: true
+                )
+            },
+            allowsExternalRuntimes: true
+        )
     }
 
     @Test
@@ -826,6 +829,111 @@ struct BrowserLaunchBuilderTests {
         #expect(runtime?.executableURL.standardizedFileURL == executable.standardizedFileURL)
         #expect(runtime?.source == "Выбран вручную")
         #expect(runtime?.supportsFingerprintIdentity == false)
+    }
+
+    @Test
+    func directLocatorIgnoresPersistedExternalRuntime() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let executable = directory.appendingPathComponent("Chromium")
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data([
+                0xCF, 0xFA, 0xED, 0xFE,
+                0x0C, 0x00, 0x00, 0x01
+            ])
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let preference = BrowserRuntimePreference(
+            path: executable.path,
+            flavor: .fingerprintChromium,
+            updatedAt: Date()
+        )
+        let locator = BrowserRuntimeLocator { _ in
+            BrowserRuntimeInspection(
+                version: "150.0.7871.186",
+                architectures: ["arm64"],
+                codeSignatureValid: true
+            )
+        }
+
+        #expect(locator.preferredRuntime(preference: preference) == nil)
+    }
+
+    @Test
+    func directLocatorPrefersOnlyDeclaredEmbeddedRuntime() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let app = root.appendingPathComponent(
+            "NeAntik Browser.app",
+            isDirectory: true
+        )
+        let contents = app.appendingPathComponent(
+            "Contents",
+            isDirectory: true
+        )
+        let macOS = contents.appendingPathComponent(
+            "MacOS",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: macOS,
+            withIntermediateDirectories: true
+        )
+        let executable = macOS.appendingPathComponent("NeAntik Browser")
+        try Data([
+            0xCF, 0xFA, 0xED, 0xFE,
+            0x0C, 0x00, 0x00, 0x01
+        ]).write(to: executable)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+        let plist = try PropertyListSerialization.data(
+            fromPropertyList: [
+                "CFBundleExecutable": "NeAntik Browser",
+                "CFBundleIdentifier": "app.neantik.runtime",
+                "CFBundleShortVersionString": "150.0.7871.186",
+                "NeAntikRuntimeFlavor": "fingerprint-chromium"
+            ],
+            format: .xml,
+            options: 0
+        )
+        try plist.write(
+            to: contents.appendingPathComponent("Info.plist")
+        )
+
+        let preference = BrowserRuntimePreference(
+            path: "/Applications/Google Chrome.app",
+            flavor: .standard,
+            updatedAt: Date()
+        )
+        let locator = BrowserRuntimeLocator(
+            runtimeInspector: { _ in
+                BrowserRuntimeInspection(
+                    version: "150.0.7871.186",
+                    architectures: ["arm64"],
+                    codeSignatureValid: true
+                )
+            },
+            resourceURL: root
+        )
+
+        let runtime = locator.preferredRuntime(preference: preference)
+        #expect(runtime?.executableURL == executable)
+        #expect(runtime?.source == "Встроен")
+        #expect(runtime?.supportsFingerprintIdentity == true)
     }
 
     @Test

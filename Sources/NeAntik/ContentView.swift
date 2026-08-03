@@ -40,7 +40,6 @@ struct ClipboardLeaseState: Equatable {
 struct ContentView: View {
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
-    @ObservedObject var runtimePreferences: RuntimePreferenceStore
     @ObservedObject var telemetry: TelemetryController
 
     let keychain: KeychainStore
@@ -138,7 +137,7 @@ struct ContentView: View {
                         )
                     }
                 }
-                selection = saved.id
+                normalizeSelection(preferred: saved.id)
                 if request.profile == nil {
                     telemetry.record(
                         .profileCreated,
@@ -205,7 +204,7 @@ struct ContentView: View {
                             profileID: deletedProfile.id
                         )
                     }
-                    selection = store.profiles.first?.id
+                    normalizeSelection()
                     telemetry.record(
                         .profileDeleted,
                         snapshot: telemetrySnapshot
@@ -230,15 +229,13 @@ struct ContentView: View {
                 get: {
                     localError != nil ||
                         processes.lastError != nil ||
-                        store.lastError != nil ||
-                        runtimePreferences.lastError != nil
+                        store.lastError != nil
                 },
                 set: { presented in
                     if !presented {
                         localError = nil
                         processes.lastError = nil
                         store.lastError = nil
-                        runtimePreferences.lastError = nil
                     }
                 }
             )
@@ -247,24 +244,29 @@ struct ContentView: View {
                 localError = nil
                 processes.lastError = nil
                 store.lastError = nil
-                runtimePreferences.lastError = nil
             }
         } message: {
             Text(
                 localError ??
                     processes.lastError ??
                     store.lastError ??
-                    runtimePreferences.lastError ??
                     "Неизвестная ошибка"
             )
         }
         .onAppear {
-            if selection == nil {
-                selection = store.profiles.first?.id
-            }
+            normalizeSelection(preferred: selection)
             processes.reconcile(profiles: store.profiles)
             telemetry.record(.snapshot, snapshot: telemetrySnapshot)
             presentReleaseFingerprintAuditIfNeeded()
+        }
+        .onChange(of: profileSearchText) { _, _ in
+            normalizeSelection(preferred: selection)
+        }
+        .onChange(of: selectedProfileTag) { _, _ in
+            normalizeSelection(preferred: selection)
+        }
+        .onChange(of: visibleProfiles.map(\.id)) { _, _ in
+            normalizeSelection(preferred: selection)
         }
         .onChange(of: isResolvingRuntime) { _, _ in
             presentReleaseFingerprintAuditIfNeeded()
@@ -308,7 +310,7 @@ struct ContentView: View {
             cancelClipboardTasks()
             clearClipboardIfLeaseIsActive()
         }
-        .task(id: runtimePreferences.preference) {
+        .task {
             await resolveRuntime()
         }
         .task {
@@ -330,6 +332,13 @@ struct ContentView: View {
             localError =
                 "Не удалось завершить очистку некоторых ранее удалённых паролей прокси. NeAntik безопасно повторит попытку при следующем запуске."
         }
+    }
+
+    private func normalizeSelection(preferred: UUID? = nil) {
+        selection = ProfileListProjection.normalizedSelection(
+            preferred ?? selection,
+            in: visibleProfiles
+        )
     }
 
     private var sidebar: some View {
@@ -530,6 +539,8 @@ struct ContentView: View {
                     runtime?.supportsFingerprintIdentity == true &&
                     runtimePreflight?.isReady == true &&
                     store.profiles.count >= 2,
+                fingerprintAuditUnavailableReason:
+                    fingerprintAuditUnavailableReason,
                 clipboardNotice:
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
@@ -621,7 +632,8 @@ struct ContentView: View {
                     Text(
                         isResolvingRuntime
                             ? "Проверяем встроенный движок"
-                            : runtime?.privacySummary ?? "Выбери Chromium"
+                            : runtime?.privacySummary ??
+                                "Встроенный движок недоступен"
                     )
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -645,31 +657,22 @@ struct ContentView: View {
 
                 Spacer()
 
-                Button {
-                    chooseBrowser()
-                } label: {
-                    Image(systemName: "folder")
-                }
-                .buttonStyle(.plain)
-                .help("Выбрать Chromium")
-                .accessibilityLabel("Выбрать браузерный движок")
-            }
-
-            if runtimePreferences.preference != nil {
-                Divider()
-                Picker("Тип движка", selection: runtimeFlavorBinding) {
-                    ForEach(BrowserRuntimeFlavor.allCases) { flavor in
-                        Text(flavor.title).tag(flavor)
-                    }
-                }
-                .font(.caption2)
-                .controlSize(.mini)
-                .help(
-                    "Выбери протокол, который поддерживает эта сборка браузера."
-                )
             }
         }
         .padding(12)
+    }
+
+    private var fingerprintAuditUnavailableReason: String? {
+        if store.profiles.count < 2 {
+            return "Для сравнения создай ещё один профиль."
+        }
+        if runtime?.supportsFingerprintIdentity != true {
+            return "Проверка доступна со встроенным совместимым браузером."
+        }
+        if runtimePreflight?.isReady != true {
+            return "Браузерный движок пока не готов к проверке."
+        }
+        return nil
     }
 
     private var runtimeStatusIcon: String {
@@ -753,21 +756,6 @@ struct ContentView: View {
         return runtime.supportsFingerprintIdentity ? .orange : .secondary
     }
 
-    private var runtimeFlavorBinding: Binding<BrowserRuntimeFlavor> {
-        Binding(
-            get: {
-                runtimePreferences.preference?.flavor ?? .standard
-            },
-            set: { flavor in
-                do {
-                    try runtimePreferences.updateFlavor(flavor)
-                } catch {
-                    localError = error.localizedDescription
-                }
-            }
-        )
-    }
-
     private func launch(_ profile: BrowserProfile) {
         do {
             guard let runtime else {
@@ -790,31 +778,11 @@ struct ContentView: View {
         }
     }
 
-    private func chooseBrowser() {
-        let panel = NSOpenPanel()
-        panel.title = "Выбери Chromium или Google Chrome"
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = true
-        panel.allowsMultipleSelection = false
-        panel.treatsFilePackagesAsDirectories = false
-        if panel.runModal() == .OK, let url = panel.url {
-            do {
-                try runtimePreferences.select(
-                    path: url.path,
-                    flavor: runtimeLocator.recommendedFlavor(for: url)
-                )
-            } catch {
-                localError = error.localizedDescription
-            }
-        }
-    }
-
     private func resolveRuntime() async {
         isResolvingRuntime = true
         let locator = runtimeLocator
-        let preference = runtimePreferences.preference
         let value = await Task.detached(priority: .userInitiated) {
-            locator.preferredRuntime(preference: preference)
+            locator.preferredRuntime()
         }.value
         guard !Task.isCancelled else {
             return
@@ -977,7 +945,13 @@ private struct ProfileRow: View {
                 .overlay {
                     Image(systemName: profile.displaySymbolName)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(
+                            ProfileAppearance.usesDarkForeground(
+                                for: profile.colorHex
+                            )
+                                ? Color.black
+                                : Color.white
+                        )
                     if processState.isRunning {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(
@@ -1027,6 +1001,7 @@ private struct ProfileDetailView: View {
     let browserDataPath: String
     let runtimeSupportsFingerprint: Bool
     let canRunFingerprintAudit: Bool
+    let fingerprintAuditUnavailableReason: String?
     let clipboardNotice: String?
     let onStart: () -> Void
     let onStop: () -> Void
@@ -1183,6 +1158,17 @@ private struct ProfileDetailView: View {
                     )
                 }
                 .buttonStyle(.bordered)
+                if let fingerprintAuditUnavailableReason {
+                    Label(
+                        fingerprintAuditUnavailableReason,
+                        systemImage: "info.circle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(
+                        "Проверка профиля недоступна. \(fingerprintAuditUnavailableReason)"
+                    )
+                }
                 if let clipboardNotice {
                     Label(
                         clipboardNotice,
@@ -1296,7 +1282,13 @@ private struct ProfileDetailView: View {
             .overlay {
                 Image(systemName: profile.displaySymbolName)
                     .font(.system(size: 28, weight: .medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(
+                        ProfileAppearance.usesDarkForeground(
+                            for: profile.colorHex
+                        )
+                            ? Color.black
+                            : Color.white
+                    )
             }
             .accessibilityLabel(
                 "Иконка профиля: \(ProfileAppearance.title(for: profile.displaySymbolName))"

@@ -3,7 +3,12 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DOWNLOAD_URL="${NEANTIK_DMG_DOWNLOAD_URL:-https://affpapa.org/neantik/downloads/NeAntik-0.3.14-arm64-notarized.dmg}"
+VERSION="$(
+  /usr/libexec/PlistBuddy \
+    -c 'Print :CFBundleShortVersionString' \
+    "$PROJECT_DIR/Resources/Info.plist"
+)"
+DOWNLOAD_URL="${NEANTIK_DMG_DOWNLOAD_URL:-https://affpapa.org/neantik/downloads/NeAntik-$VERSION-arm64-notarized.dmg}"
 
 pause_on_error() {
   local exit_code=$?
@@ -18,7 +23,7 @@ pause_on_error() {
 }
 trap pause_on_error ERR
 
-echo "NeAntik 0.3.14 — проверка опубликованного DMG"
+echo "NeAntik $VERSION — проверка опубликованного DMG"
 echo "Файл будет заново скачан с affpapa.org и проверен без изменения релиза."
 echo
 
