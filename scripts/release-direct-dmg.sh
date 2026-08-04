@@ -3,9 +3,8 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
-INFO_PLIST="$APP_PATH/Contents/Info.plist"
-RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"
+PREPARED_APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
+PREPARED_INFO_PLIST="$PREPARED_APP_PATH/Contents/Info.plist"
 NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 NOTARY_LOG_DIR="$PROJECT_DIR/dist/notary"
 
@@ -14,34 +13,39 @@ fail() {
   exit 65
 }
 
-[[ -d "$APP_PATH" ]] || fail "missing signed app: $APP_PATH"
-[[ -f "$INFO_PLIST" ]] || fail "missing app Info.plist"
-[[ -d "$RUNTIME_APP" ]] || fail "embedded NeAntik Browser runtime is missing"
+[[ -d "$PREPARED_APP_PATH" ]] ||
+  fail "missing signed app: $PREPARED_APP_PATH"
+[[ -f "$PREPARED_INFO_PLIST" ]] ||
+  fail "missing app Info.plist"
 
 VERSION="$(
   /usr/libexec/PlistBuddy \
     -c 'Print :CFBundleShortVersionString' \
-    "$INFO_PLIST"
+    "$PREPARED_INFO_PLIST"
 )"
 BUILD="$(
   /usr/libexec/PlistBuddy \
     -c 'Print :CFBundleVersion' \
-    "$INFO_PLIST"
+    "$PREPARED_INFO_PLIST"
 )"
 [[ -n "$VERSION" && -n "$BUILD" ]] || fail "app version/build is missing"
 
+ZIP_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"
 DMG_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.dmg"
 CHECKSUM_PATH="$DMG_PATH.sha256"
+[[ -f "$ZIP_PATH" ]] ||
+  fail "notarized ZIP is required before DMG creation: $ZIP_PATH"
 [[ ! -e "$DMG_PATH" ]] ||
   fail "final DMG already exists; verify or move it before rebuilding: $DMG_PATH"
 [[ ! -e "$CHECKSUM_PATH" ]] ||
   fail "DMG checksum already exists; verify or move it before rebuilding: $CHECKSUM_PATH"
 
-APP_SIZE_KB="$(du -sk "$APP_PATH" | awk '{print $1}')"
-(( APP_SIZE_KB >= 100000 )) ||
-  fail "app is unexpectedly small (${APP_SIZE_KB} KB); refusing to create an empty DMG"
+python3 "$PROJECT_DIR/scripts/verify-direct-notarized-archive.py" \
+  --project-root "$PROJECT_DIR" \
+  --archive "$ZIP_PATH"
 
 TEMP_ROOT="$(mktemp -d -t neantik-dmg-release)"
+ARCHIVE_ROOT="$TEMP_ROOT/archive"
 STAGING_DIR="$TEMP_ROOT/staging"
 MOUNT_POINT="$TEMP_ROOT/mount"
 TEMP_DMG="$TEMP_ROOT/$(basename "$DMG_PATH")"
@@ -54,6 +58,35 @@ cleanup() {
   rm -rf "$TEMP_ROOT"
 }
 trap cleanup EXIT
+
+mkdir -p "$ARCHIVE_ROOT"
+ditto -x -k "$ZIP_PATH" "$ARCHIVE_ROOT"
+APP_PATH="$ARCHIVE_ROOT/NeAntik.app"
+INFO_PLIST="$APP_PATH/Contents/Info.plist"
+RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"
+
+[[ -d "$APP_PATH" ]] ||
+  fail "notarized ZIP does not contain NeAntik.app"
+[[ -f "$INFO_PLIST" ]] ||
+  fail "notarized ZIP app has no Info.plist"
+[[ -d "$RUNTIME_APP" ]] ||
+  fail "notarized ZIP app has no embedded NeAntik Browser runtime"
+[[ "$(
+  /usr/libexec/PlistBuddy \
+    -c 'Print :CFBundleShortVersionString' \
+    "$INFO_PLIST"
+)" == "$VERSION" ]] ||
+  fail "notarized ZIP app version does not match the prepared candidate"
+[[ "$(
+  /usr/libexec/PlistBuddy \
+    -c 'Print :CFBundleVersion' \
+    "$INFO_PLIST"
+)" == "$BUILD" ]] ||
+  fail "notarized ZIP app build does not match the prepared candidate"
+
+APP_SIZE_KB="$(du -sk "$APP_PATH" | awk '{print $1}')"
+(( APP_SIZE_KB >= 100000 )) ||
+  fail "app is unexpectedly small (${APP_SIZE_KB} KB); refusing to create an empty DMG"
 
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 xcrun stapler validate "$APP_PATH"

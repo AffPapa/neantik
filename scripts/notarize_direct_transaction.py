@@ -274,12 +274,13 @@ def parse_notary_submission(output: str) -> str:
         )
     identifier = payload.get("id")
     status_value = payload.get("status")
-    if not isinstance(identifier, str) or not isinstance(
-        status_value,
-        str,
-    ):
+    if not isinstance(identifier, str):
         raise DirectNotaryTransactionError(
-            "Apple notary submission is missing id or status"
+            "Apple notary submission is missing id"
+        )
+    if status_value is not None and not isinstance(status_value, str):
+        raise DirectNotaryTransactionError(
+            "Apple notary submission status is invalid"
         )
     try:
         canonical_identifier = str(uuid.UUID(identifier))
@@ -291,7 +292,10 @@ def parse_notary_submission(output: str) -> str:
         raise DirectNotaryTransactionError(
             "Apple notary submission id is not canonical"
         )
-    if status_value not in {"Accepted", "In Progress"}:
+    if (
+        status_value is not None
+        and status_value not in {"Accepted", "In Progress"}
+    ):
         raise DirectNotaryTransactionError(
             f"Apple notarization submission status is {status_value}"
         )
