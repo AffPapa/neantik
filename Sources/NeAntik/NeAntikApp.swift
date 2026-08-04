@@ -54,8 +54,18 @@ struct NeAntikApp: App {
             }
         }
 
-        let paths = AppPaths()
-        let keychain = KeychainStore()
+        let environment = NeAntikApplicationEnvironment.resolve(
+            bundleIdentifier: Bundle.main.bundleIdentifier
+        )
+        let paths = environment.isDevelopment
+            ? AppPaths(
+                rootDirectory: environment.applicationSupportRoot()
+            )
+            : AppPaths()
+        let keychain = KeychainStore(
+            service: environment.keychainService,
+            legacyService: environment.legacyKeychainService
+        )
         self.keychain = keychain
         credentialCleanup = DeletedProfileCredentialCleanup(
             paths: paths,
@@ -82,6 +92,7 @@ struct NeAntikApp: App {
                     fingerprintEvidenceReleaseContext
             )
         }
+        .windowStyle(.titleBar)
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {

@@ -2,6 +2,9 @@
 
 - NeAntik uses Direct Distribution only. Never use App Store Connect or the
   Mac App Store.
+- For Swift/UI iteration use `./Develop-NeAntik.command`; it is isolated from
+  production profiles and release state. Use `./Release-NeAntik.command` only
+  for one exact final candidate after local tests are green.
 - Public release truth is GitHub `AffPapa/neantik` plus
   `https://affpapa.org/neantik`.
 - Before release or site work run:

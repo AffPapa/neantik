@@ -48,7 +48,11 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
     }
 
     var displayName: String {
-        "\(kind.title) · \(host):\(port)"
+        "\(kind.title) · \(displayEndpoint)"
+    }
+
+    var displayEndpoint: String {
+        "\(urlHost):\(port)"
     }
 
     var isValid: Bool {

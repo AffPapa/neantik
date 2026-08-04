@@ -10,17 +10,17 @@ Chromium runtime, собранный из зафиксированных исх�
 ## Скачать приложение
 
 Подписанное и нотарифицированное приложение опубликовано в
-[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.15).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.16).
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
 Текущий публичный alpha-релиз:
 
-- NeAntik `0.3.15`, build `18`;
+- NeAntik `0.3.16`, build `19`;
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- ZIP `NeAntik-0.3.15-arm64-notarized.zip`;
-- DMG `NeAntik-0.3.15-arm64-notarized.dmg`;
+- ZIP `NeAntik-0.3.16-arm64-notarized.zip`;
+- DMG `NeAntik-0.3.16-arm64-notarized.dmg`;
 - SHA-256 для обоих файлов публикуются рядом с ними в GitHub Release.
 
 Сайт продукта: [affpapa.org/neantik](https://affpapa.org/neantik).
@@ -57,7 +57,7 @@ NeAntik предназначен для приватности, разделен
 QA. Он не обещает полную анонимность или «необнаружимость» и не предназначен
 для обхода CAPTCHA, банов, антифрода или правил сторонних сервисов.
 
-Версия `0.3.15` выпускается для public-alpha изоляции профилей. Строгая
+Версия `0.3.16` выпускается для public-alpha изоляции профилей. Строгая
 production-согласованность всех fingerprint- и сетевых поверхностей остаётся
 открытым ограничением.
 
@@ -99,8 +99,19 @@ Developer ID-кандидата без software fallback. Подробности
 
 ```bash
 ./scripts/verify-native-swift-tests.sh
-swift run NeAntik
+./Develop-NeAntik.command
 ```
+
+`Develop-NeAntik.command` — быстрый цикл для интерфейса и Swift-кода. Он один
+раз создаёт APFS-клон встроенного Chromium, затем пересобирает только менеджер
+и открывает отдельную `NeAntik Dev.app`. У неё отдельные профили
+(`NeAntik Development`) и отдельное хранилище паролей; `dist`, notarization,
+GitHub и сайт не изменяются. Для проверки без открытия окна:
+`./Develop-NeAntik.command --no-open`.
+
+`Release-NeAntik.command` запускайте только для окончательного точного
+кандидата: этот путь включает тяжёлые release-gates, проверку A → B → A,
+Developer ID, Apple notarization и создание ZIP/DMG.
 
 Полная Direct-сборка дополнительно требует подготовленный Chromium runtime.
 Сертификат Developer ID и данные notarization остаются только в Связке ключей

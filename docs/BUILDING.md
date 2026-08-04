@@ -16,6 +16,20 @@ Run:
 ./scripts/verify-native-swift-release.sh
 ```
 
+For day-to-day SwiftUI and manager work, use the isolated fast loop instead:
+
+```bash
+./Develop-NeAntik.command
+```
+
+The first run creates an APFS clone of the already packaged Chromium runtime.
+Warm runs rebuild and replace only the Swift manager. `NeAntik Dev.app` uses
+the bundle ID `app.neantik.desktop.dev`, Application Support directory
+`NeAntik Development`, and Keychain service `app.neantik.dev.proxy`; it does
+not migrate or read production credentials. Use `--no-open` in automated
+checks and `--refresh-runtime` only when the local embedded runtime changed.
+This command never creates or mutates a release candidate.
+
 `scripts/package-app.sh` creates a manager-only app bundle. It does not
 download Google Chrome and does not produce the complete public application
 without a runtime.
@@ -54,6 +68,31 @@ reproducible bit-for-bit output. Developer ID signing and notarization also
 make the public ZIP builder-specific.
 
 ## Direct release
+
+Do not use the Direct release path for UI iteration. Run
+`./Release-NeAntik.command` only after the exact final candidate has passed
+local tests; a changed candidate requires new exact evidence, while an
+unchanged candidate resumes its existing transaction.
+
+### Release failure shields
+
+- Never modify `dist/NeAntik.app`, a prepared manifest, fingerprint evidence,
+  ZIP or DMG after the exact candidate is sealed.
+- Reuse A → B → A evidence only when it is bound to the same candidate; UI,
+  manager, runtime or fingerprint changes require fresh evidence, while
+  documentation-only changes do not.
+- Do not delete or hand-edit an unfinished notarization transaction. Resume it
+  only when its source snapshot and candidate digest still match; otherwise
+  prepare a new exact candidate.
+- Resolve the Developer ID identity from the already signed app. Never paste a
+  display name into a script, because Unicode/terminal encoding can corrupt it.
+- Synchronize runtime security baseline evidence before sealing a candidate;
+  do not patch baseline metadata inside the sealed `.app`.
+- Build ZIP and DMG from the same verified `.app`. A notarized empty or stale
+  container is not a valid release even if Apple accepts the container itself.
+- Publish only after local ZIP/DMG checks pass. Hosted verification downloads
+  the public file again and compares its SHA-256; CDN lag is not fixed by
+  changing the local candidate.
 
 Signing requires a Developer ID Application identity. Notarization requires a
 Keychain profile created locally by the release owner. Never store either in

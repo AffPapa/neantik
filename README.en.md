@@ -16,11 +16,11 @@ archive contains source code, not `NeAntik.app`.
 
 Current release:
 
-- NeAntik `0.3.15` build `18`;
+- NeAntik `0.3.16` build `19`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.15-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.15-arm64-notarized.dmg`;
+- ZIP: `NeAntik-0.3.16-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.16-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
 Product website: <https://affpapa.org/neantik>.
@@ -52,7 +52,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.15` is released for public-alpha profile isolation. Strict
+Version `0.3.16` is released for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
@@ -81,8 +81,18 @@ checked-in patchset. See [Building from source](docs/BUILDING.md).
 
 ```bash
 ./scripts/verify-native-swift-tests.sh
-swift run NeAntik
+./Develop-NeAntik.command
 ```
+
+`Develop-NeAntik.command` is the fast loop for UI and Swift changes. It creates
+an APFS clone of the embedded Chromium once, then rebuilds only the manager and
+opens an isolated `NeAntik Dev.app`. Development profiles and proxy credentials
+are separate from the production app. Use
+`./Develop-NeAntik.command --no-open` for a build-only check.
+
+Run `Release-NeAntik.command` only for the final exact candidate; that path
+performs the expensive release gates, A → B → A check, Developer ID signing,
+Apple notarization, and ZIP/DMG packaging.
 
 Packaging a complete Direct application additionally requires a built Chromium
 runtime. Apple Developer ID signing and notarization use credentials in the

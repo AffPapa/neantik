@@ -15,6 +15,7 @@ struct FingerprintAuditView: View {
     @State private var technicalDetailsAreExpanded = false
     @State private var releaseAuditAutoStarted = false
     @State private var releaseAuditTerminationScheduled = false
+    @FocusState private var primaryActionIsFocused: Bool
     private let isReleaseAudit: Bool
 
     init(
@@ -124,6 +125,10 @@ struct FingerprintAuditView: View {
             normalizeSelection()
             Task { @MainActor in
                 startReleaseAuditIfNeeded()
+                if !isReleaseAudit {
+                    await Task.yield()
+                    primaryActionIsFocused = true
+                }
             }
         }
         .onChange(of: profiles.map(\.id)) { _, _ in
@@ -197,18 +202,13 @@ struct FingerprintAuditView: View {
                     )
                     .foregroundStyle(.secondary)
                 } else {
-                    HStack {
-                        Label(
-                            firstProfile.map(profileLabel) ?? "Профиль не найден",
-                            systemImage: "person.crop.rectangle"
-                        )
-                        Image(systemName: "arrow.left.arrow.right")
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                        Label(
-                            secondProfile.map(profileLabel) ?? "Профиль не найден",
-                            systemImage: "person.crop.rectangle"
-                        )
+                    ViewThatFits(in: .horizontal) {
+                        HStack {
+                            profileComparisonLabels
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            profileComparisonLabels
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
@@ -244,6 +244,21 @@ struct FingerprintAuditView: View {
             }
             .disabled(coordinator.isRunning)
         }
+    }
+
+    @ViewBuilder
+    private var profileComparisonLabels: some View {
+        Label(
+            firstProfile.map(profileLabel) ?? "Профиль не найден",
+            systemImage: "person.crop.rectangle"
+        )
+        Image(systemName: "arrow.left.arrow.right")
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        Label(
+            secondProfile.map(profileLabel) ?? "Профиль не найден",
+            systemImage: "person.crop.rectangle"
+        )
     }
 
     private var runningState: some View {
@@ -649,50 +664,69 @@ struct FingerprintAuditView: View {
     }
 
     private var controls: some View {
-        HStack {
-            if isReleaseAudit, let reportURL = coordinator.reportURL {
-                Button {
-                    NSWorkspace.shared.activateFileViewerSelecting([
-                        reportURL
-                    ])
-                } label: {
-                    Label("Показать отчёт", systemImage: "doc.text")
-                }
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                reportButton
+                Spacer()
+                controlButtons
             }
-
-            Spacer()
-
-            if coordinator.isRunning {
-                Button("Остановить проверку", role: .destructive) {
-                    coordinator.cancel()
+            VStack(alignment: .trailing, spacing: 10) {
+                reportButton
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack {
+                    Spacer()
+                    controlButtons
                 }
-            } else {
-                Button("Закрыть") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button(
-                    isReleaseAudit
-                        ? "Запустить A → B → A"
-                        : (
-                            coordinator.report == nil
-                                ? "Проверить"
-                                : "Проверить снова"
-                        )
-                ) {
-                    startSelectedAudit()
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.defaultAction)
-                .disabled(
-                    !selectedProfilesAreAvailable ||
-                        firstID == secondID ||
-                        selectedProfileIsRunning
-                )
             }
         }
         .padding()
+    }
+
+    @ViewBuilder
+    private var reportButton: some View {
+        if isReleaseAudit, let reportURL = coordinator.reportURL {
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([
+                    reportURL
+                ])
+            } label: {
+                Label("Показать отчёт", systemImage: "doc.text")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var controlButtons: some View {
+        if coordinator.isRunning {
+            Button("Остановить проверку", role: .destructive) {
+                coordinator.cancel()
+            }
+        } else {
+            Button("Закрыть") {
+                dismiss()
+            }
+            .keyboardShortcut(.cancelAction)
+
+            Button(
+                isReleaseAudit
+                    ? "Запустить A → B → A"
+                    : (
+                        coordinator.report == nil
+                            ? "Проверить"
+                            : "Проверить снова"
+                    )
+            ) {
+                startSelectedAudit()
+            }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
+            .focused($primaryActionIsFocused)
+            .disabled(
+                !selectedProfilesAreAvailable ||
+                    firstID == secondID ||
+                    selectedProfileIsRunning
+            )
+        }
     }
 
     private func normalizeSelection() {

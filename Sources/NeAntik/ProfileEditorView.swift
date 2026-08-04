@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum ProxyPasswordUpdate: Equatable {
@@ -53,6 +54,10 @@ struct ProfileEditorView: View {
   @State private var proxyPort: String
   @State private var proxyUsername: String
   @State private var proxyPassword: String
+  @State private var proxyImportText = ""
+  @State private var proxyImportOrder: ProxyImportOrder = .automatic
+  @State private var proxyImportMessage: String?
+  @State private var isApplyingProxyImport = false
   @State private var detectedProxy: ProxyConfiguration?
   @State private var detectedTimezone: String?
   @State private var detectedLocale: String?
@@ -68,11 +73,15 @@ struct ProfileEditorView: View {
   init(
     original: BrowserProfile?,
     keychain: KeychainStore,
+    showsAdvancedOptionsInitially: Bool = false,
     onSave: @escaping (BrowserProfile, ProxyPasswordUpdate) throws -> Void
   ) {
     self.original = original
     self.keychain = keychain
     self.onSave = onSave
+    _showsAdvancedOptions = State(
+      initialValue: showsAdvancedOptionsInitially
+    )
 
     let profile = original ?? BrowserProfile(name: "")
     _name = State(initialValue: profile.name)
@@ -133,7 +142,9 @@ struct ProfileEditorView: View {
           TextField("Название", text: $name)
             .accessibilityLabel("Название профиля")
             .focused($nameIsFocused)
-            .onSubmit(save)
+            .onSubmit {
+              nameIsFocused = false
+            }
             .onChange(of: name) { _, value in
               if value.count > BrowserProfile.maximumNameLength {
                 name = String(
@@ -151,120 +162,143 @@ struct ProfileEditorView: View {
         }
 
         Section {
-          DisclosureGroup(
-            "Дополнительно",
-            isExpanded: $showsAdvancedOptions
-          ) {
-            VStack(alignment: .leading, spacing: 14) {
-              TextField("Стартовая страница", text: $startURL)
-                .accessibilityLabel("Стартовая страница")
+          Button {
+            nameIsFocused = false
+            withAnimation(.easeInOut(duration: 0.18)) {
+              showsAdvancedOptions.toggle()
+            }
+          } label: {
+            HStack {
+              Image(
+                systemName:
+                  showsAdvancedOptions
+                    ? "chevron.down"
+                    : "chevron.right"
+              )
+              .font(.caption.weight(.semibold))
+              Text("Дополнительно")
+                .fontWeight(.semibold)
+              Spacer()
+            }
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityValue(
+            showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
+          )
 
-              Text("Иконка и цвет")
-                .font(.headline)
-              LazyVGrid(
-                columns: [
-                  GridItem(
-                    .adaptive(minimum: 42, maximum: 46),
-                    spacing: 10
-                  )
-                ],
-                alignment: .leading,
-                spacing: 10
-              ) {
-                ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
-                  Button {
-                    symbolName = symbol
-                  } label: {
-                    RoundedRectangle(cornerRadius: 10)
-                      .fill(
-                        symbolName == symbol
-                          ? Color.accentColor
-                          : Color.secondary.opacity(0.12)
-                      )
-                      .frame(width: 42, height: 42)
-                      .overlay {
-                        Image(systemName: symbol)
+          if showsAdvancedOptions {
+            TextField("Стартовая страница", text: $startURL)
+              .accessibilityLabel("Стартовая страница")
+
+            Text("Иконка")
+              .font(.headline)
+            LazyVGrid(
+              columns: [
+                GridItem(
+                  .adaptive(minimum: 42, maximum: 46),
+                  spacing: 10
+                )
+              ],
+              alignment: .leading,
+              spacing: 10
+            ) {
+              ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
+                Button {
+                  symbolName = symbol
+                } label: {
+                  RoundedRectangle(cornerRadius: 10)
+                    .fill(
+                      symbolName == symbol
+                        ? Color.accentColor
+                        : Color.secondary.opacity(0.12)
+                    )
+                    .frame(width: 42, height: 42)
+                    .overlay {
+                      Image(systemName: symbol)
+                        .font(
+                          .system(
+                            size: 18,
+                            weight: .medium
+                          )
+                        )
+                        .foregroundStyle(
+                          symbolName == symbol
+                            ? Color.white
+                            : Color.primary
+                        )
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                  "Иконка \(ProfileAppearance.title(for: symbol))"
+                )
+                .accessibilityValue(
+                  symbolName == symbol
+                    ? "Выбрана"
+                    : "Не выбрана"
+                )
+              }
+            }
+
+            Text("Цвет")
+              .font(.headline)
+            LazyVGrid(
+              columns: [
+                GridItem(
+                  .adaptive(minimum: 28, maximum: 32),
+                  spacing: 9
+                )
+              ],
+              alignment: .leading,
+              spacing: 9
+            ) {
+              ForEach(ProfileAppearance.colors, id: \.self) { hex in
+                Button {
+                  colorHex = hex
+                } label: {
+                  Circle()
+                    .fill(Color(hex: hex))
+                    .frame(width: 24, height: 24)
+                    .overlay {
+                      if colorHex == hex {
+                        Image(systemName: "checkmark")
                           .font(
                             .system(
-                              size: 18,
-                              weight: .medium
+                              size: 9,
+                              weight: .bold
                             )
                           )
                           .foregroundStyle(
-                            symbolName == symbol
-                              ? Color.white
-                              : Color.primary
+                            ProfileAppearance
+                              .usesDarkForeground(for: hex)
+                              ? Color.black
+                              : Color.white
                           )
                       }
-                  }
-                  .buttonStyle(.plain)
-                  .accessibilityLabel(
-                    "Иконка \(ProfileAppearance.title(for: symbol))"
-                  )
-                  .accessibilityValue(
-                    symbolName == symbol
-                      ? "Выбрана"
-                      : "Не выбрана"
-                  )
+                    }
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                  ProfileAppearance.title(forColor: hex)
+                )
+                .accessibilityValue(
+                  colorHex == hex ? "Выбран" : "Не выбран"
+                )
               }
-
-              HStack(spacing: 9) {
-                Text("Цвет")
-                Spacer()
-                ForEach(ProfileAppearance.colors, id: \.self) { hex in
-                  Button {
-                    colorHex = hex
-                  } label: {
-                    Circle()
-                      .fill(Color(hex: hex))
-                      .frame(width: 22, height: 22)
-                      .overlay {
-                        if colorHex == hex {
-                          Image(systemName: "checkmark")
-                            .font(
-                              .system(
-                                size: 9,
-                                weight: .bold
-                              )
-                            )
-                            .foregroundStyle(
-                              ProfileAppearance
-                                .usesDarkForeground(
-                                  for: hex
-                                )
-                                ? Color.black
-                                : Color.white
-                            )
-                        }
-                      }
-                  }
-                  .buttonStyle(.plain)
-                  .accessibilityLabel(
-                    ProfileAppearance.title(forColor: hex)
-                  )
-                  .accessibilityValue(
-                    colorHex == hex
-                      ? "Выбран"
-                      : "Не выбран"
-                  )
-                }
-              }
-
-              Divider()
-              TextField(
-                "Теги через запятую",
-                text: $tagsText,
-                prompt: Text("Например: работа, магазин")
-              )
-              .accessibilityLabel("Теги профиля")
-              Text(
-                "До \(BrowserProfile.maximumTagCount) тегов, каждый не длиннее \(BrowserProfile.maximumTagLength) символов. Теги хранятся только на этом Mac."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
             }
-            .padding(.top, 8)
+
+            TextField(
+              "Теги через запятую",
+              text: $tagsText,
+              prompt: Text("Например: работа, магазин")
+            )
+            .accessibilityLabel("Теги профиля")
+            Text(
+              "До \(BrowserProfile.maximumTagCount) тегов, каждый не длиннее \(BrowserProfile.maximumTagLength) символов. Теги хранятся только на этом Mac."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
           }
         }
 
@@ -277,10 +311,45 @@ struct ProfileEditorView: View {
               }
             }
 
-            HStack {
-              TextField("Хост", text: $proxyHost)
-              TextField("Порт", text: $proxyPort)
-                .frame(width: 90)
+            SecureField(
+              "Вставить прокси одной строкой",
+              text: $proxyImportText
+            )
+            .accessibilityLabel("Строка прокси для импорта")
+            Text(
+              "Вставьте строку в поле или просто скопируйте её и нажмите кнопку. Поддерживаются login:password@ip:port, ip:port@login:password и оба варианта через четыре двоеточия."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            ViewThatFits(in: .horizontal) {
+              HStack {
+                proxyImportOrderPicker
+                Spacer(minLength: 8)
+                importAndTestButton
+              }
+              VStack(alignment: .leading, spacing: 8) {
+                proxyImportOrderPicker
+                importAndTestButton
+              }
+            }
+            if let proxyImportMessage {
+              Text(proxyImportMessage)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(proxyImportMessage)
+            }
+
+            ViewThatFits(in: .horizontal) {
+              HStack {
+                TextField("Хост", text: $proxyHost)
+                TextField("Порт", text: $proxyPort)
+                  .frame(width: 90)
+              }
+              VStack(alignment: .leading, spacing: 8) {
+                TextField("Хост", text: $proxyHost)
+                TextField("Порт", text: $proxyPort)
+              }
             }
             if proxyKind == .socks5 {
               Text(
@@ -410,6 +479,49 @@ struct ProfileEditorView: View {
     .onDisappear {
       proxyTestTask?.cancel()
     }
+    .onChange(of: usesProxy) { _, _ in
+      proxyInputDidChange()
+    }
+    .onChange(of: proxyKind) { _, _ in
+      proxyInputDidChange()
+    }
+    .onChange(of: proxyHost) { _, _ in
+      proxyInputDidChange()
+    }
+    .onChange(of: proxyPort) { _, _ in
+      proxyInputDidChange()
+    }
+    .onChange(of: proxyUsername) { _, _ in
+      proxyInputDidChange()
+    }
+    .onChange(of: proxyPassword) { _, _ in
+      proxyInputDidChange()
+    }
+    .onChange(of: proxyImportOrder) { _, _ in
+      proxyImportMessage = nil
+    }
+  }
+
+  private var proxyImportOrderPicker: some View {
+    Picker("Порядок", selection: $proxyImportOrder) {
+      ForEach(ProxyImportOrder.allCases) { order in
+        Text(order.title).tag(order)
+      }
+    }
+    .pickerStyle(.menu)
+    .accessibilityLabel("Расположение адреса прокси")
+  }
+
+  private var importAndTestButton: some View {
+    Button {
+      importProxyAndTest()
+    } label: {
+      Label("Вставить и проверить", systemImage: "doc.on.clipboard")
+    }
+    .disabled(isTesting)
+    .help(
+      "Взять строку из поля или буфера обмена, распознать и проверить соединение"
+    )
   }
 
   private func makeProxy() throws -> ProxyConfiguration? {
@@ -492,11 +604,59 @@ struct ProfileEditorView: View {
   private func testProxy() {
     do {
       guard let proxy = try makeProxy() else { return }
-      proxyTestTask?.cancel()
-      isTesting = true
-      testMessage = nil
-      let password = proxyPassword
-      proxyTestTask = Task {
+      startProxyTest(
+        configuration: proxy,
+        password: proxyPassword
+      )
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func importProxyAndTest() {
+    do {
+      let source = proxyImportText.isEmpty
+        ? NSPasteboard.general.string(forType: .string) ?? ""
+        : proxyImportText
+      let draft = try ProxyImportParser.parse(
+        source,
+        kind: proxyKind,
+        order: proxyImportOrder
+      )
+      isApplyingProxyImport = true
+      usesProxy = true
+      proxyHost = draft.configuration.host
+      proxyPort = String(draft.configuration.port)
+      proxyUsername = draft.configuration.username
+      proxyPassword = draft.password
+      proxyImportMessage =
+        "Распознано: \(draft.redactedSummary). Проверяю соединение…"
+      errorMessage = nil
+
+      Task { @MainActor in
+        await Task.yield()
+        isApplyingProxyImport = false
+        startProxyTest(
+          configuration: draft.configuration,
+          password: draft.password,
+          importedSummary: draft.redactedSummary
+        )
+      }
+    } catch {
+      isApplyingProxyImport = false
+      proxyImportMessage = error.localizedDescription
+    }
+  }
+
+  private func startProxyTest(
+    configuration proxy: ProxyConfiguration,
+    password: String,
+    importedSummary: String? = nil
+  ) {
+    proxyTestTask?.cancel()
+    isTesting = true
+    testMessage = nil
+    proxyTestTask = Task {
         do {
           let result = try await ProxyTester().test(
             configuration: proxy,
@@ -514,6 +674,11 @@ struct ProfileEditorView: View {
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
             detectedProxyContextEvidence = .ipAPI()
+            if let importedSummary {
+              proxyImportMessage =
+                "Готово: \(importedSummary). Соединение работает."
+              proxyImportText = ""
+            }
             isTesting = false
           }
         } catch {
@@ -524,9 +689,23 @@ struct ProfileEditorView: View {
           }
         }
       }
-    } catch {
-      errorMessage = error.localizedDescription
-    }
+  }
+
+  private func invalidateProxyEvidence() {
+    proxyTestTask?.cancel()
+    isTesting = false
+    testMessage = nil
+    detectedProxy = nil
+    detectedTimezone = nil
+    detectedLocale = nil
+    detectedLocation = nil
+    detectedProxyContextEvidence = nil
+  }
+
+  private func proxyInputDidChange() {
+    guard !isApplyingProxyImport else { return }
+    proxyImportMessage = nil
+    invalidateProxyEvidence()
   }
 }
 
