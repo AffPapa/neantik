@@ -65,6 +65,7 @@ struct ContentView: View {
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
     @State private var selectedProfileTag: String?
+    @State private var isSidebarVisible = true
 
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
@@ -107,14 +108,31 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            detail
+        GeometryReader { proxy in
+            HStack(spacing: 0) {
+                if isSidebarVisible {
+                    sidebar
+                        .frame(
+                            width: WorkspaceLayout.sidebarWidth(
+                                for: proxy.size.width
+                            )
+                        )
+                    Divider()
+                }
+
+                detail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .tint(Color(hex: "#FF3B4D"))
-        .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 760, minHeight: 520)
+        .frame(
+            minWidth: WorkspaceLayout.minimumWindowWidth,
+            minHeight: WorkspaceLayout.minimumWindowHeight
+        )
+        .animation(
+            .easeInOut(duration: 0.16),
+            value: isSidebarVisible
+        )
         .sheet(item: $editorRequest) { request in
             ProfileEditorView(
                 original: request.profile,
@@ -346,6 +364,11 @@ struct ContentView: View {
             sidebarHeader
             Divider()
 
+            if !availableProfileTags.isEmpty || selectedProfile != nil {
+                sidebarControls
+                Divider()
+            }
+
             if store.profiles.isEmpty {
                 ContentUnavailableView {
                     Label("Нет профилей", systemImage: "person.crop.rectangle.stack")
@@ -422,46 +445,57 @@ struct ContentView: View {
             }
 
             Divider()
-            runtimeStatus
-            Divider()
-            updateStatus
-            if telemetry.isConfigured {
-                Divider()
-                telemetryStatus
-            }
+            sidebarStatus
         }
-        .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
+        .background(.regularMaterial)
     }
 
     private var sidebarHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Text("Профили")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .lineLimit(1)
-                Spacer()
+
+                Spacer(minLength: 8)
+
+                Button {
+                    isSidebarVisible = false
+                } label: {
+                    Image(systemName: "sidebar.left")
+                }
+                .buttonStyle(.borderless)
+                .help("Скрыть список профилей")
+                .accessibilityLabel("Скрыть список профилей")
+
                 Button {
                     editorRequest = EditorRequest(profile: nil)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(width: 32, height: 32)
+                        .fontWeight(.semibold)
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.large)
                 .clipShape(Circle())
                 .help("Создать профиль")
                 .accessibilityLabel("Создать профиль")
             }
 
             TextField(
-                "Найти профиль",
-                text: $profileSearchText,
-                prompt: Text("Поиск по имени и тегам")
+                "Поиск по имени и тегам",
+                text: $profileSearchText
             )
             .textFieldStyle(.roundedBorder)
             .accessibilityLabel("Поиск профилей")
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
+    }
 
+    private var sidebarControls: some View {
+        VStack(alignment: .leading, spacing: 12) {
             if !availableProfileTags.isEmpty {
                 Picker("Тег", selection: $selectedProfileTag) {
                     Text("Все теги").tag(nil as String?)
@@ -521,9 +555,8 @@ struct ContentView: View {
                 )
             }
         }
-        .padding(.top, 46)
         .padding(.horizontal, 14)
-        .padding(.bottom, 12)
+        .padding(.vertical, 12)
     }
 
     @ViewBuilder
@@ -545,6 +578,13 @@ struct ContentView: View {
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
                         : nil,
+                isSidebarVisible: isSidebarVisible,
+                onToggleSidebar: {
+                    isSidebarVisible.toggle()
+                },
+                onCreate: {
+                    editorRequest = EditorRequest(profile: nil)
+                },
                 onStart: { launch(profile) },
                 onStop: { processes.stop(profileID: profile.id) },
                 onEdit: {
@@ -606,60 +646,125 @@ struct ContentView: View {
             )
             .id(profile.id)
         } else {
-            ContentUnavailableView(
-                "Выбери профиль",
-                systemImage: "rectangle.stack.person.crop",
-                description: Text("Профили разделяют сессии, cookies, настройки сети и локальные данные.")
-            )
+            emptyDetail
         }
     }
 
-    private var runtimeStatus: some View {
-        VStack(spacing: 9) {
-            HStack(spacing: 9) {
-                Image(systemName: runtimeStatusIcon)
-                    .foregroundStyle(runtimeStatusColor)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(
-                        isResolvingRuntime
-                            ? "Проверяем браузер…"
-                            : runtime?.name ?? "Браузер не найден"
+    private var emptyDetail: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Button {
+                    isSidebarVisible.toggle()
+                } label: {
+                    Image(
+                        systemName:
+                            isSidebarVisible
+                            ? "sidebar.left"
+                            : "sidebar.right"
                     )
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-                    Text(
-                        isResolvingRuntime
-                            ? "Проверяем встроенный движок"
-                            : runtime?.privacySummary ??
-                                "Встроенный движок недоступен"
-                    )
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    if let runtime {
-                        Text(runtime.runtimeSummary)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(1)
-                    }
-                    if let message = runtimePreflight?.primaryMessage {
-                        Text(message)
-                            .font(.caption2)
-                            .foregroundStyle(
-                                runtimePreflight?.isReady == true
-                                    ? Color.orange
-                                    : Color.red
-                            )
-                            .lineLimit(2)
-                    }
                 }
+                .buttonStyle(.bordered)
+                .help(
+                    isSidebarVisible
+                        ? "Скрыть список профилей"
+                        : "Показать список профилей"
+                )
+
+                Text("NeAntik")
+                    .font(.title2)
+                    .fontWeight(.semibold)
 
                 Spacer()
 
+                if !isSidebarVisible {
+                    Button {
+                        editorRequest = EditorRequest(profile: nil)
+                    } label: {
+                        Label("Новый профиль", systemImage: "plus")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+
+            Divider()
+
+            ContentUnavailableView {
+                Label(
+                    store.profiles.isEmpty
+                        ? "Создай первый профиль"
+                        : "Выбери профиль",
+                    systemImage: "rectangle.stack.person.crop"
+                )
+            } description: {
+                Text(
+                    "Каждый профиль хранит свои cookies, настройки сети и локальные данные."
+                )
+            } actions: {
+                if store.profiles.isEmpty {
+                    Button("Создать профиль") {
+                        editorRequest = EditorRequest(profile: nil)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var sidebarStatus: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label {
+                Text(
+                    isResolvingRuntime
+                        ? "Проверяем браузер…"
+                        : runtimePreflight?.isReady == true
+                        ? "Браузер готов"
+                        : "Браузер требует внимания"
+                )
+                .fontWeight(.medium)
+            } icon: {
+                Image(systemName: runtimeStatusIcon)
+                    .foregroundStyle(runtimeStatusColor)
+            }
+
+            Text(
+                isResolvingRuntime
+                    ? "Встроенный движок"
+                    : runtime?.runtimeSummary ??
+                        "Встроенный движок недоступен"
+            )
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+
+            Label(
+                updateChannel.isEnabled
+                    ? "Подписанные обновления"
+                    : "Обновления вручную",
+                systemImage: "arrow.triangle.2.circlepath"
+            )
+            .foregroundStyle(.secondary)
+
+            if telemetry.isConfigured {
+                Toggle(
+                    "Обезличенная статистика",
+                    isOn: Binding(
+                        get: { telemetry.isEnabled },
+                        set: {
+                            telemetry.setEnabled(
+                                $0,
+                                snapshot: telemetrySnapshot
+                            )
+                        }
+                    )
+                )
+                .toggleStyle(.switch)
+                .controlSize(.mini)
             }
         }
+        .font(.caption)
         .padding(12)
+        .accessibilityElement(children: .contain)
     }
 
     private var fingerprintAuditUnavailableReason: String? {
@@ -680,72 +785,6 @@ struct ContentView: View {
         return runtime.supportsFingerprintIdentity
             ? "shield.lefthalf.filled"
             : "externaldrive.fill"
-    }
-
-    private var telemetryStatus: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Toggle(
-                "Отправлять обезличенную статистику",
-                isOn: Binding(
-                    get: { telemetry.isEnabled },
-                    set: {
-                        telemetry.setEnabled(
-                            $0,
-                            snapshot: telemetrySnapshot
-                        )
-                    }
-                )
-            )
-            .font(.caption)
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .disabled(!telemetry.isConfigured)
-
-            Text(
-                telemetry.isConfigured
-                    ? "Только версия приложения и общие счётчики профилей, прокси и запусков. Без сайтов и данных прокси."
-                    : "Сервер статистики не настроен в этой сборке."
-            )
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-
-            if let url = telemetry.publicStatsURL {
-                Link("Открыть публичную статистику", destination: url)
-                    .font(.caption2)
-            }
-        }
-        .padding(12)
-    }
-
-    private var updateStatus: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Image(systemName: "checkmark.shield")
-                .foregroundStyle(updateChannel.isEnabled ? .orange : .secondary)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(
-                    updateChannel.isEnabled
-                        ? "Подписанный канал обновлений"
-                        : "Обновления вручную"
-                )
-                .font(.caption)
-                .fontWeight(.medium)
-
-                Text(
-                    updateChannel.isEnabled
-                        ? "Принимаются только Ed25519-подписанные Direct-манифесты. Автозагрузка и автоустановка выключены."
-                        : "Канал ещё не настроен. NeAntik ничего не проверяет и не скачивает в фоне."
-                )
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .accessibilityElement(children: .combine)
     }
 
     private var runtimeStatusColor: Color {
@@ -994,7 +1033,7 @@ private struct ProfileRow: View {
     }
 }
 
-private struct ProfileDetailView: View {
+struct ProfileDetailView: View {
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let isResolvingRuntime: Bool
@@ -1003,6 +1042,9 @@ private struct ProfileDetailView: View {
     let canRunFingerprintAudit: Bool
     let fingerprintAuditUnavailableReason: String?
     let clipboardNotice: String?
+    let isSidebarVisible: Bool
+    let onToggleSidebar: () -> Void
+    let onCreate: () -> Void
     let onStart: () -> Void
     let onStop: () -> Void
     let onEdit: () -> Void
@@ -1013,7 +1055,7 @@ private struct ProfileDetailView: View {
     let onCopyProxyPassword: () -> Void
 
     private var actionColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 118), spacing: 10, alignment: .leading)]
+        [GridItem(.adaptive(minimum: 148), spacing: 10, alignment: .leading)]
     }
 
     private var isRunning: Bool {
@@ -1021,267 +1063,326 @@ private struct ProfileDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 14) {
-                        profileIcon
-                        profileTitle
-                        Spacer(minLength: 12)
-                    }
+        VStack(spacing: 0) {
+            pinnedHeader
+            Divider()
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        profileIcon
-                        profileTitle
+            ScrollView {
+                detailContent
+                    .frame(maxWidth: 1_160, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 20)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+        }
+    }
+
+    private var pinnedHeader: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Button(action: onToggleSidebar) {
+                Image(
+                    systemName:
+                        isSidebarVisible
+                        ? "sidebar.left"
+                        : "sidebar.right"
+                )
+            }
+            .buttonStyle(.bordered)
+            .help(
+                isSidebarVisible
+                    ? "Скрыть список профилей"
+                    : "Показать список профилей"
+            )
+            .accessibilityLabel(
+                isSidebarVisible
+                    ? "Скрыть список профилей"
+                    : "Показать список профилей"
+            )
+
+            if !isSidebarVisible {
+                Button(action: onCreate) {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.bordered)
+                .help("Создать профиль")
+                .accessibilityLabel("Создать профиль")
+            }
+
+            profileIcon
+            profileTitle
+
+            Spacer(minLength: 12)
+
+            primaryActions
+                .frame(maxWidth: 820, alignment: .trailing)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(.bar)
+    }
+
+    private var detailContent: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            if let fingerprintAuditUnavailableReason {
+                Label(
+                    fingerprintAuditUnavailableReason,
+                    systemImage: "info.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(
+                    "Проверка профиля недоступна. \(fingerprintAuditUnavailableReason)"
+                )
+            }
+            if let clipboardNotice {
+                Label(
+                    clipboardNotice,
+                    systemImage: "checkmark.circle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(clipboardNotice)
+            }
+
+            GroupBox("Стартовая страница") {
+                LabeledContent("URL", value: profile.startURL)
+                    .textSelection(.enabled)
+                    .padding(.vertical, 4)
+            }
+
+            GroupBox("Отпечаток профиля") {
+                fingerprintSummary
+                    .padding(.vertical, 4)
+            }
+
+            GroupBox("Сеть") {
+                networkSummary
+                    .padding(.vertical, 4)
+            }
+
+            GroupBox("Локальные данные") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Данные этого профиля хранятся отдельно.")
+                        .foregroundStyle(.secondary)
+                    Text(browserDataPath)
+                        .textSelection(.enabled)
+                        .font(.caption.monospaced())
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
+                .padding(.vertical, 4)
+            }
+
+            if let lastLaunchedAt = profile.lastLaunchedAt {
+                Text(
+                    "Последний запуск: \(lastLaunchedAt.formatted(date: .abbreviated, time: .shortened))"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var fingerprintSummary: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LabeledContent(
+                "Политика",
+                value: profile.identity.issuanceSummary
+            )
+            if let timezone = profile.identity.timezoneIdentifier {
+                LabeledContent("Часовой пояс", value: timezone)
+            }
+            if let locale = profile.identity.localeIdentifier {
+                LabeledContent("Язык", value: locale)
+            }
+            if let evidence = profile.identity.proxyContextEvidence {
+                LabeledContent(
+                    "Контекст сети",
+                    value:
+                        "\(evidence.source) · \(evidence.observedAt.formatted(date: .abbreviated, time: .omitted))"
+                )
+                if !evidence.isFresh() {
+                    Text(
+                        "Данные старше 30 дней. Перепроверь прокси, чтобы обновить язык и часовой пояс."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
+            }
+            Text(
+                runtimeSupportsFingerprint
+                    ? "Параметры устройства стабильны для этого профиля."
+                    : "Совместимый встроенный браузер пока недоступен."
+            )
+            .font(.caption)
+            .foregroundStyle(
+                runtimeSupportsFingerprint
+                    ? Color.secondary
+                    : Color.orange
+            )
+        }
+    }
+
+    private var networkSummary: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let proxy = profile.proxy {
+                LabeledContent("Тип", value: proxy.kind.title)
+                LabeledContent("Сервер", value: proxy.displayEndpoint)
+                LabeledContent(
+                    "Авторизация",
+                    value: proxy.username.isEmpty ? "Нет" : proxy.username
+                )
+                if !proxy.username.isEmpty {
+                    ViewThatFits(in: .horizontal) {
+                        HStack {
+                            credentialButtons
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            credentialButtons
+                        }
                     }
                 }
+            } else {
+                LabeledContent("Подключение", value: "Без прокси")
+            }
+        }
+    }
 
-                LazyVGrid(columns: actionColumns, alignment: .leading, spacing: 10) {
-                    Button {
-                        isRunning ? onStop() : onStart()
-                    } label: {
-                        Label(
-                            isRunning
-                                ? (
-                                    processState == .checking
-                                        ? "Проверка…"
-                                        : processState.canRequestStop
-                                        ? "Остановить"
-                                        : "Закрыть вручную"
-                                )
-                                : "Запустить",
-                            systemImage:
-                                isRunning
-                                    ? (
-                                        processState == .checking
-                                            ? "hourglass"
-                                            : processState.canRequestStop
-                                            ? "stop.fill"
-                                            : "hand.raised.fill"
-                                    )
-                                    : "play.fill"
-                        )
-                        .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(
-                        (!isRunning && isResolvingRuntime) ||
-                            (isRunning && !processState.canRequestStop)
-                    )
-                    .help(
-                        processState.guidance ??
-                            (
-                                !isRunning && isResolvingRuntime
-                                    ? "NeAntik проверяет локальный браузер"
-                                    : ""
-                            )
-                    )
-                    .accessibilityHint(
-                        processState.guidance ?? ""
-                    )
-
-                    Button(action: onEdit) {
-                        Label("Изменить", systemImage: "slider.horizontal.3")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .disabled(isRunning)
-                    .help(
-                        isRunning
-                            ? "Сначала останови профиль"
-                            : "Изменить профиль"
-                    )
-                    Button(action: onReveal) {
-                        Label("Данные", systemImage: "folder")
-                            .frame(maxWidth: .infinity)
-                    }
-                    Button(action: onFingerprintAudit) {
-                        Label(
-                            "Проверить профиль",
-                            systemImage: "checkmark.shield"
-                        )
-                        .frame(maxWidth: .infinity)
-                    }
-                    .disabled(
-                        !canRunFingerprintAudit ||
+    private var primaryActions: some View {
+        LazyVGrid(
+            columns: actionColumns,
+            alignment: .leading,
+            spacing: 10
+        ) {
+            Button {
+                isRunning ? onStop() : onStart()
+            } label: {
+                compactActionLabel(
+                    isRunning
+                        ? (
                             processState == .checking
-                    )
-                    .help(
-                        canRunFingerprintAudit
-                            ? "Проверить стабильность и различие профиля"
-                            : "Нужны два профиля и готовый совместимый движок"
-                    )
-                    if let proxy = profile.proxy, !proxy.username.isEmpty {
-                        Button(action: onCopyProxyUsername) {
-                            Label(
-                                "Копировать логин",
-                                systemImage: "person.text.rectangle"
-                            )
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                            .frame(maxWidth: .infinity)
-                        }
-                        .help(
-                            "Скопировать логин прокси на 60 секунд"
+                                ? "Проверка…"
+                                : processState.canRequestStop
+                                ? "Остановить"
+                                : "Закрыть вручную"
                         )
-                        .accessibilityHint(
-                            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
-                        )
-                        Button(action: onCopyProxyPassword) {
-                            Label(
-                                "Копировать пароль",
-                                systemImage: "key"
-                            )
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                            .frame(maxWidth: .infinity)
-                        }
-                        .help(
-                            "Скопировать пароль из Связки ключей на 60 секунд"
-                        )
-                        .accessibilityHint(
-                            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
-                        )
-                    }
-                    Button(role: .destructive, action: onDelete) {
-                        Label("Удалить", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .disabled(isRunning)
-                    .help(
+                        : "Запустить",
+                    systemImage:
                         isRunning
                             ? (
                                 processState == .checking
-                                    ? "Дождись завершения проверки"
-                                    : "Сначала останови профиль"
+                                    ? "hourglass"
+                                    : processState.canRequestStop
+                                    ? "stop.fill"
+                                    : "hand.raised.fill"
                             )
-                            : "Удалить профиль"
-                    )
-                }
-                .buttonStyle(.bordered)
-                if let fingerprintAuditUnavailableReason {
-                    Label(
-                        fingerprintAuditUnavailableReason,
-                        systemImage: "info.circle"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(
-                        "Проверка профиля недоступна. \(fingerprintAuditUnavailableReason)"
-                    )
-                }
-                if let clipboardNotice {
-                    Label(
-                        clipboardNotice,
-                        systemImage: "checkmark.circle.fill"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(clipboardNotice)
-                }
-
-                GroupBox("Стартовая страница") {
-                    LabeledContent("URL", value: profile.startURL)
-                        .textSelection(.enabled)
-                        .padding(.vertical, 4)
-                }
-
-                GroupBox("Отпечаток профиля") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        LabeledContent(
-                            "Политика",
-                            value: profile.identity.issuanceSummary
-                        )
-                        if let timezone = profile.identity.timezoneIdentifier {
-                            LabeledContent("Часовой пояс", value: timezone)
-                        }
-                        if let locale = profile.identity.localeIdentifier {
-                            LabeledContent("Язык", value: locale)
-                        }
-                        if let evidence =
-                            profile.identity.proxyContextEvidence {
-                            LabeledContent(
-                                "Контекст сети",
-                                value:
-                                    "\(evidence.source) · \(evidence.observedAt.formatted(date: .abbreviated, time: .omitted))"
-                            )
-                            if !evidence.isFresh() {
-                                Text(
-                                    "Данные старше 30 дней. Часовой пояс и язык не применяются при запуске, пока ты снова не проверишь прокси."
-                                )
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                            }
-                        } else if profile.identity.timezoneIdentifier != nil ||
-                                    profile.identity.localeIdentifier != nil {
-                            Text(
-                                "Часовой пояс сохранён старой версией без даты проверки и не применяется при запуске. Перепроверь прокси, чтобы обновить контекст."
-                            )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        }
-                        Text(
-                            runtimeSupportsFingerprint
-                                ? "NeAntik передаёт встроенному Chromium стабильные параметры этого профиля. Нажми «Проверить профиль», чтобы убедиться, что всё работает."
-                                : "Параметры профиля сохранены, но выбранный браузер изолирует только локальные данные. Выбери совместимый движок, чтобы применить отпечаток."
-                        )
-                        .font(.caption)
-                        .foregroundStyle(
-                            runtimeSupportsFingerprint
-                                ? Color.secondary
-                                : Color.orange
-                        )
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                GroupBox("Сеть") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        if let proxy = profile.proxy {
-                            LabeledContent("Тип", value: proxy.kind.title)
-                            LabeledContent("Сервер", value: "\(proxy.host):\(proxy.port)")
-                            LabeledContent(
-                                "Авторизация",
-                                value: proxy.username.isEmpty ? "Нет" : proxy.username
-                            )
-                        } else {
-                            LabeledContent("Подключение", value: "Без прокси")
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                GroupBox("Локальные данные") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Папка браузера")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(browserDataPath)
-                            .textSelection(.enabled)
-                            .font(.callout.monospaced())
-                            .lineLimit(3)
-                            .truncationMode(.middle)
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                if let lastLaunchedAt = profile.lastLaunchedAt {
-                    Text("Последний запуск: \(lastLaunchedAt.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                            : "play.fill"
+                )
             }
-            .frame(maxWidth: 980, alignment: .leading)
-            .padding(28)
+            .buttonStyle(.borderedProminent)
+            .disabled(
+                (!isRunning && isResolvingRuntime) ||
+                    (isRunning && !processState.canRequestStop)
+            )
+            .help(
+                processState.guidance ??
+                    (
+                        !isRunning && isResolvingRuntime
+                            ? "NeAntik проверяет локальный браузер"
+                            : ""
+                    )
+            )
+            .accessibilityHint(processState.guidance ?? "")
+
+            Button(action: onEdit) {
+                compactActionLabel(
+                    "Изменить",
+                    systemImage: "slider.horizontal.3"
+                )
+            }
+            .disabled(isRunning)
+            .help(
+                isRunning
+                    ? "Сначала останови профиль"
+                    : "Изменить профиль"
+            )
+
+            Button(action: onReveal) {
+                compactActionLabel("Данные", systemImage: "folder")
+            }
+
+            Button(action: onFingerprintAudit) {
+                compactActionLabel(
+                    "Проверить профиль",
+                    systemImage: "checkmark.shield"
+                )
+            }
+            .disabled(
+                !canRunFingerprintAudit ||
+                    processState == .checking
+            )
+            .help(
+                canRunFingerprintAudit
+                    ? "Проверить стабильность и различие профиля"
+                    : "Нужны два профиля и готовый совместимый движок"
+            )
+
+            Button(role: .destructive, action: onDelete) {
+                compactActionLabel("Удалить", systemImage: "trash")
+            }
+            .disabled(isRunning)
+            .help(
+                isRunning
+                    ? (
+                        processState == .checking
+                            ? "Дождись завершения проверки"
+                            : "Сначала останови профиль"
+                    )
+                    : "Удалить профиль"
+            )
         }
+        .buttonStyle(.bordered)
+    }
+
+    private func compactActionLabel(
+        _ title: String,
+        systemImage: String
+    ) -> some View {
+        Label(title, systemImage: systemImage)
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
+            .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private var credentialButtons: some View {
+        Button(action: onCopyProxyUsername) {
+            Label(
+                "Копировать логин",
+                systemImage: "person.text.rectangle"
+            )
+        }
+        .help("Скопировать логин прокси на 60 секунд")
+        .accessibilityHint(
+            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
+        )
+
+        Button(action: onCopyProxyPassword) {
+            Label("Копировать пароль", systemImage: "key")
+        }
+        .help("Скопировать пароль из Связки ключей на 60 секунд")
+        .accessibilityHint(
+            "Буфер обмена очистится через 60 секунд, если его содержимое не изменится."
+        )
     }
 
     private var profileIcon: some View {
         RoundedRectangle(cornerRadius: 14)
             .fill(Color(hex: profile.colorHex).gradient)
-            .frame(width: 64, height: 64)
+            .frame(width: 52, height: 52)
             .overlay {
                 Image(systemName: profile.displaySymbolName)
-                    .font(.system(size: 28, weight: .medium))
+                    .font(.system(size: 23, weight: .medium))
                     .foregroundStyle(
                         ProfileAppearance.usesDarkForeground(
                             for: profile.colorHex
@@ -1298,7 +1399,7 @@ private struct ProfileDetailView: View {
     private var profileTitle: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(profile.name)
-                .font(.largeTitle)
+                .font(.title2)
                 .fontWeight(.semibold)
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)

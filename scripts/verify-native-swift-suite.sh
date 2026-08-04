@@ -9,6 +9,7 @@ fi
 
 SUITE="$1"
 case "$SUITE" in
+  ApplicationEnvironmentTests|\
   AppPathsTests|\
   BrowserLaunchBuilderTests|\
   BrowserProcessInventoryTests|\
@@ -26,7 +27,10 @@ case "$SUITE" in
   ProfileEditorPasswordTests|\
   ProfileOrganizationTests|\
   ProfileStoreTests|\
+  ProxyImportParserTests|\
   ProxyTesterTests|\
+  ResponsiveLayoutRenderTests|\
+  WorkspaceLayoutTests|\
   RuntimePreferenceStoreTests|\
   TelemetryTests|\
   UpdateManifestTests)

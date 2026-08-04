@@ -67,25 +67,33 @@ TEXT_SUFFIXES = {
 REQUIRED_PUBLIC_PATHS = {
     ".github/workflows/ci.yml",
     "CONTRIBUTING.md",
+    "Develop-NeAntik.command",
     "LICENSE",
     "Release-NeAntik.command",
     "SECURITY.md",
     "Sources/NeAntik/BrowserProcessInventory.swift",
+    "Sources/NeAntik/ApplicationEnvironment.swift",
     "Sources/NeAntik/FingerprintEvidenceEnrollment.swift",
     "Sources/NeAntik/FingerprintEvidenceEnvelope.swift",
     "Sources/NeAntik/FingerprintEvidenceRecoveryStore.swift",
     "Sources/NeAntik/FingerprintEvidenceReleaseContext.swift",
     "Sources/NeAntik/FingerprintReleaseEvidencePayload.swift",
     "Sources/NeAntik/ProfileListProjection.swift",
+    "Sources/NeAntik/ProxyImportParser.swift",
     "Sources/NeAntik/SecureEnclaveFingerprintEvidenceSigner.swift",
     "Sources/NeAntik/UpdateManifest.swift",
+    "Sources/NeAntik/WorkspaceLayout.swift",
     "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json",
     "Tests/Fixtures/fingerprint-conformance/manifest.json",
     "Tests/NeAntikTests/FingerprintEvidenceEnrollmentTests.swift",
+    "Tests/NeAntikTests/ApplicationEnvironmentTests.swift",
     "Tests/NeAntikTests/BrowserProcessInventoryTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceEnvelopeTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceReleaseContextTests.swift",
     "Tests/NeAntikTests/ProfileOrganizationTests.swift",
+    "Tests/NeAntikTests/ProxyImportParserTests.swift",
+    "Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift",
+    "Tests/NeAntikTests/WorkspaceLayoutTests.swift",
     "Tests/NeAntikTests/SecureEnclaveFingerprintEvidenceSignerTests.swift",
     "Tests/NeAntikTests/UpdateManifestTests.swift",
     "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
@@ -100,6 +108,7 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/Run-NeAntik-Hosted-Verification.command",
     "scripts/Run-NeAntik-Release.command",
     "scripts/Run-NeAntik-Runtime-Audit.command",
+    "scripts/run-local-manager.sh",
     "scripts/generate-runtime-integration-notices.py",
     "scripts/export-runtime-source-provenance.py",
     "scripts/verify-runtime-source-provenance.py",
@@ -157,6 +166,40 @@ def fail(message: str) -> None:
 
 
 def iter_public_files() -> list[Path]:
+    git_listing = subprocess.run(
+        [
+            "git",
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+        ],
+        cwd=PROJECT_ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if git_listing.returncode == 0:
+        files: list[Path] = []
+        for raw_relative in git_listing.stdout.split(b"\0"):
+            if not raw_relative:
+                continue
+            relative = Path(raw_relative.decode("utf-8"))
+            if any(part in FORBIDDEN_PARTS for part in relative.parts):
+                fail(f"forbidden generated path is present: {relative}")
+            path = PROJECT_ROOT / relative
+            if path.is_symlink():
+                fail(
+                    "symbolic link is not allowed in public source: "
+                    f"{relative}"
+                )
+            if path.is_file():
+                files.append(path)
+        return files
+
+    # Exported source archives may not contain .git. In that case preserve the
+    # strict filesystem walk and reject any generated/private directory.
     files: list[Path] = []
     for path in PROJECT_ROOT.rglob("*"):
         relative = path.relative_to(PROJECT_ROOT)

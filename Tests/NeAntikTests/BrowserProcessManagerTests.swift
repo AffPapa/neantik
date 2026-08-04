@@ -1082,7 +1082,11 @@ struct BrowserProcessManagerTests {
         let fakeBrowser = root.appendingPathComponent("fake-browser")
         FileManager.default.createFile(
             atPath: fakeBrowser.path,
-            contents: Data("#!/bin/sh\nsleep 1\n".utf8)
+            // A loaded full-suite run can delay the three-manager
+            // hand-off for more than one second. Keep the fake owner alive
+            // until the test explicitly stops it so scheduler pressure
+            // cannot remove the lease before the final assertion.
+            contents: Data("#!/bin/sh\nsleep 10\n".utf8)
         )
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o755],

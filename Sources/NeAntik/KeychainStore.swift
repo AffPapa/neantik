@@ -80,30 +80,39 @@ struct KeychainStore: Sendable {
     ].joined(separator: ".")
 
     private let backend: any KeychainBackend
+    private let service: String
+    private let legacyService: String?
 
-    init(backend: any KeychainBackend = SecurityKeychainBackend()) {
+    init(
+        backend: any KeychainBackend = SecurityKeychainBackend(),
+        service: String = Self.currentService,
+        legacyService: String? = Self.legacyService
+    ) {
         self.backend = backend
+        self.service = service
+        self.legacyService = legacyService
     }
 
     func saveProxyPassword(_ password: String, profileID: UUID) throws {
         let previousCurrent = try backend.data(
-            service: Self.currentService,
+            service: service,
             profileID: profileID
         )
-        let previousLegacy = try backend.data(
-            service: Self.legacyService,
-            profileID: profileID
-        )
+        let previousLegacy = try legacyService.flatMap {
+            try backend.data(service: $0, profileID: profileID)
+        }
         do {
             try backend.upsert(
                 Data(password.utf8),
-                service: Self.currentService,
+                service: service,
                 profileID: profileID
             )
-            try backend.delete(
-                service: Self.legacyService,
-                profileID: profileID
-            )
+            if let legacyService {
+                try backend.delete(
+                    service: legacyService,
+                    profileID: profileID
+                )
+            }
         } catch {
             restore(
                 current: previousCurrent,
@@ -116,35 +125,38 @@ struct KeychainStore: Sendable {
 
     func proxyPassword(profileID: UUID) throws -> String? {
         if let current = try backend.data(
-            service: Self.currentService,
+            service: service,
             profileID: profileID
         ) {
-            try backend.delete(
-                service: Self.legacyService,
-                profileID: profileID
-            )
+            if let legacyService {
+                try backend.delete(
+                    service: legacyService,
+                    profileID: profileID
+                )
+            }
             return try decode(current)
         }
-        guard let legacy = try backend.data(
-            service: Self.legacyService,
-            profileID: profileID
-        ) else {
+        guard let legacyService,
+              let legacy = try backend.data(
+                  service: legacyService,
+                  profileID: profileID
+              ) else {
             return nil
         }
 
         do {
             try backend.upsert(
                 legacy,
-                service: Self.currentService,
+                service: service,
                 profileID: profileID
             )
             try backend.delete(
-                service: Self.legacyService,
+                service: legacyService,
                 profileID: profileID
             )
         } catch {
             try? backend.delete(
-                service: Self.currentService,
+                service: service,
                 profileID: profileID
             )
             throw error
@@ -154,10 +166,7 @@ struct KeychainStore: Sendable {
 
     func deleteProxyPassword(profileID: UUID) throws {
         var failures = 0
-        for service in [
-            Self.currentService,
-            Self.legacyService
-        ] {
+        for service in [service, legacyService].compactMap({ $0 }) {
             do {
                 try backend.delete(
                     service: service,
@@ -188,14 +197,16 @@ struct KeychainStore: Sendable {
     ) {
         restore(
             current,
-            service: Self.currentService,
+            service: service,
             profileID: profileID
         )
-        restore(
-            legacy,
-            service: Self.legacyService,
-            profileID: profileID
-        )
+        if let legacyService {
+            restore(
+                legacy,
+                service: legacyService,
+                profileID: profileID
+            )
+        }
     }
 
     private func restore(
