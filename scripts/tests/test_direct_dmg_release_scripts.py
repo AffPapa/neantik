@@ -8,7 +8,20 @@ ROOT = Path(__file__).resolve().parents[2]
 class DirectDMGReleaseScriptTests(unittest.TestCase):
     def test_release_script_fails_closed_before_notarization(self) -> None:
         text = (ROOT / "scripts" / "release-direct-dmg.sh").read_text()
-        self.assertIn('APP_PATH="$PROJECT_DIR/dist/NeAntik.app"', text)
+        self.assertIn(
+            'PREPARED_APP_PATH="$PROJECT_DIR/dist/NeAntik.app"',
+            text,
+        )
+        self.assertIn(
+            'ZIP_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"',
+            text,
+        )
+        self.assertIn(
+            'verify-direct-notarized-archive.py',
+            text,
+        )
+        self.assertIn('ditto -x -k "$ZIP_PATH" "$ARCHIVE_ROOT"', text)
+        self.assertIn('APP_PATH="$ARCHIVE_ROOT/NeAntik.app"', text)
         self.assertIn('RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"', text)
         self.assertIn("APP_SIZE_KB >= 100000", text)
         self.assertIn("DMG_SIZE >= 50000000", text)
