@@ -903,6 +903,132 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 )
             )
 
+    def test_mismatched_submit_intent_without_history_is_retired_and_released(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "submission",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=FakeReleaseRunner(fail_submit=True),
+                    **self.source_kwargs(root, commit="a"),
+                )
+
+            runner = FakeReleaseRunner()
+            result = MODULE.run_transaction(
+                project_root=root,
+                app=paths["app"],
+                manifest=paths["manifest"],
+                evidence=paths["evidence"],
+                attestation=paths["attestation"],
+                release_channel="public-alpha",
+                notary_profile="test-profile",
+                runner=runner,
+                **self.source_kwargs(root, commit="d"),
+            )
+
+            self.assertTrue(Path(result["archive"]).is_file())
+            self.assertEqual(
+                sum(
+                    command[:3] == ["xcrun", "notarytool", "submit"]
+                    for command in runner.commands
+                ),
+                1,
+            )
+            self.assertTrue(
+                any(
+                    command[:3] == ["xcrun", "notarytool", "history"]
+                    for command in runner.commands
+                )
+            )
+            retired = list((root / "dist" / ".notary-retired").iterdir())
+            reconciled = [
+                path
+                for path in retired
+                if (path / "notary-reconciliation.json").is_file()
+            ]
+            self.assertEqual(len(reconciled), 1)
+            marker = json.loads(
+                (reconciled[0] / "notary-reconciliation.json").read_text()
+            )
+            self.assertEqual(marker["result"], "submission-absent")
+            self.assertEqual(
+                marker["archiveName"],
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            )
+
+    def test_mismatched_submit_intent_with_history_remains_blocking(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "submission",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=FakeReleaseRunner(fail_submit=True),
+                    **self.source_kwargs(root, commit="a"),
+                )
+            active = MODULE.STATE.find_active_transaction(
+                root / "dist",
+                "NeAntik-1.2.3-arm64-notarized.zip",
+            )
+            assert active is not None
+            submission_name = MODULE._receipt_data(
+                active[1],
+                "transaction-created",
+            )["submissionName"]
+            runner = FakeReleaseRunner(
+                history_submission_name=str(submission_name),
+            )
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "matching Apple submission",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=runner,
+                    **self.source_kwargs(root, commit="d"),
+                )
+            self.assertFalse(
+                any(
+                    command[:3] == ["xcrun", "notarytool", "submit"]
+                    for command in runner.commands
+                )
+            )
+            self.assertIsNotNone(
+                MODULE.STATE.find_active_transaction(
+                    root / "dist",
+                    "NeAntik-1.2.3-arm64-notarized.zip",
+                )
+            )
+
     def test_sidecar_crash_resumes_exact_transaction_without_resubmit(
         self,
     ) -> None:

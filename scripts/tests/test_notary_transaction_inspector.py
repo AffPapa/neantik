@@ -203,6 +203,25 @@ def create_transaction(
     return root
 
 
+def write_reconciliation_marker(root: Path, transaction_id: str) -> None:
+    submission_name = f"{transaction_id}-{ARCHIVE}"
+    write_private(
+        root / "notary-reconciliation.json",
+        {
+            "archiveName": ARCHIVE,
+            "checkedAtUnixNs": 1,
+            "historySHA256": "a" * 64,
+            "markerType": "neantik-notary-reconciliation",
+            "result": "submission-absent",
+            "schemaVersion": 1,
+            "submissionNameSHA256": hashlib.sha256(
+                submission_name.encode("utf-8")
+            ).hexdigest(),
+            "transactionId": transaction_id,
+        },
+    )
+
+
 def tree_snapshot(root: Path) -> tuple[tuple[object, ...], ...]:
     rows = []
     for path in sorted((root, *root.rglob("*"))):
@@ -372,6 +391,55 @@ class NotaryTransactionInspectorTests(unittest.TestCase):
         self.assertEqual(
             report["records"][0]["reasonCode"],
             "retired-state-requires-reconciliation",
+        )
+
+    def test_reconciled_retired_submit_intent_is_non_blocking(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir()
+            transaction_id = str(uuid.uuid4())
+            root = create_transaction(
+                dist,
+                category="retired",
+                stage="submit-intent",
+                transaction_id=transaction_id,
+            )
+            write_reconciliation_marker(root, transaction_id)
+            report = MODULE.inspect_dist(
+                dist,
+                expected_archive_name=ARCHIVE,
+            )
+        self.assertTrue(report["safe"])
+        self.assertTrue(report["releaseReady"])
+        self.assertEqual(report["summary"]["retiredCount"], 1)
+        self.assertEqual(report["records"], [])
+
+    def test_malformed_reconciliation_marker_is_blocking(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dist = Path(temporary) / "dist"
+            dist.mkdir()
+            transaction_id = str(uuid.uuid4())
+            root = create_transaction(
+                dist,
+                category="retired",
+                stage="submit-intent",
+                transaction_id=transaction_id,
+            )
+            write_reconciliation_marker(root, transaction_id)
+            marker_path = root / "notary-reconciliation.json"
+            marker = json.loads(marker_path.read_text())
+            marker["submissionNameSHA256"] = "0" * 64
+            marker_path.chmod(0o600)
+            write_private(marker_path, marker)
+            report = MODULE.inspect_dist(
+                dist,
+                expected_archive_name=ARCHIVE,
+            )
+        self.assertFalse(report["safe"])
+        self.assertFalse(report["releaseReady"])
+        self.assertEqual(
+            report["records"][0]["reasonCode"],
+            "invalid-reconciliation-schema",
         )
 
     def test_realistic_independent_retirement_uuid_is_safe(self) -> None:

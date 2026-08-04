@@ -37,7 +37,8 @@ _STATE_TEMPORARY_NAME = re.compile(
     r"\.tmp-[0-9a-f]{32}$"
 )
 _ROOT_TEMPORARY_NAME = re.compile(
-    r"^\.(?:init-marker|apple-accepted|notary-receipt)\.json"
+    r"^\.(?:init-marker|apple-accepted|notary-receipt|"
+    r"notary-reconciliation)\.json"
     r"\.tmp-[0-9a-f]{32}$"
 )
 _STAGES: tuple[tuple[str, str], ...] = (
@@ -64,6 +65,7 @@ _ALLOWED_ROOT_ENTRIES = frozenset(
         "final-check",
         "inputs",
         "notary-receipt.json",
+        "notary-reconciliation.json",
         "precheck",
         "state",
         "submitted",
@@ -959,6 +961,61 @@ def _read_marker(
     return payload
 
 
+def _read_reconciliation_marker(
+    root: int,
+    *,
+    expected_device: int,
+    transaction_id: str,
+    state_context: dict[str, object],
+) -> dict[str, object]:
+    payload = _decode_canonical_json(
+        _read_regular_file_at(
+            root,
+            "notary-reconciliation.json",
+            expected_device=expected_device,
+            expected_mode=0o400,
+            maximum_bytes=_MAXIMUM_MARKER_BYTES,
+        )
+    )
+    if set(payload) != {
+        "archiveName",
+        "checkedAtUnixNs",
+        "historySHA256",
+        "markerType",
+        "result",
+        "schemaVersion",
+        "submissionNameSHA256",
+        "transactionId",
+    }:
+        raise NotaryTransactionInspectionError(
+            "invalid-reconciliation-schema"
+        )
+    checked_at = payload.get("checkedAtUnixNs")
+    submission_name = state_context.get("submission")
+    if (
+        payload.get("schemaVersion") != 1
+        or payload.get("markerType")
+        != "neantik-notary-reconciliation"
+        or payload.get("result") != "submission-absent"
+        or payload.get("transactionId") != transaction_id
+        or payload.get("archiveName") != state_context.get("archive")
+        or not isinstance(checked_at, int)
+        or isinstance(checked_at, bool)
+        or checked_at <= 0
+        or not isinstance(submission_name, str)
+        or payload.get("submissionNameSHA256")
+        != hashlib.sha256(submission_name.encode("utf-8")).hexdigest()
+    ):
+        raise NotaryTransactionInspectionError(
+            "invalid-reconciliation-schema"
+        )
+    _require_sha(
+        payload.get("historySHA256"),
+        code="invalid-reconciliation-schema",
+    )
+    return payload
+
+
 def _exclusive_lock_is_live(
     parent: int,
     name: str,
@@ -1451,6 +1508,7 @@ def _classify_transaction(
     archive_name: str | None,
     expected_archive_name: str | None,
     live_lease: bool | None,
+    reconciliation: dict[str, object] | None,
 ) -> InspectionRecord:
     marker_id = (
         str(marker["transactionId"]) if marker is not None else None
@@ -1465,6 +1523,10 @@ def _classify_transaction(
             "marker-state-id-mismatch"
         )
     if category == "initialization":
+        if reconciliation is not None:
+            raise NotaryTransactionInspectionError(
+                "initialization-has-reconciliation"
+            )
         match = _INITIAL_NAME.fullmatch(name)
         if match is None:
             raise NotaryTransactionInspectionError(
@@ -1507,6 +1569,23 @@ def _classify_transaction(
         if stage is None:
             raise NotaryTransactionInspectionError(
                 "active-state-missing"
+            )
+        if reconciliation is not None:
+            if stage != "submit-intent":
+                raise NotaryTransactionInspectionError(
+                    "reconciliation-stage-mismatch"
+                )
+            return _record(
+                category=category,
+                name=name,
+                status="active-reconciled-retirement-pending",
+                stage=stage,
+                external_effect="none",
+                structurally_safe=True,
+                release_blocking=True,
+                operator_action=True,
+                live_lease=None,
+                reason_code="apple-history-proves-submission-absent",
             )
         if (
             expected_archive_name is None
@@ -1573,6 +1652,23 @@ def _classify_transaction(
     if retired_match is None:
         raise NotaryTransactionInspectionError(
             "invalid-retired-name"
+        )
+    if reconciliation is not None:
+        if stage != "submit-intent":
+            raise NotaryTransactionInspectionError(
+                "reconciliation-stage-mismatch"
+            )
+        return _record(
+            category=category,
+            name=name,
+            status="retired-reconciled-no-effect",
+            stage=stage,
+            external_effect="none",
+            structurally_safe=True,
+            release_blocking=False,
+            operator_action=False,
+            live_lease=live_lease,
+            reason_code="apple-history-proves-submission-absent",
         )
     if marker is None and stage is None:
         return _record(
@@ -1714,6 +1810,16 @@ def _inspect_transaction_directory(
                 expected_device=expected_device,
             )
         )
+        reconciliation = (
+            _read_reconciliation_marker(
+                descriptor,
+                expected_device=expected_device,
+                transaction_id=state_transaction_id or "",
+                state_context=state_context,
+            )
+            if "notary-reconciliation.json" in names_before
+            else None
+        )
         if stage is not None and not _REQUIRED_TRANSACTION_DIRECTORIES.issubset(
             names_before
         ):
@@ -1775,6 +1881,7 @@ def _inspect_transaction_directory(
             ),
             expected_archive_name=expected_archive_name,
             live_lease=live_lease,
+            reconciliation=reconciliation,
         )
     except NotaryTransactionInspectionError as error:
         return _record(

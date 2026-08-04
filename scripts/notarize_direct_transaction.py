@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import plistlib
@@ -297,11 +298,11 @@ def parse_notary_submission(output: str) -> str:
     return identifier
 
 
-def find_notary_submission_in_history(
+def find_notary_submission_in_history_or_none(
     output: str,
     *,
     submission_name: str,
-) -> str:
+) -> tuple[str | None, str]:
     try:
         payload = json.loads(
             output,
@@ -340,6 +341,18 @@ def find_notary_submission_in_history(
         return None
 
     found = walk(payload)
+    return found, hashlib.sha256(output.encode("utf-8")).hexdigest()
+
+
+def find_notary_submission_in_history(
+    output: str,
+    *,
+    submission_name: str,
+) -> str:
+    found, _history_sha256 = find_notary_submission_in_history_or_none(
+        output,
+        submission_name=submission_name,
+    )
     if found is None:
         raise DirectNotaryTransactionError(
             "Apple submission effect is unknown and notary history does "
@@ -1255,6 +1268,221 @@ def _receipt_data(
     return matching[0]
 
 
+def _transaction_matches_current_release(
+    receipts: tuple[STATE.StateReceipt, ...],
+    *,
+    archive_name: str,
+    inputs: CandidateInputs,
+    release_source: SOURCE.ReleaseSourceSnapshot,
+    runtime_build_evidence: dict[str, object],
+    release_channel: str,
+) -> bool:
+    created = _receipt_data(receipts, "transaction-created")
+    return (
+        created.get("archiveName") == archive_name
+        and created.get("releaseChannel") == release_channel
+        and created.get("candidateInputs")
+        == {
+            "infoPlist": inputs.info.sha256,
+            "manifest": inputs.manifest.sha256,
+            "evidence": inputs.evidence.sha256,
+            "attestation": inputs.attestation.sha256,
+        }
+        and created.get("releaseSource") == release_source.payload
+        and created.get("runtimeBuildEvidence")
+        == runtime_build_evidence
+    )
+
+
+def _validate_reconciliation_marker(
+    marker: Path,
+    *,
+    transaction_id: str,
+    archive_name: str,
+    submission_name: str,
+) -> None:
+    try:
+        raw = _read_private_regular_file(
+            marker,
+            maximum_bytes=16 * 1024,
+        )
+        payload = json.loads(
+            raw,
+            object_pairs_hook=_reject_duplicate_json_pairs,
+        )
+    except (json.JSONDecodeError, TypeError) as error:
+        raise DirectNotaryTransactionError(
+            "notary reconciliation marker is invalid"
+        ) from error
+    if (
+        not isinstance(payload, dict)
+        or _canonical_private_json(payload) != raw
+        or set(payload)
+        != {
+            "archiveName",
+            "checkedAtUnixNs",
+            "historySHA256",
+            "markerType",
+            "result",
+            "schemaVersion",
+            "submissionNameSHA256",
+            "transactionId",
+        }
+        or payload.get("schemaVersion") != 1
+        or payload.get("markerType")
+        != "neantik-notary-reconciliation"
+        or payload.get("result") != "submission-absent"
+        or payload.get("transactionId") != transaction_id
+        or payload.get("archiveName") != archive_name
+        or not isinstance(payload.get("checkedAtUnixNs"), int)
+        or isinstance(payload.get("checkedAtUnixNs"), bool)
+        or int(payload["checkedAtUnixNs"]) <= 0
+        or not isinstance(payload.get("historySHA256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", payload["historySHA256"])
+        is None
+        or payload.get("submissionNameSHA256")
+        != hashlib.sha256(submission_name.encode("utf-8")).hexdigest()
+    ):
+        raise DirectNotaryTransactionError(
+            "notary reconciliation marker is invalid"
+        )
+
+
+def reconcile_mismatched_submit_intent(
+    active: tuple[Path, tuple[STATE.StateReceipt, ...]],
+    *,
+    project_root: Path,
+    notary_profile: str,
+    runner: CommandRunner,
+) -> bool:
+    """Prove a stale submit intent had no Apple effect, then retain it.
+
+    The durable submit-intent receipt is written before invoking Apple. If the
+    invocation fails before returning an id, a later clean source commit must
+    not silently reuse that candidate. A strict history query is the only
+    automatic no-effect proof: a matching name remains blocking, while an
+    absent name is recorded inside the exact transaction before inode-verified
+    retirement.
+    """
+    transaction_root, receipts = active
+    if receipts[-1].stage != "submit-intent":
+        return False
+    created = _receipt_data(receipts, "transaction-created")
+    submission_name = created.get("submissionName")
+    archive_name = created.get("archiveName")
+    transaction_id = receipts[0].payload.get("transactionId")
+    if (
+        not isinstance(submission_name, str)
+        or not isinstance(archive_name, str)
+        or not isinstance(transaction_id, str)
+    ):
+        raise DirectNotaryTransactionError(
+            "stale submit-intent transaction identity is invalid"
+        )
+    history_output = run_checked(
+        [
+            "xcrun",
+            "notarytool",
+            "history",
+            "--keychain-profile",
+            notary_profile,
+            "--output-format",
+            "json",
+        ],
+        cwd=project_root,
+        runner=runner,
+        label="stale Apple notarization history reconciliation",
+    )
+    found, history_sha256 = find_notary_submission_in_history_or_none(
+        history_output,
+        submission_name=submission_name,
+    )
+    if found is not None:
+        raise DirectNotaryTransactionError(
+            "stale transaction has a matching Apple submission and "
+            "requires exact-source recovery"
+        )
+
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        directory_flags |= os.O_NOFOLLOW
+    descriptor = -1
+    try:
+        descriptor = os.open(transaction_root, directory_flags)
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISDIR(before.st_mode)
+            or before.st_uid != os.geteuid()
+            or stat.S_IMODE(before.st_mode) != 0o700
+        ):
+            raise DirectNotaryTransactionError(
+                "stale submit-intent transaction directory is unsafe"
+        )
+        marker = transaction_root / "notary-reconciliation.json"
+        if os.path.lexists(marker):
+            _validate_reconciliation_marker(
+                marker,
+                transaction_id=transaction_id,
+                archive_name=archive_name,
+                submission_name=submission_name,
+            )
+        else:
+            write_private_json(
+                marker,
+                {
+                    "archiveName": archive_name,
+                    "checkedAtUnixNs": time.time_ns(),
+                    "historySHA256": history_sha256,
+                    "markerType": "neantik-notary-reconciliation",
+                    "result": "submission-absent",
+                    "schemaVersion": 1,
+                    "submissionNameSHA256": hashlib.sha256(
+                        submission_name.encode("utf-8")
+                    ).hexdigest(),
+                    "transactionId": transaction_id,
+                },
+            )
+            _validate_reconciliation_marker(
+                marker,
+                transaction_id=transaction_id,
+                archive_name=archive_name,
+                submission_name=submission_name,
+            )
+        after = os.fstat(descriptor)
+        if (
+            before.st_dev != after.st_dev
+            or before.st_ino != after.st_ino
+            or before.st_uid != after.st_uid
+            or before.st_mode != after.st_mode
+        ):
+            raise DirectNotaryTransactionError(
+                "stale submit-intent transaction changed during "
+                "reconciliation"
+            )
+        retirement = retire_exact_transaction(
+            transaction_root,
+            descriptor=descriptor,
+            expected_device=before.st_dev,
+            expected_inode=before.st_ino,
+        )
+        if not (
+            retirement.moved
+            and retirement.durable
+            and retirement.verified
+        ):
+            raise DirectNotaryTransactionError(
+                "reconciled stale transaction could not be safely retired"
+            )
+        return True
+    except OSError as error:
+        raise DirectNotaryTransactionError(
+            "stale submit-intent transaction could not be reconciled"
+        ) from error
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
 def observe_public_release_pair(
     archive: TRANSACTION.FileSeal,
     checksum: TRANSACTION.FileSeal,
@@ -1300,18 +1528,13 @@ def resume_known_transaction(
             "operator cleanup"
         )
     created = _receipt_data(receipts, "transaction-created")
-    expected_inputs = {
-        "infoPlist": inputs.info.sha256,
-        "manifest": inputs.manifest.sha256,
-        "evidence": inputs.evidence.sha256,
-        "attestation": inputs.attestation.sha256,
-    }
-    if (
-        created.get("archiveName") != archive_name
-        or created.get("releaseChannel") != release_channel
-        or created.get("candidateInputs") != expected_inputs
-        or created.get("releaseSource") != release_source.payload
-        or created.get("runtimeBuildEvidence") != runtime_build_evidence
+    if not _transaction_matches_current_release(
+        receipts,
+        archive_name=archive_name,
+        inputs=inputs,
+        release_source=release_source,
+        runtime_build_evidence=runtime_build_evidence,
+        release_channel=release_channel,
     ):
         raise DirectNotaryTransactionError(
             "unfinished transaction does not match the exact current "
@@ -2003,6 +2226,24 @@ def run_transaction(
             archive_name,
             exclude=transaction_root,
         )
+        if active is not None:
+            if (
+                not _transaction_matches_current_release(
+                    active[1],
+                    archive_name=archive_name,
+                    inputs=inputs,
+                    release_source=release_source,
+                    runtime_build_evidence=bound_runtime_build_evidence,
+                    release_channel=release_channel,
+                )
+                and reconcile_mismatched_submit_intent(
+                    active,
+                    project_root=project_root,
+                    notary_profile=notary_profile,
+                    runner=runner,
+                )
+            ):
+                active = None
         if active is not None:
             resumed = resume_known_transaction(
                 active,
