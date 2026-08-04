@@ -100,7 +100,6 @@ class FakeReleaseRunner:
                 json.dumps(
                     {
                         "id": SUBMISSION_ID,
-                        "status": self.notary_status,
                     }
                 ),
             )
@@ -156,6 +155,41 @@ class FakeReleaseRunner:
 
 
 class DirectNotaryTransactionTests(unittest.TestCase):
+    def test_no_wait_submission_accepts_identifier_without_status(
+        self,
+    ) -> None:
+        self.assertEqual(
+            MODULE.parse_notary_submission(
+                json.dumps({"id": SUBMISSION_ID})
+            ),
+            SUBMISSION_ID,
+        )
+
+    def test_no_wait_submission_rejects_missing_identifier(self) -> None:
+        with self.assertRaisesRegex(
+            MODULE.DirectNotaryTransactionError,
+            "missing id",
+        ):
+            MODULE.parse_notary_submission(
+                json.dumps({"message": "Successfully uploaded file"})
+            )
+
+    def test_no_wait_submission_rejects_invalid_optional_status(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            MODULE.DirectNotaryTransactionError,
+            "status is Rejected",
+        ):
+            MODULE.parse_notary_submission(
+                json.dumps(
+                    {
+                        "id": SUBMISSION_ID,
+                        "status": "Rejected",
+                    }
+                )
+            )
+
     def source_kwargs(
         self,
         root: Path,
