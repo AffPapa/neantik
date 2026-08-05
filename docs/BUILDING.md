@@ -41,7 +41,7 @@ checkout or build output. Runtime provenance is split into:
 
 - `runtime/fingerprint-chromium.lock.json` — upstream source and build-time
   provenance;
-- `runtime/nevision-patches/series.json` — release-ready Chromium 150 patch
+- `runtime/nevision-patches/series.json` — release-ready Chromium 151 patch
   manifest;
 - `runtime/nevision-patches/patches/` — patch files;
 - `runtime/apple-device-tuples.json` — reviewed Apple Silicon tuple catalog;
@@ -54,16 +54,20 @@ performed only with a complete rebuild and new binary evidence.
 Prepare and build in a separate disposable directory with ample free space:
 
 ```bash
-./scripts/preflight-runtime-rebase-150.py /absolute/path/to/build-root
-./scripts/prepare-runtime-source.sh /absolute/path/to/build-root
-./scripts/build-runtime.sh /absolute/path/to/build-root
+./scripts/preflight-runtime-rebase-150.py \
+  --plan runtime/chromium-151-rebase-plan.json \
+  /absolute/path/to/build-root
+./scripts/build-runtime.sh /absolute/path/to/build-root prepare
+./scripts/build-runtime.sh /absolute/path/to/build-root configure
+./scripts/build-runtime.sh /absolute/path/to/build-root build
 ```
 
-The exact workflow and acceptance gates are documented in
-[RUNTIME_SECURITY_REBASE_150.md](RUNTIME_SECURITY_REBASE_150.md).
+The current workflow and acceptance gates are documented in
+[`runtime/README.md`](../runtime/README.md). The Chromium 150 rebase document
+is retained as historical evidence.
 
-The published `0.3.12` binary is source-pinned and its patches and build
-evidence are auditable, but the project does not yet claim independently
+Published binaries are source-pinned and their patches and build evidence are
+auditable, but the project does not yet claim independently
 reproducible bit-for-bit output. Developer ID signing and notarization also
 make the public ZIP builder-specific.
 
@@ -118,7 +122,10 @@ export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm
 ./scripts/release-direct.sh
 ```
 
-The first phase signs one exact candidate, invokes that exact signed executable
+The first phase signs and freshly verifies the built runtime, promotes the
+candidate source lock only after the Metal binary report matches, regenerates
+the public notices, and packages one exact candidate. It then invokes that
+exact signed executable
 in a strict headless mode to create and self-test a candidate-scoped Secure
 Enclave authority, then writes a non-overwriting schema-3 manifest of the
 complete bundle and public binding. Every enrollment attempt receives a new

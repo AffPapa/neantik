@@ -18,10 +18,12 @@ CONTENT_LIVE="$LIVE_ROOT/public/neantik/content.json"
 RELEASE_LIVE="$LIVE_ROOT/public/neantik/release.json"
 SUDOERS_LIVE="/etc/sudoers.d/neantik-deploy"
 AUTHORIZED_KEYS="/home/neantik-deploy/.ssh/authorized_keys"
+OPS_MANIFEST="/etc/neantik-release-ops.json"
 BACKUP_ROOT="$LIVE_ROOT/storage/app/codex-backups"
 TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 BACKUP="$BACKUP_ROOT/neantik-final-access-$TIMESTAMP"
 CONTENT_EXISTED=0
+OPS_MANIFEST_EXISTED=0
 
 required=(
     neantik-release-deploy
@@ -67,6 +69,10 @@ if [[ -f "$CONTENT_LIVE" ]]; then
     CONTENT_EXISTED=1
     cp -a "$CONTENT_LIVE" "$BACKUP/content.json"
 fi
+if [[ -f "$OPS_MANIFEST" ]]; then
+    OPS_MANIFEST_EXISTED=1
+    cp -a "$OPS_MANIFEST" "$BACKUP/neantik-release-ops.json"
+fi
 BEFORE_RELEASE_SHA=$(sha256sum "$RELEASE_LIVE" | cut -d' ' -f1)
 
 restore_install() {
@@ -79,6 +85,11 @@ restore_install() {
         cp -a "$BACKUP/content.json" "$CONTENT_LIVE" || true
     else
         rm -f "$CONTENT_LIVE"
+    fi
+    if [[ "$OPS_MANIFEST_EXISTED" -eq 1 ]]; then
+        cp -a "$BACKUP/neantik-release-ops.json" "$OPS_MANIFEST" || true
+    else
+        rm -f "$OPS_MANIFEST"
     fi
     cd "$LIVE_ROOT"
     sudo -u deploy php artisan view:clear >/dev/null 2>&1 || true
@@ -100,6 +111,33 @@ install -m 440 -o root -g root \
     "$STAGED/neantik-deploy.sudoers" \
     "$SUDOERS_LIVE"
 visudo -cf "$SUDOERS_LIVE" >/dev/null
+
+ops_manifest_tmp=$(mktemp /etc/neantik-release-ops.json.install-XXXXXX)
+python3 - "$ops_manifest_tmp" <<'PY'
+import hashlib
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+paths = sorted(Path("/usr/local/sbin").glob("neantik-*"))
+manifest = {
+    "schemaVersion": 1,
+    "installedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    "files": {
+        path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in paths
+        if path.is_file() and not path.is_symlink()
+    },
+}
+Path(sys.argv[1]).write_text(
+    json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+    encoding="utf-8",
+)
+PY
+chown root:root "$ops_manifest_tmp"
+chmod 644 "$ops_manifest_tmp"
+mv -f "$ops_manifest_tmp" "$OPS_MANIFEST"
 
 content_tmp=$(mktemp "$CONTENT_LIVE.install-XXXXXX")
 install -m 644 -o deploy -g deploy "$STAGED/content.json" "$content_tmp"

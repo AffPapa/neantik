@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "151.0.7922.75",
+  "targetArchitecture": "arm64",
+  "sourceMode": "owned-rebase",
+  "binaryBindingStatus": "pending-new-build",
+  "rebasePlanSHA256": "831a8b7df05cc8101816a4c9735720609de968a08634c90f380fdcf47464a7a7",
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "151.0.7922.75",
+    "commit": "1ddc0a2003eb30c3990568d74ed0437451e9c374",
+    "tree": "07c21c83df8c29373f2ff5e7fb3d44a2bb1443c3",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+    "liteArchive": {
+      "filename": "chromium-151.0.7922.75-lite.tar.xz",
+      "sha256": "4bc6bc515e61e20f8c400997ae2af9ccb9f455bac1bb0532337be78736f89947",
+      "size": 1701085588,
+      "hashesFileSHA256": "b24ecc434295309276cb476ddca2a10d62ed0ab3826921e8b7a7bb76812a9af6"
+    }
+  },
+  "macPackaging": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "commit": "e194927e4838cb66ecdef40843a97c4f88f8d2af",
+    "tree": "03711ad4caab83424797a1bcd3a3b620caad6b55",
+    "packagedChromiumVersion": "151.0.7922.71",
+    "recordedCommonSubmoduleCommit": "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
+    "criticalFiles": {
+      "LICENSE": "2fdd1ed451121c07df0726a8ac8b86b49315d89a22c683edaf98b579e710504b",
+      "patches/series": "8ee061e5e7ea9ed731462aeb10449ee62d65a398aeaf275cec0beb9d38d55491",
+      "flags.macos.gn": "4c2ef83f9aba988cd55b2f9542148c07a7a4056f0bde1fea6451bb31f7d39165",
+      "downloads-arm64.ini": "6135825472ad21fde9fe6dadafff7706e62695c3c3b898d0a2e5e90374708433",
+      "downloads-arm64-rustlib.ini": "b5237c4a7d2bfa445443c5a20f49fc55fc7878c77ab096bf8a70ad0f2f4e799f"
+    }
+  },
+  "commonChromium": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "151.0.7922.71-1",
+    "tagObject": "fab7818c01a4660f588bc390ed46174661d570d3",
+    "commit": "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
+    "tree": "eb75a0ed767e8c0cd8576c92fe4c364dfdad03c0",
+    "criticalFiles": {
+      "LICENSE": "78bc4abfc3e5606b5b88c3cb9409a3250a7f64cffe704bef0563e11910a29189",
+      "patches/series": "a6ae1bf8300ea98e9811bc02a35ed123d51e73bb9722c17fd081edfb59a9005d",
+      "flags.gn": "a274a5633b3f909a1d6035192b5ff02c28f81a2f8fe60545d56bde34a0dc6c6b",
+      "downloads.ini": "dc3d4a77b79570878ad691ab26306946dfff0f8c711768edebce7eb26ae2fb68",
+      "pruning.list": "6d2c5b6d67594aad12c1996ad82a0a5c650b4ddccd490719deeb532588dc68d9",
+      "chromium_version.txt": "ceee167cc8ddcf80de5bdf6d56a12d007cdd2cf4299b06427523308a83559a6f"
+    }
+  },
+  "sourceVersionOverride": {
+    "from": "151.0.7922.71",
+    "to": "151.0.7922.75",
+    "modifiedCriticalFileSHA256": "79eb18e7d7bd8305f99351a22132be98dea5bc9e9d913c54ebace1b11a249189"
+  },
+  "ownedInputs": {
+    "runtime/nevision-patches/series.json": "d60b18ec07a985beffe1c0c5a584316c3c8709ac5cbaae28bc8f96a3b96b2875",
+    "scripts/apply-neantik-patchset.py": "2fb7d131cc0e2d7239ed3c361a1054d82b610dbf821fdac9c1e050cdf7858120",
+    "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+    "scripts/apply-owned-runtime-device-tuples.py": "ecd54b0c108f39ec3d374f0c4ec225a7a2e93eda7602b53ab8a444569adcc35d",
+    "runtime/chromium-151-toolchain-lock.json": "1bd134675b33ce24661a0210c98d5a6dc3a6fb565b484b39940f2b22de861932",
+    "scripts/build-runtime.sh": "f18f3b2e777114f2140d933f1487d8432b7ac9d947ec3e6f90fde7649c7a829c",
+    "scripts/verify-chromium-webrtc-policy.py": "7a307f5e77fb6e2e8aad3319272da657d83cae01a6441f6c57e7707d4dc4f970",
+    "scripts/verify-chromium-launch-flags.py": "4498899797e0746b69f2598b611805cb3553f46429325b15d98c63174bca06ab"
+  },
+  "policy": "This contract describes the expected Chromium 151 source inputs only. It does not attest any existing binary. Binary binding remains blocked until a new build records the emitted source-provenance SHA-256 in its runtime verification report."
+}

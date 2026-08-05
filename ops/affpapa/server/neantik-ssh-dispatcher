@@ -3,7 +3,7 @@
 # /usr/local/sbin/neantik-ssh-dispatcher, owned by root.
 # Allows ONLY:
 #   neantik-release-status
-#   neantik-release-deploy [--check|--dry-run]
+#   neantik-release-deploy [--check|--dry-run|--stage-artifacts|--activate]
 #   neantik-release-abort
 #   neantik-release-rollback [--check|--dry-run]
 #   neantik-upload <strictly-validated filename>
@@ -27,6 +27,12 @@ case "$CMD" in
         ;;
     "neantik-release-deploy --dry-run")
         exec sudo /usr/local/sbin/neantik-release-deploy --dry-run
+        ;;
+    "neantik-release-deploy --stage-artifacts")
+        exec sudo /usr/local/sbin/neantik-release-deploy --stage-artifacts
+        ;;
+    "neantik-release-deploy --activate")
+        exec sudo /usr/local/sbin/neantik-release-deploy --activate
         ;;
     "neantik-release-abort")
         exec sudo /usr/local/sbin/neantik-release-abort
@@ -53,7 +59,7 @@ case "$CMD" in
     "")
         echo "NeAntik deploy access. Available commands:"
         echo "  neantik-release-status"
-        echo "  neantik-release-deploy [--check|--dry-run]"
+        echo "  neantik-release-deploy [--check|--dry-run|--stage-artifacts|--activate]"
         echo "  neantik-release-abort"
         echo "  neantik-release-rollback [--check|--dry-run]"
         echo "  neantik-upload <filename>"

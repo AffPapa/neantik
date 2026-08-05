@@ -669,6 +669,11 @@ struct ContentView: View {
                         ? "Скрыть список профилей"
                         : "Показать список профилей"
                 )
+                .accessibilityLabel(
+                    isSidebarVisible
+                        ? "Скрыть список профилей"
+                        : "Показать список профилей"
+                )
 
                 Text("NeAntik")
                     .font(.title2)

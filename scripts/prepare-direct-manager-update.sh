@@ -21,7 +21,7 @@ resolve_source_provenance() {
     echo "$configured"
     return
   fi
-  local default="/private/tmp/nevision-chromium-150/build/source-provenance.json"
+  local default="/private/tmp/nevision-chromium-151/build/source-provenance.json"
   if [[ -f "$default" ]]; then
     echo "$default"
     return
@@ -66,8 +66,8 @@ copy_reviewed_runtime_evidence() {
     "$evidence/neantik-patch-series.json"
   cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
     "$evidence/apple-device-tuples.json"
-  cp "$PROJECT_DIR/runtime/chromium-150-source-contract.json" \
-    "$evidence/chromium-150-source-contract.json"
+  cp "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
+    "$evidence/chromium-151-source-contract.json"
   cp "$source_provenance" "$evidence/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$evidence/source-provenance.json"

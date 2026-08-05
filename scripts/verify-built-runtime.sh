@@ -7,7 +7,7 @@ LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
 PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
 DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
-SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
+SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-151-source-contract.json"
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
@@ -93,7 +93,7 @@ SOURCE_CONTRACT_SHA256="$(
 )"
 SOURCE_PROVENANCE_SHA256=""
 if [[ -n "$REPORT_PATH" && -z "$SOURCE_PROVENANCE_PATH" ]]; then
-  echo "A new runtime report requires Chromium 150 source provenance." >&2
+  echo "A new runtime report requires owned Chromium source provenance." >&2
   exit 66
 fi
 if [[ -n "$REPORT_PATH" && -z "$CANDIDATE_LOCK_PATH" ]]; then
@@ -255,26 +255,37 @@ framework = Path(sys.argv[1])
 required = {
     value.encode("ascii")
     for value in (
-        "fingerprint-platform",
-        "fingerprint-timezone",
-        "fingerprint-locale",
+        "NEANTIK_PROFILE_SEED",
+        "NEANTIK_PROFILE_TIMEZONE",
         "apple-device-tuple",
         "default_public_interface_only",
         "disable_non_proxied_udp",
-        "DnsOverHttps",
+        "DnsOverHttpsUpgrade",
         "AsyncDns",
         "WebGPUService",
     )
 }
-overlap = max(map(len, required)) - 1
+forbidden = {
+    value.encode("ascii") + b"\0"
+    for value in (
+        "fingerprint-timezone",
+        "fingerprint-locale",
+        "fingerprint-platform",
+    )
+}
+found_forbidden = set()
+overlap = max(map(len, required | forbidden)) - 1
 tail = b""
 with framework.open("rb") as handle:
-    while required:
+    while required or len(found_forbidden) != len(forbidden):
         chunk = handle.read(1024 * 1024)
         if not chunk:
             break
         haystack = tail + chunk
         required = {needle for needle in required if needle not in haystack}
+        found_forbidden.update(
+            needle for needle in forbidden if needle in haystack
+        )
         tail = haystack[-overlap:]
 
 if required:
@@ -282,6 +293,14 @@ if required:
         print(
             "Missing fingerprint protocol string: "
             + value.decode("ascii"),
+            file=sys.stderr,
+        )
+    raise SystemExit(65)
+if found_forbidden:
+    for value in sorted(found_forbidden):
+        print(
+            "Forbidden legacy fingerprint argv marker: "
+            + value.rstrip(b"\0").decode("ascii"),
             file=sys.stderr,
         )
     raise SystemExit(65)
@@ -314,6 +333,9 @@ for generated_input in series.get("generatedInputs", []):
     generated_postimages.update(
         generated_input.get("postimageSHA256", {})
     )
+final_patch_postimages = {}
+for group in series.get("patchGroups", []):
+    final_patch_postimages.update(group.get("postimageSHA256", {}))
 
 checked = 0
 for group in series.get("patchGroups", []):
@@ -322,7 +344,7 @@ for group in series.get("patchGroups", []):
     for relative_path, expected_sha256 in group.get("postimageSHA256", {}).items():
         expected_sha256 = generated_postimages.get(
             relative_path,
-            expected_sha256,
+            final_patch_postimages.get(relative_path, expected_sha256),
         )
         path = source_root / relative_path
         if not path.is_file():

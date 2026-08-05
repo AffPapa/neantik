@@ -90,8 +90,10 @@ def verify(
     security_fix_count = baseline.get("securityFixCount")
     if not isinstance(security_fix_count, int) or isinstance(security_fix_count, bool):
         fail("Runtime security baseline securityFixCount must be an integer.")
-    if security_fix_count < 1:
-        fail("Runtime security baseline securityFixCount must be positive.")
+    if security_fix_count < 0:
+        fail(
+            "Runtime security baseline securityFixCount must be non-negative."
+        )
     observed = baseline.get("alsoObservedPublicChromiumVersions")
     if not isinstance(observed, list) or not all(isinstance(item, str) for item in observed):
         fail("Runtime security baseline alsoObservedPublicChromiumVersions must be a string list.")
@@ -123,13 +125,19 @@ def verify(
             "Rebase the owned fingerprint runtime and reproduce all runtime gates first."
         )
 
+    security_summary = (
+        f"security fixes {security_fix_count}"
+        if security_fix_count > 0
+        else "security fixes not enumerated by the official post"
+    )
+
     verification = lock.get("verification")
     if not isinstance(verification, dict):
         if allow_public_alpha_tuples and lock.get("status") == "source-qualified":
             return (
                 f"Runtime security baseline verified for public alpha: Chromium {runtime_raw} >= "
                 f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
-                f"security fixes {security_fix_count}; source-only runtime lock has no "
+                f"{security_summary}; source-only runtime lock has no "
                 "coherent Apple device tuple verification object; GUI fingerprint evidence "
                 "must remain bound by the Direct release gate."
             )
@@ -146,14 +154,14 @@ def verify(
         return (
             f"Runtime security baseline verified for public alpha: Chromium {runtime_raw} >= "
             f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
-            f"security fixes {security_fix_count}; coherent Apple device tuple hardening "
+            f"{security_summary}; coherent Apple device tuple hardening "
             f"not complete (status: {tuple_status!r})."
         )
 
     return (
         f"Runtime security baseline verified: Chromium {runtime_raw} >= "
         f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
-        f"security fixes {security_fix_count}; coherent Apple device tuples verified."
+        f"{security_summary}; coherent Apple device tuples verified."
     )
 
 

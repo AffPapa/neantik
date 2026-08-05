@@ -94,6 +94,7 @@ fi
 
 SIGNED_RUNTIME_ROOT="$(mktemp -d -t neantik-developer-id-runtime)"
 SIGNED_RUNTIME="$SIGNED_RUNTIME_ROOT/NeAntik Browser.app"
+RUNTIME_REPORT="$SIGNED_RUNTIME_ROOT/runtime-verification.json"
 cleanup() {
   rm -rf "$SIGNED_RUNTIME_ROOT"
 }
@@ -104,6 +105,20 @@ export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
   "$RUNTIME_APP" \
   "$PACKAGING_DIR" \
   "$SIGNED_RUNTIME"
+"$PROJECT_DIR/scripts/verify-built-runtime.sh" \
+  "$SIGNED_RUNTIME" \
+  "$RUNTIME_REPORT" \
+  "$BUILD_ARGS" \
+  "$SOURCE_PROVENANCE" \
+  "$CANDIDATE_LOCK"
+python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
+  "$CANDIDATE_LOCK" \
+  "$SOURCE_PROVENANCE" \
+  "$SIGNED_RUNTIME" \
+  "$BUILD_ARGS" \
+  "$RUNTIME_REPORT" \
+  --confirm-promote-source-lock
+python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \

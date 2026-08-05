@@ -35,13 +35,7 @@ PUBLIC_ALPHA_STABLE_CONTEXT_KEYS = [
     "languages",
     "timezone",
 ]
-PRODUCTION_EXTENDED_CONTEXT_KEYS = [
-    "audio_repeat",
-    "canvas_repeat",
-    "client_rects_repeat",
-    "webgl_pixels_repeat",
-    "webgl_shader_precision",
-    "css_screen_match",
+PUBLIC_ALPHA_COHERENCE_CONTEXT_KEYS = [
     "intl_locale",
     "primary_locale_core",
     "intl_locale_core",
@@ -50,7 +44,6 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
     "worker_webgl_vendor",
     "worker_webgl_renderer",
     "worker_webgl_extensions",
-    "worker_webgl_shader_precision",
     "worker_user_agent",
     "worker_platform",
     "worker_languages",
@@ -67,7 +60,20 @@ PRODUCTION_EXTENDED_CONTEXT_KEYS = [
     "webrtc_stun_requests",
     "webrtc_candidate_summary",
 ]
-PUBLIC_ALPHA_REQUIRED_KEYS = CRITICAL_KEYS + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
+PRODUCTION_EXTENDED_CONTEXT_KEYS = [
+    "audio_repeat",
+    "canvas_repeat",
+    "client_rects_repeat",
+    "webgl_pixels_repeat",
+    "webgl_shader_precision",
+    "css_screen_match",
+    "worker_webgl_shader_precision",
+]
+PUBLIC_ALPHA_REQUIRED_KEYS = (
+    CRITICAL_KEYS
+    + PUBLIC_ALPHA_STABLE_CONTEXT_KEYS
+    + PUBLIC_ALPHA_COHERENCE_CONTEXT_KEYS
+)
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
 CURRENT_AUDIT_SCHEMA_VERSION = 7
 CURRENT_IDENTITY_CATALOG_VERSION = 1
@@ -306,7 +312,7 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         "candidateLockSHA256":
             evidence_root / "fingerprint-chromium.lock.json",
         "sourceContractSHA256":
-            evidence_root / "chromium-150-source-contract.json",
+            evidence_root / "chromium-151-source-contract.json",
         "sourceProvenanceSHA256":
             evidence_root / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",
@@ -687,16 +693,11 @@ def cross_realm_consistency_issues(
     issues: list[str] = []
 
     for first, second in (
-        ("audio", "audio_repeat"),
-        ("canvas", "canvas_repeat"),
         ("canvas", "worker_canvas"),
-        ("client_rects", "client_rects_repeat"),
-        ("webgl_pixels", "webgl_pixels_repeat"),
         ("webgl_pixels", "worker_webgl_pixels"),
         ("webgl_vendor", "worker_webgl_vendor"),
         ("webgl_renderer", "worker_webgl_renderer"),
         ("webgl_extensions", "worker_webgl_extensions"),
-        ("webgl_shader_precision", "worker_webgl_shader_precision"),
         ("user_agent", "worker_user_agent"),
         ("platform", "worker_platform"),
         ("languages", "worker_languages"),
@@ -750,12 +751,6 @@ def cross_realm_consistency_issues(
                 f"{locale_core_key}."
             )
 
-    if (
-        is_available(v.get("css_screen_match"))
-        and v.get("css_screen_match") != "width:1|height:1|resolution:1"
-    ):
-        issues.append(f"The {label} CSS media queries disagree with the Screen API.")
-
     top_hints = parsed_client_hints(v.get("client_hints"))
     worker_hints = parsed_client_hints(v.get("worker_client_hints"))
     if top_hints is not None and worker_hints is not None:
@@ -773,6 +768,33 @@ def cross_realm_consistency_issues(
                 issues.append(
                     f"The {label} Client Hints {key} value disagrees between the page and worker."
                 )
+    return issues
+
+
+def strict_context_consistency_issues(
+    label: str,
+    capture_object: dict[str, Any],
+) -> list[str]:
+    v = values(capture_object)
+    issues: list[str] = []
+    for first, second in (
+        ("audio", "audio_repeat"),
+        ("canvas", "canvas_repeat"),
+        ("client_rects", "client_rects_repeat"),
+        ("webgl_pixels", "webgl_pixels_repeat"),
+        ("webgl_shader_precision", "worker_webgl_shader_precision"),
+    ):
+        if (
+            is_available(v.get(first))
+            and is_available(v.get(second))
+            and v.get(first) != v.get(second)
+        ):
+            issues.append(f"The {label} {first} value disagrees with {second}.")
+    if (
+        is_available(v.get("css_screen_match"))
+        and v.get("css_screen_match") != "width:1|height:1|resolution:1"
+    ):
+        issues.append(f"The {label} CSS media queries disagree with the Screen API.")
     return issues
 
 
@@ -903,31 +925,9 @@ def production_release_issues(
         report,
         expected_runtime=expected_runtime,
     )
-    first_capture = capture(report, "firstInitial")
-    second_capture = capture(report, "second")
-    repeat_capture = capture(report, "firstRepeat")
-    first = values(first_capture)
-    second = values(second_capture)
-    repeat = values(repeat_capture)
-
-    if report.get("auditSchemaVersion", 1) != CURRENT_AUDIT_SCHEMA_VERSION:
-        issues.append("The report does not use the current strict fingerprint audit schema.")
-    if report.get("identityCatalogVersion") != CURRENT_IDENTITY_CATALOG_VERSION:
-        issues.append("The report does not use the current immutable identity catalog.")
-
-    try:
-        direct_control = capture(report, "webrtcDirectControl")
-    except FingerprintReportError:
-        issues.append(
-            "The report does not contain a WebRTC direct positive control."
-        )
-    else:
-        issues.extend(
-            network_privacy_issues(
-                "WebRTC direct control",
-                direct_control,
-            )
-        )
+    first = values(capture(report, "firstInitial"))
+    second = values(capture(report, "second"))
+    repeat = values(capture(report, "firstRepeat"))
 
     unavailable = unavailable_required_keys(
         first,
@@ -944,37 +944,12 @@ def production_release_issues(
     )
     if unstable:
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
-
-    runtime_version = report.get("runtimeVersion")
-    if isinstance(runtime_version, str) and runtime_version:
-        issues.extend(
-            device_tuple_issues(
-                "profile A, first capture",
-                first_capture,
-                runtime_version=runtime_version,
-            )
-        )
-        issues.extend(
-            device_tuple_issues(
-                "profile B",
-                second_capture,
-                runtime_version=runtime_version,
-            )
-        )
-        issues.extend(
-            device_tuple_issues(
-                "profile A, repeat capture",
-                repeat_capture,
-                runtime_version=runtime_version,
-            )
-        )
     for label, capture_object in (
-        ("profile A, first capture", first_capture),
-        ("profile B", second_capture),
-        ("profile A, repeat capture", repeat_capture),
+        ("profile A, first capture", capture(report, "firstInitial")),
+        ("profile B", capture(report, "second")),
+        ("profile A, repeat capture", capture(report, "firstRepeat")),
     ):
-        issues.extend(cross_realm_consistency_issues(label, capture_object))
-        issues.extend(network_privacy_issues(label, capture_object))
+        issues.extend(strict_context_consistency_issues(label, capture_object))
     return issues
 
 
@@ -1033,6 +1008,10 @@ def public_alpha_release_issues(
         issues.append("The report does not bind the runtime framework SHA-256.")
     if expected_runtime is not None:
         issues.extend(runtime_lock_issues(report, expected_runtime))
+    if report.get("auditSchemaVersion", 1) != CURRENT_AUDIT_SCHEMA_VERSION:
+        issues.append("The report does not use the current fingerprint audit schema.")
+    if report.get("identityCatalogVersion") != CURRENT_IDENTITY_CATALOG_VERSION:
+        issues.append("The report does not use the current immutable identity catalog.")
 
     if first_capture.get("profileID") == second_capture.get("profileID") or first_capture.get(
         "profileID"
@@ -1074,6 +1053,41 @@ def public_alpha_release_issues(
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
     if "webgl_pixels" not in changed_critical:
         issues.append("WebGL pixels did not differ between profiles.")
+
+    try:
+        direct_control_capture = capture(report, "webrtcDirectControl")
+    except FingerprintReportError:
+        issues.append(
+            "The report does not contain a WebRTC direct positive control."
+        )
+    else:
+        issues.extend(
+            network_privacy_issues(
+                "WebRTC direct control",
+                direct_control_capture,
+            )
+        )
+
+    if isinstance(runtime_version, str) and runtime_version:
+        for label, capture_object in (
+            ("profile A, first capture", first_capture),
+            ("profile B", second_capture),
+            ("profile A, repeat capture", repeat_capture),
+        ):
+            issues.extend(
+                device_tuple_issues(
+                    label,
+                    capture_object,
+                    runtime_version=runtime_version,
+                )
+            )
+    for label, capture_object in (
+        ("profile A, first capture", first_capture),
+        ("profile B", second_capture),
+        ("profile A, repeat capture", repeat_capture),
+    ):
+        issues.extend(cross_realm_consistency_issues(label, capture_object))
+        issues.extend(network_privacy_issues(label, capture_object))
     return issues
 
 

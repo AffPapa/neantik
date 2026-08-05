@@ -685,8 +685,8 @@ class CollectGuiFingerprintEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             report = VERIFIER_FIXTURES.production_report()
-            report["firstInitial"]["values"]["worker_platform"] = "Win32"
-            report["firstRepeat"]["values"]["worker_platform"] = "Win32"
+            report["firstInitial"]["values"]["audio_repeat"] = "strict-mismatch"
+            report["firstRepeat"]["values"]["audio_repeat"] = "strict-mismatch"
             source = root / "audit-alpha-only.json"
             source.write_text(json.dumps(report), encoding="utf-8")
             output = root / "dist" / "fingerprint-audit.json"

@@ -46,7 +46,7 @@ if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOC
   exit 65
 fi
 if [[ ! -f "$SOURCE_PROVENANCE" || -L "$SOURCE_PROVENANCE" ]]; then
-  echo "Chromium source provenance is missing; rebuild/configure the owned Chromium 150 source first." >&2
+  echo "Chromium source provenance is missing; rebuild/configure the owned Chromium source first." >&2
   exit 66
 fi
 if [[ "$CANDIDATE_LOCK" != /* ||
@@ -115,8 +115,8 @@ cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
   "$EVIDENCE/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-150-source-contract.json" \
-  "$EVIDENCE/chromium-150-source-contract.json"
+cp "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
+  "$EVIDENCE/chromium-151-source-contract.json"
 cp "$SOURCE_PROVENANCE" \
   "$EVIDENCE/source-provenance.json"
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"

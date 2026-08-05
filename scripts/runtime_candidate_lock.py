@@ -18,7 +18,7 @@ from runtime_source_provenance import (
 )
 
 
-DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-150-source-contract.json"
+DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-151-source-contract.json"
 DEFAULT_PATCH_MANIFEST = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
 DEFAULT_DEVICE_TUPLES = PROJECT_ROOT / "runtime" / "apple-device-tuples.json"
 DEFAULT_SECURITY_BASELINE = PROJECT_ROOT / "runtime" / "security-baseline.json"
@@ -52,10 +52,10 @@ def expected_candidate_lock(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
     project_root = project_root.resolve()
-    contract_path = project_root / "runtime" / "chromium-150-source-contract.json"
+    contract_path = project_root / "runtime" / "chromium-151-source-contract.json"
     provenance = load_object(
         provenance_path,
-        "emitted Chromium 150 source provenance",
+        "emitted Chromium source provenance",
     )
     verify_document(
         provenance,

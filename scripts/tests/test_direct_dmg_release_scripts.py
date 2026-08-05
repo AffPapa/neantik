@@ -43,6 +43,11 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
 
     def test_release_script_requires_accepted_and_all_outer_gates(self) -> None:
         text = (ROOT / "scripts" / "release-direct-dmg.sh").read_text()
+        self.assertIn("--output-format json", text)
+        self.assertIn("payload.get(\"id\")", text)
+        self.assertIn("payload.get(\"status\")", text)
+        self.assertIn("notarytool log", text)
+        self.assertNotIn("awk '/^[[:space:]]*status:", text)
         self.assertIn('[[ "$NOTARY_STATUS" == "Accepted" ]]', text)
         self.assertIn("xcrun stapler staple", text)
         self.assertIn("xcrun stapler validate", text)

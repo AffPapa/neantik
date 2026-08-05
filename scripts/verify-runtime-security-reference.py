@@ -95,8 +95,14 @@ def verify_reference(
     if not isinstance(platforms, list) or "macOS" not in platforms:
         raise SecurityReferenceError("Baseline platforms must include macOS")
     security_fix_count = baseline.get("securityFixCount")
-    if not isinstance(security_fix_count, int) or security_fix_count < 1:
-        raise SecurityReferenceError("Baseline securityFixCount must be positive")
+    if (
+        not isinstance(security_fix_count, int)
+        or isinstance(security_fix_count, bool)
+        or security_fix_count < 0
+    ):
+        raise SecurityReferenceError(
+            "Baseline securityFixCount must be a non-negative integer"
+        )
     if baseline.get("referenceTitle") != "Stable Channel Update for Desktop":
         raise SecurityReferenceError("Baseline referenceTitle must match Desktop Stable post")
     if baseline.get("sourceLabel") != "Chrome Releases":
@@ -120,18 +126,23 @@ def verify_reference(
         raise SecurityReferenceError(
             "Official reference does not look like a desktop Stable Channel update"
         )
-    if "security" not in text.lower():
-        raise SecurityReferenceError("Official reference does not mention security")
     if "mac" not in text.lower():
         raise SecurityReferenceError("Official reference does not mention Mac")
-    if str(security_fix_count) not in text:
+    if security_fix_count > 0 and "security" not in text.lower():
+        raise SecurityReferenceError("Official reference does not mention security")
+    if security_fix_count > 0 and str(security_fix_count) not in text:
         raise SecurityReferenceError(
             f"Official reference does not mention securityFixCount {security_fix_count}"
         )
+    fix_summary = (
+        f"security fixes {security_fix_count}"
+        if security_fix_count > 0
+        else "security fixes not enumerated by the official post"
+    )
     return (
         "Runtime security baseline reference verified: "
         f"{minimum} appears in official Chrome Releases source {reference}; "
-        f"also observed {', '.join(also_observed)}; security fixes {security_fix_count}"
+        f"also observed {', '.join(also_observed)}; {fix_summary}"
     )
 
 

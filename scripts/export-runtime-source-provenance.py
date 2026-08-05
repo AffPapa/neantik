@@ -17,7 +17,7 @@ from runtime_source_provenance import (
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate the pinned Chromium 150 source pair and atomically export "
+            "Validate the pinned Chromium source pair and atomically export "
             "source-only provenance. This does not attest an existing binary."
         )
     )
@@ -43,7 +43,7 @@ def main() -> int:
     except (OSError, SourceProvenanceError) as error:
         print(f"Source provenance export failed: {error}", file=sys.stderr)
         return 1
-    print(f"Chromium 150 source provenance exported: {output}")
+    print(f"Chromium source provenance exported: {output}")
     print(f"SHA-256: {sha256_file(output)}")
     print("Binary binding: pending-new-build")
     return 0

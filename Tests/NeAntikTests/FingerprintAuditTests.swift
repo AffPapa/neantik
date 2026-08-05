@@ -585,7 +585,7 @@ struct FingerprintAuditTests {
     }
 
     @Test
-    func crossRealmMismatchFailsStrictProductionButNotPublicAlpha() {
+    func crossRealmMismatchFailsPublicAlpha() {
         var firstValues = productionValues(
             canvas: "canvas-a",
             webGLPixels: "webgl-a",
@@ -610,7 +610,7 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
             result.crossRealmConsistencyIssues.contains {
@@ -622,7 +622,7 @@ struct FingerprintAuditTests {
     }
 
     @Test
-    func missingWorkerMemoryFailsStrictProductionButNotPublicAlpha() {
+    func missingWorkerMemoryFailsPublicAlpha() {
         var firstValues = productionValues(
             canvas: "canvas-a",
             webGLPixels: "webgl-a",
@@ -645,13 +645,13 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(result.productionUnavailableKeys == ["worker_device_memory"])
     }
 
     @Test
-    func workerMemoryMismatchFailsStrictProductionButNotPublicAlpha() {
+    func workerMemoryMismatchFailsPublicAlpha() {
         var firstValues = productionValues(
             canvas: "canvas-a",
             webGLPixels: "webgl-a",
@@ -676,7 +676,7 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
             result.crossRealmConsistencyIssues.contains {
@@ -688,7 +688,7 @@ struct FingerprintAuditTests {
     }
 
     @Test
-    func localeMismatchFailsStrictProductionButNotPublicAlpha() {
+    func localeMismatchFailsPublicAlpha() {
         var firstValues = productionValues(
             canvas: "canvas-a",
             webGLPixels: "webgl-a",
@@ -716,7 +716,7 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
             result.crossRealmConsistencyIssues.contains {
@@ -894,7 +894,7 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
             result.productionReleaseIssues.contains {
@@ -929,10 +929,14 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(
+            !result.publicAlphaReleaseIssues.contains {
+                $0.contains("audio value disagrees with audio_repeat")
+            }
+        )
         #expect(!result.isProductionReleaseQualified)
         #expect(
-            result.crossRealmConsistencyIssues.contains {
+            result.productionReleaseIssues.contains {
                 $0.contains("audio value disagrees with audio_repeat")
             }
         )
@@ -966,7 +970,7 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
             result.networkPrivacyIssues.contains {
@@ -1200,11 +1204,11 @@ struct FingerprintAuditTests {
         )
 
         #expect(legacy.effectiveAuditSchemaVersion == 1)
-        #expect(legacy.isPublicAlphaReleaseQualified)
+        #expect(!legacy.isPublicAlphaReleaseQualified)
         #expect(!legacy.isProductionReleaseQualified)
         #expect(
-            legacy.productionReleaseIssues.contains(
-                "The report does not use the current strict fingerprint audit schema."
+            legacy.publicAlphaReleaseIssues.contains(
+                "The report does not use the current fingerprint audit schema."
             )
         )
     }
@@ -1247,11 +1251,11 @@ struct FingerprintAuditTests {
         )
 
         #expect(previous.effectiveAuditSchemaVersion == 6)
-        #expect(previous.isPublicAlphaReleaseQualified)
+        #expect(!previous.isPublicAlphaReleaseQualified)
         #expect(!previous.isProductionReleaseQualified)
         #expect(
-            previous.productionReleaseIssues.contains(
-                "The report does not use the current strict fingerprint audit schema."
+            previous.publicAlphaReleaseIssues.contains(
+                "The report does not use the current fingerprint audit schema."
             )
         )
     }
@@ -1297,10 +1301,10 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
-            result.productionReleaseIssues.contains(
+            result.publicAlphaReleaseIssues.contains(
                 "The report does not use the current immutable identity catalog."
             )
         )
@@ -1334,7 +1338,7 @@ struct FingerprintAuditTests {
             )
         )
 
-        #expect(result.isPublicAlphaReleaseQualified)
+        #expect(!result.isPublicAlphaReleaseQualified)
         #expect(!result.isProductionReleaseQualified)
         #expect(
             result.deviceTupleConsistencyIssues.contains {

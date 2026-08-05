@@ -279,25 +279,25 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             any(issue.startswith("Required browser surfaces are unstable") for issue in issues)
         )
 
-    def test_cross_realm_mismatch_fails_strict_but_not_public_alpha(self) -> None:
+    def test_cross_realm_mismatch_fails_public_alpha(self) -> None:
         report = production_report()
         report["firstInitial"]["values"]["worker_platform"] = "Win32"
         report["firstRepeat"]["values"]["worker_platform"] = "Win32"
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "The profile A, first capture platform value disagrees with worker_platform.",
-            summary["productionIssues"],
+            summary["issues"],
         )
         self.assertEqual(
             MODULE.qualification_issues(
                 summary,
                 require_production=False,
             ),
-            [],
+            summary["issues"],
         )
         self.assertIn(
             "The profile A, first capture platform value disagrees with worker_platform.",
@@ -307,35 +307,35 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             ),
         )
 
-    def test_missing_worker_memory_fails_strict_but_not_public_alpha(self) -> None:
+    def test_missing_worker_memory_fails_public_alpha(self) -> None:
         report = production_report()
         for capture_key in ["firstInitial", "second", "firstRepeat"]:
             del report[capture_key]["values"]["worker_device_memory"]
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "Required browser surfaces are unavailable: worker_device_memory.",
-            summary["productionIssues"],
+            summary["issues"],
         )
 
-    def test_worker_memory_mismatch_fails_strict_but_not_public_alpha(self) -> None:
+    def test_worker_memory_mismatch_fails_public_alpha(self) -> None:
         report = production_report()
         report["firstInitial"]["values"]["worker_device_memory"] = "4"
         report["firstRepeat"]["values"]["worker_device_memory"] = "4"
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "The profile A, first capture device_memory value disagrees with worker_device_memory.",
-            summary["productionIssues"],
+            summary["issues"],
         )
 
-    def test_locale_mismatch_fails_strict_but_not_public_alpha(self) -> None:
+    def test_locale_mismatch_fails_public_alpha(self) -> None:
         report = production_report()
         for capture_key in ["firstInitial", "firstRepeat"]:
             report[capture_key]["values"]["languages"] = "ru-RU,ru"
@@ -349,17 +349,17 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "The profile A, first capture primary_locale_core "
             "disagrees with intl_locale_core.",
-            summary["productionIssues"],
+            summary["issues"],
         )
         self.assertIn(
             "The profile A, first capture worker_primary_locale_core "
             "disagrees with worker_intl_locale_core.",
-            summary["productionIssues"],
+            summary["issues"],
         )
 
     def test_locale_canonicalization_accepts_equivalent_identifiers(self) -> None:
@@ -418,17 +418,17 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
 
                 summary = MODULE.verification_summary(report)
 
-                self.assertTrue(summary["qualified"])
+                self.assertFalse(summary["qualified"])
                 self.assertFalse(summary["productionQualified"])
                 self.assertTrue(
                     any(
                         "primary_locale_core disagrees with intl_locale_core"
                         in issue
-                        for issue in summary["productionIssues"]
+                        for issue in summary["issues"]
                     )
                 )
 
-    def test_non_ascii_locale_identifiers_fail_strict(self) -> None:
+    def test_non_ascii_locale_identifiers_fail_public_alpha(self) -> None:
         report = production_report()
         for capture_key in ["firstInitial", "firstRepeat"]:
             values = report[capture_key]["values"]
@@ -439,12 +439,12 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertTrue(
             any(
                 "not supported locale identifiers" in issue
-                for issue in summary["productionIssues"]
+                for issue in summary["issues"]
             )
         )
 
@@ -462,18 +462,18 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             summary["productionIssues"],
         )
 
-    def test_legacy_schema_fails_strict_but_not_public_alpha(self) -> None:
+    def test_legacy_schema_fails_public_alpha(self) -> None:
         report = production_report()
         del report["auditSchemaVersion"]
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertEqual(summary["auditSchemaVersion"], 1)
         self.assertIn(
-            "The report does not use the current strict fingerprint audit schema.",
-            summary["productionIssues"],
+            "The report does not use the current fingerprint audit schema.",
+            summary["issues"],
         )
 
     def test_previous_schema_five_cannot_use_schema_six_production_contract(self) -> None:
@@ -482,27 +482,27 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
-            "The report does not use the current strict fingerprint audit schema.",
-            summary["productionIssues"],
+            "The report does not use the current fingerprint audit schema.",
+            summary["issues"],
         )
 
-    def test_identity_catalog_drift_fails_strict_but_not_public_alpha(self) -> None:
+    def test_identity_catalog_drift_fails_public_alpha(self) -> None:
         report = production_report()
         report["identityCatalogVersion"] = 2
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "The report does not use the current immutable identity catalog.",
-            summary["productionIssues"],
+            summary["issues"],
         )
 
-    def test_proxied_host_candidate_fails_strict_but_not_public_alpha(
+    def test_proxied_host_candidate_fails_public_alpha(
         self,
     ) -> None:
         report = production_report()
@@ -515,11 +515,11 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
 
         summary = MODULE.verification_summary(report)
 
-        self.assertTrue(summary["qualified"])
+        self.assertFalse(summary["qualified"])
         self.assertFalse(summary["productionQualified"])
         self.assertIn(
             "The profile B proxied route exposed a direct WebRTC candidate.",
-            summary["productionIssues"],
+            summary["issues"],
         )
 
     def test_unknown_candidate_type_fails_strict(self) -> None:
@@ -813,7 +813,7 @@ def write_integrated_app_fixture(root: Path) -> Path:
     patch_series = evidence_root / "neantik-patch-series.json"
     device_tuples = evidence_root / "apple-device-tuples.json"
     security_baseline = evidence_root / "security-baseline.json"
-    source_contract = evidence_root / "chromium-150-source-contract.json"
+    source_contract = evidence_root / "chromium-151-source-contract.json"
     source_provenance = evidence_root / "source-provenance.json"
     args_gn = evidence_root / "args.gn"
     patch_series.write_text('{"schemaVersion":1}\n', encoding="utf-8")

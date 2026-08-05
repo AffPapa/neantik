@@ -30,6 +30,26 @@ class RuntimeSecurityReferenceTests(unittest.TestCase):
         self.assertIn("reference verified", message)
         self.assertIn("security fixes 4", message)
 
+    def test_accepts_official_desktop_post_without_enumerated_fixes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            baseline = write_baseline(Path(temporary))
+            data = json.loads(baseline.read_text(encoding="utf-8"))
+            data["minimumPublicChromiumVersion"] = "151.0.7922.75"
+            data["alsoObservedPublicChromiumVersions"] = ["151.0.7922.76"]
+            data["securityFixCount"] = 0
+            baseline.write_text(json.dumps(data), encoding="utf-8")
+            message = MODULE.verify_reference(
+                baseline_path=baseline,
+                html_text=(
+                    "<title>Stable Channel Update for Desktop</title>"
+                    "The Stable channel has been updated to "
+                    "151.0.7922.75/.76 for Windows and Mac."
+                ),
+            )
+
+        self.assertIn("reference verified", message)
+        self.assertIn("security fixes not enumerated", message)
+
     def test_rejects_non_official_reference_host(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             baseline = write_baseline(

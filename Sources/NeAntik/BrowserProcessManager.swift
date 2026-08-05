@@ -203,6 +203,21 @@ enum BrowserLaunchPurpose: Equatable, Sendable {
 }
 
 enum BrowserLaunchBuilder {
+    private static let allowedInheritedEnvironmentKeys: Set<String> = [
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "LOGNAME",
+        "PATH",
+        "SHELL",
+        "TMPDIR",
+        "USER",
+        "XPC_FLAGS",
+        "XPC_SERVICE_NAME",
+        "__CFBundleIdentifier"
+    ]
+
     static func requiresProxyContextRetest(
         profile: BrowserProfile,
         now: Date = Date()
@@ -226,9 +241,9 @@ enum BrowserLaunchBuilder {
         "--proxy-pac-url",
         "--proxy-bypass-list",
         "--host-resolver-rules",
+        "--webrtc-ip-handling-policy",
         "--force-webrtc-ip-handling-policy",
         "--disable-quic",
-        "--dns-prefetch-disable",
         "--fingerprint",
         "--fingerprint-platform",
         "--fingerprint-timezone",
@@ -255,13 +270,11 @@ enum BrowserLaunchBuilder {
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
             "--no-default-browser-check",
-            "--disable-background-mode",
             "--new-window"
         ]
         var disabledFeatures = Set<String>()
 
         if runtimeCapabilities.contains(.fingerprintSeed) {
-            arguments.append("--fingerprint=\(profile.identity.runtimeSeed)")
             arguments.append("--fingerprinting-client-rects-noise")
             arguments.append("--fingerprinting-canvas-measuretext-noise")
             arguments.append("--fingerprinting-canvas-image-data-noise")
@@ -270,9 +283,6 @@ enum BrowserLaunchBuilder {
             // Apple device tuple.
             disabledFeatures.insert("WebGPUService")
         }
-        if runtimeCapabilities.contains(.platformOverride) {
-            arguments.append("--fingerprint-platform=macos")
-        }
         let hasFreshProxyContext =
             profile.proxy != nil &&
             profile.identity.proxyContextEvidence?.isFresh(
@@ -280,14 +290,7 @@ enum BrowserLaunchBuilder {
             ) == true
         if runtimeCapabilities.contains(.fingerprintSeed),
            hasFreshProxyContext,
-           let timezone = profile.identity.timezoneIdentifier {
-            arguments.append("--fingerprint-timezone=\(timezone)")
-            arguments.append("--timezone=\(timezone)")
-        }
-        if runtimeCapabilities.contains(.fingerprintSeed),
-           hasFreshProxyContext,
            let locale = profile.identity.localeIdentifier {
-            arguments.append("--fingerprint-locale=\(locale)")
             arguments.append("--lang=\(locale)")
             arguments.append("--accept-lang=\(locale)")
         }
@@ -295,14 +298,14 @@ enum BrowserLaunchBuilder {
         if let proxy = profile.proxy {
             arguments.append("--proxy-server=\(proxy.chromiumServer)")
             arguments.append(
-                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+                "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
             arguments.append("--disable-quic")
-            arguments.append("--dns-prefetch-disable")
             // Resolver rules are the primary fail-closed control. Disabling
-            // Chromium's asynchronous and secure-DNS paths adds defense in
-            // depth so a future resolver path cannot silently bypass them.
-            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttps"])
+            // Chromium's asynchronous resolver and automatic DoH upgrade add
+            // defense in depth so a future resolver path cannot silently
+            // bypass them.
+            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade"])
             arguments.append(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
             )
@@ -324,7 +327,7 @@ enum BrowserLaunchBuilder {
             // Direct profiles still avoid exposing every local interface to
             // WebRTC while retaining ordinary calls over the public route.
             arguments.append(
-                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+                "--webrtc-ip-handling-policy=default_public_interface_only"
             )
         }
 
@@ -341,6 +344,34 @@ enum BrowserLaunchBuilder {
             startURLOverride ?? normalizedStartURL(profile.startURL)
         arguments.append(startURL.absoluteString)
         return arguments
+    }
+
+    static func environment(
+        profile: BrowserProfile,
+        runtimeCapabilities: BrowserRuntimeCapabilities = [],
+        inherited: [String: String] = ProcessInfo.processInfo.environment,
+        now: Date = Date()
+    ) -> [String: String] {
+        var environment = inherited.filter {
+            allowedInheritedEnvironmentKeys.contains($0.key)
+        }
+
+        guard runtimeCapabilities.contains(.fingerprintSeed) else {
+            return environment
+        }
+        environment["NEANTIK_PROFILE_SEED"] =
+            String(profile.identity.runtimeSeed)
+
+        let hasFreshProxyContext =
+            profile.proxy != nil &&
+            profile.identity.proxyContextEvidence?.isFresh(
+                relativeTo: now
+            ) == true
+        if hasFreshProxyContext,
+           let timezone = profile.identity.timezoneIdentifier {
+            environment["NEANTIK_PROFILE_TIMEZONE"] = timezone
+        }
+        return environment
     }
 
     static func sanitizedAdditionalArguments(
@@ -1350,6 +1381,7 @@ final class BrowserProcessManager: ObservableObject {
         let logURL = paths.logFile(for: profile.id)
 
         let process = Process()
+        let launchNow = Date()
         process.executableURL = runtime.executableURL
         process.arguments = BrowserLaunchBuilder.arguments(
             profile: profile,
@@ -1357,7 +1389,13 @@ final class BrowserProcessManager: ObservableObject {
             runtimeCapabilities: runtime.capabilities,
             additionalArguments: additionalArguments,
             startURLOverride: startURLOverride,
+            now: launchNow,
             purpose: purpose
+        )
+        process.environment = BrowserLaunchBuilder.environment(
+            profile: profile,
+            runtimeCapabilities: runtime.capabilities,
+            now: launchNow
         )
         process.currentDirectoryURL =
             browserDataDirectoryOverride == nil

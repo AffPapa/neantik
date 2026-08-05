@@ -274,8 +274,8 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
             for result in results
             if not result.passed
         }
-        self.assertIn("Chromium 150 source provenance", blocked)
-        self.assertIn("schema 3", blocked["Chromium 150 source provenance"])
+        self.assertIn("Chromium source provenance", blocked)
+        self.assertIn("schema 3", blocked["Chromium source provenance"])
 
     def test_rejects_missing_source_provenance_sha(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -310,10 +310,10 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
             for result in results
             if not result.passed
         }
-        self.assertIn("Chromium 150 source provenance", blocked)
+        self.assertIn("Chromium source provenance", blocked)
         self.assertIn(
             "not bound to embedded source provenance",
-            blocked["Chromium 150 source provenance"],
+            blocked["Chromium source provenance"],
         )
 
     def test_json_report_exposes_stable_direct_release_boundary(self) -> None:
@@ -408,7 +408,7 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
     executable.write_bytes(b"runtime executable")
     framework.write_bytes(b"runtime framework")
     embedded_report = args_gn.parent / "runtime-verification.json"
-    source_contract = root / "runtime" / "chromium-150-source-contract.json"
+    source_contract = root / "runtime" / "chromium-151-source-contract.json"
     source_contract.write_text(
         json.dumps(
             {
@@ -419,7 +419,7 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
         ),
         encoding="utf-8",
     )
-    embedded_contract = args_gn.parent / "chromium-150-source-contract.json"
+    embedded_contract = args_gn.parent / "chromium-151-source-contract.json"
     embedded_contract.write_bytes(source_contract.read_bytes())
     source_provenance = args_gn.parent / "source-provenance.json"
     source_provenance.write_text(

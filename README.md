@@ -10,18 +10,22 @@ Chromium runtime, собранный из зафиксированных исх�
 ## Скачать приложение
 
 Подписанное и нотарифицированное приложение опубликовано в
-[GitHub Releases](https://github.com/AffPapa/neantik/releases/tag/v0.3.16).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases).
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Текущий публичный alpha-релиз:
+Текущий опубликованный alpha-релиз:
 
-- NeAntik `0.3.16`, build `19`;
+- NeAntik `0.3.15`, build `18`;
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- ZIP `NeAntik-0.3.16-arm64-notarized.zip`;
-- DMG `NeAntik-0.3.16-arm64-notarized.dmg`;
+- ZIP `NeAntik-0.3.15-arm64-notarized.zip`;
+- DMG `NeAntik-0.3.15-arm64-notarized.dmg`;
 - SHA-256 для обоих файлов публикуются рядом с ними в GitHub Release.
+
+В этой ветке готовится кандидат `0.3.16` (19) с Chromium
+`151.0.7922.75`. Не считайте его выпущенным и не используйте исходный ZIP
+GitHub вместо приложения, пока подписанные DMG/ZIP не появились в Releases.
 
 Сайт продукта: [affpapa.org/neantik](https://affpapa.org/neantik).
 
@@ -33,6 +37,8 @@ Chromium runtime, собранный из зафиксированных исх�
   и SOCKS5 без логина и пароля;
 - хранит пароли прокси в Связке ключей macOS и не передаёт их в аргументах
   командной строки;
+- запускает Chromium с минимальным allowlist системных переменных, не
+  наследуя proxy-переменные, TLS key logs или токены из Terminal;
 - не допускает повторный запуск одного профиля и корректно распознаёт живые
   helper-процессы;
 - перемещает удаляемые данные профиля в Корзину, а секрет из Связки ключей
@@ -57,9 +63,14 @@ NeAntik предназначен для приватности, разделен
 QA. Он не обещает полную анонимность или «необнаружимость» и не предназначен
 для обхода CAPTCHA, банов, антифрода или правил сторонних сервисов.
 
-Версия `0.3.16` выпускается для public-alpha изоляции профилей. Строгая
+Версия `0.3.16` готовится для public-alpha изоляции профилей. Строгая
 production-согласованность всех fingerprint- и сетевых поверхностей остаётся
 открытым ограничением.
+
+Встроенный privacy-oriented Chromium собирается без Google Safe Browsing.
+NeAntik не отправляет историю посещений в Google, но и не заменяет отдельную
+защиту от фишинга, вредоносных сайтов и опасных загрузок. Не открывайте
+недоверенные ссылки только потому, что они запущены в изолированном профиле.
 
 Четыре когорты — проверенная продуктовая политика, а не статистика рынка и не
 гарантия анонимности. Стабильный отпечаток одного профиля по назначению
@@ -142,7 +153,7 @@ python3 scripts/verify-open-source-tree.py
 python3 scripts/verify-public-workflow-references.py
 ```
 
-Проверка точных исходников Chromium 150 и source-qualified candidate:
+Проверка точных исходников Chromium 151 и source-qualified candidate:
 
 ```bash
 python3 scripts/verify-runtime-source-provenance.py \
@@ -153,7 +164,7 @@ python3 scripts/verify-runtime-candidate-lock.py \
   /absolute/path/to/source-provenance.json
 ```
 
-Source contract для `150.0.7871.186` не подтверждает готовый бинарник сам по
+Source contract для `151.0.7922.75` не подтверждает готовый бинарник сам по
 себе. Promotion в release lock разрешён только после новой Metal-сборки и
 точного schema-3 runtime verification report.
 

@@ -14,7 +14,7 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         self.assertIn("sourceContractSHA256", script)
         self.assertIn("sourceProvenanceSHA256", script)
         self.assertIn(
-            "A new runtime report requires Chromium 150 source provenance.",
+            "A new runtime report requires owned Chromium source provenance.",
             script,
         )
 
@@ -86,9 +86,38 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         script = SCRIPT.read_text(encoding="utf-8")
 
         self.assertIn('handle.read(1024 * 1024)', script)
-        self.assertIn('"fingerprint-platform"', script)
+        self.assertIn('"NEANTIK_PROFILE_SEED"', script)
+        self.assertIn('"NEANTIK_PROFILE_TIMEZONE"', script)
         self.assertIn('"WebGPUService"', script)
+        self.assertIn('"fingerprint-timezone"', script)
+        self.assertIn('"fingerprint-locale"', script)
+        self.assertIn('"fingerprint-platform"', script)
+        self.assertIn("Forbidden legacy fingerprint argv marker", script)
         self.assertNotIn("for protocol_string in", script)
+
+    def test_public_contract_does_not_document_legacy_private_argv(self) -> None:
+        contract = (
+            PROJECT_ROOT / "docs" / "FINGERPRINT_RUNTIME.md"
+        ).read_text(encoding="utf-8")
+        manager = (
+            PROJECT_ROOT / "Sources" / "NeAntik" /
+            "BrowserProcessManager.swift"
+        ).read_text(encoding="utf-8")
+
+        for marker in (
+            "--fingerprint=<",
+            "--fingerprint-platform=",
+            "--fingerprint-timezone=",
+            "--fingerprint-locale=",
+        ):
+            self.assertNotIn(marker, contract)
+        self.assertIn("NEANTIK_PROFILE_SEED=<", contract)
+        self.assertIn("NEANTIK_PROFILE_TIMEZONE=<", contract)
+        self.assertNotIn('arguments.append("--fingerprint=', manager)
+        self.assertNotIn(
+            'arguments.append("--fingerprint-timezone=',
+            manager,
+        )
 
 
 if __name__ == "__main__":

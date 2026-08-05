@@ -4,13 +4,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
-SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
+SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-151-source-contract.json"
 
 LOCKED_RUNTIME_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
 )"
-if [[ "$LOCKED_RUNTIME_VERSION" == 150.* && -f "$SOURCE_CONTRACT" ]]; then
-  echo "Legacy source-lock verification is blocked for Chromium 150." >&2
+if [[ "$LOCKED_RUNTIME_VERSION" == 15[01].* && -f "$SOURCE_CONTRACT" ]]; then
+  echo "Legacy source-lock verification is blocked for the owned Chromium rebase." >&2
   echo "Use scripts/export-runtime-source-provenance.py and scripts/verify-runtime-source-provenance.py with the owned rebase source root." >&2
   exit 65
 fi

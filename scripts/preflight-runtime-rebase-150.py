@@ -46,9 +46,9 @@ def version_tuple(raw: object, label: str) -> tuple[int, int, int, int]:
 
 
 def parse_plan(path: Path) -> RebasePlan:
-    raw = load_json(path, "Chromium 150 rebase plan")
+    raw = load_json(path, "Chromium rebase plan")
     if raw.get("schemaVersion") != 1:
-        raise RebasePreflightError("Unexpected Chromium 150 rebase plan schema")
+        raise RebasePreflightError("Unexpected Chromium rebase plan schema")
     mac = raw.get("macPackaging")
     common = raw.get("commonChromium")
     if not isinstance(mac, dict) or not isinstance(common, dict):
@@ -235,8 +235,9 @@ def verify(
         free_gib=free_gib,
         source_root=source_root,
     )
+    target_major = str(report["targetChromiumVersion"]).split(".", 1)[0]
     lines = [
-        f"Chromium 150 rebase preflight passed for {report['buildRoot']}",
+        f"Chromium {target_major} rebase preflight passed for {report['buildRoot']}",
         f"Target Chromium: {report['targetChromiumVersion']}",
         f"mac packaging commit: {report['macPackaging']['commit']}",
         f"common Chromium tag: {report['commonChromium']['tag']}",
@@ -269,21 +270,25 @@ def verify_report(
         minimum_public, "minimumPublicChromiumVersion"
     ):
         raise RebasePreflightError(
-            f"Chromium 150 rebase target {plan.target_version} is below security baseline {minimum_public}"
+            f"Chromium rebase target {plan.target_version} is below security baseline {minimum_public}"
         )
 
     assert_safe_build_root(build_root, plan.preserved_evidence_build_root)
     actual_free = free_gib if free_gib is not None else free_gib_for(build_root)
     if actual_free < plan.minimum_prepare_free_gib:
         raise RebasePreflightError(
-            f"At least {plan.minimum_prepare_free_gib} GiB free is required for Chromium 150 prepare; available: {actual_free} GiB"
+            f"At least {plan.minimum_prepare_free_gib} GiB free is required for Chromium prepare; available: {actual_free} GiB"
         )
 
     checkout_messages = verify_existing_checkout(build_root, plan)
     selected_source_root = source_root
     if selected_source_root is None:
         default_source_root = build_root / "build" / "src"
-        selected_source_root = default_source_root if default_source_root.exists() else None
+        selected_source_root = (
+            default_source_root
+            if (default_source_root / "chrome" / "VERSION").is_file()
+            else None
+        )
     source_report: dict[str, object] = {
         "sourceRoot": str(selected_source_root) if selected_source_root is not None else None,
         "chromiumVersion": None,
@@ -321,7 +326,7 @@ def verify_report(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Preflight a safe NeAntik Chromium 150 source rebase workspace.",
+        description="Preflight a safe NeAntik Chromium source rebase workspace.",
     )
     parser.add_argument(
         "build_root",
@@ -333,6 +338,15 @@ def main() -> int:
         "--project-root",
         type=Path,
         default=Path(__file__).resolve().parents[1],
+    )
+    parser.add_argument(
+        "--plan",
+        type=Path,
+        help=(
+            "Rebase plan path. Defaults to "
+            "<project-root>/runtime/chromium-151-rebase-plan.json for "
+            "backward compatibility."
+        ),
     )
     parser.add_argument("--free-gib", type=int, default=None)
     parser.add_argument(
@@ -350,12 +364,17 @@ def main() -> int:
     )
     args = parser.parse_args()
     project_root = args.project_root.resolve()
+    plan_path = (
+        args.plan.resolve()
+        if args.plan is not None
+        else project_root / "runtime" / "chromium-150-rebase-plan.json"
+    )
     try:
         if args.json:
             print(
                 json.dumps(
                     verify_report(
-                        plan_path=project_root / "runtime" / "chromium-150-rebase-plan.json",
+                        plan_path=plan_path,
                         baseline_path=project_root / "runtime" / "security-baseline.json",
                         build_root=args.build_root,
                         free_gib=args.free_gib,
@@ -368,7 +387,7 @@ def main() -> int:
         else:
             print(
                 verify(
-                    plan_path=project_root / "runtime" / "chromium-150-rebase-plan.json",
+                    plan_path=plan_path,
                     baseline_path=project_root / "runtime" / "security-baseline.json",
                     build_root=args.build_root,
                     free_gib=args.free_gib,

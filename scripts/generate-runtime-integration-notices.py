@@ -65,7 +65,7 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
     source_contract = load_json(
-        project_root / "runtime" / "chromium-150-source-contract.json"
+        project_root / "runtime" / "chromium-151-source-contract.json"
     )
     patchset = load_json(
         project_root / "runtime" / "nevision-patches" / "series.json"

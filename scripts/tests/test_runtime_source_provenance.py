@@ -23,7 +23,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             (
                 PROJECT_ROOT
                 / "runtime"
-                / "chromium-150-source-contract.json"
+                / "chromium-151-source-contract.json"
             ).read_text(encoding="utf-8")
         )
 
@@ -32,7 +32,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             (
                 PROJECT_ROOT
                 / "runtime"
-                / "chromium-150-rebase-plan.json"
+                / "chromium-151-rebase-plan.json"
             ).read_text(encoding="utf-8")
         )
 
@@ -43,7 +43,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             "sourceContractSHA256": MODULE.sha256_file(
                 PROJECT_ROOT
                 / "runtime"
-                / "chromium-150-source-contract.json"
+                / "chromium-151-source-contract.json"
             ),
             "fingerprintChromium": {
                 "chromiumVersion": contract["targetChromiumVersion"],
@@ -77,12 +77,12 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         )
         self.assertEqual(
             contract["macPackaging"]["commit"],
-            "9cbd94c2b8f6f2a58a80bf32b3e01b68f3d129d4",
+            "e194927e4838cb66ecdef40843a97c4f88f8d2af",
         )
         self.assertNotIn("tag", contract["macPackaging"])
         self.assertEqual(
             contract["commonChromium"]["commit"],
-            "fd0378e4f20fa09e21b09beca71573d435d787cf",
+            "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
         )
 
     def test_rejects_stale_chromium_144_mac_commit(self) -> None:
@@ -107,7 +107,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "contract.json"
             contract = self.contract()
-            contract["macPackaging"]["tag"] = "150.0.7871.181"
+            contract["macPackaging"]["tag"] = "151.0.7922.71"
             self.write_json(path, contract)
 
             with self.assertRaisesRegex(

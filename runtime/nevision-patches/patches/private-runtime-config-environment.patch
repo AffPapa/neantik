@@ -1,0 +1,149 @@
+diff --git a/components/ungoogled/ungoogled_switches.h b/components/ungoogled/ungoogled_switches.h
+--- a/components/ungoogled/ungoogled_switches.h
++++ b/components/ungoogled/ungoogled_switches.h
+@@ -14,10 +14,6 @@ namespace switches {
+ COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintingClientRectsNoise[];
+ COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintingCanvasMeasureTextNoise[];
+ COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintingCanvasImageDataNoise[];
+-COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprint[];
+-COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintPlatform[];
+-COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintTimezone[];
+-COMPONENT_EXPORT(UNGOOGLED) extern const char kFingerprintLocale[];
+
+ }
+
+diff --git a/components/ungoogled/ungoogled_switches.cc b/components/ungoogled/ungoogled_switches.cc
+--- a/components/ungoogled/ungoogled_switches.cc
++++ b/components/ungoogled/ungoogled_switches.cc
+@@ -15,13 +15,4 @@ const char kFingerprintingCanvasMeasureTextNoise[] = "fingerprinting-canvas-measuretext-noise";
+ // Enable fingerprinting deception for Canvas image data
+ const char kFingerprintingCanvasImageDataNoise[] = "fingerprinting-canvas-image-data-noise";
+
+-// Stable NeAntik profile identity seed. Missing or malformed values must
+-// preserve stock Chromium behavior in every consumer.
+-const char kFingerprint[] = "fingerprint";
+-
+-// Optional profile context supplied by NeAntik for coherent macOS profiles.
+-const char kFingerprintPlatform[] = "fingerprint-platform";
+-const char kFingerprintTimezone[] = "fingerprint-timezone";
+-const char kFingerprintLocale[] = "fingerprint-locale";
+-
+ }  // namespace switches
+diff --git a/components/ungoogled/nevision_fingerprint.h b/components/ungoogled/nevision_fingerprint.h
+--- a/components/ungoogled/nevision_fingerprint.h
++++ b/components/ungoogled/nevision_fingerprint.h
+@@ -14,9 +14,9 @@
+
+ namespace ungoogled::nevision {
+
+-// Returns the validated NeAntik profile seed from the current process command
+-// line. The value is intentionally constrained to a signed 31-bit range to
+-// match the native NeAntik launch contract. Missing, zero, or malformed
++// Returns the validated NeAntik profile seed inherited through the private
++// process environment. The value is intentionally constrained to a signed
++// 31-bit range to match the native launch contract. Missing, zero, or malformed
+ // values return std::nullopt so callers preserve stock Chromium behavior.
+ COMPONENT_EXPORT(UNGOOGLED) std::optional<uint32_t> GetProfileSeed();
+
+diff --git a/components/ungoogled/nevision_fingerprint.cc b/components/ungoogled/nevision_fingerprint.cc
+--- a/components/ungoogled/nevision_fingerprint.cc
++++ b/components/ungoogled/nevision_fingerprint.cc
+@@ -10,10 +10,9 @@
+ #include <string>
+ #include <string_view>
+
+-#include "base/command_line.h"
++#include "base/environment.h"
+ #include "base/hash/hash.h"
+ #include "base/strings/string_number_conversions.h"
+-#include "components/ungoogled/ungoogled_switches.h"
+
+ namespace ungoogled::nevision {
+
+@@ -21,15 +20,15 @@ namespace {
+ constexpr uint32_t kMaximumRuntimeSeed =
+     static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
+
+-std::optional<uint32_t> ReadSeedFromCommandLine() {
+-  const base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+-  if (!command_line || !command_line->HasSwitch(switches::kFingerprint)) {
++std::optional<uint32_t> ReadSeedFromEnvironment() {
++  std::optional<std::string> value =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_SEED");
++  if (!value) {
+     return std::nullopt;
+   }
+
+   uint32_t seed = 0;
+-  if (!base::StringToUint(
+-          command_line->GetSwitchValueASCII(switches::kFingerprint), &seed)) {
++  if (!base::StringToUint(*value, &seed)) {
+     return std::nullopt;
+   }
+   if (seed == 0 || seed > kMaximumRuntimeSeed) {
+@@ -47,7 +45,7 @@ uint32_t SaltedProfileHash(uint32_t seed, std::string_view salt) {
+ }  // namespace
+
+ std::optional<uint32_t> GetProfileSeed() {
+-  return ReadSeedFromCommandLine();
++  return ReadSeedFromEnvironment();
+ }
+
+ std::optional<double> GetProfileUnitInterval(std::string_view salt) {
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -3897,9 +3897,5 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+       switches::kEnableWebGPUDeveloperFeatures,
+       switches::kFileUrlPathAlias,
+-      switches::kFingerprint,
+-      switches::kFingerprintPlatform,
+-      switches::kFingerprintTimezone,
+-      switches::kFingerprintLocale,
+       switches::kFingerprintingClientRectsNoise,
+       switches::kFingerprintingCanvasMeasureTextNoise,
+       switches::kFingerprintingCanvasImageDataNoise,
+diff --git a/third_party/blink/renderer/core/core_initializer.cc b/third_party/blink/renderer/core/core_initializer.cc
+--- a/third_party/blink/renderer/core/core_initializer.cc
++++ b/third_party/blink/renderer/core/core_initializer.cc
+@@ -32,9 +32,8 @@
+
+ #include <memory>
+
+-#include "base/command_line.h"
++#include "base/environment.h"
+ #include "base/no_destructor.h"
+-#include "components/ungoogled/ungoogled_switches.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/public/web/blink.h"
+ #include "third_party/blink/renderer/bindings/core/v8/binding_security.h"
+@@ -89,16 +88,14 @@ NeAntikTimeZoneOverrideHandle() {
+   return *handle;
+ }
+
+-void ApplyNeAntikTimeZoneOverrideFromCommandLine() {
+-  const base::CommandLine* command_line =
+-      base::CommandLine::ForCurrentProcess();
+-  if (!command_line->HasSwitch(switches::kFingerprintTimezone)) {
++void ApplyNeAntikTimeZoneOverrideFromEnvironment() {
++  std::optional<std::string> timezone_value =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_TIMEZONE");
++  if (!timezone_value) {
+     return;
+   }
+
+-  std::string timezone_value =
+-      command_line->GetSwitchValueASCII(switches::kFingerprintTimezone);
+-  String timezone_id = String::FromUtf8(timezone_value);
++  String timezone_id = String::FromUtf8(*timezone_value);
+   if (timezone_id.empty()) {
+     return;
+   }
+@@ -209,6 +206,6 @@ void CoreInitializer::Initialize() {
+   ScriptStateImpl::Init();
+
+   TimeZoneController::Init();
+-  ApplyNeAntikTimeZoneOverrideFromCommandLine();
++  ApplyNeAntikTimeZoneOverrideFromEnvironment();
+
+   FontGlobalContext::Init();

@@ -155,6 +155,123 @@ struct ResponsiveLayoutRenderTests {
         }
     }
 
+    @Test func actualContentViewRendersAtMinimumAndWideSizes() throws {
+        let temporaryRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "neantik-content-layout-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer {
+            try? FileManager.default.removeItem(at: temporaryRoot)
+        }
+        let paths = AppPaths(rootDirectory: temporaryRoot)
+        let store = ProfileStore(paths: paths)
+        _ = try store.upsert(
+            BrowserProfile(
+                name:
+                    "Очень длинное Unicode-название рабочего профиля",
+                tags: ["Работа", "Проверка"],
+                proxy: ProxyConfiguration(
+                    kind: .https,
+                    host: "2001:db8::1",
+                    port: 8_080,
+                    username: "operator"
+                )
+            )
+        )
+        let runtimeExecutable = temporaryRoot.appendingPathComponent(
+            "NeAntik Browser"
+        )
+        #expect(
+            FileManager.default.createFile(
+                atPath: runtimeExecutable.path,
+                contents: Data("runtime".utf8),
+                attributes: [.posixPermissions: 0o700]
+            )
+        )
+        let runtimeLocator = BrowserRuntimeLocator(
+            runtimeInspector: { _ in
+                BrowserRuntimeInspection(
+                    version: "151.0.7922.75",
+                    architectures: ["arm64"],
+                    codeSignatureValid: true
+                )
+            },
+            candidates: [
+                BrowserRuntimeLocator.Candidate(
+                    name: "NeAntik Browser",
+                    url: runtimeExecutable,
+                    source: "Встроен",
+                    flavor: .fingerprintChromium
+                )
+            ]
+        )
+        let keychain = KeychainStore(
+            backend: LayoutRenderKeychainBackend(),
+            service: "layout.content.proxy",
+            legacyService: nil
+        )
+        let defaultsName = "NeAntik.Layout.\(UUID().uuidString)"
+        let defaults = try #require(
+            UserDefaults(suiteName: defaultsName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: defaultsName)
+        }
+        let telemetry = TelemetryController(
+            edition: .direct,
+            configuration: TelemetryConfiguration(
+                endpoint: nil,
+                publicStatsURL: nil
+            ),
+            defaults: defaults
+        )
+        let processes = BrowserProcessManager(paths: paths)
+        let intent = NeAntikLaunchIntent.parse(
+            arguments: [
+                "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+            ]
+        )
+
+        for (name, size) in [
+            (
+                "actual-content-minimum",
+                CGSize(
+                    width: WorkspaceLayout.minimumWindowWidth,
+                    height: WorkspaceLayout.minimumWindowHeight
+                )
+            ),
+            (
+                "actual-content-wide",
+                CGSize(width: 1_600, height: 1_000)
+            ),
+        ] {
+            try render(
+                ContentView(
+                    store: store,
+                    processes: processes,
+                    telemetry: telemetry,
+                    keychain: keychain,
+                    credentialCleanup:
+                        DeletedProfileCredentialCleanup(
+                            paths: paths,
+                            keychain: keychain
+                        ),
+                    runtimeLocator: runtimeLocator,
+                    launchIntent: intent,
+                    fingerprintEvidenceReleaseContext: nil
+                ),
+                name: name,
+                size: size,
+                styleMask: [
+                    .titled,
+                    .closable,
+                    .resizable,
+                ]
+            )
+        }
+    }
+
     @Test func workspaceKeepsFixedControlsVisibleAtMinimumWindowSize() throws {
         let profile = BrowserProfile(
             name: "Рабочий профиль",

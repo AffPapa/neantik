@@ -73,6 +73,12 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
         message = self.verify("150.0.7871.187")
         self.assertIn("verified", message)
 
+    def test_zero_fix_count_is_valid_when_official_post_enumerates_none(self) -> None:
+        baseline = self.baseline()
+        baseline["securityFixCount"] = 0
+        message = self.verify("150.0.7871.187", baseline)
+        self.assertIn("security fixes not enumerated", message)
+
     def test_old_runtime_is_release_blocked(self) -> None:
         with self.assertRaisesRegex(SystemExit, "Public Direct release blocked"):
             self.verify("144.0.7559.132")

@@ -1,0 +1,36 @@
+diff --git a/components/ungoogled/nevision_fingerprint.cc b/components/ungoogled/nevision_fingerprint.cc
+--- a/components/ungoogled/nevision_fingerprint.cc
++++ b/components/ungoogled/nevision_fingerprint.cc
+@@ -12,6 +12,7 @@
+
+ #include "base/environment.h"
+ #include "base/hash/hash.h"
++#include "base/no_destructor.h"
+ #include "base/strings/string_number_conversions.h"
+
+ namespace ungoogled::nevision {
+@@ -36,6 +37,15 @@ std::optional<uint32_t> ReadSeedFromEnvironment() {
+   return seed;
+ }
+
++const std::optional<uint32_t>& CachedProfileSeed() {
++  // The manager fixes the child environment before Process.run(). Reading it
++  // once avoids an environment lookup for every deterministic audio sample or
++  // pixel while keeping one stable value for the lifetime of this process.
++  static const base::NoDestructor<std::optional<uint32_t>> seed(
++      ReadSeedFromEnvironment());
++  return *seed;
++}
++
+ uint32_t SaltedProfileHash(uint32_t seed, std::string_view salt) {
+   return base::PersistentHash(base::NumberToString(seed) + ":" +
+                               std::string(salt));
+@@ -45,7 +55,7 @@ uint32_t SaltedProfileHash(uint32_t seed, std::string_view salt) {
+ }  // namespace
+
+ std::optional<uint32_t> GetProfileSeed() {
+-  return ReadSeedFromEnvironment();
++  return CachedProfileSeed();
+ }
+
+ std::optional<double> GetProfileUnitInterval(std::string_view salt) {

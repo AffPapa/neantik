@@ -134,6 +134,19 @@ struct FingerprintAuditView: View {
         .onChange(of: profiles.map(\.id)) { _, _ in
             normalizeSelection()
         }
+        .onChange(of: coordinator.isRunning) { _, isRunning in
+            if isRunning {
+                announce("Проверка профилей началась.")
+            }
+        }
+        .onChange(of: coordinator.report?.id) { _, _ in
+            guard let report = coordinator.report else { return }
+            announce(
+                report.isPublicAlphaReleaseQualified
+                    ? "Проверка завершена: профиль работает правильно."
+                    : "Проверка завершена: требуется внимание."
+            )
+        }
         .onChange(of: coordinator.releaseEvidenceIsReady) { _, ready in
             guard ready,
                   isReleaseAudit,
@@ -166,6 +179,18 @@ struct FingerprintAuditView: View {
                 NSApplication.shared.terminate(nil)
             }
         }
+    }
+
+    @MainActor
+    private func announce(_ message: String) {
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.medium.rawValue
+            ]
+        )
     }
 
     private var header: some View {
@@ -619,8 +644,8 @@ struct FingerprintAuditView: View {
             issue.contains("diagnostic mode") {
             return "Отчёт получен не в обычном режиме браузера."
         }
-        if issue.contains("strict fingerprint audit schema") {
-            return "Нужен свежий отчёт текущего формата; старый отчёт подходит только для уровня public alpha."
+        if issue.contains("fingerprint audit schema") {
+            return "Нужен свежий отчёт текущего формата."
         }
         if issue.contains("immutable identity catalog") {
             return "Отчёт не связан с текущей неизменяемой версией каталога устройств."

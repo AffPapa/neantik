@@ -12,7 +12,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
-REBASE_PLAN_PATH = PROJECT_ROOT / "runtime" / "chromium-150-rebase-plan.json"
+REBASE_PLAN_PATH = PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json"
 VERIFIER_PATH = PROJECT_ROOT / "scripts" / "verify-nevision-patchset-manifest.py"
 
 SPEC = importlib.util.spec_from_file_location(
@@ -114,6 +114,14 @@ def postimage_state(
     groups: list[dict[str, object]],
     generated_postimages: dict[str, str],
 ) -> tuple[int, int, list[str]]:
+    final_patch_postimages: dict[str, str] = {}
+    for group in groups:
+        final_patch_postimages.update(
+            {
+                str(relative): str(digest)
+                for relative, digest in group["postimageSHA256"].items()
+            }
+        )
     matched = 0
     total = 0
     mismatches: list[str] = []
@@ -126,6 +134,7 @@ def postimage_state(
             actual = sha256(path) if path.is_file() else "missing"
             accepted = {
                 str(expected),
+                final_patch_postimages[str(relative)],
                 *(
                     [generated_postimages[str(relative)]]
                     if str(relative) in generated_postimages
@@ -142,12 +151,94 @@ def postimage_state(
     return matched, total, mismatches
 
 
+def recover_one_incremental_group(
+    *,
+    source_root: Path,
+    manifest_path: Path,
+    groups: list[dict[str, object]],
+    generated_postimages: dict[str, str],
+) -> dict[str, object] | None:
+    final_postimages: dict[str, str] = {}
+    for group in groups:
+        final_postimages.update(
+            {
+                str(relative): str(digest)
+                for relative, digest in group["postimageSHA256"].items()
+            }
+        )
+
+    candidates: list[dict[str, object]] = []
+    for group in groups:
+        preimages = group.get("incrementalPreimageSHA256", {})
+        if not isinstance(preimages, dict) or not preimages:
+            continue
+        if all(
+            (source_root / str(relative)).is_file()
+            and sha256(source_root / str(relative)) == str(digest)
+            for relative, digest in preimages.items()
+        ):
+            candidates.append(group)
+    if not candidates:
+        return None
+    if len(candidates) != 1:
+        raise PatchApplicationError(
+            "Incremental recovery is ambiguous: multiple reviewed preimages match"
+        )
+
+    candidate = candidates[0]
+    candidate_preimages = {
+        str(relative): str(digest)
+        for relative, digest in
+        candidate["incrementalPreimageSHA256"].items()
+    }
+    for relative, expected in final_postimages.items():
+        if relative in candidate_preimages:
+            continue
+        path = source_root / relative
+        actual = sha256(path) if path.is_file() else "missing"
+        accepted = {
+            expected,
+            *(
+                [generated_postimages[relative]]
+                if relative in generated_postimages
+                else []
+            ),
+        }
+        if actual not in accepted:
+            raise PatchApplicationError(
+                "Incremental recovery refused because an unrelated locked "
+                f"postimage drifted: {relative}"
+            )
+
+    patch_path = manifest_path.parent / str(candidate["patchFile"])
+    run_git_apply(source_root, [patch_path], "--check")
+    run_git_apply(source_root, [patch_path])
+    matched, total, mismatches = postimage_state(
+        source_root,
+        groups,
+        generated_postimages,
+    )
+    if matched != total:
+        raise PatchApplicationError(
+            "Incremental recovery did not produce the complete reviewed "
+            f"postimage set: {matched}/{total} match.\n"
+            + "\n".join(mismatches[:12])
+        )
+    return {
+        "status": "incrementally-recovered",
+        "patchCount": 1,
+        "postimageCount": total,
+        "group": str(candidate["id"]),
+    }
+
+
 def apply_patchset(
     *,
     source_root: Path,
     manifest_path: Path = MANIFEST_PATH,
     rebase_plan_path: Path = REBASE_PLAN_PATH,
     check_only: bool = False,
+    recover_incremental: bool = False,
 ) -> dict[str, object]:
     source_root = source_root.resolve()
     if not source_root.is_dir():
@@ -197,6 +288,18 @@ def apply_patchset(
     try:
         run_git_apply(source_root, patch_paths, "--check")
     except PatchApplicationError as forward_error:
+        if recover_incremental and not check_only:
+            recovered = recover_one_incremental_group(
+                source_root=source_root,
+                manifest_path=manifest_path,
+                groups=groups,
+                generated_postimages=generated_postimages,
+            )
+            if recovered is not None:
+                return {
+                    **recovered,
+                    "chromiumVersion": actual_version,
+                }
         try:
             run_git_apply(source_root, patch_paths, "--reverse", "--check")
         except PatchApplicationError:
@@ -243,6 +346,14 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
     parser.add_argument("--rebase-plan", type=Path, default=REBASE_PLAN_PATH)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--recover-incremental",
+        action="store_true",
+        help=(
+            "Apply one manifest group only when its explicit incremental "
+            "preimage matches and every unrelated final postimage is exact."
+        ),
+    )
     args = parser.parse_args()
     try:
         result = apply_patchset(
@@ -250,6 +361,7 @@ def main() -> int:
             manifest_path=args.manifest.resolve(),
             rebase_plan_path=args.rebase_plan.resolve(),
             check_only=args.check,
+            recover_incremental=args.recover_incremental,
         )
     except (PatchApplicationError, VERIFIER.PatchsetManifestError) as error:
         print(f"NeAntik patchset application failed: {error}", file=sys.stderr)

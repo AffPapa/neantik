@@ -113,7 +113,7 @@ EXACT_CRITICAL_FILE_PATHS = {
     ),
     "sourceContract": (
         "Contents/Resources/NeAntikRuntimeEvidence/"
-        "chromium-150-source-contract.json"
+        "chromium-151-source-contract.json"
     ),
     "sourceProvenance": (
         "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json"

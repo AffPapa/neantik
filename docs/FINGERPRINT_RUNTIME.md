@@ -4,13 +4,12 @@ NeAntik itself is a native profile and process manager. Browser-visible
 fingerprint values are implemented by a compatible Chromium runtime, not by
 JavaScript injected into pages.
 
-## Required command-line protocol
+## Private launch protocol
 
 A compatible runtime must support:
 
 ```text
---fingerprint=<positive signed-32-bit-compatible seed>
---fingerprint-platform=macos
+NEANTIK_PROFILE_SEED=<positive signed-32-bit-compatible seed>
 ```
 
 NeAntik persists one stable seed in `1...2147483647` per profile. It does not
@@ -33,9 +32,13 @@ values still make Canvas, Audio, WebGL and ClientRects effectively distinct at
 public-alpha population sizes. Shared full-fingerprint cohorts remain a
 separate production design problem.
 
-The current owned runtime parses this switch through Chromium's signed `int`
-command-line conversion. NeAntik therefore never generates a high-bit
-`UInt32` seed. Profiles written by older builds are repaired once on load:
+The current owned runtime parses this private environment value as an unsigned
+integer constrained to Chromium's signed `int` range. NeAntik therefore never
+generates a high-bit `UInt32` seed. The value is absent from process argv and
+the manager builds the child environment from a strict system allowlist, so
+shell proxy variables, TLS key-log paths, cloud tokens and stale NeAntik
+values cannot leak into Chromium. Profiles written by older builds are
+repaired once on load:
 high-bit values are folded into the supported positive range and any resulting
 collisions are resolved before the repaired metadata is persisted. The launch
 builder applies the same conversion defensively. Collision repair walks the
@@ -84,7 +87,9 @@ runtime.
 
 ### Explicitly compatible Chromium
 
-- Receives the persistent profile seed and native macOS platform flag.
+- Receives the persistent profile seed through the private child-process
+  environment contract. The runtime is ARM64-only and its macOS platform is
+  fixed by the signed build rather than supplied by a mutable launch flag.
 - The runtime, not NeAntik, is responsible for coherent Canvas, Audio, WebGL,
   font, ClientRects, WebRTC, language, timezone, and Client Hints behavior.
 
@@ -127,17 +132,16 @@ When a proxy is active, NeAntik currently applies Chromium's proxy leak
 controls:
 
 ```text
---force-webrtc-ip-handling-policy=disable_non_proxied_udp
+--webrtc-ip-handling-policy=disable_non_proxied_udp
 --disable-quic
---dns-prefetch-disable
---disable-features=AsyncDns,DnsOverHttps[,WebGPUService]
+--disable-features=AsyncDns,DnsOverHttpsUpgrade[,WebGPUService]
 --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE <proxy host>
 --proxy-bypass-list=<-loopback>
 ```
 
 The resolver rule permits DNS resolution of the proxy itself while preventing
 other browser components from resolving target hosts directly. Async DNS and
-DoH are disabled in proxy mode as defense in depth. Direct profiles explicitly
+automatic DoH upgrade are disabled in proxy mode as defense in depth. Direct profiles explicitly
 pass `--no-proxy-server`, so they do not inherit a macOS HTTP proxy, PAC file,
 or proxy auto-detection setting. That switch does not bypass a VPN, Network
 Extension, system routing, DNS interception, or an upstream network proxy.
@@ -146,7 +150,7 @@ take precedence over command-line proxy preferences. The current audit records
 the configured route; it does not independently observe the effective HTTP
 route, so a Direct label is not proof against those overrides.
 Direct profiles also use
-`--force-webrtc-ip-handling-policy=default_public_interface_only` to avoid
+`--webrtc-ip-handling-policy=default_public_interface_only` to avoid
 exposing every local interface while preserving ordinary WebRTC calls.
 
 Direct Chromium supports authenticated HTTP/HTTPS proxies through its native
@@ -160,20 +164,26 @@ implement SOCKS5 authentication, so NeAntik Direct accepts SOCKS5 only without
 credentials.
 
 After a successful proxy test, NeAntik also stores the exit timezone and
-primary locale with the profile identity. A compatible runtime receives both
-supported Chromium dialects:
+primary locale with the profile identity. A compatible runtime receives the
+validated timezone through the same private environment contract and the
+locale through ordinary Chromium language switches:
 
 ```text
---fingerprint-timezone=<IANA timezone>
---timezone=<IANA timezone>
---fingerprint-locale=<locale>
+NEANTIK_PROFILE_TIMEZONE=<IANA timezone>
 --lang=<locale>
 --accept-lang=<locale>
 ```
 
-Unknown switches are ignored by Chromium. Sending the same value in both
-dialects lets NeAntik support Cloak-style and fingerprint-chromium-style
-runtimes without injecting page scripts.
+Timezone is intentionally transported only through NeAntik's private
+environment contract. Chromium 151 does not expose a supported
+`--timezone` command-line switch, so the manager never emits that no-op
+argument.
+
+The custom `--fingerprint*` argv family is intentionally unsupported and the
+release verifier rejects those legacy NUL-terminated markers in the packaged
+runtime. NeAntik supports only its exact embedded runtime contract; it does not
+silently claim compatibility with unrelated Cloak-style or
+fingerprint-chromium-style binaries.
 
 ## Built-in verification
 

@@ -98,13 +98,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "languages",
         "timezone"
     ]
-    static let productionExtendedContextKeys = [
-        "audio_repeat",
-        "canvas_repeat",
-        "client_rects_repeat",
-        "webgl_pixels_repeat",
-        "webgl_shader_precision",
-        "css_screen_match",
+    static let publicAlphaCoherenceContextKeys = [
         "intl_locale",
         "primary_locale_core",
         "intl_locale_core",
@@ -113,7 +107,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "worker_webgl_vendor",
         "worker_webgl_renderer",
         "worker_webgl_extensions",
-        "worker_webgl_shader_precision",
         "worker_user_agent",
         "worker_platform",
         "worker_languages",
@@ -129,6 +122,15 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "webrtc_complete",
         "webrtc_stun_requests",
         "webrtc_candidate_summary"
+    ]
+    static let productionExtendedContextKeys = [
+        "audio_repeat",
+        "canvas_repeat",
+        "client_rects_repeat",
+        "webgl_pixels_repeat",
+        "webgl_shader_precision",
+        "css_screen_match",
+        "worker_webgl_shader_precision"
     ]
 
     let id: UUID
@@ -307,18 +309,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
     var productionReleaseIssues: [String] {
         var issues = publicAlphaReleaseIssues
-        if effectiveAuditSchemaVersion != Self.currentAuditSchemaVersion {
-            issues.append(
-                "The report does not use the current strict fingerprint audit schema."
-            )
-        }
-        if identityCatalogVersion !=
-            BrowserIdentityCatalog.currentVersion
-        {
-            issues.append(
-                "The report does not use the current immutable identity catalog."
-            )
-        }
         if !productionExtendedUnavailableKeys.isEmpty {
             issues.append(
                 "Required browser surfaces are unavailable: " +
@@ -333,21 +323,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                     "."
             )
         }
-        issues.append(contentsOf: crossRealmConsistencyIssues)
-        issues.append(contentsOf: deviceTupleConsistencyIssues)
-        if let webrtcDirectControl {
-            issues.append(
-                contentsOf: Self.networkPrivacyIssues(
-                    for: webrtcDirectControl,
-                    label: "WebRTC direct control"
-                )
-            )
-        } else {
-            issues.append(
-                "The report does not contain a WebRTC direct positive control."
-            )
-        }
-        issues.append(contentsOf: networkPrivacyIssues)
+        issues.append(contentsOf: strictContextConsistencyIssues)
         return issues
     }
 
@@ -383,6 +359,18 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 "The report does not bind the runtime framework SHA-256."
             )
         }
+        if effectiveAuditSchemaVersion != Self.currentAuditSchemaVersion {
+            issues.append(
+                "The report does not use the current fingerprint audit schema."
+            )
+        }
+        if identityCatalogVersion !=
+            BrowserIdentityCatalog.currentVersion
+        {
+            issues.append(
+                "The report does not use the current immutable identity catalog."
+            )
+        }
         if firstInitial.profileID == second.profileID ||
             firstInitial.profileID != firstRepeat.profileID {
             issues.append(
@@ -413,6 +401,21 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         if !changedCriticalKeys.contains("webgl_pixels") {
             issues.append("WebGL pixels did not differ between profiles.")
         }
+        issues.append(contentsOf: crossRealmConsistencyIssues)
+        issues.append(contentsOf: deviceTupleConsistencyIssues)
+        if let webrtcDirectControl {
+            issues.append(
+                contentsOf: Self.networkPrivacyIssues(
+                    for: webrtcDirectControl,
+                    label: "WebRTC direct control"
+                )
+            )
+        } else {
+            issues.append(
+                "The report does not contain a WebRTC direct positive control."
+            )
+        }
+        issues.append(contentsOf: networkPrivacyIssues)
         return issues
     }
 
@@ -455,6 +458,16 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("profile A, repeat capture", firstRepeat)
         ].flatMap { label, capture in
             Self.crossRealmIssues(for: capture, label: label)
+        }
+    }
+
+    private var strictContextConsistencyIssues: [String] {
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
+            Self.strictContextIssues(for: capture, label: label)
         }
     }
 
@@ -743,7 +756,9 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     private static var publicAlphaRequiredKeys: [String] {
-        criticalKeys + publicAlphaStableContextKeys
+        criticalKeys +
+            publicAlphaStableContextKeys +
+            publicAlphaCoherenceContextKeys
     }
 
     private static var productionRequiredKeys: [String] {
@@ -908,16 +923,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
 
         for pair in [
-            ("audio", "audio_repeat"),
-            ("canvas", "canvas_repeat"),
             ("canvas", "worker_canvas"),
-            ("client_rects", "client_rects_repeat"),
-            ("webgl_pixels", "webgl_pixels_repeat"),
             ("webgl_pixels", "worker_webgl_pixels"),
             ("webgl_vendor", "worker_webgl_vendor"),
             ("webgl_renderer", "worker_webgl_renderer"),
             ("webgl_extensions", "worker_webgl_extensions"),
-            ("webgl_shader_precision", "worker_webgl_shader_precision"),
             ("user_agent", "worker_user_agent"),
             ("platform", "worker_platform"),
             ("languages", "worker_languages"),
@@ -977,15 +987,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             localeCoreKey: "worker_intl_locale_core"
         )
 
-        if isAvailable(values["css_screen_match"]),
-           values["css_screen_match"] !=
-            "width:1|height:1|resolution:1"
-        {
-            issues.append(
-                "The \(label) CSS media queries disagree with the Screen API."
-            )
-        }
-
         if let topHints = parsedClientHints(values["client_hints"]),
            let workerHints = parsedClientHints(values["worker_client_hints"])
         {
@@ -1007,6 +1008,37 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             }
         }
 
+        return issues
+    }
+
+    private static func strictContextIssues(
+        for capture: FingerprintCapture,
+        label: String
+    ) -> [String] {
+        let values = capture.values
+        var issues: [String] = []
+        for pair in [
+            ("audio", "audio_repeat"),
+            ("canvas", "canvas_repeat"),
+            ("client_rects", "client_rects_repeat"),
+            ("webgl_pixels", "webgl_pixels_repeat"),
+            ("webgl_shader_precision", "worker_webgl_shader_precision")
+        ] where isAvailable(values[pair.0]) &&
+            isAvailable(values[pair.1]) &&
+            values[pair.0] != values[pair.1]
+        {
+            issues.append(
+                "The \(label) \(pair.0) value disagrees with \(pair.1)."
+            )
+        }
+        if isAvailable(values["css_screen_match"]),
+           values["css_screen_match"] !=
+            "width:1|height:1|resolution:1"
+        {
+            issues.append(
+                "The \(label) CSS media queries disagree with the Screen API."
+            )
+        }
         return issues
     }
 

@@ -1,0 +1,11 @@
+--- a/tools/metrics/BUILD.gn
++++ b/tools/metrics/BUILD.gn
+@@ -45,7 +45,7 @@ group("metrics_metadata") {
+   # for non-git checkouts.
+   # TODO(crbug.com/329080012): Remove this once dirmd works in non-git
+   # checkouts.
+-  if (generate_location_tags) {
++  if (generate_location_tags && path_exists("//.git")) {
+     deps += [ ":histograms_xml" ]
+   }
+ }

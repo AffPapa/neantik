@@ -518,7 +518,9 @@ struct KeychainStoreTests {
             )
         }
 
-        candidateEnumerated.wait()
+        await Task.detached {
+            waitSynchronously(candidateEnumerated)
+        }.value
         try paths.withProcessLockGuard(for: profileID) {
             continueToLock.signal()
             try paths.removeCredentialCleanupMarker(for: profileID)
@@ -715,3 +717,7 @@ private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable 
 }
 
 private struct MemoryKeychainError: Error {}
+
+private func waitSynchronously(_ semaphore: DispatchSemaphore) {
+    semaphore.wait()
+}

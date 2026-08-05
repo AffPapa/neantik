@@ -4,7 +4,7 @@
 # Uses flock, root-owned immutable snapshot, atomic publish, auto-rollback.
 # Canonical schema: runtime, source, artifacts[].
 # Blade is root-owned and NOT part of the deploy channel.
-set -euo pipefail
+set -Eeuo pipefail
 
 LIVE_ROOT="/var/www/hrband"
 STAGING="/var/www/hrband/storage/app/neantik-release-staging"
@@ -22,11 +22,20 @@ CURL_RESOLVE=(--insecure --resolve "affpapa.org:443:127.0.0.1")
 
 CHECK_MODE=0
 DRY_RUN=0
+STAGE_ARTIFACTS_MODE=0
+ACTIVATE_MODE=0
+DEPLOY_ARMED=0
+DEPLOY_COMPLETE=0
+ROLLBACK_RUNNING=0
 case "${1:-}" in
     --check)   CHECK_MODE=1 ;;
     --dry-run) DRY_RUN=1 ;;
-    "")        ;;
-    *)         echo "Usage: neantik-release-deploy [--check|--dry-run]" >&2; exit 2 ;;
+    --stage-artifacts) STAGE_ARTIFACTS_MODE=1 ;;
+    --activate|"") ACTIVATE_MODE=1 ;;
+    *)
+        echo "Usage: neantik-release-deploy [--check|--dry-run|--stage-artifacts|--activate]" >&2
+        exit 2
+        ;;
 esac
 
 log_entry() {
@@ -66,7 +75,24 @@ fi
 SNAPSHOT=$(mktemp -d /tmp/neantik-snapshot-XXXXXX)
 chmod 700 "$SNAPSHOT"
 chown root:root "$SNAPSHOT"
-trap 'rm -rf "$SNAPSHOT"' EXIT
+
+cleanup_and_maybe_rollback() {
+    local exit_code=$?
+    trap - EXIT ERR
+    if [[ "$exit_code" -ne 0 &&
+          "$DEPLOY_ARMED" -eq 1 &&
+          "$DEPLOY_COMPLETE" -eq 0 &&
+          "$ROLLBACK_RUNNING" -eq 0 ]]; then
+        ROLLBACK_RUNNING=1
+        if ! do_rollback; then
+            log_entry "DEPLOY ROLLBACK FAILED: v${VERSION:-unknown} (exit=$exit_code)"
+            printf 'CRITICAL: automatic rollback failed; inspect %s\n' "$LOG" >&2
+        fi
+    fi
+    rm -rf "$SNAPSHOT"
+    exit "$exit_code"
+}
+trap cleanup_and_maybe_rollback EXIT
 
 # Safe copy: only regular files, no symlinks/FIFO/devices, check nlink, owner, perms, size
 DEPLOY_UID=$(id -u neantik-deploy)
@@ -160,6 +186,59 @@ if [[ -f "$RELEASE_JSON_LIVE" ]]; then
     fi
 fi
 
+stage_artifact_file() {
+    local src="$1"
+    local dest="$2"
+    local expected actual tmpfile
+    expected=$(sha256sum "$src" | cut -d' ' -f1)
+    if [[ -e "$dest" ]]; then
+        [[ -f "$dest" && ! -L "$dest" ]] ||
+            fail "existing artifact is not a regular file: $dest"
+        actual=$(sha256sum "$dest" | cut -d' ' -f1)
+        [[ "$actual" == "$expected" ]] ||
+            fail "immutable artifact already exists with different bytes: $dest"
+        return 0
+    fi
+    tmpfile=$(mktemp "${dest}.stage-XXXXXX")
+    install -m 644 -o deploy -g deploy "$src" "$tmpfile"
+    actual=$(sha256sum "$tmpfile" | cut -d' ' -f1)
+    [[ "$actual" == "$expected" ]] ||
+        fail "staged artifact SHA changed before publish: $dest"
+    mv "$tmpfile" "$dest"
+}
+
+verify_staged_artifacts() {
+    local source_file dest expected actual
+    for source_file in "$SNAPSHOT"/NeAntik-*; do
+        [[ -f "$source_file" ]] || continue
+        dest="$DOWNLOADS_LIVE/$(basename "$source_file")"
+        [[ -f "$dest" && ! -L "$dest" ]] ||
+            fail "staged public artifact is missing: $dest"
+        expected=$(sha256sum "$source_file" | cut -d' ' -f1)
+        actual=$(sha256sum "$dest" | cut -d' ' -f1)
+        [[ "$actual" == "$expected" ]] ||
+            fail "staged public artifact SHA mismatch: $dest"
+    done
+}
+
+if [[ "$STAGE_ARTIFACTS_MODE" -eq 1 ]]; then
+    for source_file in "$SNAPSHOT"/NeAntik-*; do
+        [[ -f "$source_file" ]] || continue
+        stage_artifact_file \
+            "$source_file" \
+            "$DOWNLOADS_LIVE/$(basename "$source_file")"
+        echo "  OK: $(basename "$source_file") staged without metadata activation"
+    done
+    verify_staged_artifacts
+    log_entry "DEPLOY ARTIFACTS STAGED: v$VERSION build $BUILD (user=${SUDO_USER:-?})"
+    echo "PASS: immutable artifacts are public; release metadata is unchanged."
+    exit 0
+fi
+
+# Metadata activation is allowed only after the exact immutable artifacts were
+# published and externally verified by the restricted Mac client.
+verify_staged_artifacts
+
 # ===================================================================
 # DEPLOYMENT — from this point, any failure triggers full rollback
 # ===================================================================
@@ -190,10 +269,12 @@ done
 chown root:root "$BACKUP_DIR/backup.sha256"
 chmod 600 "$BACKUP_DIR/backup.sha256"
 echo "  OK: backup at $BACKUP_DIR"
+DEPLOY_ARMED=1
 
 declare -a PUBLISHED_FILES=()
 
 do_rollback() {
+    ROLLBACK_RUNNING=1
     echo "!!! ROLLING BACK !!!" >&2
     log_entry "DEPLOY ROLLBACK START: v$VERSION (user=${SUDO_USER:-?})"
 
@@ -228,6 +309,8 @@ do_rollback() {
 
     log_entry "DEPLOY ROLLBACK COMPLETE: v$VERSION (user=${SUDO_USER:-?})"
     echo "!!! ROLLBACK COMPLETE !!!" >&2
+    DEPLOY_ARMED=0
+    ROLLBACK_RUNNING=0
 }
 
 publish_file() {
@@ -242,14 +325,7 @@ publish_file() {
     PUBLISHED_FILES+=("$dest")
 }
 
-# --- Publish immutable downloads first ---
-for f in "$SNAPSHOT"/NeAntik-*; do
-    [[ -f "$f" ]] || continue
-    publish_file "$f" "$DOWNLOADS_LIVE/$(basename "$f")"
-    echo "  OK: $(basename "$f") published"
-done
-
-# --- Publish page data, then release.json as the atomic public pointer ---
+# --- Activate page data, then release.json as the atomic public pointer ---
 publish_file "$SNAPSHOT/content.json" "$CONTENT_JSON_LIVE"
 echo "  OK: content.json published"
 publish_file "$SNAPSHOT/release.json" "$RELEASE_JSON_LIVE"
@@ -347,3 +423,5 @@ echo "=== DEPLOY COMPLETE: v$VERSION (build $BUILD) ==="
 rm -f "$STAGING"/*
 
 log_entry "DEPLOY OK: v$VERSION build $BUILD (user=${SUDO_USER:-?})"
+DEPLOY_COMPLETE=1
+DEPLOY_ARMED=0

@@ -117,7 +117,7 @@ def build_runbook(
             "A real user-context GUI report exists",
             "The report passes verify-gui-fingerprint-report.py",
             "The report is collected to dist/fingerprint-audit.json with 0600 permissions",
-            "Chromium security baseline and owned Chromium 150 patchset gates pass",
+            "Chromium security baseline and owned Chromium patchset gates pass",
         ],
     }
 

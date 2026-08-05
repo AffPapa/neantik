@@ -12,7 +12,7 @@ class LegacyRuntimeSourceScriptTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("Legacy source-pair preparation is blocked", script)
-        self.assertIn("chromium-150-source-contract.json", script)
+        self.assertIn("chromium-151-source-contract.json", script)
 
     def test_legacy_verifier_redirects_to_source_provenance(self) -> None:
         script = (
