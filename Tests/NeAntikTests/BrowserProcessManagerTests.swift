@@ -195,10 +195,8 @@ struct BrowserProcessManagerTests {
             browserDataProcessInspector: { _ in .absent }
         )
         let profile = BrowserProfile(name: "Временная проверка")
-        let temporaryBrowserData = root.appendingPathComponent(
-            "temporary-browser-data",
-            isDirectory: true
-        )
+        let temporaryBrowserData =
+            try manager.reserveFingerprintAuditDataDirectory()
         let runtime = BrowserRuntime(
             name: "Fake Chromium",
             executableURL: fakeBrowser,
@@ -230,6 +228,105 @@ struct BrowserProcessManagerTests {
                 atPath: paths.profileDirectory(for: profile.id).path
             )
         )
+    }
+
+    @Test
+    func freshAuditDirectoryAllowsUnknownInventoryWithoutWeakeningProfiles()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 0.1\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+        let paths = AppPaths(
+            rootDirectory: root.appendingPathComponent("data")
+        )
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .unknown }
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+        let auditProfile = BrowserProfile(name: "Audit")
+        let auditDirectory =
+            try manager.reserveFingerprintAuditDataDirectory()
+
+        try manager.launch(
+            profile: auditProfile,
+            runtime: runtime,
+            browserDataDirectoryOverride: auditDirectory,
+            purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
+        )
+        #expect(manager.runningProfileIDs.contains(auditProfile.id))
+
+        let normalProfile = BrowserProfile(name: "Normal")
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(
+                profile: normalProfile,
+                runtime: runtime
+            )
+        }
+    }
+
+    @Test
+    func freshAuditDirectoryStillRejectsKnownOccupant() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nexit 0\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+        let paths = AppPaths(
+            rootDirectory: root.appendingPathComponent("data")
+        )
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .found }
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+        let profile = BrowserProfile(name: "Occupied audit")
+        let auditDirectory =
+            try manager.reserveFingerprintAuditDataDirectory()
+
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(
+                profile: profile,
+                runtime: runtime,
+                browserDataDirectoryOverride: auditDirectory,
+                purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
+            )
+        }
     }
 
     @Test
@@ -1635,6 +1732,82 @@ struct BrowserProcessManagerTests {
             }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
+
+        #expect(manager.processState(for: profile.id) == .recoveryRequired)
+        #expect(
+            FileManager.default.fileExists(
+                atPath: paths.lockFile(for: profile.id).path
+            )
+        )
+
+        inspection = .absent
+        for _ in 0..<100 {
+            if manager.processState(for: profile.id) == .stopped {
+                break
+            }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        #expect(manager.processState(for: profile.id) == .stopped)
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.lockFile(for: profile.id).path
+            )
+        )
+    }
+
+    @Test
+    func lateTerminationCallbackCannotEraseHelperRecovery() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let exitedMarker = root.appendingPathComponent("exited")
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data(
+                "#!/bin/sh\nsleep 0.05\ntouch '\(exitedMarker.path)'\n"
+                    .utf8
+            )
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+        let paths = AppPaths(
+            rootDirectory: root.appendingPathComponent("data")
+        )
+        let profile = BrowserProfile(name: "Late callback")
+        var inspection = BrowserDataProcessInspection.absent
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            observationIntervalNanoseconds: 20_000_000,
+            browserDataProcessInspector: { _ in inspection }
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+
+        try manager.launch(profile: profile, runtime: runtime)
+        inspection = .found
+        for _ in 0..<200 where
+            !FileManager.default.fileExists(atPath: exitedMarker.path)
+        {
+            usleep(10_000)
+        }
+        #expect(
+            FileManager.default.fileExists(atPath: exitedMarker.path)
+        )
+        usleep(100_000)
+        manager.stop(profileID: profile.id)
+        await Task.yield()
+        await Task.yield()
 
         #expect(manager.processState(for: profile.id) == .recoveryRequired)
         #expect(

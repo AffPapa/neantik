@@ -5,6 +5,35 @@ import Testing
 
 struct FingerprintAuditTests {
     @Test
+    func auditUsesFreshProcessProfileWithoutChangingIdentity() {
+        let sourceID = UUID()
+        let processID = UUID()
+        let source = BrowserProfile(
+            id: sourceID,
+            name: "Stable A",
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "127.0.0.1",
+                port: 8080,
+                username: "login"
+            ),
+            identity: BrowserIdentity(seed: 42)
+        )
+
+        let processProfile =
+            FingerprintAuditCoordinator.transientProcessProfile(
+                from: source,
+                processID: processID
+            )
+
+        #expect(processProfile.id == processID)
+        #expect(processProfile.id != source.id)
+        #expect(processProfile.identity == source.identity)
+        #expect(processProfile.proxy == source.proxy)
+        #expect(processProfile.name == source.name)
+    }
+
+    @Test
     func safeDiagnosticSummaryUsesOnlyAllowlistedProvenance() {
         let profileID = UUID()
         let secretProfileName = "PROFILE-NAME-MUST-NOT-LEAK"

@@ -397,6 +397,29 @@ struct AppPaths: Sendable {
         }
     }
 
+    func createPrivateDirectoryExclusively(_ url: URL) throws {
+        try createPrivateDirectory(url.deletingLastPathComponent())
+        let result = url.path.withCString {
+            Darwin.mkdir($0, mode_t(S_IRWXU))
+        }
+        guard result == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        do {
+            try validatePrivateDirectory(url)
+            guard chmod(url.path, mode_t(S_IRWXU)) == 0 else {
+                throw POSIXError(
+                    POSIXErrorCode(rawValue: errno) ?? .EACCES
+                )
+            }
+        } catch {
+            _ = url.path.withCString { Darwin.rmdir($0) }
+            throw error
+        }
+    }
+
     private func createPrivateDirectory(_ url: URL) throws {
         if let status = try fileStatus(at: url) {
             let type = status.st_mode & mode_t(S_IFMT)

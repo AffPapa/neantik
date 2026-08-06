@@ -537,6 +537,7 @@ final class BrowserProcessManager: ObservableObject {
     private var lastReconciledProfiles: [BrowserProfile] = []
     private var pendingReconciliationProfileIDs = Set<UUID>()
     private var passiveInventoryObservationTask: Task<Void, Never>?
+    private var reservedFingerprintAuditDataDirectories = Set<String>()
 
     init(paths: AppPaths) {
         self.paths = paths
@@ -691,6 +692,34 @@ final class BrowserProcessManager: ObservableObject {
             generation: reconcileGeneration,
             retryCount: 0,
             processInventoryProvider: processInventoryProvider
+        )
+    }
+
+    func reserveFingerprintAuditDataDirectory() throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "app.neantik.fingerprint-audit",
+                isDirectory: true
+            )
+        for _ in 0..<8 {
+            let directory = root.appendingPathComponent(
+                UUID().uuidString,
+                isDirectory: true
+            )
+            do {
+                try paths.createPrivateDirectoryExclusively(directory)
+                reservedFingerprintAuditDataDirectories.insert(
+                    directory.standardizedFileURL.path
+                )
+                return directory
+            } catch let error as POSIXError
+                where error.code == .EEXIST
+            {
+                continue
+            }
+        }
+        throw NeAntikError.fingerprintAuditFailed(
+            "Не удалось безопасно подготовить временные данные браузера."
         )
     }
 
@@ -1373,6 +1402,26 @@ final class BrowserProcessManager: ObservableObject {
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
+        let ownsFreshFingerprintAuditDirectory: Bool
+        switch purpose {
+        case .normal:
+            ownsFreshFingerprintAuditDirectory = false
+        case .fingerprintAudit:
+            guard let browserDataDirectoryOverride else {
+                throw NeAntikError.fingerprintAuditFailed(
+                    "Для проверки не подготовлен временный каталог браузера."
+                )
+            }
+            ownsFreshFingerprintAuditDirectory =
+                reservedFingerprintAuditDataDirectories.remove(
+                    browserDataDirectoryOverride.standardizedFileURL.path
+                ) != nil
+            guard ownsFreshFingerprintAuditDirectory else {
+                throw NeAntikError.fingerprintAuditFailed(
+                    "Временный каталог проверки не принадлежит этому запуску."
+                )
+            }
+        }
         let profileDirectoryExistedBeforeLaunch =
             FileManager.default.fileExists(
                 atPath: paths.profileDirectory(for: profile.id).path
@@ -1432,7 +1481,9 @@ final class BrowserProcessManager: ObservableObject {
                 provisionalLock,
                 profileID: profile.id,
                 at: lockURL,
-                browserDataDirectory: browserDataDirectory
+                browserDataDirectory: browserDataDirectory,
+                allowsUnknownBrowserDataInspection:
+                    ownsFreshFingerprintAuditDirectory
             )
         } catch where Self.isExistingPathError(error) {
             reconcileProfile(profileID: profile.id)
@@ -1444,7 +1495,9 @@ final class BrowserProcessManager: ObservableObject {
                     provisionalLock,
                     profileID: profile.id,
                     at: lockURL,
-                    browserDataDirectory: browserDataDirectory
+                    browserDataDirectory: browserDataDirectory,
+                    allowsUnknownBrowserDataInspection:
+                        ownsFreshFingerprintAuditDirectory
                 )
             } catch where Self.isExistingPathError(error) {
                 reconcileProfile(profileID: profile.id)
@@ -1454,6 +1507,8 @@ final class BrowserProcessManager: ObservableObject {
                     error.localizedDescription
                 )
             }
+        } catch let error as NeAntikError {
+            throw error
         } catch {
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
         }
@@ -1518,8 +1573,15 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func stop(profileID: UUID) {
-        if let process = processes[profileID], process.isRunning {
-            managedProcessTerminator(process)
+        if let process = processes[profileID] {
+            if process.isRunning {
+                managedProcessTerminator(process)
+            } else {
+                handleTermination(
+                    profileID: profileID,
+                    process: process
+                )
+            }
             return
         }
         if recoveryProfileIDs.contains(profileID) {
@@ -1586,10 +1648,12 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func handleTermination(profileID: UUID, process: Process?) {
-        if let current = processes[profileID],
-           let process,
-           current !== process {
-            return
+        if let process {
+            guard let current = processes[profileID],
+                  current === process
+            else {
+                return
+            }
         }
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
@@ -1641,6 +1705,7 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: removableSnapshot,
                 blockingManagerPID: nil,
+                surfaceMessage: false,
                 message:
                     "Основной процесс браузера завершён, но его вспомогательные процессы ещё используют данные профиля. Профиль разблокируется автоматически после их завершения."
             )
@@ -1718,6 +1783,7 @@ final class BrowserProcessManager: ObservableObject {
         browserDataProcessInspector:
             ((URL) -> BrowserDataProcessInspection)? = nil,
         deferInitialResolution: Bool = false,
+        surfaceMessage: Bool = true,
         message: String
     ) {
         externalLocks.removeValue(forKey: profileID)
@@ -1739,7 +1805,9 @@ final class BrowserProcessManager: ObservableObject {
             entryIdentity: entryIdentity ?? nil
         )
         recoveryRecords[profileID] = record
-        lastError = message
+        if surfaceMessage {
+            lastError = message
+        }
         let effectiveBrowserDataProcessInspector =
             browserDataProcessInspector ??
             self.browserDataProcessInspector
@@ -2079,7 +2147,8 @@ final class BrowserProcessManager: ObservableObject {
         _ lock: BrowserProcessLock,
         profileID: UUID,
         at lockURL: URL,
-        browserDataDirectory: URL
+        browserDataDirectory: URL,
+        allowsUnknownBrowserDataInspection: Bool = false
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
             switch try paths.privateFileEntryKind(
@@ -2099,7 +2168,12 @@ final class BrowserProcessManager: ObservableObject {
             let inspection = browserDataProcessInspector(
                 browserDataDirectory
             )
-            guard inspection == .absent else {
+            guard inspection == .absent ||
+                    (
+                        inspection == .unknown &&
+                        allowsUnknownBrowserDataInspection
+                    )
+            else {
                 throw BrowserProfileLeaseUnavailableError(
                     inspection: inspection
                 )

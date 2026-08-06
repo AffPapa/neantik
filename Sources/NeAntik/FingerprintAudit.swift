@@ -1464,7 +1464,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         executionMode: FingerprintAuditExecutionMode
     ) async throws -> FingerprintCapture {
         try Task.checkCancellation()
-        try paths.prepareProfileDirectories(for: profile.id)
+        let processProfile = Self.transientProcessProfile(from: profile)
         let auditServer = try await FingerprintAuditLoopbackServer.start()
         defer { auditServer.stop() }
         let stunServer =
@@ -1482,26 +1482,13 @@ final class FingerprintAuditCoordinator: ObservableObject {
         ]
         let auditURL = auditURLComponents.url!
 
-        let dataDirectory = FileManager.default.temporaryDirectory
-            .appendingPathComponent(
-                "app.neantik.fingerprint-audit",
-                isDirectory: true
-            )
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: dataDirectory,
-            withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700]
-        )
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o700],
-            ofItemAtPath: dataDirectory.path
-        )
+        let dataDirectory =
+            try processes.reserveFingerprintAuditDataDirectory()
 
         let portFile = dataDirectory.appendingPathComponent(
             "DevToolsActivePort"
         )
-        activeProfileID = profile.id
+        activeProfileID = processProfile.id
 
         do {
             let devToolsArguments = [
@@ -1515,7 +1502,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 "--window-size=1200,800"
             ] + executionMode.additionalLaunchArguments
             try processes.launch(
-                profile: profile,
+                profile: processProfile,
                 runtime: runtime,
                 additionalArguments: devToolsArguments,
                 // Loopback is a potentially trustworthy origin, so
@@ -1537,8 +1524,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 profile.proxy == nil ? "direct" : "proxied"
             values["webrtc_stun_requests"] =
                 String(stunServer.acceptedRequestCount)
-            processes.stop(profileID: profile.id)
-            try await waitUntilStopped(profileID: profile.id)
+            processes.stop(profileID: processProfile.id)
+            try await waitUntilStopped(profileID: processProfile.id)
             activeProfileID = nil
             try? FileManager.default.removeItem(at: dataDirectory)
 
@@ -1550,18 +1537,33 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 values: values
             )
         } catch {
-            processes.stop(profileID: profile.id)
-            do {
-                try await waitUntilStopped(profileID: profile.id)
+            if processes.processState(for: processProfile.id) != .stopped {
+                processes.stop(profileID: processProfile.id)
+                do {
+                    try await waitUntilStopped(
+                        profileID: processProfile.id
+                    )
+                    try? FileManager.default.removeItem(at: dataDirectory)
+                } catch {
+                    // Keep the disposable directory while a browser may still
+                    // use it. The system temporary-directory cleanup can
+                    // remove it after the process has exited.
+                }
+            } else {
                 try? FileManager.default.removeItem(at: dataDirectory)
-            } catch {
-                // Keep the disposable directory while a browser may still use
-                // it. The system temporary-directory cleanup can remove it
-                // after the process has exited.
             }
             activeProfileID = nil
             throw error
         }
+    }
+
+    nonisolated static func transientProcessProfile(
+        from profile: BrowserProfile,
+        processID: UUID = UUID()
+    ) -> BrowserProfile {
+        var processProfile = profile
+        processProfile.id = processID
+        return processProfile
     }
 
     private func waitForDevToolsPort(at url: URL) async throws -> Int {
@@ -1748,9 +1750,15 @@ final class FingerprintAuditCoordinator: ObservableObject {
     }
 
     private func waitUntilStopped(profileID: UUID) async throws {
-        for _ in 0..<80 {
-            if !processes.runningProfileIDs.contains(profileID) {
-                return
+        var consecutiveStoppedObservations = 0
+        for _ in 0..<160 {
+            if processes.processState(for: profileID) == .stopped {
+                consecutiveStoppedObservations += 1
+                if consecutiveStoppedObservations >= 8 {
+                    return
+                }
+            } else {
+                consecutiveStoppedObservations = 0
             }
             await Task.detached {
                 try? await Task.sleep(nanoseconds: 125_000_000)
