@@ -616,13 +616,21 @@ def _validate_state_data(
                 raise NotaryTransactionInspectionError(
                     "invalid-transaction-created-data"
                 )
-            inputs = _require_keys(
-                data["candidateInputs"],
-                frozenset(
-                    {"infoPlist", "manifest", "evidence", "attestation"}
-                ),
-                code="invalid-candidate-inputs",
+            inputs = data["candidateInputs"]
+            legacy_input_keys = frozenset(
+                {"infoPlist", "manifest", "evidence", "attestation"}
             )
+            source_bound_input_keys = legacy_input_keys | {
+                "sourceBinding"
+            }
+            if (
+                not isinstance(inputs, dict)
+                or set(inputs)
+                not in {legacy_input_keys, source_bound_input_keys}
+            ):
+                raise NotaryTransactionInspectionError(
+                    "invalid-candidate-inputs"
+                )
             for value in inputs.values():
                 _require_sha(value, code="invalid-candidate-inputs")
             if (
