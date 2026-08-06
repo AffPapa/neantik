@@ -15,10 +15,10 @@
         : [];
     $releaseManifest = is_array($releaseManifest) ? $releaseManifest : [];
     $contentManifest = is_array($contentManifest) ? $contentManifest : [];
-    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.14');
-    $releaseBuild = (int) ($releaseManifest['build'] ?? 17);
-    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '150.0.7871.186');
-    $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '150';
+    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.16');
+    $releaseBuild = (int) ($releaseManifest['build'] ?? 19);
+    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.75');
+    $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '151';
     $artifactByFormat = [];
     foreach (($releaseManifest['artifacts'] ?? []) as $artifact) {
         if (is_array($artifact) && isset($artifact['format'])) {
@@ -41,6 +41,37 @@
     ];
 
     $changelog = [
+        [
+            'ver' => '0.3.16',
+            'build' => 19,
+            'date' => '6 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'Встроенный движок обновлён до Chromium 151.0.7922.75 для Apple Silicon, ARM64 и Metal',
+                'Seed и timezone профиля удалены из аргументов процессов; Chromium получает только минимальный проверенный набор переменных окружения',
+                'Исправлена shipping-политика WebRTC и усилены release-gates для прокси, DNS, QUIC и WebGPU',
+                'Проверка A → B → A требует согласованности page и worker, Client Hints, locale, Apple Silicon tuple и отсутствия прямой WebRTC-утечки при прокси',
+                'Интерфейс профилей переработан для окон от 820 × 560: список, шапка и основные действия остаются доступными',
+                'Создание профиля и вставка прокси упрощены; поддерживаются четыре распространённых формата, пароль остаётся в Связке ключей',
+                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой, проверкой и автоматическим rollback',
+            ],
+        ],
+        [
+            'ver' => '0.3.15',
+            'build' => 18,
+            'date' => '4 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'NeAntik всегда использует только встроенный проверенный Chromium — ручные пути к стороннему браузеру больше не влияют на запуск',
+                'Создание профиля стало короче: имя, при необходимости прокси и кнопка «Создать»; иконка, цвет, теги и стартовая страница перенесены в «Дополнительно»',
+                'Поиск и фильтры по тегам больше не оставляют скрытый профиль выбранным для запуска',
+                'Перед первой загрузкой существующих профилей создаётся безопасная recovery-копия метаданных без cookies и BrowserData',
+                'Проверка профиля показывает понятную причину недоступности, а иконки сохраняют контраст в светлой и тёмной темах',
+                'Менеджер быстрее готов к работе: тяжёлые Chromium hashes считаются только для защищённой fingerprint/release-проверки',
+                'Локальная проверка встроенного runtime ускорена примерно с 23,4 до 3,7 секунды',
+                'Единая Direct release-команда повторно использует точный подписанный кандидат и уже подтверждённый A → B → A отчёт',
+            ],
+        ],
         [
             'ver' => '0.3.14',
             'build' => 17,
