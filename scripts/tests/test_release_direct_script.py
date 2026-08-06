@@ -69,6 +69,21 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text,
         )
 
+    def test_manager_only_update_preserves_verified_runtime_evidence(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding="utf-8")
+
+        self.assertIn("verify_reviewed_runtime_evidence", text)
+        self.assertIn("verify-packaged-runtime-report.py", text)
+        self.assertIn("verify-runtime-compliance.sh", text)
+        self.assertIn("cmp -s", text)
+        self.assertNotIn(
+            '"$PROJECT_DIR/scripts/verify-built-runtime.sh" \\\n'
+            '    "$CANDIDATE_RUNTIME" \\\n'
+            '    "$evidence/runtime-verification.json"',
+            text,
+        )
+        self.assertNotIn("rebind_runtime_compliance", text)
+
     def test_enrollment_helper_is_exact_private_and_bounded(self) -> None:
         text = ENROLL.read_text(encoding="utf-8")
 

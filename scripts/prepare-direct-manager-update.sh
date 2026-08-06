@@ -52,80 +52,47 @@ resolve_runtime_candidate_lock() {
   echo "$default"
 }
 
-copy_reviewed_runtime_evidence() {
+verify_reviewed_runtime_evidence() {
   local evidence="$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence"
+  local compliance="$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeCompliance"
   local source_provenance
   local runtime_candidate_lock
   source_provenance="$(resolve_source_provenance)"
   runtime_candidate_lock="$(resolve_runtime_candidate_lock)"
-  mkdir -p "$evidence"
-  cp "$runtime_candidate_lock" "$evidence/fingerprint-chromium.lock.json"
-  cp "$PROJECT_DIR/runtime/security-baseline.json" \
-    "$evidence/security-baseline.json"
-  cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
-    "$evidence/neantik-patch-series.json"
-  cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
-    "$evidence/apple-device-tuples.json"
-  cp "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
-    "$evidence/chromium-151-source-contract.json"
-  cp "$source_provenance" "$evidence/source-provenance.json"
+
+  local comparisons=(
+    "$source_provenance:$evidence/source-provenance.json"
+    "$runtime_candidate_lock:$evidence/fingerprint-chromium.lock.json"
+    "$PROJECT_DIR/runtime/security-baseline.json:$evidence/security-baseline.json"
+    "$PROJECT_DIR/runtime/nevision-patches/series.json:$evidence/neantik-patch-series.json"
+    "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
+    "$PROJECT_DIR/runtime/chromium-151-source-contract.json:$evidence/chromium-151-source-contract.json"
+  )
+  local comparison
+  for comparison in "${comparisons[@]}"; do
+    local expected="${comparison%%:*}"
+    local packaged="${comparison#*:}"
+    if [[ ! -f "$expected" || -L "$expected" ||
+          ! -f "$packaged" || -L "$packaged" ]] ||
+       ! cmp -s "$expected" "$packaged"; then
+      echo "Packaged runtime evidence does not match reviewed input: $packaged" >&2
+      exit 65
+    fi
+  done
+
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$evidence/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
     "$evidence/fingerprint-chromium.lock.json" \
     "$evidence/source-provenance.json"
-  "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
-    "$CANDIDATE_RUNTIME" \
-    "$evidence/runtime-verification.json" \
-    "$evidence/args.gn" \
-    "$evidence/source-provenance.json" \
+  python3 "$PROJECT_DIR/scripts/verify-packaged-runtime-report.py" \
+    --report "$evidence/runtime-verification.json" \
+    --runtime-app "$CANDIDATE_RUNTIME" \
+    --evidence "$evidence" \
+    --project-root "$PROJECT_DIR"
+  "$PROJECT_DIR/scripts/verify-runtime-compliance.sh" \
+    "$compliance" \
     "$evidence/fingerprint-chromium.lock.json"
-}
-
-rebind_runtime_compliance() {
-  local compliance="$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeCompliance"
-  local lock="$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json"
-  COMPLIANCE_DIR="$compliance" LOCK_FILE="$lock" python3 - <<'PY'
-import hashlib
-import json
-import os
-from pathlib import Path
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-root = Path(os.environ["COMPLIANCE_DIR"])
-lock = Path(os.environ["LOCK_FILE"])
-manifest_path = root / "compliance-manifest.json"
-manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-spdx_meta = manifest.get("spdx")
-if not isinstance(spdx_meta, dict):
-    raise SystemExit("Compliance SPDX metadata is missing.")
-spdx_path = root / str(spdx_meta.get("file", ""))
-if not spdx_path.is_file():
-    raise SystemExit("Compliance SPDX document is missing.")
-spdx = json.loads(spdx_path.read_text(encoding="utf-8"))
-lock_sha = sha256(lock)
-version = manifest.get("chromiumVersion")
-namespace = f"https://neantik.app/spdx/chromium-{version}-{lock_sha}"
-spdx["documentNamespace"] = namespace
-spdx_path.write_text(
-    json.dumps(spdx, indent=4, sort_keys=False) + "\n",
-    encoding="utf-8",
-)
-manifest["sourceLockSHA256"] = lock_sha
-spdx_meta["documentNamespace"] = namespace
-spdx_meta["sha256"] = sha256(spdx_path)
-manifest_path.write_text(
-    json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-    encoding="utf-8",
-)
-PY
-  "$PROJECT_DIR/scripts/verify-runtime-compliance.sh" "$compliance" "$lock"
 }
 
 verify_runtime_unchanged() {
@@ -226,8 +193,7 @@ cp "$PROJECT_DIR/Resources/PrivacyInfo.xcprivacy" \
   "$CANDIDATE_APP/Contents/Resources/PrivacyInfo.xcprivacy"
 printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"
-copy_reviewed_runtime_evidence
-rebind_runtime_compliance
+verify_reviewed_runtime_evidence
 
 verify_runtime_unchanged
 
