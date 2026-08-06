@@ -65,6 +65,7 @@ def stage_data(stage: str, transaction_id: str) -> dict[str, object]:
                 "manifest": "2" * 64,
                 "evidence": "3" * 64,
                 "attestation": "4" * 64,
+                "sourceBinding": "5" * 64,
             },
             "releaseSource": {"schemaVersion": 4},
             "runtimeBuildEvidence": {"schemaVersion": 1},
@@ -245,6 +246,20 @@ def tree_snapshot(root: Path) -> tuple[tuple[object, ...], ...]:
 
 
 class NotaryTransactionInspectorTests(unittest.TestCase):
+    def test_state_parser_accepts_legacy_candidate_inputs(self) -> None:
+        transaction_id = str(uuid.uuid4())
+        created = stage_data("transaction-created", transaction_id)
+        inputs = created["candidateInputs"]
+        assert isinstance(inputs, dict)
+        inputs.pop("sourceBinding")
+
+        context = MODULE._validate_state_data(
+            (("transaction-created", created),),
+            transaction_id=transaction_id,
+        )
+
+        self.assertEqual(context["archive"], ARCHIVE)
+
     def test_empty_dist_is_release_ready(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             dist = Path(temporary) / "dist"
