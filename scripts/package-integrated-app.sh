@@ -81,7 +81,24 @@ COMPLIANCE_DIR="$(mktemp -d -t nevision-runtime-compliance)"
 SNAPSHOT_ROOT="$(mktemp -d -t nevision-integrated-input)"
 SNAPSHOT_RUNTIME="$SNAPSHOT_ROOT/NeAntik Browser.app"
 SNAPSHOT_ARGS="$SNAPSHOT_ROOT/args.gn"
-trap 'rm -f "$VERIFY_REPORT"; rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"' EXIT
+PUBLIC_VERIFY_ROOT=""
+PUBLIC_VERIFY_APP=""
+restore_engineering_bundle() {
+  if [[ -n "$PUBLIC_VERIFY_APP" &&
+        -d "$PUBLIC_VERIFY_APP" &&
+        ! -e "$OUTPUT_APP" ]]; then
+    mv "$PUBLIC_VERIFY_APP" "$OUTPUT_APP"
+  fi
+}
+cleanup() {
+  restore_engineering_bundle
+  rm -f "$VERIFY_REPORT"
+  rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"
+  if [[ -n "$PUBLIC_VERIFY_ROOT" ]]; then
+    rm -rf "$PUBLIC_VERIFY_ROOT"
+  fi
+}
+trap cleanup EXIT
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$VERIFY_REPORT" \
@@ -135,5 +152,22 @@ cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
 codesign --force --sign - "$OUTPUT_APP"
 codesign --verify --deep --strict --verbose=2 "$OUTPUT_APP"
 
-"$PROJECT_DIR/scripts/verify-integrated-release.sh" "$OUTPUT_APP"
+# The full Direct verifier intentionally accepts only the public bundle name
+# NeAntik.app. Move the exact engineering bundle into a private public-name
+# verification path, verify it without weakening that gate, then restore the
+# engineering artifact for prepare-direct-runtime-candidate.sh.
+PUBLIC_VERIFY_ROOT="$(
+  /usr/bin/mktemp -d \
+    "$PROJECT_DIR/dist/.neantik-integrated-verification.XXXXXX"
+)"
+PUBLIC_VERIFY_APP="$PUBLIC_VERIFY_ROOT/NeAntik.app"
+mv "$OUTPUT_APP" "$PUBLIC_VERIFY_APP"
+VERIFY_STATUS=0
+"$PROJECT_DIR/scripts/verify-integrated-release.sh" "$PUBLIC_VERIFY_APP" ||
+  VERIFY_STATUS=$?
+mv "$PUBLIC_VERIFY_APP" "$OUTPUT_APP"
+if (( VERIFY_STATUS != 0 )); then
+  exit "$VERIFY_STATUS"
+fi
+
 echo "$OUTPUT_APP"
