@@ -62,6 +62,7 @@ struct ContentView: View {
     @State private var clipboardClearTask: Task<Void, Never>?
     @State private var clipboardNoticeTask: Task<Void, Never>?
     @State private var handledReleaseAuditIntent = false
+    @State private var releaseAuditTerminationScheduled = false
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
     @State private var selectedProfileTag: String?
@@ -245,9 +246,12 @@ struct ContentView: View {
             "NeAntik",
             isPresented: Binding(
                 get: {
-                    localError != nil ||
-                        processes.lastError != nil ||
-                        store.lastError != nil
+                    fingerprintEvidenceReleaseContext == nil &&
+                        (
+                            localError != nil ||
+                                processes.lastError != nil ||
+                                store.lastError != nil
+                        )
                 },
                 set: { presented in
                     if !presented {
@@ -848,9 +852,10 @@ struct ContentView: View {
         guard runtime?.supportsFingerprintIdentity == true,
               runtimePreflight?.isReady == true
         else {
-            localError =
+            failFingerprintReleaseBeforePresentation(
                 runtimePreflight?.primaryMessage ??
-                "Встроенный браузер не готов к проверке отпечатка."
+                    "Встроенный браузер не готов к проверке отпечатка."
+            )
             return
         }
 
@@ -860,6 +865,30 @@ struct ContentView: View {
         }
         selection = releaseAuditProfiles.first?.id
         showingFingerprintAudit = true
+    }
+
+    private func failFingerprintReleaseBeforePresentation(
+        _ message: String
+    ) {
+        guard fingerprintEvidenceReleaseContext != nil else {
+            localError = message
+            return
+        }
+        guard !releaseAuditTerminationScheduled else {
+            return
+        }
+        releaseAuditTerminationScheduled = true
+        let line = FingerprintAuditAutomationPolicy.sanitizedLogLine(
+            prefix: "Автоматическая проверка отпечатка не запущена: ",
+            message: message
+        )
+        if let data = line.data(using: .utf8) {
+            try? FileHandle.standardError.write(contentsOf: data)
+        }
+        Task { @MainActor in
+            await Task.yield()
+            NSApplication.shared.terminate(nil)
+        }
     }
 
     private static func makeReleaseAuditProfiles() -> [BrowserProfile] {

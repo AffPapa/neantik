@@ -712,7 +712,6 @@ struct BrowserProcessManagerTests {
                 atPath: paths.lockFile(for: profile.id).path
             )
         )
-
         inspection = .absent
         for _ in 0..<20 {
             if !manager.runningProfileIDs.contains(profile.id) {
@@ -1739,6 +1738,9 @@ struct BrowserProcessManagerTests {
                 atPath: paths.lockFile(for: profile.id).path
             )
         )
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
 
         inspection = .absent
         for _ in 0..<100 {
