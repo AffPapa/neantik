@@ -172,6 +172,8 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertNotIn("notarytool submit", wrapper)
         self.assertNotIn("stapler", wrapper)
         self.assertIn("notarize_direct_transaction.py", wrapper)
+        self.assertIn("--source-binding", wrapper)
+        self.assertIn("direct-candidate-source.json", wrapper)
         self.assertIn("run-isolated-release-python.py", wrapper)
         self.assertIn("git -C \"$PROJECT_DIR\" ls-files -z -- '*.py'", wrapper)
         self.assertIn('python_cache="$python_parent/__pycache__"', wrapper)

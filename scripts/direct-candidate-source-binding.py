@@ -44,9 +44,15 @@ def checked_project_root(project_root: Path) -> Path:
         raise CandidateSourceBindingError(
             "project root must be the exact Git worktree root"
         )
-    if run_git(root, "status", "--porcelain", "--untracked-files=no"):
+    if run_git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--ignored=no",
+    ):
         raise CandidateSourceBindingError(
-            "tracked release source is not clean"
+            "release source is not clean"
         )
     return root
 
