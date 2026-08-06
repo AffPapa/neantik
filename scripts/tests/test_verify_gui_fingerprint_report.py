@@ -41,10 +41,52 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         self.assertTrue(summary["qualified"])
         self.assertEqual(summary["issues"], [])
 
+    def test_accepts_reduced_user_agent_with_exact_client_hints(self) -> None:
+        report = production_report(runtime_version="151.0.7922.75")
+        for capture_name in ("firstInitial", "second", "firstRepeat"):
+            reduced_user_agent = (
+                "Mozilla/5.0 Chrome/151.0.0.0 Safari/537.36"
+            )
+            report[capture_name]["values"]["user_agent"] = reduced_user_agent
+            report[capture_name]["values"][
+                "worker_user_agent"
+            ] = reduced_user_agent
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertEqual(summary["issues"], [])
+
     def test_rejects_future_runtime_with_stale_user_agent_version(self) -> None:
         report = production_report(runtime_version="150.0.7871.186")
         report["firstInitial"]["values"]["user_agent"] = (
             "Mozilla/5.0 Chrome/144.0.7559.132 Safari/537.36"
+        )
+
+        issues = MODULE.production_release_issues(report)
+
+        self.assertIn(
+            "The profile A, first capture User-Agent does not match the compiled runtime version.",
+            issues,
+        )
+
+    def test_rejects_reduced_user_agent_with_stale_major_version(self) -> None:
+        report = production_report(runtime_version="151.0.7922.75")
+        report["firstInitial"]["values"]["user_agent"] = (
+            "Mozilla/5.0 Chrome/150.0.0.0 Safari/537.36"
+        )
+
+        issues = MODULE.production_release_issues(report)
+
+        self.assertIn(
+            "The profile A, first capture User-Agent does not match the compiled runtime version.",
+            issues,
+        )
+
+    def test_rejects_malformed_reduced_user_agent_token(self) -> None:
+        report = production_report(runtime_version="151.0.7922.75")
+        report["firstInitial"]["values"]["user_agent"] = (
+            "Mozilla/5.0 Chrome/151.0.0.0x Safari/537.36"
         )
 
         issues = MODULE.production_release_issues(report)

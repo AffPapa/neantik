@@ -1492,6 +1492,135 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func acceptsReducedUserAgentWithExactClientHintsVersion() {
+        let runtimeVersion = "151.0.7922.75"
+        var firstValues = coherentTupleValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            gpu: "M2 Pro",
+            cores: 12,
+            screen: "1512x982x1512x957x24x2",
+            platformVersion: "15.3.1",
+            runtimeVersion: runtimeVersion
+        )
+        var secondValues = coherentTupleValues(
+            canvas: "canvas-b",
+            webGLPixels: "webgl-b",
+            gpu: "M4",
+            cores: 10,
+            screen: "1280x832x1280x807x24x2",
+            platformVersion: "15.1.0",
+            runtimeVersion: runtimeVersion
+        )
+        let reducedUserAgent =
+            "Mozilla/5.0 Chrome/151.0.0.0 Safari/537.36"
+        firstValues["user_agent"] = reducedUserAgent
+        firstValues["worker_user_agent"] = reducedUserAgent
+        secondValues["user_agent"] = reducedUserAgent
+        secondValues["worker_user_agent"] = reducedUserAgent
+
+        let first = capture(
+            name: "First",
+            identityCode: "NA-13579BDF",
+            values: firstValues
+        )
+        let result = FingerprintAuditReport(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 2),
+            runtimeName: "NeAntik Browser",
+            runtimeVersion: runtimeVersion,
+            runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: true,
+            runtimeExecutableSHA256: String(repeating: "a", count: 64),
+            runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+            webrtcDirectControl: capture(
+                name: "WebRTC control",
+                identityCode: "NA-13579BDF",
+                values: firstValues
+            ),
+            firstInitial: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-2468ACE0",
+                values: secondValues
+            ),
+            firstRepeat: capture(
+                id: first.profileID,
+                name: first.profileName,
+                identityCode: first.identityCode,
+                values: first.values
+            )
+        )
+
+        #expect(result.deviceTupleConsistencyIssues.isEmpty)
+        #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func rejectsReducedUserAgentWithStaleOrMalformedMajorVersion() {
+        let runtimeVersion = "151.0.7922.75"
+        for invalidUserAgent in [
+            "Mozilla/5.0 Chrome/150.0.0.0 Safari/537.36",
+            "Mozilla/5.0 Chrome/151.0.0.0x Safari/537.36"
+        ] {
+            var firstValues = coherentTupleValues(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+                gpu: "M2 Pro",
+                cores: 12,
+                screen: "1512x982x1512x957x24x2",
+                platformVersion: "15.3.1",
+                runtimeVersion: runtimeVersion
+            )
+            firstValues["user_agent"] = invalidUserAgent
+            let first = capture(
+                name: "First",
+                identityCode: "NA-13579BDF",
+                values: firstValues
+            )
+            let result = FingerprintAuditReport(
+                id: UUID(),
+                createdAt: Date(timeIntervalSince1970: 2),
+                runtimeName: "NeAntik Browser",
+                runtimeVersion: runtimeVersion,
+                runtimeFlavor: .fingerprintChromium,
+                runtimeCodeSignatureValid: true,
+                runtimeExecutableSHA256: String(repeating: "a", count: 64),
+                runtimeFrameworkSHA256: String(repeating: "b", count: 64),
+                firstInitial: first,
+                second: capture(
+                    name: "Second",
+                    identityCode: "NA-2468ACE0",
+                    values: coherentTupleValues(
+                        canvas: "canvas-b",
+                        webGLPixels: "webgl-b",
+                        gpu: "M4",
+                        cores: 10,
+                        screen: "1280x832x1280x807x24x2",
+                        platformVersion: "15.1.0",
+                        runtimeVersion: runtimeVersion
+                    )
+                ),
+                firstRepeat: capture(
+                    id: first.profileID,
+                    name: first.profileName,
+                    identityCode: first.identityCode,
+                    values: first.values
+                )
+            )
+
+            #expect(
+                result.deviceTupleConsistencyIssues.contains {
+                    $0.contains(
+                        "User-Agent does not match the compiled runtime version"
+                    )
+                }
+            )
+            #expect(!result.isProductionReleaseQualified)
+        }
+    }
+
+    @Test
     func rejectsCrossFieldAppleDeviceTupleMismatch() {
         var values = coherentTupleValues(
             canvas: "canvas-a",

@@ -911,9 +911,32 @@ def device_tuple_issues(
     }.items():
         if hints.get(key) != expected:
             issues.append(f"The {label} Client Hints {key} value does not match device tuple {tuple_.id}.")
-    if f"Chrome/{runtime_version}" not in v.get("user_agent", ""):
+    if not user_agent_matches_runtime(
+        v.get("user_agent"),
+        runtime_version=runtime_version,
+    ):
         issues.append(f"The {label} User-Agent does not match the compiled runtime version.")
     return issues
+
+
+def user_agent_matches_runtime(
+    user_agent: Any,
+    *,
+    runtime_version: str,
+) -> bool:
+    if not runtime_version or not isinstance(user_agent, str):
+        return False
+    user_agent_tokens = set(user_agent.split())
+    if f"Chrome/{runtime_version}" in user_agent_tokens:
+        return True
+
+    version_parts = runtime_version.split(".")
+    if (
+        len(version_parts) != 4
+        or not all(part.isdigit() and part for part in version_parts)
+    ):
+        return False
+    return f"Chrome/{version_parts[0]}.0.0.0" in user_agent_tokens
 
 
 def production_release_issues(

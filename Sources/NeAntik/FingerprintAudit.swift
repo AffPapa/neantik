@@ -593,14 +593,48 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                     "The \(label) Client Hints \(key) value does not match device tuple \(tuple.id)."
             )
         }
-        if capture.values["user_agent"]?.contains(
-            "Chrome/\(runtimeVersion)"
-        ) != true {
+        if !Self.userAgentMatchesRuntime(
+            capture.values["user_agent"],
+            runtimeVersion: runtimeVersion
+        ) {
             issues.append(
                 "The \(label) User-Agent does not match the compiled runtime version."
             )
         }
         return issues
+    }
+
+    private static func userAgentMatchesRuntime(
+        _ userAgent: String?,
+        runtimeVersion: String
+    ) -> Bool {
+        guard !runtimeVersion.isEmpty, let userAgent else {
+            return false
+        }
+        let userAgentTokens = Set(
+            userAgent
+                .split(whereSeparator: \.isWhitespace)
+                .map(String.init)
+        )
+        if userAgentTokens.contains("Chrome/\(runtimeVersion)") {
+            return true
+        }
+
+        let versionParts = runtimeVersion.split(separator: ".")
+        guard
+            let majorVersion = versionParts.first,
+            !majorVersion.isEmpty,
+            versionParts.count == 4,
+            versionParts.allSatisfy({
+                !$0.isEmpty && $0.allSatisfy(\.isNumber)
+            })
+        else {
+            return false
+        }
+
+        return userAgentTokens.contains(
+            "Chrome/\(majorVersion).0.0.0"
+        )
     }
 
     private struct AppleDeviceTuple {
@@ -1403,18 +1437,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 )
                 let savedURL: URL
                 if let releaseContext {
-                    let releaseQualified: Bool
+                    let releaseIssues: [String]
                     switch releaseContext.metadata.releaseChannel {
                     case .publicAlpha:
-                        releaseQualified =
-                            newReport.isPublicAlphaReleaseQualified
+                        releaseIssues =
+                            newReport.publicAlphaReleaseIssues
                     case .production:
-                        releaseQualified =
-                            newReport.isProductionReleaseQualified
+                        releaseIssues =
+                            newReport.productionReleaseIssues
                     }
-                    guard releaseQualified else {
+                    guard releaseIssues.isEmpty else {
+                        // Keep the complete report only in this process so the
+                        // UI and opt-in integration diagnostics can explain a
+                        // failed gate. The one-shot release authority remains
+                        // untouched and no unqualified evidence is written.
+                        report = newReport
+                        Self.writeReleaseQualificationIssues(releaseIssues)
                         throw NeAntikError.fingerprintAuditFailed(
-                            "Проверка не прошла обязательный уровень выпуска. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
+                            "Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
                         )
                     }
                     phase = "Подписываем отчёт выпуска"
@@ -1440,6 +1480,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
             isRunning = false
             task = nil
         }
+    }
+
+    nonisolated private static func writeReleaseQualificationIssues(
+        _ issues: [String]
+    ) {
+        let safeIssues = issues
+            .prefix(32)
+            .map { issue in
+                issue
+                    .replacingOccurrences(of: "\n", with: " ")
+                    .replacingOccurrences(of: "\r", with: " ")
+            }
+        let message =
+            "Fingerprint release qualification failed:\n" +
+            safeIssues.map { "- \($0)" }.joined(separator: "\n") +
+            "\n"
+        guard let data = message.data(using: .utf8) else { return }
+        try? FileHandle.standardError.write(contentsOf: data)
     }
 
     private func inspectRuntime(
