@@ -24,8 +24,14 @@ for input in "$INPUT_APP" "$PACKAGING_DIR"; do
     echo "Signing inputs must be existing absolute directories: $input" >&2
     exit 66
   fi
+  if [[ -L "$input" ]]; then
+    echo "Signing input must not be a symlink: $input" >&2
+    exit 66
+  fi
 done
-if [[ ! -d "$INPUT_APP" ]]; then
+if [[ ! -d "$INPUT_APP" ||
+      -L "$INPUT_APP/Contents" ||
+      -L "$INPUT_APP/Contents/Resources" ]]; then
   echo "Signing inputs must be existing absolute directories: $INPUT_APP" >&2
   exit 66
 fi
@@ -65,14 +71,27 @@ apply_public_runtime_icon() {
   local project_icon="$PROJECT_DIR/Resources/NeAntik.icns"
   local runtime_resources="$app_path/Contents/Resources"
   local runtime_icon="$runtime_resources/app.icns"
+  local temporary_icon=""
 
   if [[ ! -f "$project_icon" || -L "$project_icon" ||
-        ! -d "$runtime_resources" || -L "$runtime_resources" ]]; then
+        ! -d "$runtime_resources" || -L "$runtime_resources" ||
+        -L "$runtime_icon" ||
+        (-e "$runtime_icon" && ! -f "$runtime_icon") ]]; then
     echo "Runtime icon inputs are unsafe or incomplete." >&2
     exit 66
   fi
-  /bin/cp "$project_icon" "$runtime_icon"
-  if ! cmp -s "$project_icon" "$runtime_icon"; then
+  temporary_icon="$(
+    /usr/bin/mktemp "$runtime_resources/.neantik-runtime-icon.XXXXXX"
+  )"
+  /bin/cp "$project_icon" "$temporary_icon"
+  if [[ ! -f "$temporary_icon" || -L "$temporary_icon" ]] ||
+      ! cmp -s "$project_icon" "$temporary_icon"; then
+    echo "Runtime icon overlay verification failed." >&2
+    exit 65
+  fi
+  /bin/mv -f "$temporary_icon" "$runtime_icon"
+  if [[ ! -f "$runtime_icon" || -L "$runtime_icon" ]] ||
+      ! cmp -s "$project_icon" "$runtime_icon"; then
     echo "Runtime icon overlay verification failed." >&2
     exit 65
   fi

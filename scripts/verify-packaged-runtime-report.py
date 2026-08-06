@@ -75,6 +75,72 @@ def canonical_bundle_file(
     return path
 
 
+def canonical_runtime_binaries(
+    runtime_app: Path,
+    report: dict[str, Any],
+) -> tuple[Path, Path, dict[str, Any]]:
+    info_path = runtime_app / "Contents/Info.plist"
+    if not info_path.is_file() or info_path.is_symlink():
+        raise PackagedRuntimeReportError(
+            "Runtime Info.plist is missing or unsafe"
+        )
+    with info_path.open("rb") as handle:
+        info = plistlib.load(handle)
+    if not isinstance(info, dict):
+        raise PackagedRuntimeReportError("Runtime Info.plist must be an object")
+
+    executable_name = info.get("CFBundleExecutable")
+    if (
+        not isinstance(executable_name, str)
+        or not executable_name
+        or "/" in executable_name
+        or executable_name in {".", ".."}
+    ):
+        raise PackagedRuntimeReportError(
+            "Runtime CFBundleExecutable is invalid"
+        )
+    expected_executable = f"Contents/MacOS/{executable_name}"
+    if field(report, "executable.path") != expected_executable:
+        raise PackagedRuntimeReportError(
+            "Runtime report executable.path does not match CFBundleExecutable"
+        )
+
+    frameworks_root = runtime_app / "Contents/Frameworks"
+    if not frameworks_root.is_dir() or frameworks_root.is_symlink():
+        raise PackagedRuntimeReportError(
+            "Runtime Frameworks directory is missing or unsafe"
+        )
+    framework_candidates = [
+        path
+        for path in frameworks_root.rglob("* Framework")
+        if path.is_file() and not path.is_symlink()
+    ]
+    if len(framework_candidates) != 1:
+        raise PackagedRuntimeReportError(
+            "Runtime must contain exactly one canonical Framework binary"
+        )
+    framework_relative = str(
+        framework_candidates[0].relative_to(runtime_app)
+    )
+    if field(report, "framework.path") != framework_relative:
+        raise PackagedRuntimeReportError(
+            "Runtime report framework.path does not match the canonical "
+            "Framework binary"
+        )
+
+    executable = canonical_bundle_file(
+        runtime_app,
+        expected_executable,
+        "Contents/MacOS/",
+    )
+    framework = canonical_bundle_file(
+        runtime_app,
+        framework_relative,
+        "Contents/Frameworks/",
+    )
+    return executable, framework, info
+
+
 def command_output(arguments: list[str]) -> str:
     completed = subprocess.run(
         arguments,
@@ -166,17 +232,9 @@ def verify(
             "Packaged runtime report must use schema 3"
         )
 
-    with (runtime_app / "Contents/Info.plist").open("rb") as handle:
-        info = plistlib.load(handle)
-    executable = canonical_bundle_file(
+    executable, framework, info = canonical_runtime_binaries(
         runtime_app,
-        field(report, "executable.path"),
-        "Contents/MacOS/",
-    )
-    framework = canonical_bundle_file(
-        runtime_app,
-        field(report, "framework.path"),
-        "Contents/Frameworks/",
+        report,
     )
 
     evidence_files = {

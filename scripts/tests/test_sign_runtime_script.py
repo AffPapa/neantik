@@ -39,6 +39,9 @@ class SignRuntimeScriptTests(unittest.TestCase):
         self.assertIn('cmp -s "$project_icon" "$runtime_icon"', helper)
         self.assertIn('-L "$project_icon"', helper)
         self.assertIn('-L "$runtime_resources"', helper)
+        self.assertIn('-L "$runtime_icon"', helper)
+        self.assertIn(".neantik-runtime-icon.XXXXXX", helper)
+        self.assertIn('/bin/mv -f "$temporary_icon" "$runtime_icon"', helper)
 
 
 if __name__ == "__main__":
