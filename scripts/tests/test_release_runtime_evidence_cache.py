@@ -36,6 +36,35 @@ class ReleaseRuntimeEvidenceCacheTests(unittest.TestCase):
         self.assertIn("-type f -name source-provenance.json", text)
         self.assertIn('lock="$evidence_dir/fingerprint-chromium.lock.json"', text)
 
+    def test_release_reuses_only_candidate_from_exact_current_source(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"',
+            text,
+        )
+        self.assertIn("direct-candidate-source-binding.py", text)
+        self.assertIn("--project-root \"$PROJECT_DIR\"", text)
+        self.assertIn("--binding \"$CANDIDATE_SOURCE_BINDING\"", text)
+        self.assertIn(
+            'mv "$CANDIDATE_SOURCE_BINDING" '
+            '"$ATTEMPT_STATE_ROOT/previous-direct-candidate-source.json"',
+            text,
+        )
+        source_verifications = [
+            index
+            for index in range(len(text))
+            if text.startswith(
+                'python3 "$PROJECT_DIR/scripts/direct-candidate-source-binding.py" verify',
+                index,
+            )
+        ]
+        self.assertEqual(len(source_verifications), 2)
+        self.assertLess(
+            source_verifications[-1],
+            text.index("[3/4] Отправляю кандидат в Apple notarization…"),
+        )
+
     def test_release_waits_before_retrying_gui_audit(self) -> None:
         text = RELEASE_COMMAND.read_text(encoding="utf-8")
 
