@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
 usage() {
   echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/NeAntik\\ Browser\\ Packaging /absolute/output/NeAntik\\ Browser.app" >&2
 }
@@ -22,8 +24,14 @@ for input in "$INPUT_APP" "$PACKAGING_DIR"; do
     echo "Signing inputs must be existing absolute directories: $input" >&2
     exit 66
   fi
+  if [[ -L "$input" ]]; then
+    echo "Signing input must not be a symlink: $input" >&2
+    exit 66
+  fi
 done
-if [[ ! -d "$INPUT_APP" ]]; then
+if [[ ! -d "$INPUT_APP" ||
+      -L "$INPUT_APP/Contents" ||
+      -L "$INPUT_APP/Contents/Resources" ]]; then
   echo "Signing inputs must be existing absolute directories: $INPUT_APP" >&2
   exit 66
 fi
@@ -57,6 +65,37 @@ if [[ "$BUILD_MODE" != "source-build" && "$BUILD_MODE" != "metal-integration" ]]
   echo "Unexpected runtime NeAntikRuntimeBuildMode: $BUILD_MODE" >&2
   exit 65
 fi
+
+apply_public_runtime_icon() {
+  local app_path="$1"
+  local project_icon="$PROJECT_DIR/Resources/NeAntik.icns"
+  local runtime_resources="$app_path/Contents/Resources"
+  local runtime_icon="$runtime_resources/app.icns"
+  local temporary_icon=""
+
+  if [[ ! -f "$project_icon" || -L "$project_icon" ||
+        ! -d "$runtime_resources" || -L "$runtime_resources" ||
+        -L "$runtime_icon" ||
+        (-e "$runtime_icon" && ! -f "$runtime_icon") ]]; then
+    echo "Runtime icon inputs are unsafe or incomplete." >&2
+    exit 66
+  fi
+  temporary_icon="$(
+    /usr/bin/mktemp "$runtime_resources/.neantik-runtime-icon.XXXXXX"
+  )"
+  /bin/cp "$project_icon" "$temporary_icon"
+  if [[ ! -f "$temporary_icon" || -L "$temporary_icon" ]] ||
+      ! cmp -s "$project_icon" "$temporary_icon"; then
+    echo "Runtime icon overlay verification failed." >&2
+    exit 65
+  fi
+  /bin/mv -f "$temporary_icon" "$runtime_icon"
+  if [[ ! -f "$runtime_icon" || -L "$runtime_icon" ]] ||
+      ! cmp -s "$project_icon" "$runtime_icon"; then
+    echo "Runtime icon overlay verification failed." >&2
+    exit 65
+  fi
+}
 
 manual_public_alpha_sign() {
   local entitlements_root="${NEANTIK_CHROMIUM_SOURCE_ROOT:-}"
@@ -128,6 +167,7 @@ manual_public_alpha_sign() {
   fi
 
   ditto "$INPUT_APP" "$OUTPUT_APP"
+  apply_public_runtime_icon "$OUTPUT_APP"
 
   find "$OUTPUT_APP/Contents" -type f -print0 |
   while IFS= read -r -d '' candidate; do
@@ -215,6 +255,7 @@ trap cleanup EXIT
 ditto "$INPUT_APP" "$STAGING/NeAntik Browser.app"
 ditto "$PACKAGING_DIR" "$STAGING/NeAntik Browser Packaging"
 STAGED_APP="$STAGING/NeAntik Browser.app"
+apply_public_runtime_icon "$STAGED_APP"
 
 # Chromium's release signer refuses an already attached signature. Work only
 # on the temporary copy and preserve the verified build artifact unchanged.

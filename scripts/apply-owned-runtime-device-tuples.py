@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the canonical Apple device catalog to the owned Chromium 150 port.
+"""Apply the canonical Apple device catalog to the owned Chromium port.
 
 The owned Chromium rebase intentionally keeps its hand-written behavioral
 patches separate from generated data. This overlay replaces the provisional
@@ -40,16 +40,16 @@ PREIMAGE_SHA256 = {
     "third_party/blink/renderer/core/frame/screen.cc":
         "cec3eefab518188c2bb33870e588e409b982482cf02637cbec8df308838b1c85",
     "third_party/blink/renderer/core/frame/local_dom_window.cc":
-        "4631b8862275ba11299bc8ac4be63eb7ae98efe45db2a88ad1cb2c4aef852e9c",
+        "6f2d91abe3adf152de4786aaf85f1bd44ab62383b36594a4a08bd84731cfaa47",
     "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc":
-        "603cc2836df7403b0dab8471e8cccdf55ef20c252fc67f3262c8939fb578c0bf",
+        "ee740e4a9b13c3ec0f29ea29012e353ea44b66dd234b0e7e161aa31a2a8ed40c",
     "components/embedder_support/user_agent_utils.cc":
         "a4317b2cab28c12f9902ad5cf246d64f7a5dfcfd4dd8f752c643e82ca8e5d5f3",
     "components/embedder_support/BUILD.gn":
         "355120ca227322e7c2c4a2691c8573c2e7b56a0d4c8f8c34b93286a373e4ee38",
 }
 
-# Filled from a clean Chromium 150 source pair after the owned patchset and
+# Filled from a clean pinned Chromium source pair after the owned patchset and
 # this deterministic transform. The script refuses to write unless every
 # rendered postimage matches these reviewed digests.
 POSTIMAGE_SHA256 = {
@@ -62,9 +62,9 @@ POSTIMAGE_SHA256 = {
     "third_party/blink/renderer/core/frame/screen.cc":
         "60f1378ba5252765852093b4f288cf1b09d701169f6f12ebf4e379aea7e23429",
     "third_party/blink/renderer/core/frame/local_dom_window.cc":
-        "c24ba09b3a1f76baea12df380dd63bf729b5232bd48c128a5f6efa2358247b06",
+        "50670cc0f4abb0a12ce8ec9a26622191517134d4f5f0c1b20aaa40213e545e56",
     "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc":
-        "bfc8495a33bc70da13a65883d23cfdce5e03069793a2f8fb9880f1902981bc45",
+        "d7585aa1ca9704d8e716d564e850916868af880b2adcb1252e36f3a054f3cece",
     "components/embedder_support/user_agent_utils.cc":
         "989eb7bd73fc11f4df1bed9ef37b39e39fc22f5727e7a9ef5477e7c54419eb2f",
     "components/embedder_support/BUILD.gn":
@@ -425,7 +425,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Generate and apply the canonical NeAntik Apple tuple overlay "
-            "to an owned Chromium 150 source root."
+            "to an owned Chromium source root."
         )
     )
     parser.add_argument("source_root", type=Path)

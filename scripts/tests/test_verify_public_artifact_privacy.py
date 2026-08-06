@@ -399,7 +399,10 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
 
                     with self.assertRaisesRegex(
                         MODULE.PublicArtifactPrivacyError,
-                        "not semantically qualified",
+                        (
+                            "not semantically qualified"
+                            "|must be public-alpha-qualified"
+                        ),
                     ):
                         MODULE.verify_evidence_attestation_binding(
                             private_evidence=private,

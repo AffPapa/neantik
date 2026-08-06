@@ -14,14 +14,18 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Current release:
+Current published release:
 
-- NeAntik `0.3.16` build `19`;
+- NeAntik `0.3.15` build `18`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `150.0.7871.186`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.16-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.16-arm64-notarized.dmg`;
+- ZIP: `NeAntik-0.3.15-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.15-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
+
+This branch prepares candidate `0.3.16` (19) with Chromium
+`151.0.7922.75`. It is not a published download until signed DMG/ZIP assets
+appear in GitHub Releases.
 
 Product website: <https://affpapa.org/neantik>.
 
@@ -32,6 +36,8 @@ Product website: <https://affpapa.org/neantik>.
 - supports direct connections, authenticated HTTP/HTTPS through Chromium's
   native prompt, and SOCKS5 without credentials;
 - keeps proxy passwords in macOS Keychain;
+- launches Chromium with a minimal system-environment allowlist instead of
+  inheriting proxy variables, TLS key logs, or Terminal tokens;
 - prevents a second launch of the same profile;
 - provides deterministic per-profile browser-surface isolation in the bundled
   patched Chromium runtime; newly created profiles are distributed with the
@@ -52,9 +58,14 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.16` is released for public-alpha profile isolation. Strict
+Version `0.3.16` is being prepared for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
+
+The bundled privacy-oriented Chromium is built without Google Safe Browsing.
+NeAntik does not send browsing history to Google, but it is not a replacement
+for dedicated phishing, malicious-site, or unsafe-download protection. Do not
+trust an unknown link merely because it is opened in an isolated profile.
 
 The four cohorts are a reviewed product policy, not market-share evidence or
 an anonymity guarantee. A stable profile fingerprint intentionally links

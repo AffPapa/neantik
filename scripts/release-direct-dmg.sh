@@ -181,18 +181,39 @@ hdiutil detach "$MOUNT_POINT" >/dev/null
 MOUNTED=0
 
 SUBMIT_LOG="$NOTARY_LOG_DIR/$(basename "$DMG_PATH").notary-submit.log"
+NOTARY_RECEIPT="$NOTARY_LOG_DIR/$(basename "$DMG_PATH").notary-receipt.json"
 rm -f "$SUBMIT_LOG"
+rm -f "$NOTARY_RECEIPT"
 xcrun notarytool submit \
   "$TEMP_DMG" \
   --keychain-profile "$NOTARY_PROFILE" \
-  --wait 2>&1 | tee "$SUBMIT_LOG"
+  --wait \
+  --output-format json |
+  tee "$SUBMIT_LOG"
 
-NOTARY_STATUS="$(
-  awk '/^[[:space:]]*status:/ {print $2}' "$SUBMIT_LOG" |
-    tail -n 1
+read -r SUBMISSION_ID NOTARY_STATUS <<<"$(
+  python3 - "$SUBMIT_LOG" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+submission_id = payload.get("id")
+status = payload.get("status")
+if not isinstance(submission_id, str) or not submission_id.strip():
+    raise SystemExit("notary submission JSON has no id")
+if status not in {"Accepted", "Invalid", "In Progress", "Rejected"}:
+    raise SystemExit("notary submission JSON has an invalid status")
+print(submission_id, status)
+PY
 )"
 [[ "$NOTARY_STATUS" == "Accepted" ]] ||
   fail "Apple notarization status is ${NOTARY_STATUS:-unknown}; see $SUBMIT_LOG"
+xcrun notarytool log \
+  "$SUBMISSION_ID" \
+  --keychain-profile "$NOTARY_PROFILE" \
+  "$NOTARY_RECEIPT"
+python3 -m json.tool "$NOTARY_RECEIPT" >/dev/null
 
 xcrun stapler staple "$TEMP_DMG"
 xcrun stapler validate "$TEMP_DMG"

@@ -100,9 +100,11 @@
  #include "build/build_config.h"
  #include "cc/input/snap_selection_strategy.h"
  #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
-@@ -1823,6 +1824,9 @@
-   if (!GetFrame())
+@@ -1909,8 +1910,11 @@
+ double LocalDOMWindow::devicePixelRatio() const {
+   if (!GetFrame()) {
      return 0.0;
+   }
  
 +  if (ungoogled::nevision::GetProfileSeed().has_value()) {
 +    return 2.0;

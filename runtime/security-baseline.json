@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-08-03",
-  "publishedAt": "2026-07-23",
+  "checkedAt": "2026-08-06",
+  "publishedAt": "2026-08-04",
   "maximumAgeDays": 7,
-  "minimumPublicChromiumVersion": "150.0.7871.186",
+  "minimumPublicChromiumVersion": "151.0.7922.75",
   "alsoObservedPublicChromiumVersions": [
-    "150.0.7871.187"
+    "151.0.7922.76"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 4,
-  "reference": "https://chromereleases.googleblog.com/2026/07/stable-channel-update-for-desktop_01320465736.html",
+  "securityFixCount": 0,
+  "reference": "https://chromereleases.googleblog.com/2026/08/stable-channel-update-for-desktop.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
-  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference before every public Direct release.",
+  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference before every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
   "policy": "A public NeAntik Direct build must not ship an older Chromium version than the latest security-patched macOS Stable version recorded here. Refresh this checked-in baseline before every release."
 }

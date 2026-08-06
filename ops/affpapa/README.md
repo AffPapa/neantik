@@ -55,16 +55,27 @@ Check and stage without publishing:
 ./scripts/neantik-affpapa-release prepare /absolute/path/to/release-dir
 ```
 
-Publish in one explicit transaction:
+Publish through one operator command:
 
 ```bash
 ./scripts/neantik-affpapa-release publish /absolute/path/to/release-dir
 ```
 
-The publish command performs local validation, clears only stale NeAntik
-staging, uploads six allowlisted files, runs the server check, publishes
-artifacts first and `release.json` last, then checks the live landing,
-manifests, and Range sizes.
+The wrapper performs the transaction in two explicit server phases:
+
+1. validate the exact clean GitHub source/tag and re-download the GitHub DMG
+   and ZIP;
+2. upload six allowlisted files and stage only the immutable versioned
+   artifacts;
+3. re-download the full staged DMG and ZIP from AffPapa and verify their
+   hashes, signatures, stapling and Gatekeeper status on the Mac;
+4. activate `content.json` and then `release.json` as the atomic public
+   pointer;
+5. re-download and verify both live artifacts again.
+
+Any failure after activation invokes the server rollback command. The server
+also has a centralized EXIT trap, so an unexpected command failure cannot
+leave partially activated metadata.
 
 ## Safety boundary
 
@@ -78,3 +89,11 @@ forward ports, upload Blade/PHP, or execute arbitrary commands. It can only:
 - check or execute the latest NeAntik rollback.
 
 The Mac App Store and App Store Connect are outside this pipeline.
+
+Root-owned command updates are intentionally outside the restricted identity.
+When these reviewed scripts change, a server administrator installs one
+transactional batch with `install-server-batch.sh`; the installer backs up the
+old commands, preserves live `release.json`, validates syntax/sudoers/view
+cache, and records a root-owned SHA-256 manifest. Subsequent `doctor` and
+`publish` calls fail closed if the server manifest differs from the reviewed
+local scripts.

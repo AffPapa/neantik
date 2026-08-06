@@ -13,8 +13,6 @@ RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"
 EVIDENCE="$APP_PATH/Contents/Resources/NeAntikRuntimeEvidence"
 LICENSES="$APP_PATH/Contents/Resources/NeAntikRuntimeLicenses"
 COMPLIANCE="$APP_PATH/Contents/Resources/NeAntikRuntimeCompliance"
-REPORT="$(mktemp -t nevision-integrated-verification)"
-trap 'rm -f "$REPORT"' EXIT
 
 EXPECTED_MANAGER_VERSION="$(
   plutil -extract CFBundleShortVersionString raw -o - \
@@ -97,9 +95,9 @@ if ! cmp -s \
 fi
 
 if ! cmp -s \
-  "$PROJECT_DIR/runtime/chromium-150-source-contract.json" \
-  "$EVIDENCE/chromium-150-source-contract.json"; then
-  echo "Integrated Chromium 150 source contract does not match the project contract." >&2
+  "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
+  "$EVIDENCE/chromium-151-source-contract.json"; then
+  echo "Integrated Chromium source contract does not match the project contract." >&2
   exit 65
 fi
 
@@ -121,7 +119,7 @@ for required in \
   "$EVIDENCE/runtime-verification.json" \
   "$EVIDENCE/neantik-patch-series.json" \
   "$EVIDENCE/apple-device-tuples.json" \
-  "$EVIDENCE/chromium-150-source-contract.json" \
+  "$EVIDENCE/chromium-151-source-contract.json" \
   "$EVIDENCE/source-provenance.json" \
   "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md" \
   "$LICENSES/Chromium-LICENSE" \
@@ -159,14 +157,12 @@ for expectation in "${license_hashes[@]}"; do
 done
 
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
-  "$RUNTIME_APP" \
-  "$REPORT" \
-  "$EVIDENCE/args.gn" \
-  "$EVIDENCE/source-provenance.json" \
-  "$EVIDENCE/fingerprint-chromium.lock.json"
-"$PROJECT_DIR/scripts/verify-runtime-report-consistency.py" \
-  "$EVIDENCE/runtime-verification.json" \
-  "$REPORT"
+  "$RUNTIME_APP"
+python3 "$PROJECT_DIR/scripts/verify-packaged-runtime-report.py" \
+  --report "$EVIDENCE/runtime-verification.json" \
+  --runtime-app "$RUNTIME_APP" \
+  --evidence "$EVIDENCE" \
+  --project-root "$PROJECT_DIR"
 "$PROJECT_DIR/scripts/verify-runtime-compliance.sh" \
   "$COMPLIANCE" \
   "$EVIDENCE/fingerprint-chromium.lock.json"

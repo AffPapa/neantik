@@ -203,6 +203,21 @@ enum BrowserLaunchPurpose: Equatable, Sendable {
 }
 
 enum BrowserLaunchBuilder {
+    private static let allowedInheritedEnvironmentKeys: Set<String> = [
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "LOGNAME",
+        "PATH",
+        "SHELL",
+        "TMPDIR",
+        "USER",
+        "XPC_FLAGS",
+        "XPC_SERVICE_NAME",
+        "__CFBundleIdentifier"
+    ]
+
     static func requiresProxyContextRetest(
         profile: BrowserProfile,
         now: Date = Date()
@@ -226,9 +241,9 @@ enum BrowserLaunchBuilder {
         "--proxy-pac-url",
         "--proxy-bypass-list",
         "--host-resolver-rules",
+        "--webrtc-ip-handling-policy",
         "--force-webrtc-ip-handling-policy",
         "--disable-quic",
-        "--dns-prefetch-disable",
         "--fingerprint",
         "--fingerprint-platform",
         "--fingerprint-timezone",
@@ -255,13 +270,11 @@ enum BrowserLaunchBuilder {
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
             "--no-default-browser-check",
-            "--disable-background-mode",
             "--new-window"
         ]
         var disabledFeatures = Set<String>()
 
         if runtimeCapabilities.contains(.fingerprintSeed) {
-            arguments.append("--fingerprint=\(profile.identity.runtimeSeed)")
             arguments.append("--fingerprinting-client-rects-noise")
             arguments.append("--fingerprinting-canvas-measuretext-noise")
             arguments.append("--fingerprinting-canvas-image-data-noise")
@@ -270,9 +283,6 @@ enum BrowserLaunchBuilder {
             // Apple device tuple.
             disabledFeatures.insert("WebGPUService")
         }
-        if runtimeCapabilities.contains(.platformOverride) {
-            arguments.append("--fingerprint-platform=macos")
-        }
         let hasFreshProxyContext =
             profile.proxy != nil &&
             profile.identity.proxyContextEvidence?.isFresh(
@@ -280,14 +290,7 @@ enum BrowserLaunchBuilder {
             ) == true
         if runtimeCapabilities.contains(.fingerprintSeed),
            hasFreshProxyContext,
-           let timezone = profile.identity.timezoneIdentifier {
-            arguments.append("--fingerprint-timezone=\(timezone)")
-            arguments.append("--timezone=\(timezone)")
-        }
-        if runtimeCapabilities.contains(.fingerprintSeed),
-           hasFreshProxyContext,
            let locale = profile.identity.localeIdentifier {
-            arguments.append("--fingerprint-locale=\(locale)")
             arguments.append("--lang=\(locale)")
             arguments.append("--accept-lang=\(locale)")
         }
@@ -295,14 +298,14 @@ enum BrowserLaunchBuilder {
         if let proxy = profile.proxy {
             arguments.append("--proxy-server=\(proxy.chromiumServer)")
             arguments.append(
-                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+                "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
             arguments.append("--disable-quic")
-            arguments.append("--dns-prefetch-disable")
             // Resolver rules are the primary fail-closed control. Disabling
-            // Chromium's asynchronous and secure-DNS paths adds defense in
-            // depth so a future resolver path cannot silently bypass them.
-            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttps"])
+            // Chromium's asynchronous resolver and automatic DoH upgrade add
+            // defense in depth so a future resolver path cannot silently
+            // bypass them.
+            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade"])
             arguments.append(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
             )
@@ -324,7 +327,7 @@ enum BrowserLaunchBuilder {
             // Direct profiles still avoid exposing every local interface to
             // WebRTC while retaining ordinary calls over the public route.
             arguments.append(
-                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+                "--webrtc-ip-handling-policy=default_public_interface_only"
             )
         }
 
@@ -341,6 +344,34 @@ enum BrowserLaunchBuilder {
             startURLOverride ?? normalizedStartURL(profile.startURL)
         arguments.append(startURL.absoluteString)
         return arguments
+    }
+
+    static func environment(
+        profile: BrowserProfile,
+        runtimeCapabilities: BrowserRuntimeCapabilities = [],
+        inherited: [String: String] = ProcessInfo.processInfo.environment,
+        now: Date = Date()
+    ) -> [String: String] {
+        var environment = inherited.filter {
+            allowedInheritedEnvironmentKeys.contains($0.key)
+        }
+
+        guard runtimeCapabilities.contains(.fingerprintSeed) else {
+            return environment
+        }
+        environment["NEANTIK_PROFILE_SEED"] =
+            String(profile.identity.runtimeSeed)
+
+        let hasFreshProxyContext =
+            profile.proxy != nil &&
+            profile.identity.proxyContextEvidence?.isFresh(
+                relativeTo: now
+            ) == true
+        if hasFreshProxyContext,
+           let timezone = profile.identity.timezoneIdentifier {
+            environment["NEANTIK_PROFILE_TIMEZONE"] = timezone
+        }
+        return environment
     }
 
     static func sanitizedAdditionalArguments(
@@ -506,6 +537,7 @@ final class BrowserProcessManager: ObservableObject {
     private var lastReconciledProfiles: [BrowserProfile] = []
     private var pendingReconciliationProfileIDs = Set<UUID>()
     private var passiveInventoryObservationTask: Task<Void, Never>?
+    private var reservedFingerprintAuditDataDirectories = Set<String>()
 
     init(paths: AppPaths) {
         self.paths = paths
@@ -660,6 +692,34 @@ final class BrowserProcessManager: ObservableObject {
             generation: reconcileGeneration,
             retryCount: 0,
             processInventoryProvider: processInventoryProvider
+        )
+    }
+
+    func reserveFingerprintAuditDataDirectory() throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "app.neantik.fingerprint-audit",
+                isDirectory: true
+            )
+        for _ in 0..<8 {
+            let directory = root.appendingPathComponent(
+                UUID().uuidString,
+                isDirectory: true
+            )
+            do {
+                try paths.createPrivateDirectoryExclusively(directory)
+                reservedFingerprintAuditDataDirectories.insert(
+                    directory.standardizedFileURL.path
+                )
+                return directory
+            } catch let error as POSIXError
+                where error.code == .EEXIST
+            {
+                continue
+            }
+        }
+        throw NeAntikError.fingerprintAuditFailed(
+            "Не удалось безопасно подготовить временные данные браузера."
         )
     }
 
@@ -1342,6 +1402,26 @@ final class BrowserProcessManager: ObservableObject {
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
+        let ownsFreshFingerprintAuditDirectory: Bool
+        switch purpose {
+        case .normal:
+            ownsFreshFingerprintAuditDirectory = false
+        case .fingerprintAudit:
+            guard let browserDataDirectoryOverride else {
+                throw NeAntikError.fingerprintAuditFailed(
+                    "Для проверки не подготовлен временный каталог браузера."
+                )
+            }
+            ownsFreshFingerprintAuditDirectory =
+                reservedFingerprintAuditDataDirectories.remove(
+                    browserDataDirectoryOverride.standardizedFileURL.path
+                ) != nil
+            guard ownsFreshFingerprintAuditDirectory else {
+                throw NeAntikError.fingerprintAuditFailed(
+                    "Временный каталог проверки не принадлежит этому запуску."
+                )
+            }
+        }
         let profileDirectoryExistedBeforeLaunch =
             FileManager.default.fileExists(
                 atPath: paths.profileDirectory(for: profile.id).path
@@ -1350,6 +1430,7 @@ final class BrowserProcessManager: ObservableObject {
         let logURL = paths.logFile(for: profile.id)
 
         let process = Process()
+        let launchNow = Date()
         process.executableURL = runtime.executableURL
         process.arguments = BrowserLaunchBuilder.arguments(
             profile: profile,
@@ -1357,7 +1438,13 @@ final class BrowserProcessManager: ObservableObject {
             runtimeCapabilities: runtime.capabilities,
             additionalArguments: additionalArguments,
             startURLOverride: startURLOverride,
+            now: launchNow,
             purpose: purpose
+        )
+        process.environment = BrowserLaunchBuilder.environment(
+            profile: profile,
+            runtimeCapabilities: runtime.capabilities,
+            now: launchNow
         )
         process.currentDirectoryURL =
             browserDataDirectoryOverride == nil
@@ -1394,7 +1481,9 @@ final class BrowserProcessManager: ObservableObject {
                 provisionalLock,
                 profileID: profile.id,
                 at: lockURL,
-                browserDataDirectory: browserDataDirectory
+                browserDataDirectory: browserDataDirectory,
+                allowsUnknownBrowserDataInspection:
+                    ownsFreshFingerprintAuditDirectory
             )
         } catch where Self.isExistingPathError(error) {
             reconcileProfile(profileID: profile.id)
@@ -1406,7 +1495,9 @@ final class BrowserProcessManager: ObservableObject {
                     provisionalLock,
                     profileID: profile.id,
                     at: lockURL,
-                    browserDataDirectory: browserDataDirectory
+                    browserDataDirectory: browserDataDirectory,
+                    allowsUnknownBrowserDataInspection:
+                        ownsFreshFingerprintAuditDirectory
                 )
             } catch where Self.isExistingPathError(error) {
                 reconcileProfile(profileID: profile.id)
@@ -1416,6 +1507,8 @@ final class BrowserProcessManager: ObservableObject {
                     error.localizedDescription
                 )
             }
+        } catch let error as NeAntikError {
+            throw error
         } catch {
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
         }
@@ -1480,8 +1573,15 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func stop(profileID: UUID) {
-        if let process = processes[profileID], process.isRunning {
-            managedProcessTerminator(process)
+        if let process = processes[profileID] {
+            if process.isRunning {
+                managedProcessTerminator(process)
+            } else {
+                handleTermination(
+                    profileID: profileID,
+                    process: process
+                )
+            }
             return
         }
         if recoveryProfileIDs.contains(profileID) {
@@ -1548,10 +1648,12 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func handleTermination(profileID: UUID, process: Process?) {
-        if let current = processes[profileID],
-           let process,
-           current !== process {
-            return
+        if let process {
+            guard let current = processes[profileID],
+                  current === process
+            else {
+                return
+            }
         }
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
@@ -1603,6 +1705,7 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: removableSnapshot,
                 blockingManagerPID: nil,
+                surfaceMessage: false,
                 message:
                     "Основной процесс браузера завершён, но его вспомогательные процессы ещё используют данные профиля. Профиль разблокируется автоматически после их завершения."
             )
@@ -1680,6 +1783,7 @@ final class BrowserProcessManager: ObservableObject {
         browserDataProcessInspector:
             ((URL) -> BrowserDataProcessInspection)? = nil,
         deferInitialResolution: Bool = false,
+        surfaceMessage: Bool = true,
         message: String
     ) {
         externalLocks.removeValue(forKey: profileID)
@@ -1701,7 +1805,9 @@ final class BrowserProcessManager: ObservableObject {
             entryIdentity: entryIdentity ?? nil
         )
         recoveryRecords[profileID] = record
-        lastError = message
+        if surfaceMessage {
+            lastError = message
+        }
         let effectiveBrowserDataProcessInspector =
             browserDataProcessInspector ??
             self.browserDataProcessInspector
@@ -2041,7 +2147,8 @@ final class BrowserProcessManager: ObservableObject {
         _ lock: BrowserProcessLock,
         profileID: UUID,
         at lockURL: URL,
-        browserDataDirectory: URL
+        browserDataDirectory: URL,
+        allowsUnknownBrowserDataInspection: Bool = false
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
             switch try paths.privateFileEntryKind(
@@ -2061,7 +2168,12 @@ final class BrowserProcessManager: ObservableObject {
             let inspection = browserDataProcessInspector(
                 browserDataDirectory
             )
-            guard inspection == .absent else {
+            guard inspection == .absent ||
+                    (
+                        inspection == .unknown &&
+                        allowsUnknownBrowserDataInspection
+                    )
+            else {
                 throw BrowserProfileLeaseUnavailableError(
                     inspection: inspection
                 )

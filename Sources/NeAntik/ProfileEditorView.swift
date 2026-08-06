@@ -631,6 +631,7 @@ struct ProfileEditorView: View {
       proxyPassword = draft.password
       proxyImportMessage =
         "Распознано: \(draft.redactedSummary). Проверяю соединение…"
+      announce(proxyImportMessage ?? "Прокси распознан. Проверяю соединение.")
       errorMessage = nil
 
       Task { @MainActor in
@@ -645,6 +646,7 @@ struct ProfileEditorView: View {
     } catch {
       isApplyingProxyImport = false
       proxyImportMessage = error.localizedDescription
+      announce(error.localizedDescription)
     }
   }
 
@@ -680,12 +682,14 @@ struct ProfileEditorView: View {
               proxyImportText = ""
             }
             isTesting = false
+            announce(testMessage ?? "Прокси подключён.")
           }
         } catch {
           guard !Task.isCancelled else { return }
           await MainActor.run {
             testMessage = error.localizedDescription
             isTesting = false
+            announce(error.localizedDescription)
           }
         }
       }
@@ -706,6 +710,18 @@ struct ProfileEditorView: View {
     guard !isApplyingProxyImport else { return }
     proxyImportMessage = nil
     invalidateProxyEvidence()
+  }
+
+  @MainActor
+  private func announce(_ message: String) {
+    NSAccessibility.post(
+      element: NSApp as Any,
+      notification: .announcementRequested,
+      userInfo: [
+        .announcement: message,
+        .priority: NSAccessibilityPriorityLevel.medium.rawValue
+      ]
+    )
   }
 }
 

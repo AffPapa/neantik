@@ -41,6 +41,43 @@ def required_text(value: object, field: str) -> str:
     return value.strip()
 
 
+def required_mapping(value: object, field: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise RuntimeNoticesError(f"missing object {field}")
+    return value
+
+
+def bound_license_sha256(
+    *,
+    lock_component: dict[str, Any],
+    source_component: dict[str, Any],
+    lock_field: str,
+    source_field: str,
+) -> str:
+    lock_value = lock_component.get("licenseSHA256")
+    if lock_value is None:
+        lock_value = required_mapping(
+            lock_component.get("criticalFiles"),
+            f"{lock_field}.criticalFiles",
+        ).get("LICENSE")
+    source_value = source_component.get("licenseSHA256")
+    if source_value is None:
+        source_value = required_mapping(
+            source_component.get("criticalFiles"),
+            f"{source_field}.criticalFiles",
+        ).get("LICENSE")
+    lock_sha256 = required_text(lock_value, f"{lock_field}.licenseSHA256")
+    source_sha256 = required_text(
+        source_value,
+        f"{source_field}.licenseSHA256",
+    )
+    if lock_sha256 != source_sha256:
+        raise RuntimeNoticesError(
+            f"{lock_field} and {source_field} license SHA-256 differ"
+        )
+    return lock_sha256
+
+
 def verified_license(
     *,
     project_root: Path,
@@ -65,7 +102,7 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
     source_contract = load_json(
-        project_root / "runtime" / "chromium-150-source-contract.json"
+        project_root / "runtime" / "chromium-151-source-contract.json"
     )
     patchset = load_json(
         project_root / "runtime" / "nevision-patches" / "series.json"
@@ -127,17 +164,21 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     chromium_license = verified_license(
         project_root=project_root,
         relative_path="runtime/licenses/Chromium-LICENSE",
-        expected_sha256=required_text(
-            chromium.get("licenseSHA256"),
-            "fingerprintChromium.licenseSHA256",
+        expected_sha256=bound_license_sha256(
+            lock_component=chromium,
+            source_component=official_chromium,
+            lock_field="fingerprintChromium",
+            source_field="officialChromiumBase",
         ),
     )
     packaging_license = verified_license(
         project_root=project_root,
         relative_path="runtime/licenses/ungoogled-chromium-macos-LICENSE",
-        expected_sha256=required_text(
-            packaging.get("licenseSHA256"),
-            "macPackaging.licenseSHA256",
+        expected_sha256=bound_license_sha256(
+            lock_component=packaging,
+            source_component=source_packaging,
+            lock_field="macPackaging",
+            source_field="sourceContract.macPackaging",
         ),
     )
     fingerprint_license = verified_license(
@@ -173,8 +214,8 @@ Do not edit generated values by hand.
 - Product: `NeAntik Browser`
 - Chromium: `{chromium_version}`
 - Architecture: `arm64`
-- Historical published runtime lock status: `{runtime_status}`
-- Next candidate source binary binding: `{binary_binding_status}`
+- Runtime source lock status: `{runtime_status}`
+- Source contract binary binding: `{binary_binding_status}`
 - Owned patchset status: `{patch_status}`
 - Ported patch groups: `{len(patch_groups)}`
 
@@ -187,7 +228,7 @@ artifact or a final legal review.
 - Source: `{chromium_repository}`
 - Tag: `{chromium_tag}`
 - Commit: `{chromium_commit}`
-- License: `{required_text(chromium.get("license"), "fingerprintChromium.license")}`
+- License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/Chromium-LICENSE`
 - License SHA-256: `{chromium_license}`
 
@@ -195,7 +236,7 @@ artifact or a final legal review.
 
 - Source: `{packaging_repository}`
 - Commit: `{packaging_commit}`
-- License: `{required_text(packaging.get("license"), "macPackaging.license")}`
+- License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/ungoogled-chromium-macos-LICENSE`
 - License SHA-256: `{packaging_license}`
 

@@ -60,12 +60,32 @@ class BuildRuntimeScriptTests(unittest.TestCase):
     def test_owned_rebase_verifies_rust_archive_missing_upstream_hash(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
         lock = (
-            PROJECT_ROOT / "runtime" / "chromium-150-toolchain-lock.json"
+            PROJECT_ROOT / "runtime" / "chromium-151-toolchain-lock.json"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("chromium-150-toolchain-lock.json", script)
+        self.assertIn("chromium-151-toolchain-lock.json", script)
         self.assertIn("Locked Rust toolchain archive verified.", script)
-        self.assertIn("03d5e8cf7331c6ed8a779eba0c24ab6a", lock)
+        self.assertIn(
+            "8b5933fa6319cc2b4a83098562731eff4c16cb982be44282aef51c17a43fe7e6",
+            lock,
+        )
+
+    def test_owned_rebase_installs_exact_dawn_go_toolchain(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+        lock = (
+            PROJECT_ROOT / "runtime" / "chromium-151-toolchain-lock.json"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("prepare_owned_dawn_go()", script)
+        self.assertIn("chrome-infra-packages.appspot.com/client", script)
+        self.assertIn("dawnGo.clientSHA256", script)
+        self.assertIn("dawnGo.instanceId", script)
+        self.assertIn("Locked Dawn Go toolchain verified.", script)
+        self.assertIn('"version": "1.25.0"', lock)
+        self.assertIn(
+            '"instanceId": "3JX2vzvi6MjGUTHLmAins8zodX5IxdLkTI8TdMh90gIC"',
+            lock,
+        )
 
     def test_exports_source_provenance_before_ninja_compile(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
@@ -76,6 +96,38 @@ class BuildRuntimeScriptTests(unittest.TestCase):
         self.assertLess(export_index, compile_index)
         self.assertLess(verify_index, compile_index)
         self.assertIn('SOURCE_PROVENANCE="$BUILD_DIR/source-provenance.json"', script)
+
+    def test_official_lite_archive_build_contract_is_release_required(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+        manifest = (
+            PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("apply-neantik-patchset.py", script)
+        self.assertIn("official-lite-archive-build-contract", manifest)
+
+    def test_shipping_build_does_not_compile_unused_chromedriver(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn('ninja -C out/Default -j"$jobs" chrome', script)
+        self.assertNotIn("chrome chromedriver", script)
+
+    def test_go_generators_keep_cache_inside_build_root(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn('GO_CACHE_DIR="$BUILD_DIR/go-build-cache"', script)
+        self.assertIn('GO_PATH_DIR="$BUILD_DIR/go-path"', script)
+        self.assertIn('export GOCACHE="$GO_CACHE_DIR"', script)
+        self.assertIn('export GOPATH="$GO_PATH_DIR"', script)
+
+    def test_each_compile_attempt_has_a_clean_preserved_log(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("Previous build log preserved:", script)
+        self.assertIn('previous_build_log="$BUILD_LOG.', script)
+        self.assertIn(': > "$BUILD_LOG"', script)
+        self.assertIn('tee "$BUILD_LOG"', script)
+        self.assertNotIn('tee -a "$BUILD_LOG"', script)
 
 
 if __name__ == "__main__":

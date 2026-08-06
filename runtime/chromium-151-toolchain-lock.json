@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "rust": {
+    "version": "2026-06-16",
+    "filename": "rust-nightly-2026-06-16-aarch64-apple-darwin.tar.xz",
+    "url": "https://static.rust-lang.org/dist/2026-06-16/rust-nightly-aarch64-apple-darwin.tar.xz",
+    "officialSHA256URL": "https://static.rust-lang.org/dist/2026-06-16/rust-nightly-aarch64-apple-darwin.tar.xz.sha256",
+    "sha256": "8b5933fa6319cc2b4a83098562731eff4c16cb982be44282aef51c17a43fe7e6",
+    "size": 154872612,
+    "architecture": "arm64"
+  },
+  "dawnGo": {
+    "version": "1.25.0",
+    "depsVersion": "version:3@1.25.0",
+    "package": "infra/3pp/tools/go/mac-arm64",
+    "instanceId": "3JX2vzvi6MjGUTHLmAins8zodX5IxdLkTI8TdMh90gIC",
+    "clientRevision": "git_revision:2947bd98a9c59d4f552df3a043c5883651448e0a",
+    "clientSHA256": "958d9758a4810ed2643b159aef48b126c56fb7228a64ee6dab9976df9e3095a9",
+    "packageArchiveSHA256": "dc95f6bf3be2e8c8c65131cb9808a7b3cce8757e48c5d2e44c8f1374c87dd202",
+    "packageArchiveSize": 63660208,
+    "architecture": "arm64"
+  }
+}

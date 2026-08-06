@@ -21,13 +21,13 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
     def test_current_manifest_is_valid_port_plan(self) -> None:
         summary = MODULE.verify_manifest(
             manifest_path=PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json",
-            rebase_plan_path=PROJECT_ROOT / "runtime" / "chromium-150-rebase-plan.json",
+            rebase_plan_path=PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json",
             release=False,
             verify_source_evidence=True,
             project_root=PROJECT_ROOT,
         )
 
-        self.assertEqual(summary["targetChromiumVersion"], "150.0.7871.186")
+        self.assertEqual(summary["targetChromiumVersion"], "151.0.7922.75")
         self.assertIn(
             summary["manifestStatus"],
             {"planned-not-ported", "partially-ported", "release-ready"},
@@ -211,6 +211,41 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
                     release=False,
                 )
 
+    def test_rejects_incremental_preimage_outside_locked_postimages(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = fixture_manifest()
+            patch = "patches/stable-surface.patch"
+            patch_text = "diff --git a/a.txt b/a.txt\n"
+            manifest["patchGroups"][0].update(
+                {
+                    "status": "ported",
+                    "patchFile": patch,
+                    "patchSHA256": hashlib.sha256(
+                        patch_text.encode("utf-8")
+                    ).hexdigest(),
+                    "postimageSHA256": {"a.txt": "a" * 64},
+                    "incrementalPreimageSHA256": {"other.txt": "b" * 64},
+                }
+            )
+            manifest_path, rebase_path = write_fixture(
+                root,
+                manifest=manifest,
+            )
+            patch_path = manifest_path.parent / patch
+            patch_path.parent.mkdir(parents=True)
+            patch_path.write_text(patch_text, encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.PatchsetManifestError,
+                "only describe a locked postimage path",
+            ):
+                MODULE.verify_manifest(
+                    manifest_path=manifest_path,
+                    rebase_plan_path=rebase_path,
+                    release=False,
+                )
+
     def test_rejects_ported_group_with_unsafe_patch_file_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -379,6 +414,11 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             )
             manifest = fixture_manifest()
             manifest["status"] = "release-ready"
+            manifest["generatedInputs"][0]["postimageSHA256"] = {
+                "generated/output.h": hashlib.sha256(
+                    b"generated\n"
+                ).hexdigest()
+            }
             manifest["patchGroups"][0].update(
                 {
                     "status": "ported",
@@ -402,6 +442,107 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             )
 
             self.assertTrue(summary["releaseReady"])
+
+    def test_exact_already_applied_source_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_root = root / "chromium"
+            source_root.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=source_root, check=True)
+            (source_root / "a.txt").write_text("old\n", encoding="utf-8")
+            patch_text = (
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n"
+            )
+            manifest = fixture_manifest()
+            manifest["status"] = "release-ready"
+            manifest["generatedInputs"][0]["postimageSHA256"] = {
+                "generated/output.h": hashlib.sha256(
+                    b"generated\n"
+                ).hexdigest()
+            }
+            manifest["patchGroups"][0].update(
+                {
+                    "status": "ported",
+                    "patchFile": "patches/stable.patch",
+                    "patchSHA256": hashlib.sha256(
+                        patch_text.encode("utf-8")
+                    ).hexdigest(),
+                    "postimageSHA256": {
+                        "a.txt": hashlib.sha256(b"new\n").hexdigest()
+                    },
+                }
+            )
+            manifest_path, rebase_path = write_fixture(root, manifest=manifest)
+            patch_path = manifest_path.parent / "patches" / "stable.patch"
+            patch_path.parent.mkdir(parents=True)
+            patch_path.write_text(patch_text, encoding="utf-8")
+            generated_output = source_root / "generated" / "output.h"
+            generated_output.parent.mkdir(parents=True)
+            generated_output.write_text("generated\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "apply", str(patch_path)],
+                cwd=source_root,
+                check=True,
+            )
+
+            summary = MODULE.verify_manifest(
+                manifest_path=manifest_path,
+                rebase_plan_path=rebase_path,
+                release=True,
+                source_root=source_root,
+            )
+
+            self.assertTrue(summary["releaseReady"])
+
+    def test_partially_applied_or_drifted_source_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_root = root / "chromium"
+            source_root.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=source_root, check=True)
+            (source_root / "a.txt").write_text("wrong\n", encoding="utf-8")
+            patch_text = (
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n"
+            )
+            manifest = fixture_manifest()
+            manifest["status"] = "release-ready"
+            manifest["patchGroups"][0].update(
+                {
+                    "status": "ported",
+                    "patchFile": "patches/stable.patch",
+                    "patchSHA256": hashlib.sha256(
+                        patch_text.encode("utf-8")
+                    ).hexdigest(),
+                    "postimageSHA256": {
+                        "a.txt": hashlib.sha256(b"new\n").hexdigest()
+                    },
+                }
+            )
+            manifest_path, rebase_path = write_fixture(root, manifest=manifest)
+            patch_path = manifest_path.parent / "patches" / "stable.patch"
+            patch_path.parent.mkdir(parents=True)
+            patch_path.write_text(patch_text, encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.PatchsetManifestError,
+                "neither applies cleanly nor matches",
+            ):
+                MODULE.verify_manifest(
+                    manifest_path=manifest_path,
+                    rebase_plan_path=rebase_path,
+                    release=True,
+                    source_root=source_root,
+                )
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

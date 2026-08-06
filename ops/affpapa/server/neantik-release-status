@@ -12,9 +12,17 @@ IMAGES="$LIVE_ROOT/public/img/neantik"
 STAGING="/var/www/hrband/storage/app/neantik-release-staging"
 BACKUPS="/var/www/hrband/storage/app/neantik-release-backups"
 LOG="/var/log/neantik-deploy.log"
+OPS_MANIFEST="/etc/neantik-release-ops.json"
 
 echo "=== NeAntik Release Status ==="
 echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+if [[ -f "$OPS_MANIFEST" && ! -L "$OPS_MANIFEST" ]]; then
+    printf 'Ops manifest: '
+    tr -d '\n' <"$OPS_MANIFEST"
+    echo
+else
+    echo "Ops manifest: MISSING"
+fi
 echo
 
 # Current version from release.json

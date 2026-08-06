@@ -11,21 +11,21 @@
       "issueContains": []
     },
     {
-      "id": "public-alpha-worker-mismatch",
+      "id": "public-alpha-strict-audio-repeat-mismatch",
       "mutations": [
         {
-          "path": "firstInitial.values.worker_platform",
-          "value": "Win32"
+          "path": "firstInitial.values.audio_repeat",
+          "value": "strict-mismatch"
         },
         {
-          "path": "firstRepeat.values.worker_platform",
-          "value": "Win32"
+          "path": "firstRepeat.values.audio_repeat",
+          "value": "strict-mismatch"
         }
       ],
       "publicAlphaQualified": true,
       "productionQualified": false,
       "issueContains": [
-        "platform value disagrees with worker_platform"
+        "audio value disagrees with audio_repeat"
       ]
     },
     {
@@ -44,7 +44,7 @@
           "value": "unavailable"
         }
       ],
-      "publicAlphaQualified": true,
+      "publicAlphaQualified": false,
       "productionQualified": false,
       "issueContains": [
         "Required browser surfaces are unavailable: worker_device_memory."
@@ -62,7 +62,7 @@
           "value": "4"
         }
       ],
-      "publicAlphaQualified": true,
+      "publicAlphaQualified": false,
       "productionQualified": false,
       "issueContains": [
         "device_memory value disagrees with worker_device_memory"
@@ -104,7 +104,7 @@
           "value": "ru-Cyrl-RU"
         }
       ],
-      "publicAlphaQualified": true,
+      "publicAlphaQualified": false,
       "productionQualified": false,
       "issueContains": [
         "primary_locale_core disagrees with intl_locale_core",
@@ -177,7 +177,7 @@
           "value": "{\"total\":1,\"host\":1,\"srflx\":0,\"prflx\":0,\"relay\":0,\"unknown\":0}"
         }
       ],
-      "publicAlphaQualified": true,
+      "publicAlphaQualified": false,
       "productionQualified": false,
       "issueContains": [
         "proxied route exposed a direct WebRTC candidate"
@@ -191,7 +191,7 @@
           "value": "proxied"
         }
       ],
-      "publicAlphaQualified": true,
+      "publicAlphaQualified": false,
       "productionQualified": false,
       "issueContains": [
         "proxied route sent a loopback STUN request"

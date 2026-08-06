@@ -8,7 +8,7 @@ APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
 ATTEMPT_STATE_ROOT="$PROJECT_DIR/artifacts/neantik/private-release-attempts/$(date -u '+%Y%m%dT%H%M%SZ')-$$"
-DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-150/build/source-provenance.json"
+DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-151/build/source-provenance.json"
 EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
 
@@ -202,6 +202,8 @@ done
 
 attempt=1
 while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$APP_PATH"
   ATTEMPT_STATE_DIR="$ATTEMPT_STATE_ROOT/attempt-$attempt"
   python3 "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" \
     --prepare-attempt-state "$ATTEMPT_STATE_DIR" \
@@ -230,16 +232,30 @@ while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
   fi
   GUI_WAIT_SECONDS=0
   GUI_TIMEOUT_SECONDS=240
+  GUI_TIMED_OUT=0
   while kill -0 "$GUI_PID" >/dev/null 2>&1; do
     if (( GUI_WAIT_SECONDS >= GUI_TIMEOUT_SECONDS )); then
       echo "Автоматическая GUI-проверка не завершилась за ${GUI_TIMEOUT_SECONDS} секунд." >&2
       kill -TERM "$GUI_PID" >/dev/null 2>&1 || true
+      GUI_TIMED_OUT=1
       break
     fi
     sleep 1
     GUI_WAIT_SECONDS=$((GUI_WAIT_SECONDS + 1))
   done
-  wait "$GUI_PID" >/dev/null 2>&1 || true
+  GUI_EXIT_STATUS=0
+  wait "$GUI_PID" >/dev/null 2>&1 || GUI_EXIT_STATUS="$?"
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$APP_PATH"
+  if (( GUI_TIMED_OUT != 0 )); then
+    echo "Повторная попытка после timeout запрещена; notarization не запускалась." >&2
+    exit 67
+  fi
+  if (( GUI_EXIT_STATUS != 0 )); then
+    echo "NeAntik завершил автоматическую проверку с кодом $GUI_EXIT_STATUS." >&2
+    echo "Notarization не запускалась." >&2
+    exit 66
+  fi
 
   if python3 "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" \
     --source "$SCHEMA8_SOURCE" \
@@ -259,9 +275,14 @@ while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
   fi
 
   echo
-  echo "Отчёт ещё не создан. Команда безопасно повторит автоматическую проверку."
+  echo "Отчёт ещё не создан. Жду полного завершения Chromium и безопасно повторяю проверку."
+  sleep 3
   (( attempt += 1 ))
 done
+
+python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+  --app "$APP_PATH" \
+  --timeout 45
 
 echo "[3/4] Отправляю кандидат в Apple notarization…"
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"

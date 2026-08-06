@@ -47,8 +47,8 @@ class ReleaseSourceSnapshot:
 RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("runtime/apple-device-tuples.json", "reviewed-policy"),
     ("runtime/browser-identity-issuance.json", "reviewed-policy"),
-    ("runtime/chromium-150-source-contract.json", "reviewed-policy"),
-    ("runtime/chromium-150-toolchain-lock.json", "reviewed-toolchain-lock"),
+    ("runtime/chromium-151-source-contract.json", "reviewed-policy"),
+    ("runtime/chromium-151-toolchain-lock.json", "reviewed-toolchain-lock"),
     ("runtime/nevision-patches/series.json", "reviewed-policy"),
     ("runtime/security-baseline.json", "reviewed-policy"),
     ("scripts/direct-candidate-manifest.py", "candidate-manifest"),
@@ -993,7 +993,7 @@ def runtime_build_evidence_from_manifest(
     toolchain_entries = [
         entry
         for entry in snapshot.payload["closure"]  # type: ignore[index]
-        if entry["path"] == "runtime/chromium-150-toolchain-lock.json"
+        if entry["path"] == "runtime/chromium-151-toolchain-lock.json"
     ]
     if len(toolchain_entries) != 1:
         raise ReleaseSourceReceiptError(

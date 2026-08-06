@@ -264,10 +264,10 @@ def verify_direct_public_release_plan(
             evidence_root / "fingerprint-chromium.lock.json"
         )
         embedded_contract_path = (
-            evidence_root / "chromium-150-source-contract.json"
+            evidence_root / "chromium-151-source-contract.json"
         )
         project_contract_path = (
-            project_root / "runtime" / "chromium-150-source-contract.json"
+            project_root / "runtime" / "chromium-151-source-contract.json"
         )
         for path, label in (
             (report_path, "runtime verification report"),
@@ -304,7 +304,7 @@ def verify_direct_public_release_plan(
             )
         if embedded_contract_path.read_bytes() != project_contract_path.read_bytes():
             raise ValueError(
-                "embedded Chromium 150 source contract differs from project contract"
+                "embedded Chromium source contract differs from project contract"
             )
         provenance = read_json(provenance_path)
         contract = read_json(embedded_contract_path)
@@ -352,7 +352,7 @@ def verify_direct_public_release_plan(
             or "144.0.7559.96" in stale_text
         ):
             raise ValueError("source evidence contains stale Chromium 144 provenance")
-        return "schema 3 runtime report is bound to Chromium 150 source provenance"
+        return "schema 3 runtime report is bound to Chromium source provenance"
 
     def metal_args() -> str:
         if not args_gn.is_file():
@@ -481,7 +481,7 @@ def verify_direct_public_release_plan(
         gate("Integrated Direct bundle", integrated_bundle),
         gate("Source-branded fingerprint runtime", runtime_identity),
         gate("Runtime app matches runtime lock", runtime_lock_contract),
-        gate("Chromium 150 source provenance", runtime_source_provenance),
+        gate("Chromium source provenance", runtime_source_provenance),
         gate("Runtime security baseline", runtime_security),
         gate("Metal runtime arguments", metal_args),
         gate("GUI fingerprint qualification", gui_report),

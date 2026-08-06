@@ -26,6 +26,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("verify-direct-update-policy.py", text)
         self.assertIn("verify-public-fingerprint-corpus.py", text)
         self.assertIn("sign-runtime.sh", text)
+        self.assertIn("verify-built-runtime.sh", text)
+        self.assertIn("promote-runtime-candidate-lock.py", text)
+        self.assertIn("--confirm-promote-source-lock", text)
+        self.assertIn("generate-runtime-integration-notices.py", text)
         self.assertIn("package-integrated-app.sh", text)
         self.assertIn("enroll-direct-fingerprint-authority.sh", text)
         self.assertIn("direct-candidate-manifest.py", text)
@@ -34,6 +38,14 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("fingerprint-enrollment.XXXXXX", text)
         self.assertIn('APP_PATH="$PROJECT_DIR/dist/NeAntik.app"', text)
         self.assertNotIn("notarytool submit", text)
+        self.assertLess(
+            text.index("sign-runtime.sh"),
+            text.index("promote-runtime-candidate-lock.py"),
+        )
+        self.assertLess(
+            text.index("promote-runtime-candidate-lock.py"),
+            text.index("package-integrated-app.sh"),
+        )
         self.assertLess(
             text.index("enroll-direct-fingerprint-authority.sh"),
             text.index("direct-candidate-manifest.py"),
@@ -56,6 +68,21 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             "LOCAL QA ONLY: schema-3 release enrollment was intentionally skipped.",
             text,
         )
+
+    def test_manager_only_update_preserves_verified_runtime_evidence(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding="utf-8")
+
+        self.assertIn("verify_reviewed_runtime_evidence", text)
+        self.assertIn("verify-packaged-runtime-report.py", text)
+        self.assertIn("verify-runtime-compliance.sh", text)
+        self.assertIn("cmp -s", text)
+        self.assertNotIn(
+            '"$PROJECT_DIR/scripts/verify-built-runtime.sh" \\\n'
+            '    "$CANDIDATE_RUNTIME" \\\n'
+            '    "$evidence/runtime-verification.json"',
+            text,
+        )
+        self.assertNotIn("rebind_runtime_compliance", text)
 
     def test_enrollment_helper_is_exact_private_and_bounded(self) -> None:
         text = ENROLL.read_text(encoding="utf-8")

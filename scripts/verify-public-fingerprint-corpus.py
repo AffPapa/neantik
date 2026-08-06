@@ -27,6 +27,8 @@ SYNTHETIC_CONTROL_ID = "00000000-0000-4000-8000-000000000303"
 SYNTHETIC_CONTROL_NAME = "SYNTHETIC-CONTROL"
 ALLOWED_MUTATION_PATHS = {
     "executionMode",
+    "firstInitial.values.audio_repeat",
+    "firstRepeat.values.audio_repeat",
     "firstInitial.values.worker_platform",
     "firstRepeat.values.worker_platform",
     "firstInitial.values.worker_device_memory",

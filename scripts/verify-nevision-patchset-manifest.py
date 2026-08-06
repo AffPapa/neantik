@@ -12,7 +12,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
-DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-150-rebase-plan.json"
+DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json"
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
 ALLOWED_STATUSES = {"planned", "ported"}
 ALLOWED_MANIFEST_STATUSES = {
@@ -75,7 +75,40 @@ def assert_patch_scope_allowed(patch_path: Path, forbidden_scopes: list[str], gr
             )
 
 
-def apply_check(source_root: Path, patch_path: Path) -> None:
+def source_postimage_mismatches(
+    source_root: Path,
+    manifest: dict[str, object],
+) -> list[str]:
+    accepted_by_path: dict[str, set[str]] = {}
+    for group in manifest["patchGroups"]:
+        assert isinstance(group, dict)
+        postimages = group["postimageSHA256"]
+        assert isinstance(postimages, dict)
+        for relative, digest in postimages.items():
+            accepted_by_path[str(relative)] = {str(digest)}
+    for generated_input in manifest["generatedInputs"]:
+        assert isinstance(generated_input, dict)
+        postimages = generated_input["postimageSHA256"]
+        assert isinstance(postimages, dict)
+        for relative, digest in postimages.items():
+            accepted_by_path.setdefault(str(relative), set()).add(str(digest))
+
+    mismatches: list[str] = []
+    for relative, accepted in sorted(accepted_by_path.items()):
+        path = source_root / relative
+        actual = sha256(path) if path.is_file() else "missing"
+        if actual not in accepted:
+            mismatches.append(
+                f"{relative}: expected one of {sorted(accepted)}, actual {actual}"
+            )
+    return mismatches
+
+
+def apply_check(
+    source_root: Path,
+    patch_paths: list[Path],
+    manifest: dict[str, object],
+) -> None:
     repository = subprocess.run(
         ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
         text=True,
@@ -104,18 +137,27 @@ def apply_check(source_root: Path, patch_path: Path) -> None:
             "--check",
             "--whitespace=nowarn",
             *directory_options,
-            str(patch_path),
+            *(str(path) for path in patch_paths),
         ],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if completed.returncode != 0 or "Skipped patch" in completed.stdout:
-        raise PatchsetManifestError(
-            f"patch does not apply cleanly with git apply --check: {patch_path.name}\n"
-            + completed.stdout.strip()
-        )
+    if completed.returncode == 0 and "Skipped patch" not in completed.stdout:
+        return
+
+    mismatches = source_postimage_mismatches(source_root, manifest)
+    if not mismatches:
+        return
+    detail = completed.stdout.strip()
+    raise PatchsetManifestError(
+        "owned patch series neither applies cleanly nor matches the exact "
+        "reviewed final postimages"
+        + (f":\n{detail}" if detail else "")
+        + "\n"
+        + "\n".join(mismatches[:12])
+    )
 
 
 def verify_source_evidence_paths(
@@ -238,7 +280,7 @@ def verify_manifest(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, object]:
     manifest = load_object(manifest_path, "NeAntik patchset manifest")
-    rebase_plan = load_object(rebase_plan_path, "Chromium 150 rebase plan")
+    rebase_plan = load_object(rebase_plan_path, "Chromium rebase plan")
     if manifest.get("schemaVersion") != 1:
         raise PatchsetManifestError("Unexpected patchset manifest schema")
     manifest_status = require_string(manifest.get("status"), "status")
@@ -252,7 +294,7 @@ def verify_manifest(
         raise PatchsetManifestError("targetChromiumVersion must be a four-part version")
     if target != rebase_plan.get("targetChromiumVersion"):
         raise PatchsetManifestError(
-            "patchset targetChromiumVersion must match chromium-150-rebase-plan.json"
+            "patchset targetChromiumVersion must match the selected Chromium rebase plan"
         )
     forbidden_scope_values = manifest.get("forbiddenScopes")
     if not isinstance(forbidden_scope_values, list) or not forbidden_scope_values:
@@ -279,6 +321,7 @@ def verify_manifest(
     missing_for_release: list[str] = []
     planned_for_release: list[str] = []
     group_diagnostics: list[dict[str, object]] = []
+    ported_patch_paths: list[Path] = []
     for index, group in enumerate(groups):
         if not isinstance(group, dict):
             raise PatchsetManifestError(f"patchGroups[{index}] must be an object")
@@ -307,8 +350,16 @@ def verify_manifest(
         patch_file = group.get("patchFile")
         patch_digest = group.get("patchSHA256")
         postimages = group.get("postimageSHA256")
+        incremental_preimages = group.get(
+            "incrementalPreimageSHA256",
+            {},
+        )
         if not isinstance(postimages, dict):
             raise PatchsetManifestError(f"{group_id}.postimageSHA256 must be an object")
+        if not isinstance(incremental_preimages, dict):
+            raise PatchsetManifestError(
+                f"{group_id}.incrementalPreimageSHA256 must be an object"
+            )
         if status == "ported":
             if not isinstance(patch_file, str) or not patch_file:
                 raise PatchsetManifestError(f"{group_id} is ported but has no patchFile")
@@ -342,8 +393,25 @@ def verify_manifest(
                     raise PatchsetManifestError(
                         f"{group_id}.postimageSHA256 must map source paths to SHA-256 strings"
                     )
-            if source_root is not None:
-                apply_check(source_root, patch_path)
+            for relative, digest in incremental_preimages.items():
+                if relative not in postimages:
+                    raise PatchsetManifestError(
+                        f"{group_id}.incrementalPreimageSHA256 may only "
+                        "describe a locked postimage path"
+                    )
+                assert_safe_relative_path(
+                    relative,
+                    field=f"{group_id}.incrementalPreimageSHA256",
+                )
+                if (
+                    not isinstance(digest, str)
+                    or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                ):
+                    raise PatchsetManifestError(
+                        f"{group_id}.incrementalPreimageSHA256 must map "
+                        "source paths to SHA-256 strings"
+                    )
+            ported_patch_paths.append(patch_path)
             group_diagnostics.append(
                 {
                     "id": group_id,
@@ -361,6 +429,10 @@ def verify_manifest(
                 raise PatchsetManifestError(f"{group_id} is planned but has patchSHA256")
             if postimages:
                 raise PatchsetManifestError(f"{group_id} is planned but has postimage hashes")
+            if incremental_preimages:
+                raise PatchsetManifestError(
+                    f"{group_id} is planned but has incremental preimage hashes"
+                )
             planned_for_release.append(group_id)
             if release:
                 missing_for_release.append(group_id)
@@ -396,6 +468,12 @@ def verify_manifest(
         raise PatchsetManifestError(
             f"status must be {expected_manifest_status} for "
             f"{planned_count} planned and {ported_count} ported group(s)"
+        )
+    if source_root is not None and ported_patch_paths:
+        apply_check(
+            source_root.resolve(),
+            ported_patch_paths,
+            manifest,
         )
 
     summary = {

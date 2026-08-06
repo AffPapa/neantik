@@ -98,13 +98,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "languages",
         "timezone"
     ]
-    static let productionExtendedContextKeys = [
-        "audio_repeat",
-        "canvas_repeat",
-        "client_rects_repeat",
-        "webgl_pixels_repeat",
-        "webgl_shader_precision",
-        "css_screen_match",
+    static let publicAlphaCoherenceContextKeys = [
         "intl_locale",
         "primary_locale_core",
         "intl_locale_core",
@@ -113,7 +107,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "worker_webgl_vendor",
         "worker_webgl_renderer",
         "worker_webgl_extensions",
-        "worker_webgl_shader_precision",
         "worker_user_agent",
         "worker_platform",
         "worker_languages",
@@ -129,6 +122,15 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "webrtc_complete",
         "webrtc_stun_requests",
         "webrtc_candidate_summary"
+    ]
+    static let productionExtendedContextKeys = [
+        "audio_repeat",
+        "canvas_repeat",
+        "client_rects_repeat",
+        "webgl_pixels_repeat",
+        "webgl_shader_precision",
+        "css_screen_match",
+        "worker_webgl_shader_precision"
     ]
 
     let id: UUID
@@ -307,18 +309,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
     var productionReleaseIssues: [String] {
         var issues = publicAlphaReleaseIssues
-        if effectiveAuditSchemaVersion != Self.currentAuditSchemaVersion {
-            issues.append(
-                "The report does not use the current strict fingerprint audit schema."
-            )
-        }
-        if identityCatalogVersion !=
-            BrowserIdentityCatalog.currentVersion
-        {
-            issues.append(
-                "The report does not use the current immutable identity catalog."
-            )
-        }
         if !productionExtendedUnavailableKeys.isEmpty {
             issues.append(
                 "Required browser surfaces are unavailable: " +
@@ -333,21 +323,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                     "."
             )
         }
-        issues.append(contentsOf: crossRealmConsistencyIssues)
-        issues.append(contentsOf: deviceTupleConsistencyIssues)
-        if let webrtcDirectControl {
-            issues.append(
-                contentsOf: Self.networkPrivacyIssues(
-                    for: webrtcDirectControl,
-                    label: "WebRTC direct control"
-                )
-            )
-        } else {
-            issues.append(
-                "The report does not contain a WebRTC direct positive control."
-            )
-        }
-        issues.append(contentsOf: networkPrivacyIssues)
+        issues.append(contentsOf: strictContextConsistencyIssues)
         return issues
     }
 
@@ -383,6 +359,18 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 "The report does not bind the runtime framework SHA-256."
             )
         }
+        if effectiveAuditSchemaVersion != Self.currentAuditSchemaVersion {
+            issues.append(
+                "The report does not use the current fingerprint audit schema."
+            )
+        }
+        if identityCatalogVersion !=
+            BrowserIdentityCatalog.currentVersion
+        {
+            issues.append(
+                "The report does not use the current immutable identity catalog."
+            )
+        }
         if firstInitial.profileID == second.profileID ||
             firstInitial.profileID != firstRepeat.profileID {
             issues.append(
@@ -413,6 +401,21 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         if !changedCriticalKeys.contains("webgl_pixels") {
             issues.append("WebGL pixels did not differ between profiles.")
         }
+        issues.append(contentsOf: crossRealmConsistencyIssues)
+        issues.append(contentsOf: deviceTupleConsistencyIssues)
+        if let webrtcDirectControl {
+            issues.append(
+                contentsOf: Self.networkPrivacyIssues(
+                    for: webrtcDirectControl,
+                    label: "WebRTC direct control"
+                )
+            )
+        } else {
+            issues.append(
+                "The report does not contain a WebRTC direct positive control."
+            )
+        }
+        issues.append(contentsOf: networkPrivacyIssues)
         return issues
     }
 
@@ -455,6 +458,16 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("profile A, repeat capture", firstRepeat)
         ].flatMap { label, capture in
             Self.crossRealmIssues(for: capture, label: label)
+        }
+    }
+
+    private var strictContextConsistencyIssues: [String] {
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
+            Self.strictContextIssues(for: capture, label: label)
         }
     }
 
@@ -580,14 +593,48 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                     "The \(label) Client Hints \(key) value does not match device tuple \(tuple.id)."
             )
         }
-        if capture.values["user_agent"]?.contains(
-            "Chrome/\(runtimeVersion)"
-        ) != true {
+        if !Self.userAgentMatchesRuntime(
+            capture.values["user_agent"],
+            runtimeVersion: runtimeVersion
+        ) {
             issues.append(
                 "The \(label) User-Agent does not match the compiled runtime version."
             )
         }
         return issues
+    }
+
+    private static func userAgentMatchesRuntime(
+        _ userAgent: String?,
+        runtimeVersion: String
+    ) -> Bool {
+        guard !runtimeVersion.isEmpty, let userAgent else {
+            return false
+        }
+        let userAgentTokens = Set(
+            userAgent
+                .split(whereSeparator: \.isWhitespace)
+                .map(String.init)
+        )
+        if userAgentTokens.contains("Chrome/\(runtimeVersion)") {
+            return true
+        }
+
+        let versionParts = runtimeVersion.split(separator: ".")
+        guard
+            let majorVersion = versionParts.first,
+            !majorVersion.isEmpty,
+            versionParts.count == 4,
+            versionParts.allSatisfy({
+                !$0.isEmpty && $0.allSatisfy(\.isNumber)
+            })
+        else {
+            return false
+        }
+
+        return userAgentTokens.contains(
+            "Chrome/\(majorVersion).0.0.0"
+        )
     }
 
     private struct AppleDeviceTuple {
@@ -743,7 +790,9 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     private static var publicAlphaRequiredKeys: [String] {
-        criticalKeys + publicAlphaStableContextKeys
+        criticalKeys +
+            publicAlphaStableContextKeys +
+            publicAlphaCoherenceContextKeys
     }
 
     private static var productionRequiredKeys: [String] {
@@ -908,16 +957,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
 
         for pair in [
-            ("audio", "audio_repeat"),
-            ("canvas", "canvas_repeat"),
             ("canvas", "worker_canvas"),
-            ("client_rects", "client_rects_repeat"),
-            ("webgl_pixels", "webgl_pixels_repeat"),
             ("webgl_pixels", "worker_webgl_pixels"),
             ("webgl_vendor", "worker_webgl_vendor"),
             ("webgl_renderer", "worker_webgl_renderer"),
             ("webgl_extensions", "worker_webgl_extensions"),
-            ("webgl_shader_precision", "worker_webgl_shader_precision"),
             ("user_agent", "worker_user_agent"),
             ("platform", "worker_platform"),
             ("languages", "worker_languages"),
@@ -977,15 +1021,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             localeCoreKey: "worker_intl_locale_core"
         )
 
-        if isAvailable(values["css_screen_match"]),
-           values["css_screen_match"] !=
-            "width:1|height:1|resolution:1"
-        {
-            issues.append(
-                "The \(label) CSS media queries disagree with the Screen API."
-            )
-        }
-
         if let topHints = parsedClientHints(values["client_hints"]),
            let workerHints = parsedClientHints(values["worker_client_hints"])
         {
@@ -1007,6 +1042,37 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             }
         }
 
+        return issues
+    }
+
+    private static func strictContextIssues(
+        for capture: FingerprintCapture,
+        label: String
+    ) -> [String] {
+        let values = capture.values
+        var issues: [String] = []
+        for pair in [
+            ("audio", "audio_repeat"),
+            ("canvas", "canvas_repeat"),
+            ("client_rects", "client_rects_repeat"),
+            ("webgl_pixels", "webgl_pixels_repeat"),
+            ("webgl_shader_precision", "worker_webgl_shader_precision")
+        ] where isAvailable(values[pair.0]) &&
+            isAvailable(values[pair.1]) &&
+            values[pair.0] != values[pair.1]
+        {
+            issues.append(
+                "The \(label) \(pair.0) value disagrees with \(pair.1)."
+            )
+        }
+        if isAvailable(values["css_screen_match"]),
+           values["css_screen_match"] !=
+            "width:1|height:1|resolution:1"
+        {
+            issues.append(
+                "The \(label) CSS media queries disagree with the Screen API."
+            )
+        }
         return issues
     }
 
@@ -1371,18 +1437,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 )
                 let savedURL: URL
                 if let releaseContext {
-                    let releaseQualified: Bool
+                    let releaseIssues: [String]
                     switch releaseContext.metadata.releaseChannel {
                     case .publicAlpha:
-                        releaseQualified =
-                            newReport.isPublicAlphaReleaseQualified
+                        releaseIssues =
+                            newReport.publicAlphaReleaseIssues
                     case .production:
-                        releaseQualified =
-                            newReport.isProductionReleaseQualified
+                        releaseIssues =
+                            newReport.productionReleaseIssues
                     }
-                    guard releaseQualified else {
+                    guard releaseIssues.isEmpty else {
+                        // Keep the complete report only in this process so the
+                        // UI and opt-in integration diagnostics can explain a
+                        // failed gate. The one-shot release authority remains
+                        // untouched and no unqualified evidence is written.
+                        report = newReport
+                        Self.writeReleaseQualificationIssues(releaseIssues)
                         throw NeAntikError.fingerprintAuditFailed(
-                            "Проверка не прошла обязательный уровень выпуска. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
+                            "Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
                         )
                     }
                     phase = "Подписываем отчёт выпуска"
@@ -1410,6 +1482,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
     }
 
+    nonisolated private static func writeReleaseQualificationIssues(
+        _ issues: [String]
+    ) {
+        let safeIssues = issues
+            .prefix(32)
+            .map { issue in
+                issue
+                    .replacingOccurrences(of: "\n", with: " ")
+                    .replacingOccurrences(of: "\r", with: " ")
+            }
+        let message =
+            "Fingerprint release qualification failed:\n" +
+            safeIssues.map { "- \($0)" }.joined(separator: "\n") +
+            "\n"
+        guard let data = message.data(using: .utf8) else { return }
+        try? FileHandle.standardError.write(contentsOf: data)
+    }
+
     private func inspectRuntime(
         _ executableURL: URL
     ) async -> BrowserRuntimeInspection {
@@ -1432,7 +1522,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         executionMode: FingerprintAuditExecutionMode
     ) async throws -> FingerprintCapture {
         try Task.checkCancellation()
-        try paths.prepareProfileDirectories(for: profile.id)
+        let processProfile = Self.transientProcessProfile(from: profile)
         let auditServer = try await FingerprintAuditLoopbackServer.start()
         defer { auditServer.stop() }
         let stunServer =
@@ -1450,26 +1540,13 @@ final class FingerprintAuditCoordinator: ObservableObject {
         ]
         let auditURL = auditURLComponents.url!
 
-        let dataDirectory = FileManager.default.temporaryDirectory
-            .appendingPathComponent(
-                "app.neantik.fingerprint-audit",
-                isDirectory: true
-            )
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: dataDirectory,
-            withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700]
-        )
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o700],
-            ofItemAtPath: dataDirectory.path
-        )
+        let dataDirectory =
+            try processes.reserveFingerprintAuditDataDirectory()
 
         let portFile = dataDirectory.appendingPathComponent(
             "DevToolsActivePort"
         )
-        activeProfileID = profile.id
+        activeProfileID = processProfile.id
 
         do {
             let devToolsArguments = [
@@ -1483,7 +1560,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 "--window-size=1200,800"
             ] + executionMode.additionalLaunchArguments
             try processes.launch(
-                profile: profile,
+                profile: processProfile,
                 runtime: runtime,
                 additionalArguments: devToolsArguments,
                 // Loopback is a potentially trustworthy origin, so
@@ -1505,8 +1582,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 profile.proxy == nil ? "direct" : "proxied"
             values["webrtc_stun_requests"] =
                 String(stunServer.acceptedRequestCount)
-            processes.stop(profileID: profile.id)
-            try await waitUntilStopped(profileID: profile.id)
+            processes.stop(profileID: processProfile.id)
+            try await waitUntilStopped(profileID: processProfile.id)
             activeProfileID = nil
             try? FileManager.default.removeItem(at: dataDirectory)
 
@@ -1518,18 +1595,33 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 values: values
             )
         } catch {
-            processes.stop(profileID: profile.id)
-            do {
-                try await waitUntilStopped(profileID: profile.id)
+            if processes.processState(for: processProfile.id) != .stopped {
+                processes.stop(profileID: processProfile.id)
+                do {
+                    try await waitUntilStopped(
+                        profileID: processProfile.id
+                    )
+                    try? FileManager.default.removeItem(at: dataDirectory)
+                } catch {
+                    // Keep the disposable directory while a browser may still
+                    // use it. The system temporary-directory cleanup can
+                    // remove it after the process has exited.
+                }
+            } else {
                 try? FileManager.default.removeItem(at: dataDirectory)
-            } catch {
-                // Keep the disposable directory while a browser may still use
-                // it. The system temporary-directory cleanup can remove it
-                // after the process has exited.
             }
             activeProfileID = nil
             throw error
         }
+    }
+
+    nonisolated static func transientProcessProfile(
+        from profile: BrowserProfile,
+        processID: UUID = UUID()
+    ) -> BrowserProfile {
+        var processProfile = profile
+        processProfile.id = processID
+        return processProfile
     }
 
     private func waitForDevToolsPort(at url: URL) async throws -> Int {
@@ -1716,9 +1808,15 @@ final class FingerprintAuditCoordinator: ObservableObject {
     }
 
     private func waitUntilStopped(profileID: UUID) async throws {
-        for _ in 0..<80 {
-            if !processes.runningProfileIDs.contains(profileID) {
-                return
+        var consecutiveStoppedObservations = 0
+        for _ in 0..<160 {
+            if processes.processState(for: profileID) == .stopped {
+                consecutiveStoppedObservations += 1
+                if consecutiveStoppedObservations >= 8 {
+                    return
+                }
+            } else {
+                consecutiveStoppedObservations = 0
             }
             await Task.detached {
                 try? await Task.sleep(nanoseconds: 125_000_000)

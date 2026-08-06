@@ -153,6 +153,112 @@ class ApplyNeAntikPatchsetTests(unittest.TestCase):
 
             self.assertEqual(repeated["status"], "already-applied")
 
+    def test_explicit_incremental_preimage_recovers_one_appended_group(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source, manifest_path, rebase = self.fixture(Path(temporary))
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            first_patch = (
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+middle\n"
+            )
+            second_patch = (
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-middle\n"
+                "+new\n"
+            )
+            patch_root = manifest_path.parent / "patches"
+            (patch_root / "first.patch").write_text(
+                first_patch,
+                encoding="utf-8",
+            )
+            (patch_root / "second.patch").write_text(
+                second_patch,
+                encoding="utf-8",
+            )
+            common = {
+                "title": "Incremental fixture",
+                "status": "ported",
+                "releaseRequired": True,
+                "sourceEvidence": ["owner.txt"],
+                "requiredBehavior": ["stable"],
+            }
+            manifest["patchGroups"] = [
+                {
+                    **common,
+                    "id": "first",
+                    "patchFile": "patches/first.patch",
+                    "patchSHA256": hashlib.sha256(
+                        first_patch.encode("utf-8")
+                    ).hexdigest(),
+                    "postimageSHA256": {
+                        "a.txt": hashlib.sha256(b"middle\n").hexdigest()
+                    },
+                },
+                {
+                    **common,
+                    "id": "second",
+                    "patchFile": "patches/second.patch",
+                    "patchSHA256": hashlib.sha256(
+                        second_patch.encode("utf-8")
+                    ).hexdigest(),
+                    "incrementalPreimageSHA256": {
+                        "a.txt": hashlib.sha256(b"middle\n").hexdigest()
+                    },
+                    "postimageSHA256": {
+                        "a.txt": hashlib.sha256(b"new\n").hexdigest()
+                    },
+                },
+            ]
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            (source / "a.txt").write_text("middle\n", encoding="utf-8")
+
+            recovered = MODULE.apply_patchset(
+                source_root=source,
+                manifest_path=manifest_path,
+                rebase_plan_path=rebase,
+                recover_incremental=True,
+            )
+
+            self.assertEqual(recovered["status"], "incrementally-recovered")
+            self.assertEqual(recovered["group"], "second")
+            self.assertEqual((source / "a.txt").read_text(), "new\n")
+
+    def test_later_patch_postimage_supersedes_shared_intermediate_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary)
+            (source / "shared.txt").write_text("final\n", encoding="utf-8")
+            groups = [
+                {
+                    "id": "first",
+                    "postimageSHA256": {
+                        "shared.txt": hashlib.sha256(b"middle\n").hexdigest()
+                    },
+                },
+                {
+                    "id": "second",
+                    "postimageSHA256": {
+                        "shared.txt": hashlib.sha256(b"final\n").hexdigest()
+                    },
+                },
+            ]
+
+            matched, total, mismatches = MODULE.postimage_state(
+                source,
+                groups,
+                {},
+            )
+
+            self.assertEqual(matched, 2)
+            self.assertEqual(total, 2)
+            self.assertEqual(mismatches, [])
+
     def test_rejects_wrong_chromium_version(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             source, manifest, rebase = self.fixture(Path(temporary))

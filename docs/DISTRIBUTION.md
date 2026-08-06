@@ -18,9 +18,9 @@ https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-ar
 https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.dmg
 ```
 
-## Chromium 150 provenance boundary
+## Chromium 151 provenance boundary
 
-`runtime/chromium-150-source-contract.json` records the exact Chromium and
+`runtime/chromium-151-source-contract.json` records the exact Chromium and
 macOS-packaging source pair for the next runtime build. It deliberately has
 `binaryBindingStatus: pending-new-build`: it is source evidence, not a claim
 about an older distributed binary. A release build must emit and verify both
@@ -51,7 +51,9 @@ A public release must:
     release is marked public.
 
 The release is deliberately two-phase. First,
-`prepare-direct-runtime-candidate.sh` creates and signs one exact
+`prepare-direct-runtime-candidate.sh` signs and verifies the fresh Metal
+runtime, promotes its exact source lock, regenerates notices, and creates one
+exact
 `dist/NeAntik.app`, runs its strict headless Secure Enclave enrollment from the
 signed-in user's Terminal, then writes the compact schema-3
 `dist/direct-candidate-manifest.json` with a full bundle inventory and the

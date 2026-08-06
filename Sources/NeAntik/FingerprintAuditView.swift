@@ -2,6 +2,34 @@ import AppKit
 import Foundation
 import SwiftUI
 
+enum FingerprintAuditErrorPresentation: Equatable {
+    case hidden
+    case manualAlert
+    case automatedTermination
+}
+
+enum FingerprintAuditAutomationPolicy {
+    static func errorPresentation(
+        isReleaseAudit: Bool,
+        errorMessage: String?
+    ) -> FingerprintAuditErrorPresentation {
+        guard errorMessage != nil else {
+            return .hidden
+        }
+        return isReleaseAudit ? .automatedTermination : .manualAlert
+    }
+
+    static func sanitizedLogLine(
+        prefix: String,
+        message: String
+    ) -> String {
+        let singleLine = message
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+        return "\(prefix)\(singleLine.prefix(1_024))\n"
+    }
+}
+
 struct FingerprintAuditView: View {
     let profiles: [BrowserProfile]
     let runtime: BrowserRuntime
@@ -102,7 +130,12 @@ struct FingerprintAuditView: View {
                 ? "Проверка отпечатка"
                 : "Проверка профиля",
             isPresented: Binding(
-                get: { coordinator.errorMessage != nil },
+                get: {
+                    FingerprintAuditAutomationPolicy.errorPresentation(
+                        isReleaseAudit: isReleaseAudit,
+                        errorMessage: coordinator.errorMessage
+                    ) == .manualAlert
+                },
                 set: { visible in
                     if !visible {
                         coordinator.errorMessage = nil
@@ -123,6 +156,12 @@ struct FingerprintAuditView: View {
         }
         .onAppear {
             normalizeSelection()
+            if isReleaseAudit,
+               let errorMessage = coordinator.errorMessage
+            {
+                finishReleaseAutomation(error: errorMessage)
+                return
+            }
             Task { @MainActor in
                 startReleaseAuditIfNeeded()
                 if !isReleaseAudit {
@@ -134,38 +173,59 @@ struct FingerprintAuditView: View {
         .onChange(of: profiles.map(\.id)) { _, _ in
             normalizeSelection()
         }
+        .onChange(of: coordinator.isRunning) { _, isRunning in
+            if isRunning {
+                announce("Проверка профилей началась.")
+            }
+        }
+        .onChange(of: coordinator.report?.id) { _, _ in
+            guard let report = coordinator.report else { return }
+            announce(
+                report.isPublicAlphaReleaseQualified
+                    ? "Проверка завершена: профиль работает правильно."
+                    : "Проверка завершена: требуется внимание."
+            )
+        }
         .onChange(of: coordinator.releaseEvidenceIsReady) { _, ready in
-            guard ready,
-                  isReleaseAudit,
-                  !releaseAuditTerminationScheduled
-            else {
-                return
-            }
-            releaseAuditTerminationScheduled = true
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 350_000_000)
-                NSApplication.shared.terminate(nil)
-            }
+            guard ready else { return }
+            finishReleaseAutomation()
         }
         .onChange(of: coordinator.errorMessage) { _, message in
-            guard isReleaseAudit,
-                  let message,
-                  !releaseAuditTerminationScheduled
-            else {
-                return
-            }
-            releaseAuditTerminationScheduled = true
-            if let data = (
-                "Автоматическая проверка отпечатка остановлена: " +
-                    "\(message)\n"
-            ).data(using: .utf8) {
+            guard let message else { return }
+            finishReleaseAutomation(error: message)
+        }
+    }
+
+    private func finishReleaseAutomation(error: String? = nil) {
+        guard isReleaseAudit, !releaseAuditTerminationScheduled else {
+            return
+        }
+        releaseAuditTerminationScheduled = true
+        if let error {
+            let line = FingerprintAuditAutomationPolicy.sanitizedLogLine(
+                prefix: "Автоматическая проверка отпечатка остановлена: ",
+                message: error
+            )
+            if let data = line.data(using: .utf8) {
                 try? FileHandle.standardError.write(contentsOf: data)
             }
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 350_000_000)
-                NSApplication.shared.terminate(nil)
-            }
         }
+        Task { @MainActor in
+            await Task.yield()
+            NSApplication.shared.terminate(nil)
+        }
+    }
+
+    @MainActor
+    private func announce(_ message: String) {
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.medium.rawValue
+            ]
+        )
     }
 
     private var header: some View {
@@ -619,8 +679,8 @@ struct FingerprintAuditView: View {
             issue.contains("diagnostic mode") {
             return "Отчёт получен не в обычном режиме браузера."
         }
-        if issue.contains("strict fingerprint audit schema") {
-            return "Нужен свежий отчёт текущего формата; старый отчёт подходит только для уровня public alpha."
+        if issue.contains("fingerprint audit schema") {
+            return "Нужен свежий отчёт текущего формата."
         }
         if issue.contains("immutable identity catalog") {
             return "Отчёт не связан с текущей неизменяемой версией каталога устройств."

@@ -12,12 +12,12 @@ Do not edit generated values by hand.
 ## Runtime contract
 
 - Product: `NeAntik Browser`
-- Chromium: `150.0.7871.186`
+- Chromium: `151.0.7922.75`
 - Architecture: `arm64`
-- Historical published runtime lock status: `chromium-150-owned-patchset-metal-runtime-built-gui-audit-pending`
-- Next candidate source binary binding: `pending-new-build`
+- Runtime source lock status: `source-qualified`
+- Source contract binary binding: `pending-new-build`
 - Owned patchset status: `release-ready`
-- Ported patch groups: `8`
+- Ported patch groups: `11`
 
 The distributed application must also contain Chromium-generated third-party
 notices and its generated SPDX SBOM. This summary does not replace either
@@ -26,8 +26,8 @@ artifact or a final legal review.
 ## Chromium
 
 - Source: `https://chromium.googlesource.com/chromium/src.git`
-- Tag: `150.0.7871.186`
-- Commit: `0fcdce5f4fdec8d442d7df760cb541f1ca6e446d`
+- Tag: `151.0.7922.75`
+- Commit: `1ddc0a2003eb30c3990568d74ed0437451e9c374`
 - License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/Chromium-LICENSE`
 - License SHA-256: `368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b`
@@ -35,7 +35,7 @@ artifact or a final legal review.
 ## ungoogled-chromium-macos packaging source
 
 - Source: `https://github.com/ungoogled-software/ungoogled-chromium-macos.git`
-- Commit: `9cbd94c2b8f6f2a58a80bf32b3e01b68f3d129d4`
+- Commit: `e194927e4838cb66ecdef40843a97c4f88f8d2af`
 - License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/ungoogled-chromium-macos-LICENSE`
 - License SHA-256: `2fdd1ed451121c07df0726a8ac8b86b49315d89a22c683edaf98b579e710504b`
@@ -43,8 +43,8 @@ artifact or a final legal review.
 ## Common Chromium packaging source
 
 - Source: `https://github.com/ungoogled-software/ungoogled-chromium.git`
-- Tag: `150.0.7871.186-1`
-- Commit: `fd0378e4f20fa09e21b09beca71573d435d787cf`
+- Tag: `151.0.7922.71-1`
+- Commit: `f2038df00b82e3afbd5cbecac37cf7b463acb42a`
 
 ## Retained fingerprint-chromium attribution
 
@@ -58,7 +58,7 @@ historical upstream implementation used to develop and validate this work.
 
 ## NeAntik owned patchset
 
-The release-required Chromium changes are the 8 ported groups
+The release-required Chromium changes are the 11 ported groups
 declared in `runtime/nevision-patches/series.json`. The release verifier binds
 the packaged manifest and license files to the checked-in copies and separately
 verifies the final source-built runtime, generated notices, and SPDX SBOM.

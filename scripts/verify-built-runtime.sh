@@ -7,7 +7,7 @@ LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
 PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
 DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
-SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
+SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-151-source-contract.json"
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
@@ -93,7 +93,7 @@ SOURCE_CONTRACT_SHA256="$(
 )"
 SOURCE_PROVENANCE_SHA256=""
 if [[ -n "$REPORT_PATH" && -z "$SOURCE_PROVENANCE_PATH" ]]; then
-  echo "A new runtime report requires Chromium 150 source provenance." >&2
+  echo "A new runtime report requires owned Chromium source provenance." >&2
   exit 66
 fi
 if [[ -n "$REPORT_PATH" && -z "$CANDIDATE_LOCK_PATH" ]]; then
@@ -255,26 +255,37 @@ framework = Path(sys.argv[1])
 required = {
     value.encode("ascii")
     for value in (
-        "fingerprint-platform",
-        "fingerprint-timezone",
-        "fingerprint-locale",
-        "apple-device-tuple",
+        "NEANTIK_PROFILE_SEED",
+        "NEANTIK_PROFILE_TIMEZONE",
         "default_public_interface_only",
         "disable_non_proxied_udp",
-        "DnsOverHttps",
+        "DnsOverHttpsUpgrade",
         "AsyncDns",
         "WebGPUService",
     )
 }
-overlap = max(map(len, required)) - 1
+forbidden = {
+    value.encode("ascii") + b"\0"
+    for value in (
+        "fingerprint-timezone",
+        "fingerprint-locale",
+        "fingerprint-platform",
+        "apple-device-tuple",
+    )
+}
+found_forbidden = set()
+overlap = max(map(len, required | forbidden)) - 1
 tail = b""
 with framework.open("rb") as handle:
-    while required:
+    while required or len(found_forbidden) != len(forbidden):
         chunk = handle.read(1024 * 1024)
         if not chunk:
             break
         haystack = tail + chunk
         required = {needle for needle in required if needle not in haystack}
+        found_forbidden.update(
+            needle for needle in forbidden if needle in haystack
+        )
         tail = haystack[-overlap:]
 
 if required:
@@ -285,11 +296,20 @@ if required:
             file=sys.stderr,
         )
     raise SystemExit(65)
+if found_forbidden:
+    for value in sorted(found_forbidden):
+        print(
+            "Forbidden legacy or provisional fingerprint marker: "
+            + value.rstrip(b"\0").decode("ascii"),
+            file=sys.stderr,
+        )
+    raise SystemExit(65)
 PY
 then
   exit 65
 fi
 
+SOURCE_POSTIMAGES_VERIFIED=0
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
   SERIES_FILE="$PATCH_SERIES_FILE"
@@ -314,41 +334,58 @@ for generated_input in series.get("generatedInputs", []):
     generated_postimages.update(
         generated_input.get("postimageSHA256", {})
     )
+if not generated_postimages:
+    print(
+        "Canonical generated runtime postimages are missing.",
+        file=sys.stderr,
+    )
+    sys.exit(65)
+
+expected_postimages = {}
+for group in series.get("patchGroups", []):
+    if group.get("releaseRequired", False):
+        expected_postimages.update(group.get("postimageSHA256", {}))
+
+# Generated outputs are the reviewed final state and intentionally replace
+# intermediate patch-group postimages. They also include generated-only files,
+# such as the canonical Apple device tuple header, which must not be skipped.
+expected_postimages.update(generated_postimages)
 
 checked = 0
-for group in series.get("patchGroups", []):
-    if not group.get("releaseRequired", False):
-        continue
-    for relative_path, expected_sha256 in group.get("postimageSHA256", {}).items():
-        expected_sha256 = generated_postimages.get(
-            relative_path,
-            expected_sha256,
+for relative_path, expected_sha256 in expected_postimages.items():
+    path = source_root / relative_path
+    if not path.is_file():
+        print(
+            f"Release patch postimage is missing: {relative_path}",
+            file=sys.stderr,
         )
-        path = source_root / relative_path
-        if not path.is_file():
-            print(
-                f"Release patch postimage is missing: {relative_path}",
-                file=sys.stderr,
-            )
-            sys.exit(65)
-        actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
-        if actual_sha256 != expected_sha256:
-            print(
-                "Release patch postimage hash mismatch: "
-                f"{relative_path} expected {expected_sha256} got {actual_sha256}",
-                file=sys.stderr,
-            )
-            sys.exit(65)
-        checked += 1
+        sys.exit(65)
+    actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual_sha256 != expected_sha256:
+        print(
+            "Release patch postimage hash mismatch: "
+            f"{relative_path} expected {expected_sha256} got {actual_sha256}",
+            file=sys.stderr,
+        )
+        sys.exit(65)
+    checked += 1
 
 if checked == 0:
     print("No releaseRequired patch postimages were checked.", file=sys.stderr)
     sys.exit(65)
 PY
+    SOURCE_POSTIMAGES_VERIFIED=1
   elif [[ ! -f "$SERIES_FILE" ]]; then
     echo "NeAntik patch series manifest is missing: $SERIES_FILE" >&2
     exit 66
   fi
+fi
+
+if [[ -n "$REPORT_PATH" && "$SOURCE_POSTIMAGES_VERIFIED" != 1 ]]; then
+  echo \
+    "A new runtime report requires verified canonical source postimages." \
+    >&2
+  exit 66
 fi
 
 VERSION_OUTPUT="$("$EXECUTABLE_PATH" --version 2>&1)"

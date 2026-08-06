@@ -36,6 +36,45 @@ class ReleaseRuntimeEvidenceCacheTests(unittest.TestCase):
         self.assertIn("-type f -name source-provenance.json", text)
         self.assertIn('lock="$evidence_dir/fingerprint-chromium.lock.json"', text)
 
+    def test_release_waits_before_retrying_gui_audit(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+
+        retry_message = (
+            "Отчёт ещё не создан. Жду полного завершения Chromium "
+            "и безопасно повторяю проверку."
+        )
+        retry_index = text.index(retry_message)
+        sleep_index = text.index("sleep 3", retry_index)
+        increment_index = text.index("(( attempt += 1 ))", sleep_index)
+
+        self.assertLess(retry_index, sleep_index)
+        self.assertLess(sleep_index, increment_index)
+        first_drain = text.index("wait-for-neantik-runtime-drain.py")
+        launch = text.index('"$APP_PATH/Contents/MacOS/NeAntik"')
+        wait = text.index('wait "$GUI_PID"', launch)
+        second_drain = text.index(
+            "wait-for-neantik-runtime-drain.py",
+            first_drain + 1,
+        )
+        final_drain = text.index(
+            "wait-for-neantik-runtime-drain.py",
+            second_drain + 1,
+        )
+        collector = text.index(
+            "collect-gui-fingerprint-evidence.py",
+            wait,
+        )
+        notarization = text.index(
+            "[3/4] Отправляю кандидат в Apple notarization…"
+        )
+        self.assertLess(first_drain, launch)
+        self.assertLess(wait, second_drain)
+        self.assertLess(second_drain, collector)
+        self.assertLess(collector, final_drain)
+        self.assertLess(final_drain, notarization)
+        self.assertNotIn("pkill", text)
+        self.assertNotIn("kill -9", text)
+
 
 if __name__ == "__main__":
     unittest.main()

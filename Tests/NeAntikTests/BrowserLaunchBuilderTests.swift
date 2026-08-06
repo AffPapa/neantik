@@ -58,14 +58,15 @@ struct BrowserLaunchBuilderTests {
         )
 
         #expect(arguments.contains("--user-data-dir=/tmp/neantik-profile"))
+        #expect(!arguments.contains("--disable-background-mode"))
         #expect(arguments.contains("--proxy-server=socks5://127.0.0.1:1080"))
         #expect(
             arguments.contains(
-                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+                "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
         )
         #expect(arguments.contains("--disable-quic"))
-        #expect(arguments.contains("--dns-prefetch-disable"))
+        #expect(!arguments.contains("--dns-prefetch-disable"))
         #expect(
             arguments.contains(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"
@@ -89,7 +90,7 @@ struct BrowserLaunchBuilderTests {
         #expect(!arguments.contains { $0.hasPrefix("--proxy-pac-url=") })
         #expect(
             arguments.contains(
-                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+                "--webrtc-ip-handling-policy=default_public_interface_only"
             )
         )
         #expect(!arguments.contains("--dns-prefetch-disable"))
@@ -158,7 +159,7 @@ struct BrowserLaunchBuilderTests {
         #expect(!audit.contains("--proxy-bypass-list=<-loopback>"))
         #expect(
             audit.contains(
-                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+                "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
         )
     }
@@ -188,6 +189,7 @@ struct BrowserLaunchBuilderTests {
                 "--proxy-pac-url=https://attacker.example/proxy.pac",
                 "--proxy-bypass-list=*",
                 "--host-resolver-rules=MAP * 127.0.0.1",
+                "--webrtc-ip-handling-policy=default",
                 "--force-webrtc-ip-handling-policy=default",
                 "--fingerprint=999",
                 "--fingerprint-timezone=UTC",
@@ -218,23 +220,28 @@ struct BrowserLaunchBuilderTests {
         )
         #expect(
             arguments.contains(
-                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+                "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
         )
-        #expect(arguments.contains("--fingerprint=123"))
+        #expect(!arguments.contains { $0.hasPrefix("--fingerprint=") })
         #expect(arguments.contains("--fingerprinting-client-rects-noise"))
         #expect(arguments.contains("--fingerprinting-canvas-measuretext-noise"))
         #expect(arguments.contains("--fingerprinting-canvas-image-data-noise"))
         #expect(
             arguments.contains(
-                "--disable-features=AsyncDns,DnsOverHttps,WebGPUService"
+                "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
             )
         )
         #expect(!arguments.contains("--user-data-dir=/tmp/evil"))
         #expect(!arguments.contains("--proxy-server=direct://"))
         #expect(!arguments.contains("--proxy-bypass-list=*"))
         #expect(!arguments.contains("--host-resolver-rules=MAP * 127.0.0.1"))
-        #expect(!arguments.contains("--force-webrtc-ip-handling-policy=default"))
+        #expect(!arguments.contains("--webrtc-ip-handling-policy=default"))
+        #expect(
+            !arguments.contains(
+                "--force-webrtc-ip-handling-policy=default"
+            )
+        )
         #expect(!arguments.contains("--fingerprint=999"))
         #expect(!arguments.contains("--fingerprint-timezone=UTC"))
         #expect(!arguments.contains("--fingerprint-locale=ru-RU"))
@@ -268,12 +275,12 @@ struct BrowserLaunchBuilderTests {
 
         #expect(
             arguments.contains(
-                "--disable-features=AsyncDns,DnsOverHttps,WebGPUService"
+                "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
             )
         )
         #expect(
             arguments.contains(
-                "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+                "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
         )
         #expect(!arguments.contains("--no-proxy-server"))
@@ -281,7 +288,7 @@ struct BrowserLaunchBuilderTests {
         #expect(!arguments.contains { $0.hasPrefix("--proxy-pac-url=") })
         #expect(
             !arguments.contains(
-                "--force-webrtc-ip-handling-policy=default_public_interface_only"
+                "--webrtc-ip-handling-policy=default_public_interface_only"
             )
         )
         #expect(
@@ -329,9 +336,24 @@ struct BrowserLaunchBuilderTests {
             runtimeCapabilities: .fingerprintIdentity,
             now: observedAt.addingTimeInterval(60)
         )
+        let environment = BrowserLaunchBuilder.environment(
+            profile: profile,
+            runtimeCapabilities: .fingerprintIdentity,
+            inherited: [
+                "HOME": "/Users/test",
+                "SAFE_PARENT": "1",
+                "HTTP_PROXY":
+                    "http://private-user:private-password@proxy.example",
+                "SSLKEYLOGFILE": "/tmp/tls-secrets.log",
+                "AWS_SECRET_ACCESS_KEY": "private-cloud-secret",
+                "NEANTIK_PROFILE_SEED": "attacker",
+                "NEANTIK_PROFILE_TIMEZONE": "attacker"
+            ],
+            now: observedAt
+        )
 
-        #expect(firstLaunch.contains("--fingerprint=123456789"))
-        #expect(firstLaunch.contains("--fingerprint-platform=macos"))
+        #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint=") })
+        #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint-platform=") })
         #expect(firstLaunch.contains("--fingerprinting-client-rects-noise"))
         #expect(firstLaunch.contains("--fingerprinting-canvas-measuretext-noise"))
         #expect(firstLaunch.contains("--fingerprinting-canvas-image-data-noise"))
@@ -341,14 +363,19 @@ struct BrowserLaunchBuilderTests {
                     $0.contains("WebGPUService")
             }
         )
-        #expect(
-            firstLaunch.contains("--fingerprint-timezone=Europe/Berlin")
-        )
-        #expect(firstLaunch.contains("--timezone=Europe/Berlin"))
-        #expect(firstLaunch.contains("--fingerprint-locale=de-DE"))
+        #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint-timezone=") })
+        #expect(!firstLaunch.contains { $0.hasPrefix("--timezone=") })
+        #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint-locale=") })
         #expect(firstLaunch.contains("--lang=de-DE"))
         #expect(firstLaunch.contains("--accept-lang=de-DE"))
         #expect(firstLaunch == secondLaunch)
+        #expect(environment["HOME"] == "/Users/test")
+        #expect(environment["SAFE_PARENT"] == nil)
+        #expect(environment["HTTP_PROXY"] == nil)
+        #expect(environment["SSLKEYLOGFILE"] == nil)
+        #expect(environment["AWS_SECRET_ACCESS_KEY"] == nil)
+        #expect(environment["NEANTIK_PROFILE_SEED"] == "123456789")
+        #expect(environment["NEANTIK_PROFILE_TIMEZONE"] == "Europe/Berlin")
     }
 
     @Test
@@ -366,14 +393,18 @@ struct BrowserLaunchBuilderTests {
             browserDataDirectory: URL(fileURLWithPath: "/tmp/high-seed"),
             runtimeCapabilities: .fingerprintIdentity
         )
+        let environment = BrowserLaunchBuilder.environment(
+            profile: profile,
+            runtimeCapabilities: .fingerprintIdentity,
+            inherited: [:]
+        )
 
         #expect(persistedIdentity.seed == UInt32.max)
+        #expect(!arguments.contains { $0.hasPrefix("--fingerprint=") })
         #expect(
-            arguments.contains(
-                "--fingerprint=\(BrowserIdentity.maximumRuntimeSeed)"
-            )
+            environment["NEANTIK_PROFILE_SEED"] ==
+                String(BrowserIdentity.maximumRuntimeSeed)
         )
-        #expect(!arguments.contains("--fingerprint=\(UInt32.max)"))
     }
 
     @Test
@@ -605,6 +636,17 @@ struct BrowserLaunchBuilderTests {
                         $0.hasPrefix("--accept-lang=")
                 }
             )
+            let environment = BrowserLaunchBuilder.environment(
+                profile: profile,
+                runtimeCapabilities: .fingerprintIdentity,
+                inherited: [
+                    "NEANTIK_PROFILE_SEED": "attacker",
+                    "NEANTIK_PROFILE_TIMEZONE": "attacker"
+                ],
+                now: observedAt.addingTimeInterval(31 * 24 * 60 * 60)
+            )
+            #expect(environment["NEANTIK_PROFILE_SEED"] != "attacker")
+            #expect(environment["NEANTIK_PROFILE_TIMEZONE"] == nil)
         }
 
         let afterExpiry = observedAt.addingTimeInterval(
@@ -964,7 +1006,9 @@ struct BrowserLaunchBuilderTests {
 
         let recorder = RuntimeInspectionRecorder()
         let locator = BrowserRuntimeLocator(
-            runtimeInspector: recorder.inspect,
+            runtimeInspector: { url in
+                recorder.inspect(url)
+            },
             candidates: [
                 BrowserRuntimeLocator.Candidate(
                     name: "First",

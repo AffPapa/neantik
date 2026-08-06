@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed Chromium 150 source provenance helpers.
+"""Fail-closed Chromium source provenance helpers.
 
 This module deliberately proves source inputs only. A runtime binary is bound
 to this evidence only when a new runtime verification report records the
@@ -20,8 +20,8 @@ from typing import Any, Callable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-150-source-contract.json"
-DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-150-rebase-plan.json"
+DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-151-source-contract.json"
+DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_OBJECT_RE = re.compile(r"^[0-9a-f]{40}$")
 STALE_PROVENANCE_MARKERS = (
@@ -144,21 +144,21 @@ def verify_contract(
     project_root = project_root.resolve()
     contract_path = contract_path.resolve()
     rebase_plan_path = rebase_plan_path.resolve()
-    contract = load_object(contract_path, "Chromium 150 source contract")
-    plan = load_object(rebase_plan_path, "Chromium 150 rebase plan")
-    ensure_no_stale_markers(contract, "Chromium 150 source contract")
+    contract = load_object(contract_path, "Chromium source contract")
+    plan = load_object(rebase_plan_path, "Chromium rebase plan")
+    ensure_no_stale_markers(contract, "Chromium source contract")
 
     if contract.get("schemaVersion") != 1:
-        raise SourceProvenanceError("Unexpected Chromium 150 source contract schema")
+        raise SourceProvenanceError("Unexpected Chromium source contract schema")
     if plan.get("schemaVersion") != 1:
-        raise SourceProvenanceError("Unexpected Chromium 150 rebase plan schema")
+        raise SourceProvenanceError("Unexpected Chromium rebase plan schema")
     if contract.get("binaryBindingStatus") != "pending-new-build":
         raise SourceProvenanceError(
             "Source contract must remain binaryBindingStatus=pending-new-build "
             "until a new runtime build records its provenance SHA-256"
         )
-    if contract.get("sourceMode") != "owned-rebase-150":
-        raise SourceProvenanceError("Source contract must use owned-rebase-150")
+    if contract.get("sourceMode") != "owned-rebase":
+        raise SourceProvenanceError("Source contract must use owned-rebase")
     if contract.get("targetArchitecture") != "arm64":
         raise SourceProvenanceError("Source contract must target arm64")
 
@@ -175,7 +175,7 @@ def verify_contract(
     )
     if target != plan.get("targetChromiumVersion"):
         raise SourceProvenanceError(
-            "Source contract target does not match Chromium 150 rebase plan"
+            "Source contract target does not match Chromium rebase plan"
         )
 
     mac = contract.get("macPackaging")
@@ -198,7 +198,7 @@ def verify_contract(
     plan_common = plan.get("commonChromium")
     if not isinstance(plan_mac, dict) or not isinstance(plan_common, dict):
         raise SourceProvenanceError(
-            "Chromium 150 rebase plan is missing source-pair objects"
+            "Chromium rebase plan is missing source-pair objects"
         )
     exact_pairs = (
         (
@@ -498,6 +498,8 @@ def build_provenance(
             os.fspath(project_root / "scripts" / "apply-neantik-patchset.py"),
             os.fspath(source_root),
             "--check",
+            "--rebase-plan",
+            os.fspath(rebase_plan_path),
         ],
         "Owned NeAntik patchset check",
     )
@@ -538,7 +540,7 @@ def build_provenance(
         "rebasePlanSHA256": sha256_file(rebase_plan_path),
         "targetChromiumVersion": version,
         "targetArchitecture": "arm64",
-        "sourceMode": "owned-rebase-150",
+        "sourceMode": "owned-rebase",
         "officialChromiumBase": official,
         "macPackaging": mac,
         "commonChromium": common,
@@ -577,7 +579,7 @@ def expected_static_document(
         "rebasePlanSHA256": sha256_file(rebase_plan_path),
         "targetChromiumVersion": contract["targetChromiumVersion"],
         "targetArchitecture": "arm64",
-        "sourceMode": "owned-rebase-150",
+        "sourceMode": "owned-rebase",
         "officialChromiumBase": contract["officialChromiumBase"],
         "macPackaging": mac,
         "commonChromium": common,
@@ -655,7 +657,7 @@ def verify_runtime_lock_for_new_candidate(
     expected_contract_sha = sha256_file(contract_path)
     if lock.get("sourceContractSHA256") != expected_contract_sha:
         raise SourceProvenanceError(
-            "New-candidate runtime lock is not bound to the Chromium 150 "
+            "New-candidate runtime lock is not bound to the Chromium "
             "source contract"
         )
     fingerprint = lock.get("fingerprintChromium")

@@ -1,157 +1,149 @@
 # NeAntik Chromium runtime
 
-NeAntik Direct is a native profile manager. Browser-visible fingerprint
-changes must be implemented inside Chromium, not by page-level JavaScript.
+NeAntik is a native macOS profile manager. Browser-visible privacy and
+fingerprint behavior is implemented in the bundled Chromium runtime, not by
+injecting JavaScript into visited pages.
 
-The Chromium 150 source inputs for the next build are pinned in
-`chromium-150-source-contract.json` and cross-checked against
-`chromium-150-rebase-plan.json`. The contract records
-`binaryBindingStatus: pending-new-build`: it does not retroactively claim that
-the published 0.3.12 binary is bound to those source commits.
+## Current source contract
 
-- `ungoogled-software/ungoogled-chromium-macos` supplies the BSD-3-Clause macOS
-  ARM64 build and packaging layer at commit `9cbd94c...`;
-- its recorded Chromium `.181` submodule is deliberately replaced by the
-  pinned common `ungoogled-chromium` `150.0.7871.186-1` commit `fd0378e...`;
-- the reviewed NeAntik fingerprint changes come from the owned patch manifest
-  in `nevision-patches/series.json`.
+The candidate runtime is Chromium `151.0.7922.75`, ARM64-only:
 
-`fingerprint-chromium.lock.json` still contains legacy Chromium 144 packaging
-metadata used by the already-published artifact. It must not be edited to
-pretend that artifact has new provenance. Release gates remain blocked until a
-new Metal build records the emitted source-provenance SHA-256 in a schema 3
-runtime report and the new-candidate lock is regenerated honestly as schema 4.
-That lock must bind this source contract, remove legacy fingerprint-fork
-integration fields, and repeat the exact mac/common Git objects and critical
-file hashes from the contract.
+- `runtime/chromium-151-source-contract.json` pins the official Chromium
+  source archive, macOS packaging layer, common ungoogled-chromium inputs and
+  every NeAntik-owned source input;
+- `runtime/chromium-151-rebase-plan.json` records the reviewed rebase;
+- `runtime/chromium-151-toolchain-lock.json` pins the build toolchain resources
+  that are not fully hashed by the upstream macOS packaging manifest;
+- `runtime/nevision-patches/series.json` is the executable owned-patch manifest.
 
-## Verify and export the exact Chromium 150 source evidence
+The source contract deliberately says `binaryBindingStatus:
+pending-new-build`. Source evidence is not binary evidence. The checked
+`runtime/fingerprint-chromium.lock.json` continues to describe the last
+verified Chromium 150 runtime until a new Chromium 151 Metal bundle is built,
+verified and explicitly promoted.
+
+Do not edit the checked runtime lock merely to make version gates green.
+
+## Security and privacy boundaries
+
+The owned Chromium patchset provides deterministic profile separation for
+Canvas, WebGL pixels, OfflineAudio and ClientRects, plus a reviewed Apple
+Silicon device tuple, real runtime version, locale/timezone context and public
+NeAntik branding.
+
+Profile seed and timezone are supplied to Chromium through the child process
+environment (`NEANTIK_PROFILE_SEED` and `NEANTIK_PROFILE_TIMEZONE`). They are
+not exposed in command-line arguments. The manager builds a minimal allowlist
+of required system variables, discards ambient proxy/TLS/token variables and
+then sets the validated values for the selected profile.
+
+Proxy passwords stay in macOS Keychain and never enter Chromium arguments.
+HTTP/HTTPS authentication uses Chromium's native authentication flow. SOCKS5
+username/password authentication is intentionally unsupported until it can be
+implemented without putting a secret in process arguments or logs.
+
+For proxied profiles NeAntik disables non-proxied UDP, QUIC, DNS prefetch,
+asynchronous DNS and automatic DNS-over-HTTPS, and uses a fail-closed host
+resolver policy. Direct profiles use an explicit direct route.
+
+The product goal is privacy and stable profile separation. The patchset must
+not include automation-evasion, webdriver hiding, CAPTCHA bypass, ban evasion
+or anti-fraud bypass behavior.
+
+## Prepare and verify source
+
+The build wrapper is resumable:
 
 ```sh
-python3 scripts/export-runtime-source-provenance.py \
-  /absolute/path/to/nevision-chromium-150/build/src
-python3 scripts/verify-runtime-source-provenance.py \
-  /absolute/path/to/nevision-chromium-150/build/source-provenance.json \
-  --source-root /absolute/path/to/nevision-chromium-150/build/src
+scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 prepare
+scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 configure
+scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 build
 ```
 
-The exporter verifies both Git heads and trees, critical Git-object hashes,
-the official Chromium source archive and `chrome/VERSION`, the owned patchset,
-and the generated Apple tuple layer. It writes atomically and records no local
-absolute path. Legacy `prepare-runtime-source.sh` and
-`verify-runtime-source.sh` are intentionally blocked for Chromium 150 because
-their old layout reads the stale Chromium 144 lock.
+Running without a phase performs the complete sequence. The wrapper:
 
-## Reproducible Apple Silicon build
+- refuses non-ARM64 hosts and unverified source inputs;
+- verifies the official Chromium archive and pinned Git objects;
+- installs build helpers inside the build root;
+- applies upstream macOS/common patches and all NeAntik-owned patches exactly
+  once;
+- verifies exact postimage hashes from the owned manifest;
+- emits source provenance and an immutable candidate lock;
+- configures an official ARM64 build with Metal and `symbol_level=0`;
+- builds only the shipping Chromium app target, with bounded parallelism and a
+  persistent log. `chromedriver` is not a product or release dependency.
 
-After preparing the pinned source pair, run:
+The default is four Ninja jobs because large Blink translation units can cause
+memory-compression churn on 16 GB Apple Silicon Macs. Override it only with an
+integer from 1 through 12:
 
 ```sh
-scripts/build-runtime.sh /absolute/path/to/nevision-chromium-build
+NEANTIK_NINJA_JOBS=6 \
+  scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 build
 ```
 
-The wrapper:
-
-- refuses non-ARM64 hosts and unverified source pairs;
-- installs pinned Python/Ninja helpers inside the build directory rather than
-  modifying the user's global Python installation;
-- supplies a portable `greadlink -f` implementation for a clean macOS host;
-- downloads and verifies the exact Chromium, LLVM, Node, and Rust resources;
-- applies binary pruning, all fingerprint/macOS patches, and domain
-  substitution exactly once;
-- verifies the unpacked `chrome/VERSION` against the locked Chromium runtime
-  version before accepting a fresh or resumed source stamp;
-- applies an exact-preimage NeAntik overlay that replaces the fingerprint
-  fork's implementation-defined `std::hash` calls with Chromium's specified
-  `base::PersistentHash`;
-- applies a separate exact-preimage source-branding overlay for the NeAntik
-  product name, bundle identifiers, executable/Framework/Helper names,
-  runtime metadata, app icon, and core browser strings;
-- uses resumable phase stamps;
-- generates an ARM64 official-build configuration with `symbol_level=0`;
-- builds `chrome` and `chromedriver` with bounded parallelism;
-- keeps a persistent build log under `build/nevision-runtime-arm64.log`.
-
-The current macOS dependency manifest publishes SHA-512 for LLVM and Node but
-omits a digest for its Rust nightly archive. NeAntik therefore pins the
-official Rust URL, size and SHA-256 in
-`runtime/chromium-150-toolchain-lock.json`; the build refuses to execute that
-compiler when the archive does not match.
-
-Chromium documents `base::PersistentHash` as permanently frozen: the same
-message retains the same value across Chromium revisions. It is used here for
-repeatable profile-derived noise, not as a cryptographic primitive.
-
-Xcode 26 installs its Metal compiler as an optional Apple component. Install it
-once before the configure/build phase:
+Xcode installs the Metal compiler as an optional component. The wrapper checks
+for it before configuration:
 
 ```sh
 xcodebuild -downloadComponent MetalToolchain
 xcrun --find metallib
 ```
 
-The wrapper checks this up front so a clean build does not discover the missing
-component thousands of compile steps later. Apple documents both the Xcode
-Components UI and this command-line installation method:
-<https://developer.apple.com/documentation/Xcode/downloading-and-installing-additional-xcode-components>.
+An explicit `NEANTIK_NO_METAL=1` build is diagnostic only. It can validate
+compilation and the launch protocol, but it is never acceptable as a public
+release runtime.
 
-For an explicitly non-production fingerprint integration build, ANGLE Metal
-can be disabled while retaining Chromium's compiled OpenGL and SwiftShader
-fallbacks:
+Source provenance can be regenerated and compared independently:
 
 ```sh
-NEANTIK_NO_METAL=1 \
-  scripts/build-runtime.sh /absolute/path/to/nevision-chromium-build build
+python3 scripts/export-runtime-source-provenance.py \
+  /absolute/path/to/neantik-chromium-151/build/src
+
+python3 scripts/verify-runtime-source-provenance.py \
+  /absolute/path/to/neantik-chromium-151/build/source-provenance.json \
+  --source-root /absolute/path/to/neantik-chromium-151/build/src
 ```
 
-This mode exists only to validate compilation, the launch protocol, profile
-isolation, and deterministic A -> B -> A behavior on a machine where the
-optional Metal compiler cannot yet be installed. It does not promise which
-fallback Chromium will select at runtime; the A -> B -> A report must retain
-the actual WebGL vendor, renderer, and pixels. It is not an acceptable shipping
-GPU fingerprint, and production acceptance still requires the normal Metal
-build and its full behavioral audit.
+The generated evidence contains no local absolute source path.
 
-## Chromium 150 owned patchset handoff
+## Verify the owned patchset
 
-The public-release rebase uses `runtime/nevision-patches/series.json` as the
-owned NeAntik patchset handoff. It is currently a verified port plan, not a
-ported patch series.
+All eleven release-required groups in `series.json` are ported to Chromium
+`151.0.7922.75`. The manifest is release-ready source evidence, not proof that a
+shipping binary exists.
 
 ```sh
 scripts/verify-nevision-patchset-manifest.py
 scripts/verify-nevision-patchset-manifest.py --source-evidence
-scripts/verify-nevision-patchset-manifest.py --release --source-evidence
-scripts/verify-nevision-patchset-manifest.py --release --source-evidence --source-root /absolute/chromium/src
+scripts/verify-nevision-patchset-manifest.py \
+  --release \
+  --source-evidence \
+  --source-root /absolute/path/to/chromium/src
 ```
 
-The release form intentionally fails until every group has a real patch file
-with `patchSHA256`, safe-relative Chromium 150 postimage paths, a clean
-`git apply --check --whitespace=nowarn`, and locked Chromium 150 postimage
-hashes.
+The release verifier checks safe paths, patch SHA-256 values, exact Chromium
+151 postimages, forbidden scopes and clean patch application evidence. An
+`already-applied` result is accepted only when every recorded postimage matches
+the source tree; stock preimages cannot masquerade as an applied patch.
 
-The manifest top-level `status` is also executable release evidence. It must be
-`planned-not-ported` when every group is still planned, `partially-ported` when
-some but not all groups are ported, and `release-ready` only when no planned
-release-required groups remain. The verifier rejects mismatched status strings
-before the workbench or release gate can use the manifest.
+## Verify and promote a built runtime
 
-Individual phases can be resumed explicitly:
+After building, the normal one-command candidate path signs the nested browser
+bundle, verifies it, promotes the exact candidate lock and regenerates notices:
 
 ```sh
-scripts/build-runtime.sh /absolute/path/to/nevision-chromium-build prepare
-scripts/build-runtime.sh /absolute/path/to/nevision-chromium-build configure
-scripts/build-runtime.sh /absolute/path/to/nevision-chromium-build build
+NEANTIK_RELEASE_CHANNEL=public-alpha \
+NEANTIK_SIGNING_IDENTITY="Developer ID Application: …" \
+scripts/prepare-direct-runtime-candidate.sh \
+  "/absolute/path/to/NeAntik Browser.app" \
+  /absolute/path/to/out/Default/args.gn \
+  /absolute/path/to/chromium/src \
+  /absolute/path/to/build/runtime-candidate-lock.json
 ```
 
-Set `NEANTIK_NINJA_JOBS` to an integer from 1 through 12 to tune build
-parallelism. The default is 4: Chromium's large Blink translation units caused
-severe memory-compression churn with 6 concurrent jobs on a 16 GB Apple
-Silicon Mac. Higher values remain available for machines with more memory.
-
-## Verify the built bundle
-
-After the build and local or Developer ID signing, run:
+The lower-level verification and promotion commands remain available for
+diagnostics:
 
 ```sh
 scripts/verify-built-runtime.sh \
@@ -162,15 +154,12 @@ scripts/verify-built-runtime.sh \
   /absolute/path/to/build/runtime-candidate-lock.json
 ```
 
-The owned Chromium 150 configure phase emits both source provenance and a
-deterministic schema 4 candidate lock inside the build root. The candidate lock
-is timeless and source-only: it contains no timestamps, local paths, binary
-hashes, report path, or build/result claim. The schema 3 runtime report is the
-one-way binary binding and records the candidate-lock SHA-256. The checked
-`runtime/fingerprint-chromium.lock.json` is never overwritten by configure,
-build, verification, or packaging.
+The schema-3 report binds the actual executable/framework hashes, ARM64 Mach-O
+inventory, signature, runtime version, Metal build arguments, candidate-lock
+hash, source provenance, security baseline, owned patchset and device tuples.
+Fresh inspection and packaged evidence must match on immutable fields.
 
-Promotion is a separate manual operation after review of a fresh Metal report:
+Promotion is intentionally separate:
 
 ```sh
 scripts/promote-runtime-candidate-lock.py \
@@ -182,97 +171,59 @@ scripts/promote-runtime-candidate-lock.py \
   --confirm-promote-source-lock
 ```
 
-Without the explicit confirmation flag the command exits without writing. It
-reruns binary verification, requires `angle_enable_metal=true`, compares the
-fresh and reviewed reports, then promotes the candidate bytes atomically.
+Promotion reruns binary verification, requires Metal, compares the fresh and
+reviewed reports and writes the checked lock atomically. Without the explicit
+confirmation flag it writes nothing.
 
-This gate verifies the exact pinned Chromium version, ARM64-only architecture
-for all nested Mach-O code, the deep code signature, runtime `--version`
-output, fingerprint protocol strings in the linked framework, and SHA-256
-evidence for the main executable and framework. When `args.gn` is supplied, its
-SHA-256 and the proven `metal` or `no-metal` build mode are retained in
-the report. Without it, the verifier deliberately records the mode as
-`unrecorded`. The report also distinguishes local ad-hoc signing from a
-Developer ID identity. This does not replace the behavioral A -> B -> A audit.
-Runtime verification report schema 3 includes the candidate-lock, source
-provenance, upstream
-fingerprint and macOS packaging patch-series hashes, the owned NeAntik patch
-manifest, reviewed Apple device-tuple catalog, security baseline, both
-deterministic overlays, build arguments, and executable/framework SHA-256
-values. Packaged and freshly inspected reports must match on every immutable
-field.
+## Behavioral A → B → A evidence
 
-To run that behavioral gate without depending on UI automation, use the same
-production audit coordinator and probe through the small developer CLI:
+Binary verification does not prove browser behavior. The same production audit
+coordinator can be run through the developer CLI:
 
 ```sh
 scripts/run-runtime-audit.sh \
   "/absolute/path/to/NeAntik Browser.app/Contents/MacOS/NeAntik Browser" \
   /absolute/path/to/fingerprint-audit.json
-```
 
-It launches fixed profile A, profile B, and profile A again with fresh
-disposable data directories, writes the normal NeAntik JSON report, and exits
-nonzero unless the verdict is `verified`. The CLI is compiled into a temporary
-build directory and is not included in either NeAntik app bundle.
-
-To qualify that JSON as public-release GUI evidence, run the independent gate:
-
-```sh
 scripts/verify-gui-fingerprint-report.py \
   /absolute/path/to/fingerprint-audit.json
 ```
 
-This emits separate `publicAlphaQualified` and `productionQualified` verdicts.
-The public-alpha gate rejects diagnostic mode, missing binary hashes,
-unavailable required alpha browser surfaces, unstable A-repeat values and an
-invalid A -> B -> A profile identity. The strict production gate additionally
-requires device-tuple agreement and fingerprint audit schema 7 evidence for
-repeat-call stability including OfflineAudio, main-realm / Web Worker
-coherence for CPU and device memory, OffscreenCanvas coherence, CSS
-screen/DPR media-query coherence, WebGL shader precision, and bounded
-candidate-type-only WebRTC route evidence plus a same-run loopback STUN direct
-positive control and zero STUN requests for proxied captures. Raw ICE candidate strings,
-addresses, hostnames, and derived hashes are not persisted. The current
-signed GUI release still has to produce fresh `loopback-stun-v1` evidence
-before the shipped binary can be qualified. A legacy schema 1
-report may remain valid alpha evidence but cannot be promoted to strict
-production evidence.
+The public-alpha gate requires stable A-repeat values and meaningful A/B
+separation across required surfaces. The stricter production gate also checks:
 
-For a source-built bare `headless_shell` inside a restricted engineering
-environment, use the separately marked diagnostic mode:
+- repeated-call stability;
+- page and dedicated-worker CPU/memory coherence;
+- OffscreenCanvas and main-canvas coherence;
+- CSS screen/DPR media queries;
+- WebGL pixels, metadata and shader precision;
+- real User-Agent and Client Hints;
+- timezone, locale and languages;
+- bounded candidate-type-only WebRTC evidence;
+- loopback STUN positive control for Direct and zero STUN requests for proxied
+  captures.
 
-```sh
-scripts/run-runtime-audit.sh \
-  /absolute/path/to/headless_shell \
-  /absolute/path/to/fingerprint-audit.json \
-  --headless-single-process-diagnostic
-```
+Raw ICE candidates, IP addresses, proxy credentials, profile names, profile
+identifiers and measured site values are not included in the public-safe
+summary.
 
-The report records this mode and the CLI warns that it is not production GUI
-release evidence. The normal browser path never receives the diagnostic
-`--single-process --no-sandbox` arguments.
+For an engineering-only `headless_shell`, the separate
+`--headless-single-process-diagnostic` mode remains available. Its report is
+explicitly diagnostic and cannot qualify a GUI release.
 
-## Build spike acceptance gate
+## Direct release acceptance
 
-Run the upstream macOS build only on an isolated Apple Silicon builder with
-enough disposable disk and time for a full Chromium build. Before distribution:
+Before publication:
 
-1. prove every patch applies without fuzz or rejects;
-2. build only `target_cpu = "arm64"`;
-3. run the NeAntik A -> B -> A audit and retain its JSON report;
-4. test Canvas, WebGL pixels and metadata, Audio, ClientRects, UA/Client Hints,
-   fonts, screen/device values, timezone, locale, and WebRTC in both the main
-   realm and a Web Worker where the API exists;
-5. prove repeated reads, OffscreenCanvas results, CSS media queries, and WebGL
-   shader precision are deterministic and coherent;
-6. reject unstable per-load noise and internally inconsistent combinations;
-7. rebrand bundle identifiers and visible Chromium branding;
-8. preserve Chromium and all third-party notices;
-9. sign nested code with NeAntik's Developer ID, notarize, staple, and verify;
-10. publish the exact lock, source attribution, binary SHA-256, and SBOM beside
-   the release.
+1. prove every source and patch hash;
+2. build and verify ARM64-only Metal runtime;
+3. verify profile CRUD, data isolation and proxy behavior;
+4. pass GUI A → B → A for the exact candidate;
+5. sign nested code and the manager with Developer ID;
+6. notarize, staple and pass Gatekeeper;
+7. package notarized ZIP and DMG;
+8. publish the exact version, changelog, runtime version, sizes and SHA-256;
+9. download both public artifacts and repeat integrity/Gatekeeper checks.
 
-Новый встроенный Direct runtime нельзя публиковать, пока этот gate не
-завершён. Поддержка отдельно выбранного runtime остаётся только явным
-инженерным режимом и не подменяет проверку публичного bundle.
+NeAntik is Direct Distribution only. No App Store or App Store Connect workflow
+is part of this project.

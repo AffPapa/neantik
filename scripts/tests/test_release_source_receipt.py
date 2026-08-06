@@ -516,7 +516,7 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
                         {
                             "path": (
                                 "runtime/"
-                                "chromium-150-toolchain-lock.json"
+                                "chromium-151-toolchain-lock.json"
                             ),
                             "role": "reviewed-toolchain-lock",
                             "sha256": "f" * 64,

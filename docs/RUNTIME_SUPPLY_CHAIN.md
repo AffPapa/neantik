@@ -1,6 +1,6 @@
 # Supply chain Chromium runtime
 
-Проверено: 30 июля 2026 года.
+Проверено: 6 августа 2026 года.
 
 ## Решение
 
@@ -27,21 +27,21 @@ NeAntik сохраняет нативный SwiftUI-менеджер и собс
 - <https://github.com/zhom/donutbrowser>
 - <https://www.clearcotelabs.com/>
 
-## Публичный релиз 0.3.12
+## Публичный baseline
 
-Опубликованный NeAntik `0.3.12` build `15` содержит Chromium
-`150.0.7871.186`, ARM64, Metal. ZIP подписан Developer ID, нотарифицирован,
-stapled и повторно проверен после скачивания. Его metadata и SHA-256 находятся
-в `releases/`.
+На момент подготовки Chromium 151-кандидата на AffPapa и GitHub опубликован
+NeAntik `0.3.15` build `18` с Chromium `150.0.7871.186`, ARM64, Metal.
+Его ZIP и DMG подписаны Developer ID, нотарифицированы, stapled и повторно
+проверены после скачивания.
 
 Эта опубликованная сборка не является доказательством ещё не выпущенных
 изменений ветки `Unreleased`.
 
 ## Новый source contract и candidate
 
-`runtime/chromium-150-source-contract.json` фиксирует:
+`runtime/chromium-151-source-contract.json` фиксирует:
 
-- официальный Chromium tag/commit/tree `150.0.7871.186`;
+- официальный Chromium tag/commit/tree `151.0.7922.75`;
 - точные commits macOS packaging и common ungoogled-chromium;
 - hashes критических upstream и NeAntik-owned inputs;
 - статус `binaryBindingStatus: pending-new-build`.
@@ -57,8 +57,13 @@ stapled и повторно проверен после скачивания. Е
 5. ARM64-only, nested signing, notices и SBOM gates;
 6. GUI A → B → A и полный Direct release ladder.
 
-Текущий candidate намеренно не promoted: установленному builder пока требуется
-Metal Toolchain и новая production-сборка.
+Текущий source candidate намеренно не promoted до завершения новой
+ARM64/Metal-сборки и свежей бинарной/GUI-проверки.
+
+Privacy-oriented build использует `safe_browsing_mode=0`: обращения к Google
+Safe Browsing не включены, но runtime не предоставляет встроенную замену
+защите от фишинга, вредоносных сайтов или опасных загрузок. Это публичное
+ограничение релиза, а не скрытая security-гарантия.
 
 ## Обязательные свойства fingerprint runtime
 
@@ -81,7 +86,7 @@ CAPTCHA, банов, антифрода, webdriver detection или правил
 Chromium 144 использовался как раннее инженерное доказательство переноса
 патчей и Metal-сборки. Он не является текущим публичным runtime и не может
 использоваться как release candidate. Исторические source/build artifacts
-сохраняются для воспроизводимости и не подменяют текущие Chromium 150 gates.
+сохраняются для воспроизводимости и не подменяют текущие Chromium 151 gates.
 
 ## Direct release boundary
 

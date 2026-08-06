@@ -34,8 +34,8 @@ struct FingerprintEvidenceReleaseContextTests {
         for privateValue in [
             "PRIVATE-PROFILE-A",
             "PRIVATE-PROFILE-B",
-            "NA-DEADBEEF",
-            "NA-CAFEBABE",
+            "NA-13579BDF",
+            "NA-2468ACE0",
             report.firstInitial.profileID.uuidString,
             report.second.profileID.uuidString,
             "raw-canvas-a",
@@ -776,7 +776,7 @@ struct FingerprintEvidenceReleaseContextTests {
                     ],
                     "sourceContract": [
                         "bundlePath":
-                            "Contents/Resources/NeAntikRuntimeEvidence/chromium-150-source-contract.json",
+                            "Contents/Resources/NeAntikRuntimeEvidence/chromium-151-source-contract.json",
                         "sha256": String(repeating: "2", count: 64)
                     ],
                     "sourceProvenance": [
@@ -808,11 +808,15 @@ struct FingerprintEvidenceReleaseContextTests {
         let first = FingerprintCapture(
             profileID: firstID,
             profileName: "PRIVATE-PROFILE-A",
-            identityCode: "NA-DEADBEEF",
+            identityCode: "NA-13579BDF",
             capturedAt: Date(timeIntervalSince1970: 1),
             values: publicAlphaValues(
                 canvas: "raw-canvas-a",
-                webGL: "raw-webgl-a"
+                webGL: "raw-webgl-a",
+                gpu: "M2 Pro",
+                cores: 12,
+                screen: "1512x982x1512x957x24x2",
+                platformVersion: "15.3.1"
             )
         )
         let second = FingerprintCapture(
@@ -821,11 +825,15 @@ struct FingerprintEvidenceReleaseContextTests {
                     "22222222-2222-2222-2222-222222222222"
             )!,
             profileName: "PRIVATE-PROFILE-B",
-            identityCode: "NA-CAFEBABE",
+            identityCode: "NA-2468ACE0",
             capturedAt: Date(timeIntervalSince1970: 2),
             values: publicAlphaValues(
                 canvas: "raw-canvas-b",
-                webGL: "raw-webgl-b"
+                webGL: "raw-webgl-b",
+                gpu: "M4",
+                cores: 10,
+                screen: "1280x832x1280x807x24x2",
+                platformVersion: "15.1.0"
             )
         )
         return FingerprintAuditReport(
@@ -842,6 +850,13 @@ struct FingerprintEvidenceReleaseContextTests {
             runtimeFrameworkSHA256:
                 String(repeating: "b", count: 64),
             executionMode: .browser,
+            webrtcDirectControl: FingerprintCapture(
+                profileID: firstID,
+                profileName: "PRIVATE-DIRECT-CONTROL",
+                identityCode: first.identityCode,
+                capturedAt: Date(timeIntervalSince1970: 0),
+                values: first.values
+            ),
             firstInitial: first,
             second: second,
             firstRepeat: FingerprintCapture(
@@ -856,27 +871,63 @@ struct FingerprintEvidenceReleaseContextTests {
 
     private func publicAlphaValues(
         canvas: String,
-        webGL: String
+        webGL: String,
+        gpu: String,
+        cores: Int,
+        screen: String,
+        platformVersion: String
     ) -> [String: String] {
-        [
+        let runtimeVersion = "150.0.7871.186"
+        let userAgent =
+            "Mozilla/5.0 Chrome/\(runtimeVersion) Safari/537.36"
+        let clientHints = """
+        {"architecture":"arm","bitness":"64","platform":"macOS","platformVersion":"\(platformVersion)","uaFullVersion":"\(runtimeVersion)"}
+        """
+        let renderer =
+            "ANGLE (Apple, ANGLE Metal Renderer: Apple \(gpu), Unspecified Version)"
+        return [
             "canvas": canvas,
             "webgl_pixels": webGL,
             "audio": "audio",
             "client_rects": "rects",
             "webgl_vendor": "Google Inc. (Apple)",
-            "webgl_renderer": "Apple M2",
+            "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
             "webgpu_policy": "disabled",
-            "user_agent": "Mozilla/5.0",
+            "user_agent": userAgent,
             "platform": "MacIntel",
-            "client_hints": "{\"platform\":\"macOS\"}",
-            "screen": "1512x982x1512x944x24x2",
-            "hardware_concurrency": "8",
+            "client_hints": clientHints,
+            "screen": screen,
+            "hardware_concurrency": String(cores),
             "device_memory": "8",
             "touch_points": "0",
             "fonts": "Arial,Menlo",
             "languages": "en-US,en",
-            "timezone": "Europe/Berlin"
+            "timezone": "Europe/Berlin",
+            "intl_locale": "en-US",
+            "primary_locale_core": "en-Latn-US",
+            "intl_locale_core": "en-Latn-US",
+            "worker_canvas": canvas,
+            "worker_webgl_pixels": webGL,
+            "worker_webgl_vendor": "Google Inc. (Apple)",
+            "worker_webgl_renderer": renderer,
+            "worker_webgl_extensions": "extensions",
+            "worker_user_agent": userAgent,
+            "worker_platform": "MacIntel",
+            "worker_languages": "en-US,en",
+            "worker_timezone": "Europe/Berlin",
+            "worker_intl_locale": "en-US",
+            "worker_primary_locale_core": "en-Latn-US",
+            "worker_intl_locale_core": "en-Latn-US",
+            "worker_hardware_concurrency": String(cores),
+            "worker_device_memory": "8",
+            "worker_client_hints": clientHints,
+            "network_route": "direct",
+            "webrtc_probe": "loopback-stun-v1",
+            "webrtc_complete": "true",
+            "webrtc_stun_requests": "1",
+            "webrtc_candidate_summary":
+                #"{"total":0,"host":0,"srflx":0,"prflx":0,"relay":0,"unknown":0}"#
         ]
     }
 

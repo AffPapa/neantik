@@ -46,7 +46,7 @@ if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOC
   exit 65
 fi
 if [[ ! -f "$SOURCE_PROVENANCE" || -L "$SOURCE_PROVENANCE" ]]; then
-  echo "Chromium source provenance is missing; rebuild/configure the owned Chromium 150 source first." >&2
+  echo "Chromium source provenance is missing; rebuild/configure the owned Chromium source first." >&2
   exit 66
 fi
 if [[ "$CANDIDATE_LOCK" != /* ||
@@ -81,7 +81,11 @@ COMPLIANCE_DIR="$(mktemp -d -t nevision-runtime-compliance)"
 SNAPSHOT_ROOT="$(mktemp -d -t nevision-integrated-input)"
 SNAPSHOT_RUNTIME="$SNAPSHOT_ROOT/NeAntik Browser.app"
 SNAPSHOT_ARGS="$SNAPSHOT_ROOT/args.gn"
-trap 'rm -f "$VERIFY_REPORT"; rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"' EXIT
+cleanup() {
+  rm -f "$VERIFY_REPORT"
+  rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"
+}
+trap cleanup EXIT
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$VERIFY_REPORT" \
@@ -115,8 +119,8 @@ cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
   "$EVIDENCE/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-150-source-contract.json" \
-  "$EVIDENCE/chromium-150-source-contract.json"
+cp "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
+  "$EVIDENCE/chromium-151-source-contract.json"
 cp "$SOURCE_PROVENANCE" \
   "$EVIDENCE/source-provenance.json"
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
@@ -135,5 +139,12 @@ cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
 codesign --force --sign - "$OUTPUT_APP"
 codesign --verify --deep --strict --verbose=2 "$OUTPUT_APP"
 
-"$PROJECT_DIR/scripts/verify-integrated-release.sh" "$OUTPUT_APP"
+# The full Direct verifier intentionally accepts only the public bundle name
+# NeAntik.app. Move the exact engineering bundle into a private public-name
+# verification path, verify it without weakening that gate, then restore the
+# engineering artifact for prepare-direct-runtime-candidate.sh.
+python3 "$PROJECT_DIR/scripts/verify-public-named-bundle.py" \
+  --engineering-app "$OUTPUT_APP" \
+  --verifier "$PROJECT_DIR/scripts/verify-integrated-release.sh"
+
 echo "$OUTPUT_APP"

@@ -4,14 +4,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
-SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-150-source-contract.json"
+SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-151-source-contract.json"
 
 LOCKED_RUNTIME_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
 )"
-if [[ "$LOCKED_RUNTIME_VERSION" == 150.* && -f "$SOURCE_CONTRACT" ]]; then
-  echo "Legacy source-pair preparation is blocked for Chromium 150." >&2
-  echo "Use the pinned runtime/chromium-150-rebase-plan.json bootstrap and build-runtime.sh; the legacy lock still describes Chromium 144 packaging metadata." >&2
+if [[ "$LOCKED_RUNTIME_VERSION" == 15[01].* && -f "$SOURCE_CONTRACT" ]]; then
+  echo "Legacy source-pair preparation is blocked for the owned Chromium rebase." >&2
+  echo "Use the pinned runtime/chromium-151-rebase-plan.json and build-runtime.sh." >&2
   exit 65
 fi
 

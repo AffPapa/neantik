@@ -19,7 +19,7 @@ from runtime_candidate_lock import verify_candidate_lock
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Verify emitted Chromium 150 source-only provenance against the "
+            "Verify emitted Chromium source-only provenance against the "
             "checked source contract and rebase plan."
         )
     )
@@ -43,7 +43,7 @@ def main() -> int:
             )
         document = load_object(
             args.provenance,
-            "emitted Chromium 150 source provenance",
+            "emitted Chromium source provenance",
         )
         project_root = args.project_root.resolve()
         verify_document(document, project_root=project_root)
@@ -65,7 +65,7 @@ def main() -> int:
     except (OSError, SourceProvenanceError) as error:
         print(f"Source provenance verification failed: {error}", file=sys.stderr)
         return 1
-    print("PASS: Chromium 150 source provenance matches contract and rebase plan.")
+    print("PASS: Chromium source provenance matches contract and rebase plan.")
     print(f"SHA-256: {sha256_file(args.provenance)}")
     print("Binary binding remains pending until a new runtime report records this SHA-256.")
     return 0

@@ -34,11 +34,11 @@ NeAntik AffPapa Direct release client
   dry-run                  полный no-change preflight staging
   abort                    безопасно очистить только NeAntik staging
   prepare <release-dir>    проверить и загрузить кандидат, затем server check
-  publish <release-dir>    prepare + deploy + live verification
+  publish <release-dir>    GitHub gate + hosted bytes + atomic metadata activation
   upload <file>            загрузить один разрешённый файл
   rollback-check           проверить доступность отката без изменений
   rollback                 откатить последний NeAntik release backup
-  verify-live              проверить текущие HTML/JSON/DMG/ZIP headers
+  verify-live              полностью скачать и проверить текущие DMG/ZIP
 
 release-dir должен содержать:
   release.json
@@ -131,6 +131,163 @@ PY
         --archive "$zip"
 }
 
+verify_artifact_files_against_manifest() {
+    local manifest="$1"
+    local directory="$2"
+    while IFS=$'\t' read -r format filename expected_size expected_hash; do
+        local path="$directory/$filename"
+        [[ -f "$path" && ! -L "$path" ]] || {
+            echo "Ошибка: не найден проверяемый $format: $path" >&2
+            return 1
+        }
+        local actual_size actual_hash
+        actual_size=$(stat -f '%z' "$path")
+        actual_hash=$(shasum -a 256 "$path" | awk '{print $1}')
+        [[ "$actual_size" == "$expected_size" ]] || {
+            echo "Ошибка: размер $filename изменился: $actual_size != $expected_size" >&2
+            return 1
+        }
+        [[ "$actual_hash" == "$expected_hash" ]] || {
+            echo "Ошибка: SHA-256 $filename изменился" >&2
+            return 1
+        }
+        if [[ "$format" == "dmg" ]]; then
+            "$PROJECT_ROOT/scripts/verify-direct-notarized-dmg.sh" "$path"
+        else
+            python3 "$PROJECT_ROOT/scripts/verify-direct-notarized-archive.py" \
+                --project-root "$PROJECT_ROOT" \
+                --archive "$path"
+        fi
+    done < <(python3 - "$manifest" <<'PY'
+import json
+import sys
+for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
+    print(
+        artifact["format"],
+        artifact["filename"],
+        artifact["sizeBytes"],
+        artifact["sha256"],
+        sep="\t",
+    )
+PY
+)
+}
+
+verify_hosted_artifacts() {
+    local manifest="$1"
+    local temporary
+    temporary=$(mktemp -d /tmp/neantik-hosted-artifacts.XXXXXX)
+    while IFS=$'\t' read -r url filename; do
+        if ! curl \
+            --fail \
+            --location \
+            --retry 2 \
+            --retry-all-errors \
+            --connect-timeout 30 \
+            --max-time 1200 \
+            "$url" \
+            -o "$temporary/$filename"; then
+            rm -rf "$temporary"
+            return 1
+        fi
+    done < <(python3 - "$manifest" <<'PY'
+import json
+import sys
+for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
+    print(artifact["url"], artifact["filename"], sep="\t")
+PY
+)
+    if ! verify_artifact_files_against_manifest "$manifest" "$temporary"; then
+        rm -rf "$temporary"
+        return 1
+    fi
+    rm -rf "$temporary"
+    echo "PASS: hosted DMG и ZIP полностью скачаны и проверены."
+}
+
+verify_github_release() {
+    local manifest="$1"
+    command -v gh >/dev/null || {
+        echo "Ошибка: GitHub CLI не найден" >&2
+        return 1
+    }
+    local tag expected_commit resolved_commit repository
+    read -r tag expected_commit repository < <(python3 - "$manifest" <<'PY'
+import json
+import sys
+source = json.load(open(sys.argv[1], encoding="utf-8"))["source"]
+print(source["tag"], source["commit"], source["repository"])
+PY
+)
+    [[ "$repository" == "https://github.com/AffPapa/neantik" ]] || {
+        echo "Ошибка: release.json указывает неизвестный GitHub repository" >&2
+        return 1
+    }
+    resolved_commit=$(gh api "repos/AffPapa/neantik/commits/$tag" --jq .sha)
+    [[ "$resolved_commit" == "$expected_commit" ]] || {
+        echo "Ошибка: GitHub tag $tag не указывает на $expected_commit" >&2
+        return 1
+    }
+    local release_json temporary
+    release_json=$(mktemp /tmp/neantik-github-release.XXXXXX.json)
+    temporary=$(mktemp -d /tmp/neantik-github-assets.XXXXXX)
+    if ! gh release view "$tag" \
+        --repo AffPapa/neantik \
+        --json tagName,isDraft,assets,url \
+        >"$release_json"; then
+        rm -f "$release_json"
+        rm -rf "$temporary"
+        return 1
+    fi
+    if ! python3 - "$manifest" "$release_json" <<'PY'
+import json
+import sys
+manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+release = json.load(open(sys.argv[2], encoding="utf-8"))
+assert release["tagName"] == manifest["source"]["tag"]
+assert release["isDraft"] is False
+expected = {
+    item["filename"]: item["sizeBytes"]
+    for item in manifest["artifacts"]
+}
+assets = {
+    item["name"]: item["size"]
+    for item in release["assets"]
+}
+for name, size in expected.items():
+    assert assets.get(name) == size, (name, size, assets.get(name))
+PY
+    then
+        rm -f "$release_json"
+        rm -rf "$temporary"
+        echo "Ошибка: GitHub Release не содержит точные DMG/ZIP assets" >&2
+        return 1
+    fi
+    while IFS= read -r filename; do
+        if ! gh release download "$tag" \
+            --repo AffPapa/neantik \
+            --pattern "$filename" \
+            --dir "$temporary"; then
+            rm -f "$release_json"
+            rm -rf "$temporary"
+            return 1
+        fi
+    done < <(python3 - "$manifest" <<'PY'
+import json
+import sys
+for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
+    print(artifact["filename"])
+PY
+)
+    rm -f "$release_json"
+    if ! verify_artifact_files_against_manifest "$manifest" "$temporary"; then
+        rm -rf "$temporary"
+        return 1
+    fi
+    rm -rf "$temporary"
+    echo "PASS: GitHub tag, commit и скачанные release assets совпадают."
+}
+
 prepare_release() {
     local directory="$1"
     [[ -d "$directory" ]] || fail "каталог кандидата не найден: $directory"
@@ -167,7 +324,7 @@ prepare_release() {
     echo "PASS: кандидат проверен и оставлен в staging."
 }
 
-verify_live() {
+verify_live_metadata() {
     local release_json content_json
     release_json=$(mktemp /tmp/neantik-live-release.XXXXXX.json)
     content_json=$(mktemp /tmp/neantik-live-content.XXXXXX.json)
@@ -202,18 +359,70 @@ for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
 PY
 )
     rm -f "$release_json" "$content_json"
-    echo "PASS: landing, release.json, content.json, DMG и ZIP доступны."
+    echo "PASS: landing, release.json, content.json, DMG и ZIP headers доступны."
+}
+
+verify_live() {
+    local release_json
+    release_json=$(mktemp /tmp/neantik-live-full.XXXXXX.json)
+    if ! curl -fsS --max-time 30 \
+        https://affpapa.org/neantik/release.json \
+        -o "$release_json"; then
+        rm -f "$release_json"
+        return 1
+    fi
+    if ! verify_live_metadata ||
+       ! verify_hosted_artifacts "$release_json"; then
+        rm -f "$release_json"
+        return 1
+    fi
+    rm -f "$release_json"
+}
+
+verify_remote_ops_contract() {
+    local status_text="$1"
+    local remote_json
+    remote_json=$(printf '%s\n' "$status_text" |
+        sed -n 's/^Ops manifest: //p' |
+        head -n 1)
+    [[ -n "$remote_json" && "$remote_json" != "MISSING" ]] || {
+        echo "Ошибка: сервер не публикует проверяемый ops manifest" >&2
+        return 1
+    }
+    python3 - "$PROJECT_ROOT/ops/affpapa/server" "$remote_json" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+remote = json.loads(sys.argv[2])
+assert remote.get("schemaVersion") == 1
+expected = {
+    path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+    for path in sorted(root.glob("neantik-*"))
+    if path.is_file() and not path.is_symlink()
+}
+assert remote.get("files") == expected, {
+    "expected": expected,
+    "remote": remote.get("files"),
+}
+print(f"PASS: server ops contract matches {len(expected)} reviewed files.")
+PY
 }
 
 doctor() {
     echo "NeAntik AffPapa deploy doctor"
     echo "PASS: локальный ключ и host key закреплены по fingerprint."
-    remote neantik-release-status
+    local status_text
+    status_text=$(remote neantik-release-status)
+    printf '%s\n' "$status_text"
+    verify_remote_ops_contract "$status_text"
     if remote "uname -a" >/dev/null 2>&1; then
         fail "restricted SSH неожиданно разрешил произвольную команду"
     fi
     echo "PASS: shell и произвольные SSH-команды запрещены."
-    verify_live
+    verify_live_metadata
     echo "PASS: Claude/Codex могут работать через единый restricted release client."
 }
 
@@ -248,11 +457,29 @@ main() {
         publish)
             [[ $# -eq 2 ]] || fail "использование: publish <release-dir>"
             prepare_release "$2"
-            if ! remote neantik-release-deploy; then
+            if ! verify_github_release "$2/release.json"; then
                 remote neantik-release-abort || true
                 return 1
             fi
-            verify_live
+            if ! remote "neantik-release-deploy --stage-artifacts"; then
+                remote neantik-release-abort || true
+                return 1
+            fi
+            if ! verify_hosted_artifacts "$2/release.json"; then
+                echo "Ошибка: immutable artifacts не прошли внешнюю проверку; metadata не активирована." >&2
+                remote neantik-release-abort || true
+                return 1
+            fi
+            if ! remote "neantik-release-deploy --activate"; then
+                remote neantik-release-abort || true
+                return 1
+            fi
+            if ! verify_live; then
+                echo "Ошибка: live-проверка не прошла; выполняю автоматический rollback." >&2
+                remote neantik-release-rollback || true
+                verify_live_metadata || true
+                return 1
+            fi
             ;;
         upload)
             [[ $# -eq 2 ]] || fail "использование: upload <file>"
