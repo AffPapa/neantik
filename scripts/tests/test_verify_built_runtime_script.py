@@ -23,14 +23,39 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
 
         self.assertIn("generated_postimages = {}", script)
         self.assertIn(
-            "expected_sha256 = generated_postimages.get(",
+            "expected_postimages.update(generated_postimages)",
             script,
         )
         self.assertLess(
             script.index("generated_postimages = {}"),
             script.index(
-                "expected_sha256 = generated_postimages.get("
+                "expected_postimages.update(generated_postimages)"
             ),
+        )
+        self.assertIn(
+            "Canonical generated runtime postimages are missing.",
+            script,
+        )
+        self.assertIn(
+            "A new runtime report requires verified canonical source "
+            "postimages.",
+            script,
+        )
+
+    def test_canonical_tuple_binding_rejects_provisional_salt_marker(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        required_block = script[
+            script.index("required = {"):script.index("forbidden = {")
+        ]
+        forbidden_block = script[
+            script.index("forbidden = {"):script.index("found_forbidden")
+        ]
+        self.assertNotIn('"apple-device-tuple"', required_block)
+        self.assertIn('"apple-device-tuple"', forbidden_block)
+        self.assertIn(
+            "Forbidden legacy or provisional fingerprint marker",
+            script,
         )
 
     def test_report_contains_no_local_absolute_paths(self) -> None:
@@ -92,7 +117,10 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         self.assertIn('"fingerprint-timezone"', script)
         self.assertIn('"fingerprint-locale"', script)
         self.assertIn('"fingerprint-platform"', script)
-        self.assertIn("Forbidden legacy fingerprint argv marker", script)
+        self.assertIn(
+            "Forbidden legacy or provisional fingerprint marker",
+            script,
+        )
         self.assertNotIn("for protocol_string in", script)
 
     def test_public_contract_does_not_document_legacy_private_argv(self) -> None:

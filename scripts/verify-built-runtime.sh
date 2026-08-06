@@ -257,7 +257,6 @@ required = {
     for value in (
         "NEANTIK_PROFILE_SEED",
         "NEANTIK_PROFILE_TIMEZONE",
-        "apple-device-tuple",
         "default_public_interface_only",
         "disable_non_proxied_udp",
         "DnsOverHttpsUpgrade",
@@ -271,6 +270,7 @@ forbidden = {
         "fingerprint-timezone",
         "fingerprint-locale",
         "fingerprint-platform",
+        "apple-device-tuple",
     )
 }
 found_forbidden = set()
@@ -299,7 +299,7 @@ if required:
 if found_forbidden:
     for value in sorted(found_forbidden):
         print(
-            "Forbidden legacy fingerprint argv marker: "
+            "Forbidden legacy or provisional fingerprint marker: "
             + value.rstrip(b"\0").decode("ascii"),
             file=sys.stderr,
         )
@@ -309,6 +309,7 @@ then
   exit 65
 fi
 
+SOURCE_POSTIMAGES_VERIFIED=0
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
   SERIES_FILE="$PATCH_SERIES_FILE"
@@ -333,44 +334,58 @@ for generated_input in series.get("generatedInputs", []):
     generated_postimages.update(
         generated_input.get("postimageSHA256", {})
     )
-final_patch_postimages = {}
+if not generated_postimages:
+    print(
+        "Canonical generated runtime postimages are missing.",
+        file=sys.stderr,
+    )
+    sys.exit(65)
+
+expected_postimages = {}
 for group in series.get("patchGroups", []):
-    final_patch_postimages.update(group.get("postimageSHA256", {}))
+    if group.get("releaseRequired", False):
+        expected_postimages.update(group.get("postimageSHA256", {}))
+
+# Generated outputs are the reviewed final state and intentionally replace
+# intermediate patch-group postimages. They also include generated-only files,
+# such as the canonical Apple device tuple header, which must not be skipped.
+expected_postimages.update(generated_postimages)
 
 checked = 0
-for group in series.get("patchGroups", []):
-    if not group.get("releaseRequired", False):
-        continue
-    for relative_path, expected_sha256 in group.get("postimageSHA256", {}).items():
-        expected_sha256 = generated_postimages.get(
-            relative_path,
-            final_patch_postimages.get(relative_path, expected_sha256),
+for relative_path, expected_sha256 in expected_postimages.items():
+    path = source_root / relative_path
+    if not path.is_file():
+        print(
+            f"Release patch postimage is missing: {relative_path}",
+            file=sys.stderr,
         )
-        path = source_root / relative_path
-        if not path.is_file():
-            print(
-                f"Release patch postimage is missing: {relative_path}",
-                file=sys.stderr,
-            )
-            sys.exit(65)
-        actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
-        if actual_sha256 != expected_sha256:
-            print(
-                "Release patch postimage hash mismatch: "
-                f"{relative_path} expected {expected_sha256} got {actual_sha256}",
-                file=sys.stderr,
-            )
-            sys.exit(65)
-        checked += 1
+        sys.exit(65)
+    actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual_sha256 != expected_sha256:
+        print(
+            "Release patch postimage hash mismatch: "
+            f"{relative_path} expected {expected_sha256} got {actual_sha256}",
+            file=sys.stderr,
+        )
+        sys.exit(65)
+    checked += 1
 
 if checked == 0:
     print("No releaseRequired patch postimages were checked.", file=sys.stderr)
     sys.exit(65)
 PY
+    SOURCE_POSTIMAGES_VERIFIED=1
   elif [[ ! -f "$SERIES_FILE" ]]; then
     echo "NeAntik patch series manifest is missing: $SERIES_FILE" >&2
     exit 66
   fi
+fi
+
+if [[ -n "$REPORT_PATH" && "$SOURCE_POSTIMAGES_VERIFIED" != 1 ]]; then
+  echo \
+    "A new runtime report requires verified canonical source postimages." \
+    >&2
+  exit 66
 fi
 
 VERSION_OUTPUT="$("$EXECUTABLE_PATH" --version 2>&1)"
