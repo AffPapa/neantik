@@ -6,6 +6,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SOURCE_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
+CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
 REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
 ATTEMPT_STATE_ROOT="$PROJECT_DIR/artifacts/neantik/private-release-attempts/$(date -u '+%Y%m%dT%H%M%SZ')-$$"
 DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-151/build/source-provenance.json"
@@ -128,6 +129,10 @@ prepare_candidate() {
     "$ATTEMPT_STATE_ROOT/prepare-candidate.log" \
     "$PROJECT_DIR/scripts/prepare-direct-manager-update.sh" \
     "$SOURCE_APP"
+  python3 "$PROJECT_DIR/scripts/direct-candidate-source-binding.py" create \
+    --project-root "$PROJECT_DIR" \
+    --manifest "$CANDIDATE_MANIFEST" \
+    --binding "$CANDIDATE_SOURCE_BINDING"
 }
 
 echo "NeAntik $EXPECTED_VERSION — защищённый локальный этап выпуска"
@@ -141,7 +146,9 @@ echo "Private attempt state: $ATTEMPT_STATE_ROOT"
 cache_runtime_source_evidence
 
 if [[ -d "$APP_PATH" && -f "$CANDIDATE_MANIFEST" &&
-      ! -L "$CANDIDATE_MANIFEST" ]]; then
+      ! -L "$CANDIDATE_MANIFEST" &&
+      -f "$CANDIDATE_SOURCE_BINDING" &&
+      ! -L "$CANDIDATE_SOURCE_BINDING" ]]; then
   echo "Проверяю уже подготовленный кандидат."
   NEEDS_REBUILD=0
   if ! python3 "$PROJECT_DIR/scripts/direct-candidate-manifest.py" verify \
@@ -149,6 +156,13 @@ if [[ -d "$APP_PATH" && -f "$CANDIDATE_MANIFEST" &&
       --manifest "$CANDIDATE_MANIFEST" \
       --release-channel "$NEANTIK_RELEASE_CHANNEL" \
       >"$ATTEMPT_STATE_ROOT/candidate-reuse-check.log" 2>&1; then
+    NEEDS_REBUILD=1
+  fi
+  if ! python3 "$PROJECT_DIR/scripts/direct-candidate-source-binding.py" verify \
+      --project-root "$PROJECT_DIR" \
+      --manifest "$CANDIDATE_MANIFEST" \
+      --binding "$CANDIDATE_SOURCE_BINDING" \
+      >>"$ATTEMPT_STATE_ROOT/candidate-reuse-check.log" 2>&1; then
     NEEDS_REBUILD=1
   fi
   CANDIDATE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist" 2>/dev/null || true)"
@@ -162,18 +176,25 @@ if [[ -d "$APP_PATH" && -f "$CANDIDATE_MANIFEST" &&
     echo "Кандидат изменился; переношу его в private attempt state."
     mv "$APP_PATH" "$ATTEMPT_STATE_ROOT/previous-NeAntik.app"
     mv "$CANDIDATE_MANIFEST" "$ATTEMPT_STATE_ROOT/previous-direct-candidate-manifest.json"
+    mv "$CANDIDATE_SOURCE_BINDING" "$ATTEMPT_STATE_ROOT/previous-direct-candidate-source.json"
     prepare_candidate
   else
     echo "[1/4] PASS: использую неизменившийся кандидат $EXPECTED_VERSION ($EXPECTED_BUILD)."
   fi
 elif [[ -e "$APP_PATH" || -e "$CANDIDATE_MANIFEST" ||
-        -L "$CANDIDATE_MANIFEST" ]]; then
+        -L "$CANDIDATE_MANIFEST" ||
+        -e "$CANDIDATE_SOURCE_BINDING" ||
+        -L "$CANDIDATE_SOURCE_BINDING" ]]; then
   echo "Найден неполный локальный кандидат; переношу его в private attempt state."
   if [[ -e "$APP_PATH" ]]; then
     mv "$APP_PATH" "$ATTEMPT_STATE_ROOT/previous-NeAntik.app"
   fi
   if [[ -e "$CANDIDATE_MANIFEST" || -L "$CANDIDATE_MANIFEST" ]]; then
     mv "$CANDIDATE_MANIFEST" "$ATTEMPT_STATE_ROOT/previous-direct-candidate-manifest.json"
+  fi
+  if [[ -e "$CANDIDATE_SOURCE_BINDING" ||
+        -L "$CANDIDATE_SOURCE_BINDING" ]]; then
+    mv "$CANDIDATE_SOURCE_BINDING" "$ATTEMPT_STATE_ROOT/previous-direct-candidate-source.json"
   fi
   prepare_candidate
 else
@@ -283,6 +304,11 @@ done
 python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
   --app "$APP_PATH" \
   --timeout 45
+
+python3 "$PROJECT_DIR/scripts/direct-candidate-source-binding.py" verify \
+  --project-root "$PROJECT_DIR" \
+  --manifest "$CANDIDATE_MANIFEST" \
+  --binding "$CANDIDATE_SOURCE_BINDING"
 
 echo "[3/4] Отправляю кандидат в Apple notarization…"
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"
