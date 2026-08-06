@@ -275,7 +275,7 @@
         "runtime/nevision-patches/patches/private-runtime-config-environment.patch"
       ],
       "patchFile": "patches/cached-runtime-profile-seed.patch",
-      "patchSHA256": "1905894eaadde7baaffa3502b5de19145907287e67b7ad0344584af1cdaaa8ef",
+      "patchSHA256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b",
       "requiredBehavior": [
         "each Chromium process validates its inherited profile seed once",
         "hot deterministic audio and pixel paths do not repeat environment lookups",
@@ -285,7 +285,7 @@
         "components/ungoogled/nevision_fingerprint.cc": "ccc4539e4cae85ee0f7d26503a8b397d717fe14ca288bbb454a8b99c783ea63f"
       },
       "postimageSHA256": {
-        "components/ungoogled/nevision_fingerprint.cc": "6032eadd97e9d78a3774c6ec325a4944b4b2a71a8fc2bbb2a488b7829ad72269"
+        "components/ungoogled/nevision_fingerprint.cc": "039b44e03f8230b98ee584c8d089fd2425e5789fbfc0a955249f0785c9d2cf1a"
       }
     }
   ]

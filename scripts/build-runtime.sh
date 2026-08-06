@@ -196,18 +196,21 @@ write_owned_source_stamp() {
 
 apply_owned_source_layers() {
   local recover_incremental="${1:-0}"
-  local patchset_arguments=()
   if [[ "$recover_incremental" == "1" ]]; then
-    patchset_arguments+=(--recover-incremental)
+    "$TOOLS_DIR/bin/python3" \
+      "$SCRIPT_DIR/apply-neantik-patchset.py" \
+      "$SOURCE_DIR" \
+      --rebase-plan "$REBASE_PLAN" \
+      --recover-incremental
   elif [[ "$recover_incremental" != "0" ]]; then
     echo "Internal error: invalid incremental recovery mode." >&2
     exit 70
+  else
+    "$TOOLS_DIR/bin/python3" \
+      "$SCRIPT_DIR/apply-neantik-patchset.py" \
+      "$SOURCE_DIR" \
+      --rebase-plan "$REBASE_PLAN"
   fi
-  "$TOOLS_DIR/bin/python3" \
-    "$SCRIPT_DIR/apply-neantik-patchset.py" \
-    "$SOURCE_DIR" \
-    --rebase-plan "$REBASE_PLAN" \
-    "${patchset_arguments[@]}"
   "$TOOLS_DIR/bin/python3" \
     "$SCRIPT_DIR/apply-owned-runtime-device-tuples.py" \
     "$SOURCE_DIR"
