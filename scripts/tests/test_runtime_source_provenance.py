@@ -215,14 +215,20 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
                 )
 
     def test_published_legacy_lock_remains_release_blocked(self) -> None:
-        with self.assertRaisesRegex(
-            MODULE.SourceProvenanceError,
-            "stale Chromium 144",
-        ):
-            MODULE.verify_runtime_lock_for_new_candidate(
-                PROJECT_ROOT / "runtime" / "fingerprint-chromium.lock.json",
-                project_root=PROJECT_ROOT,
-            )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "legacy-runtime-lock.json"
+            legacy = self.coherent_candidate_lock()
+            legacy["schemaVersion"] = 3
+            self.write_json(path, legacy)
+
+            with self.assertRaisesRegex(
+                MODULE.SourceProvenanceError,
+                "source-contract schema 4",
+            ):
+                MODULE.verify_runtime_lock_for_new_candidate(
+                    path,
+                    project_root=PROJECT_ROOT,
+                )
 
     def test_atomic_writer_refuses_symlink_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

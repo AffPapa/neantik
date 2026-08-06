@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import shutil
 import sys
 import tempfile
@@ -26,14 +27,47 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertEqual(rendered, checked_in)
-        self.assertIn("Chromium: `150.0.7871.186`", rendered)
+        self.assertIn("Chromium: `151.0.7922.75`", rendered)
         self.assertIn(
-            "Next candidate source binary binding: `pending-new-build`", rendered
+            "Source contract binary binding: `pending-new-build`", rendered
         )
-        self.assertIn("9cbd94c2b8f6f2a58a80bf32b3e01b68f3d129d4", rendered)
-        self.assertIn("fd0378e4f20fa09e21b09beca71573d435d787cf", rendered)
+        self.assertIn("1ddc0a2003eb30c3990568d74ed0437451e9c374", rendered)
+        self.assertIn("e194927e4838cb66ecdef40843a97c4f88f8d2af", rendered)
         self.assertIn("Owned patchset status: `release-ready`", rendered)
         self.assertNotIn("25 July 2026", rendered)
+
+    def test_schema_four_nested_packaging_license_is_source_bound(self) -> None:
+        rendered = MODULE.render_notices(project_root=ROOT)
+
+        expected = (
+            ROOT
+            / "runtime"
+            / "chromium-151-source-contract.json"
+        )
+        source_contract = MODULE.load_json(expected)
+        packaging = source_contract["macPackaging"]
+        license_sha256 = packaging["criticalFiles"]["LICENSE"]
+        self.assertIn(f"License SHA-256: `{license_sha256}`", rendered)
+
+    def test_changed_source_contract_license_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = Path(temporary)
+            shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            contract_path = (
+                fixture / "runtime" / "chromium-151-source-contract.json"
+            )
+            contract = MODULE.load_json(contract_path)
+            contract["macPackaging"]["criticalFiles"]["LICENSE"] = "0" * 64
+            contract_path.write_text(
+                json.dumps(contract),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                MODULE.RuntimeNoticesError,
+                "license SHA-256 differ",
+            ):
+                MODULE.render_notices(project_root=fixture)
 
     def test_changed_locked_license_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
