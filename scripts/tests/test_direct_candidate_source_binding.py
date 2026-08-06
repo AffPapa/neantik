@@ -38,7 +38,11 @@ class DirectCandidateSourceBindingTests(unittest.TestCase):
         git(root, "config", "user.name", "NeAntik Tests")
         source = root / "source.txt"
         source.write_text("first\n", encoding="utf-8")
-        git(root, "add", "source.txt")
+        (root / ".gitignore").write_text(
+            "candidate.json\nbinding.json\n",
+            encoding="utf-8",
+        )
+        git(root, "add", "source.txt", ".gitignore")
         git(root, "commit", "-qm", "initial")
         manifest = root / "candidate.json"
         manifest.write_text('{"schemaVersion":3}', encoding="utf-8")
@@ -96,6 +100,20 @@ class DirectCandidateSourceBindingTests(unittest.TestCase):
                 "not clean",
             ):
                 MODULE.verify_binding(root, manifest, binding)
+
+    def test_rejects_untracked_swift_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, binding = self.fixture(root)
+            untracked = root / "Sources/NeAntik/Injected.swift"
+            untracked.parent.mkdir(parents=True)
+            untracked.write_text("let injected = true\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.CandidateSourceBindingError,
+                "not clean",
+            ):
+                MODULE.create_binding(root, manifest, binding)
 
 
 if __name__ == "__main__":

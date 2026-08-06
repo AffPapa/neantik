@@ -7,6 +7,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
+CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
 SUMMARY_PATH="$PROJECT_DIR/dist/fingerprint-audit-summary.json"
 
 : "${NEANTIK_NOTARY_PROFILE:?Set NEANTIK_NOTARY_PROFILE to a notarytool Keychain profile}"
@@ -51,6 +52,7 @@ exec "$RELEASE_PYTHON" -I -B \
   --project-root "$PROJECT_DIR" \
   --app "$APP_PATH" \
   --manifest "$CANDIDATE_MANIFEST" \
+  --source-binding "$CANDIDATE_SOURCE_BINDING" \
   --evidence "$REPORT_PATH" \
   --attestation "$SUMMARY_PATH" \
   --release-channel "$NEANTIK_RELEASE_CHANNEL"

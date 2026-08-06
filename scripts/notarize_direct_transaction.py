@@ -28,6 +28,7 @@ import notary_transaction_state as STATE
 
 MAXIMUM_ARCHIVE_BYTES = 16 * 1024 * 1024 * 1024
 MAXIMUM_MANIFEST_BYTES = 16 * 1024 * 1024
+MAXIMUM_SOURCE_BINDING_BYTES = 4096
 MAXIMUM_EVIDENCE_BYTES = 8 * 1024 * 1024
 MAXIMUM_ATTESTATION_BYTES = 1024 * 1024
 MAXIMUM_INFO_PLIST_BYTES = 1024 * 1024
@@ -50,6 +51,7 @@ class CommandResult:
 class CandidateInputs:
     info: SNAPSHOT.ReleaseInputSnapshot
     manifest: SNAPSHOT.ReleaseInputSnapshot
+    source_binding: SNAPSHOT.ReleaseInputSnapshot
     evidence: SNAPSHOT.ReleaseInputSnapshot
     attestation: SNAPSHOT.ReleaseInputSnapshot
 
@@ -85,6 +87,7 @@ def rebase_candidate_inputs(
     return CandidateInputs(
         info=rebase(inputs.info),
         manifest=rebase(inputs.manifest),
+        source_binding=rebase(inputs.source_binding),
         evidence=rebase(inputs.evidence),
         attestation=rebase(inputs.attestation),
     )
@@ -101,6 +104,10 @@ def receipt_candidate_inputs(
         "manifest": {
             "sha256": inputs.manifest.sha256,
             "size": inputs.manifest.size,
+        },
+        "sourceBinding": {
+            "sha256": inputs.source_binding.sha256,
+            "size": inputs.source_binding.size,
         },
         "evidence": {
             "sha256": inputs.evidence.sha256,
@@ -519,6 +526,7 @@ def snapshot_candidate_inputs(
     *,
     info_plist: Path,
     manifest: Path,
+    source_binding: Path,
     evidence: Path,
     attestation: Path,
     destination: Path,
@@ -534,6 +542,11 @@ def snapshot_candidate_inputs(
                 manifest,
                 destination / "direct-candidate-manifest.json",
                 maximum_bytes=MAXIMUM_MANIFEST_BYTES,
+            ),
+            source_binding=SNAPSHOT.snapshot_release_input(
+                source_binding,
+                destination / "direct-candidate-source.json",
+                maximum_bytes=MAXIMUM_SOURCE_BINDING_BYTES,
             ),
             evidence=SNAPSHOT.snapshot_release_input(
                 evidence,
@@ -556,6 +569,7 @@ def assert_candidate_inputs_unchanged(inputs: CandidateInputs) -> None:
     for snapshot, maximum_bytes in (
         (inputs.info, MAXIMUM_INFO_PLIST_BYTES),
         (inputs.manifest, MAXIMUM_MANIFEST_BYTES),
+        (inputs.source_binding, MAXIMUM_SOURCE_BINDING_BYTES),
         (inputs.evidence, MAXIMUM_EVIDENCE_BYTES),
         (inputs.attestation, MAXIMUM_ATTESTATION_BYTES),
     ):
@@ -572,6 +586,46 @@ def assert_candidate_inputs_unchanged(inputs: CandidateInputs) -> None:
             raise DirectNotaryTransactionError(
                 "candidate release input changed during notarization"
             ) from error
+
+
+def validate_candidate_source_binding(
+    inputs: CandidateInputs,
+    release_source: SOURCE.ReleaseSourceSnapshot,
+) -> dict[str, object]:
+    try:
+        raw = inputs.source_binding.pinned.read_bytes()
+        payload = json.loads(
+            raw,
+            object_pairs_hook=_reject_duplicate_json_pairs,
+        )
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError, TypeError) as error:
+        raise DirectNotaryTransactionError(
+            "candidate source binding is invalid"
+        ) from error
+    git = release_source.payload.get("git")
+    expected = {
+        "commit": git.get("commit") if isinstance(git, dict) else None,
+        "manifestSHA256": inputs.manifest.sha256,
+        "schemaVersion": 1,
+        "tree": git.get("tree") if isinstance(git, dict) else None,
+    }
+    canonical = json.dumps(
+        expected,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != set(expected)
+        or payload != expected
+        or raw != canonical
+    ):
+        raise DirectNotaryTransactionError(
+            "candidate source binding does not match the pinned "
+            "manifest and release source"
+        )
+    return payload
 
 
 def verify_candidate_app(
@@ -1289,6 +1343,7 @@ def _transaction_matches_current_release(
         == {
             "infoPlist": inputs.info.sha256,
             "manifest": inputs.manifest.sha256,
+            "sourceBinding": inputs.source_binding.sha256,
             "evidence": inputs.evidence.sha256,
             "attestation": inputs.attestation.sha256,
         }
@@ -2108,6 +2163,7 @@ def run_transaction(
     attestation: Path,
     release_channel: str,
     notary_profile: str,
+    source_binding: Path | None = None,
     runner: CommandRunner = default_runner,
     phase_hook: PhaseHook | None = None,
     source_snapshot: SOURCE.ReleaseSourceSnapshot | None = None,
@@ -2178,9 +2234,15 @@ def run_transaction(
             final_check_root,
         ):
             directory.mkdir(mode=0o700)
+        resolved_source_binding = (
+            source_binding
+            if source_binding is not None
+            else manifest.parent / "direct-candidate-source.json"
+        )
         inputs = snapshot_candidate_inputs(
             info_plist=project_root / "Resources" / "Info.plist",
             manifest=manifest,
+            source_binding=resolved_source_binding,
             evidence=evidence,
             attestation=attestation,
             destination=inputs_root,
@@ -2195,6 +2257,7 @@ def run_transaction(
                 "release source snapshot belongs to another worktree"
             )
         source_assertion(release_source)
+        validate_candidate_source_binding(inputs, release_source)
         bound_runtime_build_evidence = (
             runtime_build_evidence
             if runtime_build_evidence is not None
@@ -2204,6 +2267,7 @@ def run_transaction(
             )
         )
         context["manifest"] = inputs.manifest.pinned
+        context["source_binding"] = inputs.source_binding.pinned
         context["evidence"] = inputs.evidence.pinned
         context["attestation"] = inputs.attestation.pinned
         context["info"] = inputs.info.pinned
@@ -2279,6 +2343,7 @@ def run_transaction(
                 "candidateInputs": {
                     "infoPlist": inputs.info.sha256,
                     "manifest": inputs.manifest.sha256,
+                    "sourceBinding": inputs.source_binding.sha256,
                     "evidence": inputs.evidence.sha256,
                     "attestation": inputs.attestation.sha256,
                 },
@@ -2356,6 +2421,7 @@ def run_transaction(
         final_root = transaction_root / "final"
         final_check_root = transaction_root / "final-check"
         context["manifest"] = inputs.manifest.pinned
+        context["source_binding"] = inputs.source_binding.pinned
         context["evidence"] = inputs.evidence.pinned
         context["attestation"] = inputs.attestation.pinned
         context["info"] = inputs.info.pinned
@@ -2930,6 +2996,7 @@ def main() -> int:
     parser.add_argument("--project-root", type=Path, required=True)
     parser.add_argument("--app", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--source-binding", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--attestation", type=Path, required=True)
     parser.add_argument(
@@ -2944,6 +3011,7 @@ def main() -> int:
             project_root=args.project_root,
             app=args.app,
             manifest=args.manifest,
+            source_binding=args.source_binding,
             evidence=args.evidence,
             attestation=args.attestation,
             release_channel=args.release_channel,

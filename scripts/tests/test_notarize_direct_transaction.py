@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 import os
 import plistlib
@@ -196,6 +197,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
         *,
         commit: str = "a",
     ) -> dict[str, object]:
+        tree = "b" * 40
         snapshot = MODULE.SOURCE.ReleaseSourceSnapshot(
             project_root=root.resolve(),
             payload={
@@ -205,7 +207,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 "git": {
                     "objectFormat": "sha1",
                     "commit": commit * 40,
-                    "tree": "b" * 40,
+                    "tree": tree,
                     "worktreeState": "clean",
                 },
                 "digestAlgorithm": "sha256",
@@ -214,6 +216,23 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             },
             files=(),
         )
+        manifest = root / "dist" / "direct-candidate-manifest.json"
+        binding = root / "dist" / "direct-candidate-source.json"
+        binding.write_bytes(
+            json.dumps(
+                {
+                    "commit": commit * 40,
+                    "manifestSHA256": hashlib.sha256(
+                        manifest.read_bytes()
+                    ).hexdigest(),
+                    "schemaVersion": 1,
+                    "tree": tree,
+                },
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        )
+        binding.chmod(0o600)
         return {
             "source_snapshot": snapshot,
             "source_assertion": lambda _snapshot: None,
@@ -382,6 +401,7 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 for value in receipt["candidateInputs"].values()
             )
         )
+        self.assertIn("sourceBinding", receipt["candidateInputs"])
         self.assertEqual(
             receipt["releaseSource"]["git"]["commit"],
             "a" * 40,
@@ -401,6 +421,49 @@ class DirectNotaryTransactionTests(unittest.TestCase):
         self.assertEqual(checksum_mode, 0o400)
         self.assertEqual(len(accepted_receipts), 1)
         self.assertNotIn("test-profile", receipt_text)
+
+    def test_source_binding_must_match_pinned_manifest_and_release_source(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            source_kwargs = self.source_kwargs(root, commit="a")
+            binding = root / "dist" / "direct-candidate-source.json"
+            payload = json.loads(binding.read_text(encoding="utf-8"))
+            payload["commit"] = "d" * 40
+            binding.write_bytes(
+                json.dumps(
+                    payload,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ).encode("utf-8")
+            )
+            binding.chmod(0o600)
+            runner = FakeReleaseRunner()
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "does not match the pinned manifest and release source",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=runner,
+                    **source_kwargs,
+                )
+
+            self.assertFalse(
+                any(
+                    command[:3] == ["xcrun", "notarytool", "submit"]
+                    for command in runner.commands
+                )
+            )
 
     @unittest.skipUnless(
         hasattr(__import__("select"), "kqueue"),
@@ -602,6 +665,51 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 any(
                     command[:3]
                     == ["xcrun", "notarytool", "submit"]
+                    for command in runner.commands
+                )
+            )
+
+    def test_source_binding_write_restore_aborts_before_notary_submit(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            runner = FakeReleaseRunner()
+
+            def mutate_input(
+                phase: str,
+                _context: dict[str, Path],
+            ) -> None:
+                if phase == "inputs-pinned":
+                    binding = (
+                        root / "dist" / "direct-candidate-source.json"
+                    )
+                    original = binding.read_bytes()
+                    binding.write_bytes(b"changed")
+                    binding.write_bytes(original)
+                    binding.chmod(0o600)
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "input changed",
+            ):
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="test-profile",
+                    runner=runner,
+                    phase_hook=mutate_input,
+                    **self.source_kwargs(root),
+                )
+
+            self.assertFalse(
+                any(
+                    command[:3] == ["xcrun", "notarytool", "submit"]
                     for command in runner.commands
                 )
             )
