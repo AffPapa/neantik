@@ -35,6 +35,8 @@ NeAntik AffPapa Direct release client
   abort                    безопасно очистить только NeAntik staging
   prepare <release-dir>    проверить и загрузить кандидат, затем server check
   publish <release-dir>    GitHub gate + hosted bytes + atomic metadata activation
+  resume-publish <release-dir>
+                           продолжить проверенный staging без повторной загрузки
   upload <file>            загрузить один разрешённый файл
   rollback-check           проверить доступность отката без изменений
   rollback                 откатить последний NeAntik release backup
@@ -105,22 +107,23 @@ PY
 }
 
 verify_local_artifacts() {
-    local directory="$1"
+    local manifest_path="$1"
+    local directory="$2"
     local dmg zip
-    dmg=$(python3 - "$directory/release.json" <<'PY'
+    dmg=$(python3 - "$manifest_path" "$directory" <<'PY'
 import json
 import sys
 from pathlib import Path
-root = Path(sys.argv[1]).parent
+root = Path(sys.argv[2])
 manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 print(root / next(item["filename"] for item in manifest["artifacts"] if item["format"] == "dmg"))
 PY
 )
-    zip=$(python3 - "$directory/release.json" <<'PY'
+    zip=$(python3 - "$manifest_path" "$directory" <<'PY'
 import json
 import sys
 from pathlib import Path
-root = Path(sys.argv[1]).parent
+root = Path(sys.argv[2])
 manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 print(root / next(item["filename"] for item in manifest["artifacts"] if item["format"] == "zip"))
 PY
@@ -129,6 +132,26 @@ PY
     python3 "$PROJECT_ROOT/scripts/verify-direct-notarized-archive.py" \
         --project-root "$PROJECT_ROOT" \
         --archive "$zip"
+}
+
+verify_release_artifacts_with_policy_fallback() {
+    local manifest="$1"
+    local directory="$2"
+    local strict_output
+    if strict_output=$(verify_local_artifacts "$manifest" "$directory" 2>&1); then
+        printf '%s\n' "$strict_output"
+        return 0
+    fi
+    printf '%s\n' "$strict_output" >&2
+    if ! printf '%s\n' "$strict_output" |
+        grep -Eqi 'kLSDataUnavailableErr|LSDataUnavailable|internal error in code signing subsystem'; then
+        return 1
+    fi
+    python3 \
+        "$PROJECT_ROOT/scripts/verify-direct-release-local-policy-fallback.py" \
+        --project-root "$PROJECT_ROOT" \
+        --manifest "$manifest" \
+        --directory "$directory"
 }
 
 verify_artifact_files_against_manifest() {
@@ -151,13 +174,15 @@ verify_artifact_files_against_manifest() {
             echo "Ошибка: SHA-256 $filename изменился" >&2
             return 1
         }
-        if [[ "$format" == "dmg" ]]; then
-            "$PROJECT_ROOT/scripts/verify-direct-notarized-dmg.sh" "$path"
-        else
-            python3 "$PROJECT_ROOT/scripts/verify-direct-notarized-archive.py" \
-                --project-root "$PROJECT_ROOT" \
-                --archive "$path"
-        fi
+        local sidecar="$path.sha256"
+        [[ -f "$sidecar" && ! -L "$sidecar" ]] || {
+            echo "Ошибка: не найден checksum sidecar: $sidecar" >&2
+            return 1
+        }
+        [[ "$(cat "$sidecar")" == "$expected_hash  $filename" ]] || {
+            echo "Ошибка: checksum sidecar неканоничен: $sidecar" >&2
+            return 1
+        }
     done < <(python3 - "$manifest" <<'PY'
 import json
 import sys
@@ -171,6 +196,7 @@ for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
     )
 PY
 )
+    verify_release_artifacts_with_policy_fallback "$manifest" "$directory"
 }
 
 verify_hosted_artifacts() {
@@ -195,6 +221,11 @@ import json
 import sys
 for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
     print(artifact["url"], artifact["filename"], sep="\t")
+    print(
+        artifact["url"] + ".sha256",
+        artifact["filename"] + ".sha256",
+        sep="\t",
+    )
 PY
 )
     if ! verify_artifact_files_against_manifest "$manifest" "$temporary"; then
@@ -229,7 +260,7 @@ PY
         return 1
     }
     local release_json temporary
-    release_json=$(mktemp /tmp/neantik-github-release.XXXXXX.json)
+    release_json=$(mktemp /tmp/neantik-github-release.XXXXXX)
     temporary=$(mktemp -d /tmp/neantik-github-assets.XXXXXX)
     if ! gh release view "$tag" \
         --repo AffPapa/neantik \
@@ -250,6 +281,9 @@ expected = {
     item["filename"]: item["sizeBytes"]
     for item in manifest["artifacts"]
 }
+for item in manifest["artifacts"]:
+    sidecar = f"{item['sha256']}  {item['filename']}\n".encode()
+    expected[item["filename"] + ".sha256"] = len(sidecar)
 assets = {
     item["name"]: item["size"]
     for item in release["assets"]
@@ -277,6 +311,7 @@ import json
 import sys
 for artifact in json.load(open(sys.argv[1], encoding="utf-8"))["artifacts"]:
     print(artifact["filename"])
+    print(artifact["filename"] + ".sha256")
 PY
 )
     rm -f "$release_json"
@@ -293,16 +328,20 @@ prepare_release() {
     [[ -d "$directory" ]] || fail "каталог кандидата не найден: $directory"
     directory=$(cd "$directory" && pwd)
     local live_manifest
-    live_manifest=$(mktemp /tmp/neantik-live-release.XXXXXX.json)
+    live_manifest=$(mktemp /tmp/neantik-live-release.XXXXXX)
+    local cache_bust
+    cache_bust=$(date +%s)
     curl -fsS --max-time 30 \
-        https://affpapa.org/neantik/release.json \
+        "https://affpapa.org/neantik/release.json?release_gate=$cache_bust" \
         -o "$live_manifest"
     if ! python3 "$VALIDATOR" "$directory" "$live_manifest"; then
         rm -f "$live_manifest"
         return 1
     fi
     rm -f "$live_manifest"
-    verify_local_artifacts "$directory"
+    verify_release_artifacts_with_policy_fallback \
+        "$directory/release.json" \
+        "$directory"
 
     remote neantik-release-abort
     local uploaded=0
@@ -326,11 +365,19 @@ prepare_release() {
 
 verify_live_metadata() {
     local release_json content_json
-    release_json=$(mktemp /tmp/neantik-live-release.XXXXXX.json)
-    content_json=$(mktemp /tmp/neantik-live-content.XXXXXX.json)
-    curl -fsS --max-time 30 https://affpapa.org/neantik -o /dev/null
-    curl -fsS --max-time 30 https://affpapa.org/neantik/release.json -o "$release_json"
-    curl -fsS --max-time 30 https://affpapa.org/neantik/content.json -o "$content_json"
+    release_json=$(mktemp /tmp/neantik-live-release.XXXXXX)
+    content_json=$(mktemp /tmp/neantik-live-content.XXXXXX)
+    local cache_bust
+    cache_bust=$(date +%s)
+    curl -fsS --max-time 30 \
+        "https://affpapa.org/neantik?release_gate=$cache_bust" \
+        -o /dev/null
+    curl -fsS --max-time 30 \
+        "https://affpapa.org/neantik/release.json?release_gate=$cache_bust" \
+        -o "$release_json"
+    curl -fsS --max-time 30 \
+        "https://affpapa.org/neantik/content.json?release_gate=$cache_bust" \
+        -o "$content_json"
     python3 - "$release_json" "$content_json" <<'PY'
 import json
 import sys
@@ -364,9 +411,11 @@ PY
 
 verify_live() {
     local release_json
-    release_json=$(mktemp /tmp/neantik-live-full.XXXXXX.json)
+    release_json=$(mktemp /tmp/neantik-live-full.XXXXXX)
+    local cache_bust
+    cache_bust=$(date +%s)
     if ! curl -fsS --max-time 30 \
-        https://affpapa.org/neantik/release.json \
+        "https://affpapa.org/neantik/release.json?release_gate=$cache_bust" \
         -o "$release_json"; then
         rm -f "$release_json"
         return 1
@@ -409,6 +458,38 @@ assert remote.get("files") == expected, {
 }
 print(f"PASS: server ops contract matches {len(expected)} reviewed files.")
 PY
+}
+
+publish_staged_release() {
+    local directory="$1"
+    [[ -d "$directory" ]] || fail "каталог кандидата не найден: $directory"
+    directory=$(cd "$directory" && pwd)
+    if ! remote "neantik-release-deploy --check"; then
+        return 1
+    fi
+    if ! verify_github_release "$directory/release.json"; then
+        remote neantik-release-abort || true
+        return 1
+    fi
+    if ! remote "neantik-release-deploy --stage-artifacts"; then
+        remote neantik-release-abort || true
+        return 1
+    fi
+    if ! verify_hosted_artifacts "$directory/release.json"; then
+        echo "Ошибка: immutable artifacts не прошли внешнюю проверку; metadata не активирована." >&2
+        remote neantik-release-abort || true
+        return 1
+    fi
+    if ! remote "neantik-release-deploy --activate"; then
+        remote neantik-release-abort || true
+        return 1
+    fi
+    if ! verify_live; then
+        echo "Ошибка: live-проверка не прошла; выполняю автоматический rollback." >&2
+        remote neantik-release-rollback || true
+        verify_live_metadata || true
+        return 1
+    fi
 }
 
 doctor() {
@@ -457,29 +538,12 @@ main() {
         publish)
             [[ $# -eq 2 ]] || fail "использование: publish <release-dir>"
             prepare_release "$2"
-            if ! verify_github_release "$2/release.json"; then
-                remote neantik-release-abort || true
-                return 1
-            fi
-            if ! remote "neantik-release-deploy --stage-artifacts"; then
-                remote neantik-release-abort || true
-                return 1
-            fi
-            if ! verify_hosted_artifacts "$2/release.json"; then
-                echo "Ошибка: immutable artifacts не прошли внешнюю проверку; metadata не активирована." >&2
-                remote neantik-release-abort || true
-                return 1
-            fi
-            if ! remote "neantik-release-deploy --activate"; then
-                remote neantik-release-abort || true
-                return 1
-            fi
-            if ! verify_live; then
-                echo "Ошибка: live-проверка не прошла; выполняю автоматический rollback." >&2
-                remote neantik-release-rollback || true
-                verify_live_metadata || true
-                return 1
-            fi
+            publish_staged_release "$2"
+            ;;
+        resume-publish)
+            [[ $# -eq 2 ]] ||
+                fail "использование: resume-publish <release-dir>"
+            publish_staged_release "$2"
             ;;
         upload)
             [[ $# -eq 2 ]] || fail "использование: upload <file>"

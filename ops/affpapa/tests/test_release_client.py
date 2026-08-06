@@ -11,7 +11,10 @@ SUDOERS = ROOT / "ops" / "affpapa" / "neantik-deploy.sudoers"
 class ReleaseClientTests(unittest.TestCase):
     def test_publish_verifies_bytes_before_metadata_activation(self) -> None:
         text = CLIENT.read_text(encoding="utf-8")
-        publish = text[text.index("        publish)"):text.index("        upload)")]
+        publish = text[
+            text.index("publish_staged_release()"):
+            text.index("doctor()")
+        ]
 
         self.assertLess(
             publish.index("verify_github_release"),
@@ -29,8 +32,38 @@ class ReleaseClientTests(unittest.TestCase):
         self.assertIn("shasum -a 256", text)
         self.assertIn("verify-direct-notarized-dmg.sh", text)
         self.assertIn("verify-direct-notarized-archive.py", text)
+        self.assertIn(
+            "verify-direct-release-local-policy-fallback.py",
+            text,
+        )
+        self.assertIn('artifact["url"] + ".sha256"', text)
+        self.assertIn('artifact["filename"] + ".sha256"', text)
         self.assertIn("gh release download", text)
         self.assertIn("repos/AffPapa/neantik/commits/$tag", text)
+
+    def test_local_policy_fallback_is_limited_to_known_macos_errors(self) -> None:
+        text = CLIENT.read_text(encoding="utf-8")
+        fallback = text[
+            text.index("verify_release_artifacts_with_policy_fallback()"):
+            text.index("verify_artifact_files_against_manifest()")
+        ]
+        self.assertIn("kLSDataUnavailableErr", fallback)
+        self.assertIn("LSDataUnavailable", fallback)
+        self.assertIn("internal error in code signing subsystem", fallback)
+        self.assertIn("return 1", fallback)
+
+    def test_macos_mktemp_templates_end_with_xxxxxx(self) -> None:
+        text = CLIENT.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            if "mktemp " in line and "XXXXXX" in line:
+                template = line.split("XXXXXX", 1)[1]
+                self.assertNotIn(".json", template)
+
+    def test_live_metadata_verification_bypasses_stale_cdn_cache(self) -> None:
+        text = CLIENT.read_text(encoding="utf-8")
+        live = text[text.index("verify_live_metadata()"):text.index("verify_live()")]
+        self.assertIn("release.json?release_gate=$cache_bust", live)
+        self.assertIn("content.json?release_gate=$cache_bust", live)
 
     def test_restricted_channel_allows_only_exact_two_phase_commands(self) -> None:
         dispatcher = DISPATCHER.read_text(encoding="utf-8")
