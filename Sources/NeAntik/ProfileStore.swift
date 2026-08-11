@@ -2,6 +2,10 @@ import Combine
 import Darwin
 import Foundation
 
+protocol ProfileCredentialCleanupRecoveryProviding: Error {
+    var profileIDsRequiringCredentialCleanup: [UUID] { get }
+}
+
 @MainActor
 final class ProfileStore: ObservableObject {
     @Published private(set) var profiles: [BrowserProfile] = []
@@ -170,8 +174,21 @@ final class ProfileStore: ObservableObject {
                         rollbackError: error
                     )
                 }
-                for directory in createdDirectories.reversed() {
-                    try? FileManager.default.removeItem(at: directory)
+                do {
+                    try removeNewProfileDirectories(createdDirectories)
+                    if let recovery = operationError as?
+                        any ProfileCredentialCleanupRecoveryProviding
+                    {
+                        try authorizeCredentialCleanup(
+                            for: recovery
+                                .profileIDsRequiringCredentialCleanup
+                        )
+                    }
+                } catch {
+                    throw ProfileSaveRollbackError(
+                        operationError: operationError,
+                        rollbackError: error
+                    )
                 }
                 throw operationError
             }
@@ -466,6 +483,61 @@ final class ProfileStore: ObservableObject {
             throw POSIXError(.EFTYPE)
         case .regular:
             try FileManager.default.removeItem(at: tombstone)
+        }
+    }
+
+    private func removeNewProfileDirectories(
+        _ directories: [URL]
+    ) throws {
+        for directory in directories.reversed() {
+            guard let identity = try paths.privateFileEntryIdentity(directory)
+            else {
+                continue
+            }
+            guard (identity.mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) else {
+                throw POSIXError(.EFTYPE)
+            }
+            try FileManager.default.removeItem(at: directory)
+        }
+    }
+
+    private func authorizeCredentialCleanup(
+        for profileIDs: [UUID]
+    ) throws {
+        for profileID in Set(profileIDs) {
+            guard !profiles.contains(where: { $0.id == profileID }),
+                  try paths.privateFileEntryKind(
+                      paths.profileDirectory(for: profileID)
+                  ) == .missing
+            else {
+                throw NeAntikError.invalidProfile
+            }
+
+            let tombstone = paths.profileDeletionTombstone(for: profileID)
+            switch try paths.privateFileEntryKind(tombstone) {
+            case .missing:
+                try paths.createPrivateFileExclusively(
+                    Data("rolled-back-insert-v1".utf8),
+                    at: tombstone
+                )
+            case .regular:
+                break
+            case .unsafe:
+                throw POSIXError(.EFTYPE)
+            }
+
+            let marker = paths.profileCredentialCleanupMarker(for: profileID)
+            switch try paths.privateFileEntryKind(marker) {
+            case .missing:
+                try paths.createPrivateFileExclusively(
+                    Data("keychain-cleanup-v1".utf8),
+                    at: marker
+                )
+            case .regular:
+                break
+            case .unsafe:
+                throw POSIXError(.EFTYPE)
+            }
         }
     }
 

@@ -143,11 +143,56 @@ struct BulkProxyImportTests {
         #expect(fixture.store.profiles.isEmpty)
         #expect(backend.storedValueCount == 0)
     }
+
+    @MainActor
+    @Test func importerQueuesOrphanedSecretForSafeNextLaunchCleanup() async throws {
+        let backend = BulkImportKeychainBackend(
+            failOnUpsert: 2,
+            // The failed second upsert first restores its own empty value.
+            // Fail the following delete, which rolls back the first secret.
+            failOnDelete: 2
+        )
+        let fixture = try BulkImportFixture(backend: backend)
+        let drafts = try BulkProxyImportParser.parse(
+            "user:first@one.example:443\nother:second@two.example:8443",
+            kind: .https,
+            order: .automatic
+        )
+
+        #expect(throws: BulkProxyImportError.self) {
+            try BulkProfileImporter.create(
+                drafts: drafts,
+                baseName: "Работа",
+                store: fixture.store,
+                keychain: fixture.keychain
+            )
+        }
+        #expect(fixture.store.profiles.isEmpty)
+        #expect(backend.storedValueCount == 1)
+
+        let pending = try fixture.paths.pendingCredentialCleanupProfileIDs()
+        #expect(pending.count == 1)
+        let cleanup = DeletedProfileCredentialCleanup(
+            paths: fixture.paths,
+            keychain: fixture.keychain
+        )
+        let summary = await cleanup.runOnce(
+            metadataIsTrusted: true,
+            excluding: []
+        )
+
+        #expect(summary.attemptedCount == 1)
+        #expect(summary.clearedCount == 1)
+        #expect(summary.failedCount == 0)
+        #expect(backend.storedValueCount == 0)
+        #expect(try fixture.paths.pendingCredentialCleanupProfileIDs().isEmpty)
+    }
 }
 
 @MainActor
 private final class BulkImportFixture {
     let root: URL
+    let paths: AppPaths
     let store: ProfileStore
     let keychain: KeychainStore
 
@@ -159,7 +204,7 @@ private final class BulkImportFixture {
             isDirectory: true
         )
         root = rootURL
-        let paths = AppPaths(rootDirectory: rootURL)
+        paths = AppPaths(rootDirectory: rootURL)
         let trashRoot = rootURL.appendingPathComponent(
             "Trash",
             isDirectory: true
@@ -210,10 +255,13 @@ private final class BulkImportKeychainBackend:
 {
     private var values: [String: Data] = [:]
     private let failOnUpsert: Int?
+    private let failOnDelete: Int?
     private var upsertCount = 0
+    private var deleteCount = 0
 
-    init(failOnUpsert: Int? = nil) {
+    init(failOnUpsert: Int? = nil, failOnDelete: Int? = nil) {
         self.failOnUpsert = failOnUpsert
+        self.failOnDelete = failOnDelete
     }
 
     var storedValueCount: Int { values.count }
@@ -235,6 +283,10 @@ private final class BulkImportKeychainBackend:
     }
 
     func delete(service: String, profileID: UUID) throws {
+        deleteCount += 1
+        if deleteCount == failOnDelete {
+            throw BulkImportFixtureError.forcedFailure
+        }
         values.removeValue(forKey: key(service: service, profileID: profileID))
     }
 

@@ -62,7 +62,7 @@ enum BulkProxyImportError: LocalizedError, Equatable {
     case tooMany
     case tooLarge
     case invalidLine(Int)
-    case rollbackFailed
+    case rollbackFailed([UUID])
 
     var errorDescription: String? {
         switch self {
@@ -77,6 +77,15 @@ enum BulkProxyImportError: LocalizedError, Equatable {
         case .rollbackFailed:
             "Импорт остановлен, но часть данных Связки ключей не удалось очистить. Профили не созданы; обратись в поддержку, не передавая пароль."
         }
+    }
+}
+
+extension BulkProxyImportError: ProfileCredentialCleanupRecoveryProviding {
+    var profileIDsRequiringCredentialCleanup: [UUID] {
+        guard case let .rollbackFailed(profileIDs) = self else {
+            return []
+        }
+        return profileIDs
     }
 }
 
@@ -119,18 +128,20 @@ enum BulkProfileImporter {
                     savedSecretIDs.append(profile.id)
                 }
             } catch {
-                var cleanupFailed = false
+                var cleanupFailedProfileIDs: [UUID] = []
                 for profileID in savedSecretIDs {
                     do {
                         try keychain.deleteProxyPassword(
                             profileID: profileID
                         )
                     } catch {
-                        cleanupFailed = true
+                        cleanupFailedProfileIDs.append(profileID)
                     }
                 }
-                if cleanupFailed {
-                    throw BulkProxyImportError.rollbackFailed
+                if !cleanupFailedProfileIDs.isEmpty {
+                    throw BulkProxyImportError.rollbackFailed(
+                        cleanupFailedProfileIDs
+                    )
                 }
                 throw error
             }
