@@ -89,6 +89,96 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    @discardableResult
+    func insertNewProfiles(
+        _ requestedProfiles: [BrowserProfile],
+        afterPersist: ([BrowserProfile]) throws -> Void
+    ) throws -> [BrowserProfile] {
+        try paths.withProfilesMetadataGuard {
+            try reloadLatestProfilesForMutation()
+            try requireStorage()
+            guard !requestedProfiles.isEmpty else {
+                throw NeAntikError.invalidProfile
+            }
+
+            let previousProfiles = profiles
+            let existingIDs = Set(previousProfiles.map(\.id))
+            var requestedIDs = Set<UUID>()
+            var prepared = requestedProfiles
+            for index in prepared.indices {
+                guard !existingIDs.contains(prepared[index].id),
+                      requestedIDs.insert(prepared[index].id).inserted,
+                      BrowserProfile.isValidName(prepared[index].name),
+                      ProfileAppearance.isSafeStoredSymbol(
+                          prepared[index].symbolName
+                      ),
+                      let cleanTags = BrowserProfile.normalizedTags(
+                          prepared[index].tags
+                      ),
+                      try paths.privateFileEntryKind(
+                          paths.profileDeletionTombstone(
+                              for: prepared[index].id
+                          )
+                      ) == .missing
+                else {
+                    throw NeAntikError.invalidProfile
+                }
+                prepared[index].tags = cleanTags
+                prepared[index].updatedAt = Date()
+            }
+
+            let normalized = try Self.normalizedForIsolation(
+                previousProfiles + prepared
+            ).profiles
+            let inserted = Array(normalized.suffix(prepared.count))
+            var createdDirectories: [URL] = []
+            do {
+                for profile in inserted {
+                    let directory = paths.profileDirectory(for: profile.id)
+                    guard !FileManager.default.fileExists(
+                        atPath: directory.path
+                    ) else {
+                        throw NeAntikError.invalidProfile
+                    }
+                    try paths.prepareProfileDirectories(for: profile.id)
+                    createdDirectories.append(directory)
+                }
+
+                profiles = normalized
+                sortProfiles()
+                try persist()
+            } catch {
+                profiles = previousProfiles
+                for directory in createdDirectories.reversed() {
+                    try? FileManager.default.removeItem(at: directory)
+                }
+                throw error
+            }
+
+            let persistedProfiles = profiles
+            do {
+                try afterPersist(inserted)
+            } catch {
+                let operationError = error
+                profiles = previousProfiles
+                do {
+                    try persist(synchronizeRecoverySnapshot: true)
+                } catch {
+                    profiles = persistedProfiles
+                    throw ProfileSaveRollbackError(
+                        operationError: operationError,
+                        rollbackError: error
+                    )
+                }
+                for directory in createdDirectories.reversed() {
+                    try? FileManager.default.removeItem(at: directory)
+                }
+                throw operationError
+            }
+            return inserted
+        }
+    }
+
     private func upsertAfterMetadataReload(
         _ profile: BrowserProfile,
         afterPersist: (BrowserProfile) throws -> Void

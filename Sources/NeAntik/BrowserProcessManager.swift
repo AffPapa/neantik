@@ -1378,6 +1378,9 @@ final class BrowserProcessManager: ObservableObject {
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
         }
+        guard !profile.isArchived else {
+            throw NeAntikError.profileArchived
+        }
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)

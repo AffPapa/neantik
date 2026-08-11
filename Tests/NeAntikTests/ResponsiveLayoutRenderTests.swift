@@ -37,6 +37,9 @@ struct ResponsiveLayoutRenderTests {
                 onStart: {},
                 onStop: {},
                 onEdit: {},
+                onDuplicate: {},
+                onTogglePinned: {},
+                onToggleArchived: {},
                 onDelete: {},
                 onReveal: {},
                 onCopyProxyUsername: {},
@@ -58,6 +61,12 @@ struct ResponsiveLayoutRenderTests {
             ) { _, _ in },
             name: "profile-editor-minimum",
             size: CGSize(width: 460, height: 380)
+        )
+
+        try render(
+            BulkProxyImportView { _, _ in },
+            name: "bulk-proxy-import-minimum",
+            size: CGSize(width: 500, height: 500)
         )
 
         let temporaryRoot = FileManager.default.temporaryDirectory
@@ -138,6 +147,9 @@ struct ResponsiveLayoutRenderTests {
                     onStart: {},
                     onStop: {},
                     onEdit: {},
+                    onDuplicate: {},
+                    onTogglePinned: {},
+                    onToggleArchived: {},
                     onDelete: {},
                     onReveal: {},
                     onCopyProxyUsername: {},
@@ -319,6 +331,9 @@ struct ResponsiveLayoutRenderTests {
                         onStart: {},
                         onStop: {},
                         onEdit: {},
+                        onDuplicate: {},
+                        onTogglePinned: {},
+                        onToggleArchived: {},
                         onDelete: {},
                         onReveal: {},
                         onCopyProxyUsername: {},
@@ -382,6 +397,9 @@ struct ResponsiveLayoutRenderTests {
                         onStart: {},
                         onStop: {},
                         onEdit: {},
+                        onDuplicate: {},
+                        onTogglePinned: {},
+                        onToggleArchived: {},
                         onDelete: {},
                         onReveal: {},
                         onCopyProxyUsername: {},

@@ -6,6 +6,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "Sources" / "NeAntik" / "ContentView.swift"
 EDITOR = ROOT / "Sources" / "NeAntik" / "ProfileEditorView.swift"
 AUDIT = ROOT / "Sources" / "NeAntik" / "FingerprintAuditView.swift"
+BULK_IMPORT = ROOT / "Sources" / "NeAntik" / "BulkProxyImport.swift"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
@@ -69,6 +70,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
             text,
         )
         self.assertNotIn(".onSubmit(save)", text)
+
+    def test_bulk_proxy_import_is_bounded_local_and_secret_safe(self) -> None:
+        text = BULK_IMPORT.read_text(encoding="utf-8")
+        self.assertIn("static let maximumEntries = 100", text)
+        self.assertIn("static let maximumInputBytes = 512 * 1_024", text)
+        self.assertIn(".privacySensitive()", text)
+        self.assertIn("Соединение автоматически не проверяется", text)
+        self.assertNotIn("ProxyTester", text)
+        self.assertNotIn("startProxyTest", text)
 
     def test_narrow_proxy_and_audit_controls_have_fallbacks(self) -> None:
         editor = EDITOR.read_text(encoding="utf-8")

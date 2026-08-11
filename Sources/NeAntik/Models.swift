@@ -636,6 +636,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var colorHex: String
     var symbolName: String
     var tags: [String]
+    var isPinned: Bool
+    var isArchived: Bool
     var startURL: String
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
@@ -649,6 +651,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         colorHex: String? = nil,
         symbolName: String? = nil,
         tags: [String] = [],
+        isPinned: Bool = false,
+        isArchived: Bool = false,
         startURL: String = "https://www.google.com",
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
@@ -662,6 +666,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.symbolName =
             symbolName ?? ProfileAppearance.defaultSymbol(for: id)
         self.tags = Self.normalizedTags(tags) ?? []
+        self.isPinned = isPinned
+        self.isArchived = isArchived
         self.startURL = startURL
         self.proxy = proxy
         self.identity = identity
@@ -703,6 +709,22 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         return result
     }
 
+    func duplicated(at date: Date = Date()) -> BrowserProfile {
+        let suffix = " — копия"
+        let prefixLength = max(1, Self.maximumNameLength - suffix.count)
+        return BrowserProfile(
+            name: String(name.prefix(prefixLength)) + suffix,
+            colorHex: colorHex,
+            symbolName: symbolName,
+            tags: tags,
+            startURL: startURL,
+            proxy: proxy,
+            identity: BrowserIdentity(),
+            createdAt: date,
+            updatedAt: date
+        )
+    }
+
     var displaySymbolName: String {
         ProfileAppearance.displaySymbol(symbolName, profileID: id)
     }
@@ -713,6 +735,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case colorHex
         case symbolName
         case tags
+        case isPinned
+        case isArchived
         case startURL
         case proxy
         case identity
@@ -757,6 +781,14 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             )
         }
         tags = cleanTags
+        isPinned = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .isPinned
+        ) ?? false
+        isArchived = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .isArchived
+        ) ?? false
         startURL = try container.decode(String.self, forKey: .startURL)
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
@@ -874,6 +906,7 @@ enum NeAntikError: LocalizedError {
     case profileAlreadyRunning
     case invalidProfile
     case invalidProxy
+    case profileArchived
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -889,6 +922,8 @@ enum NeAntikError: LocalizedError {
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .invalidProxy:
             "Укажи корректный хост и порт прокси."
+        case .profileArchived:
+            "Сначала верни профиль из архива."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case .processLaunchFailed:

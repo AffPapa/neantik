@@ -14,18 +14,17 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Current published release:
+Current published public-alpha release:
 
-- NeAntik `0.3.15` build `18`;
+- NeAntik `0.3.16` build `19`;
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `150.0.7871.186`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.15-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.15-arm64-notarized.dmg`;
+- Chromium `151.0.7922.75`, ARM64, Metal;
+- ZIP: `NeAntik-0.3.16-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.16-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-This branch prepares candidate `0.3.16` (19) with Chromium
-`151.0.7922.75`. It is not a published download until signed DMG/ZIP assets
-appear in GitHub Releases.
+New branch changes are not a binary release until separately signed and
+notarized DMG/ZIP assets appear in GitHub Releases.
 
 Product website: <https://affpapa.org/neantik>.
 
@@ -33,8 +32,13 @@ Product website: <https://affpapa.org/neantik>.
 
 - keeps cookies, local storage, and browser data in separate persistent
   profiles;
+- searches profiles by name and tags, pins important profiles, archives
+  inactive profiles without deleting data, and creates clean independent
+  configuration copies;
 - supports direct connections, authenticated HTTP/HTTPS through Chromium's
   native prompt, and SOCKS5 without credentials;
+- locally parses a proxy list and atomically creates up to 100 independent
+  profiles without automatic network requests;
 - keeps proxy passwords in macOS Keychain;
 - launches Chromium with a minimal system-environment allowlist instead of
   inheriting proxy variables, TLS key logs, or Terminal tokens;
@@ -43,7 +47,8 @@ Product website: <https://affpapa.org/neantik>.
   patched Chromium runtime; newly created profiles are distributed with the
   system CSPRNG across four reviewed Apple Silicon cohorts, while existing
   profiles are never rotated automatically;
-- includes an A → B → A audit for stability and separation;
+- includes a protected release-only A → B → A audit for stability and
+  separation without exposing it in the normal user flow;
 - keeps Direct telemetry disabled.
 
 For authenticated HTTP/HTTPS proxies, separate buttons copy the username and
@@ -58,7 +63,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.16` is being prepared for public-alpha profile isolation. Strict
+Version `0.3.16` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
