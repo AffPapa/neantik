@@ -874,7 +874,6 @@ enum NeAntikError: LocalizedError {
     case profileAlreadyRunning
     case invalidProfile
     case invalidProxy
-    case proxyContextNeedsRetest
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -890,8 +889,6 @@ enum NeAntikError: LocalizedError {
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .invalidProxy:
             "Укажи корректный хост и порт прокси."
-        case .proxyContextNeedsRetest:
-            "Контекст прокси устарел или не подтверждён. Открой профиль, снова проверь прокси и сохрани изменения перед запуском."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case .processLaunchFailed:

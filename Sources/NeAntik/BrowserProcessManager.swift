@@ -218,21 +218,6 @@ enum BrowserLaunchBuilder {
         "__CFBundleIdentifier"
     ]
 
-    static func requiresProxyContextRetest(
-        profile: BrowserProfile,
-        now: Date = Date()
-    ) -> Bool {
-        guard profile.proxy != nil,
-              profile.identity.timezoneIdentifier != nil ||
-                profile.identity.localeIdentifier != nil
-        else {
-            return false
-        }
-        return profile.identity.proxyContextEvidence?.isFresh(
-            relativeTo: now
-        ) != true
-    }
-
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
         "--proxy-server",
@@ -1393,12 +1378,6 @@ final class BrowserProcessManager: ObservableObject {
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
         }
-        guard !BrowserLaunchBuilder.requiresProxyContextRetest(
-            profile: profile
-        ) else {
-            throw NeAntikError.proxyContextNeedsRetest
-        }
-
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)

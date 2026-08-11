@@ -572,12 +572,6 @@ struct ContentView: View {
                 isResolvingRuntime: isResolvingRuntime,
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
                 runtimeSupportsFingerprint: runtime?.supportsFingerprintIdentity == true,
-                canRunFingerprintAudit:
-                    runtime?.supportsFingerprintIdentity == true &&
-                    runtimePreflight?.isReady == true &&
-                    store.profiles.count >= 2,
-                fingerprintAuditUnavailableReason:
-                    fingerprintAuditUnavailableReason,
                 clipboardNotice:
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
@@ -599,9 +593,6 @@ struct ContentView: View {
                         return
                     }
                     editorRequest = EditorRequest(profile: profile)
-                },
-                onFingerprintAudit: {
-                    showingFingerprintAudit = true
                 },
                 onDelete: {
                     guard !processes.runningProfileIDs.contains(profile.id) else {
@@ -774,19 +765,6 @@ struct ContentView: View {
         .font(.caption)
         .padding(12)
         .accessibilityElement(children: .contain)
-    }
-
-    private var fingerprintAuditUnavailableReason: String? {
-        if store.profiles.count < 2 {
-            return "Для сравнения создай ещё один профиль."
-        }
-        if runtime?.supportsFingerprintIdentity != true {
-            return "Проверка доступна со встроенным совместимым браузером."
-        }
-        if runtimePreflight?.isReady != true {
-            return "Браузерный движок пока не готов к проверке."
-        }
-        return nil
     }
 
     private var runtimeStatusIcon: String {
@@ -1073,8 +1051,6 @@ struct ProfileDetailView: View {
     let isResolvingRuntime: Bool
     let browserDataPath: String
     let runtimeSupportsFingerprint: Bool
-    let canRunFingerprintAudit: Bool
-    let fingerprintAuditUnavailableReason: String?
     let clipboardNotice: String?
     let isSidebarVisible: Bool
     let onToggleSidebar: () -> Void
@@ -1082,7 +1058,6 @@ struct ProfileDetailView: View {
     let onStart: () -> Void
     let onStop: () -> Void
     let onEdit: () -> Void
-    let onFingerprintAudit: () -> Void
     let onDelete: () -> Void
     let onReveal: () -> Void
     let onCopyProxyUsername: () -> Void
@@ -1157,17 +1132,6 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 22) {
-            if let fingerprintAuditUnavailableReason {
-                Label(
-                    fingerprintAuditUnavailableReason,
-                    systemImage: "info.circle"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(
-                    "Проверка профиля недоступна. \(fingerprintAuditUnavailableReason)"
-                )
-            }
             if let clipboardNotice {
                 Label(
                     clipboardNotice,
@@ -1184,7 +1148,7 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
-            GroupBox("Отпечаток профиля") {
+            GroupBox("Изоляция") {
                 fingerprintSummary
                     .padding(.vertical, 4)
             }
@@ -1245,7 +1209,7 @@ struct ProfileDetailView: View {
             }
             Text(
                 runtimeSupportsFingerprint
-                    ? "Параметры устройства стабильны для этого профиля."
+                    ? "Параметры браузера закреплены за профилем автоматически."
                     : "Совместимый встроенный браузер пока недоступен."
             )
             .font(.caption)
@@ -1341,38 +1305,22 @@ struct ProfileDetailView: View {
                     : "Изменить профиль"
             )
 
-            Button(action: onReveal) {
-                compactActionLabel("Данные", systemImage: "folder")
+            Menu {
+                Button(action: onReveal) {
+                    Label("Показать данные", systemImage: "folder")
+                }
+                Divider()
+                Button(role: .destructive, action: onDelete) {
+                    Label("Удалить профиль", systemImage: "trash")
+                }
+                .disabled(isRunning)
+            } label: {
+                compactActionLabel("Ещё", systemImage: "ellipsis.circle")
             }
-
-            Button(action: onFingerprintAudit) {
-                compactActionLabel(
-                    "Проверить профиль",
-                    systemImage: "checkmark.shield"
-                )
-            }
-            .disabled(
-                !canRunFingerprintAudit ||
-                    processState == .checking
-            )
-            .help(
-                canRunFingerprintAudit
-                    ? "Проверить стабильность и различие профиля"
-                    : "Нужны два профиля и готовый совместимый движок"
-            )
-
-            Button(role: .destructive, action: onDelete) {
-                compactActionLabel("Удалить", systemImage: "trash")
-            }
-            .disabled(isRunning)
             .help(
                 isRunning
-                    ? (
-                        processState == .checking
-                            ? "Дождись завершения проверки"
-                            : "Сначала останови профиль"
-                    )
-                    : "Удалить профиль"
+                    ? "Данные доступны; удаление — после остановки профиля"
+                    : "Данные и удаление профиля"
             )
         }
         .buttonStyle(.bordered)

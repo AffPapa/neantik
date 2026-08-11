@@ -38,11 +38,28 @@ class ResponsiveUIContractTests(unittest.TestCase):
         for action in (
             '"Запустить"',
             '"Изменить"',
-            '"Данные"',
-            '"Проверить профиль"',
-            '"Удалить"',
+            '"Ещё"',
+            '"Показать данные"',
+            '"Удалить профиль"',
         ):
             self.assertIn(action, text)
+        self.assertNotIn(
+            'compactActionLabel(\n                    "Проверить профиль"',
+            text,
+        )
+
+    def test_proxy_import_is_local_and_connection_test_is_optional(
+        self,
+    ) -> None:
+        text = EDITOR.read_text(encoding="utf-8")
+        self.assertIn('Label("Вставить прокси"', text)
+        self.assertIn('Label("Проверить прокси"', text)
+        self.assertIn("private func importProxy()", text)
+        self.assertNotIn("importProxyAndTest", text)
+        import_start = text.index("private func importProxy()")
+        test_start = text.index("private func startProxyTest(")
+        import_body = text[import_start:test_start]
+        self.assertNotIn("startProxyTest(", import_body)
 
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
