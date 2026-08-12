@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "targetChromiumVersion": "151.0.7922.75",
+  "targetChromiumVersion": "151.0.7922.108",
   "minimumPrepareFreeGiB": 55,
   "preservedEvidenceBuildRoot": "/private/tmp/nevision-chromium-build-20260725",
   "officialChromiumBase": {
     "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "151.0.7922.75",
-    "commit": "1ddc0a2003eb30c3990568d74ed0437451e9c374",
-    "tree": "07c21c83df8c29373f2ff5e7fb3d44a2bb1443c3",
+    "tag": "151.0.7922.108",
+    "commit": "4744b886309d987d292e43232776d2206cccb13d",
+    "tree": "6163e54114d4c0bbbb3e762315b063700d5a713c",
     "liteArchive": {
-      "filename": "chromium-151.0.7922.75-lite.tar.xz",
-      "sha256": "4bc6bc515e61e20f8c400997ae2af9ccb9f455bac1bb0532337be78736f89947",
-      "hashesFileSHA256": "b24ecc434295309276cb476ddca2a10d62ed0ab3826921e8b7a7bb76812a9af6"
+      "filename": "chromium-151.0.7922.108-lite.tar.xz",
+      "sha256": "3f13338d12db5c6e17464b3be28eca2a07d64c7c58634268fa76924e3c5243aa",
+      "hashesFileSHA256": "7f16ae389452232f45ac87144363e04df5488dd3c060b039cf2fbe2918c13969"
     }
   },
   "macPackaging": {
@@ -22,15 +22,15 @@
   },
   "commonChromium": {
     "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
-    "tag": "151.0.7922.71-1",
-    "tagObject": "fab7818c01a4660f588bc390ed46174661d570d3",
-    "commit": "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
-    "tree": "eb75a0ed767e8c0cd8576c92fe4c364dfdad03c0"
+    "tag": "151.0.7922.108-1",
+    "tagObject": "c3497a1be12b0ee49aea3aa7a4d5644e9bcfae78",
+    "commit": "ecbcc4c1413c961e37d4224f787fecb8534b1505",
+    "tree": "cf5f0f7af2c831651dbe574934a2daf5b50c0d6f"
   },
   "sourceVersionOverride": {
-    "from": "151.0.7922.71",
-    "to": "151.0.7922.75",
-    "reason": "Use the pinned ungoogled Chromium 151 packaging and patchset while retrieving the newer official macOS Stable source archive required by the Direct release baseline."
+    "from": "151.0.7922.108",
+    "to": "151.0.7922.108",
+    "reason": "The matching ungoogled Chromium packaging layer already selects the official macOS Stable 151.0.7922.108 source archive; the explicit no-op version boundary prevents accidental fallback to a different archive."
   },
   "policy": "Do not mutate or delete the preserved Chromium evidence build root automatically. Use a separate absolute build root, verify the official archive SHA-256, apply upstream, packaging and owned NeAntik patches with zero fuzz, then regenerate source and binary evidence."
 }

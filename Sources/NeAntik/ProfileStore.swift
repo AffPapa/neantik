@@ -2,6 +2,10 @@ import Combine
 import Darwin
 import Foundation
 
+protocol ProfileCredentialCleanupRecoveryProviding: Error {
+    var profileIDsRequiringCredentialCleanup: [UUID] { get }
+}
+
 @MainActor
 final class ProfileStore: ObservableObject {
     @Published private(set) var profiles: [BrowserProfile] = []
@@ -86,6 +90,109 @@ final class ProfileStore: ObservableObject {
                 profile,
                 afterPersist: afterPersist
             )
+        }
+    }
+
+    @discardableResult
+    func insertNewProfiles(
+        _ requestedProfiles: [BrowserProfile],
+        afterPersist: ([BrowserProfile]) throws -> Void
+    ) throws -> [BrowserProfile] {
+        try paths.withProfilesMetadataGuard {
+            try reloadLatestProfilesForMutation()
+            try requireStorage()
+            guard !requestedProfiles.isEmpty else {
+                throw NeAntikError.invalidProfile
+            }
+
+            let previousProfiles = profiles
+            let existingIDs = Set(previousProfiles.map(\.id))
+            var requestedIDs = Set<UUID>()
+            var prepared = requestedProfiles
+            for index in prepared.indices {
+                guard !existingIDs.contains(prepared[index].id),
+                      requestedIDs.insert(prepared[index].id).inserted,
+                      BrowserProfile.isValidName(prepared[index].name),
+                      ProfileAppearance.isSafeStoredSymbol(
+                          prepared[index].symbolName
+                      ),
+                      let cleanTags = BrowserProfile.normalizedTags(
+                          prepared[index].tags
+                      ),
+                      try paths.privateFileEntryKind(
+                          paths.profileDeletionTombstone(
+                              for: prepared[index].id
+                          )
+                      ) == .missing
+                else {
+                    throw NeAntikError.invalidProfile
+                }
+                prepared[index].tags = cleanTags
+                prepared[index].updatedAt = Date()
+            }
+
+            let normalized = try Self.normalizedForIsolation(
+                previousProfiles + prepared
+            ).profiles
+            let inserted = Array(normalized.suffix(prepared.count))
+            var createdDirectories: [URL] = []
+            do {
+                for profile in inserted {
+                    let directory = paths.profileDirectory(for: profile.id)
+                    guard !FileManager.default.fileExists(
+                        atPath: directory.path
+                    ) else {
+                        throw NeAntikError.invalidProfile
+                    }
+                    try paths.prepareProfileDirectories(for: profile.id)
+                    createdDirectories.append(directory)
+                }
+
+                profiles = normalized
+                sortProfiles()
+                try persist()
+            } catch {
+                profiles = previousProfiles
+                for directory in createdDirectories.reversed() {
+                    try? FileManager.default.removeItem(at: directory)
+                }
+                throw error
+            }
+
+            let persistedProfiles = profiles
+            do {
+                try afterPersist(inserted)
+            } catch {
+                let operationError = error
+                profiles = previousProfiles
+                do {
+                    try persist(synchronizeRecoverySnapshot: true)
+                } catch {
+                    profiles = persistedProfiles
+                    throw ProfileSaveRollbackError(
+                        operationError: operationError,
+                        rollbackError: error
+                    )
+                }
+                do {
+                    try removeNewProfileDirectories(createdDirectories)
+                    if let recovery = operationError as?
+                        any ProfileCredentialCleanupRecoveryProviding
+                    {
+                        try authorizeCredentialCleanup(
+                            for: recovery
+                                .profileIDsRequiringCredentialCleanup
+                        )
+                    }
+                } catch {
+                    throw ProfileSaveRollbackError(
+                        operationError: operationError,
+                        rollbackError: error
+                    )
+                }
+                throw operationError
+            }
+            return inserted
         }
     }
 
@@ -376,6 +483,61 @@ final class ProfileStore: ObservableObject {
             throw POSIXError(.EFTYPE)
         case .regular:
             try FileManager.default.removeItem(at: tombstone)
+        }
+    }
+
+    private func removeNewProfileDirectories(
+        _ directories: [URL]
+    ) throws {
+        for directory in directories.reversed() {
+            guard let identity = try paths.privateFileEntryIdentity(directory)
+            else {
+                continue
+            }
+            guard (identity.mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) else {
+                throw POSIXError(.EFTYPE)
+            }
+            try FileManager.default.removeItem(at: directory)
+        }
+    }
+
+    private func authorizeCredentialCleanup(
+        for profileIDs: [UUID]
+    ) throws {
+        for profileID in Set(profileIDs) {
+            guard !profiles.contains(where: { $0.id == profileID }),
+                  try paths.privateFileEntryKind(
+                      paths.profileDirectory(for: profileID)
+                  ) == .missing
+            else {
+                throw NeAntikError.invalidProfile
+            }
+
+            let tombstone = paths.profileDeletionTombstone(for: profileID)
+            switch try paths.privateFileEntryKind(tombstone) {
+            case .missing:
+                try paths.createPrivateFileExclusively(
+                    Data("rolled-back-insert-v1".utf8),
+                    at: tombstone
+                )
+            case .regular:
+                break
+            case .unsafe:
+                throw POSIXError(.EFTYPE)
+            }
+
+            let marker = paths.profileCredentialCleanupMarker(for: profileID)
+            switch try paths.privateFileEntryKind(marker) {
+            case .missing:
+                try paths.createPrivateFileExclusively(
+                    Data("keychain-cleanup-v1".utf8),
+                    at: marker
+                )
+            case .regular:
+                break
+            case .unsafe:
+                throw POSIXError(.EFTYPE)
+            }
         }
     }
 

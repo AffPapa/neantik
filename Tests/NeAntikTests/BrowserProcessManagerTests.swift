@@ -473,6 +473,31 @@ struct BrowserProcessManagerTests {
     }
 
     @Test
+    func archivedProfileCannotLaunch() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let profile = BrowserProfile(
+            name: "Archived",
+            isArchived: true
+        )
+        let runtime = BrowserRuntime(
+            name: "Never launched",
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Test"
+        )
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root)
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+    }
+
+    @Test
     func keepsExternalProfileLockedUntilProcessActuallyExits() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

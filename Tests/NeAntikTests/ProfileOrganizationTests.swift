@@ -26,6 +26,8 @@ struct ProfileOrganizationTests {
         }
         object.removeValue(forKey: "symbolName")
         object.removeValue(forKey: "tags")
+        object.removeValue(forKey: "isPinned")
+        object.removeValue(forKey: "isArchived")
         let legacyData = try JSONSerialization.data(withJSONObject: object)
 
         let decoder = JSONDecoder()
@@ -36,6 +38,8 @@ struct ProfileOrganizationTests {
         #expect(first.id == id)
         #expect(first.colorHex == "#10B981")
         #expect(first.tags.isEmpty)
+        #expect(!first.isPinned)
+        #expect(!first.isArchived)
         #expect(first.symbolName == ProfileAppearance.defaultSymbol(for: id))
         #expect(first.symbolName == second.symbolName)
     }
@@ -45,7 +49,9 @@ struct ProfileOrganizationTests {
         let profile = BrowserProfile(
             name: "Проект",
             symbolName: "folder.fill",
-            tags: ["Работа", "Клиент"]
+            tags: ["Работа", "Клиент"],
+            isPinned: true,
+            isArchived: true
         )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -62,9 +68,45 @@ struct ProfileOrganizationTests {
         #expect(decoded.colorHex == profile.colorHex)
         #expect(decoded.symbolName == profile.symbolName)
         #expect(decoded.tags == profile.tags)
+        #expect(decoded.isPinned)
+        #expect(decoded.isArchived)
         #expect(decoded.startURL == profile.startURL)
         #expect(decoded.proxy == profile.proxy)
         #expect(decoded.identity == profile.identity)
+    }
+
+    @Test
+    func duplicateHasFreshIdentityAndNoBrowserHistory() {
+        let original = BrowserProfile(
+            name: String(repeating: "Д", count: 120),
+            colorHex: "#10B981",
+            symbolName: "folder.fill",
+            tags: ["Работа"],
+            isPinned: true,
+            isArchived: true,
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: "user"
+            ),
+            lastLaunchedAt: Date(timeIntervalSince1970: 100)
+        )
+
+        let copy = original.duplicated(
+            at: Date(timeIntervalSince1970: 200)
+        )
+
+        #expect(copy.id != original.id)
+        #expect(copy.identity.runtimeSeed != original.identity.runtimeSeed)
+        #expect(copy.name.count <= BrowserProfile.maximumNameLength)
+        #expect(copy.name.hasSuffix(" — копия"))
+        #expect(copy.proxy == original.proxy)
+        #expect(copy.tags == original.tags)
+        #expect(!copy.isPinned)
+        #expect(!copy.isArchived)
+        #expect(copy.lastLaunchedAt == nil)
+        #expect(copy.createdAt == Date(timeIntervalSince1970: 200))
     }
 
     @Test
@@ -169,6 +211,29 @@ struct ProfileOrganizationTests {
             "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
             "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB"
         ])
+    }
+
+    @Test
+    func pinnedProfilesSortFirstAndScopesExcludeTheOtherSection() {
+        let regular = BrowserProfile(name: "Альфа")
+        let pinned = BrowserProfile(name: "Якорь", isPinned: true)
+        let archived = BrowserProfile(name: "Архив", isArchived: true)
+        let profiles = [regular, archived, pinned]
+
+        let active = ProfileListProjection.filtered(
+            profiles,
+            searchText: "",
+            tag: nil
+        ).sorted(by: ProfileListProjection.areInIncreasingOrder)
+        let archive = ProfileListProjection.filtered(
+            profiles,
+            searchText: "",
+            tag: nil,
+            scope: .archived
+        )
+
+        #expect(active.map(\.id) == [pinned.id, regular.id])
+        #expect(archive.map(\.id) == [archived.id])
     }
 
     @Test

@@ -54,6 +54,7 @@ struct ContentView: View {
     @State private var editorRequest: EditorRequest?
     @State private var showingDeleteConfirmation = false
     @State private var showingFingerprintAudit = false
+    @State private var showingBulkProxyImport = false
     @State private var localError: String?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
@@ -66,6 +67,7 @@ struct ContentView: View {
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
     @State private var selectedProfileTag: String?
+    @State private var profileListScope: ProfileListScope = .active
     @State private var isSidebarVisible = true
 
     private var selectedProfile: BrowserProfile? {
@@ -83,12 +85,21 @@ struct ContentView: View {
         ProfileListProjection.filtered(
             store.profiles,
             searchText: profileSearchText,
-            tag: selectedProfileTag
+            tag: selectedProfileTag,
+            scope: profileListScope
         )
     }
 
     private var availableProfileTags: [String] {
-        ProfileListProjection.allTags(in: store.profiles)
+        ProfileListProjection.allTags(
+            in: store.profiles.filter {
+                $0.isArchived == (profileListScope == .archived)
+            }
+        )
+    }
+
+    private var hasArchivedProfiles: Bool {
+        store.profiles.contains(where: \.isArchived)
     }
 
     private var runtime: BrowserRuntime? {
@@ -176,6 +187,14 @@ struct ContentView: View {
                         snapshot: telemetrySnapshot
                     )
                 }
+            }
+        }
+        .sheet(isPresented: $showingBulkProxyImport) {
+            BulkProxyImportView { drafts, baseName in
+                try createProfiles(
+                    from: drafts,
+                    baseName: baseName
+                )
             }
         }
         .sheet(isPresented: $showingFingerprintAudit) {
@@ -287,6 +306,10 @@ struct ContentView: View {
         .onChange(of: selectedProfileTag) { _, _ in
             normalizeSelection(preferred: selection)
         }
+        .onChange(of: profileListScope) { _, _ in
+            selectedProfileTag = nil
+            normalizeSelection(preferred: selection)
+        }
         .onChange(of: visibleProfiles.map(\.id)) { _, _ in
             normalizeSelection(preferred: selection)
         }
@@ -363,12 +386,106 @@ struct ContentView: View {
         )
     }
 
+    private func togglePinned(_ profile: BrowserProfile) {
+        do {
+            var updated = profile
+            updated.isPinned.toggle()
+            let saved = try store.upsert(updated)
+            normalizeSelection(preferred: saved.id)
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func toggleArchived(_ profile: BrowserProfile) {
+        guard !processes.runningProfileIDs.contains(profile.id) else {
+            localError = "Сначала останови профиль, потом перемещай его в архив."
+            return
+        }
+        do {
+            var updated = profile
+            updated.isArchived.toggle()
+            let saved = try store.upsert(updated)
+            if !saved.isArchived {
+                profileListScope = .active
+                normalizeSelection(preferred: saved.id)
+            } else {
+                normalizeSelection()
+            }
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func duplicate(_ profile: BrowserProfile) {
+        do {
+            let copy = profile.duplicated()
+            let password = try keychain.proxyPassword(
+                profileID: profile.id
+            )
+            let saved = try store.upsert(copy) { saved in
+                if let password, !password.isEmpty {
+                    try keychain.saveProxyPassword(
+                        password,
+                        profileID: saved.id
+                    )
+                }
+            }
+            profileListScope = .active
+            normalizeSelection(preferred: saved.id)
+            telemetry.record(
+                .profileCreated,
+                snapshot: telemetrySnapshot
+            )
+            if saved.proxy != nil {
+                telemetry.record(
+                    .proxyEnabled,
+                    snapshot: telemetrySnapshot
+                )
+            }
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func createProfiles(
+        from drafts: [ProxyImportDraft],
+        baseName: String
+    ) throws {
+        let created = try BulkProfileImporter.create(
+            drafts: drafts,
+            baseName: baseName,
+            store: store,
+            keychain: keychain
+        )
+
+        profileListScope = .active
+        profileSearchText = ""
+        selectedProfileTag = nil
+        normalizeSelection(preferred: created.last?.id)
+        for profile in created {
+            telemetry.record(
+                .profileCreated,
+                snapshot: telemetrySnapshot
+            )
+            if profile.proxy != nil {
+                telemetry.record(
+                    .proxyEnabled,
+                    snapshot: telemetrySnapshot
+                )
+            }
+        }
+    }
+
     private var sidebar: some View {
         VStack(spacing: 0) {
             sidebarHeader
             Divider()
 
-            if !availableProfileTags.isEmpty || selectedProfile != nil {
+            if hasArchivedProfiles ||
+                !availableProfileTags.isEmpty ||
+                selectedProfile != nil
+            {
                 sidebarControls
                 Divider()
             }
@@ -385,13 +502,42 @@ struct ContentView: View {
                 }
             } else if visibleProfiles.isEmpty {
                 ContentUnavailableView {
-                    Label("Ничего не найдено", systemImage: "magnifyingglass")
+                    Label(
+                        profileSearchText.isEmpty && selectedProfileTag == nil
+                            ? (
+                                profileListScope == .archived
+                                    ? "Архив пуст"
+                                    : "Нет активных профилей"
+                            )
+                            : "Ничего не найдено",
+                        systemImage:
+                            profileListScope == .archived
+                                ? "archivebox"
+                                : "magnifyingglass"
+                    )
                 } description: {
-                    Text("Измени поиск или выбери другой тег.")
+                    Text(
+                        profileSearchText.isEmpty && selectedProfileTag == nil
+                            ? "Профили можно вернуть из архива в любой момент."
+                            : "Измени поиск или выбери другой тег."
+                    )
                 } actions: {
-                    Button("Сбросить фильтры") {
-                        profileSearchText = ""
-                        selectedProfileTag = nil
+                    if !profileSearchText.isEmpty || selectedProfileTag != nil {
+                        Button("Сбросить фильтры") {
+                            profileSearchText = ""
+                            selectedProfileTag = nil
+                        }
+                    } else if hasArchivedProfiles {
+                        Button(
+                            profileListScope == .archived
+                                ? "Показать профили"
+                                : "Показать архив"
+                        ) {
+                            profileListScope =
+                                profileListScope == .archived
+                                    ? .active
+                                    : .archived
+                        }
                     }
                 }
             } else {
@@ -406,6 +552,43 @@ struct ContentView: View {
                         )
                         .tag(profile.id)
                         .contextMenu {
+                            Button {
+                                togglePinned(profile)
+                            } label: {
+                                Label(
+                                    profile.isPinned
+                                        ? "Открепить"
+                                        : "Закрепить",
+                                    systemImage:
+                                        profile.isPinned
+                                            ? "pin.slash"
+                                            : "pin"
+                                )
+                            }
+
+                            Button {
+                                duplicate(profile)
+                            } label: {
+                                Label("Дублировать", systemImage: "plus.square.on.square")
+                            }
+
+                            Button {
+                                toggleArchived(profile)
+                            } label: {
+                                Label(
+                                    profile.isArchived
+                                        ? "Вернуть из архива"
+                                        : "В архив",
+                                    systemImage:
+                                        profile.isArchived
+                                            ? "arrow.uturn.backward"
+                                            : "archivebox"
+                                )
+                            }
+                            .disabled(processState.isRunning)
+
+                            Divider()
+
                             Button {
                                 editorRequest = EditorRequest(profile: profile)
                             } label: {
@@ -473,8 +656,20 @@ struct ContentView: View {
                 .help("Скрыть список профилей")
                 .accessibilityLabel("Скрыть список профилей")
 
-                Button {
-                    editorRequest = EditorRequest(profile: nil)
+                Menu {
+                    Button {
+                        editorRequest = EditorRequest(profile: nil)
+                    } label: {
+                        Label("Новый профиль", systemImage: "plus")
+                    }
+                    Button {
+                        showingBulkProxyImport = true
+                    } label: {
+                        Label(
+                            "Профили из списка прокси",
+                            systemImage: "list.bullet.clipboard"
+                        )
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
@@ -482,8 +677,8 @@ struct ContentView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .clipShape(Circle())
-                .help("Создать профиль")
-                .accessibilityLabel("Создать профиль")
+                .help("Создать профили")
+                .accessibilityLabel("Создать профили")
             }
 
             TextField(
@@ -500,6 +695,16 @@ struct ContentView: View {
 
     private var sidebarControls: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if hasArchivedProfiles {
+                Picker("Раздел", selection: $profileListScope) {
+                    ForEach(ProfileListScope.allCases) { scope in
+                        Text(scope.title).tag(scope)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel("Раздел профилей")
+            }
+
             if !availableProfileTags.isEmpty {
                 Picker("Тег", selection: $selectedProfileTag) {
                     Text("Все теги").tag(nil as String?)
@@ -545,7 +750,8 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(
-                    (!processState.isRunning && isResolvingRuntime) ||
+                    profile.isArchived ||
+                        (!processState.isRunning && isResolvingRuntime) ||
                         (processState.isRunning &&
                             !processState.canRequestStop)
                 )
@@ -572,12 +778,6 @@ struct ContentView: View {
                 isResolvingRuntime: isResolvingRuntime,
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
                 runtimeSupportsFingerprint: runtime?.supportsFingerprintIdentity == true,
-                canRunFingerprintAudit:
-                    runtime?.supportsFingerprintIdentity == true &&
-                    runtimePreflight?.isReady == true &&
-                    store.profiles.count >= 2,
-                fingerprintAuditUnavailableReason:
-                    fingerprintAuditUnavailableReason,
                 clipboardNotice:
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
@@ -600,8 +800,14 @@ struct ContentView: View {
                     }
                     editorRequest = EditorRequest(profile: profile)
                 },
-                onFingerprintAudit: {
-                    showingFingerprintAudit = true
+                onDuplicate: {
+                    duplicate(profile)
+                },
+                onTogglePinned: {
+                    togglePinned(profile)
+                },
+                onToggleArchived: {
+                    toggleArchived(profile)
                 },
                 onDelete: {
                     guard !processes.runningProfileIDs.contains(profile.id) else {
@@ -774,19 +980,6 @@ struct ContentView: View {
         .font(.caption)
         .padding(12)
         .accessibilityElement(children: .contain)
-    }
-
-    private var fingerprintAuditUnavailableReason: String? {
-        if store.profiles.count < 2 {
-            return "Для сравнения создай ещё один профиль."
-        }
-        if runtime?.supportsFingerprintIdentity != true {
-            return "Проверка доступна со встроенным совместимым браузером."
-        }
-        if runtimePreflight?.isReady != true {
-            return "Браузерный движок пока не готов к проверке."
-        }
-        return nil
     }
 
     private var runtimeStatusIcon: String {
@@ -1040,10 +1233,22 @@ private struct ProfileRow: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(profile.name)
-                    .lineLimit(1)
                 HStack(spacing: 5) {
-                    Text(profile.proxy?.displayName ?? "Без прокси")
+                    Text(profile.name)
+                        .lineLimit(1)
+                    if profile.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Закреплён")
+                    }
+                }
+                HStack(spacing: 5) {
+                    Text(
+                        profile.isArchived
+                            ? "В архиве"
+                            : profile.proxy?.displayName ?? "Без прокси"
+                    )
                         .lineLimit(1)
                     if let tag = profile.tags.first {
                         Text(tag)
@@ -1068,13 +1273,13 @@ private struct ProfileRow: View {
 }
 
 struct ProfileDetailView: View {
+    @State private var technicalDetailsExpanded = false
+
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let isResolvingRuntime: Bool
     let browserDataPath: String
     let runtimeSupportsFingerprint: Bool
-    let canRunFingerprintAudit: Bool
-    let fingerprintAuditUnavailableReason: String?
     let clipboardNotice: String?
     let isSidebarVisible: Bool
     let onToggleSidebar: () -> Void
@@ -1082,7 +1287,9 @@ struct ProfileDetailView: View {
     let onStart: () -> Void
     let onStop: () -> Void
     let onEdit: () -> Void
-    let onFingerprintAudit: () -> Void
+    let onDuplicate: () -> Void
+    let onTogglePinned: () -> Void
+    let onToggleArchived: () -> Void
     let onDelete: () -> Void
     let onReveal: () -> Void
     let onCopyProxyUsername: () -> Void
@@ -1157,17 +1364,6 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 22) {
-            if let fingerprintAuditUnavailableReason {
-                Label(
-                    fingerprintAuditUnavailableReason,
-                    systemImage: "info.circle"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(
-                    "Проверка профиля недоступна. \(fingerprintAuditUnavailableReason)"
-                )
-            }
             if let clipboardNotice {
                 Label(
                     clipboardNotice,
@@ -1184,9 +1380,28 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
-            GroupBox("Отпечаток профиля") {
-                fingerprintSummary
-                    .padding(.vertical, 4)
+            GroupBox("Профиль") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(
+                        "Cookies и данные сайтов хранятся отдельно",
+                        systemImage: "person.crop.rectangle.stack"
+                    )
+                    Label(
+                        runtimeSupportsFingerprint
+                            ? "Параметры браузера закреплены за профилем"
+                            : "Совместимый встроенный браузер пока недоступен",
+                        systemImage:
+                            runtimeSupportsFingerprint
+                                ? "checkmark.shield"
+                                : "exclamationmark.shield"
+                    )
+                    .foregroundStyle(
+                        runtimeSupportsFingerprint
+                            ? Color.secondary
+                            : Color.orange
+                    )
+                }
+                .padding(.vertical, 4)
             }
 
             GroupBox("Сеть") {
@@ -1194,9 +1409,15 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
-            GroupBox("Локальные данные") {
+            DisclosureGroup(
+                "Технические сведения",
+                isExpanded: $technicalDetailsExpanded
+            ) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Данные этого профиля хранятся отдельно.")
+                    fingerprintSummary
+                    Divider()
+                    Text("Папка данных браузера")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(browserDataPath)
                         .textSelection(.enabled)
@@ -1204,8 +1425,11 @@ struct ProfileDetailView: View {
                         .lineLimit(2)
                         .truncationMode(.middle)
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 10)
             }
+            .accessibilityHint(
+                "Показывает параметры изоляции и локальный путь данных профиля"
+            )
 
             if let lastLaunchedAt = profile.lastLaunchedAt {
                 Text(
@@ -1245,7 +1469,7 @@ struct ProfileDetailView: View {
             }
             Text(
                 runtimeSupportsFingerprint
-                    ? "Параметры устройства стабильны для этого профиля."
+                    ? "Параметры браузера закреплены за профилем автоматически."
                     : "Совместимый встроенный браузер пока недоступен."
             )
             .font(.caption)
@@ -1292,7 +1516,9 @@ struct ProfileDetailView: View {
                 isRunning ? onStop() : onStart()
             } label: {
                 compactActionLabel(
-                    isRunning
+                    profile.isArchived
+                        ? "В архиве"
+                        : isRunning
                         ? (
                             processState == .checking
                                 ? "Проверка…"
@@ -1302,7 +1528,9 @@ struct ProfileDetailView: View {
                         )
                         : "Запустить",
                     systemImage:
-                        isRunning
+                        profile.isArchived
+                            ? "archivebox"
+                            : isRunning
                             ? (
                                 processState == .checking
                                     ? "hourglass"
@@ -1315,7 +1543,8 @@ struct ProfileDetailView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(
-                (!isRunning && isResolvingRuntime) ||
+                profile.isArchived ||
+                    (!isRunning && isResolvingRuntime) ||
                     (isRunning && !processState.canRequestStop)
             )
             .help(
@@ -1341,38 +1570,44 @@ struct ProfileDetailView: View {
                     : "Изменить профиль"
             )
 
-            Button(action: onReveal) {
-                compactActionLabel("Данные", systemImage: "folder")
+            Menu {
+                Button(action: onTogglePinned) {
+                    Label(
+                        profile.isPinned ? "Открепить" : "Закрепить",
+                        systemImage: profile.isPinned ? "pin.slash" : "pin"
+                    )
+                }
+                Button(action: onDuplicate) {
+                    Label("Дублировать", systemImage: "plus.square.on.square")
+                }
+                Button(action: onToggleArchived) {
+                    Label(
+                        profile.isArchived
+                            ? "Вернуть из архива"
+                            : "В архив",
+                        systemImage:
+                            profile.isArchived
+                                ? "arrow.uturn.backward"
+                                : "archivebox"
+                    )
+                }
+                .disabled(isRunning)
+                Divider()
+                Button(action: onReveal) {
+                    Label("Показать данные", systemImage: "folder")
+                }
+                Divider()
+                Button(role: .destructive, action: onDelete) {
+                    Label("Удалить профиль", systemImage: "trash")
+                }
+                .disabled(isRunning)
+            } label: {
+                compactActionLabel("Ещё", systemImage: "ellipsis.circle")
             }
-
-            Button(action: onFingerprintAudit) {
-                compactActionLabel(
-                    "Проверить профиль",
-                    systemImage: "checkmark.shield"
-                )
-            }
-            .disabled(
-                !canRunFingerprintAudit ||
-                    processState == .checking
-            )
-            .help(
-                canRunFingerprintAudit
-                    ? "Проверить стабильность и различие профиля"
-                    : "Нужны два профиля и готовый совместимый движок"
-            )
-
-            Button(role: .destructive, action: onDelete) {
-                compactActionLabel("Удалить", systemImage: "trash")
-            }
-            .disabled(isRunning)
             .help(
                 isRunning
-                    ? (
-                        processState == .checking
-                            ? "Дождись завершения проверки"
-                            : "Сначала останови профиль"
-                    )
-                    : "Удалить профиль"
+                    ? "Данные доступны; удаление — после остановки профиля"
+                    : "Данные и удаление профиля"
             )
         }
         .buttonStyle(.bordered)
@@ -1462,6 +1697,11 @@ struct ProfileDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+            }
+            if profile.isArchived {
+                Label("В архиве", systemImage: "archivebox")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

@@ -12,7 +12,7 @@ Do not edit generated values by hand.
 ## Runtime contract
 
 - Product: `NeAntik Browser`
-- Chromium: `151.0.7922.75`
+- Chromium: `151.0.7922.108`
 - Architecture: `arm64`
 - Runtime source lock status: `source-qualified`
 - Source contract binary binding: `pending-new-build`
@@ -26,8 +26,8 @@ artifact or a final legal review.
 ## Chromium
 
 - Source: `https://chromium.googlesource.com/chromium/src.git`
-- Tag: `151.0.7922.75`
-- Commit: `1ddc0a2003eb30c3990568d74ed0437451e9c374`
+- Tag: `151.0.7922.108`
+- Commit: `4744b886309d987d292e43232776d2206cccb13d`
 - License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/Chromium-LICENSE`
 - License SHA-256: `368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b`
@@ -43,8 +43,8 @@ artifact or a final legal review.
 ## Common Chromium packaging source
 
 - Source: `https://github.com/ungoogled-software/ungoogled-chromium.git`
-- Tag: `151.0.7922.71-1`
-- Commit: `f2038df00b82e3afbd5cbecac37cf7b463acb42a`
+- Tag: `151.0.7922.108-1`
+- Commit: `ecbcc4c1413c961e37d4224f787fecb8534b1505`
 
 ## Retained fingerprint-chromium attribution
 

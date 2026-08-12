@@ -1,7 +1,7 @@
 @extends('affpapa.layout')
 
 @section('title', 'NeAntik — антидетект-браузер для Apple Silicon Mac | AffPapa')
-@section('description', 'NeAntik — нативный менеджер браузерных профилей для macOS со встроенным Chromium. Изолированные сессии, прокси, локальное хранение и проверка fingerprint A→B→A. SwiftUI, без Electron, без облака.')
+@section('description', 'NeAntik — нативный менеджер браузерных профилей для macOS со встроенным Chromium. Изолированные сессии, прокси и локальное хранение. SwiftUI, без Electron, без облака.')
 @section('canonical', 'https://affpapa.org/neantik')
 
 @php
@@ -27,15 +27,15 @@
     }
 
     $faqs = [
-        ['q' => 'Это антидетект-браузер?', 'a' => 'NeAntik — нативный менеджер изолированных Chromium-профилей с fingerprint-протоколом. Он разделяет cookies, storage и proxy между профилями и включает встроенный Chromium '.$runtimeMajor.' с поддержкой Metal. Canvas, WebGL, Audio и device signals проверяются встроенной процедурой A→B→A.'],
+        ['q' => 'Это антидетект-браузер?', 'a' => 'NeAntik — нативный менеджер изолированных Chromium-профилей с fingerprint-протоколом. Он разделяет cookies, storage и proxy между профилями и включает встроенный Chromium '.$runtimeMajor.' с поддержкой Metal. Каждый выпуск проходит автоматическую проверку стабильности и разделения профилей.'],
         ['q' => 'Нужен ли установленный Chrome?', 'a' => 'Нет. NeAntik включает собственный Chromium '.$runtimeVersion.' ARM64 с Metal. Внешний браузер не требуется — всё работает из коробки.'],
         ['q' => 'Чем профиль NeAntik отличается от инкогнито?', 'a' => 'Инкогнито временно отделяет cookies и историю, но не создаёт постоянную сессию и не меняет fingerprint устройства. Профиль NeAntik сохраняется между запусками, использует отдельный data directory и может иметь собственный proxy и identity.'],
         ['q' => 'Где хранятся профили?', 'a' => 'Локально на Mac — в Application Support. Proxy-пароли хранятся отдельно в macOS Keychain. Облака и серверов нет.'],
         ['q' => 'Нужен ли аккаунт?', 'a' => 'Нет. Нет аккаунта, облачной синхронизации, аналитики или телеметрии.'],
-        ['q' => 'Поддерживается ли Intel Mac?', 'a' => 'Нет. NeAntik создан только для Apple Silicon (M1–M4) и выпускается как ARM64-only.'],
+        ['q' => 'Поддерживается ли Intel Mac?', 'a' => 'Нет. NeAntik выпускается только для Apple Silicon (ARM64) и требует macOS 14 или новее.'],
         ['q' => 'Поддерживаются ли прокси?', 'a' => 'Да. NeAntik поддерживает Direct, HTTP и HTTPS с логином и паролем, а также SOCKS5 без авторизации. Пароли HTTP/HTTPS хранятся в macOS Keychain.'],
         ['q' => 'Гарантирует ли NeAntik анонимность?', 'a' => 'Нет. Ни один браузер не может честно это гарантировать. Proxy, аккаунты, поведение и расширения могут связывать сессии. NeAntik уменьшает пересечение профилей и даёт инструмент для измерения fingerprint, но не обещает невозможность корреляции.'],
-        ['q' => 'Что показывает Fingerprint Check?', 'a' => 'Он сравнивает два профиля (A → B → A) и проверяет: отличаются ли fingerprint-поверхности между профилями и стабилен ли результат при повторном запуске. Verdict: verified, partial, unchanged или unstable.'],
+        ['q' => 'Нужно ли запускать проверку отпечатка?', 'a' => 'Нет. Перед публикацией NeAntik автоматически сравнивает два тестовых профиля и повторно проверяет первый. Пользователю достаточно создать профиль, при необходимости указать proxy и нажать «Запустить».'],
         ['q' => 'Как обновляется встроенный Chromium?', 'a' => 'Новая версия Chromium поставляется вместе с обновлением NeAntik. Текущая версия — '.$runtimeVersion.' ARM64 с Metal.'],
         ['q' => 'Это правила сайтов или капчи?', 'a' => 'NeAntik не обходит правила сайтов и не решает капчи. Каждый профиль — это отдельный рабочий контекст, как отдельный браузер. Ответственность за соблюдение правил площадок — на пользователе.'],
     ];
@@ -53,7 +53,7 @@
                 'Проверка A → B → A требует согласованности page и worker, Client Hints, locale, Apple Silicon tuple и отсутствия прямой WebRTC-утечки при прокси',
                 'Интерфейс профилей переработан для окон от 820 × 560: список, шапка и основные действия остаются доступными',
                 'Создание профиля и вставка прокси упрощены; поддерживаются четыре распространённых формата, пароль остаётся в Связке ключей',
-                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой, проверкой и автоматическим rollback',
+                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой и проверкой; AffPapa автоматически откатывается при ошибке',
             ],
         ],
         [
@@ -189,9 +189,7 @@
         ['Облако',          'Нет',           'Да',              'Да',              'Да',              'Да (старшие)',    'Да'],
         ['Аккаунт',         'Не нужен',      'Нужен',           'Нужен',           'Нужен',           'Нужен',           'Нужен'],
         ['Команды и роли',  '—',             '✓',               '✓',               '✓',               '✓',               '✓'],
-        ['Fingerprint',     'Seed + A→B→A проверка', 'Генерация', 'Генерация',   'Генерация',       'Генерация',       'Генерация'],
-        ['Проверка результата', '✓ встроенная', '—',            '—',               '—',               '—',               '—'],
-        ['Телеметрия',      'Нет',           'Есть',            'Есть',            'Есть',            'Есть',            'Есть'],
+        ['Fingerprint',     'Стабильная identity профиля', 'Генерация', 'Генерация',   'Генерация',       'Генерация',       'Генерация'],
         ['Для кого',        'Индивид. на Mac', 'Команды',       'Команды',         'Команды',         'Affiliate-команды','Команды'],
     ];
 
@@ -200,7 +198,7 @@
     $proofItems = [
         ['num' => $releaseVersion, 'label' => 'текущая версия'],
         ['num' => $runtimeMajor, 'label' => 'Chromium ARM64'],
-        ['num' => '10', 'label' => 'поверхностей A→B→A'],
+        ['num' => '10', 'label' => 'поверхностей release-аудита'],
         ['num' => (string) $releaseBuild, 'label' => 'текущий build'],
     ];
 
@@ -225,7 +223,7 @@
             'softwareVersion' => $releaseVersion,
             'processorRequirements' => 'Apple Silicon / ARM64',
             'downloadUrl' => $dmgDownloadUrl,
-            'description' => 'Нативный менеджер изолированных браузерных профилей для Apple Silicon Mac со встроенным Chromium и проверкой fingerprint A→B→A.',
+            'description' => 'Нативный менеджер изолированных браузерных профилей для Apple Silicon Mac со встроенным Chromium и автоматической проверкой каждого выпуска.',
         ],
         [
             '@type' => 'FAQPage',
@@ -455,10 +453,10 @@
                 </div>
             </div>
             <div class="nk-screenshot nk-reveal" style="transition-delay:80ms">
-                <img src="/img/neantik/audit.svg" alt="NeAntik — fingerprint audit A→B→A" width="1440" height="900" loading="lazy">
+                <img src="/img/neantik/audit.svg" alt="NeAntik — автоматический fingerprint-аудит выпуска" width="1440" height="900" loading="lazy">
                 <div class="nk-screenshot__caption">
-                    <h3>Fingerprint audit</h3>
-                    <p>A → B → A проверка показывает verified/partial/unchanged/unstable вместо маркетинговых обещаний.</p>
+                    <h3>Проверка выпуска</h3>
+                    <p>Перед публикацией автоматический A → B → A аудит подтверждает различие профилей и стабильность повторного запуска.</p>
                 </div>
             </div>
             <div class="nk-screenshot nk-reveal" style="transition-delay:160ms">
@@ -477,40 +475,36 @@
         <div class="nk-problem">
             <p>Режим инкогнито не&nbsp;создаёт новое устройство для сайта. Cookies можно очистить, но&nbsp;Canvas, WebGL, Audio, GPU, timezone и&nbsp;другие сигналы остаются связанными с&nbsp;тем&nbsp;же браузером и&nbsp;Mac.</p>
             <p>Большие антидетект-платформы решают эту задачу вместе с&nbsp;облаком, командами, API, RPA и&nbsp;десятками настроек. Это полезно для масштабных операций, но&nbsp;лишнее, если нужны несколько постоянных локальных контекстов на&nbsp;одном Mac.</p>
-            <p>NeAntik оставляет только основу: профиль, proxy, встроенный Chromium, стабильная identity и&nbsp;проверка результата.</p>
+            <p>NeAntik оставляет только основу: профиль, proxy, встроенный Chromium и&nbsp;стабильная identity. Сложная диагностика остаётся внутри release-процесса.</p>
         </div>
     </section>
 
-    {{-- ═══ KILLER FEATURE: A→B→A ═══ --}}
+    {{-- ═══ AUTOMATIC RELEASE AUDIT ═══ --}}
     <section class="section nk-reveal" id="neantik-check">
-        <div class="section-head"><h2>Настроить недостаточно — нужно измерить</h2></div>
-        <p class="muted" style="max-width:640px; margin-bottom:1rem;">Встроенный Chromium получает identity профиля. Затем NeAntik запускает локальную проверку A → B → A: сравнивает два профиля и повторно проверяет первый.</p>
+        <div class="section-head"><h2>Каждый выпуск проверяется автоматически</h2></div>
+        <p class="muted" style="max-width:640px; margin-bottom:1rem;">Перед публикацией NeAntik сравнивает два тестовых профиля и повторно запускает первый. Обычному пользователю не нужно разбираться в отчётах: релиз не публикуется без успешного результата.</p>
 
-        <div class="nk-aba-demo" x-data="nkAba()">
+        <div class="nk-aba-demo">
             <div class="nk-aba">
-                <div class="nk-aba__node" :class="{'nk-aba__node--active': step===1, 'nk-aba__node--done': step>1}">
+                <div class="nk-aba__node nk-aba__node--done">
                     <span class="nk-aba__node-label">Profile A</span>
-                    <span class="nk-aba__node-sub" x-text="step===1 ? 'measuring…' : step>1 ? 'stable' : 'idle'" x-show="!done"></span>
-                    <span class="nk-aba__node-sub" x-show="done" style="color:var(--money)">stable</span>
+                    <span class="nk-aba__node-sub" style="color:var(--money)">stable</span>
                 </div>
-                <span class="nk-aba__arrow" :class="{'nk-aba__arrow--active': step>=2}" aria-hidden="true">→</span>
-                <div class="nk-aba__node" :class="{'nk-aba__node--active': step===2, 'nk-aba__node--done': step>2}">
+                <span class="nk-aba__arrow nk-aba__arrow--active" aria-hidden="true">→</span>
+                <div class="nk-aba__node nk-aba__node--done">
                     <span class="nk-aba__node-label">Profile B</span>
-                    <span class="nk-aba__node-sub" x-text="step===2 ? 'measuring…' : step>2 ? 'distinct' : 'idle'" x-show="!done"></span>
-                    <span class="nk-aba__node-sub" x-show="done" style="color:var(--accent-dim)">distinct</span>
+                    <span class="nk-aba__node-sub" style="color:var(--accent-dim)">distinct</span>
                 </div>
-                <span class="nk-aba__arrow" :class="{'nk-aba__arrow--active': step>=3}" aria-hidden="true">→</span>
-                <div class="nk-aba__node" :class="{'nk-aba__node--active': step===3, 'nk-aba__node--done': done}">
+                <span class="nk-aba__arrow nk-aba__arrow--active" aria-hidden="true">→</span>
+                <div class="nk-aba__node nk-aba__node--done">
                     <span class="nk-aba__node-label">Profile A</span>
-                    <span class="nk-aba__node-sub" x-text="step===3 ? 're-checking…' : done ? 'stable' : 'idle'" x-show="!done"></span>
-                    <span class="nk-aba__node-sub" x-show="done" style="color:var(--money)">stable</span>
+                    <span class="nk-aba__node-sub" style="color:var(--money)">stable</span>
                 </div>
-                <span class="nk-aba__verdict" :class="{'is-visible': done, 'nk-aba__verdict--verified': done}">verified</span>
+                <span class="nk-aba__verdict is-visible nk-aba__verdict--verified">release verified</span>
             </div>
-            <button class="nk-aba__btn" @click="run()" :disabled="running" x-text="done ? '↻ Повторить' : running ? 'Проверяю…' : '▶ Запустить проверку'"></button>
         </div>
 
-        <p style="font-size:.88rem; color:var(--ink-2); margin:.5rem 0;">Если A и B отличаются, но A нестабилен между запусками — fingerprint ненадёжен. Только различающийся <em>и</em> повторяемый результат получает verdict <strong style="font-family:var(--mono);">verified</strong>.</p>
+        <p style="font-size:.88rem; color:var(--ink-2); margin:.5rem 0;">Release gate проверяет различие профилей и повторяемость первого профиля. Подробный отчёт нужен разработчикам, а не в обычной работе.</p>
 
         <div class="nk-surfaces">
             @foreach ($surfaces as $s)
@@ -585,8 +579,8 @@
                 <p>Direct, HTTP/HTTPS или SOCKS5. Проверьте exit IP, страну и timezone одной кнопкой.</p>
             </div>
             <div class="card nk-step nk-reveal" style="transition-delay:240ms">
-                <h3>Запустите и проверьте</h3>
-                <p>Нажмите Launch — откроется встроенный Chromium. Запустите A → B → A для проверки fingerprint.</p>
+                <h3>Запустите браузер</h3>
+                <p>Нажмите «Запустить» — откроется встроенный Chromium с данными, сетью и identity выбранного профиля.</p>
             </div>
         </div>
     </section>
@@ -603,7 +597,7 @@
                     <li>Cookies, localStorage, cache</li>
                     <li>История посещений и URL</li>
                     <li>Proxy-пароли (macOS Keychain)</li>
-                    <li>Отчёты fingerprint check</li>
+                    <li>Технические отчёты локальной диагностики</li>
                 </ul>
             </div>
             <div class="card nk-privacy-card nk-reveal" style="transition-delay:60ms">
@@ -682,7 +676,7 @@
     <section class="section nk-reveal" id="neantik-boundary">
         <div class="nk-boundary">
             <p class="nk-boundary__title">Честный public alpha</p>
-            <p>NeAntik — рабочий инструмент на стадии public alpha. Встроенный Chromium {{ $runtimeMajor }} с Metal работает и проходит проверку A→B→A. Но это альфа: возможны баги, интерфейс меняется между релизами, профили могут потребовать миграцию при обновлении.</p>
+            <p>NeAntik — рабочий инструмент на стадии public alpha. Встроенный Chromium {{ $runtimeMajor }} с Metal работает, а каждый опубликованный кандидат проходит автоматический release-аудит. Но это альфа: возможны баги, интерфейс меняется между релизами, профили могут потребовать миграцию при обновлении.</p>
             <p>NeAntik не гарантирует анонимность и не обходит правила сайтов. Proxy, аккаунты, поведение и расширения могут связывать сессии. Инструмент уменьшает пересечение профилей и даёт способ это измерить — но ответственность за использование остаётся на пользователе.</p>
         </div>
     </section>
@@ -755,25 +749,5 @@
         }
     })();
 
-    document.addEventListener('alpine:init', function () {
-        Alpine.data('nkAba', function () {
-            return {
-                step: 0,
-                running: false,
-                done: false,
-                run: function () {
-                    if (this.running) return;
-                    this.step = 0;
-                    this.done = false;
-                    this.running = true;
-                    var self = this;
-                    setTimeout(function () { self.step = 1; }, 200);
-                    setTimeout(function () { self.step = 2; }, 900);
-                    setTimeout(function () { self.step = 3; }, 1600);
-                    setTimeout(function () { self.done = true; self.running = false; }, 2300);
-                }
-            };
-        });
-    });
     </script>
 @endsection

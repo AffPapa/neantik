@@ -309,6 +309,52 @@ def verify_contract(
                 )
             require_sha256(digest, f"{owner_name}.criticalFiles.{relative}")
 
+    contract_override = contract.get("sourceVersionOverride")
+    plan_override = plan.get("sourceVersionOverride")
+    if (
+        not isinstance(contract_override, dict)
+        or not isinstance(plan_override, dict)
+    ):
+        raise SourceProvenanceError(
+            "Source contract and rebase plan must contain sourceVersionOverride"
+        )
+    override_from = require_text(
+        contract_override.get("from"),
+        "sourceVersionOverride.from",
+    )
+    override_to = require_text(
+        contract_override.get("to"),
+        "sourceVersionOverride.to",
+    )
+    if (
+        override_from != plan_override.get("from")
+        or override_to != plan_override.get("to")
+    ):
+        raise SourceProvenanceError(
+            "Source contract sourceVersionOverride does not match rebase plan"
+        )
+    if override_to != target:
+        raise SourceProvenanceError(
+            "sourceVersionOverride.to must equal targetChromiumVersion"
+        )
+    common_critical = common["criticalFiles"]
+    assert isinstance(common_critical, dict)
+    original_version_sha = sha256_bytes(f"{override_from}\n".encode("utf-8"))
+    if common_critical.get("chromium_version.txt") != original_version_sha:
+        raise SourceProvenanceError(
+            "sourceVersionOverride.from does not match the locked common "
+            "chromium_version.txt preimage"
+        )
+    modified_version_sha = require_sha256(
+        contract_override.get("modifiedCriticalFileSHA256"),
+        "sourceVersionOverride.modifiedCriticalFileSHA256",
+    )
+    expected_modified_sha = sha256_bytes(f"{override_to}\n".encode("utf-8"))
+    if modified_version_sha != expected_modified_sha:
+        raise SourceProvenanceError(
+            "sourceVersionOverride modified critical-file SHA-256 is stale"
+        )
+
     owned = contract.get("ownedInputs")
     if not isinstance(owned, dict) or not owned:
         raise SourceProvenanceError("ownedInputs must be a non-empty object")

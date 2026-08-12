@@ -1,7 +1,7 @@
 # NeAntik-owned Chromium patchset
 
 `series.json` is the executable manifest for the owned Chromium
-`151.0.7922.75` patchset.
+`151.0.7922.108` patchset.
 
 All release-required groups are currently marked `ported`. That means the
 source port is ready to build; it does not claim that a Chromium 151 binary has

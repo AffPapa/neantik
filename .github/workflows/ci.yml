@@ -25,7 +25,9 @@ jobs:
           - BrowserProcessManagerTests
           - BrowserRuntimeInspectorTests
           - BrowserRuntimePreflightTests
+          - BulkProxyImportTests
           - FingerprintAuditLoopbackSTUNServerTests
+          - FingerprintAuditAutomationPolicyTests
           - FingerprintAuditTests
           - FingerprintEvidenceEnrollmentTests
           - FingerprintEvidenceEnvelopeTests
@@ -83,3 +85,5 @@ jobs:
           scripts.tests.test_direct_candidate_manifest
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+      - name: AffPapa release regression tests
+        run: python3 -m unittest discover -s ops/affpapa/tests -p 'test_*.py'

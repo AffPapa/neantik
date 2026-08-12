@@ -6,6 +6,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "Sources" / "NeAntik" / "ContentView.swift"
 EDITOR = ROOT / "Sources" / "NeAntik" / "ProfileEditorView.swift"
 AUDIT = ROOT / "Sources" / "NeAntik" / "FingerprintAuditView.swift"
+BULK_IMPORT = ROOT / "Sources" / "NeAntik" / "BulkProxyImport.swift"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
@@ -38,11 +39,28 @@ class ResponsiveUIContractTests(unittest.TestCase):
         for action in (
             '"Запустить"',
             '"Изменить"',
-            '"Данные"',
-            '"Проверить профиль"',
-            '"Удалить"',
+            '"Ещё"',
+            '"Показать данные"',
+            '"Удалить профиль"',
         ):
             self.assertIn(action, text)
+        self.assertNotIn(
+            'compactActionLabel(\n                    "Проверить профиль"',
+            text,
+        )
+
+    def test_proxy_import_is_local_and_connection_test_is_optional(
+        self,
+    ) -> None:
+        text = EDITOR.read_text(encoding="utf-8")
+        self.assertIn('Label("Вставить прокси"', text)
+        self.assertIn('Label("Проверить прокси"', text)
+        self.assertIn("private func importProxy()", text)
+        self.assertNotIn("importProxyAndTest", text)
+        import_start = text.index("private func importProxy()")
+        test_start = text.index("private func startProxyTest(")
+        import_body = text[import_start:test_start]
+        self.assertNotIn("startProxyTest(", import_body)
 
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
@@ -52,6 +70,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
             text,
         )
         self.assertNotIn(".onSubmit(save)", text)
+
+    def test_bulk_proxy_import_is_bounded_local_and_secret_safe(self) -> None:
+        text = BULK_IMPORT.read_text(encoding="utf-8")
+        self.assertIn("static let maximumEntries = 100", text)
+        self.assertIn("static let maximumInputBytes = 512 * 1_024", text)
+        self.assertIn(".privacySensitive()", text)
+        self.assertIn("Соединение автоматически не проверяется", text)
+        self.assertNotIn("ProxyTester", text)
+        self.assertNotIn("startProxyTest", text)
 
     def test_narrow_proxy_and_audit_controls_have_fallbacks(self) -> None:
         editor = EDITOR.read_text(encoding="utf-8")

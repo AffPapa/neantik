@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "targetChromiumVersion": "151.0.7922.75",
+  "targetChromiumVersion": "151.0.7922.108",
   "status": "release-ready",
   "policy": "Owned NeAntik patchset for the Chromium 151 security rebase. This manifest is a release blocker until every releaseRequired group is ported, has a patch file, applies with zero fuzz, and records postimage hashes from the real Chromium 151 source tree.",
   "forbiddenScopes": [
@@ -122,7 +122,7 @@
         "WebGL pixels remain stable for repeated profile A"
       ],
       "postimageSHA256": {
-        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "d7585aa1ca9704d8e716d564e850916868af880b2adcb1252e36f3a054f3cece"
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "ee740e4a9b13c3ec0f29ea29012e353ea44b66dd234b0e7e161aa31a2a8ed40c"
       }
     },
     {
@@ -191,7 +191,7 @@
         "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
         "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
         "third_party/blink/renderer/core/frame/screen.cc": "cec3eefab518188c2bb33870e588e409b982482cf02637cbec8df308838b1c85",
-        "third_party/blink/renderer/core/frame/local_dom_window.cc": "50670cc0f4abb0a12ce8ec9a26622191517134d4f5f0c1b20aaa40213e545e56"
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "6f2d91abe3adf152de4786aaf85f1bd44ab62383b36594a4a08bd84731cfaa47"
       }
     },
     {

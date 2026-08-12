@@ -1,5 +1,19 @@
 import Foundation
 
+enum ProfileListScope: String, CaseIterable, Identifiable, Sendable {
+    case active
+    case archived
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .active: "Профили"
+        case .archived: "Архив"
+        }
+    }
+}
+
 enum ProfileListProjection {
     static func normalizedSelection(
         _ currentSelection: UUID?,
@@ -15,12 +29,16 @@ enum ProfileListProjection {
     static func filtered(
         _ profiles: [BrowserProfile],
         searchText: String,
-        tag: String?
+        tag: String?,
+        scope: ProfileListScope = .active
     ) -> [BrowserProfile] {
         let query = searchText.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
         return profiles.filter { profile in
+            guard profile.isArchived == (scope == .archived) else {
+                return false
+            }
             let matchesTag: Bool
             if let tag {
                 matchesTag = profile.tags.contains {
@@ -64,6 +82,9 @@ enum ProfileListProjection {
         _ lhs: BrowserProfile,
         _ rhs: BrowserProfile
     ) -> Bool {
+        if lhs.isPinned != rhs.isPinned {
+            return lhs.isPinned
+        }
         let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
         if nameOrder != .orderedSame {
             return nameOrder == .orderedAscending

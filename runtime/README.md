@@ -6,7 +6,7 @@ injecting JavaScript into visited pages.
 
 ## Current source contract
 
-The candidate runtime is Chromium `151.0.7922.75`, ARM64-only:
+The candidate runtime is Chromium `151.0.7922.108`, ARM64-only:
 
 - `runtime/chromium-151-source-contract.json` pins the official Chromium
   source archive, macOS packaging layer, common ungoogled-chromium inputs and
@@ -19,8 +19,8 @@ The candidate runtime is Chromium `151.0.7922.75`, ARM64-only:
 The source contract deliberately says `binaryBindingStatus:
 pending-new-build`. Source evidence is not binary evidence. The checked
 `runtime/fingerprint-chromium.lock.json` continues to describe the last
-verified Chromium 150 runtime until a new Chromium 151 Metal bundle is built,
-verified and explicitly promoted.
+verified Chromium `151.0.7922.75` runtime until a new Chromium
+`151.0.7922.108` Metal bundle is built, verified and explicitly promoted.
 
 Do not edit the checked runtime lock merely to make version gates green.
 
@@ -110,8 +110,8 @@ The generated evidence contains no local absolute source path.
 ## Verify the owned patchset
 
 All eleven release-required groups in `series.json` are ported to Chromium
-`151.0.7922.75`. The manifest is release-ready source evidence, not proof that a
-shipping binary exists.
+`151.0.7922.108`. The manifest is release-ready source evidence, not proof that
+a shipping binary exists.
 
 ```sh
 scripts/verify-nevision-patchset-manifest.py

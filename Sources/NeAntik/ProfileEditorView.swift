@@ -326,11 +326,11 @@ struct ProfileEditorView: View {
               HStack {
                 proxyImportOrderPicker
                 Spacer(minLength: 8)
-                importAndTestButton
+                importProxyButton
               }
               VStack(alignment: .leading, spacing: 8) {
                 proxyImportOrderPicker
-                importAndTestButton
+                importProxyButton
               }
             }
             if let proxyImportMessage {
@@ -512,15 +512,15 @@ struct ProfileEditorView: View {
     .accessibilityLabel("Расположение адреса прокси")
   }
 
-  private var importAndTestButton: some View {
+  private var importProxyButton: some View {
     Button {
-      importProxyAndTest()
+      importProxy()
     } label: {
-      Label("Вставить и проверить", systemImage: "doc.on.clipboard")
+      Label("Вставить прокси", systemImage: "doc.on.clipboard")
     }
     .disabled(isTesting)
     .help(
-      "Взять строку из поля или буфера обмена, распознать и проверить соединение"
+      "Взять строку из поля или буфера обмена и заполнить настройки"
     )
   }
 
@@ -613,7 +613,7 @@ struct ProfileEditorView: View {
     }
   }
 
-  private func importProxyAndTest() {
+  private func importProxy() {
     do {
       let source = proxyImportText.isEmpty
         ? NSPasteboard.general.string(forType: .string) ?? ""
@@ -630,18 +630,14 @@ struct ProfileEditorView: View {
       proxyUsername = draft.configuration.username
       proxyPassword = draft.password
       proxyImportMessage =
-        "Распознано: \(draft.redactedSummary). Проверяю соединение…"
-      announce(proxyImportMessage ?? "Прокси распознан. Проверяю соединение.")
+        "Готово: \(draft.redactedSummary). При желании проверь соединение отдельно."
+      announce(proxyImportMessage ?? "Прокси распознан.")
       errorMessage = nil
 
       Task { @MainActor in
         await Task.yield()
+        proxyImportText = ""
         isApplyingProxyImport = false
-        startProxyTest(
-          configuration: draft.configuration,
-          password: draft.password,
-          importedSummary: draft.redactedSummary
-        )
       }
     } catch {
       isApplyingProxyImport = false
@@ -652,8 +648,7 @@ struct ProfileEditorView: View {
 
   private func startProxyTest(
     configuration proxy: ProxyConfiguration,
-    password: String,
-    importedSummary: String? = nil
+    password: String
   ) {
     proxyTestTask?.cancel()
     isTesting = true
@@ -676,11 +671,6 @@ struct ProfileEditorView: View {
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
             detectedProxyContextEvidence = .ipAPI()
-            if let importedSummary {
-              proxyImportMessage =
-                "Готово: \(importedSummary). Соединение работает."
-              proxyImportText = ""
-            }
             isTesting = false
             announce(testMessage ?? "Прокси подключён.")
           }

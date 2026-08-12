@@ -30,8 +30,6 @@ struct ResponsiveLayoutRenderTests {
                 browserDataPath:
                     "/Users/example/Library/Application Support/NeAntik Development/Profiles/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/BrowserData",
                 runtimeSupportsFingerprint: true,
-                canRunFingerprintAudit: true,
-                fingerprintAuditUnavailableReason: nil,
                 clipboardNotice: nil,
                 isSidebarVisible: true,
                 onToggleSidebar: {},
@@ -39,7 +37,9 @@ struct ResponsiveLayoutRenderTests {
                 onStart: {},
                 onStop: {},
                 onEdit: {},
-                onFingerprintAudit: {},
+                onDuplicate: {},
+                onTogglePinned: {},
+                onToggleArchived: {},
                 onDelete: {},
                 onReveal: {},
                 onCopyProxyUsername: {},
@@ -61,6 +61,12 @@ struct ResponsiveLayoutRenderTests {
             ) { _, _ in },
             name: "profile-editor-minimum",
             size: CGSize(width: 460, height: 380)
+        )
+
+        try render(
+            BulkProxyImportView { _, _ in },
+            name: "bulk-proxy-import-minimum",
+            size: CGSize(width: 500, height: 500)
         )
 
         let temporaryRoot = FileManager.default.temporaryDirectory
@@ -134,8 +140,6 @@ struct ResponsiveLayoutRenderTests {
                     browserDataPath:
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
                     runtimeSupportsFingerprint: true,
-                    canRunFingerprintAudit: true,
-                    fingerprintAuditUnavailableReason: nil,
                     clipboardNotice: nil,
                     isSidebarVisible: sidebarVisible,
                     onToggleSidebar: {},
@@ -143,7 +147,9 @@ struct ResponsiveLayoutRenderTests {
                     onStart: {},
                     onStop: {},
                     onEdit: {},
-                    onFingerprintAudit: {},
+                    onDuplicate: {},
+                    onTogglePinned: {},
+                    onToggleArchived: {},
                     onDelete: {},
                     onReveal: {},
                     onCopyProxyUsername: {},
@@ -318,8 +324,6 @@ struct ResponsiveLayoutRenderTests {
                         browserDataPath:
                             "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
                         runtimeSupportsFingerprint: true,
-                        canRunFingerprintAudit: true,
-                        fingerprintAuditUnavailableReason: nil,
                         clipboardNotice: nil,
                         isSidebarVisible: true,
                         onToggleSidebar: {},
@@ -327,7 +331,9 @@ struct ResponsiveLayoutRenderTests {
                         onStart: {},
                         onStop: {},
                         onEdit: {},
-                        onFingerprintAudit: {},
+                        onDuplicate: {},
+                        onTogglePinned: {},
+                        onToggleArchived: {},
                         onDelete: {},
                         onReveal: {},
                         onCopyProxyUsername: {},
@@ -384,8 +390,6 @@ struct ResponsiveLayoutRenderTests {
                         browserDataPath:
                             "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
                         runtimeSupportsFingerprint: true,
-                        canRunFingerprintAudit: true,
-                        fingerprintAuditUnavailableReason: nil,
                         clipboardNotice: nil,
                         isSidebarVisible: true,
                         onToggleSidebar: {},
@@ -393,7 +397,9 @@ struct ResponsiveLayoutRenderTests {
                         onStart: {},
                         onStop: {},
                         onEdit: {},
-                        onFingerprintAudit: {},
+                        onDuplicate: {},
+                        onTogglePinned: {},
+                        onToggleArchived: {},
                         onDelete: {},
                         onReveal: {},
                         onCopyProxyUsername: {},

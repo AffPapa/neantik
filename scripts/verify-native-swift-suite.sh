@@ -16,6 +16,8 @@ case "$SUITE" in
   BrowserProcessManagerTests|\
   BrowserRuntimeInspectorTests|\
   BrowserRuntimePreflightTests|\
+  BulkProxyImportTests|\
+  FingerprintAuditAutomationPolicyTests|\
   FingerprintAuditLoopbackSTUNServerTests|\
   FingerprintAuditTests|\
   FingerprintEvidenceEnrollmentTests|\

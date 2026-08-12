@@ -649,27 +649,9 @@ struct BrowserLaunchBuilderTests {
             #expect(environment["NEANTIK_PROFILE_TIMEZONE"] == nil)
         }
 
-        let afterExpiry = observedAt.addingTimeInterval(
-            31 * 24 * 60 * 60
-        )
-        #expect(
-            BrowserLaunchBuilder.requiresProxyContextRetest(
-                profile: stale,
-                now: afterExpiry
-            )
-        )
-        #expect(
-            BrowserLaunchBuilder.requiresProxyContextRetest(
-                profile: legacy,
-                now: afterExpiry
-            )
-        )
-        #expect(
-            !BrowserLaunchBuilder.requiresProxyContextRetest(
-                profile: direct,
-                now: afterExpiry
-            )
-        )
+        // Stale or missing location evidence no longer blocks profile launch.
+        // The argument and environment checks above prove that unverified
+        // locale/timezone hints are simply omitted instead.
     }
 
     @Test
