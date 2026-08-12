@@ -25,14 +25,25 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         checked_in = (
             ROOT / "docs" / "RUNTIME_INTEGRATION_NOTICES.md"
         ).read_text(encoding="utf-8")
+        runtime_lock = MODULE.load_json(
+            ROOT / "runtime" / "fingerprint-chromium.lock.json"
+        )
+        source_contract = MODULE.load_json(
+            ROOT / "runtime" / "chromium-151-source-contract.json"
+        )
+        chromium_version = runtime_lock["fingerprintChromium"][
+            "chromiumVersion"
+        ]
+        common_commit = source_contract["commonChromium"]["commit"]
+        packaging_commit = source_contract["macPackaging"]["commit"]
 
         self.assertEqual(rendered, checked_in)
-        self.assertIn("Chromium: `151.0.7922.75`", rendered)
+        self.assertIn(f"Chromium: `{chromium_version}`", rendered)
         self.assertIn(
             "Source contract binary binding: `pending-new-build`", rendered
         )
-        self.assertIn("1ddc0a2003eb30c3990568d74ed0437451e9c374", rendered)
-        self.assertIn("e194927e4838cb66ecdef40843a97c4f88f8d2af", rendered)
+        self.assertIn(common_commit, rendered)
+        self.assertIn(packaging_commit, rendered)
         self.assertIn("Owned patchset status: `release-ready`", rendered)
         self.assertNotIn("25 July 2026", rendered)
 

@@ -49,6 +49,23 @@ changelog without uploading executable PHP.
 
 ## Normal release
 
+After the exact release commit and verified DMG/ZIP exist, generate the six
+files instead of editing hashes and sizes by hand:
+
+```bash
+python3 scripts/prepare-affpapa-release-snapshot.py \
+  --dmg /absolute/path/to/NeAntik-<version>-arm64-notarized.dmg \
+  --zip /absolute/path/to/NeAntik-<version>-arm64-notarized.zip \
+  --release-date YYYY-MM-DD \
+  --output /absolute/path/to/release-dir
+```
+
+The generator requires a clean Git worktree, reads version/build/runtime from
+the exact checked source, imports the first matching `CHANGELOG.md` section,
+copies both artifacts, writes their sidecars and runs the same server
+validator locally. It does not publish. The following `prepare` command still
+repeats signature, notarization, stapling and Gatekeeper checks.
+
 Check and stage without publishing:
 
 ```bash

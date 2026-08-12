@@ -49,6 +49,22 @@ class VerifyDirectUiLocalizationTests(unittest.TestCase):
         self.assertFalse(result["qualified"])
         self.assertIn("Delete", " ".join(result["issues"]))
 
+    def test_rejects_missing_required_technical_disclosure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            sources = write_sources(Path(temporary))
+            for filename in MODULE.UI_FILES:
+                path = sources / filename
+                path.write_text(
+                    path.read_text(encoding="utf-8").replace(
+                        'Button("Технические сведения") {}\n',
+                        "",
+                    ),
+                    encoding="utf-8",
+                )
+            result = MODULE.inspect_sources(sources)
+        self.assertFalse(result["qualified"])
+        self.assertIn("Технические сведения", " ".join(result["issues"]))
+
 
 if __name__ == "__main__":
     unittest.main()

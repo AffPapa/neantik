@@ -28,17 +28,30 @@ notarized DMG/ZIP assets appear in GitHub Releases.
 
 Product website: <https://affpapa.org/neantik>.
 
+> The capabilities below describe the current `0.3.17 (20)` source candidate.
+> Regular users receive them only after a separately signed and notarized
+> release is published. Public `0.3.16 (19)` does not yet include every branch
+> change.
+
+## Quick start
+
+1. Create a profile and give it a clear name.
+2. Paste a proxy if needed; NeAntik parses it locally.
+3. Click **Launch**. Cookies and site data stay inside that profile.
+
 ## What it does
 
 - keeps cookies, local storage, and browser data in separate persistent
   profiles;
 - searches profiles by name and tags, pins important profiles, archives
-  inactive profiles without deleting data, and creates clean independent
-  configuration copies;
+  inactive profiles without deleting data, and duplicates settings into a
+  profile with a new UUID, fingerprint seed, and BrowserData; the proxy
+  configuration is copied too;
 - supports direct connections, authenticated HTTP/HTTPS through Chromium's
   native prompt, and SOCKS5 without credentials;
-- locally parses a proxy list and atomically creates up to 100 independent
-  profiles without automatic network requests;
+- locally parses a proxy list and creates up to 100 separate profiles without
+  automatic network requests; a failed import does not save profiles, and any
+  unfinished password cleanup is marked for retry on the next launch;
 - keeps proxy passwords in macOS Keychain;
 - launches Chromium with a minimal system-environment allowlist instead of
   inheriting proxy variables, TLS key logs, or Terminal tokens;

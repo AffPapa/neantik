@@ -82,7 +82,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         self.assertNotIn("tag", contract["macPackaging"])
         self.assertEqual(
             contract["commonChromium"]["commit"],
-            "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
+            "ecbcc4c1413c961e37d4224f787fecb8534b1505",
         )
 
     def test_rejects_stale_chromium_144_mac_commit(self) -> None:
@@ -157,6 +157,29 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
                 MODULE.verify_contract(
                     project_root=PROJECT_ROOT,
                     contract_path=path,
+                )
+
+    def test_rejects_source_version_override_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            plan_path = root / "plan.json"
+            contract_path = root / "contract.json"
+            plan = self.plan()
+            self.write_json(plan_path, plan)
+            contract = self.contract()
+            contract["sourceVersionOverride"]["from"] = "9.9.9.9"
+            contract["sourceVersionOverride"]["to"] = "8.8.8.8"
+            contract["rebasePlanSHA256"] = MODULE.sha256_file(plan_path)
+            self.write_json(contract_path, contract)
+
+            with self.assertRaisesRegex(
+                MODULE.SourceProvenanceError,
+                "sourceVersionOverride does not match rebase plan",
+            ):
+                MODULE.verify_contract(
+                    project_root=PROJECT_ROOT,
+                    contract_path=contract_path,
+                    rebase_plan_path=plan_path,
                 )
 
     def test_emitted_document_rejects_tree_mutation(self) -> None:

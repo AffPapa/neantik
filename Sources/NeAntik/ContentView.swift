@@ -1273,6 +1273,8 @@ private struct ProfileRow: View {
 }
 
 struct ProfileDetailView: View {
+    @State private var technicalDetailsExpanded = false
+
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let isResolvingRuntime: Bool
@@ -1378,9 +1380,28 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
-            GroupBox("Изоляция") {
-                fingerprintSummary
-                    .padding(.vertical, 4)
+            GroupBox("Профиль") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(
+                        "Cookies и данные сайтов хранятся отдельно",
+                        systemImage: "person.crop.rectangle.stack"
+                    )
+                    Label(
+                        runtimeSupportsFingerprint
+                            ? "Параметры браузера закреплены за профилем"
+                            : "Совместимый встроенный браузер пока недоступен",
+                        systemImage:
+                            runtimeSupportsFingerprint
+                                ? "checkmark.shield"
+                                : "exclamationmark.shield"
+                    )
+                    .foregroundStyle(
+                        runtimeSupportsFingerprint
+                            ? Color.secondary
+                            : Color.orange
+                    )
+                }
+                .padding(.vertical, 4)
             }
 
             GroupBox("Сеть") {
@@ -1388,9 +1409,15 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
-            GroupBox("Локальные данные") {
+            DisclosureGroup(
+                "Технические сведения",
+                isExpanded: $technicalDetailsExpanded
+            ) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Данные этого профиля хранятся отдельно.")
+                    fingerprintSummary
+                    Divider()
+                    Text("Папка данных браузера")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(browserDataPath)
                         .textSelection(.enabled)
@@ -1398,8 +1425,11 @@ struct ProfileDetailView: View {
                         .lineLimit(2)
                         .truncationMode(.middle)
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 10)
             }
+            .accessibilityHint(
+                "Показывает параметры изоляции и локальный путь данных профиля"
+            )
 
             if let lastLaunchedAt = profile.lastLaunchedAt {
                 Text(

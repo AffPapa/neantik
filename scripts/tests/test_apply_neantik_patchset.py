@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -258,6 +259,248 @@ class ApplyNeAntikPatchsetTests(unittest.TestCase):
             self.assertEqual(matched, 2)
             self.assertEqual(total, 2)
             self.assertEqual(mismatches, [])
+
+    def test_dependent_patch_series_is_checked_and_committed_in_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            source.mkdir()
+            (source / "a.txt").write_text("old\n", encoding="utf-8")
+            first = root / "first.patch"
+            first.write_text(
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+middle\n",
+                encoding="utf-8",
+            )
+            second = root / "second.patch"
+            second.write_text(
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-middle\n"
+                "+final\n",
+                encoding="utf-8",
+            )
+
+            MODULE.run_patch_series_transaction(
+                source,
+                [first, second],
+                check_only=True,
+            )
+            self.assertEqual((source / "a.txt").read_text(), "old\n")
+
+            MODULE.run_patch_series_transaction(
+                source,
+                [first, second],
+                check_only=False,
+            )
+            self.assertEqual((source / "a.txt").read_text(), "final\n")
+
+    def test_failed_dependent_patch_series_does_not_modify_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            source.mkdir()
+            (source / "a.txt").write_text("old\n", encoding="utf-8")
+            first = root / "first.patch"
+            first.write_text(
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+middle\n",
+                encoding="utf-8",
+            )
+            invalid = root / "invalid.patch"
+            invalid.write_text(
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-unexpected\n"
+                "+final\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(MODULE.PatchApplicationError):
+                MODULE.run_patch_series_transaction(
+                    source,
+                    [first, invalid],
+                    check_only=False,
+                )
+
+            self.assertEqual((source / "a.txt").read_text(), "old\n")
+
+    def test_concurrent_transaction_requires_exclusive_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            source.mkdir()
+            (source / "a.txt").write_text("old\n", encoding="utf-8")
+            patch = root / "change.patch"
+            patch.write_text(
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n",
+                encoding="utf-8",
+            )
+
+            with MODULE.exclusive_transaction_lock(source):
+                with self.assertRaisesRegex(
+                    MODULE.PatchApplicationError,
+                    "already locked",
+                ):
+                    MODULE.run_patch_series_transaction(
+                        source,
+                        [patch],
+                        check_only=False,
+                    )
+
+            self.assertEqual((source / "a.txt").read_text(), "old\n")
+
+    def test_failed_new_file_postimage_removes_created_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            source.mkdir()
+            patch = root / "new-file.patch"
+            patch.write_text(
+                "diff --git a/new.txt b/new.txt\n"
+                "new file mode 100644\n"
+                "--- /dev/null\n"
+                "+++ b/new.txt\n"
+                "@@ -0,0 +1 @@\n"
+                "+created\n",
+                encoding="utf-8",
+            )
+
+            def reject_commit() -> None:
+                raise MODULE.PostimageValidationError("fixture mismatch")
+
+            with self.assertRaisesRegex(
+                MODULE.PostimageValidationError,
+                "fixture mismatch",
+            ):
+                MODULE.run_patch_series_transaction(
+                    source,
+                    [patch],
+                    check_only=False,
+                    validate_commit=reject_commit,
+                )
+
+            self.assertFalse((source / "new.txt").exists())
+
+    def test_parent_symlink_is_rejected_without_touching_outside(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            outside = root / "outside"
+            source.mkdir()
+            outside.mkdir()
+            victim = outside / "victim.txt"
+            victim.write_text("old\n", encoding="utf-8")
+            (source / "linked").symlink_to(outside, target_is_directory=True)
+            patch = root / "escape.patch"
+            patch.write_text(
+                "diff --git a/linked/victim.txt b/linked/victim.txt\n"
+                "--- a/linked/victim.txt\n"
+                "+++ b/linked/victim.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                MODULE.PatchApplicationError,
+                "symlinked directory|escapes",
+            ):
+                MODULE.run_patch_series_transaction(
+                    source,
+                    [patch],
+                    check_only=False,
+                )
+
+            self.assertEqual(victim.read_text(encoding="utf-8"), "old\n")
+
+    def test_failed_incremental_recovery_restores_content_and_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            source.mkdir()
+            target = source / "a.txt"
+            target.write_text("middle\n", encoding="utf-8")
+            target.chmod(0o640)
+            patch_root = root / "runtime" / "nevision-patches"
+            patch_root.mkdir(parents=True)
+            patch = patch_root / "second.patch"
+            patch.write_text(
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-middle\n"
+                "+new\n",
+                encoding="utf-8",
+            )
+            groups = [
+                {
+                    "id": "second",
+                    "patchFile": "second.patch",
+                    "incrementalPreimageSHA256": {
+                        "a.txt": hashlib.sha256(b"middle\n").hexdigest()
+                    },
+                    "postimageSHA256": {
+                        "a.txt": hashlib.sha256(b"wrong\n").hexdigest()
+                    },
+                }
+            ]
+
+            with self.assertRaisesRegex(
+                MODULE.PatchApplicationError,
+                "Incremental recovery did not produce",
+            ):
+                MODULE.recover_one_incremental_group(
+                    source_root=source,
+                    manifest_path=patch_root / "series.json",
+                    groups=groups,
+                    generated_postimages={},
+                )
+
+            self.assertEqual(target.read_text(encoding="utf-8"), "middle\n")
+            self.assertEqual(os.stat(target).st_mode & 0o777, 0o640)
+
+    def test_postimage_failure_atomically_restores_patch_preimage(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source, manifest_path, rebase = self.fixture(Path(temporary))
+            (source / "a.txt").chmod(0o640)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["patchGroups"][0]["postimageSHA256"]["a.txt"] = (
+                hashlib.sha256(b"not-the-patch-result\n").hexdigest()
+            )
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                MODULE.PatchApplicationError,
+                "Postimage verification failed",
+            ):
+                MODULE.apply_patchset(
+                    source_root=source,
+                    manifest_path=manifest_path,
+                    rebase_plan_path=rebase,
+                )
+
+            self.assertEqual((source / "a.txt").read_text(), "old\n")
+            self.assertEqual(os.stat(source / "a.txt").st_mode & 0o777, 0o640)
 
     def test_rejects_wrong_chromium_version(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

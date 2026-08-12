@@ -5,33 +5,33 @@
     "status": "not-attested-by-this-document"
   },
   "commonChromium": {
-    "commit": "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
+    "commit": "ecbcc4c1413c961e37d4224f787fecb8534b1505",
     "criticalFiles": {
       "LICENSE": "78bc4abfc3e5606b5b88c3cb9409a3250a7f64cffe704bef0563e11910a29189",
-      "chromium_version.txt": "ceee167cc8ddcf80de5bdf6d56a12d007cdd2cf4299b06427523308a83559a6f",
+      "chromium_version.txt": "eaa31041e40f975418a35e28cc81e32255c967c03e15da4bbeac60ef16e93769",
       "downloads.ini": "dc3d4a77b79570878ad691ab26306946dfff0f8c711768edebce7eb26ae2fb68",
       "flags.gn": "a274a5633b3f909a1d6035192b5ff02c28f81a2f8fe60545d56bde34a0dc6c6b",
       "patches/series": "a6ae1bf8300ea98e9811bc02a35ed123d51e73bb9722c17fd081edfb59a9005d",
       "pruning.list": "6d2c5b6d67594aad12c1996ad82a0a5c650b4ddccd490719deeb532588dc68d9"
     },
     "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
-    "tag": "151.0.7922.71-1",
-    "tagObject": "fab7818c01a4660f588bc390ed46174661d570d3",
-    "tree": "eb75a0ed767e8c0cd8576c92fe4c364dfdad03c0"
+    "tag": "151.0.7922.108-1",
+    "tagObject": "c3497a1be12b0ee49aea3aa7a4d5644e9bcfae78",
+    "tree": "cf5f0f7af2c831651dbe574934a2daf5b50c0d6f"
   },
   "fingerprintChromium": {
-    "chromiumVersion": "151.0.7922.75",
-    "commit": "1ddc0a2003eb30c3990568d74ed0437451e9c374",
+    "chromiumVersion": "151.0.7922.108",
+    "commit": "4744b886309d987d292e43232776d2206cccb13d",
     "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
     "liteArchive": {
-      "filename": "chromium-151.0.7922.75-lite.tar.xz",
-      "hashesFileSHA256": "b24ecc434295309276cb476ddca2a10d62ed0ab3826921e8b7a7bb76812a9af6",
-      "sha256": "4bc6bc515e61e20f8c400997ae2af9ccb9f455bac1bb0532337be78736f89947",
-      "size": 1701085588
+      "filename": "chromium-151.0.7922.108-lite.tar.xz",
+      "hashesFileSHA256": "7f16ae389452232f45ac87144363e04df5488dd3c060b039cf2fbe2918c13969",
+      "sha256": "3f13338d12db5c6e17464b3be28eca2a07d64c7c58634268fa76924e3c5243aa",
+      "size": 1711817516
     },
     "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "151.0.7922.75",
-    "tree": "07c21c83df8c29373f2ff5e7fb3d44a2bb1443c3"
+    "tag": "151.0.7922.108",
+    "tree": "6163e54114d4c0bbbb3e762315b063700d5a713c"
   },
   "macPackaging": {
     "commit": "e194927e4838cb66ecdef40843a97c4f88f8d2af",
@@ -42,7 +42,7 @@
       "flags.macos.gn": "4c2ef83f9aba988cd55b2f9542148c07a7a4056f0bde1fea6451bb31f7d39165",
       "patches/series": "8ee061e5e7ea9ed731462aeb10449ee62d65a398aeaf275cec0beb9d38d55491"
     },
-    "effectiveCommonCommit": "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
+    "effectiveCommonCommit": "ecbcc4c1413c961e37d4224f787fecb8534b1505",
     "packagedChromiumVersion": "151.0.7922.71",
     "recordedCommonSubmoduleCommit": "f2038df00b82e3afbd5cbecac37cf7b463acb42a",
     "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
@@ -51,8 +51,8 @@
   "ownedInputs": {
     "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
     "runtime/chromium-151-toolchain-lock.json": "1bd134675b33ce24661a0210c98d5a6dc3a6fb565b484b39940f2b22de861932",
-    "runtime/nevision-patches/series.json": "19dddf2995bdbc9da65ce97fea73e5917af33edbdcbce948073a9d0045e20762",
-    "scripts/apply-neantik-patchset.py": "2fb7d131cc0e2d7239ed3c361a1054d82b610dbf821fdac9c1e050cdf7858120",
+    "runtime/nevision-patches/series.json": "a68a00be85fe22af2e0985f4359e24c467564c909ddd9d99ad7dc44b72982da1",
+    "scripts/apply-neantik-patchset.py": "32cf446c6f68993cc225564b062fe326c20f4217e8d21c1678de86d536362e5b",
     "scripts/apply-owned-runtime-device-tuples.py": "ecd54b0c108f39ec3d374f0c4ec225a7a2e93eda7602b53ab8a444569adcc35d",
     "scripts/build-runtime.sh": "0a87c74eba29674e41c1428b7fa3201c539f4b08d0d2367dbf138bb6a0feedc0",
     "scripts/verify-chromium-launch-flags.py": "4498899797e0746b69f2598b611805cb3553f46429325b15d98c63174bca06ab",
@@ -60,12 +60,12 @@
   },
   "ownedManifests": {
     "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
-    "neantikPatchSeriesSHA256": "19dddf2995bdbc9da65ce97fea73e5917af33edbdcbce948073a9d0045e20762",
-    "securityBaselineSHA256": "048800eb52b984fac7e19a30c8409e942a28ffeac2e19336491c0eac75e9d0f6"
+    "neantikPatchSeriesSHA256": "a68a00be85fe22af2e0985f4359e24c467564c909ddd9d99ad7dc44b72982da1",
+    "securityBaselineSHA256": "8654aa64a55ce3afc2dcf00e5e990101c6678932cadb57d8d784f116844ccd4b"
   },
   "schemaVersion": 4,
-  "sourceContractSHA256": "24afd364c810284d4d60d640cb74f950947f1913ad0fcada03b25b2ab01fddfa",
-  "sourceProvenanceSHA256": "7a08174aaa83d57d248e2b7c53404f20df399c3d28f4e79473552555100653d8",
+  "sourceContractSHA256": "565c237b2801976d12b7f1a1e50b50f3c335a9a053593fe5deebf63633f4a28e",
+  "sourceProvenanceSHA256": "7354fea0e58981ca5caa13820c9a14833c58b8f3f6cae677acc3fc1599ef2b32",
   "status": "source-qualified",
   "targetArchitecture": "arm64"
 }

@@ -2,11 +2,20 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import importlib.util
 import json
+import os
+import re
+import shutil
+import stat
 import subprocess
 import sys
+import tempfile
+import uuid
+from collections.abc import Callable
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -26,6 +35,10 @@ SPEC.loader.exec_module(VERIFIER)
 
 
 class PatchApplicationError(ValueError):
+    pass
+
+
+class PostimageValidationError(PatchApplicationError):
     pass
 
 
@@ -106,6 +119,245 @@ def run_git_apply(source_root: Path, patch_paths: list[Path], *options: str) -> 
         raise PatchApplicationError(
             "Owned NeAntik patch series does not apply atomically"
             + (f":\n{detail}" if detail else ".")
+        )
+
+
+def touched_patch_paths(patch_paths: list[Path]) -> list[Path]:
+    paths: set[Path] = set()
+    header = re.compile(r"^(?:---|\+\+\+) (?:a|b)/(.+)$")
+    for patch_path in patch_paths:
+        try:
+            lines = patch_path.read_text(encoding="utf-8").splitlines()
+        except OSError as error:
+            raise PatchApplicationError(f"Cannot read patch {patch_path}: {error}") from error
+        for line in lines:
+            match = header.match(line)
+            if match is None:
+                continue
+            relative = Path(match.group(1))
+            if relative.is_absolute() or ".." in relative.parts:
+                raise PatchApplicationError(
+                    f"Owned patch contains an unsafe path: {relative}"
+                )
+            paths.add(relative)
+    if not paths:
+        raise PatchApplicationError("Owned patch series has no file paths")
+    return sorted(paths)
+
+
+def copy_regular_file(source: Path, destination: Path) -> None:
+    if source.is_symlink() or (source.exists() and not source.is_file()):
+        raise PatchApplicationError(
+            f"Owned patch transaction supports regular files only: {source}"
+        )
+    if not source.exists():
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+
+
+def verify_safe_transaction_path(source_root: Path, relative: Path) -> None:
+    if relative.is_absolute() or not relative.parts or ".." in relative.parts:
+        raise PatchApplicationError(
+            f"Owned patch contains an unsafe path: {relative}"
+        )
+    try:
+        root = source_root.resolve(strict=True)
+    except OSError as error:
+        raise PatchApplicationError(
+            f"Owned patch transaction root is unavailable: {source_root}"
+        ) from error
+    if source_root.is_symlink() or not root.is_dir():
+        raise PatchApplicationError(
+            f"Owned patch transaction root must be a regular directory: {source_root}"
+        )
+
+    current = root
+    for component in relative.parts[:-1]:
+        current /= component
+        try:
+            mode = os.lstat(current).st_mode
+        except FileNotFoundError:
+            break
+        except OSError as error:
+            raise PatchApplicationError(
+                f"Cannot inspect owned patch path: {current}"
+            ) from error
+        if stat.S_ISLNK(mode):
+            raise PatchApplicationError(
+                f"Owned patch path contains a symlinked directory: {current}"
+            )
+        if not stat.S_ISDIR(mode):
+            raise PatchApplicationError(
+                f"Owned patch path parent is not a directory: {current}"
+            )
+
+    candidate = root / relative
+    if candidate.is_symlink():
+        raise PatchApplicationError(
+            f"Owned patch transaction refuses symlink targets: {candidate}"
+        )
+    resolved = candidate.resolve(strict=False)
+    if resolved != root and root not in resolved.parents:
+        raise PatchApplicationError(
+            f"Owned patch path escapes the transaction root: {relative}"
+        )
+
+
+def file_state(path: Path) -> tuple[str, int] | None:
+    if not path.exists():
+        return None
+    if path.is_symlink() or not path.is_file():
+        raise PatchApplicationError(
+            f"Owned patch transaction supports regular files only: {path}"
+        )
+    return sha256(path), path.stat().st_mode & 0o777
+
+
+def restore_snapshot(
+    *,
+    source_root: Path,
+    snapshot_root: Path,
+    relative_paths: list[Path],
+) -> None:
+    for relative in relative_paths:
+        verify_safe_transaction_path(snapshot_root, relative)
+        verify_safe_transaction_path(source_root, relative)
+        source = snapshot_root / relative
+        destination = source_root / relative
+        if source.is_symlink():
+            raise PatchApplicationError(
+                f"Owned patch transaction refuses symlink snapshots: {source}"
+            )
+        if source.is_file():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            verify_safe_transaction_path(source_root, relative)
+            temporary = destination.with_name(
+                f".{destination.name}.neantik-restore-{uuid.uuid4().hex}"
+            )
+            try:
+                shutil.copy2(source, temporary)
+                verify_safe_transaction_path(source_root, relative)
+                os.replace(temporary, destination)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
+        elif destination.exists() or destination.is_symlink():
+            verify_safe_transaction_path(source_root, relative)
+            destination.unlink()
+
+
+@contextmanager
+def exclusive_transaction_lock(source_root: Path):
+    lock_path = source_root.parent / f".{source_root.name}.neantik-patch.lock"
+    flags = os.O_CREAT | os.O_RDWR | os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(lock_path, flags, 0o600)
+    except OSError as error:
+        raise PatchApplicationError(
+            f"Cannot open owned patch transaction lock: {lock_path}"
+        ) from error
+    try:
+        mode = os.fstat(descriptor).st_mode
+        if not stat.S_ISREG(mode):
+            raise PatchApplicationError(
+                f"Owned patch transaction lock is not a regular file: {lock_path}"
+            )
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise PatchApplicationError(
+                "Chromium source is already locked by another owned patch "
+                f"transaction: {source_root}"
+            ) from error
+        yield
+    finally:
+        os.close(descriptor)
+
+
+def _run_patch_series_transaction_locked(
+    source_root: Path,
+    patch_paths: list[Path],
+    *,
+    check_only: bool,
+    reverse: bool = False,
+    validate_commit: Callable[[], None] | None = None,
+) -> None:
+    relative_paths = touched_patch_paths(patch_paths)
+    with tempfile.TemporaryDirectory(prefix="neantik-patch-transaction-") as raw:
+        transaction_root = Path(raw)
+        snapshot_root = transaction_root / "before"
+        work_root = transaction_root / "work"
+        snapshot_root.mkdir()
+        work_root.mkdir()
+        for relative in relative_paths:
+            verify_safe_transaction_path(source_root, relative)
+            copy_regular_file(source_root / relative, snapshot_root / relative)
+            copy_regular_file(source_root / relative, work_root / relative)
+
+        ordered_patch_paths = (
+            list(reversed(patch_paths)) if reverse else patch_paths
+        )
+        options = ("--reverse",) if reverse else ()
+        for patch_path in ordered_patch_paths:
+            run_git_apply(work_root, [patch_path], *options, "--check")
+            run_git_apply(work_root, [patch_path], *options)
+
+        if check_only:
+            return
+
+        for relative in relative_paths:
+            verify_safe_transaction_path(source_root, relative)
+            if file_state(source_root / relative) != file_state(snapshot_root / relative):
+                raise PatchApplicationError(
+                    f"Chromium source changed during owned patch transaction: {relative}"
+                )
+
+        try:
+            restore_snapshot(
+                source_root=source_root,
+                snapshot_root=work_root,
+                relative_paths=relative_paths,
+            )
+            if validate_commit is not None:
+                validate_commit()
+        except BaseException as error:
+            try:
+                restore_snapshot(
+                    source_root=source_root,
+                    snapshot_root=snapshot_root,
+                    relative_paths=relative_paths,
+                )
+            except (OSError, PatchApplicationError) as restore_error:
+                raise PatchApplicationError(
+                    "Owned patch transaction failed and its exact preimage "
+                    f"could not be restored: transaction={error}; "
+                    f"restore={restore_error}"
+                ) from restore_error
+            if isinstance(error, PostimageValidationError):
+                raise
+            raise PatchApplicationError(
+                f"Owned patch transaction could not be committed: {error}"
+            ) from error
+
+
+def run_patch_series_transaction(
+    source_root: Path,
+    patch_paths: list[Path],
+    *,
+    check_only: bool,
+    reverse: bool = False,
+    validate_commit: Callable[[], None] | None = None,
+) -> None:
+    with exclusive_transaction_lock(source_root):
+        _run_patch_series_transaction_locked(
+            source_root,
+            patch_paths,
+            check_only=check_only,
+            reverse=reverse,
+            validate_commit=validate_commit,
         )
 
 
@@ -211,19 +463,29 @@ def recover_one_incremental_group(
             )
 
     patch_path = manifest_path.parent / str(candidate["patchFile"])
-    run_git_apply(source_root, [patch_path], "--check")
-    run_git_apply(source_root, [patch_path])
-    matched, total, mismatches = postimage_state(
-        source_root,
-        groups,
-        generated_postimages,
-    )
-    if matched != total:
-        raise PatchApplicationError(
-            "Incremental recovery did not produce the complete reviewed "
-            f"postimage set: {matched}/{total} match.\n"
-            + "\n".join(mismatches[:12])
+    validation: dict[str, int] = {}
+
+    def validate_incremental_commit() -> None:
+        matched, total, mismatches = postimage_state(
+            source_root,
+            groups,
+            generated_postimages,
         )
+        validation["total"] = total
+        if matched != total:
+            raise PostimageValidationError(
+                "Incremental recovery did not produce the complete reviewed "
+                f"postimage set: {matched}/{total} match.\n"
+                + "\n".join(mismatches[:12])
+            )
+
+    run_patch_series_transaction(
+        source_root,
+        [patch_path],
+        check_only=False,
+        validate_commit=validate_incremental_commit,
+    )
+    total = validation["total"]
     return {
         "status": "incrementally-recovered",
         "patchCount": 1,
@@ -285,9 +547,32 @@ def apply_patchset(
             "postimageCount": total,
             "chromiumVersion": actual_version,
         }
+    validation: dict[str, int] = {}
+
+    def validate_full_commit() -> None:
+        commit_matched, commit_total, commit_mismatches = postimage_state(
+            source_root,
+            groups,
+            generated_postimages,
+        )
+        validation["total"] = commit_total
+        if commit_matched != commit_total:
+            raise PostimageValidationError(
+                "Postimage verification failed after apply: "
+                f"{commit_matched}/{commit_total} match.\n"
+                + "\n".join(commit_mismatches[:12])
+            )
+
     try:
-        run_git_apply(source_root, patch_paths, "--check")
+        run_patch_series_transaction(
+            source_root,
+            patch_paths,
+            check_only=check_only,
+            validate_commit=None if check_only else validate_full_commit,
+        )
     except PatchApplicationError as forward_error:
+        if isinstance(forward_error, PostimageValidationError):
+            raise
         if recover_incremental and not check_only:
             recovered = recover_one_incremental_group(
                 source_root=source_root,
@@ -319,17 +604,7 @@ def apply_patchset(
             "chromiumVersion": actual_version,
         }
 
-    run_git_apply(source_root, patch_paths)
-    matched, total, mismatches = postimage_state(
-        source_root,
-        groups,
-        generated_postimages,
-    )
-    if matched != total:
-        raise PatchApplicationError(
-            f"Postimage verification failed after apply: {matched}/{total} match.\n"
-            + "\n".join(mismatches[:12])
-        )
+    total = validation["total"]
     return {
         "status": "applied",
         "patchCount": len(patch_paths),
