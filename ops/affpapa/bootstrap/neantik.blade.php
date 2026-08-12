@@ -15,9 +15,9 @@
         : [];
     $releaseManifest = is_array($releaseManifest) ? $releaseManifest : [];
     $contentManifest = is_array($contentManifest) ? $contentManifest : [];
-    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.16');
-    $releaseBuild = (int) ($releaseManifest['build'] ?? 19);
-    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.75');
+    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.17');
+    $releaseBuild = (int) ($releaseManifest['build'] ?? 20);
+    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.108');
     $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '151';
     $artifactByFormat = [];
     foreach (($releaseManifest['artifacts'] ?? []) as $artifact) {
@@ -41,6 +41,21 @@
     ];
 
     $changelog = [
+        [
+            'ver' => '0.3.17',
+            'build' => 20,
+            'date' => '12 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'Встроенный движок обновлён до Chromium 151.0.7922.108; свежая ARM64/Metal-сборка прошла source provenance и полный Direct release gate',
+                'Обычный сценарий сокращён до «профиль → прокси при необходимости → запуск», а техническая A → B → A проверка оставлена в защищённом release gate',
+                'Прокси распознаются локально и мгновенно; внешняя проверка соединения запускается только отдельной необязательной кнопкой',
+                'Запуск и изменение остаются на виду, а данные, архив, дублирование и удаление собраны в компактном меню «Ещё»',
+                'Добавлены закрепление, архив без удаления BrowserData и безопасное дублирование профиля с новым UUID, seed и отдельной папкой',
+                'Добавлено массовое создание до 100 независимых профилей из списка прокси без автоматических сетевых запросов',
+                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой и проверкой; AffPapa автоматически откатывается при ошибке',
+            ],
+        ],
         [
             'ver' => '0.3.16',
             'build' => 19,
