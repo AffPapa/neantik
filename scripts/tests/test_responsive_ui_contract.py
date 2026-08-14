@@ -25,6 +25,38 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("WorkspaceLayout.sidebarWidth", text)
         self.assertIn("isSidebarVisible", text)
 
+    def test_sidebar_stays_top_anchored_and_header_icons_do_not_clip(
+        self,
+    ) -> None:
+        text = CONTENT.read_text(encoding="utf-8")
+        sidebar_start = text.index("private var sidebar: some View")
+        header_start = text.index("private var sidebarHeader: some View")
+        controls_start = text.index("private var sidebarControls: some View")
+        sidebar = text[sidebar_start:header_start]
+        header = text[header_start:controls_start]
+
+        self.assertIn(
+            ".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)",
+            sidebar,
+        )
+        self.assertGreaterEqual(
+            sidebar.count(
+                ".frame(maxWidth: .infinity, maxHeight: .infinity)"
+            ),
+            2,
+        )
+        self.assertIn("sidebarHeaderActionIcon(\"sidebar.left\")", header)
+        self.assertIn("sidebarHeaderActionIcon(\"plus\")", header)
+        self.assertIn(".menuIndicator(.hidden)", header)
+        self.assertIn(".menuStyle(.borderlessButton)", header)
+        self.assertGreaterEqual(
+            header.count(".frame(width: 32, height: 32)"),
+            2,
+        )
+        self.assertIn("if !store.profiles.isEmpty", header)
+        self.assertIn('"Поиск по имени и тегам"', header)
+        self.assertNotIn(".clipShape(Circle())", header)
+
     def test_primary_profile_actions_are_pinned_above_scrollable_details(
         self,
     ) -> None:
