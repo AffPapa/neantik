@@ -15,8 +15,8 @@
         : [];
     $releaseManifest = is_array($releaseManifest) ? $releaseManifest : [];
     $contentManifest = is_array($contentManifest) ? $contentManifest : [];
-    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.17');
-    $releaseBuild = (int) ($releaseManifest['build'] ?? 20);
+    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.18');
+    $releaseBuild = (int) ($releaseManifest['build'] ?? 21);
     $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.108');
     $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '151';
     $artifactByFormat = [];
@@ -41,6 +41,18 @@
     ];
 
     $changelog = [
+        [
+            'ver' => '0.3.18',
+            'build' => 21,
+            'date' => '14 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'Обычный интерфейс окончательно отделён от служебной проверки отпечатков: пользователю достаточно создать профиль, при необходимости указать proxy и нажать «Запустить»',
+                'Постоянные технические статусы и параметры отпечатка убраны с главного экрана',
+                'Новые профили по умолчанию открывают изменяемую страницу https://aff.top/tools/fingerprint; сохранённые страницы существующих профилей не переписываются',
+                'Телеметрия самого NeAntik по-прежнему выключена',
+            ],
+        ],
         [
             'ver' => '0.3.17',
             'build' => 20,
