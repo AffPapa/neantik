@@ -15,8 +15,8 @@
         : [];
     $releaseManifest = is_array($releaseManifest) ? $releaseManifest : [];
     $contentManifest = is_array($contentManifest) ? $contentManifest : [];
-    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.18');
-    $releaseBuild = (int) ($releaseManifest['build'] ?? 21);
+    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.19');
+    $releaseBuild = (int) ($releaseManifest['build'] ?? 22);
     $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.108');
     $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '151';
     $artifactByFormat = [];
@@ -41,6 +41,20 @@
     ];
 
     $changelog = [
+        [
+            'ver' => '0.3.19',
+            'build' => 22,
+            'date' => '14 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'Исправлена боковая панель в пустом состоянии: заголовок, создание профиля и управление sidebar теперь всегда закреплены сверху',
+                'Кнопки скрытия sidebar и создания профиля получили одинаковую геометрию 32×32; значок «+» больше не сдвигается и не обрезается',
+                'Поиск скрыт, пока профилей нет, а после удаления последнего профиля старые поиск и фильтры безопасно сбрасываются',
+                'Добавлены нативные render-регрессии для пустого и заполненного sidebar на минимальном и широком окне',
+                'Встроенный Chromium остаётся на проверенной версии 151.0.7922.108',
+                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой и проверкой; AffPapa автоматически откатывается при ошибке',
+            ],
+        ],
         [
             'ver' => '0.3.18',
             'build' => 21,
