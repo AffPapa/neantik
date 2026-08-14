@@ -4,6 +4,34 @@ import Testing
 
 struct ProfileOrganizationTests {
     @Test
+    func newProfileUsesEditableAffTopFingerprintStartPage() {
+        let profile = BrowserProfile(name: "Новый профиль")
+
+        #expect(
+            profile.startURL == "https://aff.top/tools/fingerprint"
+        )
+    }
+
+    @Test
+    func storedStartPageSurvivesDecodeWithoutMigration() throws {
+        let profile = BrowserProfile(
+            name: "Существующий профиль",
+            startURL: "https://www.google.com"
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let decoded = try decoder.decode(
+            BrowserProfile.self,
+            from: encoder.encode(profile)
+        )
+
+        #expect(decoded.startURL == "https://www.google.com")
+    }
+
+    @Test
     func legacyProfileGetsStableAppearanceAndEmptyTags() throws {
         let id = UUID(
             uuidString: "11111111-2222-3333-4444-555555555555"

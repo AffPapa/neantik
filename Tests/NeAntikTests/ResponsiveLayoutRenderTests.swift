@@ -29,7 +29,6 @@ struct ResponsiveLayoutRenderTests {
                 isResolvingRuntime: false,
                 browserDataPath:
                     "/Users/example/Library/Application Support/NeAntik Development/Profiles/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/BrowserData",
-                runtimeSupportsFingerprint: true,
                 clipboardNotice: nil,
                 isSidebarVisible: true,
                 onToggleSidebar: {},
@@ -139,7 +138,6 @@ struct ResponsiveLayoutRenderTests {
                     isResolvingRuntime: false,
                     browserDataPath:
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
-                    runtimeSupportsFingerprint: true,
                     clipboardNotice: nil,
                     isSidebarVisible: sidebarVisible,
                     onToggleSidebar: {},
@@ -323,7 +321,6 @@ struct ResponsiveLayoutRenderTests {
                         isResolvingRuntime: false,
                         browserDataPath:
                             "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
-                        runtimeSupportsFingerprint: true,
                         clipboardNotice: nil,
                         isSidebarVisible: true,
                         onToggleSidebar: {},
@@ -389,7 +386,6 @@ struct ResponsiveLayoutRenderTests {
                         isResolvingRuntime: false,
                         browserDataPath:
                             "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
-                        runtimeSupportsFingerprint: true,
                         clipboardNotice: nil,
                         isSidebarVisible: true,
                         onToggleSidebar: {},

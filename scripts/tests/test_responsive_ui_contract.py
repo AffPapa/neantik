@@ -49,6 +49,23 @@ class ResponsiveUIContractTests(unittest.TestCase):
             text,
         )
 
+    def test_fingerprint_audit_is_release_only(self) -> None:
+        text = CONTENT.read_text(encoding="utf-8")
+        self.assertNotIn("showingFingerprintAudit", text)
+        self.assertNotIn("fingerprintAuditProfiles", text)
+        self.assertEqual(
+            text.count("showingReleaseFingerprintAudit = true"),
+            1,
+        )
+        release_gate = text.index(
+            "private func presentReleaseFingerprintAuditIfNeeded()"
+        )
+        assignment = text.index(
+            "showingReleaseFingerprintAudit = true"
+        )
+        self.assertGreater(assignment, release_gate)
+        self.assertIn("guard launchIntent.opensFingerprintAudit", text)
+
     def test_proxy_import_is_local_and_connection_test_is_optional(
         self,
     ) -> None:

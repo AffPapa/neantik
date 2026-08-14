@@ -53,7 +53,7 @@ struct ContentView: View {
     @State private var selection: UUID?
     @State private var editorRequest: EditorRequest?
     @State private var showingDeleteConfirmation = false
-    @State private var showingFingerprintAudit = false
+    @State private var showingReleaseFingerprintAudit = false
     @State private var showingBulkProxyImport = false
     @State private var localError: String?
     @State private var resolvedRuntime: BrowserRuntime?
@@ -72,13 +72,6 @@ struct ContentView: View {
 
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
-    }
-
-    private var fingerprintAuditProfiles: [BrowserProfile] {
-        if fingerprintEvidenceReleaseContext != nil {
-            return releaseAuditProfiles
-        }
-        return store.profiles
     }
 
     private var visibleProfiles: [BrowserProfile] {
@@ -197,31 +190,25 @@ struct ContentView: View {
                 )
             }
         }
-        .sheet(isPresented: $showingFingerprintAudit) {
-            let auditProfiles = fingerprintAuditProfiles
-            if let runtime, auditProfiles.count >= 2 {
+        .sheet(isPresented: $showingReleaseFingerprintAudit) {
+            if let runtime,
+               let fingerprintEvidenceReleaseContext,
+               releaseAuditProfiles.count >= 2
+            {
                 FingerprintAuditView(
-                    profiles: auditProfiles,
-                    initialFirstID:
-                        fingerprintEvidenceReleaseContext == nil
-                        ? selection
-                        : auditProfiles.first?.id,
+                    profiles: releaseAuditProfiles,
+                    initialFirstID: releaseAuditProfiles.first?.id,
                     runtime: runtime,
                     processes: processes,
                     paths: store.paths,
-                    releaseContext:
-                        fingerprintEvidenceReleaseContext
+                    releaseContext: fingerprintEvidenceReleaseContext
                 )
             } else {
                 ContentUnavailableView(
-                    fingerprintEvidenceReleaseContext == nil
-                        ? "Проверка профиля недоступна"
-                        : "Проверка отпечатка недоступна",
+                    "Служебная проверка выпуска недоступна",
                     systemImage: "exclamationmark.triangle",
                     description: Text(
-                        fingerprintEvidenceReleaseContext == nil
-                            ? "Создай минимум два профиля и выбери совместимый браузер."
-                            : "Встроенный браузер не готов к релизной проверке."
+                        "Встроенный браузер не готов к автоматической проверке выпуска."
                     )
                 )
                 .frame(width: 520, height: 360)
@@ -598,7 +585,7 @@ struct ContentView: View {
                             if processState == .checking {
                                 Button {} label: {
                                     Label(
-                                        "Проверка…",
+                                        "Подготовка…",
                                         systemImage: "hourglass"
                                     )
                                 }
@@ -729,7 +716,7 @@ struct ContentView: View {
                         processState.isRunning
                             ? (
                                 processState == .checking
-                                    ? "Проверка…"
+                                    ? "Подготовка…"
                                     : processState.canRequestStop
                                     ? "Остановить выбранный"
                                     : "Закрой браузер вручную"
@@ -777,7 +764,6 @@ struct ContentView: View {
                 processState: processes.processState(for: profile.id),
                 isResolvingRuntime: isResolvingRuntime,
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
-                runtimeSupportsFingerprint: runtime?.supportsFingerprintIdentity == true,
                 clipboardNotice:
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
@@ -927,59 +913,66 @@ struct ContentView: View {
         }
     }
 
+    @ViewBuilder
     private var sidebarStatus: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Label {
-                Text(
-                    isResolvingRuntime
-                        ? "Проверяем браузер…"
-                        : runtimePreflight?.isReady == true
-                        ? "Браузер готов"
-                        : "Браузер требует внимания"
-                )
-                .fontWeight(.medium)
-            } icon: {
-                Image(systemName: runtimeStatusIcon)
-                    .foregroundStyle(runtimeStatusColor)
-            }
-
-            Text(
-                isResolvingRuntime
-                    ? "Встроенный движок"
-                    : runtime?.runtimeSummary ??
-                        "Встроенный движок недоступен"
-            )
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-
-            Label(
-                updateChannel.isEnabled
-                    ? "Подписанные обновления"
-                    : "Обновления вручную",
-                systemImage: "arrow.triangle.2.circlepath"
-            )
-            .foregroundStyle(.secondary)
-
-            if telemetry.isConfigured {
-                Toggle(
-                    "Обезличенная статистика",
-                    isOn: Binding(
-                        get: { telemetry.isEnabled },
-                        set: {
-                            telemetry.setEnabled(
-                                $0,
-                                snapshot: telemetrySnapshot
-                            )
-                        }
+        if isResolvingRuntime || runtimePreflight?.isReady == false ||
+            updateChannel.isEnabled || telemetry.isConfigured
+        {
+            VStack(alignment: .leading, spacing: 7) {
+                Label {
+                    Text(
+                        isResolvingRuntime
+                            ? "Подготавливаем браузер…"
+                            : runtimePreflight?.isReady == true
+                            ? "Браузер готов"
+                            : "Браузер требует внимания"
                     )
-                )
-                .toggleStyle(.switch)
-                .controlSize(.mini)
+                    .fontWeight(.medium)
+                } icon: {
+                    Image(systemName: runtimeStatusIcon)
+                        .foregroundStyle(runtimeStatusColor)
+                }
+
+                if isResolvingRuntime || runtimePreflight?.isReady == false {
+                    Text(
+                        isResolvingRuntime
+                            ? "Встроенный браузер"
+                            : runtimePreflight?.primaryMessage ??
+                                "Встроенный браузер недоступен"
+                    )
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                }
+
+                if updateChannel.isEnabled {
+                    Label(
+                        "Подписанные обновления",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                    .foregroundStyle(.secondary)
+                }
+
+                if telemetry.isConfigured {
+                    Toggle(
+                        "Обезличенная статистика",
+                        isOn: Binding(
+                            get: { telemetry.isEnabled },
+                            set: {
+                                telemetry.setEnabled(
+                                    $0,
+                                    snapshot: telemetrySnapshot
+                                )
+                            }
+                        )
+                    )
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                }
             }
+            .font(.caption)
+            .padding(12)
+            .accessibilityElement(children: .contain)
         }
-        .font(.caption)
-        .padding(12)
-        .accessibilityElement(children: .contain)
     }
 
     private var runtimeStatusIcon: String {
@@ -1057,7 +1050,7 @@ struct ContentView: View {
             releaseAuditProfiles = Self.makeReleaseAuditProfiles()
         }
         selection = releaseAuditProfiles.first?.id
-        showingFingerprintAudit = true
+        showingReleaseFingerprintAudit = true
     }
 
     private func failFingerprintReleaseBeforePresentation(
@@ -1279,7 +1272,6 @@ struct ProfileDetailView: View {
     let processState: BrowserProfileProcessState
     let isResolvingRuntime: Bool
     let browserDataPath: String
-    let runtimeSupportsFingerprint: Bool
     let clipboardNotice: String?
     let isSidebarVisible: Bool
     let onToggleSidebar: () -> Void
@@ -1381,26 +1373,10 @@ struct ProfileDetailView: View {
             }
 
             GroupBox("Профиль") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label(
-                        "Cookies и данные сайтов хранятся отдельно",
-                        systemImage: "person.crop.rectangle.stack"
-                    )
-                    Label(
-                        runtimeSupportsFingerprint
-                            ? "Параметры браузера закреплены за профилем"
-                            : "Совместимый встроенный браузер пока недоступен",
-                        systemImage:
-                            runtimeSupportsFingerprint
-                                ? "checkmark.shield"
-                                : "exclamationmark.shield"
-                    )
-                    .foregroundStyle(
-                        runtimeSupportsFingerprint
-                            ? Color.secondary
-                            : Color.orange
-                    )
-                }
+                Label(
+                    "Cookies, настройки и данные сайтов хранятся отдельно",
+                    systemImage: "person.crop.rectangle.stack"
+                )
                 .padding(.vertical, 4)
             }
 
@@ -1414,8 +1390,6 @@ struct ProfileDetailView: View {
                 isExpanded: $technicalDetailsExpanded
             ) {
                 VStack(alignment: .leading, spacing: 8) {
-                    fingerprintSummary
-                    Divider()
                     Text("Папка данных браузера")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -1428,7 +1402,7 @@ struct ProfileDetailView: View {
                 .padding(.top, 10)
             }
             .accessibilityHint(
-                "Показывает параметры изоляции и локальный путь данных профиля"
+                "Показывает локальный путь данных профиля"
             )
 
             if let lastLaunchedAt = profile.lastLaunchedAt {
@@ -1438,46 +1412,6 @@ struct ProfileDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
-        }
-    }
-
-    private var fingerprintSummary: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LabeledContent(
-                "Политика",
-                value: profile.identity.issuanceSummary
-            )
-            if let timezone = profile.identity.timezoneIdentifier {
-                LabeledContent("Часовой пояс", value: timezone)
-            }
-            if let locale = profile.identity.localeIdentifier {
-                LabeledContent("Язык", value: locale)
-            }
-            if let evidence = profile.identity.proxyContextEvidence {
-                LabeledContent(
-                    "Контекст сети",
-                    value:
-                        "\(evidence.source) · \(evidence.observedAt.formatted(date: .abbreviated, time: .omitted))"
-                )
-                if !evidence.isFresh() {
-                    Text(
-                        "Данные старше 30 дней. Перепроверь прокси, чтобы обновить язык и часовой пояс."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                }
-            }
-            Text(
-                runtimeSupportsFingerprint
-                    ? "Параметры браузера закреплены за профилем автоматически."
-                    : "Совместимый встроенный браузер пока недоступен."
-            )
-            .font(.caption)
-            .foregroundStyle(
-                runtimeSupportsFingerprint
-                    ? Color.secondary
-                    : Color.orange
-            )
         }
     }
 
@@ -1521,7 +1455,7 @@ struct ProfileDetailView: View {
                         : isRunning
                         ? (
                             processState == .checking
-                                ? "Проверка…"
+                                ? "Подготовка…"
                                 : processState.canRequestStop
                                 ? "Остановить"
                                 : "Закрыть вручную"
