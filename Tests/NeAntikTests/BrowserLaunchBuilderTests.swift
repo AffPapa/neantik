@@ -98,6 +98,7 @@ struct BrowserLaunchBuilderTests {
         #expect(!arguments.contains { $0.hasPrefix("--host-resolver-rules=") })
         #expect(!arguments.contains { $0.hasPrefix("--fingerprint=") })
         #expect(!arguments.contains("--fingerprint-platform=macos"))
+        #expect(arguments.last == BrowserProfile.defaultStartURL)
     }
 
     @Test

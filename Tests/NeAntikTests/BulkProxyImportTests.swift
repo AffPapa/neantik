@@ -111,6 +111,11 @@ struct BulkProxyImportTests {
         )
 
         #expect(profiles.map(\.name) == ["Работа 1", "Работа 2"])
+        #expect(
+            profiles.allSatisfy {
+                $0.startURL == BrowserProfile.defaultStartURL
+            }
+        )
         #expect(fixture.store.profiles.count == 2)
         #expect(
             try fixture.keychain.proxyPassword(profileID: profiles[0].id)

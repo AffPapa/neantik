@@ -165,7 +165,7 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         case .stopped:
             "Остановлен"
         case .checking:
-            "Проверка…"
+            "Подготовка…"
         case .managed:
             "Запущен"
         case .externalVerified:
@@ -184,7 +184,7 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         case .stopped, .managed:
             nil
         case .checking:
-            "NeAntik проверяет, свободны ли данные профиля. Дождись завершения проверки."
+            "NeAntik подготавливает данные профиля. Это займёт несколько секунд."
         case .externalVerified:
             "Профиль запущен другим экземпляром NeAntik. Его можно безопасно остановить здесь."
         case .externalManualOnly:

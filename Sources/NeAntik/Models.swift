@@ -630,6 +630,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
     static let maximumTagCount = 8
     static let maximumTagLength = 24
+    static let defaultStartURL = "https://aff.top/tools/fingerprint"
 
     var id: UUID
     var name: String
@@ -653,7 +654,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         tags: [String] = [],
         isPinned: Bool = false,
         isArchived: Bool = false,
-        startURL: String = "https://www.google.com",
+        startURL: String = BrowserProfile.defaultStartURL,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
