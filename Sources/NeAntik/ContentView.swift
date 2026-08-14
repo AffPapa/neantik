@@ -487,6 +487,7 @@ struct ContentView: View {
                         editorRequest = EditorRequest(profile: nil)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if visibleProfiles.isEmpty {
                 ContentUnavailableView {
                     Label(
@@ -527,6 +528,7 @@ struct ContentView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(selection: $selection) {
                     ForEach(visibleProfiles) { profile in
@@ -621,6 +623,7 @@ struct ContentView: View {
             Divider()
             sidebarStatus
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.regularMaterial)
     }
 
@@ -637,9 +640,10 @@ struct ContentView: View {
                 Button {
                     isSidebarVisible = false
                 } label: {
-                    Image(systemName: "sidebar.left")
+                    sidebarHeaderActionIcon("sidebar.left")
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
+                .background(.quaternary, in: Circle())
                 .help("Скрыть список профилей")
                 .accessibilityLabel("Скрыть список профилей")
 
@@ -658,12 +662,12 @@ struct ContentView: View {
                         )
                     }
                 } label: {
-                    Image(systemName: "plus")
-                        .fontWeight(.semibold)
+                    sidebarHeaderActionIcon("plus")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .clipShape(Circle())
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .frame(width: 32, height: 32)
+                .background(.quaternary, in: Circle())
                 .help("Создать профили")
                 .accessibilityLabel("Создать профили")
             }
@@ -678,6 +682,13 @@ struct ContentView: View {
         .padding(.horizontal, 14)
         .padding(.top, 12)
         .padding(.bottom, 12)
+    }
+
+    private func sidebarHeaderActionIcon(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 14, weight: .semibold))
+            .frame(width: 32, height: 32)
+            .contentShape(Circle())
     }
 
     private var sidebarControls: some View {

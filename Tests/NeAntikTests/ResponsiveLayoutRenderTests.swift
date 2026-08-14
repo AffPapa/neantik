@@ -170,19 +170,6 @@ struct ResponsiveLayoutRenderTests {
         }
         let paths = AppPaths(rootDirectory: temporaryRoot)
         let store = ProfileStore(paths: paths)
-        _ = try store.upsert(
-            BrowserProfile(
-                name:
-                    "Очень длинное Unicode-название рабочего профиля",
-                tags: ["Работа", "Проверка"],
-                proxy: ProxyConfiguration(
-                    kind: .https,
-                    host: "2001:db8::1",
-                    port: 8_080,
-                    username: "operator"
-                )
-            )
-        )
         let runtimeExecutable = temporaryRoot.appendingPathComponent(
             "NeAntik Browser"
         )
@@ -235,6 +222,58 @@ struct ResponsiveLayoutRenderTests {
             arguments: [
                 "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
             ]
+        )
+
+        for (name, size) in [
+            (
+                "actual-empty-content-minimum",
+                CGSize(
+                    width: WorkspaceLayout.minimumWindowWidth,
+                    height: WorkspaceLayout.minimumWindowHeight
+                )
+            ),
+            (
+                "actual-empty-content-wide",
+                CGSize(width: 1_600, height: 1_000)
+            ),
+        ] {
+            try render(
+                ContentView(
+                    store: store,
+                    processes: processes,
+                    telemetry: telemetry,
+                    keychain: keychain,
+                    credentialCleanup:
+                        DeletedProfileCredentialCleanup(
+                            paths: paths,
+                            keychain: keychain
+                        ),
+                    runtimeLocator: runtimeLocator,
+                    launchIntent: intent,
+                    fingerprintEvidenceReleaseContext: nil
+                ),
+                name: name,
+                size: size,
+                styleMask: [
+                    .titled,
+                    .closable,
+                    .resizable,
+                ]
+            )
+        }
+
+        _ = try store.upsert(
+            BrowserProfile(
+                name:
+                    "Очень длинное Unicode-название рабочего профиля",
+                tags: ["Работа", "Проверка"],
+                proxy: ProxyConfiguration(
+                    kind: .https,
+                    host: "2001:db8::1",
+                    port: 8_080,
+                    username: "operator"
+                )
+            )
         )
 
         for (name, size) in [
