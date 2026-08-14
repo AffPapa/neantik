@@ -53,6 +53,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
             header.count(".frame(width: 32, height: 32)"),
             2,
         )
+        self.assertIn("if !store.profiles.isEmpty", header)
+        self.assertIn('"Поиск по имени и тегам"', header)
         self.assertNotIn(".clipShape(Circle())", header)
 
     def test_primary_profile_actions_are_pinned_above_scrollable_details(

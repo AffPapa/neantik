@@ -229,6 +229,11 @@ struct ContentView: View {
                             profileID: deletedProfile.id
                         )
                     }
+                    if store.profiles.isEmpty {
+                        profileSearchText = ""
+                        selectedProfileTag = nil
+                        profileListScope = .active
+                    }
                     normalizeSelection()
                     telemetry.record(
                         .profileDeleted,
@@ -672,12 +677,14 @@ struct ContentView: View {
                 .accessibilityLabel("Создать профили")
             }
 
-            TextField(
-                "Поиск по имени и тегам",
-                text: $profileSearchText
-            )
-            .textFieldStyle(.roundedBorder)
-            .accessibilityLabel("Поиск профилей")
+            if !store.profiles.isEmpty {
+                TextField(
+                    "Поиск по имени и тегам",
+                    text: $profileSearchText
+                )
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Поиск профилей")
+            }
         }
         .padding(.horizontal, 14)
         .padding(.top, 12)
