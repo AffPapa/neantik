@@ -1,6 +1,28 @@
 import Combine
 import Darwin
 import Foundation
+
+/// Immutable value captured when a manual fingerprint audit is presented.
+/// SwiftUI may rebuild the sheet content, but it cannot silently replace this
+/// session's profiles or runtime with values edited in another window.
+struct FingerprintAuditRequest: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let auditedProfiles: [BrowserProfile]
+    let initialFirstID: UUID?
+    let runtime: BrowserRuntime
+
+    init(
+        id: UUID = UUID(),
+        auditedProfiles: [BrowserProfile],
+        initialFirstID: UUID?,
+        runtime: BrowserRuntime
+    ) {
+        self.id = id
+        self.auditedProfiles = auditedProfiles
+        self.initialFirstID = initialFirstID
+        self.runtime = runtime
+    }
+}
 import Network
 
 enum FingerprintAuditVerdict: String, Codable, Sendable {
@@ -291,6 +313,104 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             return .partial
         }
         return .unchanged
+    }
+
+    /// Converts a locally captured browser report into the deliberately
+    /// bounded observation accepted by `ProfileEnvironmentInspector`.
+    ///
+    /// A → B → A proves repeatability only for profile A, so the converter
+    /// intentionally returns one observation. Profile B and all three capture
+    /// routes are still validated before any observation is produced. Raw
+    /// browser surfaces, candidate summaries and identity codes never cross
+    /// this boundary.
+    func validatedProfileFingerprintObservations()
+        -> [ValidatedProfileFingerprintObservation]
+    {
+        guard executionMode == .browser,
+              effectiveAuditSchemaVersion == Self.currentAuditSchemaVersion,
+              identityCatalogVersion == BrowserIdentityCatalog.currentVersion,
+              runtimeFlavor.capabilities.contains(.fingerprintIdentity),
+              unavailableCriticalKeys.isEmpty,
+              firstInitial.profileID != second.profileID,
+              firstInitial.profileID == firstRepeat.profileID,
+              !firstInitial.identityCode.isEmpty,
+              !second.identityCode.isEmpty,
+              firstInitial.identityCode != second.identityCode,
+              firstInitial.identityCode == firstRepeat.identityCode,
+              let directControl = webrtcDirectControl,
+              directControl.profileID == firstInitial.profileID,
+              directControl.identityCode == firstInitial.identityCode,
+              let control = Self.boundedNetworkObservation(
+                for: directControl
+              ),
+              control.route == .direct,
+              control.webRTCLoopback == .passed,
+              let first = Self.boundedNetworkObservation(
+                for: firstInitial
+              ),
+              let secondNetwork = Self.boundedNetworkObservation(for: second),
+              let repeatCapture = Self.boundedNetworkObservation(
+                for: firstRepeat
+              ),
+              first.route == repeatCapture.route
+        else {
+            return []
+        }
+
+        // Parsing profile B is part of the trust boundary even though the
+        // report has no second B capture and therefore cannot safely claim B
+        // stability in a per-profile observation.
+        _ = secondNetwork
+        let webRTCLoopback: WebRTCLoopbackObservation =
+            first.webRTCLoopback == .passed &&
+            repeatCapture.webRTCLoopback == .passed
+                ? .passed
+                : .failed
+        return [
+            ValidatedProfileFingerprintObservation(
+                profileID: firstInitial.profileID,
+                observedAt: firstRepeat.capturedAt,
+                route: first.route,
+                verdict: verdict,
+                webRTCLoopback: webRTCLoopback
+            )
+        ]
+    }
+
+    /// Binds a validated report only to the exact profile configuration that
+    /// started the audit and is still current when the report returns.
+    ///
+    /// This closes the cross-window race where an old A → B → A report could
+    /// otherwise be stamped with identity or proxy values edited while the
+    /// browser audit was running.
+    func revisionBoundFingerprintObservations(
+        auditedProfiles: [BrowserProfile],
+        currentProfiles: [BrowserProfile],
+        runtime: BrowserRuntime
+    ) -> [ValidatedProfileFingerprintObservation] {
+        let auditedByID = Dictionary(
+            uniqueKeysWithValues: auditedProfiles.map { ($0.id, $0) }
+        )
+        let currentByID = Dictionary(
+            uniqueKeysWithValues: currentProfiles.map { ($0.id, $0) }
+        )
+
+        return validatedProfileFingerprintObservations().compactMap {
+            observation in
+            guard let audited = auditedByID[observation.profileID],
+                  let current = currentByID[observation.profileID],
+                  audited.identity == current.identity,
+                  audited.proxy == current.proxy,
+                  firstInitial.profileID == audited.id,
+                  firstRepeat.profileID == audited.id,
+                  firstInitial.identityCode == audited.identity.displayCode,
+                  firstRepeat.identityCode == audited.identity.displayCode,
+                  runtime.flavor == runtimeFlavor
+            else {
+                return nil
+            }
+            return observation.bound(to: audited, runtime: runtime)
+        }
     }
 
     var productionUnavailableKeys: [String] {
@@ -1091,6 +1211,65 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
     }
 
+    private struct BoundedNetworkObservation {
+        let route: FingerprintObservedRoute
+        let webRTCLoopback: WebRTCLoopbackObservation
+    }
+
+    /// Validates the allowlisted WebRTC contract while discarding all raw
+    /// values. An incomplete or malformed probe returns nil; a complete probe
+    /// with a privacy-policy violation returns a bounded `.failed` result.
+    private static func boundedNetworkObservation(
+        for capture: FingerprintCapture
+    ) -> BoundedNetworkObservation? {
+        let route: FingerprintObservedRoute
+        switch capture.values["network_route"] {
+        case "direct":
+            route = .direct
+        case "proxied":
+            route = .proxied
+        default:
+            return nil
+        }
+        guard capture.values["webrtc_probe"] == "loopback-stun-v1",
+              capture.values["webrtc_complete"] == "true",
+              let requestText = capture.values["webrtc_stun_requests"],
+              let requestCount = Int(requestText),
+              (0...256).contains(requestCount),
+              String(requestCount) == requestText,
+              let encoded = capture.values["webrtc_candidate_summary"],
+              let data = encoded.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any],
+              Set(object.keys) == Set([
+                "total", "host", "srflx", "prflx", "relay", "unknown"
+              ]),
+              let summary = try? JSONDecoder().decode(
+                WebRTCCandidateSummary.self,
+                from: data
+              ),
+              summary.isValid
+        else {
+            return nil
+        }
+
+        let failed: Bool
+        switch route {
+        case .direct:
+            failed = requestCount == 0 || summary.unknown > 0
+        case .proxied:
+            failed = requestCount != 0 ||
+                summary.host > 0 ||
+                summary.srflx > 0 ||
+                summary.prflx > 0 ||
+                summary.unknown > 0
+        }
+        return BoundedNetworkObservation(
+            route: route,
+            webRTCLoopback: failed ? .failed : .passed
+        )
+    }
+
     private static func networkPrivacyIssues(
         for capture: FingerprintCapture,
         label: String
@@ -1540,8 +1719,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
         ]
         let auditURL = auditURLComponents.url!
 
-        let dataDirectory =
-            try processes.reserveFingerprintAuditDataDirectory()
+        let auditReservation = try processes.reserveFingerprintAuditLaunch(
+            startURL: auditURL,
+            httpLoopbackPort: UInt16(auditServer.url.port!)
+        )
+        let dataDirectory = auditReservation.dataDirectory
 
         let portFile = dataDirectory.appendingPathComponent(
             "DevToolsActivePort"
@@ -1569,6 +1751,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 // page or user data is transmitted by the audit.
                 startURLOverride: auditURL,
                 browserDataDirectoryOverride: dataDirectory,
+                fingerprintAuditReservation: auditReservation,
                 purpose: .fingerprintAudit(
                     httpLoopbackPort: UInt16(auditServer.url.port!)
                 )
@@ -1582,6 +1765,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 profile.proxy == nil ? "direct" : "proxied"
             values["webrtc_stun_requests"] =
                 String(stunServer.acceptedRequestCount)
+            await requestBrowserClose(port: port)
             processes.stop(profileID: processProfile.id)
             try await waitUntilStopped(profileID: processProfile.id)
             activeProfileID = nil
@@ -1612,6 +1796,47 @@ final class FingerprintAuditCoordinator: ObservableObject {
             }
             activeProfileID = nil
             throw error
+        }
+    }
+
+    private func requestBrowserClose(port: Int) async {
+        let endpoint = URL(
+            string: "http://127.0.0.1:\(port)/json/version"
+        )!
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 2
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+
+        do {
+            let (data, response) = try await session.data(from: endpoint)
+            guard let http = response as? HTTPURLResponse,
+                  http.statusCode == 200,
+                  let object = try JSONSerialization.jsonObject(
+                    with: data
+                  ) as? [String: Any],
+                  let value = object["webSocketDebuggerUrl"] as? String,
+                  let webSocketURL = URL(string: value)
+            else {
+                return
+            }
+
+            var request = URLRequest(url: webSocketURL)
+            request.setValue(
+                "http://neantik.local",
+                forHTTPHeaderField: "Origin"
+            )
+            let socket = session.webSocketTask(with: request)
+            socket.resume()
+            defer {
+                socket.cancel(with: .normalClosure, reason: nil)
+            }
+            let command = "{\"id\":1,\"method\":\"Browser.close\"}"
+            try await socket.send(.string(command))
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        } catch {
+            // This is a graceful fast path. BrowserProcessManager still owns
+            // the process and performs the ordinary termination fallback.
         }
     }
 

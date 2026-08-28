@@ -1,0 +1,18 @@
+/* Native SwiftUI/AppKit controls that otherwise fall back to English in a
+   bundle assembled without an Xcode localization catalog. */
+"More" = "Ещё";
+"Show Sidebar" = "Показать боковую панель";
+"Hide Sidebar" = "Скрыть боковую панель";
+"About %@" = "О приложении %@";
+"Services" = "Службы";
+"Hide %@" = "Скрыть %@";
+"Hide Others" = "Скрыть остальные";
+"Show All" = "Показать все";
+"Quit %@" = "Завершить %@";
+"File" = "Файл";
+"Edit" = "Правка";
+"View" = "Вид";
+"Window" = "Окно";
+"Help" = "Справка";
+"Close" = "Закрыть";
+"Close All" = "Закрыть все";

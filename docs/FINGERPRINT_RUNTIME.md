@@ -121,12 +121,24 @@ any third-party service cannot correlate a user.
 
 Proxy-derived timezone and locale values are applied only when a proxy is
 still configured and the local `ipapi.co` evidence is valid and no older than
-30 days. Clock skew up to five minutes is tolerated. Direct profiles send no
-timezone or locale override. A proxied profile with saved geographic values
-but missing, more-than-five-minutes future-dated or stale evidence is blocked
-from launch until the user retests the proxy; this prevents a silent
-fingerprint transition. NeAntik does not silently contact the location service
-during launch.
+30 days. Clock skew up to five minutes is tolerated. The ordinary UI launch
+path has a stricter route gate: every Start for a proxied profile makes a fresh
+observation. It must be bound to the current profile revision, describe the
+exact same observation as the saved identity context, contain an observed
+exit plus timezone and locale, be no older than 30 seconds and not have been
+consumed by a previous browser session. A separate manual health check is
+never reused as launch authority.
+
+If that launch gate is not met, pressing Start automatically runs the existing
+bounded `curl` probe through the configured proxy, using credentials from the
+Keychain over stdin. NeAntik persists the measured timezone/locale, re-reads
+the newest profile revision and revalidates the complete evidence pair before
+starting Chromium. A one-use short-lived receipt binds that exact revision,
+proxy and observation at the process-manager boundary, so a future API/MCP/SDK adapter
+cannot bypass the preparation gate. A failed or incomplete probe blocks launch instead of
+falling back to Direct or to the Mac's timezone. Direct profiles still make no
+location-service request and send no timezone or locale override. Manual and
+bulk checks remain available for explicit diagnostics.
 
 When a proxy is active, NeAntik currently applies Chromium's proxy leak
 controls:

@@ -59,8 +59,232 @@ struct ProfileStoreTests {
         )
         #expect(
             (directoryAttributes[.posixPermissions] as? NSNumber)?.intValue ==
-                0o700
+                    0o700
         )
+    }
+
+    @Test
+    func legacyZWJMetadataReloadsAndSurvivesSubsequentUpdate() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+
+        let family = "👨‍👩‍👧‍👦"
+        let name = String(
+            repeating: family,
+            count: BrowserProfile.maximumNameLength
+        )
+        let tag = String(
+            repeating: family,
+            count: BrowserProfile.maximumTagLength
+        )
+        let username = String(repeating: family, count: 512)
+        let urlPrefix = "https://example.com/?legacy="
+        let startURL = urlPrefix + String(
+            repeating: "a",
+            count: 8 * 1_024 - urlPrefix.utf8.count
+        )
+        let profile = BrowserProfile(
+            name: name,
+            tags: [tag],
+            startURL: startURL,
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "proxy.example",
+                port: 8_080,
+                username: username
+            ),
+            identity: BrowserIdentity(seed: 777)
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode([profile])
+        guard var legacyJSON = try JSONSerialization.jsonObject(with: encoded)
+            as? [[String: Any]]
+        else {
+            Issue.record("Could not create legacy compatibility fixture")
+            return
+        }
+        legacyJSON[0].removeValue(forKey: "note")
+        legacyJSON[0].removeValue(forKey: "revision")
+        let legacyData = try JSONSerialization.data(withJSONObject: legacyJSON)
+        try paths.writePrivateFile(legacyData, to: paths.profilesFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(store.profile(withID: profile.id)?.name == name)
+        #expect(store.profile(withID: profile.id)?.tags == [tag])
+        #expect(store.profile(withID: profile.id)?.startURL == startURL)
+        #expect(store.profile(withID: profile.id)?.proxy?.username == username)
+
+        let updated = try store.mutateProfile(withID: profile.id) {
+            $0.isPinned = true
+        }
+        let reloaded = ProfileStore(paths: paths)
+
+        #expect(updated.isPinned)
+        #expect(updated.revision == 1)
+        #expect(reloaded.profile(withID: profile.id)?.name == name)
+        #expect(reloaded.profile(withID: profile.id)?.tags == [tag])
+        #expect(reloaded.profile(withID: profile.id)?.startURL == startURL)
+        #expect(
+            reloaded.profile(withID: profile.id)?.proxy?.username == username
+        )
+    }
+
+    @Test
+    func tenThousandProfileStartupAndLaunchMarkerStayWithinMeasuredBudget() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let profiles = (0..<10_000).map { index in
+            BrowserProfile(
+                name: String(format: "Profile %05d", index),
+                tags: ["Scale", "Cohort \(index % 100)"],
+                note: "Startup benchmark note \(index)",
+                identity: BrowserIdentity(seed: UInt32(index + 1))
+            )
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(
+            encoder.encode(profiles),
+            to: paths.profilesFile
+        )
+
+        let startupStartedAt = Date()
+        let store = ProfileStore(paths: paths)
+        let startupElapsed = Date().timeIntervalSince(startupStartedAt)
+        let markerStartedAt = Date()
+        let didMarkLaunched = store.markLaunched(profiles[5_000].id)
+        let markerElapsed = Date().timeIntervalSince(markerStartedAt)
+        let startupBudget: TimeInterval = _isDebugAssertConfiguration() ? 8 : 4
+        let markerBudget: TimeInterval = _isDebugAssertConfiguration() ? 12 : 6
+
+        print(
+            "ProfileStore 10k benchmark: " +
+                "startup=\(startupElapsed)s, " +
+                "markLaunched=\(markerElapsed)s"
+        )
+        #expect(store.profiles.count == 10_000)
+        #expect(didMarkLaunched)
+        #expect(startupElapsed < startupBudget)
+        #expect(markerElapsed < markerBudget)
+
+        let overflow = BrowserProfile(name: "Profile overflow")
+        #expect(throws: NeAntikError.self) {
+            try store.upsert(overflow)
+        }
+        #expect(throws: NeAntikError.self) {
+            try store.insertNewProfiles(
+                [overflow],
+                afterPersist: { _ in }
+            )
+        }
+        #expect(store.profiles.count == ProfileStorageLimits.maximumProfileCount)
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: overflow.id).path
+            )
+        )
+    }
+
+    @Test
+    func noteIsNormalizedPersistedAndReloaded() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        var profile = BrowserProfile(name: "Заметка")
+        profile.note = "  Первая строка\r\n\rВторая строка  "
+
+        let saved = try store.upsert(profile)
+        let reloaded = ProfileStore(paths: paths)
+
+        #expect(saved.note == "Первая строка\n\nВторая строка")
+        #expect(reloaded.profile(withID: saved.id)?.note == saved.note)
+    }
+
+    @Test
+    func invalidNoteIsRejectedBySingleAndBulkWritePaths() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        var invalid = BrowserProfile(name: "Слишком длинная заметка")
+        invalid.note = String(
+            repeating: "н",
+            count: BrowserProfile.maximumNoteLength + 1
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try store.upsert(invalid)
+        }
+        #expect(throws: NeAntikError.self) {
+            try store.insertNewProfiles(
+                [invalid],
+                afterPersist: { _ in }
+            )
+        }
+        #expect(store.profiles.isEmpty)
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: invalid.id).path
+            )
+        )
+    }
+
+    @Test
+    func centralizedPersistenceValidationRejectsEveryWritePath() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        var invalidProfiles: [BrowserProfile] = []
+
+        var invalidColor = BrowserProfile(name: "Invalid color")
+        invalidColor.colorHex = "not-a-color"
+        invalidProfiles.append(invalidColor)
+
+        var invalidURL = BrowserProfile(name: "Invalid URL")
+        invalidURL.startURL = "file:///tmp/private"
+        invalidProfiles.append(invalidURL)
+
+        var invalidProxy = BrowserProfile(name: "Invalid proxy")
+        invalidProxy.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 0,
+            username: "user"
+        )
+        invalidProfiles.append(invalidProxy)
+
+        for invalid in invalidProfiles {
+            #expect(throws: NeAntikError.self) {
+                try store.upsert(invalid)
+            }
+            #expect(throws: NeAntikError.self) {
+                try store.insertNewProfiles(
+                    [invalid],
+                    afterPersist: { _ in }
+                )
+            }
+            #expect(
+                !FileManager.default.fileExists(
+                    atPath: paths.profileDirectory(for: invalid.id).path
+                )
+            )
+        }
+        #expect(store.profiles.isEmpty)
     }
 
     @Test
@@ -173,6 +397,55 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func failedNewCredentialRollbackCreatesDurableCleanupMarkers() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let backend = ProfileSaveRollbackKeychainBackend()
+        backend.failingDeleteServices = [
+            KeychainStore.currentService,
+            KeychainStore.legacyService,
+        ]
+        let keychain = KeychainStore(backend: backend)
+        let profile = BrowserProfile(name: "Credential rollback")
+
+        #expect(throws: KeychainNewCredentialRollbackError.self) {
+            try store.upsert(profile, toFolderID: nil) { saved in
+                try keychain.saveProxyPassword(
+                    "orphaned-until-recovery",
+                    profileID: saved.id
+                )
+            }
+        }
+
+        #expect(store.profile(withID: profile.id) == nil)
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileDirectory(for: profile.id)
+            ) == .missing
+        )
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileDeletionTombstone(for: profile.id)
+            ) == .regular
+        )
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileCredentialCleanupMarker(for: profile.id)
+            ) == .regular
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profile.id
+            ) == "orphaned-until-recovery"
+        )
+    }
+
+    @Test
     func restoresExistingMetadataWithoutRemovingBrowserData() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -226,6 +499,8 @@ struct ProfileStoreTests {
         let profile = try store.upsert(
             BrowserProfile(name: "Keep after credential failure")
         )
+        let folder = try store.createFolder(named: "Deleted profile folder")
+        try store.assignProfile(profile.id, toFolderID: folder.id)
         let marker = paths.browserDataDirectory(for: profile.id)
             .appendingPathComponent("session-marker")
         try Data("keep".utf8).write(to: marker)
@@ -258,6 +533,8 @@ struct ProfileStoreTests {
         }
 
         #expect(store.profile(withID: profile.id) == nil)
+        #expect(store.folderID(forProfileID: profile.id) == nil)
+        #expect(store.folder(withID: folder.id) != nil)
         #expect(!FileManager.default.fileExists(atPath: marker.path))
         #expect(
             FileManager.default.fileExists(
@@ -294,6 +571,8 @@ struct ProfileStoreTests {
         )
         let reloaded = ProfileStore(paths: paths)
         #expect(reloaded.profile(withID: profile.id) == nil)
+        #expect(reloaded.folderID(forProfileID: profile.id) == nil)
+        #expect(reloaded.folder(withID: folder.id) != nil)
         #expect(throws: BrowserProfileDeletedError.self) {
             try reloaded.upsert(profile)
         }
@@ -718,6 +997,41 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func symlinkInsertedBeforeMutationCannotReplaceInMemorySnapshot() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let saved = try store.upsert(BrowserProfile(name: "Trusted"))
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let outsideData = try encoder.encode([
+            BrowserProfile(name: "Injected")
+        ])
+        try outsideData.write(to: outside)
+        try FileManager.default.removeItem(at: paths.profilesFile)
+        try FileManager.default.createSymbolicLink(
+            at: paths.profilesFile,
+            withDestinationURL: outside
+        )
+
+        #expect(throws: (any Error).self) {
+            try store.mutateProfile(withID: saved.id) {
+                $0.name = "Must not commit"
+            }
+        }
+        #expect(store.profiles == [saved])
+        #expect(try Data(contentsOf: outside) == outsideData)
+    }
+
+    @Test
     func rejectsFingerprintSeedCollisionsOnUpsert() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -1008,6 +1322,42 @@ private final class ProfileDeleteKeychainBackend:
     func set(_ value: String, service: String, profileID: UUID) {
         values[key(service: service, profileID: profileID)] =
             Data(value.utf8)
+    }
+
+    func string(service: String, profileID: UUID) -> String? {
+        values[key(service: service, profileID: profileID)]
+            .flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    private func key(service: String, profileID: UUID) -> String {
+        "\(service)|\(profileID.uuidString)"
+    }
+}
+
+private final class ProfileSaveRollbackKeychainBackend:
+    KeychainBackend,
+    @unchecked Sendable
+{
+    var failingDeleteServices = Set<String>()
+    private var values: [String: Data] = [:]
+
+    func data(service: String, profileID: UUID) throws -> Data? {
+        values[key(service: service, profileID: profileID)]
+    }
+
+    func upsert(
+        _ data: Data,
+        service: String,
+        profileID: UUID
+    ) throws {
+        values[key(service: service, profileID: profileID)] = data
+    }
+
+    func delete(service: String, profileID: UUID) throws {
+        if failingDeleteServices.contains(service) {
+            throw ProfileStoreTestError()
+        }
+        values.removeValue(forKey: key(service: service, profileID: profileID))
     }
 
     func string(service: String, profileID: UUID) -> String? {

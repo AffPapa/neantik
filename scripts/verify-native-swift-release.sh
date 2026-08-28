@@ -3,6 +3,9 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 SWIFT_BUILD_ROOT="$(mktemp -d /private/tmp/neantik-swift-release-XXXXXX)"
 
 cleanup() {
@@ -25,6 +28,7 @@ echo "Building NeAntik release with isolated writable caches..."
   CLANG_MODULE_CACHE_PATH="$SWIFT_BUILD_ROOT/module-cache" \
     swift build \
       -c release \
+      --arch arm64 \
       --disable-sandbox \
       --scratch-path "$SWIFT_BUILD_ROOT/build"
 )

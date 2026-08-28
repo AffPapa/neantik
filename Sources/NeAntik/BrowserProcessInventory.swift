@@ -110,6 +110,21 @@ struct BrowserProcessInventory: Sendable {
         @Sendable (pid_t) -> BrowserProcessKernelIdentity?
     private let unreadableLiveProcessExists: Bool
     private let available: Bool
+    private let riskSources: [String]
+
+    var diagnostics: (
+        isAvailable: Bool,
+        hasUnreadableLiveProcess: Bool,
+        retainedProcessCount: Int,
+        riskSources: [String]
+    ) {
+        (
+            isAvailable: available,
+            hasUnreadableLiveProcess: unreadableLiveProcessExists,
+            retainedProcessCount: processes.count,
+            riskSources: riskSources
+        )
+    }
 
     init(
         processes: [pid_t: BrowserProcessArguments],
@@ -142,6 +157,9 @@ struct BrowserProcessInventory: Sendable {
         self.unreadableLiveProcessExists =
             unreadableLiveProcessExists || unsafePathExists
         self.available = available
+        riskSources = self.unreadableLiveProcessExists
+            ? ["synthetic-unreadable-process"]
+            : []
     }
 
     fileprivate init(
@@ -152,13 +170,15 @@ struct BrowserProcessInventory: Sendable {
             @escaping @Sendable
                 (pid_t) -> BrowserProcessKernelIdentity?,
         unreadableLiveProcessExists: Bool,
-        available: Bool
+        available: Bool,
+        riskSources: [String] = []
     ) {
         processes = reducedProcesses
         self.kernelIdentities = kernelIdentities
         self.kernelIdentityRevalidator = kernelIdentityRevalidator
         self.unreadableLiveProcessExists = unreadableLiveProcessExists
         self.available = available
+        self.riskSources = riskSources
     }
 
     static let unavailable = BrowserProcessInventory(
@@ -166,7 +186,8 @@ struct BrowserProcessInventory: Sendable {
         kernelIdentities: [:],
         kernelIdentityRevalidator: { _ in nil },
         unreadableLiveProcessExists: true,
-        available: false
+        available: false,
+        riskSources: ["inventory-unavailable"]
     )
 
     func inspectProcess(
@@ -298,11 +319,10 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
     func capture() -> BrowserProcessInventory {
         captureLock.lock()
         defer { captureLock.unlock() }
-        guard let processIdentities = sameUserProcessIdentities(),
-              let argumentBufferCapacity = processArgumentBufferCapacity()
-        else {
+        guard let processIdentities = sameUserProcessIdentities() else {
             return .unavailable
         }
+        let argumentBufferCapacity = processArgumentBufferCapacity()
 
         var buffer = [UInt8](
             repeating: 0,
@@ -316,6 +336,7 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
             processIdentities.count
         )
         var unreadableLiveProcessExists = false
+        var riskSources: [String] = []
         var retainedBytes = 0
         for (pid, capturedIdentity) in processIdentities
             where pid != getpid()
@@ -324,16 +345,33 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
                 pid: pid,
                 reusing: &buffer
             ) else {
-                if Self.isProcessAlive(pid) {
+                if Self.isProcessAlive(pid),
+                   Self.unreadableProcessCanUseNeAntikProfile(pid: pid)
+                {
                     unreadableLiveProcessExists = true
+                    if riskSources.count < 16 {
+                        riskSources.append(
+                            Self.executablePath(pid: pid) ??
+                                "pid:\(pid):path-unavailable"
+                        )
+                    }
                 }
                 continue
             }
             guard Self.currentProcessIdentity(pid) ==
                     capturedIdentity
             else {
-                if Self.isProcessAlive(pid) {
+                if Self.isProcessAlive(pid),
+                   Self.unreadableProcessCanUseNeAntikProfile(pid: pid)
+                {
                     unreadableLiveProcessExists = true
+                    if riskSources.count < 16 {
+                        riskSources.append(
+                            "identity-changed:" +
+                                (Self.executablePath(pid: pid) ??
+                                    "pid:\(pid):path-unavailable")
+                        )
+                    }
                 }
                 continue
             }
@@ -349,6 +387,11 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
             unreadableLiveProcessExists =
                 unreadableLiveProcessExists ||
                 reduced.unsafePathExists
+            if reduced.unsafePathExists, riskSources.count < 16 {
+                riskSources.append(
+                    "unsafe-user-data-dir:" + process.executablePath
+                )
+            }
         }
         return BrowserProcessInventory(
             reducedProcesses: processes,
@@ -357,16 +400,98 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
                 Self.currentProcessIdentity(pid)
             },
             unreadableLiveProcessExists: unreadableLiveProcessExists,
-            available: true
+            available: true,
+            riskSources: riskSources
         )
     }
 
     static func isProcessAlive(_ pid: pid_t) -> Bool {
         guard pid > 0 else { return false }
+        if let status = processStatus(pid), isZombieStatus(status) {
+            return false
+        }
         return Darwin.kill(pid, 0) == 0 || errno == EPERM
     }
 
+    static func isZombieStatus(_ status: Int32) -> Bool {
+        status == SZOMB
+    }
+
+    private static func processStatus(_ pid: pid_t) -> Int32? {
+        var managementInformationBase = [
+            CTL_KERN,
+            KERN_PROC,
+            KERN_PROC_PID,
+            pid,
+        ]
+        var entry = kinfo_proc()
+        var byteCount = MemoryLayout<kinfo_proc>.stride
+        let result = managementInformationBase
+            .withUnsafeMutableBufferPointer { base in
+                withUnsafeMutableBytes(of: &entry) { bytes in
+                    sysctl(
+                        base.baseAddress,
+                        u_int(base.count),
+                        bytes.baseAddress,
+                        &byteCount,
+                        nil,
+                        0
+                    )
+                }
+            }
+        guard result == 0,
+              byteCount == MemoryLayout<kinfo_proc>.stride,
+              entry.kp_proc.p_pid == pid
+        else {
+            return nil
+        }
+        return Int32(entry.kp_proc.p_stat)
+    }
+
+    static func executableCanUseNeAntikProfile(_ path: String) -> Bool {
+        let normalized = URL(fileURLWithPath: path)
+            .standardizedFileURL.path
+            .lowercased()
+        let embeddedRuntimeMarkers = [
+            "neantik browser",
+            "nevision browser",
+        ]
+        return embeddedRuntimeMarkers.contains {
+            normalized.contains($0)
+        }
+    }
+
+    private static func unreadableProcessCanUseNeAntikProfile(
+        pid: pid_t
+    ) -> Bool {
+        guard let executablePath = executablePath(pid: pid) else {
+            // If even the executable identity is unavailable, keep the old
+            // fail-closed behavior.
+            return true
+        }
+        return executableCanUseNeAntikProfile(executablePath)
+    }
+
+    private static func executablePath(pid: pid_t) -> String? {
+        guard pid > 0 else { return nil }
+        var buffer = [CChar](repeating: 0, count: 4_096)
+        let byteCount = proc_pidpath(
+            pid,
+            &buffer,
+            UInt32(buffer.count)
+        )
+        guard byteCount > 0 else { return nil }
+        return String(cString: buffer)
+    }
+
     private func sameUserProcessIdentities()
+        -> [pid_t: BrowserProcessKernelIdentity]?
+    {
+        sameUserProcessIdentitiesUsingSysctl() ??
+            sameUserProcessIdentitiesUsingLibproc()
+    }
+
+    private func sameUserProcessIdentitiesUsingSysctl()
         -> [pid_t: BrowserProcessKernelIdentity]?
     {
         var managementInformationBase = [
@@ -438,6 +563,48 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
         return identities
     }
 
+    private func sameUserProcessIdentitiesUsingLibproc()
+        -> [pid_t: BrowserProcessKernelIdentity]?
+    {
+        let requestedCount = Int(proc_listallpids(nil, 0))
+        guard requestedCount > 0,
+              requestedCount <= Self.maximumProcessCount
+        else {
+            return nil
+        }
+        let capacity = min(
+            requestedCount + 32,
+            Self.maximumProcessCount
+        )
+        var processIDs = [pid_t](repeating: 0, count: capacity)
+        let actualCount = processIDs.withUnsafeMutableBytes { bytes in
+            proc_listallpids(
+                bytes.baseAddress,
+                Int32(bytes.count)
+            )
+        }
+        guard actualCount > 0,
+              actualCount <= processIDs.count
+        else {
+            return nil
+        }
+
+        let userID = getuid()
+        var identities: [pid_t: BrowserProcessKernelIdentity] = [:]
+        for pid in processIDs.prefix(Int(actualCount)) where pid > 0 {
+            guard let process = Self.libprocProcessIdentity(pid),
+                  process.userID == userID
+            else {
+                continue
+            }
+            identities[pid] = process.identity
+        }
+        guard identities[getpid()] != nil else {
+            return nil
+        }
+        return identities
+    }
+
     static func currentProcessIdentity(
         _ pid: pid_t
     ) -> BrowserProcessKernelIdentity? {
@@ -463,13 +630,47 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
                     )
                 }
             }
-        guard result == 0,
-              byteCount == MemoryLayout<kinfo_proc>.stride,
-              entry.kp_proc.p_pid == pid
-        else {
+        if result == 0,
+           byteCount == MemoryLayout<kinfo_proc>.stride,
+           entry.kp_proc.p_pid == pid
+        {
+            return kernelIdentity(for: entry)
+        }
+        return libprocProcessIdentity(pid)?.identity
+    }
+
+    private static func libprocProcessIdentity(
+        _ pid: pid_t
+    ) -> (
+        userID: uid_t,
+        identity: BrowserProcessKernelIdentity
+    )? {
+        guard pid > 0 else { return nil }
+        var information = proc_taskallinfo()
+        let byteCount = withUnsafeMutableBytes(of: &information) { bytes in
+            proc_pidinfo(
+                pid,
+                2, // PROC_PIDTASKALLINFO
+                0,
+                bytes.baseAddress,
+                Int32(bytes.count)
+            )
+        }
+        guard byteCount == MemoryLayout<proc_taskallinfo>.size else {
             return nil
         }
-        return kernelIdentity(for: entry)
+        return (
+            userID: information.pbsd.pbi_uid,
+            identity: BrowserProcessKernelIdentity(
+                startSeconds: Int64(
+                    information.pbsd.pbi_start_tvsec
+                ),
+                startMicroseconds: Int32(
+                    truncatingIfNeeded:
+                        information.pbsd.pbi_start_tvusec
+                )
+            )
+        )
     }
 
     private static func kernelIdentity(
@@ -485,7 +686,7 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
         )
     }
 
-    private func processArgumentBufferCapacity() -> Int? {
+    private func processArgumentBufferCapacity() -> Int {
         var argumentMaximum = Int32()
         var argumentMaximumSize = MemoryLayout<Int32>.size
         guard sysctlbyname(
@@ -497,7 +698,7 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
         ) == 0,
             argumentMaximum > MemoryLayout<Int32>.size
         else {
-            return nil
+            return 1_048_576
         }
         return min(
             Int(argumentMaximum),

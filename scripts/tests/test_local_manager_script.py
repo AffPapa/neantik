@@ -17,6 +17,22 @@ class LocalManagerScriptTests(unittest.TestCase):
         self.assertIn("--scratch-path", text)
         self.assertIn("--disable-sandbox", text)
         self.assertIn("/bin/cp -cR", text)
+        self.assertIn(
+            'DEVELOPMENT_RUNTIME_APP="$DEVELOPMENT_APP/Contents/Resources/NeAntik Browser.app"',
+            text,
+        )
+        self.assertIn('"$DEVELOPMENT_RUNTIME_APP"', text)
+        self.assertIn("--deep", text)
+        self.assertIn("--strict", text)
+        self.assertIn("--sign -", text)
+        self.assertIn(
+            'DEVELOPMENT_INFO_STRINGS="$DEVELOPMENT_APP/Contents/Resources/ru.lproj/InfoPlist.strings"',
+            text,
+        )
+        self.assertGreaterEqual(
+            text.count("Set :CFBundleDisplayName NeAntik Dev"),
+            2,
+        )
         self.assertIn('cd "$PROJECT_DIR"', text)
         self.assertIn(
             'exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"',
@@ -38,6 +54,7 @@ class LocalManagerScriptTests(unittest.TestCase):
     def test_fast_path_never_rewrites_dist(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn('>"$SOURCE_APP', text)
+        self.assertNotIn('codesign --force --deep --sign - "$SOURCE_APP', text)
         self.assertNotIn("dist/NeAntik-Integrated.app", text)
         self.assertIn(
             'DEVELOPMENT_ROOT="$PROJECT_DIR/.build/neantik-local"',

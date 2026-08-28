@@ -19,6 +19,33 @@ struct PrivateFileEntryIdentity: Equatable, Sendable {
     let modificationNanoseconds: Int
 }
 
+/// A process-wide advisory lock that may intentionally span an async task.
+///
+/// The descriptor stays locked until `release()` (or deinit), which lets the
+/// bulk-import credential journal remain mutually exclusive with startup
+/// cleanup without blocking the main actor on Keychain work.
+final class PrivateFileGuardLease: @unchecked Sendable {
+    private let lock = NSLock()
+    private var descriptor: Int32?
+
+    fileprivate init(descriptor: Int32) {
+        self.descriptor = descriptor
+    }
+
+    func release() {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let descriptor else { return }
+        _ = neantikFlock(descriptor, LOCK_UN)
+        _ = Darwin.close(descriptor)
+        self.descriptor = nil
+    }
+
+    deinit {
+        release()
+    }
+}
+
 struct AppPaths: Sendable {
     let rootDirectory: URL
     let migrationWarning: String?
@@ -67,12 +94,26 @@ struct AppPaths: Sendable {
         rootDirectory.appendingPathComponent("profiles.previous.json")
     }
 
+    var profileOrganizationFile: URL {
+        rootDirectory.appendingPathComponent("profile-organization.json")
+    }
+
+    var profileOrganizationBackupFile: URL {
+        rootDirectory.appendingPathComponent(
+            "profile-organization.previous.json"
+        )
+    }
+
     var profilesRecoveryDirectory: URL {
         rootDirectory.appendingPathComponent("Recovery", isDirectory: true)
     }
 
     var runtimePreferenceFile: URL {
         rootDirectory.appendingPathComponent("runtime.json")
+    }
+
+    var proxyHealthFile: URL {
+        rootDirectory.appendingPathComponent("proxy-health.json")
     }
 
     var profilesDirectory: URL {
@@ -118,6 +159,12 @@ struct AppPaths: Sendable {
         )
     }
 
+    var bulkCredentialImportGuardFile: URL {
+        processLocksDirectory.appendingPathComponent(
+            "BulkCredentialImport.guard"
+        )
+    }
+
     func profileDeletionTombstone(for id: UUID) -> URL {
         processLocksDirectory.appendingPathComponent(
             "\(id.uuidString).deleted"
@@ -127,6 +174,12 @@ struct AppPaths: Sendable {
     func profileCredentialCleanupMarker(for id: UUID) -> URL {
         processLocksDirectory.appendingPathComponent(
             "\(id.uuidString).credentials-pending"
+        )
+    }
+
+    func profileCredentialStagingMarker(for id: UUID) -> URL {
+        processLocksDirectory.appendingPathComponent(
+            "\(id.uuidString).credentials-staged"
         )
     }
 
@@ -157,6 +210,36 @@ struct AppPaths: Sendable {
         }
     }
 
+    func pendingCredentialStagingProfileIDs() throws -> [UUID] {
+        try pendingProfileIDs(markerExtension: "credentials-staged")
+    }
+
+    private func pendingProfileIDs(
+        markerExtension: String
+    ) throws -> [UUID] {
+        try validatePrivateDirectory(processLocksDirectory)
+        let candidates = try FileManager.default.contentsOfDirectory(
+            at: processLocksDirectory,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+        return candidates.compactMap { candidate in
+            guard candidate.pathExtension == markerExtension else {
+                return nil
+            }
+            let basename = candidate.deletingPathExtension()
+                .lastPathComponent
+            guard let profileID = UUID(uuidString: basename),
+                  candidate.lastPathComponent ==
+                    "\(profileID.uuidString).\(markerExtension)"
+            else {
+                return nil
+            }
+            return profileID
+        }
+        .sorted { $0.uuidString < $1.uuidString }
+    }
+
     func removeCredentialCleanupMarker(for id: UUID) throws {
         let marker = profileCredentialCleanupMarker(for: id)
         switch try privateFileEntryKind(marker) {
@@ -166,6 +249,26 @@ struct AppPaths: Sendable {
             let result = marker.path.withCString {
                 Darwin.unlink($0)
             }
+            guard result == 0 || errno == ENOENT else {
+                throw POSIXError(
+                    POSIXErrorCode(rawValue: errno) ?? .EIO
+                )
+            }
+        case .unsafe:
+            throw POSIXError(.EFTYPE)
+        }
+    }
+
+    func removeCredentialStagingMarker(for id: UUID) throws {
+        try removePrivateMarker(profileCredentialStagingMarker(for: id))
+    }
+
+    private func removePrivateMarker(_ marker: URL) throws {
+        switch try privateFileEntryKind(marker) {
+        case .missing:
+            return
+        case .regular:
+            let result = marker.path.withCString { Darwin.unlink($0) }
             guard result == 0 || errno == ENOENT else {
                 throw POSIXError(
                     POSIXErrorCode(rawValue: errno) ?? .EIO
@@ -287,6 +390,32 @@ struct AppPaths: Sendable {
             at: profilesMetadataGuardFile,
             operation
         )
+    }
+
+    func acquireBulkCredentialImportGuard() throws -> PrivateFileGuardLease {
+        try createPrivateDirectory(
+            bulkCredentialImportGuardFile.deletingLastPathComponent()
+        )
+        let descriptor = bulkCredentialImportGuardFile.path.withCString {
+            Darwin.open(
+                $0,
+                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                mode_t(S_IRUSR | S_IWUSR)
+            )
+        }
+        guard descriptor >= 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        guard neantikFlock(descriptor, LOCK_EX) == 0 else {
+            let lockError = errno
+            _ = Darwin.close(descriptor)
+            throw POSIXError(
+                POSIXErrorCode(rawValue: lockError) ?? .EIO
+            )
+        }
+        return PrivateFileGuardLease(descriptor: descriptor)
     }
 
     private func withPrivateFileGuard<T>(

@@ -7,7 +7,13 @@ Requirements:
 - Apple Silicon Mac;
 - macOS 14 or newer;
 - Xcode 26 or newer;
-- Swift 6.2 toolchain.
+- Swift 6.2 or newer toolchain. The package manifest is currently verified
+  with Apple Swift 6.4 and compiles both manager and tests in Swift 5 language
+  mode. The isolated test verifier requires matching Swift compiler and macOS
+  SDK builds. Native test, development-build and Direct release entrypoints
+  respect an explicit compatible `DEVELOPER_DIR`; otherwise they check the
+  selected developer directory and installed Xcode/Xcode-beta apps without
+  changing the global `xcode-select` setting.
 
 Run:
 
@@ -28,7 +34,30 @@ the bundle ID `app.neantik.desktop.dev`, Application Support directory
 `NeAntik Development`, and Keychain service `app.neantik.dev.proxy`; it does
 not migrate or read production credentials. Use `--no-open` in automated
 checks and `--refresh-runtime` only when the local embedded runtime changed.
-This command never creates or mutates a release candidate.
+Before opening, the command validates the complete nested Chromium signature.
+If an engineering or cached runtime is invalid, only the copy inside
+`NeAntik-Dev.app` is repaired with a local ad-hoc signature. This is not
+Developer ID signing or notarization. The command never creates or mutates a
+release candidate.
+
+Live browser checks are deliberately separate from normal CI because they
+require a locally built `NeAntik-Dev.app` and an active macOS GUI session.
+After `./Develop-NeAntik.command --no-open`, run the quick launch-and-stop
+check against a temporary profile:
+
+```bash
+./scripts/verify-native-swift-live.sh manager
+```
+
+The full local browser and fingerprint comparison check is explicit:
+
+```bash
+./scripts/verify-native-swift-live.sh all
+```
+
+These commands use temporary profiles and stay outside GitHub Actions so a
+missing GUI or embedded browser on CI cannot become a false pass or a flaky
+test.
 
 `scripts/package-app.sh` creates a manager-only app bundle. It does not
 download Google Chrome and does not produce the complete public application

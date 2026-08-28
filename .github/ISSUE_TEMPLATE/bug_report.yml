@@ -12,7 +12,7 @@ body:
     id: version
     attributes:
       label: NeAntik version
-      placeholder: "0.3.12 (15)"
+      placeholder: "0.3.19 (22)"
     validations:
       required: true
   - type: input

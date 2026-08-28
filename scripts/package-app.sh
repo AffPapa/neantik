@@ -2,6 +2,9 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 APP_DIR="$PROJECT_DIR/dist/NeAntik.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -37,6 +40,11 @@ cp "$PROJECT_DIR/Resources/NeAntik.icns" "$RESOURCES_DIR/NeAntik.icns"
 cp \
   "$PROJECT_DIR/Resources/PrivacyInfo.xcprivacy" \
   "$RESOURCES_DIR/PrivacyInfo.xcprivacy"
+mkdir -p "$RESOURCES_DIR/ru.lproj"
+cp \
+  "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \
+  "$PROJECT_DIR/Resources/ru.lproj/Localizable.strings" \
+  "$RESOURCES_DIR/ru.lproj/"
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
   codesign --force --deep --sign - "$APP_DIR"

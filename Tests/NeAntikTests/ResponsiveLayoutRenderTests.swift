@@ -10,6 +10,8 @@ struct ResponsiveLayoutRenderTests {
             name:
                 "Очень длинное Unicode-название профиля для проверки переноса",
             tags: ["Работа", "Магазин"],
+            note:
+                "Клиент предпочитает утренний запуск. Перед работой проверь заказ и не меняй сохранённый маршрут без согласования.\nСледующий шаг: открыть кабинет и сверить статус.",
             proxy: ProxyConfiguration(
                 kind: .https,
                 host: "2001:db8::1",
@@ -26,21 +28,14 @@ struct ResponsiveLayoutRenderTests {
             ProfileDetailView(
                 profile: profileA,
                 processState: .stopped,
-                isResolvingRuntime: false,
                 browserDataPath:
                     "/Users/example/Library/Application Support/NeAntik Development/Profiles/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/BrowserData",
+                environmentSnapshot: ProfileEnvironmentInspector.snapshot(
+                    profile: profileA,
+                    runtime: nil,
+                    proxyHealth: nil
+                ),
                 clipboardNotice: nil,
-                isSidebarVisible: true,
-                onToggleSidebar: {},
-                onCreate: {},
-                onStart: {},
-                onStop: {},
-                onEdit: {},
-                onDuplicate: {},
-                onTogglePinned: {},
-                onToggleArchived: {},
-                onDelete: {},
-                onReveal: {},
                 onCopyProxyUsername: {},
                 onCopyProxyPassword: {}
             ),
@@ -62,10 +57,154 @@ struct ResponsiveLayoutRenderTests {
             size: CGSize(width: 460, height: 380)
         )
 
+        for (appearanceName, colorScheme) in [
+            ("light", ColorScheme.light),
+            ("dark", ColorScheme.dark),
+        ] {
+            try render(
+                ProfileEditorView(
+                    original: profileA,
+                    keychain: KeychainStore(
+                        backend: LayoutRenderKeychainBackend(),
+                        service: "layout.render.note.\(appearanceName)",
+                        legacyService: nil
+                    ),
+                    folders: [],
+                    initialFolderID: nil,
+                    suggestedTags: profileA.tags,
+                    initialFocus: .note
+                ) { _, _, _ in },
+                name: "profile-editor-note-expanded-\(appearanceName)",
+                size: CGSize(width: 540, height: 540),
+                colorScheme: colorScheme
+            )
+        }
+
+        try render(
+            ProfileFolderPickerSheet(
+                profileName: profileA.name,
+                folders: (0..<24).map {
+                    ProfileFolder(name: "Папка \($0 + 1)")
+                },
+                selectedFolderID: nil,
+                onSelect: { _ in }
+            ),
+            name: "profile-folder-picker",
+            size: CGSize(width: 460, height: 500)
+        )
+
+        let manyFolders = (0..<24).map {
+            ProfileFolder(name: "Папка \($0 + 1)")
+        }
+        try render(
+            ProfileEditorView(
+                original: profileA,
+                keychain: KeychainStore(
+                    backend: LayoutRenderKeychainBackend(),
+                    service: "layout.render.folders",
+                    legacyService: nil
+                ),
+                folders: manyFolders,
+                initialFolderID: manyFolders.last?.id,
+                suggestedTags: profileA.tags
+            ) { _, _, _ in },
+            name: "profile-editor-many-folders",
+            size: CGSize(width: 540, height: 540)
+        )
+
         try render(
             BulkProxyImportView { _, _ in },
-            name: "bulk-proxy-import-minimum",
-            size: CGSize(width: 500, height: 500)
+            name: "bulk-proxy-import-empty",
+            size: CGSize(width: 560, height: 600)
+        )
+
+        try render(
+            BulkProxyImportView(
+                targetFolderName: "QA Workspace",
+                initialText:
+                    "one.example:8080\nuser:secret@two.example:8443"
+            ) { _, _ in },
+            name: "bulk-proxy-import-valid",
+            size: CGSize(width: 560, height: 640)
+        )
+
+        try render(
+            BulkProxyImportView(
+                targetFolderName: "QA Workspace",
+                initialText:
+                    "one.example:8080\ninvalid row\ntwo.example:8443"
+            ) { _, _ in },
+            name: "bulk-proxy-import-mixed-error",
+            size: CGSize(width: 560, height: 660)
+        )
+
+        try render(
+            BulkProxyImportView(
+                targetFolderName: "QA Workspace",
+                initialText: [
+                    "one.example:8001",
+                    "two.example:8002",
+                    "three.example:8003",
+                    "four.example:8004",
+                    "five.example:8005",
+                    "six.example:8006",
+                    "invalid row after preview limit",
+                ].joined(separator: "\n")
+            ) { _, _ in },
+            name: "bulk-proxy-import-late-error",
+            size: CGSize(width: 560, height: 720)
+        )
+
+        try render(
+            BulkProxyImportView(
+                targetFolderName: "QA Workspace",
+                initialText: "one.example:8080",
+                showsOptionsInitially: true
+            ) { _, _ in },
+            name: "bulk-proxy-import-options-expanded",
+            size: CGSize(width: 560, height: 760)
+        )
+
+        try render(
+            FirstProfileOnboardingView(
+                runtimeAvailability: .ready,
+                isCreatingProfile: false,
+                onCreateAndOpen: {},
+                onRetryRuntimeCheck: {},
+                onConfigure: {}
+            ),
+            name: "first-profile-onboarding-ready-narrow",
+            size: CGSize(width: 360, height: 480)
+        )
+
+        try render(
+            FirstProfileOnboardingView(
+                runtimeAvailability: .resolving,
+                isCreatingProfile: false,
+                onCreateAndOpen: {},
+                onRetryRuntimeCheck: {},
+                onConfigure: {}
+            ),
+            name: "first-profile-onboarding-resolving-narrow",
+            size: CGSize(width: 360, height: 480)
+        )
+
+        try render(
+            FirstProfileOnboardingView(
+                runtimeAvailability: .missing,
+                isCreatingProfile: false,
+                onCreateAndOpen: {},
+                onRetryRuntimeCheck: {},
+                onConfigure: {}
+            ),
+            name: "first-profile-onboarding-missing-narrow",
+            size: CGSize(width: 360, height: 480)
+        )
+
+        try render(
+            ProfileFolderPickerUnavailableSheet(),
+            name: "profile-folder-picker-unavailable",
+            size: CGSize(width: 460, height: 280)
         )
 
         let temporaryRoot = FileManager.default.temporaryDirectory
@@ -97,6 +236,62 @@ struct ResponsiveLayoutRenderTests {
             )
         )
         try render(
+            ProfileEnvironmentView(
+                snapshot: ProfileEnvironmentInspector.snapshot(
+                    profile: profileB,
+                    runtime: runtime,
+                    proxyHealth: nil
+                ),
+                hasProxy: false,
+                isTestingProxy: false,
+                canTestProxy: false,
+                canCancelProxyTest: false,
+                canRunFingerprintAudit: false,
+                onTestProxy: {},
+                onRunFingerprintAudit: {}
+            ),
+            name: "profile-environment-direct-ready",
+            size: CGSize(width: 900, height: 360)
+        )
+        try render(
+            ProfileEnvironmentView(
+                snapshot: ProfileEnvironmentInspector.snapshot(
+                    profile: profileB,
+                    runtime: runtime,
+                    proxyHealth: nil
+                ),
+                hasProxy: false,
+                isTestingProxy: false,
+                canTestProxy: false,
+                canCancelProxyTest: false,
+                canRunFingerprintAudit: false,
+                onTestProxy: {},
+                onRunFingerprintAudit: {}
+            ),
+            name: "profile-environment-direct-ready-light",
+            size: CGSize(width: 900, height: 360),
+            colorScheme: .light
+        )
+        try render(
+            ProfileEnvironmentView(
+                snapshot: ProfileEnvironmentInspector.snapshot(
+                    profile: profileA,
+                    runtime: runtime,
+                    proxyHealth: nil
+                ),
+                hasProxy: true,
+                isTestingProxy: false,
+                canTestProxy: true,
+                canCancelProxyTest: false,
+                canRunFingerprintAudit: false,
+                onTestProxy: {},
+                onRunFingerprintAudit: {}
+            ),
+            name: "profile-environment-proxy-auto-light",
+            size: CGSize(width: 900, height: 360),
+            colorScheme: .light
+        )
+        try render(
             FingerprintAuditView(
                 profiles: [profileA, profileB],
                 initialFirstID: profileA.id,
@@ -112,49 +307,56 @@ struct ResponsiveLayoutRenderTests {
     @Test func profileDetailRendersAtOrdinaryAndWideSizes() throws {
         let profile = BrowserProfile(
             name: "Рабочий профиль",
-            tags: ["Работа", "Клиент"]
+            tags: ["Работа", "Клиент"],
+            note:
+                "Это длинная заметка профиля для проверки трёхстрочного превью. Она содержит рабочий контекст, следующий шаг и напоминание о том, что полный текст остаётся доступным по отдельной кнопке без перегрузки основного экрана."
         )
-        for (name, size, sidebarVisible) in [
+        for (name, size) in [
             (
-                "profile-detail-sidebar-hidden",
-                CGSize(width: 820, height: 560),
-                false
+                "profile-detail-compact",
+                CGSize(width: 820, height: 560)
             ),
             (
                 "profile-detail-ordinary",
-                CGSize(width: 900, height: 600),
-                true
+                CGSize(width: 900, height: 600)
             ),
             (
                 "profile-detail-wide",
-                CGSize(width: 1_600, height: 1_000),
-                true
+                CGSize(width: 1_600, height: 1_000)
             ),
         ] {
             try render(
                 ProfileDetailView(
                     profile: profile,
                     processState: .stopped,
-                    isResolvingRuntime: false,
                     browserDataPath:
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
                     clipboardNotice: nil,
-                    isSidebarVisible: sidebarVisible,
-                    onToggleSidebar: {},
-                    onCreate: {},
-                    onStart: {},
-                    onStop: {},
-                    onEdit: {},
-                    onDuplicate: {},
-                    onTogglePinned: {},
-                    onToggleArchived: {},
-                    onDelete: {},
-                    onReveal: {},
                     onCopyProxyUsername: {},
                     onCopyProxyPassword: {}
                 ),
                 name: name,
                 size: size
+            )
+        }
+
+        for (appearanceName, colorScheme) in [
+            ("light", ColorScheme.light),
+            ("dark", ColorScheme.dark),
+        ] {
+            try render(
+                ProfileDetailView(
+                    profile: profile,
+                    processState: .stopped,
+                    browserDataPath:
+                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                    clipboardNotice: nil,
+                    onCopyProxyUsername: {},
+                    onCopyProxyPassword: {}
+                ),
+                name: "profile-detail-note-minimum-\(appearanceName)",
+                size: CGSize(width: 550, height: 520),
+                colorScheme: colorScheme
             )
         }
     }
@@ -242,6 +444,11 @@ struct ResponsiveLayoutRenderTests {
                     store: store,
                     processes: processes,
                     telemetry: telemetry,
+                    fingerprintObservationStore:
+                        FingerprintObservationStore(),
+                    proxyHealthCoordinator: ProxyHealthCoordinator(
+                        fileURL: paths.proxyHealthFile
+                    ),
                     keychain: keychain,
                     credentialCleanup:
                         DeletedProfileCredentialCleanup(
@@ -276,190 +483,72 @@ struct ResponsiveLayoutRenderTests {
             )
         )
 
-        for (name, size) in [
+        let reviewedSizes: [(String, CGSize)] = [
             (
-                "actual-content-minimum",
+                "minimum",
                 CGSize(
                     width: WorkspaceLayout.minimumWindowWidth,
                     height: WorkspaceLayout.minimumWindowHeight
                 )
             ),
-            (
-                "actual-content-wide",
-                CGSize(width: 1_600, height: 1_000)
-            ),
-        ] {
-            try render(
-                ContentView(
-                    store: store,
-                    processes: processes,
-                    telemetry: telemetry,
-                    keychain: keychain,
-                    credentialCleanup:
-                        DeletedProfileCredentialCleanup(
-                            paths: paths,
-                            keychain: keychain
+            ("ordinary", CGSize(width: 1_100, height: 720)),
+            ("wide", CGSize(width: 1_600, height: 1_000)),
+        ]
+        let reviewedAppearances: [(String, ColorScheme)] = [
+            ("light", .light),
+            ("dark", .dark),
+        ]
+        for (sizeName, size) in reviewedSizes {
+            for (appearanceName, colorScheme) in reviewedAppearances {
+                try render(
+                    ContentView(
+                        store: store,
+                        processes: processes,
+                        telemetry: telemetry,
+                        fingerprintObservationStore:
+                            FingerprintObservationStore(),
+                        proxyHealthCoordinator: ProxyHealthCoordinator(
+                            fileURL: paths.proxyHealthFile
                         ),
-                    runtimeLocator: runtimeLocator,
-                    launchIntent: intent,
-                    fingerprintEvidenceReleaseContext: nil
-                ),
-                name: name,
-                size: size,
-                styleMask: [
-                    .titled,
-                    .closable,
-                    .resizable,
-                ]
-            )
-        }
-    }
-
-    @Test func workspaceKeepsFixedControlsVisibleAtMinimumWindowSize() throws {
-        let profile = BrowserProfile(
-            name: "Рабочий профиль",
-            tags: ["Работа", "Клиент"]
-        )
-        try render(
-            GeometryReader { proxy in
-                HStack(spacing: 0) {
-                    VStack(spacing: 0) {
-                        HStack {
-                            Text("Профили")
-                                .font(.title2.bold())
-                            Spacer()
-                            Button("", systemImage: "plus") {}
-                        }
-                        .padding(14)
-                        TextField(
-                            "Поиск по имени и тегам",
-                            text: .constant("")
-                        )
-                        .textFieldStyle(.roundedBorder)
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 12)
-                        Divider()
-                        List {
-                            Label(
-                                profile.name,
-                                systemImage: profile.displaySymbolName
-                            )
-                        }
-                        .listStyle(.sidebar)
-                    }
-                    .frame(
-                        width: WorkspaceLayout.sidebarWidth(
-                            for: proxy.size.width
-                        )
-                    )
-                    Divider()
-
-                    ProfileDetailView(
-                        profile: profile,
-                        processState: .stopped,
-                        isResolvingRuntime: false,
-                        browserDataPath:
-                            "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
-                        clipboardNotice: nil,
-                        isSidebarVisible: true,
-                        onToggleSidebar: {},
-                        onCreate: {},
-                        onStart: {},
-                        onStop: {},
-                        onEdit: {},
-                        onDuplicate: {},
-                        onTogglePinned: {},
-                        onToggleArchived: {},
-                        onDelete: {},
-                        onReveal: {},
-                        onCopyProxyUsername: {},
-                        onCopyProxyPassword: {}
-                    )
-                }
+                        keychain: keychain,
+                        credentialCleanup:
+                            DeletedProfileCredentialCleanup(
+                                paths: paths,
+                                keychain: keychain
+                            ),
+                        runtimeLocator: runtimeLocator,
+                        launchIntent: intent,
+                        fingerprintEvidenceReleaseContext: nil
+                    ),
+                    name: "actual-content-\(sizeName)-\(appearanceName)",
+                    size: size,
+                    styleMask: [
+                        .titled,
+                        .closable,
+                        .resizable,
+                    ],
+                    colorScheme: colorScheme
+                )
             }
-            .frame(
-                minWidth: WorkspaceLayout.minimumWindowWidth,
-                minHeight: WorkspaceLayout.minimumWindowHeight
-            ),
-            name: "workspace-window-minimum",
-            size: CGSize(
-                width: WorkspaceLayout.minimumWindowWidth,
-                height: WorkspaceLayout.minimumWindowHeight
-            ),
-            styleMask: [
-                .titled,
-                .closable,
-                .resizable,
-            ]
-        )
-
-        try render(
-            GeometryReader { proxy in
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Профили")
-                            .font(.title2.bold())
-                        TextField(
-                            "Поиск по имени и тегам",
-                            text: .constant("")
-                        )
-                        List {
-                            Label(
-                                profile.name,
-                                systemImage: profile.displaySymbolName
-                            )
-                        }
-                        .listStyle(.sidebar)
-                    }
-                    .padding(14)
-                    .frame(
-                        width: WorkspaceLayout.sidebarWidth(
-                            for: proxy.size.width
-                        )
-                    )
-                    Divider()
-
-                    ProfileDetailView(
-                        profile: profile,
-                        processState: .stopped,
-                        isResolvingRuntime: false,
-                        browserDataPath:
-                            "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
-                        clipboardNotice: nil,
-                        isSidebarVisible: true,
-                        onToggleSidebar: {},
-                        onCreate: {},
-                        onStart: {},
-                        onStop: {},
-                        onEdit: {},
-                        onDuplicate: {},
-                        onTogglePinned: {},
-                        onToggleArchived: {},
-                        onDelete: {},
-                        onReveal: {},
-                        onCopyProxyUsername: {},
-                        onCopyProxyPassword: {}
-                    )
-                }
-            },
-            name: "workspace-window-wide",
-            size: CGSize(width: 1_600, height: 1_000)
-        )
+        }
     }
 
     private func render<V: View>(
         _ view: V,
         name: String,
         size: CGSize,
-        styleMask: NSWindow.StyleMask = [.borderless]
+        styleMask: NSWindow.StyleMask = [.borderless],
+        colorScheme: ColorScheme = .dark
     ) throws {
         let hostingView = NSHostingView(
             rootView:
                 view
                 .frame(width: size.width, height: size.height)
-                .environment(\.colorScheme, .dark)
+                .environment(\.colorScheme, colorScheme)
         )
-        let appearance = NSAppearance(named: .darkAqua)
+        let appearance = NSAppearance(
+            named: colorScheme == .dark ? .darkAqua : .aqua
+        )
         let window = NSWindow(
             contentRect: CGRect(origin: .zero, size: size),
             styleMask: styleMask,

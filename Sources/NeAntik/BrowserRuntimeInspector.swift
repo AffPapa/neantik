@@ -89,9 +89,15 @@ enum BrowserRuntimeInspector {
         guard createStatus == errSecSuccess, let staticCode else {
             return nil
         }
+        let validationFlags = SecCSFlags(
+            rawValue:
+                kSecCSCheckAllArchitectures |
+                kSecCSCheckNestedCode |
+                kSecCSStrictValidate
+        )
         return SecStaticCodeCheckValidity(
             staticCode,
-            SecCSFlags(),
+            validationFlags,
             nil
         ) == errSecSuccess
     }

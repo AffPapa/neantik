@@ -20,28 +20,54 @@ jobs:
         suite:
           - ApplicationEnvironmentTests
           - AppPathsTests
+          - AccessibilityPresentationTests
+          - BrowserLaunchActionPresentationTests
           - BrowserLaunchBuilderTests
+          - BrowserLaunchPreparationPolicyTests
+          - BrowserLaunchPolicyTests
           - BrowserProcessInventoryTests
           - BrowserProcessManagerTests
           - BrowserRuntimeInspectorTests
           - BrowserRuntimePreflightTests
+          - BulkProxyActionProjectionTests
           - BulkProxyImportTests
+          - DisplayDateFormattingTests
+          - EnvironmentDiagnosticAssessmentTests
           - FingerprintAuditLoopbackSTUNServerTests
           - FingerprintAuditAutomationPolicyTests
+          - FingerprintAuditObservationTests
           - FingerprintAuditTests
           - FingerprintEvidenceEnrollmentTests
           - FingerprintEvidenceEnvelopeTests
           - FingerprintEvidenceReleaseContextTests
+          - FirstProfileBootstrapTests
           - SecureEnclaveFingerprintEvidenceSignerTests
           - KeychainStoreTests
           - LaunchIntentTests
+          - NativeMenuLocalizationTests
+          - ProfileCommandPresentationTests
           - ProfileEditorPasswordTests
+          - ProfileEditorPresentationTests
+          - ProfileEditorValidationTests
+          - ProfileEnvironmentAccessibilityTests
+          - ProfileEnvironmentInspectorTests
+          - ProfileEnvironmentPresentationTests
+          - ProfileListProjectionTests
           - ProfileOrganizationTests
+          - ProfileOrganizationPersistenceTests
+          - ProfilePostSaveRevealPolicyTests
+          - ProfileRevisionAndTransactionTests
+          - ProfileTagAppearanceTests
+          - ProfileTagEditorTests
           - ProfileStoreTests
+          - ProxyHealthTests
           - ProxyImportParserTests
+          - ProxyTestOperationRegistryTests
           - ProxyTesterTests
           - ResponsiveLayoutRenderTests
+          - WorkspaceDomainTests
           - WorkspaceLayoutTests
+          - WorkspaceQueryStateTests
           - RuntimePreferenceStoreTests
           - TelemetryTests
           - UpdateManifestTests

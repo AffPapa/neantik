@@ -35,7 +35,15 @@ enum ProxyImportOrder: String, CaseIterable, Identifiable, Sendable {
 
 enum ProxyImportParser {
     static let maximumInputBytes = 8 * 1_024
-    static let maximumPasswordBytes = 4 * 1_024
+    // Legacy fields allowed 4,096 Characters; 128 KiB preserves ordinary
+    // ZWJ emoji at that boundary while still bounding editor/tester input.
+    static let maximumPasswordLength = 4_096
+    static let maximumPasswordBytes = 128 * 1_024
+
+    static func passwordIsWithinLimits(_ value: String) -> Bool {
+        value.count <= maximumPasswordLength &&
+            value.utf8.count <= maximumPasswordBytes
+    }
 
     static func parse(
         _ input: String,
@@ -222,8 +230,9 @@ enum ProxyImportParser {
               let password = decodedCredential(rawPassword),
               !username.isEmpty,
               !password.isEmpty,
-              username.utf8.count <= 512,
-              password.utf8.count <= maximumPasswordBytes,
+              username.utf8.count <=
+                ProxyConfiguration.maximumUsernameUTF8Bytes,
+              passwordIsWithinLimits(password),
               !username.contains(":"),
               username.rangeOfCharacter(from: .controlCharacters) == nil,
               password.rangeOfCharacter(from: .controlCharacters) == nil

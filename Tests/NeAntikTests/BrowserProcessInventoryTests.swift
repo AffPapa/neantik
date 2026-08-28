@@ -195,6 +195,83 @@ private final class PassiveInventoryGate: @unchecked Sendable {
 
 struct BrowserProcessInventoryTests {
     @Test
+    func liveProviderCanProveUnusedTemporaryPathWhenRequested() {
+        guard ProcessInfo.processInfo.environment[
+            "NEANTIK_RUN_LIVE_PROCESS_INVENTORY"
+        ] == "1" else {
+            return
+        }
+        let inventory = DarwinBrowserProcessInventoryProvider().capture()
+        let unusedPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "neantik-unused-inventory-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        let diagnostics = inventory.diagnostics
+        let inspection = inventory.inspectBrowserDataProcess(unusedPath)
+        print(
+            "LIVE_PROCESS_INVENTORY available=\(diagnostics.isAvailable) " +
+                "unreadable=\(diagnostics.hasUnreadableLiveProcess) " +
+                "retained=\(diagnostics.retainedProcessCount) " +
+                "unused=\(inspection) " +
+                "sources=\(diagnostics.riskSources.joined(separator: " | "))"
+        )
+        #expect(diagnostics.isAvailable)
+        #expect(!diagnostics.hasUnreadableLiveProcess)
+        #expect(inspection == .absent)
+    }
+
+    @Test
+    func currentProcessHasStableKernelIdentity() {
+        let first = DarwinBrowserProcessInventoryProvider
+            .currentProcessIdentity(getpid())
+        let second = DarwinBrowserProcessInventoryProvider
+            .currentProcessIdentity(getpid())
+
+        #expect(first != nil)
+        #expect(first == second)
+    }
+
+    @Test
+    func zombieKernelStatusIsNotLive() {
+        #expect(
+            DarwinBrowserProcessInventoryProvider
+                .isZombieStatus(SZOMB)
+        )
+        #expect(
+            !DarwinBrowserProcessInventoryProvider
+                .isZombieStatus(2)
+        )
+    }
+
+    @Test
+    func unreadableProcessFilteringTargetsEmbeddedRuntimeOnly() {
+        for path in [
+            "/Applications/NeAntik Browser.app/Contents/MacOS/NeAntik Browser",
+            "/Applications/NeAntik Browser.app/Contents/Frameworks/NeAntik Browser Helper.app/Contents/MacOS/NeAntik Browser Helper",
+            "/Applications/NeVision Browser.app/Contents/MacOS/NeVision Browser",
+        ] {
+            #expect(
+                DarwinBrowserProcessInventoryProvider
+                    .executableCanUseNeAntikProfile(path)
+            )
+        }
+
+        for path in [
+            "/System/Library/CoreServices/Finder.app/Contents/MacOS/Finder",
+            "/Applications/Codex.app/Contents/MacOS/Codex",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Tool.app/Contents/Frameworks/Electron Framework.framework/Electron Framework",
+            "/usr/bin/ssh-agent",
+        ] {
+            #expect(
+                !DarwinBrowserProcessInventoryProvider
+                    .executableCanUseNeAntikProfile(path)
+            )
+        }
+    }
+
+    @Test
     func parserDecodesStrictUTF8ProcessArguments() {
         let buffer = processArgumentBuffer(
             executable: "/Applications/NeAntik Browser",

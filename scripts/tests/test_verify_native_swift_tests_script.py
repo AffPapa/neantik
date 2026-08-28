@@ -1,12 +1,21 @@
 from pathlib import Path
 import re
+import subprocess
 import unittest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-native-swift-tests.sh"
+RELEASE_SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "verify-native-swift-release.sh"
+)
 SUITE_SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "verify-native-swift-suite.sh"
+)
+LIVE_SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "verify-native-swift-live.sh"
 )
 CI_WORKFLOW = (
     Path(__file__).resolve().parents[2]
@@ -18,6 +27,7 @@ OPEN_SOURCE_VERIFIER = (
     Path(__file__).resolve().parents[1]
     / "verify-open-source-tree.py"
 )
+SWIFT_TESTS = Path(__file__).resolve().parents[2] / "Tests" / "NeAntikTests"
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
@@ -34,6 +44,12 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
 
         self.assertIn("swift test", text)
         self.assertIn("--disable-sandbox", text)
+
+    def test_release_build_explicitly_targets_apple_silicon(self) -> None:
+        text = RELEASE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("swift build", text)
+        self.assertIn("--arch arm64", text)
 
     def test_cleanup_is_guarded_to_nevision_tmp_prefix(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
@@ -78,6 +94,32 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         for suite in matrix_suites:
             self.assertIn(suite, runner)
 
+    def test_ci_runs_every_non_live_swift_suite_and_excludes_live_suites(
+        self,
+    ) -> None:
+        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
+        matrix_suites = set(
+            re.findall(
+                r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
+                workflow,
+                flags=re.MULTILINE,
+            )
+        )
+        discovered_suites = {
+            path.stem
+            for path in SWIFT_TESTS.glob("*Tests.swift")
+        }
+        live_suites = {
+            suite for suite in discovered_suites if suite.startswith("Live")
+        }
+        non_live_suites = discovered_suites - live_suites
+
+        self.assertEqual(matrix_suites, non_live_suites)
+        self.assertTrue(live_suites.isdisjoint(matrix_suites))
+        for suite in non_live_suites:
+            self.assertIn(suite, runner)
+
     def test_suite_runner_requires_a_positive_test_count(self) -> None:
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")
 
@@ -86,6 +128,31 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
             runner,
             r"Test run with \[1-9\]\[0-9\]\* tests\?",
         )
+
+    def test_live_runner_is_explicit_local_and_fail_closed(self) -> None:
+        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+        runner = LIVE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("NEANTIK_RUN_LIVE_BROWSER_MANAGER", runner)
+        self.assertIn("LiveBrowserProcessManagerIntegrationTests", runner)
+        self.assertIn("NEANTIK_RUN_LIVE_FINGERPRINT_AUDIT", runner)
+        self.assertIn("LiveFingerprintAuditIntegrationTests", runner)
+        self.assertIn(
+            "Live Swift suite did not execute a positive test count",
+            runner,
+        )
+        self.assertNotIn("verify-native-swift-live.sh", workflow)
+
+    def test_live_runner_rejects_unknown_mode_before_building(self) -> None:
+        result = subprocess.run(
+            [str(LIVE_SCRIPT), "unknown"],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 64)
+        self.assertIn("Unknown live verification mode", result.stderr)
 
     def test_process_inventory_source_and_tests_are_public_contracts(
         self,

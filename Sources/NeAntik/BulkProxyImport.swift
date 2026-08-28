@@ -1,5 +1,116 @@
+import AppKit
 import Foundation
 import SwiftUI
+
+struct AccessibilityAnnouncementGate<Value: Equatable> {
+    private(set) var lastValue: Value?
+
+    init() {
+        lastValue = nil
+    }
+
+    mutating func shouldAnnounce(_ value: Value) -> Bool {
+        guard lastValue != value else { return false }
+        lastValue = value
+        return true
+    }
+
+    mutating func reset() {
+        lastValue = nil
+    }
+}
+
+enum BulkProxyImportAccessibilityAnnouncement: Equatable {
+    case validationFailed
+    case ready(Int)
+    case created(Int)
+    case creationFailed
+
+    var message: String {
+        switch self {
+        case .validationFailed:
+            "Список прокси не готов. Проверь сообщение под полем."
+        case let .ready(count):
+            "Готово к созданию профилей: \(count)."
+        case let .created(count):
+            "Создано профилей: \(count)."
+        case .creationFailed:
+            "Не удалось создать профили. Проверь сообщение в окне."
+        }
+    }
+}
+
+enum BulkProxyImportRowIssue: Equatable, Sendable {
+    case invalid
+    case ambiguous
+    case tooLong
+    case unsupportedAuthentication
+
+    var message: String {
+        switch self {
+        case .invalid:
+            "Проверь адрес, порт и формат."
+        case .ambiguous:
+            "Выбери порядок полей в параметрах."
+        case .tooLong:
+            "Строка слишком длинная."
+        case .unsupportedAuthentication:
+            "SOCKS5 поддерживается только без логина и пароля."
+        }
+    }
+
+    static func resolve(_ error: Error) -> Self {
+        switch error as? ProxyImportError {
+        case .ambiguous:
+            .ambiguous
+        case .tooLong:
+            .tooLong
+        case .socksAuthenticationUnsupported:
+            .unsupportedAuthentication
+        default:
+            .invalid
+        }
+    }
+}
+
+struct BulkProxyImportPreviewRow: Identifiable, Equatable, Sendable {
+    let lineNumber: Int
+    let draft: ProxyImportDraft?
+    let issue: BulkProxyImportRowIssue?
+
+    var id: Int { lineNumber }
+
+    var safeSummary: String? {
+        guard let draft else { return nil }
+        return "\(draft.configuration.kind.title) · " +
+            "\(draft.configuration.displayEndpoint) · " +
+            (draft.configuration.username.isEmpty
+                ? "без авторизации"
+                : "с авторизацией")
+    }
+}
+
+struct BulkProxyImportPreview: Equatable, Sendable {
+    static let empty = BulkProxyImportPreview(rows: [])
+
+    let rows: [BulkProxyImportPreviewRow]
+
+    var drafts: [ProxyImportDraft] {
+        rows.compactMap(\.draft)
+    }
+
+    var issueLineNumbers: [Int] {
+        rows.compactMap { $0.issue == nil ? nil : $0.lineNumber }
+    }
+
+    var hasIssues: Bool {
+        !issueLineNumbers.isEmpty
+    }
+
+    var isReady: Bool {
+        !rows.isEmpty && !hasIssues
+    }
+}
 
 enum BulkProxyImportParser {
     static let maximumEntries = 100
@@ -10,6 +121,18 @@ enum BulkProxyImportParser {
         kind: ProxyKind,
         order: ProxyImportOrder
     ) throws -> [ProxyImportDraft] {
+        let preview = try preview(input, kind: kind, order: order)
+        if let firstIssueLine = preview.issueLineNumbers.first {
+            throw BulkProxyImportError.invalidLine(firstIssueLine)
+        }
+        return preview.drafts
+    }
+
+    static func preview(
+        _ input: String,
+        kind: ProxyKind,
+        order: ProxyImportOrder
+    ) throws -> BulkProxyImportPreview {
         guard input.utf8.count <= maximumInputBytes else {
             throw BulkProxyImportError.tooLarge
         }
@@ -30,17 +153,27 @@ enum BulkProxyImportParser {
             throw BulkProxyImportError.tooMany
         }
 
-        return try nonEmpty.map { lineNumber, line in
+        let rows = nonEmpty.map { lineNumber, line in
             do {
-                return try ProxyImportParser.parse(
+                let draft = try ProxyImportParser.parse(
                     line,
                     kind: kind,
                     order: order
                 )
+                return BulkProxyImportPreviewRow(
+                    lineNumber: lineNumber,
+                    draft: draft,
+                    issue: nil
+                )
             } catch {
-                throw BulkProxyImportError.invalidLine(lineNumber)
+                return BulkProxyImportPreviewRow(
+                    lineNumber: lineNumber,
+                    draft: nil,
+                    issue: .resolve(error)
+                )
             }
         }
+        return BulkProxyImportPreview(rows: rows)
     }
 
     static func profileName(base: String, index: Int) -> String? {
@@ -49,11 +182,7 @@ enum BulkProxyImportParser {
             return nil
         }
         let suffix = " \(index)"
-        let prefixLength = max(
-            1,
-            BrowserProfile.maximumNameLength - suffix.count
-        )
-        return String(clean.prefix(prefixLength)) + suffix
+        return BrowserProfile.nameByAppendingSuffix(suffix, to: clean)
     }
 }
 
@@ -89,20 +218,183 @@ extension BulkProxyImportError: ProfileCredentialCleanupRecoveryProviding {
     }
 }
 
+private actor BulkProfileCredentialStager {
+    struct Ticket: Hashable, Sendable {
+        fileprivate let id: UUID
+    }
+
+    private struct Session: Sendable {
+        let lease: PrivateFileGuardLease
+        let profileIDs: [UUID]
+    }
+
+    private let paths: AppPaths
+    private let keychain: KeychainStore
+    private var sessions: [Ticket: Session] = [:]
+
+    init(paths: AppPaths, keychain: KeychainStore) {
+        self.paths = paths
+        self.keychain = keychain
+    }
+
+    func stage(
+        profiles: [BrowserProfile],
+        drafts: [ProxyImportDraft]
+    ) async throws -> Ticket {
+        let paths = paths
+        let keychain = keychain
+        let stagingTask = Task.detached(priority: .userInitiated) {
+            try Self.stageSynchronously(
+                profiles: profiles,
+                drafts: drafts,
+                paths: paths,
+                keychain: keychain
+            )
+        }
+        let session = try await withTaskCancellationHandler {
+            try await stagingTask.value
+        } onCancel: {
+            stagingTask.cancel()
+        }
+        let ticket = Ticket(id: UUID())
+        sessions[ticket] = session
+        return ticket
+    }
+
+    private nonisolated static func stageSynchronously(
+        profiles: [BrowserProfile],
+        drafts: [ProxyImportDraft],
+        paths: AppPaths,
+        keychain: KeychainStore
+    ) throws -> Session {
+        let lease = try paths.acquireBulkCredentialImportGuard()
+        var attemptedProfileIDs: [UUID] = []
+        do {
+            for (profile, draft) in zip(profiles, drafts)
+            where !draft.password.isEmpty {
+                try Task.checkCancellation()
+                try paths.withProcessLockGuard(for: profile.id) {
+                    guard try paths.privateFileEntryKind(
+                        paths.profileDirectory(for: profile.id)
+                    ) == .missing,
+                    try paths.privateFileEntryKind(
+                        paths.profileDeletionTombstone(for: profile.id)
+                    ) == .missing,
+                    try paths.privateFileEntryKind(
+                        paths.profileCredentialStagingMarker(for: profile.id)
+                    ) == .missing else {
+                        throw NeAntikError.invalidProfile
+                    }
+                    try paths.createPrivateFileExclusively(
+                        Data("bulk-keychain-stage-v1".utf8),
+                        at: paths.profileCredentialStagingMarker(
+                            for: profile.id
+                        )
+                    )
+                    attemptedProfileIDs.append(profile.id)
+                    try keychain.saveProxyPassword(
+                        draft.password,
+                        profileID: profile.id
+                    )
+                }
+                try Task.checkCancellation()
+            }
+        } catch {
+            let operationError = error
+            let failed = cleanup(
+                profileIDs: attemptedProfileIDs,
+                lease: lease,
+                paths: paths,
+                keychain: keychain
+            )
+            if !failed.isEmpty {
+                throw BulkProxyImportError.rollbackFailed(failed)
+            }
+            throw operationError
+        }
+        return Session(
+            lease: lease,
+            profileIDs: attemptedProfileIDs
+        )
+    }
+
+    func commit(_ ticket: Ticket) async {
+        guard let session = sessions.removeValue(forKey: ticket) else {
+            return
+        }
+        let paths = paths
+        await Task.detached(priority: .utility) {
+            for profileID in session.profileIDs {
+                try? paths.withProcessLockGuard(for: profileID) {
+                    try paths.removeCredentialStagingMarker(for: profileID)
+                }
+            }
+            session.lease.release()
+        }.value
+    }
+
+    func rollback(_ ticket: Ticket) async throws {
+        guard let session = sessions.removeValue(forKey: ticket) else {
+            return
+        }
+        let paths = paths
+        let keychain = keychain
+        let failed = await Task.detached(priority: .userInitiated) {
+            Self.cleanup(
+                profileIDs: session.profileIDs,
+                lease: session.lease,
+                paths: paths,
+                keychain: keychain
+            )
+        }.value
+        guard failed.isEmpty else {
+            throw BulkProxyImportError.rollbackFailed(failed)
+        }
+    }
+
+    private nonisolated static func cleanup(
+        profileIDs: [UUID],
+        lease: PrivateFileGuardLease,
+        paths: AppPaths,
+        keychain: KeychainStore
+    ) -> [UUID] {
+        defer { lease.release() }
+        var failed: [UUID] = []
+        for profileID in profileIDs.reversed() {
+            do {
+                try paths.withProcessLockGuard(for: profileID) {
+                    try keychain.deleteProxyPassword(profileID: profileID)
+                    try paths.removeCredentialStagingMarker(for: profileID)
+                }
+            } catch {
+                // The durable marker intentionally remains. A later trusted
+                // startup will retry cleanup while metadata proves the profile
+                // was never committed.
+                failed.append(profileID)
+            }
+        }
+        return failed
+    }
+}
+
 @MainActor
 enum BulkProfileImporter {
     static func create(
         drafts: [ProxyImportDraft],
         baseName: String,
         store: ProfileStore,
-        keychain: KeychainStore
-    ) throws -> [BrowserProfile] {
+        keychain: KeychainStore,
+        targetFolderID: UUID? = nil
+    ) async throws -> [BrowserProfile] {
         guard !drafts.isEmpty else {
             throw BulkProxyImportError.empty
         }
         guard drafts.count <= BulkProxyImportParser.maximumEntries else {
             throw BulkProxyImportError.tooMany
         }
+        try store.validateInsertionCapacity(
+            forAdditionalProfileCount: drafts.count
+        )
 
         let profiles = try drafts.enumerated().map { offset, draft in
             guard let name = BulkProxyImportParser.profileName(
@@ -116,101 +408,229 @@ enum BulkProfileImporter {
                 proxy: draft.configuration
             )
         }
-        return try store.insertNewProfiles(profiles) { savedProfiles in
-            var savedSecretIDs: [UUID] = []
+        let credentialStager = BulkProfileCredentialStager(
+            paths: store.paths,
+            keychain: keychain
+        )
+        let ticket = try await credentialStager.stage(
+            profiles: profiles,
+            drafts: drafts
+        )
+        let inserted: [BrowserProfile]
+        do {
+            try Task.checkCancellation()
+            if let targetFolderID {
+                inserted = try store.insertNewProfiles(
+                    profiles,
+                    toFolderID: targetFolderID,
+                    afterPersist: { _ in }
+                )
+            } else {
+                inserted = try store.insertNewProfiles(
+                    profiles,
+                    afterPersist: { _ in }
+                )
+            }
+        } catch {
+            let operationError = error
             do {
-                for (profile, draft) in zip(savedProfiles, drafts)
-                where !draft.password.isEmpty {
-                    try keychain.saveProxyPassword(
-                        draft.password,
-                        profileID: profile.id
-                    )
-                    savedSecretIDs.append(profile.id)
-                }
+                try await credentialStager.rollback(ticket)
             } catch {
-                var cleanupFailedProfileIDs: [UUID] = []
-                for profileID in savedSecretIDs {
-                    do {
-                        try keychain.deleteProxyPassword(
-                            profileID: profileID
-                        )
-                    } catch {
-                        cleanupFailedProfileIDs.append(profileID)
-                    }
-                }
-                if !cleanupFailedProfileIDs.isEmpty {
-                    throw BulkProxyImportError.rollbackFailed(
-                        cleanupFailedProfileIDs
-                    )
-                }
                 throw error
             }
+            throw operationError
         }
+        // Metadata and profile directories are now committed. Marker cleanup
+        // is best-effort: if it is interrupted, trusted startup cleanup sees
+        // the active profile and removes only the stale marker, never its key.
+        await credentialStager.commit(ticket)
+        return inserted
     }
 }
 
 struct BulkProxyImportView: View {
     @Environment(\.dismiss) private var dismiss
 
-    let onCreate: ([ProxyImportDraft], String) throws -> Void
+    let targetFolderName: String?
+    let onCreate: ([ProxyImportDraft], String) async throws -> Void
 
     @State private var text = ""
     @State private var baseName = "Прокси"
     @State private var kind: ProxyKind = .http
     @State private var order: ProxyImportOrder = .automatic
-    @State private var drafts: [ProxyImportDraft] = []
-    @State private var validationMessage: String?
+    @State private var preview = BulkProxyImportPreview.empty
+    @State private var inputMessage: String?
+    @State private var creationError: String?
+    @State private var isCreating = false
+    @State private var showsOptions = false
+    @FocusState private var proxyInputIsFocused: Bool
+    @State private var announcementGate =
+        AccessibilityAnnouncementGate<
+            BulkProxyImportAccessibilityAnnouncement
+        >()
+
+    init(
+        targetFolderName: String? = nil,
+        initialText: String = "",
+        initialBaseName: String = "Прокси",
+        initialKind: ProxyKind = .http,
+        initialOrder: ProxyImportOrder = .automatic,
+        showsOptionsInitially: Bool = false,
+        onCreate: @escaping ([ProxyImportDraft], String) async throws -> Void
+    ) {
+        self.targetFolderName = targetFolderName
+        _text = State(initialValue: initialText)
+        _baseName = State(initialValue: initialBaseName)
+        _kind = State(initialValue: initialKind)
+        _order = State(initialValue: initialOrder)
+        _showsOptions = State(initialValue: showsOptionsInitially)
+        self.onCreate = onCreate
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            HStack {
+                Text("Создать профили из прокси")
+                    .font(.headline)
+                    .accessibilityHeading(.h1)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+
+            Divider()
+
             Form {
-                Section("Новые профили") {
-                    TextField("Основа названия", text: $baseName)
+                Section("Прокси — по одному на строку") {
                     Text(
-                        "Будут созданы чистые профили «\(previewName)», каждый со своей папкой и новым набором параметров."
+                        "Вставь список. Каждая непустая строка станет " +
+                            "отдельным постоянным профилем."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                    ZStack(alignment: .topLeading) {
+                        if text.isEmpty {
+                            Text(
+                                "example.com:8080\n" +
+                                    "login:password@example.com:8080"
+                            )
+                            .font(.body.monospaced())
+                            .foregroundStyle(.tertiary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 8)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                        }
+
+                        TextEditor(text: $text)
+                            .font(.body.monospaced())
+                            .frame(minHeight: 190)
+                            .scrollContentBackground(.hidden)
+                            .focused($proxyInputIsFocused)
+                            .privacySensitive()
+                            .accessibilityLabel("Список прокси")
+                    }
+
+                    Text(
+                        "Доступность прокси будет автоматически проверяться " +
+                            "перед каждым запуском профиля. Эта проверка не " +
+                            "подтверждает маршрут Chromium."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    if isCreating {
+                        statusLabel(
+                            "Создаём \(profileCountTitle(preview.drafts.count))…",
+                            systemImage: "hourglass",
+                            color: .accentColor
+                        )
+                    } else if let creationError {
+                        statusLabel(
+                            creationError,
+                            systemImage: "xmark.octagon.fill",
+                            color: .red
+                        )
+                    } else {
+                        previewStatus
+                    }
+
+                    previewRows
                 }
 
-                Section("Прокси — по одному на строку") {
-                    Picker("Тип", selection: $kind) {
-                        ForEach(ProxyKind.allCases) { value in
-                            Text(value.title).tag(value)
+                Section {
+                    Button {
+                        showsOptions.toggle()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(
+                                systemName: showsOptions
+                                    ? "chevron.down"
+                                    : "chevron.right"
+                            )
+                            .font(.caption.weight(.semibold))
+                            Text("Параметры")
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Text(optionsSummary)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                         }
-                    }
-                    Picker("Порядок", selection: $order) {
-                        ForEach(ProxyImportOrder.allCases) { value in
-                            Text(value.title).tag(value)
-                        }
-                    }
-
-                    TextEditor(text: $text)
-                        .font(.body.monospaced())
-                        .frame(minHeight: 180)
-                        .privacySensitive()
-                        .accessibilityLabel("Список прокси")
-
-                    Text(
-                        "Поддерживаются те же четыре формата, что и в одном профиле. Пароли сохранятся в Связке ключей. Соединение автоматически не проверяется."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    if let validationMessage {
-                        Label(validationMessage, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.orange)
-                            .font(.caption)
-                    } else if !drafts.isEmpty {
-                        Label(
-                            "Готово к созданию: \(drafts.count)",
-                            systemImage: "checkmark.circle.fill"
+                        .frame(
+                            maxWidth: .infinity,
+                            minHeight: 32,
+                            alignment: .leading
                         )
-                        .foregroundStyle(.green)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Параметры импорта")
+                    .accessibilityValue(
+                        showsOptions ? "Развёрнуто" : "Свёрнуто"
+                    )
+                    .accessibilityHint(
+                        showsOptions
+                            ? "Скрывает параметры импорта"
+                            : "Показывает параметры импорта"
+                    )
+
+                    if showsOptions {
+                        TextField("Основа названия", text: $baseName)
+
+                        LabeledContent("Будут названы") {
+                            Text("\(previewName)…")
+                        }
+
+                        LabeledContent("Папка") {
+                            Text(targetFolderName ?? "Без папки")
+                        }
+
+                        Picker("Тип прокси", selection: $kind) {
+                            ForEach(ProxyKind.allCases) { value in
+                                Text(value.title).tag(value)
+                            }
+                        }
+
+                        Picker("Порядок полей", selection: $order) {
+                            ForEach(ProxyImportOrder.allCases) { value in
+                                Text(value.title).tag(value)
+                            }
+                        }
+
+                        Text(
+                            "Обычно достаточно автоматического порядка. " +
+                                "Измени его только для неоднозначных строк."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 }
             }
             .formStyle(.grouped)
+            .disabled(isCreating)
 
             Divider()
             HStack {
@@ -218,24 +638,34 @@ struct BulkProxyImportView: View {
                 Button("Отмена", role: .cancel) {
                     dismiss()
                 }
-                Button("Создать \(drafts.count)") {
+                .disabled(isCreating)
+                .keyboardShortcut(.cancelAction)
+                Button(createButtonTitle) {
                     create()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(drafts.isEmpty || !baseNameIsValid)
+                .disabled(
+                    isCreating || !preview.isReady || !baseNameIsValid
+                )
                 .keyboardShortcut(.defaultAction)
             }
             .padding()
         }
         .frame(minWidth: 500, idealWidth: 620, minHeight: 500)
-        .onAppear(perform: refreshPreview)
+        .onAppear {
+            refreshPreview()
+            Task { @MainActor in
+                await Task.yield()
+                proxyInputIsFocused = true
+            }
+        }
         .onChange(of: text) { _, _ in refreshPreview() }
         .onChange(of: kind) { _, _ in refreshPreview() }
         .onChange(of: order) { _, _ in refreshPreview() }
-        .onChange(of: baseName) { _, _ in refreshPreview() }
+        .onChange(of: baseName) { _, _ in validateBaseName() }
         .onDisappear {
             text = ""
-            drafts = []
+            preview = .empty
         }
     }
 
@@ -248,34 +678,267 @@ struct BulkProxyImportView: View {
             ?? "Прокси 1"
     }
 
+    private var optionsSummary: String {
+        "\(kind.title) · \(previewName)… · " +
+            (targetFolderName ?? "Без папки")
+    }
+
+    private var createButtonTitle: String {
+        if preview.hasIssues {
+            return "Исправь \(issueCountTitle(preview.issueLineNumbers.count))"
+        }
+        guard !preview.drafts.isEmpty else {
+            return "Создать профили"
+        }
+        return "Создать \(profileCountTitle(preview.drafts.count))"
+    }
+
+    @ViewBuilder
+    private var previewStatus: some View {
+        if !baseNameIsValid {
+            statusLabel(
+                "Проверь основу названия в параметрах.",
+                systemImage: "exclamationmark.triangle.fill",
+                color: .orange
+            )
+        } else if let inputMessage {
+            statusLabel(
+                inputMessage,
+                systemImage: "exclamationmark.triangle.fill",
+                color: .orange
+            )
+        } else if preview.hasIssues {
+            statusLabel(
+                "Готово: \(profileCountTitle(preview.drafts.count)) · " +
+                    issueStatusTitle(preview.issueLineNumbers.count),
+                systemImage: "exclamationmark.triangle.fill",
+                color: .orange
+            )
+        } else if preview.isReady {
+            statusLabel(
+                "Распознано: \(profileCountTitle(preview.drafts.count))",
+                systemImage: "checkmark.circle.fill",
+                color: .green
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var previewRows: some View {
+        if !preview.rows.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                let validLimit = preview.hasIssues ? 3 : 6
+                ForEach(Array(validPreviewRows.prefix(validLimit))) { row in
+                    previewRow(row)
+                }
+
+                if validPreviewRows.count > validLimit {
+                    Text(
+                        "И ещё распознано: " +
+                            profileCountTitle(
+                                validPreviewRows.count - validLimit
+                            )
+                    )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !issuePreviewRows.isEmpty {
+                    Divider()
+                    Text("Исправь строки")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange)
+                    ForEach(issuePreviewRows) { row in
+                        previewRow(row)
+                    }
+                }
+            }
+            .padding(.top, 2)
+            .privacySensitive()
+        }
+    }
+
+    private var validPreviewRows: [BulkProxyImportPreviewRow] {
+        preview.rows.filter { $0.issue == nil }
+    }
+
+    private var issuePreviewRows: [BulkProxyImportPreviewRow] {
+        preview.rows.filter { $0.issue != nil }
+    }
+
+    private func previewRow(_ row: BulkProxyImportPreviewRow) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text("\(row.lineNumber)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 24, alignment: .trailing)
+
+            if let summary = row.safeSummary {
+                Label(summary, systemImage: "checkmark.circle")
+                    .foregroundStyle(.secondary)
+            } else {
+                Label(
+                    row.issue?.message ?? "Проверь строку.",
+                    systemImage: "exclamationmark.circle.fill"
+                )
+                .foregroundStyle(.orange)
+            }
+        }
+        .font(.caption)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            row.safeSummary.map {
+                "Строка \(row.lineNumber), готово, \($0)"
+            } ??
+                "Строка \(row.lineNumber), требует исправления, " +
+                (row.issue?.message ?? "Проверь строку.")
+        )
+    }
+
     private func refreshPreview() {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else {
-            drafts = []
-            validationMessage = nil
+            preview = .empty
+            inputMessage = nil
+            creationError = nil
+            announcementGate.reset()
             return
         }
         do {
-            drafts = try BulkProxyImportParser.parse(
+            preview = try BulkProxyImportParser.preview(
                 text,
                 kind: kind,
                 order: order
             )
-            validationMessage = baseNameIsValid
-                ? nil
-                : "Проверь основу названия."
+            inputMessage = nil
+            creationError = nil
+            if baseNameIsValid && preview.isReady {
+                announce(.ready(preview.drafts.count))
+            } else {
+                announce(.validationFailed)
+            }
         } catch {
-            drafts = []
-            validationMessage = error.localizedDescription
+            preview = .empty
+            inputMessage = error.localizedDescription
+            creationError = nil
+            announce(.validationFailed)
+        }
+    }
+
+    private func validateBaseName() {
+        creationError = nil
+        if baseNameIsValid && preview.isReady {
+            announce(.ready(preview.drafts.count))
+        } else if !baseNameIsValid {
+            announce(.validationFailed)
         }
     }
 
     private func create() {
-        do {
-            try onCreate(drafts, baseName)
-            dismiss()
-        } catch {
-            validationMessage = error.localizedDescription
+        guard !isCreating, preview.isReady, baseNameIsValid else { return }
+        let drafts = preview.drafts
+        let capturedBaseName = baseName
+        isCreating = true
+        creationError = nil
+        Task { @MainActor in
+            // Publish the busy state before the existing atomic transaction.
+            await Task.yield()
+            do {
+                let createdCount = drafts.count
+                try await onCreate(drafts, capturedBaseName)
+                announcementGate.reset()
+                announce(.created(createdCount))
+                dismiss()
+            } catch {
+                isCreating = false
+                creationError = error.localizedDescription
+                announcementGate.reset()
+                announce(.creationFailed)
+            }
         }
+    }
+
+    private func profileCountTitle(_ count: Int) -> String {
+        let modulo100 = count % 100
+        let modulo10 = count % 10
+        let noun: String
+        if (11...14).contains(modulo100) {
+            noun = "профилей"
+        } else if modulo10 == 1 {
+            noun = "профиль"
+        } else if (2...4).contains(modulo10) {
+            noun = "профиля"
+        } else {
+            noun = "профилей"
+        }
+        return "\(count) \(noun)"
+    }
+
+    private func issueCountTitle(_ count: Int) -> String {
+        let modulo100 = count % 100
+        let modulo10 = count % 10
+        let noun: String
+        if (11...14).contains(modulo100) {
+            noun = "строк"
+        } else if modulo10 == 1 {
+            noun = "строку"
+        } else if (2...4).contains(modulo10) {
+            noun = "строки"
+        } else {
+            noun = "строк"
+        }
+        return "\(count) \(noun)"
+    }
+
+    private func issueStatusTitle(_ count: Int) -> String {
+        let modulo100 = count % 100
+        let modulo10 = count % 10
+        let isSingular = modulo10 == 1 && modulo100 != 11
+        let noun: String
+        if (11...14).contains(modulo100) {
+            noun = "строк"
+        } else if modulo10 == 1 {
+            noun = "строка"
+        } else if (2...4).contains(modulo10) {
+            noun = "строки"
+        } else {
+            noun = "строк"
+        }
+        return "\(count) \(noun) " +
+            (isSingular ? "требует" : "требуют") +
+            " исправления"
+    }
+
+    private func statusLabel(
+        _ title: String,
+        systemImage: String,
+        color: Color
+    ) -> some View {
+        Label {
+            Text(title)
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(color)
+                .accessibilityHidden(true)
+        }
+        .font(.caption)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+    }
+
+    @MainActor
+    private func announce(
+        _ announcement: BulkProxyImportAccessibilityAnnouncement
+    ) {
+        guard announcementGate.shouldAnnounce(announcement) else { return }
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: announcement.message,
+                .priority: NSAccessibilityPriorityLevel.medium.rawValue
+            ]
+        )
     }
 }

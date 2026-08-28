@@ -202,6 +202,28 @@ enum BrowserLaunchPurpose: Equatable, Sendable {
     case fingerprintAudit(httpLoopbackPort: UInt16)
 }
 
+/// Opaque, single-use reservation for the diagnostic browser path. It binds
+/// the temporary data directory to one exact loopback page and port so an
+/// ordinary caller cannot relabel an external navigation as an audit launch.
+struct FingerprintAuditLaunchReservation: Equatable, Sendable {
+    fileprivate let id: UUID
+    let dataDirectory: URL
+    fileprivate let startURL: URL
+    fileprivate let httpLoopbackPort: UInt16
+
+    fileprivate init(
+        id: UUID,
+        dataDirectory: URL,
+        startURL: URL,
+        httpLoopbackPort: UInt16
+    ) {
+        self.id = id
+        self.dataDirectory = dataDirectory
+        self.startURL = startURL
+        self.httpLoopbackPort = httpLoopbackPort
+    }
+}
+
 enum BrowserLaunchBuilder {
     private static let allowedInheritedEnvironmentKeys: Set<String> = [
         "HOME",
@@ -251,31 +273,28 @@ enum BrowserLaunchBuilder {
         now: Date = Date(),
         purpose: BrowserLaunchPurpose = .normal
     ) -> [String] {
+        let policy = BrowserLaunchPolicy.resolve(
+            profile: profile,
+            runtimeCapabilities: runtimeCapabilities,
+            now: now
+        )
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
             "--no-default-browser-check",
             "--new-window"
         ]
-        var disabledFeatures = Set<String>()
+        let disabledFeatures = policy.disabledFeatures
 
-        if runtimeCapabilities.contains(.fingerprintSeed) {
+        if policy.fingerprintNoiseArgumentsEnabled {
             arguments.append("--fingerprinting-client-rects-noise")
             arguments.append("--fingerprinting-canvas-measuretext-noise")
             arguments.append("--fingerprinting-canvas-image-data-noise")
             // The runtime normalizes WebGL but not the WebGPU adapter surface.
             // Keep WebGPU unavailable until it is part of the same reviewed
             // Apple device tuple.
-            disabledFeatures.insert("WebGPUService")
         }
-        let hasFreshProxyContext =
-            profile.proxy != nil &&
-            profile.identity.proxyContextEvidence?.isFresh(
-                relativeTo: now
-            ) == true
-        if runtimeCapabilities.contains(.fingerprintSeed),
-           hasFreshProxyContext,
-           let locale = profile.identity.localeIdentifier {
+        if let locale = policy.appliedLocaleIdentifier {
             arguments.append("--lang=\(locale)")
             arguments.append("--accept-lang=\(locale)")
         }
@@ -290,7 +309,6 @@ enum BrowserLaunchBuilder {
             // Chromium's asynchronous resolver and automatic DoH upgrade add
             // defense in depth so a future resolver path cannot silently
             // bypass them.
-            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade"])
             arguments.append(
                 "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
             )
@@ -337,23 +355,22 @@ enum BrowserLaunchBuilder {
         inherited: [String: String] = ProcessInfo.processInfo.environment,
         now: Date = Date()
     ) -> [String: String] {
+        let policy = BrowserLaunchPolicy.resolve(
+            profile: profile,
+            runtimeCapabilities: runtimeCapabilities,
+            now: now
+        )
         var environment = inherited.filter {
             allowedInheritedEnvironmentKeys.contains($0.key)
         }
 
-        guard runtimeCapabilities.contains(.fingerprintSeed) else {
+        guard policy.fingerprintSeedConfigured else {
             return environment
         }
         environment["NEANTIK_PROFILE_SEED"] =
             String(profile.identity.runtimeSeed)
 
-        let hasFreshProxyContext =
-            profile.proxy != nil &&
-            profile.identity.proxyContextEvidence?.isFresh(
-                relativeTo: now
-            ) == true
-        if hasFreshProxyContext,
-           let timezone = profile.identity.timezoneIdentifier {
+        if let timezone = policy.appliedTimezoneIdentifier {
             environment["NEANTIK_PROFILE_TIMEZONE"] = timezone
         }
         return environment
@@ -522,7 +539,10 @@ final class BrowserProcessManager: ObservableObject {
     private var lastReconciledProfiles: [BrowserProfile] = []
     private var pendingReconciliationProfileIDs = Set<UUID>()
     private var passiveInventoryObservationTask: Task<Void, Never>?
-    private var reservedFingerprintAuditDataDirectories = Set<String>()
+    private var fingerprintAuditReservations:
+        [UUID: FingerprintAuditLaunchReservation] = [:]
+    private var consumedProxyPreparationKeys =
+        Set<BrowserLaunchPreparationConsumptionKey>()
 
     init(paths: AppPaths) {
         self.paths = paths
@@ -680,7 +700,21 @@ final class BrowserProcessManager: ObservableObject {
         )
     }
 
-    func reserveFingerprintAuditDataDirectory() throws -> URL {
+    func reserveFingerprintAuditLaunch(
+        startURL: URL,
+        httpLoopbackPort: UInt16
+    ) throws -> FingerprintAuditLaunchReservation {
+        guard httpLoopbackPort != 0,
+              startURL.scheme?.lowercased() == "http",
+              startURL.host?.lowercased() == "127.0.0.1",
+              startURL.port == Int(httpLoopbackPort),
+              startURL.user == nil,
+              startURL.password == nil
+        else {
+            throw NeAntikError.fingerprintAuditFailed(
+                "Проверка может открывать только свой локальный адрес."
+            )
+        }
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "app.neantik.fingerprint-audit",
@@ -693,10 +727,14 @@ final class BrowserProcessManager: ObservableObject {
             )
             do {
                 try paths.createPrivateDirectoryExclusively(directory)
-                reservedFingerprintAuditDataDirectories.insert(
-                    directory.standardizedFileURL.path
+                let reservation = FingerprintAuditLaunchReservation(
+                    id: UUID(),
+                    dataDirectory: directory.standardizedFileURL,
+                    startURL: startURL,
+                    httpLoopbackPort: httpLoopbackPort
                 )
-                return directory
+                fingerprintAuditReservations[reservation.id] = reservation
+                return reservation
             } catch let error as POSIXError
                 where error.code == .EEXIST
             {
@@ -1142,7 +1180,7 @@ final class BrowserProcessManager: ObservableObject {
                 browserDataProcessInspector:
                     browserDataProcessInspector,
                 message:
-                    "Папка профиля не прошла проверку безопасности. Профиль заблокирован, чтобы не повредить данные браузера."
+                    "Папка данных профиля не прошла проверку безопасности. Профиль заблокирован, чтобы не повредить данные браузера."
             )
             return
         }
@@ -1367,9 +1405,12 @@ final class BrowserProcessManager: ObservableObject {
     func launch(
         profile: BrowserProfile,
         runtime: BrowserRuntime,
+        preparationReceipt: BrowserLaunchPreparationReceipt? = nil,
         additionalArguments: [String] = [],
         startURLOverride: URL? = nil,
         browserDataDirectoryOverride: URL? = nil,
+        fingerprintAuditReservation:
+            FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
         guard !runningProfileIDs.contains(profile.id) else {
@@ -1381,28 +1422,47 @@ final class BrowserProcessManager: ObservableObject {
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived
         }
+        if profile.proxy != nil, purpose == .normal {
+            guard let preparationReceipt,
+                  preparationReceipt.authorizes(profile),
+                  consumedProxyPreparationKeys.insert(
+                    preparationReceipt.consumptionKey
+                  ).inserted
+            else {
+                throw NeAntikError.proxyPreparationRequired
+            }
+        }
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
         let ownsFreshFingerprintAuditDirectory: Bool
         switch purpose {
         case .normal:
+            guard fingerprintAuditReservation == nil else {
+                throw NeAntikError.fingerprintAuditFailed(
+                    "Резерв проверки нельзя использовать для обычного запуска."
+                )
+            }
             ownsFreshFingerprintAuditDirectory = false
-        case .fingerprintAudit:
-            guard let browserDataDirectoryOverride else {
+        case let .fingerprintAudit(httpLoopbackPort):
+            guard let reservation = fingerprintAuditReservation,
+                  let browserDataDirectoryOverride,
+                  let startURLOverride,
+                  reservation.httpLoopbackPort == httpLoopbackPort,
+                  reservation.dataDirectory ==
+                    browserDataDirectoryOverride.standardizedFileURL,
+                  reservation.startURL == startURLOverride,
+                  fingerprintAuditReservations[reservation.id] == reservation,
+                  Self.fingerprintAuditArgumentsAreSafe(
+                      additionalArguments
+                  )
+            else {
                 throw NeAntikError.fingerprintAuditFailed(
-                    "Для проверки не подготовлен временный каталог браузера."
+                    "Локальный запуск проверки не соответствует своему резерву."
                 )
             }
-            ownsFreshFingerprintAuditDirectory =
-                reservedFingerprintAuditDataDirectories.remove(
-                    browserDataDirectoryOverride.standardizedFileURL.path
-                ) != nil
-            guard ownsFreshFingerprintAuditDirectory else {
-                throw NeAntikError.fingerprintAuditFailed(
-                    "Временный каталог проверки не принадлежит этому запуску."
-                )
-            }
+            fingerprintAuditReservations[reservation.id] = nil
+            ownsFreshFingerprintAuditDirectory = true
         }
         let profileDirectoryExistedBeforeLaunch =
             FileManager.default.fileExists(
@@ -1527,6 +1587,9 @@ final class BrowserProcessManager: ObservableObject {
                 at: lockURL
             )
         } catch {
+            let diagnosticDetail = error.localizedDescription
+                .replacingOccurrences(of: "\n", with: " ")
+                .prefix(512)
             if process.isRunning {
                 managedProcessTerminator(process)
             }
@@ -1547,11 +1610,30 @@ final class BrowserProcessManager: ObservableObject {
             )
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
             try? appendDiagnostic(
-                "browser_launch_failed",
+                "browser_launch_failed reason=\(diagnosticDetail)",
                 to: logURL
             )
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
         }
+    }
+
+    private static func fingerprintAuditArgumentsAreSafe(
+        _ arguments: [String]
+    ) -> Bool {
+        let allowed: Set<String> = [
+            "--remote-debugging-address=127.0.0.1",
+            "--remote-debugging-port=0",
+            "--remote-allow-origins=http://neantik.local",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-component-update",
+            "--disable-sync",
+            "--window-size=1200,800",
+            "--single-process",
+            "--no-sandbox"
+        ]
+        return arguments.count == Set(arguments).count &&
+            arguments.allSatisfy(allowed.contains)
     }
 
     func stop(profileID: UUID) {
