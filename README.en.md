@@ -25,6 +25,8 @@ Current published public-alpha release:
 
 New branch changes are not a binary release until separately signed and
 notarized DMG/ZIP assets appear in GitHub Releases.
+The Direct candidate being prepared is version `0.3.20`, build `23`, but it
+remains a development preview until those artifacts are published.
 
 Product website: <https://affpapa.org/neantik>.
 
