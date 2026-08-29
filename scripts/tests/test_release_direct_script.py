@@ -5,6 +5,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1]
 PREPARE = SCRIPTS / "prepare-direct-runtime-candidate.sh"
 PREPARE_MANAGER = SCRIPTS / "prepare-direct-manager-update.sh"
+PACKAGE_APP = SCRIPTS / "package-app.sh"
 RELEASE = SCRIPTS / "release-direct.sh"
 NOTARIZE = SCRIPTS / "notarize-direct-candidate.sh"
 NOTARY_TRANSACTION = SCRIPTS / "notarize_direct_transaction.py"
@@ -13,6 +14,16 @@ INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_release_packaging_resolves_current_swift_bin_path(self) -> None:
+        stale_path = ".build/arm64-apple-macosx/release/NeAntik"
+
+        for script in (PACKAGE_APP, PREPARE_MANAGER):
+            text = script.read_text(encoding="utf-8")
+            self.assertIn("--show-bin-path", text)
+            self.assertIn('MANAGER_BINARY="$BIN_PATH/NeAntik"', text)
+            self.assertIn('cp "$MANAGER_BINARY"', text)
+            self.assertNotIn(stale_path, text)
+
     def test_prepare_builds_and_binds_one_exact_candidate(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
         self.assertIn('CANDIDATE_LOCK="$4"', text)
