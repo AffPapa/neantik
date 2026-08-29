@@ -3,6 +3,9 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 SOURCE_APP="${1:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
 CANDIDATE_APP="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
@@ -191,6 +194,11 @@ cp "$PROJECT_DIR/Resources/NeAntik.icns" \
   "$CANDIDATE_APP/Contents/Resources/NeAntik.icns"
 cp "$PROJECT_DIR/Resources/PrivacyInfo.xcprivacy" \
   "$CANDIDATE_APP/Contents/Resources/PrivacyInfo.xcprivacy"
+mkdir -p "$CANDIDATE_APP/Contents/Resources/ru.lproj"
+cp \
+  "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \
+  "$PROJECT_DIR/Resources/ru.lproj/Localizable.strings" \
+  "$CANDIDATE_APP/Contents/Resources/ru.lproj/"
 printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"
 verify_reviewed_runtime_evidence

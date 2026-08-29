@@ -3,6 +3,9 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 SOURCE_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"

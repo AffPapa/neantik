@@ -114,12 +114,81 @@ struct KeychainStore: Sendable {
                 )
             }
         } catch {
-            restore(
-                current: previousCurrent,
-                legacy: previousLegacy,
-                profileID: profileID
-            )
-            throw error
+            let operationError = error
+            do {
+                try restoreStrictly(
+                    current: previousCurrent,
+                    legacy: previousLegacy,
+                    profileID: profileID
+                )
+            } catch {
+                if previousCurrent == nil, previousLegacy == nil {
+                    throw KeychainNewCredentialRollbackError(
+                        profileID: profileID,
+                        operationError: operationError,
+                        rollbackError: error
+                    )
+                }
+                throw KeychainProfileEditRollbackError(
+                    operationError: operationError,
+                    rollbackError: error
+                )
+            }
+            throw operationError
+        }
+    }
+
+    /// Applies an editor credential change with compensating rollback.
+    ///
+    /// Profile metadata is committed before this callback runs. Unlike the
+    /// irreversible purge used after a profile deletion, an editor failure
+    /// must restore both the current and legacy namespaces so the metadata
+    /// transaction can safely roll back as well.
+    func updateProxyPasswordForProfileEdit(
+        _ password: String?,
+        profileID: UUID
+    ) throws {
+        let previousCurrent = try backend.data(
+            service: service,
+            profileID: profileID
+        )
+        let previousLegacy = try legacyService.flatMap {
+            try backend.data(service: $0, profileID: profileID)
+        }
+        do {
+            if let password {
+                try backend.upsert(
+                    Data(password.utf8),
+                    service: service,
+                    profileID: profileID
+                )
+            } else {
+                try backend.delete(
+                    service: service,
+                    profileID: profileID
+                )
+            }
+            if let legacyService {
+                try backend.delete(
+                    service: legacyService,
+                    profileID: profileID
+                )
+            }
+        } catch {
+            let operationError = error
+            do {
+                try restoreStrictly(
+                    current: previousCurrent,
+                    legacy: previousLegacy,
+                    profileID: profileID
+                )
+            } catch {
+                throw KeychainProfileEditRollbackError(
+                    operationError: operationError,
+                    rollbackError: error
+                )
+            }
+            throw operationError
         }
     }
 
@@ -128,13 +197,14 @@ struct KeychainStore: Sendable {
             service: service,
             profileID: profileID
         ) {
+            let value = try decode(current)
             if let legacyService {
                 try backend.delete(
                     service: legacyService,
                     profileID: profileID
                 )
             }
-            return try decode(current)
+            return value
         }
         guard let legacyService,
               let legacy = try backend.data(
@@ -144,6 +214,7 @@ struct KeychainStore: Sendable {
             return nil
         }
 
+        let value = try decode(legacy)
         do {
             try backend.upsert(
                 legacy,
@@ -161,7 +232,7 @@ struct KeychainStore: Sendable {
             )
             throw error
         }
-        return try decode(legacy)
+        return value
     }
 
     func deleteProxyPassword(profileID: UUID) throws {
@@ -190,43 +261,58 @@ struct KeychainStore: Sendable {
         return value
     }
 
-    private func restore(
+    private func restoreStrictly(
         current: Data?,
         legacy: Data?,
         profileID: UUID
-    ) {
-        restore(
-            current,
-            service: service,
-            profileID: profileID
-        )
-        if let legacyService {
-            restore(
-                legacy,
-                service: legacyService,
+    ) throws {
+        var failedNamespaceCount = 0
+        do {
+            try restoreStrictly(
+                current,
+                service: service,
                 profileID: profileID
+            )
+        } catch {
+            failedNamespaceCount += 1
+        }
+        if let legacyService {
+            do {
+                try restoreStrictly(
+                    legacy,
+                    service: legacyService,
+                    profileID: profileID
+                )
+            } catch {
+                failedNamespaceCount += 1
+            }
+        }
+        guard failedNamespaceCount == 0 else {
+            throw KeychainCredentialSnapshotRestoreError(
+                failedNamespaceCount: failedNamespaceCount
             )
         }
     }
 
-    private func restore(
+    private func restoreStrictly(
         _ value: Data?,
         service: String,
         profileID: UUID
-    ) {
+    ) throws {
         if let value {
-            try? backend.upsert(
+            try backend.upsert(
                 value,
                 service: service,
                 profileID: profileID
             )
         } else {
-            try? backend.delete(
+            try backend.delete(
                 service: service,
                 profileID: profileID
             )
         }
     }
+
 }
 
 struct KeychainCredentialPurgeError: LocalizedError {
@@ -234,6 +320,46 @@ struct KeychainCredentialPurgeError: LocalizedError {
 
     var errorDescription: String? {
         "Не удалось полностью удалить пароль прокси из Связки ключей macOS. Очистку можно безопасно повторить позже."
+    }
+}
+
+struct KeychainProfileEditRollbackError: LocalizedError {
+    let operationError: any Error
+    let rollbackError: any Error
+
+    var errorDescription: String? {
+        "Не удалось изменить пароль прокси и полностью восстановить прежнее состояние Связки ключей. Профиль не изменён; проверь пароль перед следующим запуском."
+    }
+}
+
+/// Signals that a failed first credential write could not be compensated.
+///
+/// ProfileStore accepts this recovery capability only after it has proved that
+/// the corresponding new profile metadata and directory were rolled back. A
+/// durable cleanup marker can then remove an otherwise orphaned Keychain item
+/// on the next application start.
+struct KeychainNewCredentialRollbackError:
+    LocalizedError,
+    ProfileCredentialCleanupRecoveryProviding
+{
+    let profileID: UUID
+    let operationError: any Error
+    let rollbackError: any Error
+
+    var profileIDsRequiringCredentialCleanup: [UUID] {
+        [profileID]
+    }
+
+    var errorDescription: String? {
+        "Не удалось сохранить новый пароль прокси и полностью отменить запись в Связке ключей. Профиль не создан; NeAntik безопасно повторит очистку."
+    }
+}
+
+private struct KeychainCredentialSnapshotRestoreError: LocalizedError {
+    let failedNamespaceCount: Int
+
+    var errorDescription: String? {
+        "Не удалось восстановить прежний пароль прокси во всех пространствах Связки ключей."
     }
 }
 

@@ -4,11 +4,131 @@ import SwiftUI
 private struct EditorRequest: Identifiable {
     let id = UUID()
     let profile: BrowserProfile?
+    let targetFolderID: UUID?
+    let initialFocus: ProfileEditorField?
+
+    init(
+        profile: BrowserProfile?,
+        targetFolderID: UUID? = nil,
+        initialFocus: ProfileEditorField? = nil
+    ) {
+        self.profile = profile
+        self.targetFolderID = targetFolderID
+        self.initialFocus = initialFocus
+    }
+}
+
+private struct FolderNameRequest: Identifiable {
+    let id = UUID()
+    let folder: ProfileFolder?
+}
+
+private struct ProfileFolderPickerRequest: Identifiable {
+    let id = UUID()
+    let profileID: UUID
+}
+
+struct BulkProxyImportRequest: Identifiable {
+    let id = UUID()
+    let targetFolderID: UUID?
+}
+
+private typealias WorkspaceSourceFocus = WorkspaceQueryFocus
+
+private struct WorkspaceAlertPresentation: Identifiable {
+    enum Source: Hashable {
+        case local
+        case process
+        case storage
+    }
+
+    let source: Source
+    let title: String
+    let message: String
+
+    var id: Source { source }
 }
 
 private struct ClipboardNotice: Equatable {
     let profileID: UUID
     let message: String
+}
+
+private struct BulkProxyProgress: Equatable {
+    let completed: Int
+    let total: Int
+}
+
+private struct LaunchPreparationFailure: Identifiable, Equatable {
+    let profileID: UUID
+    let message: String
+    var title: String = "Прокси не готов"
+    var offersProxyEdit = true
+
+    var id: UUID { profileID }
+}
+
+@MainActor
+private final class ProfileListStateResolver {
+    private var revision: UInt64?
+    private var index: ProfileListIndex?
+    private var viewStateKey: ViewStateKey?
+    private var viewState: ProfileListViewState?
+
+    private struct ViewStateKey: Equatable {
+        let revision: UInt64
+        let query: WorkspaceQueryState
+        let searchText: String
+    }
+
+    func resolve(
+        revision requestedRevision: UInt64,
+        profiles: [BrowserProfile],
+        organization: ProfileOrganizationState,
+        query: WorkspaceQueryState,
+        searchText: String
+    ) -> ProfileListViewState {
+        let currentIndex = resolveIndex(
+            revision: requestedRevision,
+            profiles: profiles,
+            organization: organization
+        )
+        let key = ViewStateKey(
+            revision: requestedRevision,
+            query: query,
+            searchText: searchText
+        )
+        if viewStateKey == key, let viewState {
+            return viewState
+        }
+        let resolved = ProfileListViewState(
+            index: currentIndex,
+            query: query,
+            searchText: searchText
+        )
+        viewStateKey = key
+        viewState = resolved
+        return resolved
+    }
+
+    func resolveIndex(
+        revision requestedRevision: UInt64,
+        profiles: [BrowserProfile],
+        organization: ProfileOrganizationState
+    ) -> ProfileListIndex {
+        if revision == requestedRevision, let index {
+            return index
+        }
+        let resolved = ProfileListIndex(
+            profiles: profiles,
+            organization: organization
+        )
+        revision = requestedRevision
+        index = resolved
+        viewStateKey = nil
+        viewState = nil
+        return resolved
+    }
 }
 
 struct ClipboardLeaseState: Equatable {
@@ -41,6 +161,10 @@ struct ContentView: View {
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
     @ObservedObject var telemetry: TelemetryController
+    @ObservedObject var fingerprintObservationStore:
+        FingerprintObservationStore
+    @ObservedObject var proxyHealthCoordinator:
+        ProxyHealthCoordinator
 
     let keychain: KeychainStore
     let credentialCleanup: DeletedProfileCredentialCleanup
@@ -54,8 +178,10 @@ struct ContentView: View {
     @State private var editorRequest: EditorRequest?
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
-    @State private var showingBulkProxyImport = false
+    @State private var fingerprintAuditRequest: FingerprintAuditRequest?
+    @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var localError: String?
+    @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
     @State private var clipboardLease = ClipboardLeaseState()
@@ -66,33 +192,162 @@ struct ContentView: View {
     @State private var releaseAuditTerminationScheduled = false
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
-    @State private var selectedProfileTag: String?
+    @State private var selectedProfileTag: ProfileTagID?
     @State private var profileListScope: ProfileListScope = .active
-    @State private var isSidebarVisible = true
+    @State private var selectedFolderFilter: ProfileFolderFilter = .all
+    @State private var folderNameRequest: FolderNameRequest?
+    @State private var profileFolderPickerRequest:
+        ProfileFolderPickerRequest?
+    @State private var folderPendingDelete: ProfileFolder?
+    @State private var proxyTestOperations = ProxyTestOperationRegistry()
+    @State private var proxyTestingProfileIDs = Set<UUID>()
+    @State private var proxyTestTasks: [UUID: Task<Void, Never>] = [:]
+    @State private var launchPreparingProfileIDs = Set<UUID>()
+    @State private var launchPreparationTasks:
+        [UUID: Task<Void, Never>] = [:]
+    @State private var launchPreparationTokens: [UUID: UUID] = [:]
+    @State private var bulkProxyTestTask: Task<Void, Never>?
+    @State private var bulkProxyTestID: UUID?
+    @State private var bulkProxyProgress: BulkProxyProgress?
+    @State private var bulkProxyStatusMessage: String?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var preferredProfileSelection: UUID?
+    @FocusState private var profileSearchIsFocused: Bool
+    @FocusState private var focusedWorkspaceSource: WorkspaceSourceFocus?
+    @State private var usesCompactWorkspaceColumns: Bool?
+    @State private var foldersSourceExpanded = true
+    @State private var tagsSourceExpanded = true
+    @State private var showsAllFolders = false
+    @State private var showsAllTags = false
+    @State private var isCreatingFirstProfile = false
+    @State private var profileListResolver = ProfileListStateResolver()
+    @State private var workspaceAnnouncementGate =
+        AccessibilityAnnouncementGate<String>()
 
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
     }
 
-    private var visibleProfiles: [BrowserProfile] {
-        ProfileListProjection.filtered(
-            store.profiles,
-            searchText: profileSearchText,
-            tag: selectedProfileTag,
-            scope: profileListScope
-        )
+    private var selectedProfileCommandSet: ProfileCommandSet {
+        guard !isWorkspaceModalPresented,
+              let selectedProfile
+        else {
+            return .unavailable
+        }
+        return profileCommandSet(for: selectedProfile)
     }
 
-    private var availableProfileTags: [String] {
-        ProfileListProjection.allTags(
-            in: store.profiles.filter {
-                $0.isArchived == (profileListScope == .archived)
+    private var isWorkspaceModalPresented: Bool {
+        editorRequest != nil ||
+            folderNameRequest != nil ||
+            profileFolderPickerRequest != nil ||
+            bulkProxyImportRequest != nil ||
+            showingReleaseFingerprintAudit ||
+            fingerprintAuditRequest != nil ||
+            showingDeleteConfirmation ||
+            folderPendingDelete != nil ||
+            launchPreparationFailure != nil ||
+            workspaceAlert != nil
+    }
+
+    private var workspaceCommandSet: WorkspaceCommandSet {
+        guard !isWorkspaceModalPresented else { return .unavailable }
+        return WorkspaceCommandSet(
+            isEnabled: true,
+            selectedFolderName: selectedFolder?.name,
+            createProfile: beginCreatingProfile,
+            createFolder: beginCreatingFolder,
+            focusProfileSearch: { profileSearchIsFocused = true },
+            renameSelectedFolder: {
+                guard let selectedFolder else { return }
+                folderNameRequest = FolderNameRequest(
+                    folder: selectedFolder
+                )
+            },
+            deleteSelectedFolder: {
+                guard let selectedFolder else { return }
+                folderPendingDelete = selectedFolder
             }
         )
     }
 
+    private func presentedProcessState(
+        for profile: BrowserProfile
+    ) -> BrowserProfileProcessState {
+        let state = processes.processState(for: profile.id)
+        guard state == .stopped,
+              launchPreparingProfileIDs.contains(profile.id)
+        else {
+            return state
+        }
+        return .checking
+    }
+
+    private func isProxyTestInFlight(profileID: UUID) -> Bool {
+        proxyTestingProfileIDs.contains(profileID) ||
+            proxyHealthCoordinator.isTesting(profileID: profileID)
+    }
+
+    private var visibleProfiles: [BrowserProfile] {
+        currentProfileListViewState.visibleProfiles
+    }
+
+    private var selectedProfileTagName: String? {
+        currentProfileListViewState.selectedTagDisplayName
+    }
+
+    private var currentProfileListIndex: ProfileListIndex {
+        profileListResolver.resolveIndex(
+            revision: store.profileListRevision,
+            profiles: store.profiles,
+            organization: store.organization
+        )
+    }
+
+    private var currentProfileListViewState: ProfileListViewState {
+        profileListResolver.resolve(
+            revision: store.profileListRevision,
+            profiles: store.profiles,
+            organization: store.organization,
+            query: workspaceQuery,
+            searchText: profileSearchText
+        )
+    }
+
+    private var workspaceQuery: WorkspaceQueryState {
+        WorkspaceQueryState(
+            scope: profileListScope,
+            folderFilter: selectedFolderFilter,
+            tag: selectedProfileTag
+        )
+    }
+
+    private var selectedFolderID: UUID? {
+        guard case let .folder(id) = selectedFolderFilter else {
+            return nil
+        }
+        return id
+    }
+
+    private var selectedFolder: ProfileFolder? {
+        store.folder(withID: selectedFolderID)
+    }
+
     private var hasArchivedProfiles: Bool {
         store.profiles.contains(where: \.isArchived)
+    }
+
+    private var bulkProxyActionProjection: BulkProxyActionProjection {
+        BulkProxyActionProjection.resolve(
+            visibleProfiles: visibleProfiles,
+            processState: { processes.processState(for: $0) },
+            isPreparing: { launchPreparingProfileIDs.contains($0) },
+            isTesting: { isProxyTestInFlight(profileID: $0) }
+        )
+    }
+
+    private var fingerprintAuditProfiles: [BrowserProfile] {
+        store.profiles.filter { !$0.isArchived }
     }
 
     private var runtime: BrowserRuntime? {
@@ -101,6 +356,37 @@ struct ContentView: View {
 
     private var runtimePreflight: BrowserRuntimePreflight? {
         runtime.map(BrowserRuntimePreflightValidator.validate)
+    }
+
+    private var runtimeAvailability: BrowserRuntimeAvailability {
+        if isResolvingRuntime { return .resolving }
+        guard runtime != nil else { return .missing }
+        guard let runtimePreflight else {
+            return .invalid(
+                message: "Не удалось проверить браузерный движок."
+            )
+        }
+        return runtimePreflight.isReady
+            ? .ready
+            : .invalid(
+                message: runtimePreflight.primaryMessage ??
+                    "Не удалось проверить браузерный движок."
+            )
+    }
+
+    private var selectedEnvironmentSnapshot: ProfileEnvironmentSnapshot? {
+        guard let selectedProfile else { return nil }
+        return WorkspaceDomain.environmentSnapshot(
+            profile: selectedProfile,
+            runtime: runtime,
+            proxyHealth: proxyHealthCoordinator.state(
+                for: selectedProfile
+            ),
+            fingerprintObservation:
+                fingerprintObservationStore.observation(
+                    for: selectedProfile.id
+                )
+        )
     }
 
     private var telemetrySnapshot: TelemetrySnapshot {
@@ -112,81 +398,155 @@ struct ContentView: View {
         )
     }
 
-    var body: some View {
-        GeometryReader { proxy in
-            HStack(spacing: 0) {
-                if isSidebarVisible {
-                    sidebar
-                        .frame(
-                            width: WorkspaceLayout.sidebarWidth(
-                                for: proxy.size.width
-                            )
-                        )
-                    Divider()
-                }
-
-                detail
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+    private var workspaceAlert: WorkspaceAlertPresentation? {
+        guard fingerprintEvidenceReleaseContext == nil else { return nil }
+        if let localError {
+            return WorkspaceAlertPresentation(
+                source: .local,
+                title: "Не удалось выполнить действие",
+                message: localError
+            )
         }
-        .tint(Color(hex: "#FF3B4D"))
+        if let processError = processes.lastError {
+            return WorkspaceAlertPresentation(
+                source: .process,
+                title: "Не удалось управлять браузером",
+                message: processError
+            )
+        }
+        if let storeError = store.lastError {
+            return WorkspaceAlertPresentation(
+                source: .storage,
+                title: "Не удалось сохранить данные",
+                message: storeError
+            )
+        }
+        return nil
+    }
+
+    private var workspaceAlertBinding:
+        Binding<WorkspaceAlertPresentation?>
+    {
+        Binding(
+            get: { workspaceAlert },
+            set: { value in
+                guard value == nil, let source = workspaceAlert?.source else {
+                    return
+                }
+                clearWorkspaceAlert(source)
+            }
+        )
+    }
+
+    var body: some View {
+        workspaceLifecycle
+    }
+
+    private var workspaceBase: some View {
+        GeometryReader { proxy in
+            workspaceNavigation
+                .onAppear {
+                    updateWorkspaceColumns(for: proxy.size.width)
+                }
+                .onChange(of: proxy.size.width) { _, width in
+                    updateWorkspaceColumns(for: width)
+                }
+        }
+    }
+
+    private var workspaceNavigation: some View {
+        let listState = currentProfileListViewState
+        return NavigationSplitView(columnVisibility: $columnVisibility) {
+            workspaceSources(listState)
+                .navigationSplitViewColumnWidth(
+                    min: WorkspaceLayout.minimumSourceColumnWidth,
+                    ideal: WorkspaceLayout.idealSourceColumnWidth,
+                    max: WorkspaceLayout.maximumSourceColumnWidth
+                )
+        } content: {
+            profileListPane(listState)
+                .navigationSplitViewColumnWidth(
+                    min: WorkspaceLayout.minimumProfileColumnWidth,
+                    ideal: WorkspaceLayout.idealProfileColumnWidth,
+                    max: WorkspaceLayout.maximumProfileColumnWidth
+                )
+        } detail: {
+            detail
+                .frame(
+                    minWidth: WorkspaceLayout.minimumDetailColumnWidth,
+                    maxWidth: .infinity,
+                    maxHeight: .infinity
+                )
+        }
+        .navigationSplitViewStyle(.balanced)
         .frame(
             minWidth: WorkspaceLayout.minimumWindowWidth,
             minHeight: WorkspaceLayout.minimumWindowHeight
         )
-        .animation(
-            .easeInOut(duration: 0.16),
-            value: isSidebarVisible
+        .toolbar { workspaceToolbar }
+        .focusedSceneValue(
+            \.neAntikProfileCommands,
+            selectedProfileCommandSet
         )
+        .focusedSceneValue(
+            \.neAntikWorkspaceCommands,
+            workspaceCommandSet
+        )
+    }
+
+    private var workspaceSheets: some View {
+        workspaceBase
         .sheet(item: $editorRequest) { request in
-            ProfileEditorView(
-                original: request.profile,
-                keychain: keychain
-            ) { profile, passwordUpdate in
-                let saved: BrowserProfile
-                switch passwordUpdate {
-                case .delete:
-                    saved = try store.upsert(profile)
-                    try keychain.deleteProxyPassword(
-                        profileID: saved.id
+            profileEditorSheet(for: request)
+        }
+        .sheet(item: $folderNameRequest) { request in
+            ProfileFolderNameSheet(
+                title: request.folder == nil
+                    ? "Новая папка"
+                    : "Переименовать папку",
+                initialName: request.folder?.name ?? "",
+                existingNames: store.organization.folders.map(\.name)
+            ) { name in
+                if let folder = request.folder {
+                    _ = try store.renameFolder(
+                        withID: folder.id,
+                        to: name
                     )
-                case .keepExisting:
-                    saved = try store.upsert(profile)
-                case let .replace(password):
-                    saved = try store.upsert(profile) { saved in
-                        try keychain.saveProxyPassword(
-                            password,
-                            profileID: saved.id
-                        )
-                    }
-                }
-                normalizeSelection(preferred: saved.id)
-                if request.profile == nil {
-                    telemetry.record(
-                        .profileCreated,
-                        snapshot: telemetrySnapshot
-                    )
-                }
-                let hadProxy = request.profile?.proxy != nil
-                let hasProxy = saved.proxy != nil
-                if hasProxy && !hadProxy {
-                    telemetry.record(
-                        .proxyEnabled,
-                        snapshot: telemetrySnapshot
-                    )
-                } else if hadProxy && !hasProxy {
-                    telemetry.record(
-                        .proxyDisabled,
-                        snapshot: telemetrySnapshot
-                    )
+                } else {
+                    let folder = try store.createFolder(named: name)
+                    selectedFolderFilter = .folder(folder.id)
+                    selectedProfileTag = nil
+                    normalizeSelection()
                 }
             }
         }
-        .sheet(isPresented: $showingBulkProxyImport) {
-            BulkProxyImportView { drafts, baseName in
-                try createProfiles(
+        .sheet(item: $profileFolderPickerRequest) { request in
+            if let profile = store.profile(withID: request.profileID) {
+                ProfileFolderPickerSheet(
+                    profileName: profile.name,
+                    folders: store.organization.folders,
+                    selectedFolderID: store.folderID(
+                        forProfileID: profile.id
+                    )
+                ) { folderID in
+                    moveProfile(profile, toFolderID: folderID)
+                }
+            } else {
+                ProfileFolderPickerUnavailableSheet {
+                        profileFolderPickerRequest = nil
+                }
+            }
+        }
+        .sheet(item: $bulkProxyImportRequest) { request in
+            BulkProxyImportView(
+                targetFolderName: request.targetFolderID.flatMap {
+                    store.folder(withID: $0)?.name
+                }
+            ) { drafts, baseName in
+                try await createProfiles(
                     from: drafts,
-                    baseName: baseName
+                    baseName: baseName,
+                    targetFolderID: request.targetFolderID
                 )
             }
         }
@@ -214,6 +574,30 @@ struct ContentView: View {
                 .frame(width: 520, height: 360)
             }
         }
+        .sheet(item: $fingerprintAuditRequest) { request in
+            FingerprintAuditView(
+                profiles: request.auditedProfiles,
+                initialFirstID: request.initialFirstID,
+                runtime: request.runtime,
+                processes: processes,
+                paths: store.paths,
+                onReport: { report in
+                    for observation in
+                        report.revisionBoundFingerprintObservations(
+                            auditedProfiles: request.auditedProfiles,
+                            currentProfiles: store.profiles,
+                            runtime: request.runtime
+                        )
+                    {
+                        fingerprintObservationStore.record(observation)
+                    }
+                }
+            )
+        }
+    }
+
+    private var workspaceAlerts: some View {
+        workspaceSheets
         .alert(
             "Удалить профиль?",
             isPresented: $showingDeleteConfirmation,
@@ -245,6 +629,8 @@ struct ContentView: View {
                             snapshot: telemetrySnapshot
                         )
                     }
+                    fingerprintObservationStore.remove(profileID: profile.id)
+                    clearProxyHealth(for: profile.id)
                 } catch {
                     localError = error.localizedDescription
                 }
@@ -254,66 +640,125 @@ struct ContentView: View {
             Text("Профиль «\(profile.name)» и его данные браузера будут перемещены в Корзину macOS.")
         }
         .alert(
-            "NeAntik",
+            "Удалить папку?",
             isPresented: Binding(
-                get: {
-                    fingerprintEvidenceReleaseContext == nil &&
-                        (
-                            localError != nil ||
-                                processes.lastError != nil ||
-                                store.lastError != nil
-                        )
-                },
-                set: { presented in
-                    if !presented {
-                        localError = nil
-                        processes.lastError = nil
-                        store.lastError = nil
+                get: { folderPendingDelete != nil },
+                set: { visible in
+                    if !visible {
+                        folderPendingDelete = nil
                     }
                 }
-            )
-        ) {
-            Button("OK") {
-                localError = nil
-                processes.lastError = nil
-                store.lastError = nil
+            ),
+            presenting: folderPendingDelete
+        ) { folder in
+            Button("Удалить папку", role: .destructive) {
+                deleteFolder(folder)
             }
-        } message: {
+            Button("Отмена", role: .cancel) {}
+        } message: { folder in
+            let count = store.organization.profileIDs(
+                inFolderID: folder.id
+            ).count
             Text(
-                localError ??
-                    processes.lastError ??
-                    store.lastError ??
-                    "Неизвестная ошибка"
+                "Папка «\(folder.name)» будет удалена. \(count) \(profileCountWord(count)) останутся и перейдут в «Без папки»."
             )
         }
+        .alert(
+            launchPreparationFailure?.title ?? "Не удалось запустить",
+            isPresented: Binding(
+                get: { launchPreparationFailure != nil },
+                set: { visible in
+                    if !visible {
+                        launchPreparationFailure = nil
+                    }
+                }
+            ),
+            presenting: launchPreparationFailure
+        ) { failure in
+            Button("Повторить") {
+                launchPreparationFailure = nil
+                if let profile = store.profile(withID: failure.profileID) {
+                    launch(profile)
+                }
+            }
+            if failure.offersProxyEdit {
+                Button("Изменить прокси…") {
+                    launchPreparationFailure = nil
+                    if let profile = store.profile(withID: failure.profileID) {
+                        beginEditing(profile)
+                    }
+                }
+            }
+            Button("Отмена", role: .cancel) {
+                launchPreparationFailure = nil
+            }
+        } message: { failure in
+            Text(failure.message)
+        }
+        .alert(item: workspaceAlertBinding) { presentation in
+            Alert(
+                title: Text(presentation.title),
+                message: Text(presentation.message),
+                dismissButton: .default(Text("OK")) {
+                    clearWorkspaceAlert(presentation.source)
+                }
+            )
+        }
+    }
+
+    private var workspaceStateObservers: some View {
+        workspaceAlerts
         .onAppear {
             normalizeSelection(preferred: selection)
+            Task { @MainActor in
+                await Task.yield()
+                normalizeSelection(
+                    preferred: preferredProfileSelection ?? selection
+                )
+            }
             processes.reconcile(profiles: store.profiles)
             telemetry.record(.snapshot, snapshot: telemetrySnapshot)
             presentReleaseFingerprintAuditIfNeeded()
         }
         .onChange(of: profileSearchText) { _, _ in
-            normalizeSelection(preferred: selection)
+            normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: selectedProfileTag) { _, _ in
-            normalizeSelection(preferred: selection)
+            normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: profileListScope) { _, _ in
-            selectedProfileTag = nil
-            normalizeSelection(preferred: selection)
+            normalizeSelection(preferred: preferredProfileSelection)
         }
-        .onChange(of: visibleProfiles.map(\.id)) { _, _ in
-            normalizeSelection(preferred: selection)
+        .onChange(of: selectedFolderFilter) { _, _ in
+            normalizeSelection(preferred: preferredProfileSelection)
         }
-        .onChange(of: isResolvingRuntime) { _, _ in
+        .onChange(of: store.profileListRevision) { _, _ in
+            if let selectedProfileTag,
+               currentProfileListIndex.displayName(for: selectedProfileTag)
+                    == nil
+            {
+                self.selectedProfileTag = nil
+            }
+            guard case let .folder(folderID) = selectedFolderFilter,
+                  store.organization.folder(withID: folderID) == nil
+            else {
+                normalizeSelection(preferred: preferredProfileSelection)
+                return
+            }
+            selectedFolderFilter = .unfiled
+            normalizeSelection(preferred: preferredProfileSelection)
+        }
+        .onChange(of: runtimeAvailability) { _, availability in
             presentReleaseFingerprintAuditIfNeeded()
+            announceRuntimeAvailability(availability)
         }
         .onChange(of: telemetrySnapshot) { _, value in
             telemetry.record(.snapshot, snapshot: value)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .neAntikCreateProfile)) { _ in
-            editorRequest = EditorRequest(profile: nil)
-        }
+    }
+
+    private var workspaceNotifications: some View {
+        workspaceStateObservers
         .onReceive(
             NotificationCenter.default.publisher(
                 for: NSApplication.willResignActiveNotification
@@ -347,11 +792,178 @@ struct ContentView: View {
             cancelClipboardTasks()
             clearClipboardIfLeaseIsActive()
         }
+    }
+
+    private var workspaceLifecycle: some View {
+        workspaceNotifications
         .task {
             await resolveRuntime()
         }
         .task {
             await recoverDeletedProfileCredentials()
+        }
+        .task {
+            await loadProxyHealth()
+        }
+        .onDisappear {
+            cancelProxyTests()
+        }
+    }
+
+    private func profileEditorSheet(
+        for request: EditorRequest
+    ) -> some View {
+        let initialFolderID = request.profile.flatMap {
+            store.folderID(forProfileID: $0.id)
+        } ?? request.targetFolderID
+        let suggestedTags = ProfileListProjection.allTags(
+            in: store.profiles
+        )
+        return ProfileEditorView(
+            original: request.profile,
+            keychain: keychain,
+            folders: store.organization.folders,
+            initialFolderID: initialFolderID,
+            suggestedTags: suggestedTags,
+            initialFocus: request.initialFocus
+        ) { profile, passwordUpdate, folderID in
+            try saveProfileEditorDraft(
+                profile,
+                passwordUpdate: passwordUpdate,
+                folderID: folderID,
+                original: request.profile
+            )
+        }
+    }
+
+    private func saveProfileEditorDraft(
+        _ profile: BrowserProfile,
+        passwordUpdate: ProxyPasswordUpdate,
+        folderID: UUID?,
+        original: BrowserProfile?
+    ) throws {
+        if original != nil,
+           presentedProcessState(for: profile).isRunning
+        {
+            throw NeAntikError.profileAlreadyRunning
+        }
+        var profile = profile
+        if passwordUpdate != .keepExisting {
+            profile.identity = profile.identity.replacingProxyContext(
+                timezoneIdentifier: nil,
+                localeIdentifier: nil,
+                evidence: nil
+            )
+        }
+        let saved = try store.upsert(
+            profile,
+            toFolderID: folderID
+        ) { saved in
+            switch passwordUpdate {
+            case .delete:
+                try keychain.updateProxyPasswordForProfileEdit(
+                    nil,
+                    profileID: saved.id
+                )
+            case .keepExisting:
+                break
+            case let .replace(password):
+                try keychain.updateProxyPasswordForProfileEdit(
+                    password,
+                    profileID: saved.id
+                )
+            }
+        }
+        if let original,
+           original.identity != saved.identity || original.proxy != saved.proxy
+        {
+            fingerprintObservationStore.remove(profileID: saved.id)
+        }
+        revealSavedProfile(saved)
+        if original == nil {
+            telemetry.record(.profileCreated, snapshot: telemetrySnapshot)
+        }
+        let hadProxy = original?.proxy != nil
+        let hasProxy = saved.proxy != nil
+        if original?.proxy != saved.proxy ||
+            passwordUpdate != .keepExisting
+        {
+            clearProxyHealth(for: saved.id)
+        }
+        if hasProxy && !hadProxy {
+            telemetry.record(.proxyEnabled, snapshot: telemetrySnapshot)
+        } else if hadProxy && !hasProxy {
+            telemetry.record(.proxyDisabled, snapshot: telemetrySnapshot)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var workspaceToolbar: some ToolbarContent {
+        ToolbarItem(placement: .automatic) {
+            Button {
+                beginCreatingProfile()
+            } label: {
+                Label("Новый профиль…", systemImage: "plus")
+            }
+            .help("Создать профиль (⌘N)")
+        }
+
+        ToolbarItemGroup(placement: .primaryAction) {
+            if let profile = selectedProfile {
+                let processState = presentedProcessState(for: profile)
+                let commands = profileCommandSet(
+                    for: profile,
+                    processState: processState
+                )
+                Button(action: commands.toggleRunning) {
+                    Label(
+                        commands.presentation.launchTitle,
+                        systemImage:
+                            commands.presentation.launchSystemImage
+                    )
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!commands.presentation.launchIsEnabled)
+                .help(commands.presentation.launchHelp)
+                .accessibilityLabel(
+                    "\(commands.presentation.launchTitle) профиль " +
+                        profile.name
+                )
+
+                Button(action: commands.edit) {
+                    Label("Изменить…", systemImage: "pencil")
+                }
+                .disabled(!commands.presentation.editIsEnabled)
+                .help(
+                    commands.presentation.editIsEnabled
+                        ? "Изменить профиль"
+                        : "Сначала останови профиль"
+                )
+
+                Menu {
+                    profileOrganizationActions(commands)
+                    Divider()
+                    Button(action: commands.revealInFinder) {
+                        Label(
+                            "Показать папку данных в Finder",
+                            systemImage: "folder"
+                        )
+                    }
+                    Divider()
+                    Button(role: .destructive, action: commands.delete) {
+                        Label("Удалить профиль", systemImage: "trash")
+                    }
+                    .disabled(!commands.presentation.deleteIsEnabled)
+                } label: {
+                    Text("Действия")
+                        .fixedSize()
+                }
+                .help("Другие действия с профилем")
+                .accessibilityLabel("Другие действия с профилем")
+                .accessibilityHint(
+                    "Открывает меню управления выбранным профилем"
+                )
+            }
         }
     }
 
@@ -373,16 +985,203 @@ struct ContentView: View {
 
     private func normalizeSelection(preferred: UUID? = nil) {
         selection = ProfileListProjection.normalizedSelection(
-            preferred ?? selection,
+            preferred ?? preferredProfileSelection ?? selection,
             in: visibleProfiles
         )
     }
 
+    private func revealSavedProfile(_ profile: BrowserProfile) {
+        let decision = ProfilePostSaveRevealPolicy.resolve(
+            savedProfile: profile,
+            currentQuery: workspaceQuery,
+            currentSearchText: profileSearchText,
+            organization: store.organization
+        )
+        profileSearchText = decision.searchText
+        applyWorkspaceQuery(decision.query, normalize: false)
+        preferredProfileSelection = decision.selectedProfileID
+        selection = decision.selectedProfileID
+        normalizeSelection(preferred: decision.selectedProfileID)
+    }
+
+    private func clearWorkspaceAlert(
+        _ source: WorkspaceAlertPresentation.Source
+    ) {
+        switch source {
+        case .local:
+            localError = nil
+        case .process:
+            processes.lastError = nil
+        case .storage:
+            store.lastError = nil
+        }
+    }
+
+    private var profileSelectionBinding: Binding<UUID?> {
+        Binding(
+            get: { selection },
+            set: { value in
+                if value == nil, !visibleProfiles.isEmpty {
+                    return
+                }
+                selection = value
+                if let value {
+                    preferredProfileSelection = value
+                }
+            }
+        )
+    }
+
+    private func beginEditing(
+        _ profile: BrowserProfile,
+        initialFocus: ProfileEditorField? = nil
+    ) {
+        guard !processes.runningProfileIDs.contains(profile.id) else {
+            localError =
+                "Сначала останови профиль. Изменения применяются при следующем запуске."
+            return
+        }
+        editorRequest = EditorRequest(
+            profile: profile,
+            initialFocus: initialFocus
+        )
+    }
+
+    private func revealProfile(_ profile: BrowserProfile) {
+        NSWorkspace.shared.activateFileViewerSelecting([
+            store.paths.profileDirectory(for: profile.id)
+        ])
+    }
+
+    private func requestProfileDeletion(_ profile: BrowserProfile) {
+        guard !processes.runningProfileIDs.contains(profile.id) else {
+            localError = "Сначала останови профиль, потом удаляй."
+            return
+        }
+        selection = profile.id
+        showingDeleteConfirmation = true
+    }
+
+    private func resetProfileFilters() {
+        profileSearchText = ""
+        applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
+        normalizeSelection(preferred: preferredProfileSelection)
+    }
+
+    private func applyWorkspaceQuery(
+        _ query: WorkspaceQueryState,
+        normalize: Bool = true
+    ) {
+        profileListScope = query.scope
+        selectedFolderFilter = query.folderFilter
+        selectedProfileTag = query.tag
+        if normalize {
+            normalizeSelection(preferred: preferredProfileSelection)
+        }
+    }
+
+    private func updateWorkspaceColumns(for width: CGFloat) {
+        let shouldUseCompactColumns =
+            width < WorkspaceLayout.minimumSourceColumnWidth +
+                WorkspaceLayout.minimumProfileColumnWidth +
+                WorkspaceLayout.minimumDetailColumnWidth
+        guard shouldUseCompactColumns != usesCompactWorkspaceColumns else {
+            return
+        }
+        usesCompactWorkspaceColumns = shouldUseCompactColumns
+        columnVisibility = shouldUseCompactColumns ? .doubleColumn : .all
+    }
+
+    private func beginCreatingProfile() {
+        guard !isWorkspaceModalPresented else { return }
+        editorRequest = EditorRequest(
+            profile: nil,
+            targetFolderID: selectedFolderID
+        )
+    }
+
+    private func beginCreatingFolder() {
+        guard !isWorkspaceModalPresented else { return }
+        folderNameRequest = FolderNameRequest(folder: nil)
+    }
+
+    private func createAndOpenFirstProfile() {
+        guard runtimeAvailability == .ready else {
+            if !isResolvingRuntime {
+                Task { await resolveRuntime() }
+            }
+            return
+        }
+        guard !isCreatingFirstProfile,
+              let profile = FirstProfileBootstrap.makeProfile(
+                  existingProfiles: store.profiles
+              )
+        else {
+            return
+        }
+
+        isCreatingFirstProfile = true
+        defer { isCreatingFirstProfile = false }
+
+        do {
+            let saved = try store.upsert(
+                profile,
+                toFolderID: selectedFolderID
+            )
+            revealSavedProfile(saved)
+            telemetry.record(
+                .profileCreated,
+                snapshot: telemetrySnapshot
+            )
+            launch(saved)
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func moveProfile(
+        _ profile: BrowserProfile,
+        toFolderID folderID: UUID?
+    ) {
+        do {
+            try store.assignProfile(profile.id, toFolderID: folderID)
+            normalizeSelection(preferred: profile.id)
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func deleteFolder(_ folder: ProfileFolder) {
+        do {
+            _ = try store.deleteFolder(withID: folder.id)
+            if selectedFolderID == folder.id {
+                selectedFolderFilter = .unfiled
+            }
+            folderPendingDelete = nil
+            normalizeSelection()
+        } catch {
+            folderPendingDelete = nil
+            localError = error.localizedDescription
+        }
+    }
+
+    private func profileCountWord(_ count: Int) -> String {
+        let lastTwo = count % 100
+        if (11...14).contains(lastTwo) {
+            return "профилей"
+        }
+        switch count % 10 {
+        case 1: return "профиль"
+        case 2...4: return "профиля"
+        default: return "профилей"
+        }
+    }
+
     private func togglePinned(_ profile: BrowserProfile) {
         do {
-            var updated = profile
-            updated.isPinned.toggle()
-            let saved = try store.upsert(updated)
+            let saved = try store.mutateProfile(withID: profile.id) {
+                $0.isPinned.toggle()
+            }
             normalizeSelection(preferred: saved.id)
         } catch {
             localError = error.localizedDescription
@@ -395,9 +1194,9 @@ struct ContentView: View {
             return
         }
         do {
-            var updated = profile
-            updated.isArchived.toggle()
-            let saved = try store.upsert(updated)
+            let saved = try store.mutateProfile(withID: profile.id) {
+                $0.isArchived.toggle()
+            }
             if !saved.isArchived {
                 profileListScope = .active
                 normalizeSelection(preferred: saved.id)
@@ -415,7 +1214,10 @@ struct ContentView: View {
             let password = try keychain.proxyPassword(
                 profileID: profile.id
             )
-            let saved = try store.upsert(copy) { saved in
+            let saved = try store.upsert(
+                copy,
+                toFolderID: store.folderID(forProfileID: profile.id)
+            ) { saved in
                 if let password, !password.isEmpty {
                     try keychain.saveProxyPassword(
                         password,
@@ -423,8 +1225,7 @@ struct ContentView: View {
                     )
                 }
             }
-            profileListScope = .active
-            normalizeSelection(preferred: saved.id)
+            revealSavedProfile(saved)
             telemetry.record(
                 .profileCreated,
                 snapshot: telemetrySnapshot
@@ -442,19 +1243,20 @@ struct ContentView: View {
 
     private func createProfiles(
         from drafts: [ProxyImportDraft],
-        baseName: String
-    ) throws {
-        let created = try BulkProfileImporter.create(
+        baseName: String,
+        targetFolderID: UUID?
+    ) async throws {
+        let created = try await BulkProfileImporter.create(
             drafts: drafts,
             baseName: baseName,
             store: store,
-            keychain: keychain
+            keychain: keychain,
+            targetFolderID: targetFolderID
         )
 
-        profileListScope = .active
-        profileSearchText = ""
-        selectedProfileTag = nil
-        normalizeSelection(preferred: created.last?.id)
+        if let last = created.last {
+            revealSavedProfile(last)
+        }
         for profile in created {
             telemetry.record(
                 .profileCreated,
@@ -469,309 +1271,880 @@ struct ContentView: View {
         }
     }
 
-    private var sidebar: some View {
-        VStack(spacing: 0) {
-            sidebarHeader
-            Divider()
+    private func workspaceSources(
+        _ listState: ProfileListViewState
+    ) -> some View {
+        let sourceIndex = listState.index
+        let tagSummaries = listState.tagSummaries
+        let folderPreview = ProfileListProjection.folderPreview(
+            store.organization.folders,
+            selectedID: selectedFolderID,
+            limit: showsAllFolders
+                ? .max
+                : ProfileListProjection.defaultPreviewLimit
+        )
+        let tagPreview = ProfileListProjection.tagPreview(
+            tagSummaries,
+            selectedID: selectedProfileTag,
+            limit: showsAllTags
+                ? .max
+                : ProfileListProjection.defaultPreviewLimit
+        )
+        return List {
+            Section("Профили") {
+                sourceButton(
+                    title: "Все профили",
+                    systemImage: "rectangle.stack.person.crop",
+                    count: sourceIndex.count(
+                        scope: .active,
+                        in: selectedFolderFilter,
+                        tagID: selectedProfileTag
+                    ),
+                    focusID: .allProfiles,
+                    isSelected: profileListScope == .active
+                ) {
+                    applyWorkspaceQuery(
+                        workspaceQuery.selecting(scope: .active)
+                    )
+                }
 
-            if hasArchivedProfiles ||
-                !availableProfileTags.isEmpty ||
-                selectedProfile != nil
-            {
-                sidebarControls
-                Divider()
+                sourceButton(
+                    title: "Закреплённые",
+                    systemImage: "pin.fill",
+                    count: sourceIndex.count(
+                        scope: .pinned,
+                        in: selectedFolderFilter,
+                        tagID: selectedProfileTag
+                    ),
+                    focusID: .pinned,
+                    isSelected: profileListScope == .pinned
+                ) {
+                    applyWorkspaceQuery(
+                        workspaceQuery.selecting(scope: .pinned)
+                    )
+                }
+
+                if sourceIndex.archivedCount > 0 {
+                    sourceButton(
+                        title: "Архив",
+                        systemImage: "archivebox",
+                        count: sourceIndex.count(
+                            scope: .archived,
+                            in: selectedFolderFilter,
+                            tagID: selectedProfileTag
+                        ),
+                        focusID: .archive,
+                        isSelected: profileListScope == .archived
+                    ) {
+                        applyWorkspaceQuery(
+                            workspaceQuery.selecting(scope: .archived)
+                        )
+                    }
+                }
             }
+
+            Section {
+                HStack {
+                    sourceDisclosureButton(
+                        title: "Папки",
+                        isExpanded: $foldersSourceExpanded
+                    )
+                    Spacer()
+                    Button {
+                        beginCreatingFolder()
+                    } label: {
+                        Label("Новая папка…", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: 32, height: 32)
+                    .help("Новая папка…")
+                    .accessibilityLabel("Новая папка…")
+
+                    if let selectedFolder {
+                        Button {
+                            folderNameRequest = FolderNameRequest(
+                                folder: selectedFolder
+                            )
+                        } label: {
+                            Label(
+                                "Переименовать папку",
+                                systemImage: "pencil"
+                            )
+                            .labelStyle(.iconOnly)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .frame(width: 32, height: 32)
+                        .help("Переименовать «\(selectedFolder.name)»")
+                        .accessibilityLabel(
+                            "Переименовать папку \(selectedFolder.name)"
+                        )
+                    }
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .listRowBackground(Color.clear)
+
+                if foldersSourceExpanded {
+                    sourceButton(
+                        title: "Без папки",
+                        systemImage: "tray",
+                        count: sourceIndex.count(
+                            scope: profileListScope,
+                            in: .unfiled,
+                            tagID: selectedProfileTag
+                        ),
+                        focusID: .unfiled,
+                        isSelected: selectedFolderFilter == .unfiled
+                    ) {
+                        applyWorkspaceQuery(
+                            workspaceQuery.selecting(
+                                folderFilter: .unfiled
+                            )
+                        )
+                    }
+
+                    ForEach(folderPreview.visibleItems) { folder in
+                        sourceButton(
+                            title: folder.name,
+                            systemImage: "folder",
+                            count: sourceIndex.count(
+                                scope: profileListScope,
+                                in: .folder(folder.id),
+                                tagID: selectedProfileTag
+                            ),
+                            focusID: .folder(folder.id),
+                            isSelected:
+                                selectedFolderFilter == .folder(folder.id)
+                        ) {
+                            applyWorkspaceQuery(
+                                workspaceQuery.selecting(
+                                    folderFilter: .folder(folder.id)
+                                )
+                            )
+                        }
+                        .contextMenu {
+                            Button("Переименовать…", systemImage: "pencil") {
+                                folderNameRequest = FolderNameRequest(folder: folder)
+                            }
+                            Button(
+                                "Удалить папку",
+                                systemImage: "trash",
+                                role: .destructive
+                            ) {
+                                folderPendingDelete = folder
+                            }
+                        }
+                    }
+
+                    if folderPreview.hasHiddenItems || showsAllFolders {
+                        previewToggleButton(
+                            isExpanded: showsAllFolders,
+                            hiddenCount: folderPreview.hiddenCount,
+                            noun: "папок"
+                        ) {
+                            showsAllFolders.toggle()
+                        }
+                    }
+                }
+            }
+
+            if !tagSummaries.isEmpty || selectedProfileTag != nil {
+                Section {
+                    if tagsSourceExpanded {
+                        ForEach(tagPreview.visibleItems) { summary in
+                            sourceButton(
+                                title: summary.name,
+                                systemImage: "tag",
+                                tagTone: ProfileTagAppearance.tone(
+                                    for: summary.id
+                                ),
+                                count: summary.count,
+                                focusID: .tag(summary.id),
+                                isSelected: selectedProfileTag == summary.id
+                            ) {
+                                applyWorkspaceQuery(
+                                    workspaceQuery.selecting(
+                                        tag: selectedProfileTag == summary.id
+                                            ? nil
+                                            : summary.id
+                                    )
+                                )
+                            }
+                        }
+                        if tagPreview.hasHiddenItems || showsAllTags {
+                            previewToggleButton(
+                                isExpanded: showsAllTags,
+                                hiddenCount: tagPreview.hiddenCount,
+                                noun: "тегов"
+                            ) {
+                                showsAllTags.toggle()
+                            }
+                        }
+                    }
+                } header: {
+                    sourceDisclosureButton(
+                        title: "Теги",
+                        isExpanded: $tagsSourceExpanded
+                    )
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .accessibilityLabel("Разделы профилей")
+        .onKeyPress(.upArrow) {
+            moveWorkspaceSourceFocus(
+                from: focusedWorkspaceSource ?? selectedWorkspaceSourceFocus,
+                offset: -1
+            )
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            moveWorkspaceSourceFocus(
+                from: focusedWorkspaceSource ?? selectedWorkspaceSourceFocus,
+                offset: 1
+            )
+            return .handled
+        }
+        .navigationTitle("NeAntik")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            sidebarStatus
+        }
+    }
+
+    private func profileListPane(
+        _ listState: ProfileListViewState
+    ) -> some View {
+        VStack(spacing: 0) {
+            profileListHeader(listState)
+            Divider()
+            runtimeReadinessBanner
+            activeFiltersBar
 
             if store.profiles.isEmpty {
                 ContentUnavailableView {
-                    Label("Нет профилей", systemImage: "person.crop.rectangle.stack")
+                    Label(
+                        "Нет профилей",
+                        systemImage: "person.crop.rectangle.stack"
+                    )
                 } description: {
-                    Text("Создай отдельный браузерный профиль за пару секунд.")
-                } actions: {
-                    Button("Создать профиль") {
-                        editorRequest = EditorRequest(profile: nil)
-                    }
+                    Text("Первый профиль создаётся в основной области окна.")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if visibleProfiles.isEmpty {
+            } else if listState.visibleProfiles.isEmpty {
                 ContentUnavailableView {
                     Label(
-                        profileSearchText.isEmpty && selectedProfileTag == nil
-                            ? (
-                                profileListScope == .archived
-                                    ? "Архив пуст"
-                                    : "Нет активных профилей"
-                            )
-                            : "Ничего не найдено",
-                        systemImage:
-                            profileListScope == .archived
-                                ? "archivebox"
-                                : "magnifyingglass"
+                        "Ничего не найдено",
+                        systemImage: "magnifyingglass"
                     )
                 } description: {
-                    Text(
-                        profileSearchText.isEmpty && selectedProfileTag == nil
-                            ? "Профили можно вернуть из архива в любой момент."
-                            : "Измени поиск или выбери другой тег."
-                    )
+                    Text("Измени поиск, папку, раздел или выбранный тег.")
                 } actions: {
-                    if !profileSearchText.isEmpty || selectedProfileTag != nil {
-                        Button("Сбросить фильтры") {
-                            profileSearchText = ""
-                            selectedProfileTag = nil
-                        }
-                    } else if hasArchivedProfiles {
-                        Button(
-                            profileListScope == .archived
-                                ? "Показать профили"
-                                : "Показать архив"
-                        ) {
-                            profileListScope =
-                                profileListScope == .archived
-                                    ? .active
-                                    : .archived
-                        }
+                    Button("Сбросить все фильтры") {
+                        resetProfileFilters()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(selection: $selection) {
-                    ForEach(visibleProfiles) { profile in
-                        let processState = processes.processState(
-                            for: profile.id
+                List(selection: profileSelectionBinding) {
+                    ForEach(listState.visibleProfiles) { profile in
+                        let processState = presentedProcessState(
+                            for: profile
+                        )
+                        let launchAction = BrowserLaunchActionPresentation.resolve(
+                            processState: processState,
+                            isArchived: profile.isArchived,
+                            runtimeAvailability: runtimeAvailability,
+                            isProxyTesting: isProxyTestInFlight(
+                                profileID: profile.id
+                            ),
+                            isLaunchPreparation:
+                                launchPreparingProfileIDs.contains(profile.id)
                         )
                         ProfileRow(
                             profile: profile,
-                            processState: processState
+                            processState: processState,
+                            launchAction: launchAction,
+                            proxyHealth: proxyHealthCoordinator.state(
+                                for: profile
+                            ),
+                            isTestingProxy:
+                                isProxyTestInFlight(profileID: profile.id),
+                            folderName: store.folderID(forProfileID: profile.id)
+                                .flatMap { listState.index.folderNameByID[$0] },
+                            onToggleRunning: {
+                                if launchPreparingProfileIDs.contains(
+                                    profile.id
+                                ) {
+                                    cancelLaunchPreparation(
+                                        profileID: profile.id
+                                    )
+                                } else if processState.isRunning {
+                                    processes.stop(profileID: profile.id)
+                                } else {
+                                    launch(profile)
+                                }
+                            }
                         )
                         .tag(profile.id)
                         .contextMenu {
-                            Button {
-                                togglePinned(profile)
-                            } label: {
-                                Label(
-                                    profile.isPinned
-                                        ? "Открепить"
-                                        : "Закрепить",
-                                    systemImage:
-                                        profile.isPinned
-                                            ? "pin.slash"
-                                            : "pin"
-                                )
-                            }
-
-                            Button {
-                                duplicate(profile)
-                            } label: {
-                                Label("Дублировать", systemImage: "plus.square.on.square")
-                            }
-
-                            Button {
-                                toggleArchived(profile)
-                            } label: {
-                                Label(
-                                    profile.isArchived
-                                        ? "Вернуть из архива"
-                                        : "В архив",
-                                    systemImage:
-                                        profile.isArchived
-                                            ? "arrow.uturn.backward"
-                                            : "archivebox"
-                                )
-                            }
-                            .disabled(processState.isRunning)
-
-                            Divider()
-
-                            Button {
-                                editorRequest = EditorRequest(profile: profile)
-                            } label: {
-                                Label("Изменить", systemImage: "slider.horizontal.3")
-                            }
-                            .disabled(processState.isRunning)
-                            if processState == .checking {
-                                Button {} label: {
-                                    Label(
-                                        "Подготовка…",
-                                        systemImage: "hourglass"
-                                    )
-                                }
-                                .disabled(true)
-                            } else if processState.isRunning &&
-                                processState.canRequestStop {
-                                Button {
-                                    processes.stop(profileID: profile.id)
-                                } label: {
-                                    Label("Остановить", systemImage: "stop.fill")
-                                }
-                            } else if processState.isRunning {
-                                Button {} label: {
-                                    Label(
-                                        "Закрой браузер вручную",
-                                        systemImage: "hand.raised.fill"
-                                    )
-                                }
-                                .disabled(true)
-                            } else {
-                                Button {
-                                    launch(profile)
-                                } label: {
-                                    Label("Запустить", systemImage: "play.fill")
-                                }
-                            }
+                            profileContextMenu(profile, processState: processState)
                         }
                     }
                 }
-                .listStyle(.sidebar)
+                .listStyle(.inset)
             }
-
-            Divider()
-            sidebarStatus
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(.regularMaterial)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .navigationTitle("Профили")
     }
 
-    private var sidebarHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func profileListHeader(
+        _ listState: ProfileListViewState
+    ) -> some View {
+        let bulkProxyAction = BulkProxyActionProjection.resolve(
+            visibleProfiles: listState.visibleProfiles,
+            processState: { processes.processState(for: $0) },
+            isPreparing: { launchPreparingProfileIDs.contains($0) },
+            isTesting: { isProxyTestInFlight(profileID: $0) }
+        )
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text("Профили")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-
-                Spacer(minLength: 8)
-
-                Button {
-                    isSidebarVisible = false
-                } label: {
-                    sidebarHeaderActionIcon("sidebar.left")
-                }
-                .buttonStyle(.plain)
-                .background(.quaternary, in: Circle())
-                .help("Скрыть список профилей")
-                .accessibilityLabel("Скрыть список профилей")
-
-                Menu {
-                    Button {
-                        editorRequest = EditorRequest(profile: nil)
-                    } label: {
-                        Label("Новый профиль", systemImage: "plus")
-                    }
-                    Button {
-                        showingBulkProxyImport = true
-                    } label: {
-                        Label(
-                            "Профили из списка прокси",
-                            systemImage: "list.bullet.clipboard"
-                        )
-                    }
-                } label: {
-                    sidebarHeaderActionIcon("plus")
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .frame(width: 32, height: 32)
-                .background(.quaternary, in: Circle())
-                .help("Создать профили")
-                .accessibilityLabel("Создать профили")
-            }
-
-            if !store.profiles.isEmpty {
-                TextField(
-                    "Поиск по имени и тегам",
-                    text: $profileSearchText
+                Text(
+                    "\(listState.visibleProfiles.count) " +
+                        profileCountWord(listState.visibleProfiles.count)
                 )
-                .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Поиск профилей")
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
-    }
-
-    private func sidebarHeaderActionIcon(_ systemName: String) -> some View {
-        Image(systemName: systemName)
-            .font(.system(size: 14, weight: .semibold))
-            .frame(width: 32, height: 32)
-            .contentShape(Circle())
-    }
-
-    private var sidebarControls: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if hasArchivedProfiles {
-                Picker("Раздел", selection: $profileListScope) {
-                    ForEach(ProfileListScope.allCases) { scope in
-                        Text(scope.title).tag(scope)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityLabel("Раздел профилей")
-            }
-
-            if !availableProfileTags.isEmpty {
-                Picker("Тег", selection: $selectedProfileTag) {
-                    Text("Все теги").tag(nil as String?)
-                    ForEach(availableProfileTags, id: \.self) { tag in
-                        Text(tag).tag(Optional(tag))
-                    }
-                }
-                .pickerStyle(.menu)
-                .accessibilityLabel("Фильтр профилей по тегу")
-            }
-
-            if let profile = selectedProfile {
-                let processState = processes.processState(for: profile.id)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
                 Button {
-                    if processState.isRunning {
-                        processes.stop(profileID: profile.id)
-                    } else {
-                        launch(profile)
-                    }
+                    bulkProxyImportRequest = BulkProxyImportRequest(
+                        targetFolderID: selectedFolderID
+                    )
                 } label: {
                     Label(
-                        processState.isRunning
-                            ? (
-                                processState == .checking
-                                    ? "Подготовка…"
-                                    : processState.canRequestStop
-                                    ? "Остановить выбранный"
-                                    : "Закрой браузер вручную"
-                            )
-                            : "Запустить выбранный",
-                        systemImage:
-                            processState.isRunning
-                                ? (
-                                    processState == .checking
-                                        ? "hourglass"
-                                        : processState.canRequestStop
-                                        ? "stop.fill"
-                                        : "hand.raised.fill"
-                                )
-                                : "play.fill"
+                        "Создать из прокси…",
+                        systemImage: "list.bullet.clipboard"
                     )
-                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 28)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(
-                    profile.isArchived ||
-                        (!processState.isRunning && isResolvingRuntime) ||
-                        (processState.isRunning &&
-                            !processState.canRequestStop)
-                )
+                .buttonStyle(.bordered)
+                .help("Создать профили из списка прокси")
+                .accessibilityLabel("Создать профили из списка прокси")
+            }
+
+            profileSearchField
+
+            if bulkProxyTestTask != nil || bulkProxyAction.isVisible {
+                Button {
+                    toggleBulkProxyTests()
+                } label: {
+                    Label(
+                        bulkProxyTestTask == nil
+                            ? "Проверить прокси (\(bulkProxyAction.count))"
+                            : "Остановить проверку",
+                        systemImage:
+                            bulkProxyTestTask == nil
+                            ? "checkmark.shield"
+                            : "stop.circle"
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 28)
+                }
+                .buttonStyle(.bordered)
                 .help(
-                    processState.guidance ??
-                        (
-                            processState.isRunning
-                                ? "Остановить профиль"
-                                : "Запустить профиль"
-                        )
+                    bulkProxyTestTask == nil
+                        ? "Проверить доступные остановленные прокси-профили, не более трёх одновременно"
+                        : "Остановить массовую проверку прокси"
                 )
+                .accessibilityLabel(
+                    bulkProxyTestTask == nil
+                        ? "Проверить прокси доступных профилей: \(bulkProxyAction.count)"
+                        : "Остановить массовую проверку прокси"
+                )
+                if let bulkProxyProgress, bulkProxyTestTask != nil {
+                    ProgressView(
+                        value: Double(bulkProxyProgress.completed),
+                        total: Double(max(1, bulkProxyProgress.total))
+                    ) {
+                        Text(
+                            "Проверено \(bulkProxyProgress.completed) из " +
+                                "\(bulkProxyProgress.total)"
+                        )
+                    }
+                    .font(.caption)
+                    .accessibilityLabel(
+                        "Проверено \(bulkProxyProgress.completed) из " +
+                            "\(bulkProxyProgress.total)"
+                    )
+                } else if let bulkProxyStatusMessage {
+                    Text(bulkProxyStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(bulkProxyStatusMessage)
+                }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(12)
+    }
+
+    private var profileSearchField: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(
+                "Поиск профилей, заметок, тегов и папок",
+                text: $profileSearchText
+            )
+            .textFieldStyle(.plain)
+            .focused($profileSearchIsFocused)
+            .accessibilityLabel("Поиск профилей, заметок, тегов и папок")
+            if !profileSearchText.isEmpty {
+                Button {
+                    profileSearchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Очистить поиск")
+                .accessibilityLabel("Очистить поиск профилей")
+            }
+        }
+        .padding(.horizontal, 8)
+        .frame(minHeight: 28)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    @ViewBuilder
+    private var runtimeReadinessBanner: some View {
+        if runtimeAvailability != .ready {
+            HStack(alignment: .top, spacing: 8) {
+                if isResolvingRuntime {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(systemName: runtimeStatusIcon)
+                        .foregroundStyle(runtimeStatusColor)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(runtimeReadinessTitle)
+                    .font(.subheadline.weight(.medium))
+                    Text(runtimeReadinessMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                if !isResolvingRuntime {
+                    Button("Повторить") {
+                        Task { await resolveRuntime() }
+                    }
+                    .controlSize(.small)
+                    .help("Повторно проверить браузерный движок")
+                    .accessibilityLabel(
+                        "Повторно проверить браузерный движок"
+                    )
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(Color.orange.opacity(0.10))
+            .accessibilityElement(children: .contain)
+        }
+    }
+
+    @ViewBuilder
+    private var activeFiltersBar: some View {
+        if selectedProfileTag != nil || selectedFolderFilter != .all ||
+            profileListScope != .active
+        {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    if let selectedFolder {
+                        filterChip(selectedFolder.name, systemImage: "folder") {
+                            applyWorkspaceQuery(
+                                workspaceQuery.removing(.folder)
+                            )
+                        }
+                    } else if selectedFolderFilter == .unfiled {
+                        filterChip("Без папки", systemImage: "tray") {
+                            applyWorkspaceQuery(
+                                workspaceQuery.removing(.folder)
+                            )
+                        }
+                    }
+                    if let selectedProfileTagName {
+                        filterChip(
+                            selectedProfileTagName,
+                            systemImage: "tag",
+                            tagTone: ProfileTagAppearance.tone(
+                                for: selectedProfileTagName
+                            )
+                        ) {
+                            applyWorkspaceQuery(
+                                workspaceQuery.removing(.tag)
+                            )
+                        }
+                    }
+                    if profileListScope != .active {
+                        filterChip(profileListScope.title, systemImage: "line.3.horizontal.decrease.circle") {
+                            applyWorkspaceQuery(
+                                workspaceQuery.removing(.scope)
+                            )
+                        }
+                    }
+                    Button("Сбросить") { resetProfileFilters() }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .frame(minHeight: 28)
+                        .contentShape(Rectangle())
+                        .accessibilityLabel("Сбросить все фильтры")
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+            }
+            Divider()
+        }
+    }
+
+    private func filterChip(
+        _ title: String,
+        systemImage: String,
+        tagTone: ProfileTagTone? = nil,
+        onRemove: @escaping () -> Void
+    ) -> some View {
+        let background = tagTone.map {
+            Color(profileTagTone: $0).opacity(0.14)
+        } ?? Color.secondary.opacity(0.10)
+        return Button(action: onRemove) {
+            HStack(spacing: 4) {
+                if tagTone != nil {
+                    ProfileTagMarker(tag: title)
+                        .accessibilityHidden(true)
+                } else {
+                    Image(systemName: systemImage)
+                }
+                Text(title).lineLimit(1)
+                Image(systemName: "xmark")
+                    .font(.caption2.weight(.bold))
+            }
+            .font(.caption)
+            .padding(.horizontal, 8)
+            .frame(minHeight: 28)
+            .background(background, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("Убрать фильтр «\(title)»")
+    }
+
+    private func sourceButton(
+        title: String,
+        systemImage: String,
+        tagTone: ProfileTagTone? = nil,
+        count: Int,
+        focusID: WorkspaceSourceFocus,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Label {
+                    Text(title)
+                } icon: {
+                    if let tagTone {
+                        Image(systemName: systemImage)
+                            .foregroundStyle(
+                                Color(profileTagTone: tagTone)
+                            )
+                    } else {
+                        Image(systemName: systemImage)
+                    }
+                }
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                Text(count, format: .number)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .frame(minHeight: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusable()
+        .focused($focusedWorkspaceSource, equals: focusID)
+        .onKeyPress(.upArrow) {
+            moveWorkspaceSourceFocus(from: focusID, offset: -1)
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            moveWorkspaceSourceFocus(from: focusID, offset: 1)
+            return .handled
+        }
+        .onKeyPress(.space) {
+            action()
+            return .handled
+        }
+        .onKeyPress(.return) {
+            action()
+            return .handled
+        }
+        .listRowBackground(
+            isSelected ? Color.accentColor.opacity(0.16) : Color.clear
+        )
+        .accessibilityLabel("\(title), \(count)")
+        .accessibilityValue(isSelected ? "Выбрано" : "Не выбрано")
+        .accessibilityHint("Показывает соответствующие профили")
+    }
+
+    private func sourceDisclosureButton(
+        title: String,
+        isExpanded: Binding<Bool>
+    ) -> some View {
+        Button {
+            isExpanded.wrappedValue.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(
+                    systemName: isExpanded.wrappedValue
+                        ? "chevron.down"
+                        : "chevron.right"
+                )
+                .font(.caption2.weight(.semibold))
+                Text(title)
+            }
+            .frame(minHeight: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(
+            isExpanded.wrappedValue ? "Развёрнуто" : "Свёрнуто"
+        )
+        .accessibilityHint(
+            isExpanded.wrappedValue
+                ? "Сворачивает раздел"
+                : "Разворачивает раздел"
+        )
+    }
+
+    private func previewToggleButton(
+        isExpanded: Bool,
+        hiddenCount: Int,
+        noun: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(
+                isExpanded
+                    ? "Показать меньше"
+                    : "Ещё \(hiddenCount) \(noun)",
+                systemImage: isExpanded ? "chevron.up" : "chevron.down"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func moveWorkspaceSourceFocus(
+        from current: WorkspaceSourceFocus,
+        offset: Int
+    ) {
+        let index = currentProfileListIndex
+        let order = WorkspaceQueryFocusProjection.visibleOrder(
+            query: workspaceQuery,
+            index: index,
+            folders: store.organization.folders,
+            foldersExpanded: foldersSourceExpanded,
+            tagsExpanded: tagsSourceExpanded,
+            folderPreviewLimit: showsAllFolders
+                ? .max
+                : ProfileListProjection.defaultPreviewLimit,
+            tagPreviewLimit: showsAllTags
+                ? .max
+                : ProfileListProjection.defaultPreviewLimit
+        )
+        guard let position = order.firstIndex(of: current),
+              !order.isEmpty
+        else {
+            return
+        }
+        let next = min(max(position + offset, 0), order.count - 1)
+        focusedWorkspaceSource = order[next]
+    }
+
+    private var selectedWorkspaceSourceFocus: WorkspaceSourceFocus {
+        if let selectedProfileTag {
+            return .tag(selectedProfileTag)
+        }
+        switch selectedFolderFilter {
+        case .unfiled:
+            return .unfiled
+        case let .folder(folderID):
+            return .folder(folderID)
+        case .all:
+            break
+        }
+        switch profileListScope {
+        case .pinned:
+            return .pinned
+        case .archived:
+            return .archive
+        case .active:
+            return .allProfiles
+        }
+    }
+
+    @ViewBuilder
+    private func profileContextMenu(
+        _ profile: BrowserProfile,
+        processState: BrowserProfileProcessState
+    ) -> some View {
+        let commands = profileCommandSet(
+            for: profile,
+            processState: processState
+        )
+        profileOrganizationActions(commands)
+        Divider()
+        Button(
+            "Изменить…",
+            systemImage: "pencil",
+            action: commands.edit
+        )
+        .disabled(!commands.presentation.editIsEnabled)
+        Button(
+            commands.presentation.launchTitle,
+            systemImage: commands.presentation.launchSystemImage,
+            action: commands.toggleRunning
+        )
+        .disabled(!commands.presentation.launchIsEnabled)
+        Divider()
+        Button(
+            "Удалить профиль",
+            systemImage: "trash",
+            role: .destructive,
+            action: commands.delete
+        )
+        .disabled(!commands.presentation.deleteIsEnabled)
+    }
+
+    @ViewBuilder
+    private func profileOrganizationActions(
+        _ commands: ProfileCommandSet
+    ) -> some View {
+        Button(
+            commands.presentation.pinTitle,
+            systemImage: commands.presentation.pinSystemImage,
+            action: commands.togglePinned
+        )
+        Button(
+            "Дублировать",
+            systemImage: "plus.square.on.square",
+            action: commands.duplicate
+        )
+        moveToFolderMenu(commands)
+        Button(
+            commands.presentation.archiveTitle,
+            systemImage: commands.presentation.archiveSystemImage,
+            action: commands.toggleArchived
+        )
+        .disabled(!commands.presentation.archiveIsEnabled)
+    }
+
+    @ViewBuilder
+    private func moveToFolderMenu(
+        _ commands: ProfileCommandSet
+    ) -> some View {
+        Menu {
+            ForEach(commands.folderOptions) { option in
+                Button {
+                    commands.moveToFolder(option.folderID)
+                } label: {
+                    Label(
+                        option.title,
+                        systemImage:
+                            option.isSelected
+                                ? "checkmark"
+                                : (option.folderID == nil
+                                    ? "tray"
+                                    : "folder")
+                    )
+                }
+            }
+
+            if commands.hasMoreFolderOptions {
+                Divider()
+                Button(
+                    "Выбрать другую папку…",
+                    systemImage: "magnifyingglass",
+                    action: commands.chooseFolder
+                )
+            }
+        } label: {
+            Label("Переместить в папку", systemImage: "folder")
+        }
+    }
+
+    private func profileCommandSet(
+        for profile: BrowserProfile,
+        processState requestedProcessState: BrowserProfileProcessState? = nil
+    ) -> ProfileCommandSet {
+        let processState = requestedProcessState ?? presentedProcessState(
+            for: profile
+        )
+        let launchAction = BrowserLaunchActionPresentation.resolve(
+            processState: processState,
+            isArchived: profile.isArchived,
+            runtimeAvailability: runtimeAvailability,
+            isProxyTesting: isProxyTestInFlight(profileID: profile.id),
+            isLaunchPreparation:
+                launchPreparingProfileIDs.contains(profile.id)
+        )
+        let currentFolderID = store.folderID(forProfileID: profile.id)
+        let folderProjection = ProfileFolderCommandProjection.resolve(
+            folders: store.organization.folders,
+            currentFolderID: currentFolderID
+        )
+        return ProfileCommandSet(
+            presentation: ProfileCommandPresentation.resolve(
+                profile: profile,
+                processState: processState,
+                launchAction: launchAction
+            ),
+            folderOptions: folderProjection.options,
+            hasMoreFolderOptions: folderProjection.hasMore,
+            toggleRunning: {
+                if launchPreparingProfileIDs.contains(profile.id) {
+                    cancelLaunchPreparation(profileID: profile.id)
+                } else if processState.isRunning {
+                    processes.stop(profileID: profile.id)
+                } else {
+                    launch(profile)
+                }
+            },
+            edit: { beginEditing(profile) },
+            togglePinned: { togglePinned(profile) },
+            duplicate: { duplicate(profile) },
+            moveToFolder: { moveProfile(profile, toFolderID: $0) },
+            chooseFolder: {
+                profileFolderPickerRequest = ProfileFolderPickerRequest(
+                    profileID: profile.id
+                )
+            },
+            toggleArchived: { toggleArchived(profile) },
+            revealInFinder: { revealProfile(profile) },
+            delete: { requestProfileDeletion(profile) }
+        )
     }
 
     @ViewBuilder
@@ -779,52 +2152,25 @@ struct ContentView: View {
         if let profile = selectedProfile {
             ProfileDetailView(
                 profile: profile,
-                processState: processes.processState(for: profile.id),
-                isResolvingRuntime: isResolvingRuntime,
+                processState: presentedProcessState(for: profile),
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
+                folderName: store.folderID(forProfileID: profile.id).flatMap {
+                    store.folder(withID: $0)?.name
+                },
+                environmentSnapshot: selectedEnvironmentSnapshot,
+                isTestingProxy: isProxyTestInFlight(profileID: profile.id),
+                canCancelProxyTest:
+                    proxyTestingProfileIDs.contains(profile.id) ||
+                    launchPreparingProfileIDs.contains(profile.id),
+                canRunFingerprintAudit:
+                    runtimePreflight?.isReady == true &&
+                    runtime?.supportsFingerprintIdentity == true &&
+                    fingerprintAuditProfiles.count >= 2 &&
+                    processes.runningProfileIDs.isEmpty,
                 clipboardNotice:
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
                         : nil,
-                isSidebarVisible: isSidebarVisible,
-                onToggleSidebar: {
-                    isSidebarVisible.toggle()
-                },
-                onCreate: {
-                    editorRequest = EditorRequest(profile: nil)
-                },
-                onStart: { launch(profile) },
-                onStop: { processes.stop(profileID: profile.id) },
-                onEdit: {
-                    guard !processes.runningProfileIDs.contains(profile.id)
-                    else {
-                        localError =
-                            "Сначала останови профиль. Изменения сети и браузера применяются только при следующем запуске."
-                        return
-                    }
-                    editorRequest = EditorRequest(profile: profile)
-                },
-                onDuplicate: {
-                    duplicate(profile)
-                },
-                onTogglePinned: {
-                    togglePinned(profile)
-                },
-                onToggleArchived: {
-                    toggleArchived(profile)
-                },
-                onDelete: {
-                    guard !processes.runningProfileIDs.contains(profile.id) else {
-                        localError = "Сначала останови профиль, потом удаляй."
-                        return
-                    }
-                    showingDeleteConfirmation = true
-                },
-                onReveal: {
-                    NSWorkspace.shared.activateFileViewerSelecting([
-                        store.paths.profileDirectory(for: profile.id)
-                    ])
-                },
                 onCopyProxyUsername: {
                     guard let username = profile.proxy?.username,
                           !username.isEmpty
@@ -856,6 +2202,21 @@ struct ContentView: View {
                     } catch {
                         localError = error.localizedDescription
                     }
+                },
+                onTestProxy: {
+                    startProxyTest(profile)
+                },
+                onCancelProxyTest: {
+                    cancelProxyTest(profileID: profile.id)
+                },
+                onEditProxy: {
+                    beginEditing(profile)
+                },
+                onChangeNote: {
+                    beginEditing(profile, initialFocus: .note)
+                },
+                onRunFingerprintAudit: {
+                    beginFingerprintAudit()
                 }
             )
             .id(profile.id)
@@ -865,103 +2226,39 @@ struct ContentView: View {
     }
 
     private var emptyDetail: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Button {
-                    isSidebarVisible.toggle()
-                } label: {
-                    Image(
-                        systemName:
-                            isSidebarVisible
-                            ? "sidebar.left"
-                            : "sidebar.right"
+        Group {
+            if store.profiles.isEmpty {
+                FirstProfileOnboardingView(
+                    runtimeAvailability: runtimeAvailability,
+                    isCreatingProfile: isCreatingFirstProfile,
+                    onCreateAndOpen: createAndOpenFirstProfile,
+                    onRetryRuntimeCheck: {
+                        Task { await resolveRuntime() }
+                    },
+                    onConfigure: beginCreatingProfile
+                )
+            } else {
+                ContentUnavailableView {
+                    Label(
+                        "Выбери профиль",
+                        systemImage: "rectangle.stack.person.crop"
+                    )
+                } description: {
+                    Text(
+                        "Каждый профиль хранит свои файлы cookie, " +
+                            "настройки сети и локальные данные."
                     )
                 }
-                .buttonStyle(.bordered)
-                .help(
-                    isSidebarVisible
-                        ? "Скрыть список профилей"
-                        : "Показать список профилей"
-                )
-                .accessibilityLabel(
-                    isSidebarVisible
-                        ? "Скрыть список профилей"
-                        : "Показать список профилей"
-                )
-
-                Text("NeAntik")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                Spacer()
-
-                if !isSidebarVisible {
-                    Button {
-                        editorRequest = EditorRequest(profile: nil)
-                    } label: {
-                        Label("Новый профиль", systemImage: "plus")
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-
-            Divider()
-
-            ContentUnavailableView {
-                Label(
-                    store.profiles.isEmpty
-                        ? "Создай первый профиль"
-                        : "Выбери профиль",
-                    systemImage: "rectangle.stack.person.crop"
-                )
-            } description: {
-                Text(
-                    "Каждый профиль хранит свои cookies, настройки сети и локальные данные."
-                )
-            } actions: {
-                if store.profiles.isEmpty {
-                    Button("Создать профиль") {
-                        editorRequest = EditorRequest(profile: nil)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
     private var sidebarStatus: some View {
-        if isResolvingRuntime || runtimePreflight?.isReady == false ||
-            updateChannel.isEnabled || telemetry.isConfigured
+        if updateChannel.isEnabled || telemetry.isConfigured
         {
             VStack(alignment: .leading, spacing: 7) {
-                Label {
-                    Text(
-                        isResolvingRuntime
-                            ? "Подготавливаем браузер…"
-                            : runtimePreflight?.isReady == true
-                            ? "Браузер готов"
-                            : "Браузер требует внимания"
-                    )
-                    .fontWeight(.medium)
-                } icon: {
-                    Image(systemName: runtimeStatusIcon)
-                        .foregroundStyle(runtimeStatusColor)
-                }
-
-                if isResolvingRuntime || runtimePreflight?.isReady == false {
-                    Text(
-                        isResolvingRuntime
-                            ? "Встроенный браузер"
-                            : runtimePreflight?.primaryMessage ??
-                                "Встроенный браузер недоступен"
-                    )
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                }
-
                 if updateChannel.isEnabled {
                     Label(
                         "Подписанные обновления",
@@ -1001,32 +2298,211 @@ struct ContentView: View {
     }
 
     private var runtimeStatusColor: Color {
-        guard let runtime else { return .orange }
-        if runtimePreflight?.isReady == false {
+        switch runtimeAvailability {
+        case .missing, .invalid:
             return .red
+        case .resolving:
+            return .orange
+        case .ready:
+            return .secondary
         }
-        return runtime.supportsFingerprintIdentity ? .orange : .secondary
+    }
+
+    private var runtimeReadinessTitle: String {
+        switch runtimeAvailability {
+        case .resolving:
+            "Проверяем браузерный движок…"
+        case .ready:
+            "Браузерный движок готов"
+        case .missing, .invalid:
+            "Встроенный браузер недоступен"
+        }
+    }
+
+    private var runtimeReadinessMessage: String {
+        switch runtimeAvailability {
+        case .resolving:
+            "Это займёт несколько секунд."
+        case .ready:
+            "Можно запускать профили."
+        case .missing:
+            "NeAntik не нашёл встроенный браузерный движок. " +
+                "Переустанови приложение из официального DMG или ZIP."
+        case let .invalid(message):
+            message
+        }
     }
 
     private func launch(_ profile: BrowserProfile) {
         do {
-            guard let runtime else {
-                throw NeAntikError.browserNotFound
-            }
-            let preflight = BrowserRuntimePreflightValidator.validate(runtime)
-            guard preflight.isReady else {
-                throw NeAntikError.runtimeValidationFailed(
-                    preflight.errors.joined(separator: " ")
+            let runtime = try launchReadyRuntime()
+            switch BrowserLaunchPreparationPolicy.resolveForUserStart(
+                profile: profile
+            ) {
+            case .launchImmediately:
+                try launchPreparedProfile(
+                    profile,
+                    runtime: runtime,
+                    preparationReceipt: nil
+                )
+            case .prepareProxyContext:
+                // Every browser session gets its own route observation.
+                // A manual health check is useful feedback, not authority to
+                // reuse a potentially rotating endpoint at Start time.
+                startAutomaticLaunchPreparation(
+                    profile,
+                    runtime: runtime
                 )
             }
-            try processes.launch(profile: profile, runtime: runtime)
-            store.markLaunched(profile.id)
-            telemetry.record(
-                .browserLaunched,
-                snapshot: telemetrySnapshot
-            )
         } catch {
-            localError = error.localizedDescription
+            launchPreparationFailure = LaunchPreparationFailure(
+                profileID: profile.id,
+                message: error.localizedDescription,
+                title: "Браузер не запустился",
+                offersProxyEdit: false
+            )
+        }
+    }
+
+    private func launchReadyRuntime() throws -> BrowserRuntime {
+        guard let runtime else {
+            throw NeAntikError.browserNotFound
+        }
+        let preflight = BrowserRuntimePreflightValidator.validate(runtime)
+        guard preflight.isReady else {
+            throw NeAntikError.runtimeValidationFailed(
+                preflight.errors.joined(separator: " ")
+            )
+        }
+        return runtime
+    }
+
+    private func launchPreparedProfile(
+        _ profile: BrowserProfile,
+        runtime: BrowserRuntime,
+        preparationReceipt: BrowserLaunchPreparationReceipt?
+    ) throws {
+        try processes.launch(
+            profile: profile,
+            runtime: runtime,
+            preparationReceipt: preparationReceipt
+        )
+        guard store.markLaunched(profile.id) else {
+            processes.stop(profileID: profile.id)
+            throw NeAntikError.profileLaunchStateNotPersisted
+        }
+        telemetry.record(
+            .browserLaunched,
+            snapshot: telemetrySnapshot
+        )
+    }
+
+    @MainActor
+    private func startAutomaticLaunchPreparation(
+        _ profile: BrowserProfile,
+        runtime: BrowserRuntime
+    ) {
+        guard launchPreparationTasks[profile.id] == nil else { return }
+        guard !isProxyTestInFlight(profileID: profile.id) else {
+            launchPreparationFailure = LaunchPreparationFailure(
+                profileID: profile.id,
+                message:
+                    "Прокси уже проверяется в другом окне. Дождись завершения или отмени проверку там."
+            )
+            return
+        }
+
+        let launchToken = UUID()
+        launchPreparationTokens[profile.id] = launchToken
+        launchPreparingProfileIDs.insert(profile.id)
+        launchPreparationTasks[profile.id] = Task { @MainActor in
+            defer {
+                if launchPreparationTokens[profile.id] == launchToken {
+                    launchPreparationTokens[profile.id] = nil
+                    launchPreparingProfileIDs.remove(profile.id)
+                    launchPreparationTasks[profile.id] = nil
+                }
+            }
+            guard let token = beginProxyTest(for: profile) else {
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: profile.id,
+                    message:
+                        "Не удалось начать подготовку прокси. Повтори запуск."
+                )
+                return
+            }
+            let state = await executeProxyTest(
+                profile,
+                token: token,
+                clearsDedicatedTask: false
+            )
+            guard !Task.isCancelled else {
+                return
+            }
+            guard let state else {
+                let message = localError ??
+                    "Подготовка прокси уже выполняется в другом окне."
+                localError = nil
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: profile.id,
+                    message: message
+                )
+                return
+            }
+            guard state.latestAttempt.outcome == .succeeded else {
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: profile.id,
+                    message: NeAntikError.proxyTestFailed(
+                        state.latestAttempt.outcome.userSummary
+                    ).localizedDescription
+                )
+                return
+            }
+            guard let currentProfile = store.profile(withID: profile.id),
+                  currentProfile.proxy == profile.proxy
+            else {
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: profile.id,
+                    message:
+                        "Профиль изменился во время подготовки. Проверь прокси и повтори запуск."
+                )
+                return
+            }
+            let currentHealth = proxyHealthCoordinator.state(
+                for: currentProfile
+            )
+            guard BrowserLaunchPreparationPolicy.resolve(
+                profile: currentProfile,
+                proxyHealth: currentHealth
+            ) == .launchImmediately
+            else {
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: profile.id,
+                    message:
+                        "Прокси отвечает, но его часовой пояс и язык не удалось безопасно согласовать с профилем."
+                )
+                return
+            }
+            do {
+                try launchPreparedProfile(
+                    currentProfile,
+                    runtime: runtime,
+                    preparationReceipt:
+                        BrowserLaunchPreparationPolicy.receipt(
+                            profile: currentProfile,
+                            proxyHealth: currentHealth
+                        )
+                )
+            } catch {
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: currentProfile.id,
+                    message:
+                        "Прокси подготовлен, но браузер не запустился. " +
+                        error.localizedDescription,
+                    title: "Браузер не запустился",
+                    offersProxyEdit: false
+                )
+            }
         }
     }
 
@@ -1042,6 +2518,349 @@ struct ContentView: View {
         resolvedRuntime = value
         isResolvingRuntime = false
         presentReleaseFingerprintAuditIfNeeded()
+    }
+
+    private func announceRuntimeAvailability(
+        _ availability: BrowserRuntimeAvailability
+    ) {
+        guard !store.profiles.isEmpty else { return }
+        let message: String
+        switch availability {
+        case .resolving:
+            return
+        case .ready:
+            message = "Браузерный движок готов. Профили можно запускать."
+        case .missing, .invalid:
+            message =
+                "Встроенный браузер недоступен. Доступно повторить проверку."
+        }
+        announceWorkspaceStatus(message)
+    }
+
+    private func announceWorkspaceStatus(_ message: String) {
+        guard workspaceAnnouncementGate.shouldAnnounce(message) else {
+            return
+        }
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.medium.rawValue
+            ]
+        )
+    }
+
+    private func beginFingerprintAudit() {
+        guard let runtime,
+              runtimePreflight?.isReady == true,
+              fingerprintAuditProfiles.count >= 2
+        else {
+            localError =
+                "Нужны два активных профиля и готовый встроенный браузерный движок."
+            return
+        }
+        fingerprintAuditRequest = FingerprintAuditRequest(
+            auditedProfiles: fingerprintAuditProfiles,
+            initialFirstID: selectedProfile?.id,
+            runtime: runtime
+        )
+    }
+
+    @MainActor
+    private func loadProxyHealth() async {
+        await proxyHealthCoordinator.reload(profiles: store.profiles)
+        if let error = proxyHealthCoordinator.lastError,
+           localError == nil
+        {
+            localError = error
+        }
+    }
+
+    @MainActor
+    private func startProxyTest(_ profile: BrowserProfile) {
+        guard processes.processState(for: profile.id) == .stopped,
+              !launchPreparingProfileIDs.contains(profile.id),
+              !isProxyTestInFlight(profileID: profile.id)
+        else { return }
+        guard let token = beginProxyTest(for: profile) else { return }
+        proxyTestTasks[profile.id] = Task { @MainActor in
+            _ = await executeProxyTest(
+                profile,
+                token: token,
+                clearsDedicatedTask: true
+            )
+        }
+    }
+
+    @MainActor
+    private func performProxyTest(_ profile: BrowserProfile) async -> Bool {
+        guard processes.processState(for: profile.id) == .stopped,
+              !launchPreparingProfileIDs.contains(profile.id),
+              !isProxyTestInFlight(profileID: profile.id)
+        else { return false }
+        guard let token = beginProxyTest(for: profile) else { return false }
+        return await executeProxyTest(
+            profile,
+            token: token,
+            clearsDedicatedTask: false
+        ) != nil
+    }
+
+    @MainActor
+    private func beginProxyTest(
+        for profile: BrowserProfile
+    ) -> ProxyTestOperationToken? {
+        guard profile.proxy != nil,
+              let token = proxyTestOperations.claim(profileID: profile.id)
+        else { return nil }
+        proxyTestingProfileIDs.insert(profile.id)
+        return token
+    }
+
+    @MainActor
+    private func executeProxyTest(
+        _ profile: BrowserProfile,
+        token: ProxyTestOperationToken,
+        clearsDedicatedTask: Bool
+    ) async -> ProxyHealthState? {
+        defer {
+            if proxyTestOperations.complete(token) {
+                proxyTestingProfileIDs.remove(profile.id)
+                if clearsDedicatedTask {
+                    proxyTestTasks[profile.id] = nil
+                }
+            }
+        }
+        guard let proxy = profile.proxy else { return nil }
+        do {
+            return try await proxyHealthCoordinator.run(
+                profile: profile,
+                operationWithCurrentIdentity: { previous in
+                    try Task.checkCancellation()
+                    guard proxyTestOperations.isCurrent(token) else {
+                        throw CancellationError()
+                    }
+                    return try await proxyHealthCommit(
+                        profileID: profile.id,
+                        expectedProxy: proxy,
+                        expectedRevision: profile.revision,
+                        previous: previous
+                    )
+                }
+            )
+        } catch is CancellationError {
+            return nil
+        } catch {
+            localError = error.localizedDescription
+            return nil
+        }
+    }
+
+    @MainActor
+    private func proxyHealthCommit(
+        profileID: UUID,
+        expectedProxy: ProxyConfiguration,
+        expectedRevision: UInt64,
+        previous: ProxyHealthState?
+    ) async throws -> ProxyHealthTestCommit {
+        let checkedAt = Date()
+        let next: ProxyHealthState
+        let password = try keychain.proxyPassword(
+            profileID: profileID
+        ) ?? ""
+        do {
+            let observation = try await ProxyTester().probe(
+                configuration: expectedProxy,
+                password: password
+            )
+            try Task.checkCancellation()
+            let currentPassword = try keychain.proxyPassword(
+                profileID: profileID
+            ) ?? ""
+            guard var currentProfile = store.profile(withID: profileID),
+                  ProxyTestCommitPolicy.matchesSnapshot(
+                      expectedProxy: expectedProxy,
+                      currentProxy: currentProfile.proxy,
+                      expectedRevision: expectedRevision,
+                      currentRevision: currentProfile.revision,
+                      credentialsMatch: currentPassword == password
+                  )
+            else {
+                throw CancellationError()
+            }
+            currentProfile.identity =
+                currentProfile.identity.replacingProxyContext(
+                    timezoneIdentifier:
+                        observation.result.timezoneIdentifier,
+                    localeIdentifier: observation.result.localeIdentifier,
+                    evidence: .ipAPI(observedAt: observation.observedAt)
+                )
+            _ = try store.upsert(currentProfile)
+            fingerprintObservationStore.remove(profileID: profileID)
+            next = ProxyHealthUpdatePolicy.success(observation)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as ProxyProbeError {
+            let currentPassword = try keychain.proxyPassword(
+                profileID: profileID
+            ) ?? ""
+            guard let currentProfile = store.profile(withID: profileID),
+                  ProxyTestCommitPolicy.matchesSnapshot(
+                      expectedProxy: expectedProxy,
+                      currentProxy: currentProfile.proxy,
+                      expectedRevision: expectedRevision,
+                      currentRevision: currentProfile.revision,
+                      credentialsMatch: currentPassword == password
+                  )
+            else {
+                throw CancellationError()
+            }
+            next = ProxyHealthUpdatePolicy.failure(
+                error,
+                checkedAt: checkedAt,
+                previous: previous
+            )
+        } catch {
+            throw error
+        }
+
+        guard let currentProfile = store.profile(withID: profileID),
+              currentProfile.proxy == expectedProxy,
+              let currentIdentity = ProxyHealthIdentity(
+                  profile: currentProfile
+              )
+        else {
+            throw CancellationError()
+        }
+        return ProxyHealthTestCommit(
+            state: next,
+            currentIdentity: currentIdentity
+        )
+    }
+
+    @MainActor
+    private func toggleBulkProxyTests() {
+        if let bulkProxyTestTask {
+            let completed = bulkProxyProgress?.completed ?? 0
+            let total = bulkProxyProgress?.total ?? 0
+            bulkProxyStatusMessage = total > 0
+                ? "Проверка остановлена: \(completed) из \(total)"
+                : "Проверка остановлена"
+            if let bulkProxyStatusMessage {
+                announceWorkspaceStatus(bulkProxyStatusMessage)
+            }
+            bulkProxyProgress = nil
+            bulkProxyTestTask.cancel()
+            return
+        }
+        let profiles = bulkProxyActionProjection.profiles
+        guard !profiles.isEmpty else { return }
+        let runID = UUID()
+        bulkProxyTestID = runID
+        bulkProxyProgress = BulkProxyProgress(
+            completed: 0,
+            total: profiles.count
+        )
+        bulkProxyStatusMessage = nil
+        bulkProxyTestTask = Task { @MainActor in
+            var completed = 0
+            for batchStart in stride(from: 0, to: profiles.count, by: 3) {
+                guard !Task.isCancelled else { break }
+                let batchEnd = min(batchStart + 3, profiles.count)
+                let batch = Array(profiles[batchStart..<batchEnd])
+                await withTaskGroup(of: Bool.self) { group in
+                    for profile in batch {
+                        group.addTask {
+                            await performProxyTest(profile)
+                        }
+                    }
+                    for await didFinish in group where didFinish {
+                        completed += 1
+                        guard bulkProxyTestID == runID else { continue }
+                        bulkProxyProgress = BulkProxyProgress(
+                            completed: completed,
+                            total: profiles.count
+                        )
+                    }
+                }
+                guard bulkProxyTestID == runID else { return }
+            }
+            if bulkProxyTestID == runID {
+                if !Task.isCancelled {
+                    bulkProxyStatusMessage =
+                        "Проверено \(completed) из \(profiles.count)"
+                    if let bulkProxyStatusMessage {
+                        announceWorkspaceStatus(bulkProxyStatusMessage)
+                    }
+                }
+                bulkProxyTestTask = nil
+                bulkProxyTestID = nil
+                bulkProxyProgress = nil
+            }
+        }
+    }
+
+    @MainActor
+    private func clearProxyHealth(for profileID: UUID) {
+        cancelLaunchPreparation(profileID: profileID)
+        proxyTestTasks[profileID]?.cancel()
+        proxyTestTasks[profileID] = nil
+        if proxyTestOperations.cancel(profileID: profileID) {
+            proxyTestingProfileIDs.remove(profileID)
+        }
+        Task {
+            do {
+                try await proxyHealthCoordinator.remove(
+                    profileID: profileID
+                )
+            } catch {
+                if localError == nil {
+                    localError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func cancelProxyTest(profileID: UUID) {
+        cancelLaunchPreparation(profileID: profileID)
+        proxyTestTasks[profileID]?.cancel()
+        proxyTestTasks[profileID] = nil
+        if proxyTestOperations.cancel(profileID: profileID) {
+            proxyTestingProfileIDs.remove(profileID)
+        }
+    }
+
+    @MainActor
+    private func cancelProxyTests() {
+        for task in launchPreparationTasks.values {
+            task.cancel()
+        }
+        launchPreparationTasks.removeAll()
+        launchPreparationTokens.removeAll()
+        launchPreparingProfileIDs.removeAll()
+        bulkProxyTestTask?.cancel()
+        bulkProxyTestTask = nil
+        bulkProxyTestID = nil
+        bulkProxyProgress = nil
+        for task in proxyTestTasks.values {
+            task.cancel()
+        }
+        proxyTestTasks.removeAll()
+        proxyTestOperations.cancelAll()
+        proxyTestingProfileIDs.removeAll()
+    }
+
+    @MainActor
+    private func cancelLaunchPreparation(profileID: UUID) {
+        launchPreparationTasks[profileID]?.cancel()
+        launchPreparationTasks[profileID] = nil
+        launchPreparationTokens[profileID] = nil
+        launchPreparingProfileIDs.remove(profileID)
+        if proxyTestOperations.cancel(profileID: profileID) {
+            proxyTestingProfileIDs.remove(profileID)
+        }
     }
 
     private func presentReleaseFingerprintAuditIfNeeded() {
@@ -1213,6 +3032,11 @@ struct ContentView: View {
 private struct ProfileRow: View {
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
+    let launchAction: BrowserLaunchActionPresentation
+    let proxyHealth: ProxyHealthState?
+    let isTestingProxy: Bool
+    let folderName: String?
+    var onToggleRunning: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 10) {
@@ -1232,10 +3056,9 @@ private struct ProfileRow: View {
                     if processState.isRunning {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(
-                                processState == .externalUnverified
-                                    || processState == .checking
-                                    ? Color.orange
-                                    : Color.green,
+                                processState.statusTone == .healthy
+                                    ? Color.green
+                                    : Color.orange,
                                 lineWidth: 2
                             )
                             .padding(-2)
@@ -1253,64 +3076,147 @@ private struct ProfileRow: View {
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("Закреплён")
                     }
+                    if !profile.note.isEmpty {
+                        Image(systemName: "note.text")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .help("Есть заметка")
+                            .accessibilityLabel("Есть заметка")
+                    }
+                    if !isTestingProxy,
+                       let attempt = proxyHealth?.latestAttempt
+                    {
+                        let routeContextIsComplete =
+                            proxyHealth?.hasCompleteRouteContext == true
+                        Image(
+                            systemName:
+                                routeContextIsComplete
+                                ? "checkmark.circle.fill"
+                                : "exclamationmark.triangle.fill"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(
+                            routeContextIsComplete
+                                ? Color.green
+                                : Color.orange
+                        )
+                        .help(
+                            "Прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.") \(attempt.checkedAt.neAntikDisplayDateTime)"
+                        )
+                        .accessibilityLabel(
+                            "Проверка прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.")"
+                        )
+                    }
                 }
-                HStack(spacing: 5) {
-                    Text(
-                        profile.isArchived
-                            ? "В архиве"
-                            : profile.proxy?.displayName ?? "Без прокси"
-                    )
-                        .lineLimit(1)
-                    if let tag = profile.tags.first {
-                        Text(tag)
-                            .lineLimit(1)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(.quaternary)
-                            .clipShape(Capsule())
-                    }
-                    if profile.tags.count > 1 {
-                        Text("+\(profile.tags.count - 1)")
-                    }
+                ViewThatFits(in: .horizontal) {
+                    secondaryMetadata(includeTags: true)
+                    secondaryMetadata(includeTags: false)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
+
+            Spacer(minLength: 4)
+
+            if isTestingProxy && processState == .stopped {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 28, height: 28)
+                    .accessibilityLabel("Проверяется прокси")
+            } else if processState == .checking && !launchAction.isEnabled {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 28, height: 28)
+                    .accessibilityLabel("Профиль подготавливается")
+            } else {
+                Button(action: onToggleRunning) {
+                    Image(systemName: launchAction.systemImage)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(
+                    processState.statusTone == .healthy
+                        ? Color.red
+                        : (
+                            processState.isRunning
+                                ? Color.orange
+                                : Color.accentColor
+                        )
+                )
+                .disabled(!launchAction.isEnabled)
+                .help("\(launchAction.help): «\(profile.name)»")
+                .accessibilityLabel(
+                    "\(launchAction.title) профиль \(profile.name)"
+                )
+            }
         }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(processState.title)
+        .padding(.vertical, 6)
+        .frame(minHeight: 48)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func secondaryMetadata(
+        includeTags: Bool
+    ) -> some View {
+        HStack(spacing: 5) {
+            if let folderName {
+                Label(folderName, systemImage: "folder")
+                    .lineLimit(1)
+                    .help(folderName)
+                    .layoutPriority(2)
+            }
+            if profile.isArchived {
+                Text("В архиве")
+                    .lineLimit(1)
+                    .layoutPriority(1)
+            } else if let proxy = profile.proxy {
+                Text(proxy.displayName)
+                    .lineLimit(1)
+                    .help(proxy.displayName)
+                    .layoutPriority(1)
+            }
+            if includeTags, let tag = profile.tags.first {
+                ProfileTagChip(
+                    tag: tag,
+                    horizontalPadding: 5,
+                    verticalPadding: 1
+                )
+            }
+            if includeTags, profile.tags.count > 1 {
+                Text("+\(profile.tags.count - 1)")
+            }
+        }
     }
 }
 
 struct ProfileDetailView: View {
     @State private var technicalDetailsExpanded = false
+    @State private var noteExpanded = false
 
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
-    let isResolvingRuntime: Bool
     let browserDataPath: String
+    var folderName: String? = nil
+    var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
+    var isTestingProxy: Bool = false
+    var canCancelProxyTest: Bool = false
+    var canRunFingerprintAudit: Bool = false
     let clipboardNotice: String?
-    let isSidebarVisible: Bool
-    let onToggleSidebar: () -> Void
-    let onCreate: () -> Void
-    let onStart: () -> Void
-    let onStop: () -> Void
-    let onEdit: () -> Void
-    let onDuplicate: () -> Void
-    let onTogglePinned: () -> Void
-    let onToggleArchived: () -> Void
-    let onDelete: () -> Void
-    let onReveal: () -> Void
     let onCopyProxyUsername: () -> Void
     let onCopyProxyPassword: () -> Void
-
-    private var actionColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 148), spacing: 10, alignment: .leading)]
-    }
+    var onTestProxy: () -> Void = {}
+    var onCancelProxyTest: () -> Void = {}
+    var onEditProxy: () -> Void = {}
+    var onChangeNote: () -> Void = {}
+    var onRunFingerprintAudit: () -> Void = {}
 
     private var isRunning: Bool {
         processState.isRunning
+    }
+
+    private var notePresentation: ProfileNotePresentation {
+        ProfileNotePresentation.resolve(profile.note)
     }
 
     var body: some View {
@@ -1330,42 +3236,10 @@ struct ProfileDetailView: View {
 
     private var pinnedHeader: some View {
         HStack(alignment: .top, spacing: 14) {
-            Button(action: onToggleSidebar) {
-                Image(
-                    systemName:
-                        isSidebarVisible
-                        ? "sidebar.left"
-                        : "sidebar.right"
-                )
-            }
-            .buttonStyle(.bordered)
-            .help(
-                isSidebarVisible
-                    ? "Скрыть список профилей"
-                    : "Показать список профилей"
-            )
-            .accessibilityLabel(
-                isSidebarVisible
-                    ? "Скрыть список профилей"
-                    : "Показать список профилей"
-            )
-
-            if !isSidebarVisible {
-                Button(action: onCreate) {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.bordered)
-                .help("Создать профиль")
-                .accessibilityLabel("Создать профиль")
-            }
-
             profileIcon
             profileTitle
 
-            Spacer(minLength: 12)
-
-            primaryActions
-                .frame(maxWidth: 820, alignment: .trailing)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
@@ -1374,16 +3248,6 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 22) {
-            if let clipboardNotice {
-                Label(
-                    clipboardNotice,
-                    systemImage: "checkmark.circle.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(clipboardNotice)
-            }
-
             GroupBox("Стартовая страница") {
                 LabeledContent("URL", value: profile.startURL)
                     .textSelection(.enabled)
@@ -1398,15 +3262,92 @@ struct ProfileDetailView: View {
                 .padding(.vertical, 4)
             }
 
-            GroupBox("Сеть") {
-                networkSummary
+            if !profile.note.isEmpty {
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(profile.note)
+                            .lineLimit(
+                                notePresentation.shouldOfferExpansion &&
+                                    !noteExpanded
+                                    ? 3
+                                    : nil
+                            )
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                            .accessibilityLabel("Заметка профиля")
+                            .accessibilityValue(profile.note)
+
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 10) {
+                                noteActions
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                noteActions
+                            }
+                        }
+                    }
                     .padding(.vertical, 4)
+                } label: {
+                    Label("Заметка", systemImage: "note.text")
+                }
             }
 
-            DisclosureGroup(
-                "Технические сведения",
-                isExpanded: $technicalDetailsExpanded
-            ) {
+            if profile.proxy != nil {
+                GroupBox("Прокси") {
+                    networkSummary
+                        .padding(.vertical, 4)
+                }
+            }
+
+            if let environmentSnapshot {
+                ProfileEnvironmentView(
+                    snapshot: environmentSnapshot,
+                    hasProxy: profile.proxy != nil,
+                    isTestingProxy: isTestingProxy,
+                    canTestProxy: processState == .stopped,
+                    canCancelProxyTest: canCancelProxyTest,
+                    canRunFingerprintAudit: canRunFingerprintAudit,
+                    onTestProxy: onTestProxy,
+                    onCancelProxy: onCancelProxyTest,
+                    onEditProxy: onEditProxy,
+                    onRunFingerprintAudit: onRunFingerprintAudit
+                )
+                .id(environmentSnapshot.profileID)
+            } else if profile.proxy == nil {
+                GroupBox("Сеть") {
+                    networkSummary
+                        .padding(.vertical, 4)
+                }
+            }
+
+            Button {
+                technicalDetailsExpanded.toggle()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(
+                        systemName: technicalDetailsExpanded
+                            ? "chevron.down"
+                            : "chevron.right"
+                    )
+                    .font(.caption2.weight(.semibold))
+                    .accessibilityHidden(true)
+                    Text("Технические сведения")
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, minHeight: 28)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(
+                technicalDetailsExpanded ? "Развёрнуто" : "Свёрнуто"
+            )
+            .accessibilityHint(
+                technicalDetailsExpanded
+                    ? "Скрывает локальный путь данных профиля"
+                    : "Показывает локальный путь данных профиля"
+            )
+
+            if technicalDetailsExpanded {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Папка данных браузера")
                         .font(.caption)
@@ -1419,18 +3360,39 @@ struct ProfileDetailView: View {
                 }
                 .padding(.top, 10)
             }
-            .accessibilityHint(
-                "Показывает локальный путь данных профиля"
-            )
 
             if let lastLaunchedAt = profile.lastLaunchedAt {
                 Text(
-                    "Последний запуск: \(lastLaunchedAt.formatted(date: .abbreviated, time: .shortened))"
+                    "Последний запуск: \(lastLaunchedAt.neAntikDisplayDateTime)"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
         }
+    }
+
+    @ViewBuilder
+    private var noteActions: some View {
+        if notePresentation.shouldOfferExpansion {
+            Button(noteExpanded ? "Свернуть" : "Показать полностью") {
+                noteExpanded.toggle()
+            }
+            .frame(minHeight: 28)
+            .accessibilityValue(
+                noteExpanded ? "Заметка раскрыта" : "Краткий вид"
+            )
+        }
+
+        Button(action: onChangeNote) {
+            Label("Изменить заметку…", systemImage: "pencil")
+                .frame(minHeight: 28)
+        }
+        .disabled(isRunning)
+        .help(
+            isRunning
+                ? "Сначала останови профиль"
+                : "Открыть заметку в редакторе профиля"
+        )
     }
 
     private var networkSummary: some View {
@@ -1440,7 +3402,7 @@ struct ProfileDetailView: View {
                 LabeledContent("Сервер", value: proxy.displayEndpoint)
                 LabeledContent(
                     "Авторизация",
-                    value: proxy.username.isEmpty ? "Нет" : proxy.username
+                    value: proxy.username.isEmpty ? "Нет" : "Настроена"
                 )
                 if !proxy.username.isEmpty {
                     ViewThatFits(in: .horizontal) {
@@ -1452,127 +3414,20 @@ struct ProfileDetailView: View {
                         }
                     }
                 }
+                if let clipboardNotice {
+                    Label(
+                        clipboardNotice,
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel(clipboardNotice)
+                }
             } else {
                 LabeledContent("Подключение", value: "Без прокси")
             }
         }
-    }
-
-    private var primaryActions: some View {
-        LazyVGrid(
-            columns: actionColumns,
-            alignment: .leading,
-            spacing: 10
-        ) {
-            Button {
-                isRunning ? onStop() : onStart()
-            } label: {
-                compactActionLabel(
-                    profile.isArchived
-                        ? "В архиве"
-                        : isRunning
-                        ? (
-                            processState == .checking
-                                ? "Подготовка…"
-                                : processState.canRequestStop
-                                ? "Остановить"
-                                : "Закрыть вручную"
-                        )
-                        : "Запустить",
-                    systemImage:
-                        profile.isArchived
-                            ? "archivebox"
-                            : isRunning
-                            ? (
-                                processState == .checking
-                                    ? "hourglass"
-                                    : processState.canRequestStop
-                                    ? "stop.fill"
-                                    : "hand.raised.fill"
-                            )
-                            : "play.fill"
-                )
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(
-                profile.isArchived ||
-                    (!isRunning && isResolvingRuntime) ||
-                    (isRunning && !processState.canRequestStop)
-            )
-            .help(
-                processState.guidance ??
-                    (
-                        !isRunning && isResolvingRuntime
-                            ? "NeAntik проверяет локальный браузер"
-                            : ""
-                    )
-            )
-            .accessibilityHint(processState.guidance ?? "")
-
-            Button(action: onEdit) {
-                compactActionLabel(
-                    "Изменить",
-                    systemImage: "slider.horizontal.3"
-                )
-            }
-            .disabled(isRunning)
-            .help(
-                isRunning
-                    ? "Сначала останови профиль"
-                    : "Изменить профиль"
-            )
-
-            Menu {
-                Button(action: onTogglePinned) {
-                    Label(
-                        profile.isPinned ? "Открепить" : "Закрепить",
-                        systemImage: profile.isPinned ? "pin.slash" : "pin"
-                    )
-                }
-                Button(action: onDuplicate) {
-                    Label("Дублировать", systemImage: "plus.square.on.square")
-                }
-                Button(action: onToggleArchived) {
-                    Label(
-                        profile.isArchived
-                            ? "Вернуть из архива"
-                            : "В архив",
-                        systemImage:
-                            profile.isArchived
-                                ? "arrow.uturn.backward"
-                                : "archivebox"
-                    )
-                }
-                .disabled(isRunning)
-                Divider()
-                Button(action: onReveal) {
-                    Label("Показать данные", systemImage: "folder")
-                }
-                Divider()
-                Button(role: .destructive, action: onDelete) {
-                    Label("Удалить профиль", systemImage: "trash")
-                }
-                .disabled(isRunning)
-            } label: {
-                compactActionLabel("Ещё", systemImage: "ellipsis.circle")
-            }
-            .help(
-                isRunning
-                    ? "Данные доступны; удаление — после остановки профиля"
-                    : "Данные и удаление профиля"
-            )
-        }
-        .buttonStyle(.bordered)
-    }
-
-    private func compactActionLabel(
-        _ title: String,
-        systemImage: String
-    ) -> some View {
-        Label(title, systemImage: systemImage)
-            .lineLimit(1)
-            .minimumScaleFactor(0.78)
-            .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -1582,6 +3437,7 @@ struct ProfileDetailView: View {
                 "Копировать логин",
                 systemImage: "person.text.rectangle"
             )
+            .frame(minHeight: 28)
         }
         .help("Скопировать логин прокси на 60 секунд")
         .accessibilityHint(
@@ -1590,6 +3446,7 @@ struct ProfileDetailView: View {
 
         Button(action: onCopyProxyPassword) {
             Label("Копировать пароль", systemImage: "key")
+                .frame(minHeight: 28)
         }
         .help("Скопировать пароль из Связки ключей на 60 секунд")
         .accessibilityHint(
@@ -1612,9 +3469,7 @@ struct ProfileDetailView: View {
                             : Color.white
                     )
             }
-            .accessibilityLabel(
-                "Иконка профиля: \(ProfileAppearance.title(for: profile.displaySymbolName))"
-            )
+            .accessibilityHidden(true)
     }
 
     private var profileTitle: some View {
@@ -1629,16 +3484,12 @@ struct ProfileDetailView: View {
                 systemImage: isRunning ? "circle.fill" : "circle"
             )
             .font(.subheadline)
-            .foregroundStyle(
-                processState == .externalUnverified
-                    ? Color.orange
-                    : (isRunning ? Color.green : Color.secondary)
-            )
+            .foregroundStyle(processStatusColor)
             if let guidance = processState.guidance {
                 Text(guidance)
                     .font(.caption)
                     .foregroundStyle(
-                        processState == .externalUnverified
+                        processState.statusTone == .attention
                             ? Color.orange
                             : Color.secondary
                     )
@@ -1650,11 +3501,28 @@ struct ProfileDetailView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
+            if let folderName {
+                Label(folderName, systemImage: "folder")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
             if profile.isArchived {
                 Label("В архиве", systemImage: "archivebox")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var processStatusColor: Color {
+        switch processState.statusTone {
+        case .neutral:
+            Color.secondary
+        case .activity, .attention:
+            Color.orange
+        case .healthy:
+            Color.green
         }
     }
 }

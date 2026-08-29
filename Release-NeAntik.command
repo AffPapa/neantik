@@ -3,6 +3,9 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 VERSION="$(
   /usr/libexec/PlistBuddy \
     -c 'Print :CFBundleShortVersionString' \

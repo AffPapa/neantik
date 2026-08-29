@@ -33,7 +33,25 @@ enum ProxyKind: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 }
 
+enum ProfileStorageLimits {
+    static let maximumProfileCount = 10_000
+}
+
+enum PersistedInlineText {
+    static func isSafe(_ value: String) -> Bool {
+        value.unicodeScalars.allSatisfy { scalar in
+            scalar.value == 0x200D ||
+                (!CharacterSet.controlCharacters.contains(scalar) &&
+                    !CharacterSet.illegalCharacters.contains(scalar))
+        }
+    }
+}
+
 struct ProxyConfiguration: Codable, Equatable, Sendable {
+    // Keeps the legacy 512-character envelope usable for ordinary ZWJ emoji.
+    static let maximumUsernameLength = 512
+    static let maximumUsernameUTF8Bytes = 16 * 1_024
+
     var kind: ProxyKind
     var host: String
     var port: Int
@@ -59,9 +77,10 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
         let cleanHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         return cleanHost == host &&
             Self.isValidHost(cleanHost) &&
-            username.rangeOfCharacter(from: .controlCharacters) == nil &&
+            PersistedInlineText.isSafe(username) &&
             !username.contains(":") &&
-            username.count <= 512 &&
+            username.count <= Self.maximumUsernameLength &&
+            username.utf8.count <= Self.maximumUsernameUTF8Bytes &&
             (kind != .socks5 || username.isEmpty) &&
             (1...65_535).contains(port)
     }
@@ -617,6 +636,17 @@ enum ProfileAppearance {
             }
     }
 
+    static func isSafeStoredColor(_ value: String) -> Bool {
+        guard value.utf8.count == 7, value.utf8.first == 35 else {
+            return false
+        }
+        return value.utf8.dropFirst().allSatisfy { byte in
+            (48...57).contains(byte) ||
+                (65...70).contains(byte) ||
+                (97...102).contains(byte)
+        }
+    }
+
     private static func stableHash(_ id: UUID) -> UInt32 {
         var hash: UInt32 = 2_166_136_261
         for byte in id.uuidString.utf8 {
@@ -628,8 +658,13 @@ enum ProfileAppearance {
 
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
+    static let maximumNameUTF8Bytes = 4 * 1_024
     static let maximumTagCount = 8
     static let maximumTagLength = 24
+    static let maximumTagUTF8Bytes = 1_024
+    static let maximumNoteLength = 1_000
+    static let maximumNoteUTF8Bytes = 4_096
+    static let maximumStartURLUTF8Bytes = 16 * 1_024
     static let defaultStartURL = "https://aff.top/tools/fingerprint"
 
     var id: UUID
@@ -637,6 +672,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var colorHex: String
     var symbolName: String
     var tags: [String]
+    var note: String
     var isPinned: Bool
     var isArchived: Bool
     var startURL: String
@@ -644,6 +680,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var identity: BrowserIdentity
     var createdAt: Date
     var updatedAt: Date
+    var revision: UInt64
     var lastLaunchedAt: Date?
 
     init(
@@ -652,6 +689,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         colorHex: String? = nil,
         symbolName: String? = nil,
         tags: [String] = [],
+        note: String = "",
         isPinned: Bool = false,
         isArchived: Bool = false,
         startURL: String = BrowserProfile.defaultStartURL,
@@ -659,6 +697,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
+        revision: UInt64 = 0,
         lastLaunchedAt: Date? = nil
     ) {
         self.id = id
@@ -667,6 +706,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.symbolName =
             symbolName ?? ProfileAppearance.defaultSymbol(for: id)
         self.tags = Self.normalizedTags(tags) ?? []
+        self.note = Self.normalizedNote(note) ?? ""
         self.isPinned = isPinned
         self.isArchived = isArchived
         self.startURL = startURL
@@ -674,15 +714,15 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.identity = identity
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.revision = revision
         self.lastLaunchedAt = lastLaunchedAt
     }
 
     static func isValidName(_ value: String) -> Bool {
         !value.isEmpty &&
             value.count <= maximumNameLength &&
-            value.rangeOfCharacter(
-                from: .controlCharacters
-            ) == nil
+            value.utf8.count <= maximumNameUTF8Bytes &&
+            PersistedInlineText.isSafe(value)
     }
 
     static func normalizedTags(_ values: [String]) -> [String]? {
@@ -695,7 +735,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             )
             guard !clean.isEmpty,
                   clean.count <= maximumTagLength,
-                  clean.rangeOfCharacter(from: .controlCharacters) == nil
+                  clean.utf8.count <= maximumTagUTF8Bytes,
+                  PersistedInlineText.isSafe(clean)
             else {
                 return nil
             }
@@ -710,14 +751,85 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         return result
     }
 
+    static func normalizedNote(_ value: String) -> String? {
+        let normalizedLineEndings = value
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        let clean = normalizedLineEndings.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard clean.count <= maximumNoteLength,
+              clean.utf8.count <= maximumNoteUTF8Bytes
+        else {
+            return nil
+        }
+        for scalar in clean.unicodeScalars {
+            if scalar.value == 0x09 || scalar.value == 0x0A {
+                continue
+            }
+            guard !CharacterSet.controlCharacters.contains(scalar),
+                  !CharacterSet.illegalCharacters.contains(scalar)
+            else {
+                return nil
+            }
+        }
+        return clean
+    }
+
+    func normalizedForPersistence() -> BrowserProfile? {
+        let cleanStartURL = startURL.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard Self.isValidName(name),
+              ProfileAppearance.isSafeStoredColor(colorHex),
+              ProfileAppearance.isSafeStoredSymbol(symbolName),
+              let cleanTags = Self.normalizedTags(tags),
+              let cleanNote = Self.normalizedNote(note),
+              cleanStartURL == startURL,
+              startURL.utf8.count <= Self.maximumStartURLUTF8Bytes,
+              PersistedInlineText.isSafe(startURL),
+              BrowserLaunchBuilder.validatedStartURL(startURL) != nil,
+              proxy?.isValid != false
+        else {
+            return nil
+        }
+        var value = self
+        value.tags = cleanTags
+        value.note = cleanNote
+        return value
+    }
+
+    static func nameByAppendingSuffix(
+        _ suffix: String,
+        to base: String
+    ) -> String? {
+        guard !suffix.isEmpty,
+              suffix.count < maximumNameLength,
+              suffix.utf8.count < maximumNameUTF8Bytes
+        else {
+            return nil
+        }
+        var prefix = String(
+            base.prefix(maximumNameLength - suffix.count)
+        )
+        while !prefix.isEmpty {
+            let candidate = prefix + suffix
+            if isValidName(candidate) {
+                return candidate
+            }
+            prefix.removeLast()
+        }
+        return nil
+    }
+
     func duplicated(at date: Date = Date()) -> BrowserProfile {
         let suffix = " — копия"
-        let prefixLength = max(1, Self.maximumNameLength - suffix.count)
         return BrowserProfile(
-            name: String(name.prefix(prefixLength)) + suffix,
+            name: Self.nameByAppendingSuffix(suffix, to: name) ?? "Копия",
             colorHex: colorHex,
             symbolName: symbolName,
             tags: tags,
+            note: "",
             startURL: startURL,
             proxy: proxy,
             identity: BrowserIdentity(),
@@ -736,6 +848,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case colorHex
         case symbolName
         case tags
+        case note
         case isPinned
         case isArchived
         case startURL
@@ -743,6 +856,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case identity
         case createdAt
         case updatedAt
+        case revision
         case lastLaunchedAt
     }
 
@@ -750,38 +864,22 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
-        guard Self.isValidName(name) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .name,
-                in: container,
-                debugDescription: "Invalid profile name."
-            )
-        }
         colorHex = try container.decode(String.self, forKey: .colorHex)
         let decodedSymbol = try container.decodeIfPresent(
             String.self,
             forKey: .symbolName
         ) ?? ProfileAppearance.defaultSymbol(for: id)
-        guard ProfileAppearance.isSafeStoredSymbol(decodedSymbol) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .symbolName,
-                in: container,
-                debugDescription: "Invalid profile symbol."
-            )
-        }
         symbolName = decodedSymbol
         let decodedTags = try container.decodeIfPresent(
             [String].self,
             forKey: .tags
         ) ?? []
-        guard let cleanTags = Self.normalizedTags(decodedTags) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .tags,
-                in: container,
-                debugDescription: "Invalid profile tags."
-            )
-        }
-        tags = cleanTags
+        tags = decodedTags
+        let decodedNote = try container.decodeIfPresent(
+            String.self,
+            forKey: .note
+        ) ?? ""
+        note = decodedNote
         isPinned = try container.decodeIfPresent(
             Bool.self,
             forKey: .isPinned
@@ -801,10 +899,23 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         ) ?? BrowserIdentity.migrated(profileID: id)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        revision = try container.decodeIfPresent(
+            UInt64.self,
+            forKey: .revision
+        ) ?? 0
         lastLaunchedAt = try container.decodeIfPresent(
             Date.self,
             forKey: .lastLaunchedAt
         )
+        guard let normalized = normalizedForPersistence() else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Invalid persisted browser profile."
+                )
+            )
+        }
+        self = normalized
     }
 }
 
@@ -906,11 +1017,14 @@ enum NeAntikError: LocalizedError {
     case browserNotFound
     case profileAlreadyRunning
     case invalidProfile
+    case profileLimitReached
     case invalidProxy
     case profileArchived
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
+    case proxyPreparationRequired
+    case profileLaunchStateNotPersisted
     case fingerprintAuditFailed(String)
 
     var errorDescription: String? {
@@ -921,16 +1035,26 @@ enum NeAntikError: LocalizedError {
             "Этот профиль уже запущен."
         case .invalidProfile:
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
+        case .profileLimitReached:
+            "Можно хранить не больше \(ProfileStorageLimits.maximumProfileCount) профилей."
         case .invalidProxy:
             "Укажи корректный хост и порт прокси."
         case .profileArchived:
             "Сначала верни профиль из архива."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
-        case .processLaunchFailed:
-            "Не удалось запустить браузер. Проверь целостность приложения и доступ к папке профиля."
+        case let .processLaunchFailed(message):
+            if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                "Не удалось запустить браузер. Проверь целостность приложения и доступ к папке профиля."
+            } else {
+                "Не удалось запустить браузер: \(message)"
+            }
         case let .proxyTestFailed(message):
             "Прокси не прошёл проверку: \(message)"
+        case .proxyPreparationRequired:
+            "Прокси нужно безопасно проверить перед запуском. Запусти профиль из главного окна NeAntik."
+        case .profileLaunchStateNotPersisted:
+            "Браузер остановлен: NeAntik не смог безопасно сохранить состояние запуска профиля. Проверь доступ к данным приложения и повтори."
         case let .fingerprintAuditFailed(message):
             "Проверка отпечатка не прошла: \(message)"
         }

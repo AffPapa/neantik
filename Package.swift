@@ -13,9 +13,6 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "NeAntik",
-            swiftSettings: [
-                .swiftLanguageMode(.v5)
-            ],
             linkerSettings: [
                 .linkedFramework("Security"),
                 .linkedFramework("Network")
@@ -24,13 +21,11 @@ let package = Package(
         .testTarget(
             name: "NeAntikTests",
             dependencies: ["NeAntik"],
-            swiftSettings: [
-                .swiftLanguageMode(.v5)
-            ],
             linkerSettings: [
                 .linkedFramework("JavaScriptCore"),
                 .linkedFramework("Network")
             ]
         )
-    ]
+    ],
+    swiftLanguageModes: [.v5]
 )

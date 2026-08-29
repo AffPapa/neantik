@@ -30,10 +30,29 @@ enum FingerprintAuditAutomationPolicy {
     }
 }
 
+struct ManualFingerprintReportDeliveryGate: Equatable {
+    private(set) var lastDeliveredReportID: UUID?
+
+    mutating func shouldDeliver(
+        reportID: UUID?,
+        isReleaseAudit: Bool
+    ) -> Bool {
+        guard !isReleaseAudit,
+              let reportID,
+              reportID != lastDeliveredReportID
+        else {
+            return false
+        }
+        lastDeliveredReportID = reportID
+        return true
+    }
+}
+
 struct FingerprintAuditView: View {
     let profiles: [BrowserProfile]
     let runtime: BrowserRuntime
     @ObservedObject var processes: BrowserProcessManager
+    let onReport: (FingerprintAuditReport) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var coordinator: FingerprintAuditCoordinator
@@ -41,8 +60,11 @@ struct FingerprintAuditView: View {
     @State private var secondID: UUID
     @State private var profileSelectionIsExpanded = false
     @State private var technicalDetailsAreExpanded = false
+    @State private var safeDiagnosticSummaryIsExpanded = false
     @State private var releaseAuditAutoStarted = false
     @State private var releaseAuditTerminationScheduled = false
+    @State private var manualReportDeliveryGate =
+        ManualFingerprintReportDeliveryGate()
     @FocusState private var primaryActionIsFocused: Bool
     private let isReleaseAudit: Bool
 
@@ -52,11 +74,13 @@ struct FingerprintAuditView: View {
         runtime: BrowserRuntime,
         processes: BrowserProcessManager,
         paths: AppPaths,
-        releaseContext: FingerprintEvidenceReleaseContext? = nil
+        releaseContext: FingerprintEvidenceReleaseContext? = nil,
+        onReport: @escaping (FingerprintAuditReport) -> Void = { _ in }
     ) {
         self.profiles = profiles
         self.runtime = runtime
         self.processes = processes
+        self.onReport = onReport
         isReleaseAudit = releaseContext != nil
 
         let first =
@@ -128,7 +152,7 @@ struct FingerprintAuditView: View {
         .alert(
             isReleaseAudit
                 ? "Проверка отпечатка"
-                : "Проверка профиля",
+                : "Проверка отпечатков",
             isPresented: Binding(
                 get: {
                     FingerprintAuditAutomationPolicy.errorPresentation(
@@ -173,6 +197,16 @@ struct FingerprintAuditView: View {
         .onChange(of: profiles.map(\.id)) { _, _ in
             normalizeSelection()
         }
+        .onChange(of: firstID) { _, selectedID in
+            guard selectedID == secondID else { return }
+            secondID = profiles.first(where: { $0.id != selectedID })?.id ??
+                secondID
+        }
+        .onChange(of: secondID) { _, selectedID in
+            guard selectedID == firstID else { return }
+            firstID = profiles.first(where: { $0.id != selectedID })?.id ??
+                firstID
+        }
         .onChange(of: coordinator.isRunning) { _, isRunning in
             if isRunning {
                 announce("Проверка профилей началась.")
@@ -180,6 +214,12 @@ struct FingerprintAuditView: View {
         }
         .onChange(of: coordinator.report?.id) { _, _ in
             guard let report = coordinator.report else { return }
+            if manualReportDeliveryGate.shouldDeliver(
+                reportID: report.id,
+                isReleaseAudit: isReleaseAudit
+            ) {
+                onReport(report)
+            }
             announce(
                 report.isPublicAlphaReleaseQualified
                     ? "Проверка завершена: профиль работает правильно."
@@ -273,10 +313,11 @@ struct FingerprintAuditView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
 
-                    DisclosureGroup(
+                    disclosureButton(
                         "Изменить профили",
                         isExpanded: $profileSelectionIsExpanded
-                    ) {
+                    )
+                    if profileSelectionIsExpanded {
                         profilePickers
                             .padding(.top, 8)
                     }
@@ -431,10 +472,11 @@ struct FingerprintAuditView: View {
             }
             .accessibilityElement(children: .combine)
 
-            DisclosureGroup(
+            disclosureButton(
                 "Технические подробности",
                 isExpanded: $technicalDetailsAreExpanded
-            ) {
+            )
+            if technicalDetailsAreExpanded {
                 detailedResult(report)
                     .padding(.top, 12)
                 if let reportURL = coordinator.reportURL {
@@ -477,8 +519,11 @@ struct FingerprintAuditView: View {
                     ) { key in
                         let state = surfaceState(key, report: report)
                         LabeledContent(surfaceTitle(key)) {
-                            Label(state.title, systemImage: state.icon)
-                                .foregroundStyle(state.color)
+                            statusLabel(
+                                state.title,
+                                systemImage: state.icon,
+                                color: state.color
+                            )
                         }
                     }
                 }
@@ -533,7 +578,12 @@ struct FingerprintAuditView: View {
                         value: report.safeRuntimeSignatureSummary
                     )
 
-                    DisclosureGroup("Безопасная диагностическая сводка") {
+                    disclosureButton(
+                        "Безопасная диагностическая сводка",
+                        isExpanded: $safeDiagnosticSummaryIsExpanded,
+                        font: .caption
+                    )
+                    if safeDiagnosticSummaryIsExpanded {
                         Text(report.safeDiagnosticSummary)
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
@@ -543,7 +593,6 @@ struct FingerprintAuditView: View {
                                 "Безопасная диагностическая сводка проверки"
                             )
                     }
-                    .font(.caption)
 
                     Text(
                         "Текст можно выделить и скопировать. В нём нет имён и идентификаторов профилей, настроек прокси или измеренных значений сайтов."
@@ -557,23 +606,23 @@ struct FingerprintAuditView: View {
             GroupBox("Доказательство для релиза") {
                 VStack(alignment: .leading, spacing: 8) {
                     if report.isPublicAlphaReleaseQualified {
-                        Label(
+                        statusLabel(
                             "Проверка подходит для публичного теста",
-                            systemImage: "checkmark.seal.fill"
+                            systemImage: "checkmark.seal.fill",
+                            color: .green
                         )
-                        .foregroundStyle(.green)
                         if report.isProductionReleaseQualified {
-                            Label(
+                            statusLabel(
                                 "Строгая согласованность production подтверждена",
-                                systemImage: "checkmark.shield.fill"
+                                systemImage: "checkmark.shield.fill",
+                                color: .green
                             )
-                            .foregroundStyle(.green)
                         } else {
-                            Label(
+                            statusLabel(
                                 "Строгая согласованность production пока не подтверждена",
-                                systemImage: "exclamationmark.shield.fill"
+                                systemImage: "exclamationmark.shield.fill",
+                                color: .orange
                             )
-                            .foregroundStyle(.orange)
                             ForEach(
                                 report.productionReleaseIssues,
                                 id: \.self
@@ -584,11 +633,11 @@ struct FingerprintAuditView: View {
                             .foregroundStyle(.secondary)
                         }
                     } else {
-                        Label(
+                        statusLabel(
                             "Проверка пока не подходит для публичного теста",
-                            systemImage: "exclamationmark.shield.fill"
+                            systemImage: "exclamationmark.shield.fill",
+                            color: .orange
                         )
-                        .foregroundStyle(.orange)
                         ForEach(
                             report.publicAlphaReleaseIssues,
                             id: \.self
@@ -612,6 +661,40 @@ struct FingerprintAuditView: View {
                 .padding(.vertical, 4)
             }
         }
+    }
+
+    private func disclosureButton(
+        _ title: String,
+        isExpanded: Binding<Bool>,
+        font: Font = .body
+    ) -> some View {
+        Button {
+            isExpanded.wrappedValue.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Image(
+                    systemName: isExpanded.wrappedValue
+                        ? "chevron.down"
+                        : "chevron.right"
+                )
+                .font(.caption2.weight(.semibold))
+                .accessibilityHidden(true)
+                Text(title)
+                    .font(font)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, minHeight: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(
+            isExpanded.wrappedValue ? "Развёрнуто" : "Свёрнуто"
+        )
+        .accessibilityHint(
+            isExpanded.wrappedValue
+                ? "Скрывает раздел"
+                : "Показывает раздел"
+        )
     }
 
     private var runningProfileBlocker: some View {
@@ -844,6 +927,23 @@ struct FingerprintAuditView: View {
             return ("Недоступно", "questionmark.circle.fill", .secondary)
         }
         return ("Одинаково", "equal.circle.fill", .secondary)
+    }
+
+    private func statusLabel(
+        _ title: String,
+        systemImage: String,
+        color: Color
+    ) -> some View {
+        Label {
+            Text(title)
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(color)
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
     }
 
     private func surfaceTitle(_ key: String) -> String {

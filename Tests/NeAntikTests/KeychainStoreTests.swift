@@ -30,6 +30,72 @@ struct KeychainStoreTests {
     }
 
     @Test
+    func corruptCurrentPreservesValidLegacyCredential() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        let corrupt = Data([0xFF, 0xFE])
+        backend.set(
+            corrupt,
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        backend.set(
+            "legacy-secret",
+            service: KeychainStore.legacyService,
+            profileID: profileID
+        )
+        let store = KeychainStore(backend: backend)
+
+        #expect(throws: (any Error).self) {
+            try store.proxyPassword(profileID: profileID)
+        }
+        #expect(backend.deleteCallCount == 0)
+        #expect(
+            backend.dataValue(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == corrupt
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.legacyService,
+                profileID: profileID
+            ) == "legacy-secret"
+        )
+    }
+
+    @Test
+    func corruptLegacyCredentialIsNotPromoted() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        let corrupt = Data([0xC3, 0x28])
+        backend.set(
+            corrupt,
+            service: KeychainStore.legacyService,
+            profileID: profileID
+        )
+        let store = KeychainStore(backend: backend)
+
+        #expect(throws: (any Error).self) {
+            try store.proxyPassword(profileID: profileID)
+        }
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+        #expect(
+            backend.dataValue(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == nil
+        )
+        #expect(
+            backend.dataValue(
+                service: KeychainStore.legacyService,
+                profileID: profileID
+            ) == corrupt
+        )
+    }
+
+    @Test
     func saveRemovesAnyLegacySecret() throws {
         let backend = MemoryKeychainBackend()
         let profileID = UUID()
@@ -48,6 +114,32 @@ struct KeychainStoreTests {
                 service: KeychainStore.legacyService,
                 profileID: profileID
             ) == nil
+        )
+    }
+
+    @Test
+    func failedNewCredentialCompensationCarriesCleanupRecovery() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.deleteFailureServices = [
+            KeychainStore.currentService,
+            KeychainStore.legacyService,
+        ]
+        let store = KeychainStore(backend: backend)
+
+        do {
+            try store.saveProxyPassword("orphan", profileID: profileID)
+            Issue.record("Expected the new credential transaction to fail.")
+        } catch let error as KeychainNewCredentialRollbackError {
+            #expect(error.profileIDsRequiringCredentialCleanup == [profileID])
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == "orphan"
         )
     }
 
@@ -101,6 +193,108 @@ struct KeychainStoreTests {
                 profileID: profileID
             ) == "legacy"
         )
+    }
+
+    @Test
+    func profileEditDeleteRestoresBothNamespacesAfterPartialFailure() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.set(
+            "current",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        backend.set(
+            "legacy",
+            service: KeychainStore.legacyService,
+            profileID: profileID
+        )
+        backend.deleteFailureService = KeychainStore.legacyService
+        let store = KeychainStore(backend: backend)
+
+        #expect(throws: MemoryKeychainError.self) {
+            try store.updateProxyPasswordForProfileEdit(
+                nil,
+                profileID: profileID
+            )
+        }
+
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == "current"
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.legacyService,
+                profileID: profileID
+            ) == "legacy"
+        )
+    }
+
+    @Test
+    func profileEditReplaceRestoresOldSecretAfterLegacyFailure() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.set(
+            "current",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        backend.set(
+            "legacy",
+            service: KeychainStore.legacyService,
+            profileID: profileID
+        )
+        backend.deleteFailureService = KeychainStore.legacyService
+        let store = KeychainStore(backend: backend)
+
+        #expect(throws: MemoryKeychainError.self) {
+            try store.updateProxyPasswordForProfileEdit(
+                "replacement",
+                profileID: profileID
+            )
+        }
+
+        #expect(
+            backend.string(
+                service: KeychainStore.currentService,
+                profileID: profileID
+            ) == "current"
+        )
+        #expect(
+            backend.string(
+                service: KeychainStore.legacyService,
+                profileID: profileID
+            ) == "legacy"
+        )
+    }
+
+    @Test
+    func profileEditReportsWhenCredentialRollbackAlsoFails() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.set(
+            "current",
+            service: KeychainStore.currentService,
+            profileID: profileID
+        )
+        backend.set(
+            "legacy",
+            service: KeychainStore.legacyService,
+            profileID: profileID
+        )
+        backend.deleteFailureService = KeychainStore.legacyService
+        backend.upsertAlwaysFails = true
+        let store = KeychainStore(backend: backend)
+
+        #expect(throws: KeychainProfileEditRollbackError.self) {
+            try store.updateProxyPasswordForProfileEdit(
+                nil,
+                profileID: profileID
+            )
+        }
     }
 
     @Test
@@ -672,6 +866,7 @@ struct KeychainStoreTests {
 
 private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable {
     var deleteFailureService: String?
+    var deleteFailureServices = Set<String>()
     var upsertAlwaysFails = false
     private(set) var upsertCallCount = 0
     private(set) var deleteCallCount = 0
@@ -695,6 +890,9 @@ private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable 
 
     func delete(service: String, profileID: UUID) throws {
         deleteCallCount += 1
+        if deleteFailureServices.contains(service) {
+            throw MemoryKeychainError()
+        }
         if deleteFailureService == service {
             deleteFailureService = nil
             throw MemoryKeychainError()
@@ -704,6 +902,14 @@ private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable 
 
     func set(_ value: String, service: String, profileID: UUID) {
         values[key(service: service, profileID: profileID)] = Data(value.utf8)
+    }
+
+    func set(_ value: Data, service: String, profileID: UUID) {
+        values[key(service: service, profileID: profileID)] = value
+    }
+
+    func dataValue(service: String, profileID: UUID) -> Data? {
+        values[key(service: service, profileID: profileID)]
     }
 
     func string(service: String, profileID: UUID) -> String? {

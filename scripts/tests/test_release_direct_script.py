@@ -9,6 +9,7 @@ RELEASE = SCRIPTS / "release-direct.sh"
 NOTARIZE = SCRIPTS / "notarize-direct-candidate.sh"
 NOTARY_TRANSACTION = SCRIPTS / "notarize_direct_transaction.py"
 ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
+INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
@@ -83,6 +84,27 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text,
         )
         self.assertNotIn("rebind_runtime_compliance", text)
+
+    def test_manager_only_update_preserves_russian_bundle_contract(self) -> None:
+        prepare = PREPARE_MANAGER.read_text(encoding="utf-8")
+        verifier = INTEGRATED_VERIFIER.read_text(encoding="utf-8")
+
+        for resource in ("InfoPlist.strings", "Localizable.strings"):
+            self.assertIn(
+                f'"$PROJECT_DIR/Resources/ru.lproj/{resource}"',
+                prepare,
+            )
+            self.assertIn(resource, verifier)
+        self.assertIn(
+            '"$CANDIDATE_APP/Contents/Resources/ru.lproj/"',
+            prepare,
+        )
+        self.assertIn("CFBundleDevelopmentRegion", verifier)
+        self.assertIn(
+            '[[ "$ACTUAL_MANAGER_DEVELOPMENT_REGION" != "ru" ]]',
+            verifier,
+        )
+        self.assertIn('cmp -s "$expected" "$packaged"', verifier)
 
     def test_enrollment_helper_is_exact_private_and_bounded(self) -> None:
         text = ENROLL.read_text(encoding="utf-8")

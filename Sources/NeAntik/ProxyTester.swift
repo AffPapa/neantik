@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 
-struct ProxyTestResult: Sendable {
+struct ProxyTestResult: Equatable, Sendable {
     let ipAddress: String
     let city: String?
     let countryName: String?
@@ -17,6 +17,20 @@ struct ProxyTestResult: Sendable {
     }
 }
 
+struct ProxyTestObservation: Equatable, Sendable {
+    let observedAt: Date
+    let responseTimeMilliseconds: Int
+    let result: ProxyTestResult
+}
+
+struct ProxyProbeError: LocalizedError, Equatable, Sendable {
+    let outcome: ProxyHealthOutcome
+
+    var errorDescription: String? {
+        outcome.userSummary
+    }
+}
+
 struct ProxyProcessResult: Sendable {
     let status: Int32
     let output: Data
@@ -25,6 +39,8 @@ struct ProxyProcessResult: Sendable {
 
 struct ProxyTester: Sendable {
     static let maximumResponseBytes = 16_384
+    static let maximumProbeOutputBytes = maximumResponseBytes + 256
+    static let metricsPrefix = "\nNEANTIK_METRICS_V1:"
     private static let invalidResponseMessage =
         "IP-сервис вернул некорректный ответ."
 
@@ -37,6 +53,7 @@ struct ProxyTester: Sendable {
         "--max-filesize", "\(maximumResponseBytes)",
         "--noproxy", "",
         "--config", "-",
+        "--write-out", "\nNEANTIK_METRICS_V1:%{time_starttransfer}\n",
         "https://ipapi.co/json/"
     ]
 
@@ -44,11 +61,31 @@ struct ProxyTester: Sendable {
         configuration: ProxyConfiguration,
         password: String
     ) async throws -> ProxyTestResult {
-        guard configuration.isValid else {
-            throw NeAntikError.invalidProxy
+        do {
+            return try await probe(
+                configuration: configuration,
+                password: password
+            ).result
+        } catch let error as ProxyProbeError {
+            if error.outcome == .invalidConfiguration {
+                throw NeAntikError.invalidProxy
+            }
+            throw NeAntikError.proxyTestFailed(
+                error.localizedDescription
+            )
         }
-        guard password.count <= 4_096, !password.contains("\0") else {
-            throw NeAntikError.invalidProxy
+    }
+
+    func probe(
+        configuration: ProxyConfiguration,
+        password: String,
+        observedAt: @Sendable () -> Date = { Date() }
+    ) async throws -> ProxyTestObservation {
+        guard configuration.isValid else {
+            throw ProxyProbeError(outcome: .invalidConfiguration)
+        }
+        guard Self.isValidPassword(password) else {
+            throw ProxyProbeError(outcome: .invalidConfiguration)
         }
 
         var config =
@@ -60,25 +97,105 @@ struct ProxyTester: Sendable {
         }
         let inputData = Data(config.utf8)
         config.removeAll(keepingCapacity: false)
-        let result = try await Self.runCancellableProcess(
-            executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
-            arguments: Self.curlArguments,
-            standardInput: inputData
-        )
-        guard !result.outputExceeded else {
-            throw NeAntikError.proxyTestFailed(
-                Self.invalidResponseMessage
+        let result: ProxyProcessResult
+        do {
+            result = try await Self.runCancellableProcess(
+                executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
+                arguments: Self.curlArguments,
+                standardInput: inputData,
+                maximumOutputBytes: Self.maximumProbeOutputBytes
             )
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw ProxyProbeError(outcome: .internalFailure)
+        }
+        guard !result.outputExceeded else {
+            throw ProxyProbeError(outcome: .invalidResponse)
         }
         guard result.status == 0 else {
-            throw NeAntikError.proxyTestFailed(
-                result.status == 28
-                    ? "Сервер не ответил за 12 секунд. Проверь адрес, порт и доступность прокси."
-                    : "Не удалось подключиться. Проверь адрес, порт, тип прокси и данные для входа."
+            throw ProxyProbeError(
+                outcome: Self.outcome(forCurlStatus: result.status)
             )
         }
 
-        return try Self.parseResponse(result.output)
+        do {
+            let parsed = try Self.parseProbeOutput(result.output)
+        return ProxyTestObservation(
+                observedAt: observedAt(),
+                responseTimeMilliseconds: parsed.responseTimeMilliseconds,
+                result: parsed.result
+            )
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw ProxyProbeError(outcome: .invalidResponse)
+        }
+    }
+
+    static func isValidPassword(_ value: String) -> Bool {
+        ProxyImportParser.passwordIsWithinLimits(value) &&
+            !value.contains("\0")
+    }
+
+    static func outcome(forCurlStatus status: Int32) -> ProxyHealthOutcome {
+        switch status {
+        case 5, 6:
+            .nameResolutionFailed
+        case 28:
+            .timedOut
+        case 7:
+            .connectionFailed
+        case 67:
+            .authenticationRejected
+        case 35, 51, 58, 59, 60, 77, 80, 82, 83, 90, 91:
+            .transportSecurityFailed
+        case 52, 55, 56, 97:
+            .protocolFailed
+        case 22:
+            .probeServiceFailed
+        default:
+            .connectionFailed
+        }
+    }
+
+    static func parseProbeOutput(
+        _ data: Data
+    ) throws -> (
+        result: ProxyTestResult,
+        responseTimeMilliseconds: Int
+    ) {
+        guard data.count <= maximumProbeOutputBytes,
+              let text = String(data: data, encoding: .utf8),
+              let marker = text.range(
+                of: metricsPrefix,
+                options: .backwards
+              )
+        else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        let bodyText = String(text[..<marker.lowerBound])
+        let metricText = text[marker.upperBound...]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !metricText.isEmpty,
+              metricText.utf8.count <= 64,
+              let seconds = Double(metricText),
+              seconds.isFinite,
+              seconds >= 0,
+              seconds <= 120
+        else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        let milliseconds = Int((seconds * 1_000).rounded())
+        guard (0...ProxyHealthAttempt.maximumResponseTimeMilliseconds)
+            .contains(milliseconds)
+        else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        return (
+            try parseResponse(Data(bodyText.utf8)),
+            milliseconds
+        )
     }
 
     static func runCancellableProcess(

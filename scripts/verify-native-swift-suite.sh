@@ -11,28 +11,54 @@ SUITE="$1"
 case "$SUITE" in
   ApplicationEnvironmentTests|\
   AppPathsTests|\
+  AccessibilityPresentationTests|\
+  BrowserLaunchActionPresentationTests|\
   BrowserLaunchBuilderTests|\
+  BrowserLaunchPreparationPolicyTests|\
+  BrowserLaunchPolicyTests|\
   BrowserProcessInventoryTests|\
   BrowserProcessManagerTests|\
   BrowserRuntimeInspectorTests|\
   BrowserRuntimePreflightTests|\
+  BulkProxyActionProjectionTests|\
   BulkProxyImportTests|\
+  DisplayDateFormattingTests|\
+  EnvironmentDiagnosticAssessmentTests|\
   FingerprintAuditAutomationPolicyTests|\
   FingerprintAuditLoopbackSTUNServerTests|\
+  FingerprintAuditObservationTests|\
   FingerprintAuditTests|\
   FingerprintEvidenceEnrollmentTests|\
   FingerprintEvidenceEnvelopeTests|\
   FingerprintEvidenceReleaseContextTests|\
+  FirstProfileBootstrapTests|\
   SecureEnclaveFingerprintEvidenceSignerTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
+  NativeMenuLocalizationTests|\
+  ProfileCommandPresentationTests|\
   ProfileEditorPasswordTests|\
+  ProfileEditorPresentationTests|\
+  ProfileEditorValidationTests|\
+  ProfileEnvironmentInspectorTests|\
+  ProfileEnvironmentPresentationTests|\
+  ProfileEnvironmentAccessibilityTests|\
+  ProfileListProjectionTests|\
   ProfileOrganizationTests|\
+  ProfileOrganizationPersistenceTests|\
+  ProfilePostSaveRevealPolicyTests|\
+  ProfileRevisionAndTransactionTests|\
+  ProfileTagAppearanceTests|\
+  ProfileTagEditorTests|\
   ProfileStoreTests|\
+  ProxyHealthTests|\
   ProxyImportParserTests|\
+  ProxyTestOperationRegistryTests|\
   ProxyTesterTests|\
   ResponsiveLayoutRenderTests|\
+  WorkspaceDomainTests|\
   WorkspaceLayoutTests|\
+  WorkspaceQueryStateTests|\
   RuntimePreferenceStoreTests|\
   TelemetryTests|\
   UpdateManifestTests)
@@ -44,6 +70,9 @@ case "$SUITE" in
 esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/neantik-swift-suite-XXXXXX)"
 
 cleanup() {
@@ -58,7 +87,7 @@ mkdir -p \
   "$SWIFT_TEST_ROOT/module-cache" \
   "$SWIFT_TEST_ROOT/build"
 
-echo "Running NeAntik Swift suite: $SUITE"
+echo "Running NeAntik Swift suite: $SUITE via $DEVELOPER_DIR"
 TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
 
 (

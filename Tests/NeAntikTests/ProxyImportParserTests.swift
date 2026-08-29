@@ -51,6 +51,25 @@ struct ProxyImportParserTests {
         #expect(draft.password == "p:ss%word")
     }
 
+    @Test func passwordRetainsLegacyCharacterLimit() throws {
+        let boundary = String(
+            repeating: "a",
+            count: ProxyImportParser.maximumPasswordLength
+        )
+        let draft = try ProxyImportParser.parse(
+            "user:\(boundary)@proxy.example:443",
+            kind: .https
+        )
+        #expect(draft.password == boundary)
+
+        #expect(throws: ProxyImportError.invalid) {
+            try ProxyImportParser.parse(
+                "user:\(boundary)a@proxy.example:443",
+                kind: .https
+            )
+        }
+    }
+
     @Test func ambiguousColonFormatFailsClosed() {
         #expect(throws: ProxyImportError.ambiguous) {
             try ProxyImportParser.parse(

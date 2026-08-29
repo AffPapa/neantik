@@ -3,6 +3,10 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
+
 SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/nevision-swift-cache-XXXXXX)"
 
 cleanup() {
@@ -17,7 +21,8 @@ mkdir -p \
   "$SWIFT_TEST_ROOT/module-cache" \
   "$SWIFT_TEST_ROOT/build"
 
-echo "Running NeAntik native Swift tests with isolated writable caches..."
+echo \
+  "Running NeAntik native Swift tests with isolated writable caches via $DEVELOPER_DIR..."
 
 (
   cd "$PROJECT_DIR"

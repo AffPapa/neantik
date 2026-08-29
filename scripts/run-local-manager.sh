@@ -6,6 +6,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DEVELOPMENT_ROOT="$PROJECT_DIR/.build/neantik-local"
 SOURCE_APP="$PROJECT_DIR/dist/NeAntik.app"
 DEVELOPMENT_APP="$DEVELOPMENT_ROOT/NeAntik-Dev.app"
+DEVELOPMENT_RUNTIME_APP="$DEVELOPMENT_APP/Contents/Resources/NeAntik Browser.app"
 SWIFT_SCRATCH="$DEVELOPMENT_ROOT/swift"
 SWIFT_CACHE="$DEVELOPMENT_ROOT/cache"
 SWIFT_CONFIG="$DEVELOPMENT_ROOT/config"
@@ -18,6 +19,10 @@ REFRESH_RUNTIME=0
 # the working directory. Keep every SwiftPM operation anchored to the project
 # so double-click and command-line launches behave identically.
 cd "$PROJECT_DIR"
+
+export DEVELOPER_DIR="$(
+  "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
+)"
 
 usage() {
   echo "Использование: ./Develop-NeAntik.command [--no-open] [--refresh-runtime]"
@@ -62,6 +67,7 @@ mkdir -p \
 
 echo "NeAntik — быстрый локальный запуск интерфейса"
 echo "Публичный релиз, dist, notarization и сайт не изменяются."
+echo "Xcode: $DEVELOPER_DIR"
 echo
 
 SECONDS=0
@@ -117,13 +123,81 @@ INFO_PLIST="$DEVELOPMENT_APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleName NeAntik Dev" \
   "$INFO_PLIST"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleDevelopmentRegion ru" \
+  "$INFO_PLIST"
+if ! /usr/libexec/PlistBuddy \
+    -c "Print :CFBundleLocalizations" \
+    "$INFO_PLIST" >/dev/null 2>&1; then
+  /usr/libexec/PlistBuddy \
+    -c "Add :CFBundleLocalizations array" \
+    "$INFO_PLIST"
+fi
+if ! /usr/libexec/PlistBuddy \
+    -c "Print :CFBundleLocalizations:0" \
+    "$INFO_PLIST" >/dev/null 2>&1; then
+  /usr/libexec/PlistBuddy \
+    -c "Add :CFBundleLocalizations:0 string ru" \
+    "$INFO_PLIST"
+else
+  /usr/libexec/PlistBuddy \
+    -c "Set :CFBundleLocalizations:0 ru" \
+    "$INFO_PLIST"
+fi
+mkdir -p "$DEVELOPMENT_APP/Contents/Resources/ru.lproj"
+/bin/cp \
+  "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \
+  "$PROJECT_DIR/Resources/ru.lproj/Localizable.strings" \
+  "$DEVELOPMENT_APP/Contents/Resources/ru.lproj/"
+
+# The localized production strings intentionally call the product "NeAntik".
+# Keep the isolated engineering bundle visibly distinct after those resources
+# are copied so testers never confuse Dev.app with a release installation.
+DEVELOPMENT_INFO_STRINGS="$DEVELOPMENT_APP/Contents/Resources/ru.lproj/InfoPlist.strings"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleDisplayName NeAntik Dev" \
+  "$DEVELOPMENT_INFO_STRINGS"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleName NeAntik Dev" \
+  "$DEVELOPMENT_INFO_STRINGS"
 
 /bin/cp "$MANAGER_BINARY" \
   "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"
+
+# A cached or engineering runtime can have a valid main executable while one
+# of its nested Chromium helpers or sealed resources is no longer valid. The
+# manager process then fails at the real launch boundary even though a shallow
+# signature inspection looks healthy. Repair only the isolated Dev.app copy
+# with an ad-hoc signature; never mutate dist or invoke Developer ID,
+# notarization or stapling from this fast path.
+if ! /usr/bin/codesign \
+    --verify \
+    --deep \
+    --strict \
+    "$DEVELOPMENT_RUNTIME_APP" \
+    >/dev/null 2>&1; then
+  echo "Восстанавливаю локальную ad-hoc подпись Chromium для Dev.app…"
+  /usr/bin/codesign \
+    --force \
+    --deep \
+    --sign - \
+    "$DEVELOPMENT_RUNTIME_APP"
+fi
+
+/usr/bin/codesign \
+  --verify \
+  --deep \
+  --strict \
+  "$DEVELOPMENT_RUNTIME_APP"
 /usr/bin/codesign \
   --force \
   --sign - \
   "$DEVELOPMENT_APP"
+/usr/bin/codesign \
+  --verify \
+  --deep \
+  --strict \
+  "$DEVELOPMENT_RUNTIME_APP"
 /usr/bin/codesign \
   --verify \
   --deep \

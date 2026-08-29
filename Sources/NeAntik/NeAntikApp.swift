@@ -1,4 +1,5 @@
 import Darwin
+import AppKit
 import Foundation
 import SwiftUI
 
@@ -7,6 +8,10 @@ struct NeAntikApp: App {
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
     @StateObject private var telemetry: TelemetryController
+    @StateObject private var fingerprintObservationStore:
+        FingerprintObservationStore
+    @StateObject private var proxyHealthCoordinator:
+        ProxyHealthCoordinator
 
     private let keychain: KeychainStore
     private let credentialCleanup: DeletedProfileCredentialCleanup
@@ -14,6 +19,16 @@ struct NeAntikApp: App {
     private let launchIntent: NeAntikLaunchIntent
     private let fingerprintEvidenceReleaseContext:
         FingerprintEvidenceReleaseContext?
+
+    private var uiSmokeColorScheme: ColorScheme? {
+        switch ProcessInfo.processInfo.environment[
+            "NEANTIK_UI_SMOKE_COLOR_SCHEME"
+        ]?.lowercased() {
+        case "dark": .dark
+        case "light": .light
+        default: nil
+        }
+    }
 
     init() {
         let launchIntent = NeAntikLaunchIntent.parse(
@@ -76,14 +91,24 @@ struct NeAntikApp: App {
         _telemetry = StateObject(
             wrappedValue: TelemetryController(edition: .direct)
         )
+        _fingerprintObservationStore = StateObject(
+            wrappedValue: FingerprintObservationStore()
+        )
+        _proxyHealthCoordinator = StateObject(
+            wrappedValue: ProxyHealthCoordinator(
+                fileURL: paths.proxyHealthFile
+            )
+        )
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("NeAntik", id: "main") {
             ContentView(
                 store: store,
                 processes: processes,
                 telemetry: telemetry,
+                fingerprintObservationStore: fingerprintObservationStore,
+                proxyHealthCoordinator: proxyHealthCoordinator,
                 keychain: keychain,
                 credentialCleanup: credentialCleanup,
                 runtimeLocator: runtimeLocator,
@@ -91,19 +116,32 @@ struct NeAntikApp: App {
                 fingerprintEvidenceReleaseContext:
                     fingerprintEvidenceReleaseContext
             )
+            .preferredColorScheme(uiSmokeColorScheme)
+            .background {
+                WindowMinimumSizeEnforcer(
+                    minimumContentSize: CGSize(
+                        width: WorkspaceLayout.minimumWindowWidth,
+                        height: WorkspaceLayout.minimumWindowHeight
+                    )
+                )
+                .frame(width: 0, height: 0)
+            }
+            .onAppear {
+                NativeMenuLocalization.applyAfterMenuCreation()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: NSApplication.didBecomeActiveNotification
+                )
+            ) { _ in
+                NativeMenuLocalization.applyAfterMenuCreation()
+            }
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentMinSize)
         .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("Новый профиль") {
-                    NotificationCenter.default.post(
-                        name: .neAntikCreateProfile,
-                        object: nil
-                    )
-                }
-                .keyboardShortcut("n")
-            }
+            WorkspaceCommandMenu()
+            ProfileCommandMenu()
         }
     }
 
@@ -134,8 +172,4 @@ struct NeAntikApp: App {
         }
         Darwin.exit(code)
     }
-}
-
-extension Notification.Name {
-    static let neAntikCreateProfile = Notification.Name("NeAntikCreateProfile")
 }

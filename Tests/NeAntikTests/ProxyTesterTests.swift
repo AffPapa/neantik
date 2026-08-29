@@ -4,6 +4,84 @@ import Testing
 
 struct ProxyTesterTests {
     @Test
+    func passwordCompatibilityEnvelopeIsBoundedByUTF8Bytes() {
+        func singleGrapheme(atUTF8Boundary byteCount: Int) -> String {
+            "a\u{1AB0}" + String(
+                repeating: "\u{301}",
+                count: (byteCount - 4) / 2
+            )
+        }
+
+        let family = "👨‍👩‍👧‍👦"
+        let legacyBoundary = String(
+            repeating: family,
+            count: ProxyImportParser.maximumPasswordLength
+        )
+        let overCharacterBoundary = legacyBoundary + family
+        let byteBoundary = singleGrapheme(
+            atUTF8Boundary: ProxyImportParser.maximumPasswordBytes
+        )
+        let overByteBoundary = byteBoundary + "\u{301}"
+        let pathological =
+            "a" + String(repeating: "\u{301}", count: 1_100_000)
+
+        #expect(legacyBoundary.utf8.count == 102_400)
+        #expect(ProxyTester.isValidPassword(legacyBoundary))
+        #expect(!ProxyTester.isValidPassword(overCharacterBoundary))
+        #expect(byteBoundary.count == 1)
+        #expect(ProxyTester.isValidPassword(byteBoundary))
+        #expect(!ProxyTester.isValidPassword(overByteBoundary))
+        #expect(pathological.count == 1)
+        #expect(pathological.utf8.count > 2 * 1_024 * 1_024)
+        #expect(!ProxyTester.isValidPassword(pathological))
+        #expect(!ProxyTester.isValidPassword("secret\0tail"))
+    }
+
+    @Test
+    func parsesProbeMetricsAfterUntrustedBody() throws {
+        let data = Data(
+            """
+            {"ip":"203.0.113.12","city":"NEANTIK_METRICS_V1:999.0"}
+            NEANTIK_METRICS_V1:0.482000
+            """.utf8
+        )
+
+        let parsed = try ProxyTester.parseProbeOutput(data)
+
+        #expect(parsed.result.ipAddress == "203.0.113.12")
+        #expect(parsed.responseTimeMilliseconds == 482)
+    }
+
+    @Test
+    func rejectsMissingOrInvalidProbeMetrics() {
+        for suffix in [
+            "",
+            "\nNEANTIK_METRICS_V1:not-a-number\n",
+            "\nNEANTIK_METRICS_V1:-1\n",
+            "\nNEANTIK_METRICS_V1:121\n"
+        ] {
+            #expect(throws: NeAntikError.self) {
+                try ProxyTester.parseProbeOutput(
+                    Data(("{\"ip\":\"203.0.113.12\"}" + suffix).utf8)
+                )
+            }
+        }
+    }
+
+    @Test
+    func curlStatusesMapToSanitizedCategories() {
+        #expect(ProxyTester.outcome(forCurlStatus: 5) == .nameResolutionFailed)
+        #expect(ProxyTester.outcome(forCurlStatus: 28) == .timedOut)
+        #expect(ProxyTester.outcome(forCurlStatus: 67) == .authenticationRejected)
+        #expect(
+            ProxyTester.outcome(forCurlStatus: 60) ==
+                .transportSecurityFailed
+        )
+        #expect(ProxyTester.outcome(forCurlStatus: 97) == .protocolFailed)
+        #expect(ProxyTester.outcome(forCurlStatus: 22) == .probeServiceFailed)
+    }
+
+    @Test
     func cancellationTerminatesProxyTestProcessPromptly() async {
         let startedAt = Date()
         let task = Task {

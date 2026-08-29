@@ -30,11 +30,29 @@ ACTUAL_MANAGER_BUILD="$(
   plutil -extract CFBundleVersion raw -o - \
     "$APP_PATH/Contents/Info.plist"
 )"
+ACTUAL_MANAGER_DEVELOPMENT_REGION="$(
+  plutil -extract CFBundleDevelopmentRegion raw -o - \
+    "$APP_PATH/Contents/Info.plist"
+)"
 if [[ "$ACTUAL_MANAGER_VERSION" != "$EXPECTED_MANAGER_VERSION" ||
       "$ACTUAL_MANAGER_BUILD" != "$EXPECTED_MANAGER_BUILD" ]]; then
   echo "Integrated manager version does not match project metadata." >&2
   exit 65
 fi
+if [[ "$ACTUAL_MANAGER_DEVELOPMENT_REGION" != "ru" ]]; then
+  echo "Integrated manager development region must be ru." >&2
+  exit 65
+fi
+
+for localized_resource in InfoPlist.strings Localizable.strings; do
+  expected="$PROJECT_DIR/Resources/ru.lproj/$localized_resource"
+  packaged="$APP_PATH/Contents/Resources/ru.lproj/$localized_resource"
+  if [[ ! -f "$packaged" || -L "$packaged" ]] ||
+     ! cmp -s "$expected" "$packaged"; then
+    echo "Integrated manager localization does not match project resource: $localized_resource" >&2
+    exit 65
+  fi
+done
 
 "$PROJECT_DIR/scripts/verify-release.sh" "$APP_PATH"
 

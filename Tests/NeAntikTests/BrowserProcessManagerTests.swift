@@ -6,6 +6,106 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func proxiedNormalLaunchRequiresPreparationReceipt() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(
+            name: "Proxy",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: ""
+            )
+        )
+        let runtime = BrowserRuntime(
+            name: "Test",
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Test"
+        )
+
+        do {
+            try manager.launch(profile: profile, runtime: runtime)
+            Issue.record("A proxy launch without a receipt was accepted")
+        } catch let error as NeAntikError {
+            guard case .proxyPreparationRequired = error else {
+                Issue.record("Unexpected launch error: \(error)")
+                return
+            }
+        }
+    }
+
+    @Test
+    func fingerprintAuditReservationRejectsExternalOrMismatchedPage()
+        throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try manager.reserveFingerprintAuditLaunch(
+                startURL: URL(string: "https://example.com/")!,
+                httpLoopbackPort: 32_123
+            )
+        }
+
+        let auditURL = URL(string: "http://127.0.0.1:32123/")!
+        let reservation = try manager.reserveFingerprintAuditLaunch(
+            startURL: auditURL,
+            httpLoopbackPort: 32_123
+        )
+        let profile = BrowserProfile(
+            name: "Proxy audit",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: ""
+            )
+        )
+        let runtime = BrowserRuntime(
+            name: "Test",
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Test"
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(
+                profile: profile,
+                runtime: runtime,
+                startURLOverride: URL(string: "https://example.com/")!,
+                browserDataDirectoryOverride: reservation.dataDirectory,
+                fingerprintAuditReservation: reservation,
+                purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
+            )
+        }
+
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(
+                profile: profile,
+                runtime: runtime,
+                additionalArguments: ["https://example.com/"],
+                startURLOverride: auditURL,
+                browserDataDirectoryOverride: reservation.dataDirectory,
+                fingerprintAuditReservation: reservation,
+                purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
+            )
+        }
+    }
+
+    @Test
     func browserDataArgumentMatchingIsExact() {
         let expected = "/tmp/NeAntik/Profile A/BrowserData"
 
@@ -195,8 +295,12 @@ struct BrowserProcessManagerTests {
             browserDataProcessInspector: { _ in .absent }
         )
         let profile = BrowserProfile(name: "Временная проверка")
-        let temporaryBrowserData =
-            try manager.reserveFingerprintAuditDataDirectory()
+        let auditURL = URL(string: "http://127.0.0.1:32123/")!
+        let auditReservation = try manager.reserveFingerprintAuditLaunch(
+            startURL: auditURL,
+            httpLoopbackPort: 32_123
+        )
+        let temporaryBrowserData = auditReservation.dataDirectory
         let runtime = BrowserRuntime(
             name: "Fake Chromium",
             executableURL: fakeBrowser,
@@ -206,7 +310,9 @@ struct BrowserProcessManagerTests {
         try manager.launch(
             profile: profile,
             runtime: runtime,
+            startURLOverride: auditURL,
             browserDataDirectoryOverride: temporaryBrowserData,
+            fingerprintAuditReservation: auditReservation,
             purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
         )
 
@@ -264,13 +370,19 @@ struct BrowserProcessManagerTests {
             source: "Test"
         )
         let auditProfile = BrowserProfile(name: "Audit")
-        let auditDirectory =
-            try manager.reserveFingerprintAuditDataDirectory()
+        let auditURL = URL(string: "http://127.0.0.1:32123/")!
+        let auditReservation = try manager.reserveFingerprintAuditLaunch(
+            startURL: auditURL,
+            httpLoopbackPort: 32_123
+        )
+        let auditDirectory = auditReservation.dataDirectory
 
         try manager.launch(
             profile: auditProfile,
             runtime: runtime,
+            startURLOverride: auditURL,
             browserDataDirectoryOverride: auditDirectory,
+            fingerprintAuditReservation: auditReservation,
             purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
         )
         #expect(manager.runningProfileIDs.contains(auditProfile.id))
@@ -316,14 +428,20 @@ struct BrowserProcessManagerTests {
             source: "Test"
         )
         let profile = BrowserProfile(name: "Occupied audit")
-        let auditDirectory =
-            try manager.reserveFingerprintAuditDataDirectory()
+        let auditURL = URL(string: "http://127.0.0.1:32123/")!
+        let auditReservation = try manager.reserveFingerprintAuditLaunch(
+            startURL: auditURL,
+            httpLoopbackPort: 32_123
+        )
+        let auditDirectory = auditReservation.dataDirectory
 
         #expect(throws: NeAntikError.self) {
             try manager.launch(
                 profile: profile,
                 runtime: runtime,
+                startURLOverride: auditURL,
                 browserDataDirectoryOverride: auditDirectory,
+                fingerprintAuditReservation: auditReservation,
                 purpose: .fingerprintAudit(httpLoopbackPort: 32_123)
             )
         }
