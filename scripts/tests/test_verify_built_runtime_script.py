@@ -123,6 +123,17 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         )
         self.assertNotIn("for protocol_string in", script)
 
+    def test_rejects_misaligned_macho_linkedit_string_tables(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn('otool -l "$binary"', script)
+        self.assertIn('LC_SYMTAB', script)
+        self.assertIn('string_table_offset % 8 != 0', script)
+        self.assertIn(
+            "Misaligned 64-bit Mach-O LINKEDIT string table",
+            script,
+        )
+
     def test_public_contract_does_not_document_legacy_private_argv(self) -> None:
         contract = (
             PROJECT_ROOT / "docs" / "FINGERPRINT_RUNTIME.md"

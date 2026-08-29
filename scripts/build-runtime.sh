@@ -638,6 +638,12 @@ configure_build() {
     > "$SOURCE_DIR/out/Default/args.gn"
   printf '%s\n' 'target_cpu = "arm64"' \
     >> "$SOURCE_DIR/out/Default/args.gn"
+  # llvm-strip 22 can move a 64-bit Mach-O string table off pointer-size
+  # alignment. macOS 27 dyld rejects the resulting dylib before Chromium can
+  # start. symbol_level=0 already omits debug symbols from this shipping build,
+  # so keep the linker's valid output instead of post-processing it.
+  printf '%s\n' 'enable_stripping=false' \
+    >> "$SOURCE_DIR/out/Default/args.gn"
   if [[ "${NEANTIK_NO_METAL:-0}" == "1" ]]; then
     printf '%s\n' 'angle_enable_metal = false' \
       >> "$SOURCE_DIR/out/Default/args.gn"
@@ -685,6 +691,7 @@ configure_build() {
   printf '%s\n' \
     "architecture=arm64" \
     "symbol_level=0" \
+    "stripping=disabled" \
     "no_metal=${NEANTIK_NO_METAL:-0}" \
     "metal_toolchain=${NEANTIK_METAL_TOOLCHAIN_PATH:-system-xcrun}" \
     "gn=generated" \

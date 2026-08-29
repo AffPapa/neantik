@@ -206,6 +206,21 @@ while IFS= read -r binary; do
     echo "Non-ARM64 nested code: $binary ($architectures)" >&2
     exit 65
   fi
+  string_table_offset="$(
+    otool -l "$binary" |
+      awk '
+        $1 == "cmd" && $2 == "LC_SYMTAB" { in_symtab = 1; next }
+        in_symtab && $1 == "cmd" { exit }
+        in_symtab && $1 == "stroff" { print $2; exit }
+      '
+  )"
+  if [[ -n "$string_table_offset" ]] &&
+      (( string_table_offset % 8 != 0 )); then
+    echo \
+      "Misaligned 64-bit Mach-O LINKEDIT string table: $binary ($string_table_offset)" \
+      >&2
+    exit 65
+  fi
 done < "$MACHO_LIST"
 
 if (( MACHO_COUNT == 0 )); then
