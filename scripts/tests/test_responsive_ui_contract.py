@@ -476,14 +476,23 @@ class ResponsiveUIContractTests(unittest.TestCase):
             details_start,
         )
         details = text[details_start:details_end]
+        button_start = text.index(
+            "private func diagnosticSectionButton("
+        )
+        button_end = text.index(
+            "private var overview: some View",
+            button_start,
+        )
+        button = text[button_start:button_end]
 
         self.assertNotIn("DisclosureGroup(", details)
-        self.assertIn("setSectionExpanded(", details)
-        self.assertIn("maxWidth: .infinity", details)
-        self.assertIn("minHeight: 32", details)
-        self.assertIn(".contentShape(Rectangle())", details)
-        self.assertIn(".onHover", details)
-        self.assertIn('isExpanded ? "Развёрнуто" : "Свёрнуто"', details)
+        self.assertIn("diagnosticSection(", details)
+        self.assertIn("setSectionExpanded(", button)
+        self.assertIn("maxWidth: .infinity", button)
+        self.assertIn("minHeight: 32", button)
+        self.assertIn(".contentShape(Rectangle())", button)
+        self.assertIn(".onHover", button)
+        self.assertIn('isExpanded ? "Развёрнуто" : "Свёрнуто"', button)
 
     def test_environment_overview_hides_optional_unavailable_actions(self) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")
