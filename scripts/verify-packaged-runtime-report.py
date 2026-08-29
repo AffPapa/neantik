@@ -241,7 +241,7 @@ def verify(
         "sourceLockSHA256": project_root
         / "runtime/fingerprint-chromium.lock.json",
         "candidateLockSHA256": evidence / "fingerprint-chromium.lock.json",
-        "sourceContractSHA256": evidence / "chromium-151-source-contract.json",
+        "sourceContractSHA256": evidence / "chromium-152-source-contract.json",
         "sourceProvenanceSHA256": evidence / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence / "neantik-patch-series.json",
         "appleDeviceTuplesManifestSHA256": evidence / "apple-device-tuples.json",

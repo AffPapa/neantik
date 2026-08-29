@@ -312,7 +312,7 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         "candidateLockSHA256":
             evidence_root / "fingerprint-chromium.lock.json",
         "sourceContractSHA256":
-            evidence_root / "chromium-151-source-contract.json",
+            evidence_root / "chromium-152-source-contract.json",
         "sourceProvenanceSHA256":
             evidence_root / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",

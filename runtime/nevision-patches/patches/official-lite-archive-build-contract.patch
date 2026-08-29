@@ -1,11 +1,12 @@
 --- a/tools/metrics/BUILD.gn
 +++ b/tools/metrics/BUILD.gn
-@@ -45,7 +45,7 @@ group("metrics_metadata") {
-   # for non-git checkouts.
-   # TODO(crbug.com/329080012): Remove this once dirmd works in non-git
-   # checkouts.
--  if (generate_location_tags) {
-+  if (generate_location_tags && path_exists("//.git")) {
+@@ -45,6 +45,8 @@ group("metrics_metadata") {
+   # for non-git checkouts, as dirmd doesn't work on non-git checkout.
+   # TODO(crbug.com/329080012): Remove this condition once dirmd works
+   # in non-git checkouts.
++  # NeAntik source contract: official lite archives have no Git metadata, so
++  # this guard is release-required even when Chromium provides it upstream.
+   if (path_exists("//.git")) {
      deps += [ ":histograms_xml" ]
    }
  }

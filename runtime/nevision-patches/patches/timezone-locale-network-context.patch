@@ -3,13 +3,13 @@ index e84a67cee8..8aa1595e21 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -407,6 +407,7 @@ component("core") {
+     ":generate_eventhandler_names",
+     ":make_deprecation_info",
+     ":xml_ffi",
      "//base",
-     "//components/attribution_reporting",
-     "//components/attribution_reporting:mojom_blink",
 +    "//components/ungoogled:ungoogled_switches",
      "//components/paint_preview/common",
      "//components/performance_manager/public/mojom:mojom_blink",
-     "//components/shared_highlighting/core/common",
 diff --git a/third_party/blink/renderer/core/core_initializer.cc b/third_party/blink/renderer/core/core_initializer.cc
 index 948451b578..20030b4876 100644
 --- a/third_party/blink/renderer/core/core_initializer.cc

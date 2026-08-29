@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "targetChromiumVersion": "151.0.7922.108",
+  "targetChromiumVersion": "152.0.7977.64",
   "status": "release-ready",
-  "policy": "Owned NeAntik patchset for the Chromium 151 security rebase. This manifest is a release blocker until every releaseRequired group is ported, has a patch file, applies with zero fuzz, and records postimage hashes from the real Chromium 151 source tree.",
+  "policy": "Owned NeAntik patchset for the Chromium 152 security rebase. This manifest is a release blocker until every releaseRequired group is ported, has a patch file, applies with zero fuzz, and records postimage hashes from the real Chromium 152 source tree.",
   "forbiddenScopes": [
     "automation-evasion",
     "webdriver-hiding",
@@ -18,16 +18,16 @@
       "catalogPath": "runtime/apple-device-tuples.json",
       "catalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
       "generatorPath": "scripts/apply-owned-runtime-device-tuples.py",
-      "generatorSHA256": "ecd54b0c108f39ec3d374f0c4ec225a7a2e93eda7602b53ab8a444569adcc35d",
+      "generatorSHA256": "75bb4a1d32d1dc82763200f32905783c9ca5e86033bf2314dca071dc47522ecc",
       "postimageSHA256": {
         "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
-        "components/embedder_support/user_agent_utils.cc": "989eb7bd73fc11f4df1bed9ef37b39e39fc22f5727e7a9ef5477e7c54419eb2f",
+        "components/embedder_support/user_agent_utils.cc": "c3d97522a38a6e284901e712bd0401d02fe1b0775cdbeb992af16035baf63937",
         "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
-        "third_party/blink/renderer/core/frame/local_dom_window.cc": "50670cc0f4abb0a12ce8ec9a26622191517134d4f5f0c1b20aaa40213e545e56",
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "9942c0225ecf961c16fbc45b8a1cd93cc5f730638722f6dce95ebaa65974e6fe",
         "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
         "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
-        "third_party/blink/renderer/core/frame/screen.cc": "60f1378ba5252765852093b4f288cf1b09d701169f6f12ebf4e379aea7e23429",
-        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "d7585aa1ca9704d8e716d564e850916868af880b2adcb1252e36f3a054f3cece"
+        "third_party/blink/renderer/core/frame/screen.cc": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "8a5578eda447e273a31ac01a908551c63db4d0c88fa57876459492126979a9ab"
       }
     }
   ],
@@ -56,7 +56,7 @@
         "components/ungoogled/ungoogled_switches.cc": "0c43eef73b9109f3a956d6b383af5e10de1fbdbd044bc302e548cfcfd524311e",
         "components/ungoogled/nevision_fingerprint.h": "98ae951a66179be8620f34b9b9156147366223aead7df5e7c363d8480e6f26b7",
         "components/ungoogled/nevision_fingerprint.cc": "29df11a4c164dcc0ff03482dc1478cddc09e856cd73739b00ae4d49bbb026ec0",
-        "content/browser/renderer_host/render_process_host_impl.cc": "9d6fdf012642fc53330fd314952a916563df17aecfb920a5be7576c059cff34c"
+        "content/browser/renderer_host/render_process_host_impl.cc": "f837f5f2580804040e9999c14ab8d0efc4241f78a2fcf22a4a78b1c91abbb343"
       }
     },
     {
@@ -76,10 +76,10 @@
         "noise uses stable hashing rather than per-load randomness"
       ],
       "postimageSHA256": {
-        "third_party/blink/renderer/core/dom/document.cc": "f2d57c4de0a04e9c2a338dec12cae2c7edc4693dcb92b707dd4049398a6b378c",
-        "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "1e2570c258f937482d18fa191679a4fd1458d8d39724931d5d7ffabb724c0f1f",
+        "third_party/blink/renderer/core/dom/document.cc": "07e0f15974043db7eb1db13df5c18786ce6f90392ab7bf4a152d510fcf6bd836",
+        "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "b342916b037965d07cfee4f0d0a7f432236f657777010052c5bd7efdeb32d64f",
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f95128efcb8885770bf291a171459d4d4218aee8ef0f5f82ec44407e5ff69dc5",
-        "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "2655ca4aa602e64217146f73f977fdb619c7af3135bc1f7a927a6a29d0f952bd",
+        "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "85a7fa0bef19675978035360f4c5f68baf48b9244178ed7524158da43dd876b2",
         "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "2c1d41aadd13c875bb9749f58c7a55334391900d349318f5924badfa1dcb738c"
       }
     },
@@ -122,7 +122,7 @@
         "WebGL pixels remain stable for repeated profile A"
       ],
       "postimageSHA256": {
-        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "ee740e4a9b13c3ec0f29ea29012e353ea44b66dd234b0e7e161aa31a2a8ed40c"
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "f13141f4dcef03794be6176d6309a66243543c655d0e6c6b8c4de3dee255c6f6"
       }
     },
     {
@@ -137,14 +137,14 @@
         "Tests/NeAntikTests/FingerprintAuditTests.swift"
       ],
       "patchFile": "patches/timezone-locale-network-context.patch",
-      "patchSHA256": "4b93984d2cec6b25fedabe699f4850d32a0aa1897da9b9d8fc670231acd5015d",
+      "patchSHA256": "11a26bc95a9cb2f56c94c17232b89e5997cf16f998c9ea1917485e6f60297dab",
       "requiredBehavior": [
         "timezone is captured and stable in the GUI fingerprint report",
         "WebRTC candidate data is hashed rather than persisted raw",
         "proxy failover remains disabled by NeAntik launch configuration"
       ],
             "postimageSHA256": {
-                "third_party/blink/renderer/core/BUILD.gn": "a32730965a3ddf485ae1870ca416b4ecd880379024ca96921168b2f4fe08840e",
+                "third_party/blink/renderer/core/BUILD.gn": "2733efa54b4fe66f33571b1277e139273831a728cb3f119ac17b4385396e95d7",
                 "third_party/blink/renderer/core/core_initializer.cc": "a7a4a6ec5d2596829c4a9230eb1c269c3f1fe2723342d31e422df89d5ed5388d"
       }
     },
@@ -156,7 +156,7 @@
       "sourceEvidence": [
         "scripts/apply-runtime-device-tuples.py",
         "scripts/verify-gui-fingerprint-report.py",
-        "runtime/chromium-151-rebase-plan.json"
+        "runtime/chromium-152-rebase-plan.json"
       ],
       "patchFile": "patches/real-browser-version-contract.patch",
       "patchSHA256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce",
@@ -181,7 +181,7 @@
         "scripts/verify-gui-fingerprint-report.py"
       ],
       "patchFile": "patches/minimal-apple-device-tuple.patch",
-      "patchSHA256": "89e757bdbb213675eebc3f78958ba7ce3b3b7147f20ef8e5e310c11af85dbe60",
+      "patchSHA256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7",
       "requiredBehavior": [
         "if tuple spoofing is retained, GPU, CPU, memory, screen, scale, platform, and Client Hints come from one reviewed tuple",
         "if tuple spoofing is deferred, real device values are kept and only rendered/noise surfaces differ",
@@ -190,8 +190,8 @@
       "postimageSHA256": {
         "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
         "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
-        "third_party/blink/renderer/core/frame/screen.cc": "cec3eefab518188c2bb33870e588e409b982482cf02637cbec8df308838b1c85",
-        "third_party/blink/renderer/core/frame/local_dom_window.cc": "6f2d91abe3adf152de4786aaf85f1bd44ab62383b36594a4a08bd84731cfaa47"
+        "third_party/blink/renderer/core/frame/screen.cc": "98b03954aeecf4373e0920999651e85c763a6b160d3eaf43b3cb1a1e08bad921",
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "d06d7347cb0229ac69ae747b7acc61c4a819d788a6283bbb84241476d1978aee"
       }
     },
     {
@@ -210,7 +210,7 @@
       "requiredBehavior": [
         "bundle metadata identifies NeAntik Browser and app.neantik.runtime",
         "source lock records Chromium base, mac packaging base, patchset hash, notices, and binary hashes",
-        "ARM64 Metal build and normal GUI A -> B -> A evidence are regenerated after Chromium 151 port"
+        "ARM64 Metal build and normal GUI A -> B -> A evidence are regenerated after Chromium 152 port"
       ],
             "postimageSHA256": {
                 "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
@@ -223,19 +223,19 @@
       "status": "ported",
       "releaseRequired": true,
       "sourceEvidence": [
-        "runtime/chromium-151-source-contract.json",
+        "runtime/chromium-152-source-contract.json",
         "scripts/build-runtime.sh",
         "scripts/tests/test_build_runtime_script.py"
       ],
       "patchFile": "patches/official-lite-archive-build-contract.patch",
-      "patchSHA256": "768ffa739fcc48f111317fcad5bfbfcad2988f8f3b5ee8accb4dbf3a04e29b1c",
+      "patchSHA256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3",
       "requiredBehavior": [
         "the verified official Chromium lite archive configures without a synthetic Git checkout",
         "metrics metadata never depends on a target omitted by Chromium for non-Git sources",
         "Git checkouts retain upstream location-tag behavior"
       ],
       "postimageSHA256": {
-        "tools/metrics/BUILD.gn": "d170282fc24c99dffb3cd128f04af144db2c6ba8bd879e876941c203a9ff6e62"
+        "tools/metrics/BUILD.gn": "51686b2f8dd10abd61c490d81666e575eb700a77ca3f28f3d9725310076242ad"
       }
     },
     {
@@ -260,7 +260,7 @@
         "components/ungoogled/ungoogled_switches.cc": "513204634b7aeecf17fe77d367a4931e80f2ad35fd75eb87f601f414759e063d",
         "components/ungoogled/nevision_fingerprint.h": "4bec711a94f76de78760bad36227eee41d9bc5a4a0b0d46600825dc882b604e9",
         "components/ungoogled/nevision_fingerprint.cc": "ccc4539e4cae85ee0f7d26503a8b397d717fe14ca288bbb454a8b99c783ea63f",
-        "content/browser/renderer_host/render_process_host_impl.cc": "638ea28b8d0de3924016780212c9bd1057f8ed22d5dab7da87ddaad09ef5399c",
+        "content/browser/renderer_host/render_process_host_impl.cc": "81b861997686d82046010e860607787c5fa95dea8366bd538b0009f2177a8be0",
         "third_party/blink/renderer/core/core_initializer.cc": "9fb088eae14b54d1b60c039c28d204023f9acab538262ca840ec6a61bc041ae7"
       }
     },

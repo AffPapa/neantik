@@ -187,7 +187,7 @@ def main() -> int:
                 "sourceContract": {
                     "bundlePath": (
                         "Contents/Resources/NeAntikRuntimeEvidence/"
-                        "chromium-151-source-contract.json"
+                        "chromium-152-source-contract.json"
                     ),
                     "sha256": "2" * 64,
                 },

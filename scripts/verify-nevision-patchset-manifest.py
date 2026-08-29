@@ -12,7 +12,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
-DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json"
+DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
 ALLOWED_STATUSES = {"planned", "ported"}
 ALLOWED_MANIFEST_STATUSES = {

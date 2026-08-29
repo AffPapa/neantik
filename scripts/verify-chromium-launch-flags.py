@@ -15,6 +15,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MANAGER_SOURCE = PROJECT_ROOT / "Sources/NeAntik/BrowserProcessManager.swift"
+POLICY_SOURCE = PROJECT_ROOT / "Sources/NeAntik/BrowserLaunchPolicy.swift"
 
 
 class VerificationError(ValueError):
@@ -60,7 +61,7 @@ FORBIDDEN_MANAGER_MARKERS = (
 )
 
 
-def verify(source_root: Path, manager_source: Path = MANAGER_SOURCE) -> None:
+def verify(source_root: Path, manager_source: Path | None = None) -> None:
     source_root = source_root.resolve()
     if not source_root.is_dir():
         raise VerificationError("Chromium source root is missing")
@@ -77,9 +78,19 @@ def verify(source_root: Path, manager_source: Path = MANAGER_SOURCE) -> None:
                     f"Chromium launch flag contract changed: {relative}"
                 )
 
-    if not manager_source.is_file() or manager_source.is_symlink():
-        raise VerificationError("NeAntik browser launch source is missing")
-    manager_text = manager_source.read_text(encoding="utf-8")
+    manager_sources = (
+        [manager_source]
+        if manager_source is not None
+        else [MANAGER_SOURCE, POLICY_SOURCE]
+    )
+    for source in manager_sources:
+        if not source.is_file() or source.is_symlink():
+            raise VerificationError(
+                f"NeAntik browser launch source is missing: {source.name}"
+            )
+    manager_text = "\n".join(
+        source.read_text(encoding="utf-8") for source in manager_sources
+    )
     for marker in REQUIRED_MANAGER_MARKERS:
         if marker not in manager_text:
             raise VerificationError(

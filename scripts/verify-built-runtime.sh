@@ -7,7 +7,7 @@ LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
 PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
 DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
-SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-151-source-contract.json"
+SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2

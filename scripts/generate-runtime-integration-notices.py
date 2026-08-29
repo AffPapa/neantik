@@ -102,7 +102,7 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
     source_contract = load_json(
-        project_root / "runtime" / "chromium-151-source-contract.json"
+        project_root / "runtime" / "chromium-152-source-contract.json"
     )
     patchset = load_json(
         project_root / "runtime" / "nevision-patches" / "series.json"
@@ -110,9 +110,13 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
 
     chromium = lock.get("fingerprintChromium")
     packaging = lock.get("macPackaging")
-    if not isinstance(chromium, dict) or not isinstance(packaging, dict):
+    common_chromium = lock.get("commonChromium")
+    if not all(
+        isinstance(value, dict)
+        for value in (chromium, packaging, common_chromium)
+    ):
         raise RuntimeNoticesError(
-            "runtime lock must declare fingerprintChromium and macPackaging"
+            "runtime lock must declare fingerprintChromium, macPackaging, and commonChromium"
         )
 
     chromium_version = required_text(
@@ -123,28 +127,24 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
         patchset.get("targetChromiumVersion"),
         "patchset.targetChromiumVersion",
     )
-    if target_version != chromium_version:
-        raise RuntimeNoticesError(
-            "runtime lock and owned patchset target different Chromium versions: "
-            f"{chromium_version} != {target_version}"
-        )
-    if source_contract.get("targetChromiumVersion") != chromium_version:
-        raise RuntimeNoticesError(
-            "source contract and runtime lock target different Chromium versions"
-        )
+    source_target_version = required_text(
+        source_contract.get("targetChromiumVersion"),
+        "source contract targetChromiumVersion",
+    )
     binary_binding_status = required_text(
         source_contract.get("binaryBindingStatus"),
         "source contract binaryBindingStatus",
     )
-    official_chromium = source_contract.get("officialChromiumBase")
-    source_packaging = source_contract.get("macPackaging")
-    common_chromium = source_contract.get("commonChromium")
-    if not all(
-        isinstance(value, dict)
-        for value in (official_chromium, source_packaging, common_chromium)
-    ):
+    if target_version != source_target_version:
         raise RuntimeNoticesError(
-            "source contract must declare officialChromiumBase, macPackaging, and commonChromium"
+            "source contract and owned patchset target different Chromium versions: "
+            f"{source_target_version} != {target_version}"
+        )
+    source_candidate_pending = source_target_version != chromium_version
+    if source_candidate_pending and binary_binding_status != "pending-new-build":
+        raise RuntimeNoticesError(
+            "a source candidate may differ from the runtime lock only while its "
+            "binary binding is pending-new-build"
         )
 
     patch_status = required_text(patchset.get("status"), "patchset.status")
@@ -164,21 +164,20 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     chromium_license = verified_license(
         project_root=project_root,
         relative_path="runtime/licenses/Chromium-LICENSE",
-        expected_sha256=bound_license_sha256(
-            lock_component=chromium,
-            source_component=official_chromium,
-            lock_field="fingerprintChromium",
-            source_field="officialChromiumBase",
+        expected_sha256=required_text(
+            chromium.get("licenseSHA256"),
+            "fingerprintChromium.licenseSHA256",
         ),
     )
     packaging_license = verified_license(
         project_root=project_root,
         relative_path="runtime/licenses/ungoogled-chromium-macos-LICENSE",
-        expected_sha256=bound_license_sha256(
-            lock_component=packaging,
-            source_component=source_packaging,
-            lock_field="macPackaging",
-            source_field="sourceContract.macPackaging",
+        expected_sha256=required_text(
+            required_mapping(
+                packaging.get("criticalFiles"),
+                "macPackaging.criticalFiles",
+            ).get("LICENSE"),
+            "macPackaging.licenseSHA256",
         ),
     )
     fingerprint_license = verified_license(
@@ -188,12 +187,12 @@ def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
 
     runtime_status = required_text(lock.get("status"), "runtime lock status")
     chromium_repository = required_text(
-        official_chromium.get("repository"), "officialChromiumBase.repository"
+        chromium.get("repository"), "fingerprintChromium.repository"
     )
-    chromium_tag = required_text(official_chromium.get("tag"), "officialChromiumBase.tag")
-    chromium_commit = required_text(official_chromium.get("commit"), "officialChromiumBase.commit")
-    packaging_repository = required_text(source_packaging.get("repository"), "macPackaging.repository")
-    packaging_commit = required_text(source_packaging.get("commit"), "macPackaging.commit")
+    chromium_tag = required_text(chromium.get("tag"), "fingerprintChromium.tag")
+    chromium_commit = required_text(chromium.get("commit"), "fingerprintChromium.commit")
+    packaging_repository = required_text(packaging.get("repository"), "macPackaging.repository")
+    packaging_commit = required_text(packaging.get("commit"), "macPackaging.commit")
     common_repository = required_text(common_chromium.get("repository"), "commonChromium.repository")
     common_tag = required_text(common_chromium.get("tag"), "commonChromium.tag")
     common_commit = required_text(common_chromium.get("commit"), "commonChromium.commit")
@@ -216,6 +215,7 @@ Do not edit generated values by hand.
 - Architecture: `arm64`
 - Runtime source lock status: `{runtime_status}`
 - Source contract binary binding: `{binary_binding_status}`
+- Source contract candidate: `{source_target_version}`
 - Owned patchset status: `{patch_status}`
 - Ported patch groups: `{len(patch_groups)}`
 

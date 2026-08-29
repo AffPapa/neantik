@@ -29,46 +29,50 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
             ROOT / "runtime" / "fingerprint-chromium.lock.json"
         )
         source_contract = MODULE.load_json(
-            ROOT / "runtime" / "chromium-151-source-contract.json"
+            ROOT / "runtime" / "chromium-152-source-contract.json"
         )
         chromium_version = runtime_lock["fingerprintChromium"][
             "chromiumVersion"
         ]
-        common_commit = source_contract["commonChromium"]["commit"]
-        packaging_commit = source_contract["macPackaging"]["commit"]
+        common_commit = runtime_lock["commonChromium"]["commit"]
+        packaging_commit = runtime_lock["macPackaging"]["commit"]
 
         self.assertEqual(rendered, checked_in)
         self.assertIn(f"Chromium: `{chromium_version}`", rendered)
         self.assertIn(
             "Source contract binary binding: `pending-new-build`", rendered
         )
+        self.assertIn(
+            f"Source contract candidate: `{source_contract['targetChromiumVersion']}`",
+            rendered,
+        )
         self.assertIn(common_commit, rendered)
         self.assertIn(packaging_commit, rendered)
         self.assertIn("Owned patchset status: `release-ready`", rendered)
         self.assertNotIn("25 July 2026", rendered)
 
-    def test_schema_four_nested_packaging_license_is_source_bound(self) -> None:
+    def test_schema_four_nested_packaging_license_is_runtime_bound(self) -> None:
         rendered = MODULE.render_notices(project_root=ROOT)
 
         expected = (
             ROOT
             / "runtime"
-            / "chromium-151-source-contract.json"
+            / "fingerprint-chromium.lock.json"
         )
-        source_contract = MODULE.load_json(expected)
-        packaging = source_contract["macPackaging"]
+        runtime_lock = MODULE.load_json(expected)
+        packaging = runtime_lock["macPackaging"]
         license_sha256 = packaging["criticalFiles"]["LICENSE"]
         self.assertIn(f"License SHA-256: `{license_sha256}`", rendered)
 
-    def test_changed_source_contract_license_fails_closed(self) -> None:
+    def test_source_candidate_must_remain_pending_until_runtime_promotion(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)
             shutil.copytree(ROOT / "runtime", fixture / "runtime")
             contract_path = (
-                fixture / "runtime" / "chromium-151-source-contract.json"
+                fixture / "runtime" / "chromium-152-source-contract.json"
             )
             contract = MODULE.load_json(contract_path)
-            contract["macPackaging"]["criticalFiles"]["LICENSE"] = "0" * 64
+            contract["binaryBindingStatus"] = "bound-to-binary"
             contract_path.write_text(
                 json.dumps(contract),
                 encoding="utf-8",
@@ -76,7 +80,7 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 MODULE.RuntimeNoticesError,
-                "license SHA-256 differ",
+                "only while its binary binding is pending-new-build",
             ):
                 MODULE.render_notices(project_root=fixture)
 

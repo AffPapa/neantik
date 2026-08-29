@@ -1,6 +1,6 @@
 # Supply chain Chromium runtime
 
-Проверено: 12 августа 2026 года.
+Проверено: 29 августа 2026 года.
 
 ## Решение
 
@@ -29,8 +29,8 @@ NeAntik сохраняет нативный SwiftUI-менеджер и собс
 
 ## Публичный baseline
 
-На момент подготовки следующего Chromium 151-кандидата на AffPapa и GitHub
-опубликован NeAntik `0.3.16` build `19` с Chromium `151.0.7922.75`, ARM64,
+На момент подготовки Chromium 152-кандидата на AffPapa и GitHub опубликован
+NeAntik `0.3.19` build `22` с Chromium `151.0.7922.108`, ARM64,
 Metal.
 Его ZIP и DMG подписаны Developer ID, нотарифицированы, stapled и повторно
 проверены после скачивания.
@@ -40,9 +40,9 @@ Metal.
 
 ## Новый source contract и candidate
 
-`runtime/chromium-151-source-contract.json` фиксирует:
+`runtime/chromium-152-source-contract.json` фиксирует:
 
-- официальный Chromium tag/commit/tree `151.0.7922.108`;
+- официальный Chromium tag/commit/tree `152.0.7977.64`;
 - точные commits macOS packaging и common ungoogled-chromium;
 - hashes критических upstream и NeAntik-owned inputs;
 - статус `binaryBindingStatus: pending-new-build`.
@@ -59,10 +59,10 @@ Metal.
 6. GUI A → B → A и полный Direct release ladder.
 
 Текущий source candidate намеренно не promoted до завершения новой
-ARM64/Metal-сборки и свежей бинарной/GUI-проверки. Опубликованный runtime
-`.75` нельзя повторно использовать для следующего релиза: официальный Chrome
-Stable для macOS от 6 августа 2026 года уже содержит `.108/.109` и 41
-исправление безопасности.
+ARM64/Metal-сборки и свежей бинарной/GUI-проверки. Опубликованный Chromium 151
+runtime нельзя повторно использовать для следующего релиза: официальный Chrome
+Stable для macOS от 25 августа 2026 года уже содержит Chromium
+`152.0.7977.64/.65` и 327 исправлений безопасности.
 
 Privacy-oriented build использует `safe_browsing_mode=0`: обращения к Google
 Safe Browsing не включены, но runtime не предоставляет встроенную замену
@@ -90,7 +90,7 @@ CAPTCHA, банов, антифрода, webdriver detection или правил
 Chromium 144 использовался как раннее инженерное доказательство переноса
 патчей и Metal-сборки. Он не является текущим публичным runtime и не может
 использоваться как release candidate. Исторические source/build artifacts
-сохраняются для воспроизводимости и не подменяют текущие Chromium 151 gates.
+сохраняются для воспроизводимости и не подменяют текущие Chromium 152 gates.
 
 ## Direct release boundary
 

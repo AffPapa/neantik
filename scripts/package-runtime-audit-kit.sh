@@ -114,8 +114,8 @@ cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
   "$EVIDENCE_DIR/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE_DIR/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
-  "$EVIDENCE_DIR/chromium-151-source-contract.json"
+cp "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
+  "$EVIDENCE_DIR/chromium-152-source-contract.json"
 cp "$SOURCE_PROVENANCE" "$EVIDENCE_DIR/source-provenance.json"
 cp "$BUILD_ARGS" "$EVIDENCE_DIR/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE_DIR/runtime-verification.json"

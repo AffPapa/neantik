@@ -60,10 +60,10 @@ class BuildRuntimeScriptTests(unittest.TestCase):
     def test_owned_rebase_verifies_rust_archive_missing_upstream_hash(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
         lock = (
-            PROJECT_ROOT / "runtime" / "chromium-151-toolchain-lock.json"
+            PROJECT_ROOT / "runtime" / "chromium-152-toolchain-lock.json"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("chromium-151-toolchain-lock.json", script)
+        self.assertIn("chromium-152-toolchain-lock.json", script)
         self.assertIn("Locked Rust toolchain archive verified.", script)
         self.assertIn(
             "8b5933fa6319cc2b4a83098562731eff4c16cb982be44282aef51c17a43fe7e6",
@@ -73,7 +73,7 @@ class BuildRuntimeScriptTests(unittest.TestCase):
     def test_owned_rebase_installs_exact_dawn_go_toolchain(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
         lock = (
-            PROJECT_ROOT / "runtime" / "chromium-151-toolchain-lock.json"
+            PROJECT_ROOT / "runtime" / "chromium-152-toolchain-lock.json"
         ).read_text(encoding="utf-8")
 
         self.assertIn("prepare_owned_dawn_go()", script)
@@ -111,6 +111,12 @@ class BuildRuntimeScriptTests(unittest.TestCase):
 
         self.assertIn('ninja -C out/Default -j"$jobs" chrome', script)
         self.assertNotIn("chrome chromedriver", script)
+
+    def test_build_does_not_consume_an_unpinned_macos_pgo_profile(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn('print "chrome_pgo_phase=0"', script)
+        self.assertIn("pgo_written", script)
 
     def test_go_generators_keep_cache_inside_build_root(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")

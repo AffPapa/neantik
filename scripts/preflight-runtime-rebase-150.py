@@ -344,7 +344,7 @@ def main() -> int:
         type=Path,
         help=(
             "Rebase plan path. Defaults to "
-            "<project-root>/runtime/chromium-151-rebase-plan.json for "
+            "<project-root>/runtime/chromium-150-rebase-plan.json for "
             "backward compatibility."
         ),
     )
