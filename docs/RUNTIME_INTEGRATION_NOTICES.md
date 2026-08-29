@@ -12,7 +12,7 @@ Do not edit generated values by hand.
 ## Runtime contract
 
 - Product: `NeAntik Browser`
-- Chromium: `151.0.7922.108`
+- Chromium: `152.0.7977.64`
 - Architecture: `arm64`
 - Runtime source lock status: `source-qualified`
 - Source contract binary binding: `pending-new-build`
@@ -27,8 +27,8 @@ artifact or a final legal review.
 ## Chromium
 
 - Source: `https://chromium.googlesource.com/chromium/src.git`
-- Tag: `151.0.7922.108`
-- Commit: `4744b886309d987d292e43232776d2206cccb13d`
+- Tag: `152.0.7977.64`
+- Commit: `506c834ecceaa943c5f41e6cfe7f68acb5c45346`
 - License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/Chromium-LICENSE`
 - License SHA-256: `368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b`
@@ -36,7 +36,7 @@ artifact or a final legal review.
 ## ungoogled-chromium-macos packaging source
 
 - Source: `https://github.com/ungoogled-software/ungoogled-chromium-macos.git`
-- Commit: `e194927e4838cb66ecdef40843a97c4f88f8d2af`
+- Commit: `4eaad8b10b3c692d4197d05adf51f00145edf0b3`
 - License: `BSD-3-Clause`
 - Packaged license: `NeAntikRuntimeLicenses/ungoogled-chromium-macos-LICENSE`
 - License SHA-256: `2fdd1ed451121c07df0726a8ac8b86b49315d89a22c683edaf98b579e710504b`
@@ -44,8 +44,8 @@ artifact or a final legal review.
 ## Common Chromium packaging source
 
 - Source: `https://github.com/ungoogled-software/ungoogled-chromium.git`
-- Tag: `151.0.7922.108-1`
-- Commit: `ecbcc4c1413c961e37d4224f787fecb8534b1505`
+- Tag: `152.0.7977.64-1`
+- Commit: `59657a38437d11520a68618008eb825721319b9e`
 
 ## Retained fingerprint-chromium attribution
 
