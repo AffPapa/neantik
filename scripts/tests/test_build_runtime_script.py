@@ -118,6 +118,14 @@ class BuildRuntimeScriptTests(unittest.TestCase):
         self.assertIn('print "chrome_pgo_phase=0"', script)
         self.assertIn("pgo_written", script)
 
+    def test_shipping_build_avoids_macos27_llvm_strip_corruption(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("llvm-strip 22", script)
+        self.assertIn("macOS 27 dyld", script)
+        self.assertIn("'enable_stripping=false'", script)
+        self.assertIn('"stripping=disabled"', script)
+
     def test_go_generators_keep_cache_inside_build_root(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
 

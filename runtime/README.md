@@ -69,7 +69,10 @@ Running without a phase performs the complete sequence. The wrapper:
   once;
 - verifies exact postimage hashes from the owned manifest;
 - emits source provenance and an immutable candidate lock;
-- configures an official ARM64 build with Metal and `symbol_level=0`;
+- configures an official ARM64 build with Metal, `symbol_level=0`, and
+  `enable_stripping=false`; the last setting preserves the linker's valid
+  pointer-aligned Mach-O layout instead of passing it through the LLVM 22
+  post-link strip path rejected by macOS 27 dyld;
 - keeps `chrome_pgo_phase=0`, matching the verified public runtime, because
   the pinned official lite archive does not carry the macOS PGO profile and
   the release pipeline never downloads an unpinned optimization input;

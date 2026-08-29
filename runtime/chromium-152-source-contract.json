@@ -58,7 +58,7 @@
     "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
     "scripts/apply-owned-runtime-device-tuples.py": "75bb4a1d32d1dc82763200f32905783c9ca5e86033bf2314dca071dc47522ecc",
     "runtime/chromium-152-toolchain-lock.json": "1bd134675b33ce24661a0210c98d5a6dc3a6fb565b484b39940f2b22de861932",
-    "scripts/build-runtime.sh": "48993f714970aa99d00432a9a27805daf09d1994de3a94fde99321f59b5d3ff9",
+    "scripts/build-runtime.sh": "cb5e9a08606443ee81f63d592ab2bff7dcfd2122e22543bfe9eafc7ebfc53b02",
     "scripts/prepare-runtime-source.sh": "c982e14d1309ae0dd229fffa3b2cf02821a2c7fc2d4d717f95dff40a7e784399",
     "scripts/verify-runtime-source-pair.py": "f5861af3abc545d20f86066bed24b11152812fae1865eeb3d79ea7c27d8c6d57",
     "scripts/verify-chromium-webrtc-policy.py": "7a307f5e77fb6e2e8aad3319272da657d83cae01a6441f6c57e7707d4dc4f970",
