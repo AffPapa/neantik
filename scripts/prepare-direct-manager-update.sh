@@ -24,7 +24,7 @@ resolve_source_provenance() {
     echo "$configured"
     return
   fi
-  local default="/private/tmp/nevision-chromium-151/build/source-provenance.json"
+  local default="/private/tmp/nevision-chromium-152/build/source-provenance.json"
   if [[ -f "$default" ]]; then
     echo "$default"
     return
@@ -69,7 +69,7 @@ verify_reviewed_runtime_evidence() {
     "$PROJECT_DIR/runtime/security-baseline.json:$evidence/security-baseline.json"
     "$PROJECT_DIR/runtime/nevision-patches/series.json:$evidence/neantik-patch-series.json"
     "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
-    "$PROJECT_DIR/runtime/chromium-151-source-contract.json:$evidence/chromium-151-source-contract.json"
+    "$PROJECT_DIR/runtime/chromium-152-source-contract.json:$evidence/chromium-152-source-contract.json"
   )
   local comparison
   for comparison in "${comparisons[@]}"; do

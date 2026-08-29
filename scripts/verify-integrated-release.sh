@@ -113,8 +113,8 @@ if ! cmp -s \
 fi
 
 if ! cmp -s \
-  "$PROJECT_DIR/runtime/chromium-151-source-contract.json" \
-  "$EVIDENCE/chromium-151-source-contract.json"; then
+  "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
+  "$EVIDENCE/chromium-152-source-contract.json"; then
   echo "Integrated Chromium source contract does not match the project contract." >&2
   exit 65
 fi
@@ -137,7 +137,7 @@ for required in \
   "$EVIDENCE/runtime-verification.json" \
   "$EVIDENCE/neantik-patch-series.json" \
   "$EVIDENCE/apple-device-tuples.json" \
-  "$EVIDENCE/chromium-151-source-contract.json" \
+  "$EVIDENCE/chromium-152-source-contract.json" \
   "$EVIDENCE/source-provenance.json" \
   "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md" \
   "$LICENSES/Chromium-LICENSE" \

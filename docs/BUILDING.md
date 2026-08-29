@@ -70,7 +70,7 @@ checkout or build output. Runtime provenance is split into:
 
 - `runtime/fingerprint-chromium.lock.json` — upstream source and build-time
   provenance;
-- `runtime/nevision-patches/series.json` — release-ready Chromium 151 patch
+- `runtime/nevision-patches/series.json` — release-ready Chromium 152 patch
   manifest;
 - `runtime/nevision-patches/patches/` — patch files;
 - `runtime/apple-device-tuples.json` — reviewed Apple Silicon tuple catalog;
@@ -84,7 +84,7 @@ Prepare and build in a separate disposable directory with ample free space:
 
 ```bash
 ./scripts/preflight-runtime-rebase-150.py \
-  --plan runtime/chromium-151-rebase-plan.json \
+  --plan runtime/chromium-152-rebase-plan.json \
   /absolute/path/to/build-root
 ./scripts/build-runtime.sh /absolute/path/to/build-root prepare
 ./scripts/build-runtime.sh /absolute/path/to/build-root configure

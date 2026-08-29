@@ -3,17 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium.lock.json"
-SOURCE_CONTRACT="$SCRIPT_DIR/../runtime/chromium-151-source-contract.json"
-
-LOCKED_RUNTIME_VERSION="$(
-  plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
-)"
-if [[ "$LOCKED_RUNTIME_VERSION" == 15[01].* && -f "$SOURCE_CONTRACT" ]]; then
-  echo "Legacy source-pair preparation is blocked for the owned Chromium rebase." >&2
-  echo "Use the pinned runtime/chromium-151-rebase-plan.json and build-runtime.sh." >&2
-  exit 65
-fi
+REBASE_PLAN="$SCRIPT_DIR/../runtime/chromium-152-rebase-plan.json"
 
 if [[ $# -ne 1 || -z "${1:-}" ]]; then
   echo "Usage: $0 /absolute/path/to/nevision-chromium-build" >&2
@@ -36,16 +26,18 @@ if [[ -d "$DESTINATION" && -n "$(find "$DESTINATION" -mindepth 1 -maxdepth 1 -pr
   exit 73
 fi
 
-read_lock() {
-  plutil -extract "$1" raw -o - "$LOCK_FILE"
+read_plan() {
+  plutil -extract "$1" raw -o - "$REBASE_PLAN"
 }
 
-MAC_REPOSITORY="$(read_lock macPackaging.repository)"
-MAC_TAG="$(read_lock macPackaging.tag)"
-MAC_COMMIT="$(read_lock macPackaging.commit)"
-FINGERPRINT_REPOSITORY="$(read_lock fingerprintChromium.repository)"
-FINGERPRINT_TAG="$(read_lock fingerprintChromium.tag)"
-FINGERPRINT_COMMIT="$(read_lock fingerprintChromium.commit)"
+MAC_REPOSITORY="$(read_plan macPackaging.repository)"
+MAC_COMMIT="$(read_plan macPackaging.commit)"
+MAC_TREE="$(read_plan macPackaging.tree)"
+COMMON_REPOSITORY="$(read_plan commonChromium.repository)"
+COMMON_TAG="$(read_plan commonChromium.tag)"
+COMMON_TAG_OBJECT="$(read_plan commonChromium.tagObject)"
+COMMON_COMMIT="$(read_plan commonChromium.commit)"
+COMMON_TREE="$(read_plan commonChromium.tree)"
 
 if [[ ! -d "$DESTINATION" ]]; then
   mkdir -p "$(dirname "$DESTINATION")"
@@ -53,32 +45,34 @@ fi
 
 git clone \
   --filter=blob:none \
-  --branch "$MAC_TAG" \
-  --single-branch \
   "$MAC_REPOSITORY" \
   "$DESTINATION"
+git -C "$DESTINATION" checkout --detach "$MAC_COMMIT"
 
-if [[ "$(git -C "$DESTINATION" rev-parse HEAD)" != "$MAC_COMMIT" ]]; then
-  echo "Pinned macOS tag no longer resolves to the expected commit." >&2
+if [[ "$(git -C "$DESTINATION" rev-parse HEAD)" != "$MAC_COMMIT" ||
+      "$(git -C "$DESTINATION" rev-parse HEAD^{tree})" != "$MAC_TREE" ]]; then
+  echo "Pinned macOS packaging commit or tree does not match the rebase plan." >&2
   exit 65
 fi
 
 git clone \
   --filter=blob:none \
-  --branch "$FINGERPRINT_TAG" \
+  --branch "$COMMON_TAG" \
   --single-branch \
-  "$FINGERPRINT_REPOSITORY" \
+  "$COMMON_REPOSITORY" \
   "$DESTINATION/ungoogled-chromium"
 
-if [[ "$(git -C "$DESTINATION/ungoogled-chromium" rev-parse HEAD)" != "$FINGERPRINT_COMMIT" ]]; then
-  echo "Pinned fingerprint tag no longer resolves to the expected commit." >&2
+if [[ "$(git -C "$DESTINATION/ungoogled-chromium" rev-parse HEAD)" != "$COMMON_COMMIT" ||
+      "$(git -C "$DESTINATION/ungoogled-chromium" rev-parse HEAD^{tree})" != "$COMMON_TREE" ||
+      "$(git -C "$DESTINATION/ungoogled-chromium" rev-parse "refs/tags/$COMMON_TAG")" != "$COMMON_TAG_OBJECT" ]]; then
+  echo "Pinned common Chromium tag, commit, or tree does not match the rebase plan." >&2
   exit 65
 fi
 
-"$SCRIPT_DIR/verify-runtime-source.sh" "$DESTINATION"
+python3 "$SCRIPT_DIR/verify-runtime-source-pair.py" "$DESTINATION"
 
 echo
 echo "Pinned source pair prepared at:"
 echo "  $DESTINATION"
 echo
-echo "No Chromium source was downloaded and no browser binary was built."
+echo "No Chromium archive was downloaded and no browser binary was built."

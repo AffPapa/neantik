@@ -223,7 +223,7 @@ python3 scripts/verify-open-source-tree.py
 python3 scripts/verify-public-workflow-references.py
 ```
 
-Проверка точных исходников Chromium 151 и source-qualified candidate:
+Проверка точных исходников Chromium 152 и source-qualified candidate:
 
 ```bash
 python3 scripts/verify-runtime-source-provenance.py \
@@ -234,7 +234,7 @@ python3 scripts/verify-runtime-candidate-lock.py \
   /absolute/path/to/source-provenance.json
 ```
 
-Source contract для `151.0.7922.108` не подтверждает готовый бинарник сам по
+Source contract для `152.0.7977.64` не подтверждает готовый бинарник сам по
 себе. Promotion в release lock разрешён только после новой Metal-сборки и
 точного schema-3 runtime verification report.
 

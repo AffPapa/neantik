@@ -264,10 +264,10 @@ def verify_direct_public_release_plan(
             evidence_root / "fingerprint-chromium.lock.json"
         )
         embedded_contract_path = (
-            evidence_root / "chromium-151-source-contract.json"
+            evidence_root / "chromium-152-source-contract.json"
         )
         project_contract_path = (
-            project_root / "runtime" / "chromium-151-source-contract.json"
+            project_root / "runtime" / "chromium-152-source-contract.json"
         )
         for path, label in (
             (report_path, "runtime verification report"),

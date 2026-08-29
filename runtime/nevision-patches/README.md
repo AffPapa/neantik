@@ -1,10 +1,10 @@
 # NeAntik-owned Chromium patchset
 
 `series.json` is the executable manifest for the owned Chromium
-`151.0.7922.108` patchset.
+`152.0.7977.64` patchset.
 
 All release-required groups are currently marked `ported`. That means the
-source port is ready to build; it does not claim that a Chromium 151 binary has
+source port is ready to build; it does not claim that a Chromium 152 binary has
 already been produced, signed or behaviorally verified.
 
 Run:
@@ -22,7 +22,7 @@ The verifier requires:
 
 - a real safe-relative patch file for every ported group;
 - the exact patch-file SHA-256;
-- non-empty safe-relative postimage hashes from Chromium 151;
+- non-empty safe-relative postimage hashes from Chromium 152;
 - clean patch application or exact already-applied postimages;
 - real NeAntik owner files for every `sourceEvidence` entry;
 - no forbidden automation-evasion, webdriver, CAPTCHA, ban or anti-fraud
@@ -54,7 +54,7 @@ WebGL and OfflineAudio hot paths.
 
 Historical Chromium 150 workbench and readiness scripts remain in the
 repository as reproducibility evidence. They are not current release inputs and
-must not be used to qualify Chromium 151.
+must not be used to qualify Chromium 152.
 
 NeAntik's public position is local profile privacy, deterministic separation,
 source/binary evidence and user-visible A → B → A measurement. Do not add

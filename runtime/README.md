@@ -6,21 +6,21 @@ injecting JavaScript into visited pages.
 
 ## Current source contract
 
-The candidate runtime is Chromium `151.0.7922.108`, ARM64-only:
+The candidate runtime is Chromium `152.0.7977.64`, ARM64-only:
 
-- `runtime/chromium-151-source-contract.json` pins the official Chromium
+- `runtime/chromium-152-source-contract.json` pins the official Chromium
   source archive, macOS packaging layer, common ungoogled-chromium inputs and
   every NeAntik-owned source input;
-- `runtime/chromium-151-rebase-plan.json` records the reviewed rebase;
-- `runtime/chromium-151-toolchain-lock.json` pins the build toolchain resources
+- `runtime/chromium-152-rebase-plan.json` records the reviewed rebase;
+- `runtime/chromium-152-toolchain-lock.json` pins the build toolchain resources
   that are not fully hashed by the upstream macOS packaging manifest;
 - `runtime/nevision-patches/series.json` is the executable owned-patch manifest.
 
 The source contract deliberately says `binaryBindingStatus:
 pending-new-build`. Source evidence is not binary evidence. The checked
 `runtime/fingerprint-chromium.lock.json` continues to describe the last
-verified Chromium `151.0.7922.75` runtime until a new Chromium
-`151.0.7922.108` Metal bundle is built, verified and explicitly promoted.
+verified Chromium `151.0.7922.108` runtime until a new Chromium
+`152.0.7977.64` Metal bundle is built, verified and explicitly promoted.
 
 Do not edit the checked runtime lock merely to make version gates green.
 
@@ -55,9 +55,9 @@ or anti-fraud bypass behavior.
 The build wrapper is resumable:
 
 ```sh
-scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 prepare
-scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 configure
-scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 build
+scripts/build-runtime.sh /absolute/path/to/neantik-chromium-152 prepare
+scripts/build-runtime.sh /absolute/path/to/neantik-chromium-152 configure
+scripts/build-runtime.sh /absolute/path/to/neantik-chromium-152 build
 ```
 
 Running without a phase performs the complete sequence. The wrapper:
@@ -70,6 +70,9 @@ Running without a phase performs the complete sequence. The wrapper:
 - verifies exact postimage hashes from the owned manifest;
 - emits source provenance and an immutable candidate lock;
 - configures an official ARM64 build with Metal and `symbol_level=0`;
+- keeps `chrome_pgo_phase=0`, matching the verified public runtime, because
+  the pinned official lite archive does not carry the macOS PGO profile and
+  the release pipeline never downloads an unpinned optimization input;
 - builds only the shipping Chromium app target, with bounded parallelism and a
   persistent log. `chromedriver` is not a product or release dependency.
 
@@ -79,7 +82,7 @@ integer from 1 through 12:
 
 ```sh
 NEANTIK_NINJA_JOBS=6 \
-  scripts/build-runtime.sh /absolute/path/to/neantik-chromium-151 build
+  scripts/build-runtime.sh /absolute/path/to/neantik-chromium-152 build
 ```
 
 Xcode installs the Metal compiler as an optional component. The wrapper checks
@@ -98,11 +101,11 @@ Source provenance can be regenerated and compared independently:
 
 ```sh
 python3 scripts/export-runtime-source-provenance.py \
-  /absolute/path/to/neantik-chromium-151/build/src
+  /absolute/path/to/neantik-chromium-152/build/src
 
 python3 scripts/verify-runtime-source-provenance.py \
-  /absolute/path/to/neantik-chromium-151/build/source-provenance.json \
-  --source-root /absolute/path/to/neantik-chromium-151/build/src
+  /absolute/path/to/neantik-chromium-152/build/source-provenance.json \
+  --source-root /absolute/path/to/neantik-chromium-152/build/src
 ```
 
 The generated evidence contains no local absolute source path.
@@ -110,7 +113,7 @@ The generated evidence contains no local absolute source path.
 ## Verify the owned patchset
 
 All eleven release-required groups in `series.json` are ported to Chromium
-`151.0.7922.108`. The manifest is release-ready source evidence, not proof that
+`152.0.7977.64`. The manifest is release-ready source evidence, not proof that
 a shipping binary exists.
 
 ```sh
@@ -123,7 +126,7 @@ scripts/verify-nevision-patchset-manifest.py \
 ```
 
 The release verifier checks safe paths, patch SHA-256 values, exact Chromium
-151 postimages, forbidden scopes and clean patch application evidence. An
+152 postimages, forbidden scopes and clean patch application evidence. An
 `already-applied` result is accepted only when every recorded postimage matches
 the source tree; stock preimages cannot masquerade as an applied patch.
 

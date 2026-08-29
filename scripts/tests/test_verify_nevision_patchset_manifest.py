@@ -21,13 +21,13 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
     def test_current_manifest_is_valid_port_plan(self) -> None:
         summary = MODULE.verify_manifest(
             manifest_path=PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json",
-            rebase_plan_path=PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json",
+            rebase_plan_path=PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json",
             release=False,
             verify_source_evidence=True,
             project_root=PROJECT_ROOT,
         )
 
-        self.assertEqual(summary["targetChromiumVersion"], "151.0.7922.108")
+        self.assertEqual(summary["targetChromiumVersion"], "152.0.7977.64")
         self.assertIn(
             summary["manifestStatus"],
             {"planned-not-ported", "partially-ported", "release-ready"},

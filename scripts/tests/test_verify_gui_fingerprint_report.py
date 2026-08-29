@@ -855,7 +855,7 @@ def write_integrated_app_fixture(root: Path) -> Path:
     patch_series = evidence_root / "neantik-patch-series.json"
     device_tuples = evidence_root / "apple-device-tuples.json"
     security_baseline = evidence_root / "security-baseline.json"
-    source_contract = evidence_root / "chromium-151-source-contract.json"
+    source_contract = evidence_root / "chromium-152-source-contract.json"
     source_provenance = evidence_root / "source-provenance.json"
     args_gn = evidence_root / "args.gn"
     patch_series.write_text('{"schemaVersion":1}\n', encoding="utf-8")

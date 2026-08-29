@@ -12,7 +12,7 @@ CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
 REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
 ATTEMPT_STATE_ROOT="$PROJECT_DIR/artifacts/neantik/private-release-attempts/$(date -u '+%Y%m%dT%H%M%SZ')-$$"
-DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-151/build/source-provenance.json"
+DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-152/build/source-provenance.json"
 EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
 

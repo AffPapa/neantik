@@ -18,9 +18,9 @@ https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-ar
 https://github.com/AffPapa/neantik/releases/download/vVERSION/NeAntik-VERSION-arm64-notarized.dmg
 ```
 
-## Chromium 151 provenance boundary
+## Chromium 152 provenance boundary
 
-`runtime/chromium-151-source-contract.json` records the exact Chromium and
+`runtime/chromium-152-source-contract.json` records the exact Chromium and
 macOS-packaging source pair for the next runtime build. It deliberately has
 `binaryBindingStatus: pending-new-build`: it is source evidence, not a claim
 about an older distributed binary. A release build must emit and verify both

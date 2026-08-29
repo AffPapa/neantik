@@ -272,7 +272,7 @@ def manifest_payload(
             ),
             "sourceContract": hashed_entry(
                 app,
-                f"{evidence_root}/chromium-151-source-contract.json",
+                f"{evidence_root}/chromium-152-source-contract.json",
             ),
             "sourceProvenance": hashed_entry(
                 app,

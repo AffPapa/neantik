@@ -23,7 +23,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             (
                 PROJECT_ROOT
                 / "runtime"
-                / "chromium-151-source-contract.json"
+                / "chromium-152-source-contract.json"
             ).read_text(encoding="utf-8")
         )
 
@@ -32,7 +32,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             (
                 PROJECT_ROOT
                 / "runtime"
-                / "chromium-151-rebase-plan.json"
+                / "chromium-152-rebase-plan.json"
             ).read_text(encoding="utf-8")
         )
 
@@ -43,7 +43,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             "sourceContractSHA256": MODULE.sha256_file(
                 PROJECT_ROOT
                 / "runtime"
-                / "chromium-151-source-contract.json"
+                / "chromium-152-source-contract.json"
             ),
             "fingerprintChromium": {
                 "chromiumVersion": contract["targetChromiumVersion"],
@@ -77,12 +77,12 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         )
         self.assertEqual(
             contract["macPackaging"]["commit"],
-            "e194927e4838cb66ecdef40843a97c4f88f8d2af",
+            "4eaad8b10b3c692d4197d05adf51f00145edf0b3",
         )
         self.assertNotIn("tag", contract["macPackaging"])
         self.assertEqual(
             contract["commonChromium"]["commit"],
-            "ecbcc4c1413c961e37d4224f787fecb8534b1505",
+            "59657a38437d11520a68618008eb825721319b9e",
         )
 
     def test_rejects_stale_chromium_144_mac_commit(self) -> None:

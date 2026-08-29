@@ -38,13 +38,13 @@ PREIMAGE_SHA256 = {
     "third_party/blink/renderer/core/frame/navigator_device_memory.cc":
         "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
     "third_party/blink/renderer/core/frame/screen.cc":
-        "cec3eefab518188c2bb33870e588e409b982482cf02637cbec8df308838b1c85",
+        "98b03954aeecf4373e0920999651e85c763a6b160d3eaf43b3cb1a1e08bad921",
     "third_party/blink/renderer/core/frame/local_dom_window.cc":
-        "6f2d91abe3adf152de4786aaf85f1bd44ab62383b36594a4a08bd84731cfaa47",
+        "d06d7347cb0229ac69ae747b7acc61c4a819d788a6283bbb84241476d1978aee",
     "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc":
-        "ee740e4a9b13c3ec0f29ea29012e353ea44b66dd234b0e7e161aa31a2a8ed40c",
+        "f13141f4dcef03794be6176d6309a66243543c655d0e6c6b8c4de3dee255c6f6",
     "components/embedder_support/user_agent_utils.cc":
-        "a4317b2cab28c12f9902ad5cf246d64f7a5dfcfd4dd8f752c643e82ca8e5d5f3",
+        "93186926980317a98172b4b716432f23472cadbaa40a044a3ae3f3e42c64f111",
     "components/embedder_support/BUILD.gn":
         "355120ca227322e7c2c4a2691c8573c2e7b56a0d4c8f8c34b93286a373e4ee38",
 }
@@ -60,13 +60,13 @@ POSTIMAGE_SHA256 = {
     "third_party/blink/renderer/core/frame/navigator_device_memory.cc":
         "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
     "third_party/blink/renderer/core/frame/screen.cc":
-        "60f1378ba5252765852093b4f288cf1b09d701169f6f12ebf4e379aea7e23429",
+        "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
     "third_party/blink/renderer/core/frame/local_dom_window.cc":
-        "50670cc0f4abb0a12ce8ec9a26622191517134d4f5f0c1b20aaa40213e545e56",
+        "9942c0225ecf961c16fbc45b8a1cd93cc5f730638722f6dce95ebaa65974e6fe",
     "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc":
-        "d7585aa1ca9704d8e716d564e850916868af880b2adcb1252e36f3a054f3cece",
+        "8a5578eda447e273a31ac01a908551c63db4d0c88fa57876459492126979a9ab",
     "components/embedder_support/user_agent_utils.cc":
-        "989eb7bd73fc11f4df1bed9ef37b39e39fc22f5727e7a9ef5477e7c54419eb2f",
+        "c3d97522a38a6e284901e712bd0401d02fe1b0775cdbeb992af16035baf63937",
     "components/embedder_support/BUILD.gn":
         "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
 }

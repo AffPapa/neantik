@@ -21,7 +21,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
-REBASE_PLAN_PATH = PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json"
+REBASE_PLAN_PATH = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
 VERIFIER_PATH = PROJECT_ROOT / "scripts" / "verify-nevision-patchset-manifest.py"
 
 SPEC = importlib.util.spec_from_file_location(
@@ -590,6 +590,7 @@ def apply_patchset(
         except PatchApplicationError:
             raise PatchApplicationError(
                 "Owned patchset is partially applied or its preimage drifted.\n"
+                f"Forward apply failure: {forward_error}\n"
                 + "\n".join(mismatches[:12])
             ) from forward_error
         raise PatchApplicationError(

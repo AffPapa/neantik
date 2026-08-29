@@ -191,7 +191,7 @@ the `com.openai.codex` coalition and abort inside Apple's
 
 Это историческое доказательство Chromium 144 сохранено только для
 воспроизводимости. Текущий продукт имеет единственный Direct release path;
-новая публикация должна использовать Chromium 151 source contract и полный
+новая публикация должна использовать Chromium 152 source contract и полный
 Direct release gate.
 
 ## Integration branding

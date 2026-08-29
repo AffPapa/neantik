@@ -50,7 +50,7 @@
   },
   "ownedInputs": {
     "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
-    "runtime/chromium-151-toolchain-lock.json": "1bd134675b33ce24661a0210c98d5a6dc3a6fb565b484b39940f2b22de861932",
+    "runtime/chromium-152-toolchain-lock.json": "1bd134675b33ce24661a0210c98d5a6dc3a6fb565b484b39940f2b22de861932",
     "runtime/nevision-patches/series.json": "a68a00be85fe22af2e0985f4359e24c467564c909ddd9d99ad7dc44b72982da1",
     "scripts/apply-neantik-patchset.py": "32cf446c6f68993cc225564b062fe326c20f4217e8d21c1678de86d536362e5b",
     "scripts/apply-owned-runtime-device-tuples.py": "ecd54b0c108f39ec3d374f0c4ec225a7a2e93eda7602b53ab8a444569adcc35d",

@@ -551,7 +551,7 @@ final class FingerprintEvidenceReleaseContext {
             "runtimeCandidateLock":
                 "Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json",
             "sourceContract":
-                "Contents/Resources/NeAntikRuntimeEvidence/chromium-151-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
             "sourceProvenance":
                 "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json",
             "buildArguments":

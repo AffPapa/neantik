@@ -776,7 +776,7 @@ struct FingerprintEvidenceReleaseContextTests {
                     ],
                     "sourceContract": [
                         "bundlePath":
-                            "Contents/Resources/NeAntikRuntimeEvidence/chromium-151-source-contract.json",
+                            "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
                         "sha256": String(repeating: "2", count: 64)
                     ],
                     "sourceProvenance": [

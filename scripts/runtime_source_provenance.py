@@ -20,8 +20,8 @@ from typing import Any, Callable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-151-source-contract.json"
-DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-151-rebase-plan.json"
+DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-152-source-contract.json"
+DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_OBJECT_RE = re.compile(r"^[0-9a-f]{40}$")
 STALE_PROVENANCE_MARKERS = (

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "152.0.7977.64",
+  "minimumPrepareFreeGiB": 55,
+  "preservedEvidenceBuildRoot": "/private/tmp/nevision-chromium-build-20260725",
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "152.0.7977.64",
+    "commit": "506c834ecceaa943c5f41e6cfe7f68acb5c45346",
+    "tree": "ef4e82eff60855955257addf490e864f9bc820ef",
+    "liteArchive": {
+      "filename": "chromium-152.0.7977.64-lite.tar.xz",
+      "sha256": "0afede9e15101678eb11277098cc2f181a84a5f532f7f46758b981a4a7585f78",
+      "hashesFileSHA256": "28951f2031eeecaf92de42099c29f89fddfc76a110cd2222bf1abc2cdb290af6"
+    }
+  },
+  "macPackaging": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "commit": "4eaad8b10b3c692d4197d05adf51f00145edf0b3",
+    "tree": "96321aae63c23ba1d6435212ea2d8f66e4569277",
+    "packagedChromiumVersion": "152.0.7977.64"
+  },
+  "commonChromium": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "152.0.7977.64-1",
+    "tagObject": "b7ef4610a50b69cff1e72c0a4d15b32e46deb7f0",
+    "commit": "59657a38437d11520a68618008eb825721319b9e",
+    "tree": "37f4a50135c42de552b8b60d34e0737bc8bb168e"
+  },
+  "sourceVersionOverride": {
+    "from": "152.0.7977.64",
+    "to": "152.0.7977.64",
+    "reason": "The matching ungoogled Chromium packaging layer already selects the official macOS Stable 152.0.7977.64 source archive; the explicit no-op version boundary prevents accidental fallback to a different archive."
+  },
+  "policy": "Do not mutate or delete the preserved Chromium evidence build root automatically. Use a separate absolute build root, verify the official archive SHA-256, apply upstream, packaging and owned NeAntik patches with zero fuzz, then regenerate source and binary evidence."
+}

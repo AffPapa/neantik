@@ -5,8 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TOOLS_PATH="$SCRIPT_DIR/runtime-tools"
-REBASE_PLAN="$PROJECT_ROOT/runtime/chromium-151-rebase-plan.json"
-TOOLCHAIN_LOCK="$PROJECT_ROOT/runtime/chromium-151-toolchain-lock.json"
+REBASE_PLAN="$PROJECT_ROOT/runtime/chromium-152-rebase-plan.json"
+TOOLCHAIN_LOCK="$PROJECT_ROOT/runtime/chromium-152-toolchain-lock.json"
+export DEVELOPER_DIR="${DEVELOPER_DIR:-$(
+  "$SCRIPT_DIR/resolve-compatible-developer-dir.sh"
+)}"
 
 usage() {
   echo "Usage: $0 /absolute/path/to/nevision-chromium-build [prepare|configure|build|all]" >&2
@@ -476,19 +479,56 @@ prepare_owned_dawn_go() {
   echo "Locked Dawn Go toolchain verified."
 }
 
+run_packaging_resource_unpack() {
+  local bootstrap_dir
+  local bootstrap_go
+  local dawn_go_binary
+  local linked_target
+
+  bootstrap_dir="$TOOLS_DIR/dawn-go-bootstrap"
+  bootstrap_go="$bootstrap_dir/go"
+  dawn_go_binary="$SOURCE_DIR/third_party/dawn/tools/golang/mac-arm64/bin/go"
+  mkdir -p "$bootstrap_dir"
+  printf '%s\n' \
+    '#!/bin/sh' \
+    'echo "Dawn Go bootstrap placeholder must not be executed." >&2' \
+    'exit 70' > "$bootstrap_go"
+  chmod 0755 "$bootstrap_go"
+
+  # ungoogled-chromium-macos expects a system Go binary while unpacking, but
+  # NeAntik deliberately has no unpinned system-Go dependency. Let that
+  # upstream step create its compatibility link to a non-shipping placeholder,
+  # validate and remove only that exact link, then install the locked Dawn Go
+  # package below.
+  PATH="$bootstrap_dir:$PATH" \
+    "$BUILD_ROOT/retrieve_and_unpack_resource.sh" -p arm64
+
+  if [[ ! -L "$dawn_go_binary" ]]; then
+    echo "Packaging resource setup did not create the expected Dawn Go link." >&2
+    exit 65
+  fi
+  linked_target="$(readlink "$dawn_go_binary")"
+  if [[ "$linked_target" != "$bootstrap_go" ]]; then
+    echo "Packaging resource setup created an unexpected Dawn Go link." >&2
+    exit 65
+  fi
+  unlink "$dawn_go_binary"
+}
+
 prepare_toolchain() {
-  if [[ -f "$TOOLCHAIN_STAMP" &&
-        -x "$SOURCE_DIR/third_party/llvm-build/Release+Asserts/bin/clang" &&
+  if [[ -x "$SOURCE_DIR/third_party/llvm-build/Release+Asserts/bin/clang" &&
         -x "$SOURCE_DIR/third_party/rust-toolchain/bin/rustc" &&
         -x "$SOURCE_DIR/third_party/node/mac_arm64/node-darwin-arm64/bin/node" ]]
   then
     verify_owned_rust_archive
     prepare_owned_dawn_go
+    printf '%s\n' "architecture=arm64" "toolchain=verified" \
+      > "$TOOLCHAIN_STAMP"
     return
   fi
 
   require_free_space 42
-  "$BUILD_ROOT/retrieve_and_unpack_resource.sh" -p arm64
+  run_packaging_resource_unpack
   verify_owned_rust_archive
 
   "$SOURCE_DIR/third_party/llvm-build/Release+Asserts/bin/clang" \
@@ -583,6 +623,13 @@ configure_build() {
 
   mkdir -p "$SOURCE_DIR/out/Default"
   awk '
+    /^chrome_pgo_phase[[:space:]]*=/ {
+      if (!pgo_written) {
+        print "chrome_pgo_phase=0"
+        pgo_written=1
+      }
+      next
+    }
     /^symbol_level=1$/ { print "symbol_level=0"; next }
     { print }
   ' \
