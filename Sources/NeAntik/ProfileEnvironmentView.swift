@@ -79,85 +79,10 @@ struct ProfileEnvironmentView: View {
                 if showingDetails {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(snapshot.sections) { section in
-                            let isExpanded = expandedSectionIDs.contains(
-                                section.id
+                            diagnosticSection(
+                                section,
+                                isLast: section.id == snapshot.sections.last?.id
                             )
-
-                            Button {
-                                setSectionExpanded(
-                                    section.id,
-                                    isExpanded: !isExpanded
-                                )
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(
-                                        systemName: isExpanded
-                                            ? "chevron.down"
-                                            : "chevron.right"
-                                    )
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .accessibilityHidden(true)
-
-                                    EnvironmentSectionHeader(section: section)
-                                }
-                                .frame(
-                                    maxWidth: .infinity,
-                                    minHeight: 32,
-                                    alignment: .leading
-                                )
-                                .padding(.horizontal, 4)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .background {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(
-                                        hoveredSectionID == section.id
-                                            ? Color.primary.opacity(0.055)
-                                            : Color.clear
-                                    )
-                            }
-                            .onHover { isHovering in
-                                if isHovering {
-                                    hoveredSectionID = section.id
-                                } else if hoveredSectionID == section.id {
-                                    hoveredSectionID = nil
-                                }
-                            }
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(
-                                ProfileEnvironmentPresentation.displayTitle(
-                                    for: section
-                                ) + ". " +
-                                    ProfileEnvironmentPresentation.sectionSummary(
-                                        for: section
-                                    )
-                            )
-                            .accessibilityValue(
-                                isExpanded ? "Развёрнуто" : "Свёрнуто"
-                            )
-                            .accessibilityHint(
-                                isExpanded
-                                    ? "Сворачивает диагностические значения"
-                                    : "Раскрывает диагностические значения"
-                            )
-                            .help(
-                                isExpanded
-                                    ? "Скрыть значения раздела"
-                                    : "Показать значения раздела"
-                            )
-
-                            if isExpanded {
-                                EnvironmentSectionFields(section: section)
-                                    .padding(.leading, 24)
-                                    .padding(.bottom, 4)
-                            }
-
-                            if section.id != snapshot.sections.last?.id {
-                                Divider()
-                                    .padding(.leading, 18)
-                            }
                         }
 
                         if hasProxy || canRunFingerprintAudit {
@@ -197,6 +122,89 @@ struct ProfileEnvironmentView: View {
         .onChange(of: snapshot.profileID) { _, _ in
             resetExpansion(for: snapshot)
         }
+    }
+
+    @ViewBuilder
+    private func diagnosticSection(
+        _ section: EnvironmentDiagnosticSection,
+        isLast: Bool
+    ) -> some View {
+        let isExpanded = expandedSectionIDs.contains(section.id)
+
+        diagnosticSectionButton(section, isExpanded: isExpanded)
+
+        if isExpanded {
+            EnvironmentSectionFields(section: section)
+                .padding(.leading, 24)
+                .padding(.bottom, 4)
+        }
+
+        if !isLast {
+            Divider()
+                .padding(.leading, 18)
+        }
+    }
+
+    private func diagnosticSectionButton(
+        _ section: EnvironmentDiagnosticSection,
+        isExpanded: Bool
+    ) -> some View {
+        Button {
+            setSectionExpanded(section.id, isExpanded: !isExpanded)
+        } label: {
+            HStack(spacing: 6) {
+                Image(
+                    systemName: isExpanded
+                        ? "chevron.down"
+                        : "chevron.right"
+                )
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+                EnvironmentSectionHeader(section: section)
+            }
+            .frame(
+                maxWidth: .infinity,
+                minHeight: 32,
+                alignment: .leading
+            )
+            .padding(.horizontal, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    hoveredSectionID == section.id
+                        ? Color.primary.opacity(0.055)
+                        : Color.clear
+                )
+        }
+        .onHover { isHovering in
+            if isHovering {
+                hoveredSectionID = section.id
+            } else if hoveredSectionID == section.id {
+                hoveredSectionID = nil
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            ProfileEnvironmentPresentation.displayTitle(for: section) +
+                ". " +
+                ProfileEnvironmentPresentation.sectionSummary(for: section)
+        )
+        .accessibilityValue(isExpanded ? "Развёрнуто" : "Свёрнуто")
+        .accessibilityHint(
+            isExpanded
+                ? "Сворачивает диагностические значения"
+                : "Раскрывает диагностические значения"
+        )
+        .help(
+            isExpanded
+                ? "Скрыть значения раздела"
+                : "Показать значения раздела"
+        )
     }
 
     private var overview: some View {
