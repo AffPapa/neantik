@@ -46,12 +46,23 @@ struct NeAntikApp: App {
             self.launchIntent = launchIntent
             if let request {
                 do {
+                    let executableURL = URL(
+                        fileURLWithPath: CommandLine.arguments[0]
+                    )
+                    guard let bundleURL =
+                            NeAntikLaunchIntent.applicationBundleURL(
+                                forExecutablePath:
+                                    CommandLine.arguments[0]
+                            ),
+                          let releaseBundle = Bundle(url: bundleURL)
+                    else {
+                        throw FingerprintEvidenceReleaseError
+                            .candidateMetadataMismatch
+                    }
                     switch try FingerprintEvidenceReleaseContext.load(
                             request: request,
-                            executableURL: URL(
-                                fileURLWithPath:
-                                    CommandLine.arguments[0]
-                            )
+                            executableURL: executableURL,
+                            bundle: releaseBundle
                         ) {
                     case let .audit(context):
                         fingerprintEvidenceReleaseContext = context
@@ -60,7 +71,8 @@ struct NeAntikApp: App {
                     }
                 } catch {
                     Self.writeControlErrorAndExit(
-                        "Не удалось подготовить защищённую проверку выпуска.\n",
+                        "Не удалось подготовить защищённую проверку выпуска: " +
+                            error.localizedDescription + "\n",
                         code: EX_DATAERR
                     )
                 }

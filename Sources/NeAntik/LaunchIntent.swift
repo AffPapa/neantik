@@ -34,6 +34,27 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         return nil
     }
 
+    static func applicationBundleURL(
+        forExecutablePath path: String
+    ) -> URL? {
+        guard isCanonicalAbsoluteExecutablePath(path) else {
+            return nil
+        }
+        let executableURL = URL(fileURLWithPath: path)
+        let bundleURL = executableURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        guard bundleURL.pathExtension == "app",
+              bundleURL.appendingPathComponent(
+                  "Contents/MacOS/NeAntik"
+              ).path == path
+        else {
+            return nil
+        }
+        return bundleURL
+    }
+
     static func parse(arguments: [String]) -> Self {
         if arguments.count == 4,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
