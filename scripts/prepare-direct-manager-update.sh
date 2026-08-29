@@ -184,10 +184,25 @@ swift build \
   --config-path "$BUILD_SUPPORT_DIR/config" \
   --security-path "$BUILD_SUPPORT_DIR/security"
 
+BIN_PATH="$(
+  swift build \
+    -c release \
+    --arch arm64 \
+    --disable-sandbox \
+    --cache-path "$BUILD_SUPPORT_DIR/cache" \
+    --config-path "$BUILD_SUPPORT_DIR/config" \
+    --security-path "$BUILD_SUPPORT_DIR/security" \
+    --show-bin-path
+)"
+MANAGER_BINARY="$BIN_PATH/NeAntik"
+if [[ ! -x "$MANAGER_BINARY" ]]; then
+  echo "Swift release binary is missing: $MANAGER_BINARY" >&2
+  exit 70
+fi
+
 rm -rf "$CANDIDATE_APP"
 ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"
-cp "$PROJECT_DIR/.build/arm64-apple-macosx/release/NeAntik" \
-  "$CANDIDATE_APP/Contents/MacOS/NeAntik"
+cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
 cp "$PROJECT_DIR/Resources/NeAntik.icns" \

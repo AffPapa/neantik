@@ -30,9 +30,25 @@ swift build \
   --config-path "$BUILD_SUPPORT_DIR/config" \
   --security-path "$BUILD_SUPPORT_DIR/security"
 
+BIN_PATH="$(
+  swift build \
+    -c release \
+    --arch arm64 \
+    --disable-sandbox \
+    --cache-path "$BUILD_SUPPORT_DIR/cache" \
+    --config-path "$BUILD_SUPPORT_DIR/config" \
+    --security-path "$BUILD_SUPPORT_DIR/security" \
+    --show-bin-path
+)"
+MANAGER_BINARY="$BIN_PATH/NeAntik"
+if [[ ! -x "$MANAGER_BINARY" ]]; then
+  echo "Swift release binary is missing: $MANAGER_BINARY" >&2
+  exit 70
+fi
+
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
-cp "$PROJECT_DIR/.build/arm64-apple-macosx/release/NeAntik" "$MACOS_DIR/NeAntik"
+cp "$MANAGER_BINARY" "$MACOS_DIR/NeAntik"
 
 cp "$PROJECT_DIR/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
 printf 'APPLNANT' >"$CONTENTS_DIR/PkgInfo"
