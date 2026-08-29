@@ -44,6 +44,30 @@ struct LaunchIntentTests {
     }
 
     @Test
+    func releaseExecutableResolvesItsOwningApplicationBundle() {
+        let executable =
+            "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+
+        #expect(
+            NeAntikLaunchIntent.applicationBundleURL(
+                forExecutablePath: executable
+            )?.path == "/Applications/NeAntik.app"
+        )
+        #expect(
+            NeAntikLaunchIntent.applicationBundleURL(
+                forExecutablePath:
+                    "/Applications/NeAntik.app/Contents/MacOS/Other"
+            ) == nil
+        )
+        #expect(
+            NeAntikLaunchIntent.applicationBundleURL(
+                forExecutablePath:
+                    "relative/NeAntik.app/Contents/MacOS/NeAntik"
+            ) == nil
+        )
+    }
+
+    @Test
     func similarReservedArgumentFailsClosed() {
         let intent = NeAntikLaunchIntent.parse(
             arguments: [
