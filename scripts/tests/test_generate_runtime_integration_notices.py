@@ -68,6 +68,17 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)
             shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            runtime_lock_path = (
+                fixture / "runtime" / "fingerprint-chromium.lock.json"
+            )
+            runtime_lock = MODULE.load_json(runtime_lock_path)
+            runtime_lock["fingerprintChromium"]["chromiumVersion"] = (
+                "151.0.7922.108"
+            )
+            runtime_lock_path.write_text(
+                json.dumps(runtime_lock),
+                encoding="utf-8",
+            )
             contract_path = (
                 fixture / "runtime" / "chromium-152-source-contract.json"
             )

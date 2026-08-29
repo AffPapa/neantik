@@ -126,7 +126,9 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
     def test_rejects_misaligned_macho_linkedit_string_tables(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
 
-        self.assertIn('otool -l "$binary"', script)
+        self.assertIn('otool -l "$MACHO_INSPECTION_PATH"', script)
+        self.assertIn('ln -s "$binary" "$MACHO_INSPECTION_PATH"', script)
+        self.assertIn("otool-classic treats a parenthesized path", script)
         self.assertIn('LC_SYMTAB', script)
         self.assertIn('string_table_offset % 8 != 0', script)
         self.assertIn(

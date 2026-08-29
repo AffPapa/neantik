@@ -187,7 +187,11 @@ if [[ "$MAIN_ARCHITECTURES" != "arm64" ]]; then
 fi
 
 MACHO_LIST="$(mktemp "${TMPDIR:-/tmp}/nevision-machos.XXXXXX")"
-trap 'rm -f "$MACHO_LIST"' EXIT
+MACHO_INSPECTION_DIR="$(
+  mktemp -d "${TMPDIR:-/tmp}/nevision-macho-inspection.XXXXXX"
+)"
+MACHO_INSPECTION_PATH="$MACHO_INSPECTION_DIR/binary"
+trap 'rm -f "$MACHO_LIST"; rm -rf "$MACHO_INSPECTION_DIR"' EXIT
 
 find "$APP_PATH/Contents" -type f \
   \( -perm -111 -o -name '*.dylib' \) -print0 |
@@ -206,8 +210,13 @@ while IFS= read -r binary; do
     echo "Non-ARM64 nested code: $binary ($architectures)" >&2
     exit 65
   fi
+  # Apple's otool-classic treats a parenthesized path component as archive
+  # member syntax. Chromium helper executables include names such as (GPU),
+  # so inspect every binary through a stable parenthesis-free symlink.
+  rm -f "$MACHO_INSPECTION_PATH"
+  ln -s "$binary" "$MACHO_INSPECTION_PATH"
   string_table_offset="$(
-    otool -l "$binary" |
+    otool -l "$MACHO_INSPECTION_PATH" |
       awk '
         $1 == "cmd" && $2 == "LC_SYMTAB" { in_symtab = 1; next }
         in_symtab && $1 == "cmd" { exit }
