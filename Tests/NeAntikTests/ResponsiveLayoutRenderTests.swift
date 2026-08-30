@@ -517,6 +517,30 @@ struct ResponsiveLayoutRenderTests {
                 )
             )
         )
+        for profile in [
+            BrowserProfile(
+                name: "TikTok · FR · UGC 02",
+                tags: ["TikTok", "Фарм"],
+                note: "Прогрев: день 3. Следующий вход после 18:00."
+            ),
+            BrowserProfile(
+                name: "Facebook Ads · DE · BM 04",
+                tags: ["Facebook", "Работа"],
+                proxy: ProxyConfiguration(
+                    kind: .socks5,
+                    host: "proxy.example",
+                    port: 10_804,
+                    username: ""
+                )
+            ),
+            BrowserProfile(
+                name: "Native · RU · Teaser 07",
+                tags: ["Тизерки"],
+                note: "Креативы проверены. Не менять гео без согласования."
+            ),
+        ] {
+            _ = try store.upsert(profile)
+        }
 
         let reviewedSizes: [(String, CGSize)] = [
             (

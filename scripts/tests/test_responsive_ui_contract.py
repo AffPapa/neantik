@@ -41,14 +41,16 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
-    def test_workspace_uses_native_three_column_navigation_without_titlebar_hacks(
+    def test_workspace_uses_native_list_first_navigation_and_optional_inspector(
         self,
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
         self.assertNotIn(".safeAreaInset(edge: .top", text)
         self.assertNotIn(".padding(.top, 46)", text)
         self.assertNotIn("windowTitlebarInset", text)
-        self.assertIn("GeometryReader", text)
+        navigation_start = text.index("private var workspaceBase")
+        sheets_start = text.index("private var workspaceSheets")
+        self.assertNotIn("GeometryReader", text[navigation_start:sheets_start])
         self.assertIn(
             "NavigationSplitView(columnVisibility: $columnVisibility)",
             text,
@@ -56,9 +58,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("workspaceSources", text)
         self.assertIn("profileListPane", text)
         self.assertIn("} detail: {", text)
+        self.assertIn(".inspector(isPresented: $showsProfileInspector)", text)
+        self.assertIn("detail\n                .inspectorColumnWidth(", text)
         self.assertIn("WorkspaceLayout.minimumSourceColumnWidth", text)
         self.assertIn("WorkspaceLayout.minimumProfileColumnWidth", text)
-        self.assertIn("WorkspaceLayout.minimumDetailColumnWidth", text)
+        self.assertIn("WorkspaceLayout.minimumInspectorWidth", text)
+        self.assertIn("WorkspaceLayout.idealInspectorWidth", text)
+        self.assertIn("WorkspaceLayout.maximumInspectorWidth", text)
         self.assertIn(".navigationSplitViewStyle(.balanced)", text)
         self.assertIn(".toolbar { workspaceToolbar }", text)
 
@@ -87,7 +93,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             2,
         )
 
-    def test_workspace_header_owns_create_and_toolbar_owns_selected_profile_actions(
+    def test_list_first_header_owns_actions_and_toolbar_toggles_inspector(
         self,
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
@@ -100,44 +106,50 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         toolbar = text[toolbar_start:toolbar_end]
 
-        self.assertIn(
-            "ToolbarItemGroup(placement: .primaryAction)", toolbar
-        )
-        self.assertIn("if let profile = selectedProfile", toolbar)
-        self.assertIn("profileCommandSet(", toolbar)
-        self.assertIn("commands.presentation.launchTitle", toolbar)
-        for action in (
-            '"Изменить…"',
-            '"Показать папку данных в Finder"',
-            '"Другие действия с профилем"',
-            '"Удалить профиль"',
-        ):
-            self.assertIn(action, toolbar)
-        self.assertIn("profileOrganizationActions(commands)", toolbar)
-        self.assertNotIn('"Новый профиль', toolbar)
+        self.assertIn("ToolbarItem(placement: .primaryAction)", toolbar)
+        self.assertIn("showsProfileInspector.toggle()", toolbar)
+        self.assertIn('systemImage: "sidebar.right"', toolbar)
+        self.assertIn('.keyboardShortcut("i", modifiers: [.command])', toolbar)
+        self.assertIn(".disabled(selectedProfile == nil)", toolbar)
+        self.assertNotIn("profileCommandSet(", toolbar)
 
         header_start = text.index("private func profileListHeader(")
         search_start = text.index(
             "private var profileSearchField", header_start
         )
         header = text[header_start:search_start]
-        self.assertIn('Label("Новый профиль", systemImage: "plus")', header)
+        self.assertIn('Label("Создать профиль", systemImage: "plus")', header)
         self.assertIn(".buttonStyle(.borderedProminent)", header)
+        self.assertIn(".tint(.green)", header)
         self.assertIn('Label("Ещё", systemImage: "ellipsis.circle")', header)
         self.assertIn("profileListViewMenu", header)
+        self.assertIn('Label("\\(runningCount) запущено"', header)
+        self.assertIn("processes.runningProfileIDs.contains($0.id)", header)
         self.assertIn('"Создать из списка прокси…"', header)
         self.assertIn('"Проверить прокси (\\(bulkProxyAction.count))"', header)
         self.assertIn("if bulkProxyTestTask == nil,", header)
         self.assertIn("if bulkProxyTestTask != nil", header)
         self.assertLess(
             header.index('Label("Ещё", systemImage: "ellipsis.circle")'),
-            header.index('Label("Новый профиль", systemImage: "plus")'),
+            header.index('Label("Создать профиль", systemImage: "plus")'),
         )
 
+        self.assertIn("private func profileTableHeader", text)
+        self.assertIn("ProfileRowLayout.minimumWideWidth", text)
+        self.assertIn("GeometryReader", text)
+        self.assertIn('Text("Действие")', text)
+        self.assertIn('Text("Подключение")', text)
+        self.assertIn("wideRow(presentation)", text)
+        self.assertIn("compactRow(presentation)", text)
+        self.assertIn("ProfileRowLayout.minimumIdentityWidth", text)
+        self.assertIn("maxWidth: .infinity", text)
+        self.assertIn("private var actionsMenu", text)
         self.assertIn("private var profileListViewMenu", text)
         self.assertIn('Picker("Сортировка"', text)
         self.assertIn('Picker("Подключение"', text)
-        self.assertIn('accessibilityLabel("Вид списка профилей")', text)
+        self.assertIn(
+            'accessibilityLabel("Фильтры и сортировка профилей")', text
+        )
         self.assertIn("profileRouteFilter = .all", text)
         self.assertIn("profileRouteFilter != .all", text)
         self.assertIn("profileRouteFilter = decision.routeFilter", text)
@@ -250,11 +262,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         empty_state = text[empty_start:empty_end]
 
-        self.assertIn("основной области окна", empty_state)
-        self.assertNotIn("createAndOpenFirstProfile()", empty_state)
-        self.assertNotIn('Button("Создать профиль")', empty_state)
-        self.assertIn("FirstProfileOnboardingView(", text)
-        self.assertIn("onCreateAndOpen: createAndOpenFirstProfile", text)
+        self.assertIn("FirstProfileOnboardingView(", empty_state)
+        self.assertIn(
+            "onCreateAndOpen: createAndOpenFirstProfile", empty_state
+        )
+        self.assertIn("onConfigure: beginCreatingProfile", empty_state)
 
         self.assertIn('"Создать и открыть"', onboarding)
         self.assertIn('Button("Настроить…"', onboarding)
@@ -478,15 +490,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
             search_start,
         )
         search = content[search_start:search_end]
+        self.assertIn('"Поиск профилей, прокси и заметок"', search)
         self.assertIn(
             '"Поиск профилей, маршрутов, заметок, тегов и папок"',
             search,
-        )
-        self.assertGreaterEqual(
-            search.count(
-                '"Поиск профилей, маршрутов, заметок, тегов и папок"'
-            ),
-            2,
         )
         self.assertGreaterEqual(projection.count("profile.note"), 2)
 
