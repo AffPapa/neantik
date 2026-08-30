@@ -214,6 +214,53 @@ def _reject_duplicate_json_pairs(
     return result
 
 
+def preflight_notary_profile(
+    *,
+    project_root: Path,
+    notary_profile: str,
+    runner: CommandRunner,
+) -> None:
+    """Prove the configured Keychain profile works before durable state.
+
+    The history response is intentionally neither returned nor included in an
+    error. Besides keeping the preflight privacy-safe, this guarantees that a
+    missing, invalid, or unreachable profile fails before a notarization
+    transaction directory or submit-intent receipt can exist.
+    """
+    result = runner(
+        [
+            "xcrun",
+            "notarytool",
+            "history",
+            "--keychain-profile",
+            notary_profile,
+            "--output-format",
+            "json",
+        ],
+        project_root,
+    )
+    if result.returncode != 0:
+        raise DirectNotaryTransactionError(
+            "Keychain notary profile preflight failed"
+        )
+    try:
+        payload = json.loads(
+            result.output,
+            object_pairs_hook=_reject_duplicate_json_pairs,
+        )
+    except (json.JSONDecodeError, TypeError) as error:
+        raise DirectNotaryTransactionError(
+            "Keychain notary profile preflight returned invalid JSON"
+        ) from error
+    if (
+        not isinstance(payload, dict)
+        or not isinstance(payload.get("history"), list)
+    ):
+        raise DirectNotaryTransactionError(
+            "Keychain notary profile preflight returned invalid history"
+        )
+
+
 def parse_notary_result(
     output: str,
     *,
@@ -2204,6 +2251,11 @@ def run_transaction(
         raise DirectNotaryTransactionError(
             "prepared NeAntik.app is missing or unsafe"
         )
+    preflight_notary_profile(
+        project_root=project_root,
+        notary_profile=notary_profile,
+        runner=runner,
+    )
     (
         transaction_root,
         transaction_descriptor,

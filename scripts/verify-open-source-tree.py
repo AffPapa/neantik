@@ -35,11 +35,19 @@ FORBIDDEN_NAMES = {
     ".DS_Store",
     ".env",
 }
-FORBIDDEN_TEXT = {
-    "/Users/dumay": "personal absolute path",
-    "root@135.181.253.143": "private deployment endpoint",
-    "/Users/dumay/AFF.job/.secrets": "private secret-store path",
-}
+PERSONAL_USER_PATH_RE = re.compile(
+    re.escape("/") + r"Users/(?P<username>[A-Za-z0-9._-]+)(?:/|$)"
+)
+PRIVATE_DEPLOYMENT_ENDPOINT_RE = re.compile(
+    r"(?<![A-Za-z0-9._-])root@[A-Za-z0-9][A-Za-z0-9.-]*\b"
+)
+PRIVATE_SECRET_STORE_PATH_RE = re.compile(
+    re.escape("/")
+    + r"(?:Users|home)/[^\"'\r\n]{1,256}/"
+    + r"(?:\.secrets|\.credentials|private[-_]?keys)(?:/|[\"'\s]|$)",
+    re.IGNORECASE,
+)
+SYNTHETIC_TEST_USERNAMES = frozenset({"alice", "example", "test"})
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
     "GitHub token": re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
@@ -129,6 +137,7 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/tests/test_verify_browser_identity_issuance.py",
     "scripts/tests/test_release_input_snapshot.py",
     "scripts/tests/test_verify_public_artifact_privacy.py",
+    "scripts/tests/test_verify_open_source_tree.py",
     "scripts/tests/test_runtime_audit_launcher.py",
     "scripts/tests/test_verify_direct_hosted_download_oss.py",
     "scripts/tests/test_verify_public_fingerprint_corpus.py",
@@ -214,11 +223,36 @@ def iter_public_files() -> list[Path]:
     return files
 
 
+def is_synthetic_test_user_path(relative: Path, username: str) -> bool:
+    parts = relative.parts
+    is_test_path = (
+        bool(parts) and parts[0] == "Tests"
+    ) or (
+        len(parts) >= 2 and parts[0] == "scripts" and parts[1] == "tests"
+    )
+    return is_test_path and username.lower() in SYNTHETIC_TEST_USERNAMES
+
+
+def text_violation(relative: Path, text: str) -> str | None:
+    if PRIVATE_SECRET_STORE_PATH_RE.search(text):
+        return "private secret-store path"
+
+    for match in PERSONAL_USER_PATH_RE.finditer(text):
+        if not is_synthetic_test_user_path(relative, match.group("username")):
+            return "personal absolute path"
+
+    if PRIVATE_DEPLOYMENT_ENDPOINT_RE.search(text):
+        return "private deployment endpoint"
+
+    for description, pattern in SECRET_PATTERNS.items():
+        if pattern.search(text):
+            return f"possible {description}"
+    return None
+
+
 def verify_files(files: list[Path]) -> None:
     for path in files:
         relative = path.relative_to(PROJECT_ROOT)
-        if path.resolve() == Path(__file__).resolve():
-            continue
         if path.name in FORBIDDEN_NAMES or path.suffix.lower() in FORBIDDEN_SUFFIXES:
             fail(f"forbidden file is present: {relative}")
         if path.suffix.lower() not in TEXT_SUFFIXES:
@@ -227,12 +261,9 @@ def verify_files(files: list[Path]) -> None:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        for needle, description in FORBIDDEN_TEXT.items():
-            if needle in text:
-                fail(f"{description} found in {relative}")
-        for description, pattern in SECRET_PATTERNS.items():
-            if pattern.search(text):
-                fail(f"possible {description} found in {relative}")
+        violation = text_violation(relative, text)
+        if violation is not None:
+            fail(f"{violation} found in {relative}")
 
 
 def verify_release_metadata() -> None:

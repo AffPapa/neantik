@@ -38,6 +38,7 @@ class FakeReleaseRunner:
         info_identifier: str = SUBMISSION_ID,
         fail_final_verifier: bool = False,
         fail_submit: bool = False,
+        fail_history: bool = False,
         history_submission_name: str | None = None,
     ) -> None:
         self.commands: list[list[str]] = []
@@ -46,6 +47,7 @@ class FakeReleaseRunner:
         self.info_identifier = info_identifier
         self.fail_final_verifier = fail_final_verifier
         self.fail_submit = fail_submit
+        self.fail_history = fail_history
         self.history_submission_name = history_submission_name
 
     def package(self, source: Path, destination: Path) -> None:
@@ -125,6 +127,12 @@ class FakeReleaseRunner:
                 ),
             )
         if command[:3] == ["xcrun", "notarytool", "history"]:
+            if self.fail_history:
+                return MODULE.CommandResult(
+                    69,
+                    "sensitive history output must not escape",
+                    "sensitive credential error must not escape",
+                )
             history: dict[str, object] = {"history": []}
             if self.history_submission_name is not None:
                 history["history"] = [
@@ -156,6 +164,54 @@ class FakeReleaseRunner:
 
 
 class DirectNotaryTransactionTests(unittest.TestCase):
+    def test_missing_notary_profile_fails_before_durable_transaction(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            runner = FakeReleaseRunner(fail_history=True)
+            source_kwargs = self.source_kwargs(root)
+            initial_dist_entries = {
+                path.name for path in (root / "dist").iterdir()
+            }
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "Keychain notary profile preflight failed",
+            ) as raised:
+                MODULE.run_transaction(
+                    project_root=root,
+                    app=paths["app"],
+                    manifest=paths["manifest"],
+                    evidence=paths["evidence"],
+                    attestation=paths["attestation"],
+                    release_channel="public-alpha",
+                    notary_profile="missing-test-profile",
+                    runner=runner,
+                    **source_kwargs,
+                )
+
+            self.assertEqual(
+                {path.name for path in (root / "dist").iterdir()},
+                initial_dist_entries,
+            )
+            self.assertEqual(
+                runner.commands,
+                [
+                    [
+                        "xcrun",
+                        "notarytool",
+                        "history",
+                        "--keychain-profile",
+                        "missing-test-profile",
+                        "--output-format",
+                        "json",
+                    ]
+                ],
+            )
+            self.assertNotIn("sensitive", str(raised.exception))
+
     def test_no_wait_submission_accepts_identifier_without_status(
         self,
     ) -> None:
