@@ -56,14 +56,26 @@ SAFE_BASENAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 FILENAME_RE = re.compile(
     r"^NeAntik-(?P<ver>\d+\.\d+\.\d+)-arm64-notarized\.(?P<ext>dmg|zip)$"
 )
-PLACEHOLDER_PATTERNS = {
-    "вставить",
-    "insert",
-    "placeholder",
-    "todo",
-    "fixme",
-    "changeme",
-}
+# Placeholder markers are matched as whole tokens or as unfinished template
+# phrases, never as bare substrings. Substring matching rejected correct
+# release copy: the ordinary Russian sentence «вставить список прокси»
+# contains the verb «вставить», while an unfinished template says
+# «вставить сюда». Marker tokens still fail closed, and the token form now
+# also catches CHANGE_ME, which the old "changeme" substring missed.
+PLACEHOLDER_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("todo", re.compile(r"\btodo\b")),
+    ("fixme", re.compile(r"\bfixme\b")),
+    ("changeme", re.compile(r"\bchange[ _-]?me\b")),
+    ("placeholder", re.compile(r"\bplaceholder\b")),
+    ("insert-here", re.compile(r"\binsert\b[^.\n]{0,40}\bhere\b")),
+    (
+        "вставить-сюда",
+        re.compile(
+            r"\bвстав(?:ить|ьте|им|лять)\b[^.\n]{0,40}"
+            r"\b(?:сюда|здесь|значение|значения|текст)\b"
+        ),
+    ),
+)
 
 
 class DuplicateKeyError(ValueError):
@@ -100,9 +112,9 @@ def parse_json(path: Path, max_size: int, label: str, errors: list[str]) -> Any:
         errors.append(f"{label} cannot be read as UTF-8: {exc}")
         return None
     lowered = text.casefold()
-    for placeholder in PLACEHOLDER_PATTERNS:
-        if placeholder in lowered:
-            errors.append(f"{label} contains placeholder marker: {placeholder}")
+    for name, pattern in PLACEHOLDER_PATTERNS:
+        if pattern.search(lowered):
+            errors.append(f"{label} contains placeholder marker: {name}")
     try:
         return json.loads(text, object_pairs_hook=no_duplicate_keys)
     except (json.JSONDecodeError, DuplicateKeyError) as exc:

@@ -181,6 +181,65 @@ class ReleaseValidatorTests(unittest.TestCase):
         self.write_snapshot()
         self.assert_rejected("content.releaseVersion")
 
+    def set_changelog_items(self, items: list[str]) -> None:
+        self.content["changelog"][0]["items"] = items
+        self.write_snapshot()
+
+    def test_accepts_ordinary_russian_verb_in_changelog(self) -> None:
+        """A normal sentence is not a placeholder marker.
+
+        The published 0.3.20 changelog describes the bulk import flow as
+        «вставить список прокси». Substring matching on the bare verb
+        «вставить» rejected that correct release copy.
+        """
+        self.set_changelog_items(
+            [
+                "Массовое создание профилей сведено к локальному сценарию "
+                "«вставить список прокси → проверить предпросмотр → "
+                "создать» без скрытых сетевых запросов.",
+            ]
+        )
+        result = self.validate()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "VALIDATION OK")
+
+    def test_accepts_ordinary_english_verb_in_changelog(self) -> None:
+        self.set_changelog_items(
+            ["Insert the profile into the workspace and continue."]
+        )
+        result = self.validate()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "VALIDATION OK")
+
+    def test_rejects_todo_marker(self) -> None:
+        self.set_changelog_items(["TODO: заполнить описание релиза"])
+        self.assert_rejected("placeholder marker: todo")
+
+    def test_rejects_fixme_marker(self) -> None:
+        self.set_changelog_items(["FIXME проверить ссылку на загрузку"])
+        self.assert_rejected("placeholder marker: fixme")
+
+    def test_rejects_change_me_marker(self) -> None:
+        self.set_changelog_items(["Версия CHANGE_ME готова к выпуску"])
+        self.assert_rejected("placeholder marker: changeme")
+
+    def test_rejects_placeholder_marker(self) -> None:
+        self.set_changelog_items(["placeholder text for the release notes"])
+        self.assert_rejected("placeholder marker: placeholder")
+
+    def test_rejects_unfinished_russian_template(self) -> None:
+        self.set_changelog_items(["вставить сюда список изменений"])
+        self.assert_rejected("placeholder marker: вставить-сюда")
+
+    def test_rejects_unfinished_english_template(self) -> None:
+        self.set_changelog_items(["insert release version here"])
+        self.assert_rejected("placeholder marker: insert-here")
+
+    def test_rejects_marker_in_release_json(self) -> None:
+        self.release["securityBaseline"]["source"] = "TODO"
+        self.write_snapshot()
+        self.assert_rejected("release.json contains placeholder marker: todo")
+
 
 if __name__ == "__main__":
     unittest.main()
