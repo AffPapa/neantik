@@ -60,6 +60,9 @@ class LocalManagerScriptTests(unittest.TestCase):
             'DEVELOPMENT_ROOT="$PROJECT_DIR/.build/neantik-local"',
             text,
         )
+        self.assertIn('CANDIDATE_INFO_PLIST="$PROJECT_DIR/Resources/Info.plist"', text)
+        self.assertIn("CFBundleShortVersionString", text)
+        self.assertIn("CFBundleVersion", text)
         self.assertIn(
             'DEVELOPMENT_APP="$DEVELOPMENT_ROOT/NeAntik-Dev.app"',
             text,

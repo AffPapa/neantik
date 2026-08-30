@@ -109,6 +109,8 @@ struct ProfileListIndex: Equatable, Sendable {
     let activeCountByFolderID: [UUID: Int]
     let folderNameByID: [UUID: String]
     private let indexedProfiles: [IndexedProfile]
+    private let orderedProfileIndicesByOrdering:
+        [ProfileListOrdering: [Int]]
     private let displayNameByTagID: [ProfileTagID: String]
     private let countsByScope:
         [ProfileListScope: [ProfileFolderFilter: Int]]
@@ -186,7 +188,7 @@ struct ProfileListIndex: Equatable, Sendable {
                     profileSearchText: ProfileSearchText.document(
                         profileValues: [profile.name] + profile.tags + [
                             profile.note
-                        ]
+                        ] + ProfileRouteSearchDocument.values(for: profile)
                     ),
                     folderSearchText: folderFilter.folderID.flatMap {
                         resolvedFolderNameByID[$0]
@@ -223,6 +225,20 @@ struct ProfileListIndex: Equatable, Sendable {
         self.unfiledCount = unfiledCount
         self.activeCountByFolderID = activeCountByFolderID
         self.indexedProfiles = indexedProfiles
+        let unorderedIndices = Array(indexedProfiles.indices)
+        orderedProfileIndicesByOrdering = Dictionary(
+            uniqueKeysWithValues: ProfileListOrdering.allCases.map { ordering in
+                (
+                    ordering,
+                    unorderedIndices.sorted { lhs, rhs in
+                        ordering.areInIncreasingOrder(
+                            indexedProfiles[lhs].profile,
+                            indexedProfiles[rhs].profile
+                        )
+                    }
+                )
+            }
+        )
         self.displayNameByTagID = displayNameByTagID
         self.countsByScope = countsByScope
         var summariesByScope:
@@ -292,10 +308,15 @@ struct ProfileListIndex: Equatable, Sendable {
         searchText: String,
         tag: String?,
         scope: ProfileListScope,
-        folderFilter: ProfileFolderFilter
+        folderFilter: ProfileFolderFilter,
+        routeFilter: ProfileRouteFilter = .all,
+        ordering: ProfileListOrdering = .pinnedThenName
     ) -> [BrowserProfile] {
         let searchQuery = ProfileSearchText.query(searchText)
-        return indexedProfiles.compactMap { entry in
+        let orderedIndices = orderedProfileIndicesByOrdering[ordering] ??
+            Array(indexedProfiles.indices)
+        return orderedIndices.compactMap { index in
+            let entry = indexedProfiles[index]
             switch scope {
             case .active:
                 guard !entry.profile.isArchived else { return nil }
@@ -314,6 +335,7 @@ struct ProfileListIndex: Equatable, Sendable {
             case let .folder(requiredFolderID):
                 guard entry.folderID == requiredFolderID else { return nil }
             }
+            guard routeFilter.includes(entry.profile) else { return nil }
             if let tag, !entry.profile.tags.contains(where: {
                 $0.compare(
                     tag,
@@ -376,7 +398,9 @@ enum ProfileListProjection {
         tag: String?,
         scope: ProfileListScope = .active,
         folderFilter: ProfileFolderFilter = .all,
-        organization: ProfileOrganizationState = .empty
+        organization: ProfileOrganizationState = .empty,
+        routeFilter: ProfileRouteFilter = .all,
+        ordering: ProfileListOrdering = .pinnedThenName
     ) -> [BrowserProfile] {
         let query = ProfileSearchText.query(searchText)
         let folderNameByID = Dictionary(
@@ -409,6 +433,7 @@ enum ProfileListProjection {
             case let .folder(requiredFolderID):
                 guard folderID == requiredFolderID else { return false }
             }
+            guard routeFilter.includes(profile) else { return false }
             let matchesTag: Bool
             if let tag {
                 matchesTag = profile.tags.contains {
@@ -423,7 +448,8 @@ enum ProfileListProjection {
             guard matchesTag else { return false }
             guard !query.isEmpty else { return true }
             if ProfileSearchText.document(
-                profileValues: [profile.name] + profile.tags + [profile.note]
+                profileValues: [profile.name] + profile.tags + [profile.note] +
+                    ProfileRouteSearchDocument.values(for: profile)
             ).contains(query) {
                 return true
             }
@@ -433,7 +459,7 @@ enum ProfileListProjection {
                 return ProfileSearchText.fold(folderName).contains(query)
             }
             return false
-        }
+        }.sorted(by: ordering.areInIncreasingOrder)
     }
 
     static func count(
@@ -587,17 +613,7 @@ enum ProfileListProjection {
         _ lhs: BrowserProfile,
         _ rhs: BrowserProfile
     ) -> Bool {
-        if lhs.isPinned != rhs.isPinned {
-            return lhs.isPinned
-        }
-        let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
-        if nameOrder != .orderedSame {
-            return nameOrder == .orderedAscending
-        }
-        if lhs.createdAt != rhs.createdAt {
-            return lhs.createdAt < rhs.createdAt
-        }
-        return lhs.id.uuidString < rhs.id.uuidString
+        ProfileListOrdering.pinnedThenName.areInIncreasingOrder(lhs, rhs)
     }
 }
 

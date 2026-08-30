@@ -194,6 +194,64 @@ struct ProfilePostSaveRevealPolicyTests {
         expectVisible(profile, decision: decision, organization: organization)
     }
 
+    @Test
+    func incompatibleRouteFilterIsClearedAfterSave() {
+        let direct = BrowserProfile(name: "Direct")
+        let proxied = BrowserProfile(
+            name: "Proxied",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 8443,
+                username: ""
+            )
+        )
+
+        let directDecision = ProfilePostSaveRevealPolicy.resolve(
+            savedProfile: direct,
+            currentQuery: WorkspaceQueryState(),
+            currentSearchText: "",
+            currentRouteFilter: .withProxy,
+            organization: .empty
+        )
+        let proxiedDecision = ProfilePostSaveRevealPolicy.resolve(
+            savedProfile: proxied,
+            currentQuery: WorkspaceQueryState(),
+            currentSearchText: "",
+            currentRouteFilter: .withoutProxy,
+            organization: .empty
+        )
+
+        #expect(directDecision.routeFilter == .all)
+        #expect(proxiedDecision.routeFilter == .all)
+        expectVisible(direct, decision: directDecision, organization: .empty)
+        expectVisible(proxied, decision: proxiedDecision, organization: .empty)
+    }
+
+    @Test
+    func compatibleRouteFilterStaysAfterSave() {
+        let profile = BrowserProfile(
+            name: "Proxied",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 8443,
+                username: ""
+            )
+        )
+
+        let decision = ProfilePostSaveRevealPolicy.resolve(
+            savedProfile: profile,
+            currentQuery: WorkspaceQueryState(),
+            currentSearchText: "",
+            currentRouteFilter: .withProxy,
+            organization: .empty
+        )
+
+        #expect(decision.routeFilter == .withProxy)
+        expectVisible(profile, decision: decision, organization: .empty)
+    }
+
     private func expectVisible(
         _ profile: BrowserProfile,
         decision: ProfilePostSaveRevealDecision,
@@ -203,7 +261,8 @@ struct ProfilePostSaveRevealPolicyTests {
             profiles: [profile],
             organization: organization,
             query: decision.query,
-            searchText: decision.searchText
+            searchText: decision.searchText,
+            routeFilter: decision.routeFilter
         )
         #expect(state.visibleProfiles.map(\.id) == [profile.id])
     }

@@ -23,8 +23,8 @@ Current published GitHub public-alpha release:
 - DMG: `NeAntik-0.3.21-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-New branch changes are not a binary release until separately signed and
-notarized DMG/ZIP assets appear in GitHub Releases.
+Source candidate `0.3.22 (25)` is not a public binary release until its own
+signed and notarized DMG/ZIP assets appear in GitHub Releases.
 
 Product website: <https://affpapa.org/neantik>.
 
@@ -71,6 +71,17 @@ The capabilities below are included in the published, signed, and notarized
 - Chromium local symbols are removed only from the temporary unsigned copy by
   the compatible Xcode Apple `strip` before Developer ID signing. Locales,
   licenses, notices, SwiftShader, crashpad, and security evidence remain.
+
+## Source candidate 0.3.22 (25)
+
+- A compact list menu adds pinned/name, recent-launch, and newest sorting.
+- Profiles can be filtered to all routes, configured proxies, or direct
+  connections.
+- Search includes the visible proxy type and endpoint, but never proxy
+  usernames, passwords, Keychain content, or other credentials.
+
+The public download remains the signed and notarized `0.3.21 (24)` release
+until this exact candidate completes the full Direct Distribution gate.
 
 For authenticated HTTP/HTTPS proxies, separate buttons copy the username and
 password into Chromium's native prompt. The password remains in macOS

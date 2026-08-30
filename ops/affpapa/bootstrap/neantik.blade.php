@@ -15,10 +15,10 @@
         : [];
     $releaseManifest = is_array($releaseManifest) ? $releaseManifest : [];
     $contentManifest = is_array($contentManifest) ? $contentManifest : [];
-    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.19');
-    $releaseBuild = (int) ($releaseManifest['build'] ?? 22);
-    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.108');
-    $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '151';
+    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.21');
+    $releaseBuild = (int) ($releaseManifest['build'] ?? 24);
+    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '152.0.7977.64');
+    $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '152';
     $artifactByFormat = [];
     foreach (($releaseManifest['artifacts'] ?? []) as $artifact) {
         if (is_array($artifact) && isset($artifact['format'])) {
@@ -41,6 +41,32 @@
     ];
 
     $changelog = [
+        [
+            'ver' => '0.3.21',
+            'build' => 24,
+            'date' => '30 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'Диагностика среды ведёт к реальному разделу, а официальная переустановка сохраняет данные профилей',
+                'Заметка видна сразу при создании и всегда отображается в карточке профиля',
+                'Установленное приложение уменьшено примерно на 125 МиБ безопасным удалением локальных символов до Developer ID signing',
+                'Локали, лицензии, notices, SwiftShader, crashpad и security evidence сохранены',
+                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой и проверкой SHA-256; AffPapa автоматически откатывается при ошибке',
+            ],
+        ],
+        [
+            'ver' => '0.3.20',
+            'build' => 23,
+            'date' => '30 августа 2026',
+            'label' => 'Public Alpha',
+            'items' => [
+                'Встроенный Chromium обновлён до 152.0.7977.64 для Apple Silicon, ARM64 и Metal',
+                'Добавлен нативный однооконный workspace с папками, тегами, заметками и безопасным дублированием профилей',
+                'Массовое создание профилей использует локальный предпросмотр прокси без скрытых сетевых запросов',
+                'Persisted-профили и proxy-health history получили общие fail-closed byte-лимиты и атомарную запись',
+                'ZIP и DMG подписаны Developer ID, нотарифицированы Apple, stapled и проверены Gatekeeper',
+            ],
+        ],
         [
             'ver' => '0.3.19',
             'build' => 22,

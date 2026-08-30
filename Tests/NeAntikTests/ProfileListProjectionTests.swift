@@ -404,7 +404,23 @@ struct ProfileListProjectionTests {
                     index.isMultiple(of: 2) ? "Even" : "Odd",
                 ],
                 note: "Account memo \(index)",
-                isPinned: index.isMultiple(of: 10)
+                isPinned: index.isMultiple(of: 10),
+                proxy: index.isMultiple(of: 2)
+                    ? ProxyConfiguration(
+                        kind: .https,
+                        host: "proxy-\(index).example",
+                        port: 8_000 + index % 1_000,
+                        username: "operator-\(index)"
+                    )
+                    : nil,
+                createdAt: Date(
+                    timeIntervalSinceReferenceDate: TimeInterval(index)
+                ),
+                lastLaunchedAt: index.isMultiple(of: 3)
+                    ? Date(
+                        timeIntervalSinceReferenceDate: TimeInterval(index)
+                    )
+                    : nil
             )
         }
         let assignments = Dictionary(
@@ -429,13 +445,19 @@ struct ProfileListProjectionTests {
 
         let repeatedStartedAt = Date()
         var repeatedVisibleCount = 0
-        for searchIndex in 0..<25 {
-            let state = ProfileListViewState(
-                index: initial.index,
-                query: query,
-                searchText: "Account memo \(searchIndex)"
-            )
-            repeatedVisibleCount += state.visibleProfiles.count
+        for ordering in ProfileListOrdering.allCases {
+            for searchIndex in 0..<25 {
+                let state = ProfileListViewState(
+                    index: initial.index,
+                    query: query,
+                    searchText: "Account memo \(searchIndex)",
+                    routeFilter: searchIndex.isMultiple(of: 2)
+                        ? .withProxy
+                        : .withoutProxy,
+                    ordering: ordering
+                )
+                repeatedVisibleCount += state.visibleProfiles.count
+            }
         }
         let repeatedElapsed = Date().timeIntervalSince(repeatedStartedAt)
 
@@ -443,8 +465,8 @@ struct ProfileListProjectionTests {
             ? 5
             : 2
         let repeatedBudget: TimeInterval = _isDebugAssertConfiguration()
-            ? 8
-            : 3
+            ? 12
+            : 5
         print(
             "ProfileListViewState 10k benchmark: " +
                 "initial=\(initialElapsed)s, " +

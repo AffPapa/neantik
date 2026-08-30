@@ -54,6 +54,7 @@ jobs:
           - ProfileEnvironmentInspectorTests
           - ProfileEnvironmentPresentationTests
           - ProfileListProjectionTests
+          - ProfileListOrderingTests
           - ProfileOrganizationTests
           - ProfileOrganizationPersistenceTests
           - ProfilePostSaveRevealPolicyTests

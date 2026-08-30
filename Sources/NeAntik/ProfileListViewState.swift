@@ -8,6 +8,8 @@ struct ProfileListViewState: Equatable, Sendable {
     let index: ProfileListIndex
     let query: WorkspaceQueryState
     let searchText: String
+    let routeFilter: ProfileRouteFilter
+    let ordering: ProfileListOrdering
     let visibleProfiles: [BrowserProfile]
     let tagSummaries: [ProfileTagSummary]
     let selectedTagDisplayName: String?
@@ -17,7 +19,9 @@ struct ProfileListViewState: Equatable, Sendable {
         profiles: [BrowserProfile],
         organization: ProfileOrganizationState,
         query: WorkspaceQueryState,
-        searchText: String
+        searchText: String,
+        routeFilter: ProfileRouteFilter = .all,
+        ordering: ProfileListOrdering = .pinnedThenName
     ) {
         self.init(
             index: ProfileListIndex(
@@ -25,14 +29,18 @@ struct ProfileListViewState: Equatable, Sendable {
                 organization: organization
             ),
             query: query,
-            searchText: searchText
+            searchText: searchText,
+            routeFilter: routeFilter,
+            ordering: ordering
         )
     }
 
     init(
         index: ProfileListIndex,
         query: WorkspaceQueryState,
-        searchText: String
+        searchText: String,
+        routeFilter: ProfileRouteFilter = .all,
+        ordering: ProfileListOrdering = .pinnedThenName
     ) {
         let selectedTagDisplayName = query.tag.flatMap(index.displayName)
         let tagSummaries = index.tagSummaries(
@@ -43,6 +51,8 @@ struct ProfileListViewState: Equatable, Sendable {
         self.index = index
         self.query = query
         self.searchText = searchText
+        self.routeFilter = routeFilter
+        self.ordering = ordering
         self.tagSummaries = tagSummaries
         self.selectedTagDisplayName = selectedTagDisplayName
         availableTags = tagSummaries.map(\.name)
@@ -50,7 +60,9 @@ struct ProfileListViewState: Equatable, Sendable {
             searchText: searchText,
             tag: selectedTagDisplayName,
             scope: query.scope,
-            folderFilter: query.folderFilter
+            folderFilter: query.folderFilter,
+            routeFilter: routeFilter,
+            ordering: ordering
         )
     }
 }

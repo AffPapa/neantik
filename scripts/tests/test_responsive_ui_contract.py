@@ -124,6 +124,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('Label("Новый профиль", systemImage: "plus")', header)
         self.assertIn(".buttonStyle(.borderedProminent)", header)
         self.assertIn('Label("Ещё", systemImage: "ellipsis.circle")', header)
+        self.assertIn("profileListViewMenu", header)
         self.assertIn('"Создать из списка прокси…"', header)
         self.assertIn('"Проверить прокси (\\(bulkProxyAction.count))"', header)
         self.assertIn("if bulkProxyTestTask == nil,", header)
@@ -132,6 +133,16 @@ class ResponsiveUIContractTests(unittest.TestCase):
             header.index('Label("Ещё", systemImage: "ellipsis.circle")'),
             header.index('Label("Новый профиль", systemImage: "plus")'),
         )
+
+        self.assertIn("private var profileListViewMenu", text)
+        self.assertIn('Picker("Сортировка"', text)
+        self.assertIn('Picker("Подключение"', text)
+        self.assertIn('accessibilityLabel("Вид списка профилей")', text)
+        self.assertIn("profileRouteFilter = .all", text)
+        self.assertIn("profileRouteFilter != .all", text)
+        self.assertIn("profileRouteFilter = decision.routeFilter", text)
+        self.assertIn('Text("Измени поиск или фильтры.")', text)
+        self.assertIn('.accessibilityLabel("Убрать фильтр \\(title)")', text)
 
         for dead_symbol in (
             "isSidebarVisible",
@@ -468,12 +479,14 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         search = content[search_start:search_end]
         self.assertIn(
-            '"Поиск профилей, заметок, тегов и папок"',
+            '"Поиск профилей, маршрутов, заметок, тегов и папок"',
             search,
         )
-        self.assertIn(
-            'accessibilityLabel("Поиск профилей, заметок, тегов и папок")',
-            search,
+        self.assertGreaterEqual(
+            search.count(
+                '"Поиск профилей, маршрутов, заметок, тегов и папок"'
+            ),
+            2,
         )
         self.assertGreaterEqual(projection.count("profile.note"), 2)
 
