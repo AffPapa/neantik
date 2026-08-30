@@ -74,6 +74,7 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/verify-public-fingerprint-corpus.py", "fingerprint-gate"),
     ("scripts/verify-runtime-security-baseline.py", "security-gate"),
     ("scripts/verify-runtime-security-reference.py", "security-gate"),
+    ("scripts/verify-secure-enclave-release-authority.py", "release-gate"),
 )
 
 _MAXIMUM_SOURCE_FILE_BYTES = 32 * 1024 * 1024

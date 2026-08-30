@@ -229,10 +229,6 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    func unfileProfile(_ profileID: UUID) throws {
-        try assignProfile(profileID, toFolderID: nil)
-    }
-
     func validateInsertionCapacity(
         forAdditionalProfileCount additionalCount: Int
     ) throws {
@@ -712,22 +708,12 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    func delete(
-        _ profile: BrowserProfile,
-        processManager: BrowserProcessManager
-    ) throws {
-        try delete(
-            profile,
-            processManager: processManager,
-            afterCommit: { _ in }
-        )
-    }
-
+    @discardableResult
     func delete(
         _ profile: BrowserProfile,
         processManager: BrowserProcessManager,
-        afterCommit: (BrowserProfile) throws -> Void
-    ) throws {
+        credentialCleanup: (BrowserProfile) throws -> Void
+    ) throws -> ProfileDeletionOutcome {
         try processManager.withVerifiedProfileDeletion(
             profileID: profile.id
         ) {
@@ -735,12 +721,11 @@ final class ProfileStore: ObservableObject {
         }
         pruneOrganizationAfterProfileDeletion()
         do {
-            try afterCommit(profile)
+            try credentialCleanup(profile)
             try paths.removeCredentialCleanupMarker(for: profile.id)
+            return .complete
         } catch {
-            throw ProfileCredentialCleanupPendingError(
-                cleanupError: error
-            )
+            return .credentialCleanupPending
         }
     }
 
@@ -1537,11 +1522,17 @@ struct ProfileDeleteRollbackError: LocalizedError {
     }
 }
 
-struct ProfileCredentialCleanupPendingError: LocalizedError {
-    let cleanupError: Error
+enum ProfileDeletionOutcome: Equatable, Sendable {
+    case complete
+    case credentialCleanupPending
 
-    var errorDescription: String? {
-        "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. NeAntik безопасно повторит очистку при следующем запуске."
+    var warningDescription: String? {
+        switch self {
+        case .complete:
+            nil
+        case .credentialCleanupPending:
+            "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; NeAntik безопасно повторит очистку при следующем запуске."
+        }
     }
 }
 

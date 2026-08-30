@@ -153,6 +153,18 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         self != .stopped
     }
 
+    /// True only when NeAntik has positive evidence of a live browser.
+    /// Transitional and recovery states remain blocked for safety, but must
+    /// not be presented to the user as running processes.
+    var isConfirmedRunning: Bool {
+        switch self {
+        case .managed, .externalVerified, .externalManualOnly:
+            true
+        case .stopped, .checking, .externalUnverified, .recoveryRequired:
+            false
+        }
+    }
+
     var canRequestStop: Bool {
         self != .checking &&
             self != .externalManualOnly &&

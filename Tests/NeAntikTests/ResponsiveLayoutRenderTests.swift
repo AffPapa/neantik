@@ -4,9 +4,11 @@ import Testing
 @testable import NeAntik
 
 @MainActor
+@Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
     @Test func primaryScreensRenderAtTheirMinimumSizes() throws {
         let profileA = BrowserProfile(
+            id: layoutFixtureID(1),
             name:
                 "Очень длинное Unicode-название профиля для проверки переноса",
             tags: ["Работа", "Магазин"],
@@ -20,6 +22,7 @@ struct ResponsiveLayoutRenderTests {
             )
         )
         let profileB = BrowserProfile(
+            id: layoutFixtureID(2),
             name: "Второй профиль",
             tags: ["Личный"]
         )
@@ -323,6 +326,7 @@ struct ResponsiveLayoutRenderTests {
 
     @Test func profileDetailRendersAtOrdinaryAndWideSizes() throws {
         let profile = BrowserProfile(
+            id: layoutFixtureID(3),
             name: "Рабочий профиль",
             tags: ["Работа", "Клиент"],
             note:
@@ -363,7 +367,10 @@ struct ResponsiveLayoutRenderTests {
         ] {
             try render(
                 ProfileDetailView(
-                    profile: BrowserProfile(name: "Профиль без заметки"),
+                    profile: BrowserProfile(
+                        id: layoutFixtureID(4),
+                        name: "Профиль без заметки"
+                    ),
                     processState: .stopped,
                     browserDataPath:
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/EMPTY/BrowserData",
@@ -374,6 +381,21 @@ struct ResponsiveLayoutRenderTests {
                 ),
                 name: "profile-detail-empty-note-minimum-\(appearanceName)",
                 size: CGSize(width: 550, height: 520),
+                colorScheme: colorScheme
+            )
+
+            try render(
+                ProfileDetailView(
+                    profile: profile,
+                    processState: .stopped,
+                    browserDataPath:
+                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                    clipboardNotice: nil,
+                    onCopyProxyUsername: {},
+                    onCopyProxyPassword: {}
+                ),
+                name: "profile-detail-note-compact-\(appearanceName)",
+                size: CGSize(width: 360, height: 560),
                 colorScheme: colorScheme
             )
 
@@ -452,12 +474,17 @@ struct ResponsiveLayoutRenderTests {
             ),
             defaults: defaults
         )
-        let processes = BrowserProcessManager(paths: paths)
+        let processes = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
         let intent = NeAntikLaunchIntent.parse(
             arguments: [
                 "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
             ]
         )
+        let initialRuntime = try #require(runtimeLocator.preferredRuntime())
 
         for (name, size) in [
             (
@@ -490,7 +517,8 @@ struct ResponsiveLayoutRenderTests {
                         ),
                     runtimeLocator: runtimeLocator,
                     launchIntent: intent,
-                    fingerprintEvidenceReleaseContext: nil
+                    fingerprintEvidenceReleaseContext: nil,
+                    initialRuntime: initialRuntime
                 ),
                 name: name,
                 size: size,
@@ -498,12 +526,14 @@ struct ResponsiveLayoutRenderTests {
                     .titled,
                     .closable,
                     .resizable,
-                ]
+                ],
+                settleTime: 0.4
             )
         }
 
         _ = try store.upsert(
             BrowserProfile(
+                id: layoutFixtureID(5),
                 name:
                     "Очень длинное Unicode-название рабочего профиля",
                 tags: ["Работа", "Проверка"],
@@ -519,11 +549,13 @@ struct ResponsiveLayoutRenderTests {
         )
         for profile in [
             BrowserProfile(
+                id: layoutFixtureID(6),
                 name: "TikTok · FR · UGC 02",
                 tags: ["TikTok", "Фарм"],
                 note: "Прогрев: день 3. Следующий вход после 18:00."
             ),
             BrowserProfile(
+                id: layoutFixtureID(7),
                 name: "Facebook Ads · DE · BM 04",
                 tags: ["Facebook", "Работа"],
                 proxy: ProxyConfiguration(
@@ -534,6 +566,7 @@ struct ResponsiveLayoutRenderTests {
                 )
             ),
             BrowserProfile(
+                id: layoutFixtureID(8),
                 name: "Native · RU · Teaser 07",
                 tags: ["Тизерки"],
                 note: "Креативы проверены. Не менять гео без согласования."
@@ -577,7 +610,8 @@ struct ResponsiveLayoutRenderTests {
                             ),
                         runtimeLocator: runtimeLocator,
                         launchIntent: intent,
-                        fingerprintEvidenceReleaseContext: nil
+                        fingerprintEvidenceReleaseContext: nil,
+                        initialRuntime: initialRuntime
                     ),
                     name: "actual-content-\(sizeName)-\(appearanceName)",
                     size: size,
@@ -586,7 +620,8 @@ struct ResponsiveLayoutRenderTests {
                         .closable,
                         .resizable,
                     ],
-                    colorScheme: colorScheme
+                    colorScheme: colorScheme,
+                    settleTime: 0.4
                 )
             }
         }
@@ -597,13 +632,16 @@ struct ResponsiveLayoutRenderTests {
         name: String,
         size: CGSize,
         styleMask: NSWindow.StyleMask = [.borderless],
-        colorScheme: ColorScheme = .dark
+        colorScheme: ColorScheme = .dark,
+        settleTime: TimeInterval = 0.05
     ) throws {
         let hostingView = NSHostingView(
             rootView:
                 view
                 .frame(width: size.width, height: size.height)
+                .background(Color(nsColor: .windowBackgroundColor))
                 .environment(\.colorScheme, colorScheme)
+                .environment(\.controlActiveState, .active)
         )
         let appearance = NSAppearance(
             named: colorScheme == .dark ? .darkAqua : .aqua
@@ -634,7 +672,7 @@ struct ResponsiveLayoutRenderTests {
         hostingView.frame = CGRect(origin: .zero, size: size)
         hostingView.layoutSubtreeIfNeeded()
         RunLoop.current.run(
-            until: Date(timeIntervalSinceNow: 0.05)
+            until: Date(timeIntervalSinceNow: settleTime)
         )
         window.contentView?.layoutSubtreeIfNeeded()
         window.displayIfNeeded()
@@ -690,6 +728,17 @@ private struct LayoutRenderKeychainBackend: KeychainBackend {
     ) throws {}
 
     func delete(service: String, profileID: UUID) throws {}
+}
+
+private func layoutFixtureID(_ ordinal: UInt8) -> UUID {
+    UUID(
+        uuid: (
+            0x4E, 0x65, 0x41, 0x6E,
+            0x74, 0x69, 0x6B, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, ordinal
+        )
+    )
 }
 
 private enum LayoutRenderError: LocalizedError {

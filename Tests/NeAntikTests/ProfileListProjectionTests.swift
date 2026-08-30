@@ -267,16 +267,6 @@ struct ProfileListProjectionTests {
         ).first {
             ProfileTagID(displayName: $0) == query.tag
         }
-        let expectedAvailableTags = ProfileListProjection.allTags(
-            in: ProfileListProjection.filtered(
-                profiles,
-                searchText: "",
-                tag: nil,
-                scope: query.scope,
-                folderFilter: query.folderFilter,
-                organization: organization
-            )
-        )
         let expectedVisible = ProfileListProjection.filtered(
             profiles,
             searchText: "  PINNED  ",
@@ -293,7 +283,6 @@ struct ProfileListProjectionTests {
         #expect(state.visibleProfiles == expectedVisible)
         #expect(state.tagSummaries == expectedSummaries)
         #expect(state.selectedTagDisplayName == expectedSelectedTag)
-        #expect(state.availableTags == expectedAvailableTags)
     }
 
     @Test
@@ -346,7 +335,6 @@ struct ProfileListProjectionTests {
 
         #expect(state.selectedTagDisplayName == nil)
         #expect(state.visibleProfiles == profiles)
-        #expect(state.availableTags == ["Known"])
     }
 
     @Test

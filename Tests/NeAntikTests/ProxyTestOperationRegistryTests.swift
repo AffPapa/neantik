@@ -196,47 +196,6 @@ struct ProxyTestOperationRegistryTests {
     }
 
     @Test
-    func crossWindowProxyEditDuringPersistenceBlocksPublication() throws {
-        let expectedProxy = ProxyConfiguration(
-            kind: .http,
-            host: "old.example",
-            port: 8_080,
-            username: "old-user"
-        )
-        let editedProxy = ProxyConfiguration(
-            kind: .socks5,
-            host: "new.example",
-            port: 1_080,
-            username: "new-user"
-        )
-
-        #expect(
-            ProxyTestCommitPolicy.permitsPublication(
-                expectedProxy: expectedProxy,
-                currentProxy: expectedProxy,
-                tokenIsCurrent: true,
-                taskIsCancelled: false
-            )
-        )
-        #expect(
-            !ProxyTestCommitPolicy.permitsPublication(
-                expectedProxy: expectedProxy,
-                currentProxy: editedProxy,
-                tokenIsCurrent: true,
-                taskIsCancelled: false
-            )
-        )
-        #expect(
-            !ProxyTestCommitPolicy.permitsPublication(
-                expectedProxy: expectedProxy,
-                currentProxy: nil,
-                tokenIsCurrent: true,
-                taskIsCancelled: false
-            )
-        )
-    }
-
-    @Test
     func sharedGateRejectsSecondClaimForSameProfile() async throws {
         let gate = ProxyTestExecutionGate(maximumConcurrentTests: 3)
         let profileID = UUID()

@@ -630,58 +630,6 @@ enum FingerprintEvidenceEnvelopeCodec {
         return uuid.uuidString == string
     }
 
-    private static func hasUppercaseCanonicalPayloadUUIDs(
-        _ report: [String: Any]
-    ) -> Bool {
-        let allowedKeys: Set<String> = [
-            "id", "createdAt", "auditSchemaVersion",
-            "identityCatalogVersion", "managerVersion", "managerBuild",
-            "runtimeName", "runtimeVersion", "runtimeFlavor",
-            "runtimeCodeSignatureValid", "runtimeExecutableSHA256",
-            "runtimeFrameworkSHA256", "executionMode",
-            "webrtcDirectControl", "firstInitial", "second",
-            "firstRepeat"
-        ]
-        let requiredKeys: Set<String> = [
-            "id", "createdAt", "auditSchemaVersion", "runtimeName",
-            "runtimeFlavor", "firstInitial", "second", "firstRepeat"
-        ]
-        guard Set(report.keys).isSubset(of: allowedKeys),
-              requiredKeys.isSubset(of: Set(report.keys)),
-              isUppercaseCanonicalUUID(report["id"]),
-              isCanonicalUTCSecondTimestamp(report["createdAt"])
-        else {
-            return false
-        }
-        for key in ["firstInitial", "second", "firstRepeat"] {
-            guard let capture = report[key] as? [String: Any],
-                  Set(capture.keys) == [
-                      "profileID", "profileName", "identityCode",
-                      "capturedAt", "values"
-                  ],
-                  isUppercaseCanonicalUUID(capture["profileID"]),
-                  isCanonicalUTCSecondTimestamp(capture["capturedAt"])
-            else {
-                return false
-            }
-        }
-        if let directControl = report["webrtcDirectControl"],
-           !(directControl is NSNull)
-        {
-            guard let capture = directControl as? [String: Any],
-                  Set(capture.keys) == [
-                      "profileID", "profileName", "identityCode",
-                      "capturedAt", "values"
-                  ],
-                  isUppercaseCanonicalUUID(capture["profileID"]),
-                  isCanonicalUTCSecondTimestamp(capture["capturedAt"])
-            else {
-                return false
-            }
-        }
-        return true
-    }
-
     private static func isCanonicalUTCSecondTimestamp(
         _ value: Any?
     ) -> Bool {

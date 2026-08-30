@@ -214,6 +214,7 @@ struct FirstProfileOnboardingView: View {
             .frame(minHeight: 28)
         }
         .buttonStyle(.borderedProminent)
+        .fixedSize(horizontal: true, vertical: false)
         .keyboardShortcut(.defaultAction)
         .disabled(!presentation.primaryIsEnabled)
         .accessibilityLabel(presentation.primaryTitle)
@@ -223,6 +224,7 @@ struct FirstProfileOnboardingView: View {
     private var configureButton: some View {
         Button("Настроить…", action: onConfigure)
             .frame(minHeight: 28)
+            .fixedSize(horizontal: true, vertical: false)
             .disabled(isCreatingProfile)
             .accessibilityHint(
                 "Открывает полную настройку профиля и прокси"

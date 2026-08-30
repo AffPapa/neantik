@@ -176,6 +176,13 @@ struct AccessibilityPresentationTests {
         #expect(direct.statusSystemImage == "circle")
         #expect(direct.routeTitle == "Без прокси")
         #expect(direct.noteSummary == "Первый шаг Второй шаг")
+        #expect(direct.statusAccessibilityLabel == "Статус: Остановлен")
+        #expect(direct.routeAccessibilityLabel == "Подключение: Без прокси")
+        #expect(
+            ProfileRowPresentation.profileAccessibilityLabel(
+                BrowserProfile(name: "Рабочий")
+            ) == "Профиль: Рабочий"
+        )
 
         let proxy = ProfileRowPresentation.resolve(
             profile: BrowserProfile(

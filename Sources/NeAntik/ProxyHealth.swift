@@ -287,14 +287,6 @@ actor ProxyHealthStore {
         return record.state
     }
 
-    func allStates() -> [UUID: ProxyHealthState] {
-        records.reduce(into: [:]) { result, entry in
-            if let id = UUID(uuidString: entry.key) {
-                result[id] = entry.value.state
-            }
-        }
-    }
-
     func allRecords() -> [UUID: ProxyHealthRecord] {
         records.reduce(into: [:]) { result, entry in
             if let id = UUID(uuidString: entry.key) {

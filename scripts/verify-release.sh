@@ -32,6 +32,11 @@ for key in \
   NeAntikDeveloperTeamIdentifier \
   NeAntikTelemetryEndpoint \
   NeAntikPublicStatsURL \
+  NeAntikUpdateChannelEnabled \
+  NeAntikUpdateAutoDownload \
+  NeAntikUpdateManifestURL \
+  NeAntikUpdatePublicKeyID \
+  NeAntikUpdatePublicKeyBase64 \
   LSMinimumSystemVersion \
   LSRequiresNativeExecution; do
   EXPECTED="$(plutil -extract "$key" raw -o - "$EXPECTED_INFO_PLIST")"
@@ -57,7 +62,8 @@ fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
-"$PROJECT_DIR/scripts/verify-direct-update-policy.py"
+"$PROJECT_DIR/scripts/verify-direct-update-policy.py" \
+  --info-plist "$INFO_PLIST"
 "$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 "$PROJECT_DIR/scripts/verify-direct-ui-localization.py"
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
@@ -99,7 +105,7 @@ echo "Architecture: $ARCHS"
 
 if codesign -d --entitlements - "$APP_PATH" 2>&1 |
     grep -q 'com.apple.security.app-sandbox'; then
-  echo "Distribution: Mac App Store sandbox"
-else
-  echo "Distribution: Direct"
+  echo "Direct distribution forbids the App Sandbox entitlement." >&2
+  exit 65
 fi
+echo "Distribution: Direct"

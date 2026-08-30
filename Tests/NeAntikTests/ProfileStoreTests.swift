@@ -523,15 +523,15 @@ struct ProfileStoreTests {
             browserDataProcessInspector: { _ in .absent }
         )
 
-        #expect(throws: ProfileCredentialCleanupPendingError.self) {
-            try store.delete(
-                profile,
-                processManager: processManager
-            ) { _ in
-                try keychain.deleteProxyPassword(profileID: profile.id)
-            }
+        let outcome = try store.delete(
+            profile,
+            processManager: processManager
+        ) { _ in
+            try keychain.deleteProxyPassword(profileID: profile.id)
         }
 
+        #expect(outcome == .credentialCleanupPending)
+        #expect(outcome.warningDescription?.contains("уже удалены") == true)
         #expect(store.profile(withID: profile.id) == nil)
         #expect(store.folderID(forProfileID: profile.id) == nil)
         #expect(store.folder(withID: folder.id) != nil)
@@ -631,7 +631,7 @@ struct ProfileStoreTests {
         try deletingStore.delete(
             profile,
             processManager: processManager
-        )
+        ) { _ in }
         #expect(
             try paths.privateFileEntryKind(
                 paths.profileCredentialCleanupMarker(for: profile.id)
@@ -726,7 +726,11 @@ struct ProfileStoreTests {
         )
 
         do {
-            try store.delete(profile, processManager: manager)
+            try store.delete(
+                profile,
+                processManager: manager,
+                credentialCleanup: { _ in }
+            )
             Issue.record("Удаление должно было завершиться ошибкой")
         } catch let error as ProfileDeleteRollbackError {
             #expect(error.rollbackError != nil)
@@ -794,7 +798,11 @@ struct ProfileStoreTests {
         )
 
         do {
-            try store.delete(profile, processManager: manager)
+            try store.delete(
+                profile,
+                processManager: manager,
+                credentialCleanup: { _ in }
+            )
             Issue.record("Откат должен был завершиться ошибкой")
         } catch let error as ProfileDeleteRollbackError {
             #expect(error.rollbackError != nil)

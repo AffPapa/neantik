@@ -25,6 +25,19 @@ struct BrowserLaunchActionPresentationTests {
     }
 
     @Test
+    func onlyPositivelyIdentifiedProcessesCountAsRunningInTheUI() {
+        #expect(!BrowserProfileProcessState.stopped.isConfirmedRunning)
+        #expect(!BrowserProfileProcessState.checking.isConfirmedRunning)
+        #expect(BrowserProfileProcessState.managed.isConfirmedRunning)
+        #expect(BrowserProfileProcessState.externalVerified.isConfirmedRunning)
+        #expect(
+            BrowserProfileProcessState.externalManualOnly.isConfirmedRunning
+        )
+        #expect(!BrowserProfileProcessState.externalUnverified.isConfirmedRunning)
+        #expect(!BrowserProfileProcessState.recoveryRequired.isConfirmedRunning)
+    }
+
+    @Test
     func stoppedProfileCanLaunchAfterRuntimeResolution() {
         let presentation = BrowserLaunchActionPresentation.resolve(
             processState: .stopped,

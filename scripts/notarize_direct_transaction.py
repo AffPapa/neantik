@@ -819,6 +819,16 @@ def verify_candidate_app(
                 ],
             ),
             (
+                "Secure Enclave release authority",
+                [
+                    str(
+                        project_root
+                        / "scripts"
+                        / "verify-secure-enclave-release-authority.py"
+                    )
+                ],
+            ),
+            (
                 "public fingerprint corpus",
                 [
                     str(

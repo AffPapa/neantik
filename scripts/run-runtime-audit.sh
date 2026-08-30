@@ -3,7 +3,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="${NEANTIK_AUDIT_BUILD_DIR:-/private/tmp/nevision-runtime-audit-cli}"
 EXECUTABLE="$BUILD_DIR/NeAntikRuntimeAudit"
 
