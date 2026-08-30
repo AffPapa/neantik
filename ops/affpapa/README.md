@@ -57,6 +57,8 @@ python3 scripts/prepare-affpapa-release-snapshot.py \
   --dmg /absolute/path/to/NeAntik-<version>-arm64-notarized.dmg \
   --zip /absolute/path/to/NeAntik-<version>-arm64-notarized.zip \
   --release-date YYYY-MM-DD \
+  --release-tag v<version> \
+  --release-commit <40-hex release source commit> \
   --output /absolute/path/to/release-dir
 ```
 
@@ -65,6 +67,34 @@ the exact checked source, imports the first matching `CHANGELOG.md` section,
 copies both artifacts, writes their sidecars and runs the same server
 validator locally. It does not publish. The following `prepare` command still
 repeats signature, notarization, stapling and Gatekeeper checks.
+
+### Release source and release tooling are separate inputs
+
+The worktree that runs the generator is the **release tooling**. It may
+legitimately be newer than the release it publishes, because validator and
+script fixes land after a release is already tagged and immutable. The
+**release source** is the commit the published binaries were actually built
+from.
+
+`--release-tag` and `--release-commit` pin the release source explicitly and
+must be used together. When they are given, the generator:
+
+- refuses a tag that is not `vSEMVER` and a commit that is not 40 lowercase
+  hexadecimal characters;
+- requires the commit to exist in the local repository;
+- requires the GitHub tag to resolve to exactly that commit;
+- requires the GitHub release to be published and immutable;
+- runs `gh release verify-asset` for the DMG and the ZIP, so both artifacts
+  are covered by the release attestation;
+- reads version, build, runtime lock, `CHANGELOG.md` and the bootstrap
+  changelog **out of that commit** with `git show`, never out of the newer
+  worktree;
+- writes the release source commit into `release.json`, and reports the
+  tooling commit separately in its output.
+
+Without the two flags the generator keeps its previous behaviour and treats
+the clean worktree `HEAD` as the release source, which is only correct when
+the worktree is checked out at the release commit itself.
 
 Check and stage without publishing:
 
