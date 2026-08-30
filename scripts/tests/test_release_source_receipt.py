@@ -29,6 +29,12 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
         ("scripts/release.py", "orchestrator"),
     )
 
+    def test_default_release_source_closure_is_sorted_and_unique(self) -> None:
+        paths = [path for path, _role in MODULE.RELEASE_SOURCE_CLOSURE]
+
+        self.assertEqual(paths, sorted(paths))
+        self.assertEqual(len(paths), len(set(paths)))
+
     def git(self, root: Path, *arguments: str) -> str:
         completed = subprocess.run(
             ["git", "-C", str(root), *arguments],

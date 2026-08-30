@@ -11,9 +11,32 @@ NOTARIZE = SCRIPTS / "notarize-direct-candidate.sh"
 NOTARY_TRANSACTION = SCRIPTS / "notarize_direct_transaction.py"
 ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
+RELEASE_VERIFIER = SCRIPTS / "verify-release.sh"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_release_verifier_rejects_sandbox_and_checks_packaged_update_policy(
+        self,
+    ) -> None:
+        text = RELEASE_VERIFIER.read_text(encoding="utf-8")
+
+        for key in (
+            "NeAntikUpdateChannelEnabled",
+            "NeAntikUpdateAutoDownload",
+            "NeAntikUpdateManifestURL",
+            "NeAntikUpdatePublicKeyID",
+            "NeAntikUpdatePublicKeyBase64",
+        ):
+            self.assertIn(key, text)
+        self.assertIn('--info-plist "$INFO_PLIST"', text)
+        sandbox_branch = text.split(
+            "grep -q 'com.apple.security.app-sandbox'; then",
+            1,
+        )[1].split("fi", 1)[0]
+        self.assertIn("Direct distribution forbids", sandbox_branch)
+        self.assertIn("exit 65", sandbox_branch)
+        self.assertNotIn("Mac App Store sandbox", text)
+
     def test_release_packaging_resolves_current_swift_bin_path(self) -> None:
         stale_path = ".build/arm64-apple-macosx/release/NeAntik"
 

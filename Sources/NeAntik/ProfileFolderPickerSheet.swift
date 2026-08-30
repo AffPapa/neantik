@@ -150,7 +150,7 @@ struct ProfileFolderPickerSheet: View {
         .accessibilityLabel(
             isSelected ? "\(title), выбрано" : title
         )
-        .accessibilityHint("Переместить профиль в эту папку")
+        .accessibilityHint("Выбрать эту папку")
     }
 }
 

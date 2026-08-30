@@ -22,8 +22,6 @@ if [[ $# -gt 1 ]]; then
   exit 64
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_ROOT="${1:-/private/tmp/nevision-chromium-150}"
 SOURCE_DIR="$BUILD_ROOT/build/src"
 PYTHON_DEPS="${NEANTIK_PYTHON_DEPS:-/private/tmp/nevision-python-deps}"

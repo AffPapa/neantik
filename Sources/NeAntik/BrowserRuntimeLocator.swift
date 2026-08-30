@@ -41,15 +41,6 @@ struct BrowserRuntimeLocator: Sendable {
         self.resourceURL = nil
     }
 
-    func availableRuntimes(
-        preference: BrowserRuntimePreference? = nil
-    ) -> [BrowserRuntime] {
-        var seen = Set<String>()
-        return runtimeCandidates(preference: preference).compactMap {
-            resolve(candidate: $0, seen: &seen)
-        }
-    }
-
     func preferredRuntime(
         preference: BrowserRuntimePreference? = nil
     ) -> BrowserRuntime? {

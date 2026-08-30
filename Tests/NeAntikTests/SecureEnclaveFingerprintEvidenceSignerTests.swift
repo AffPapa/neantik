@@ -56,6 +56,30 @@ struct SecureEnclaveFingerprintEvidenceSignerTests {
     }
 
     @Test
+    func failedSecureEnclaveEnrollmentRollsBackAndCanRetry() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(
+            backend: backend
+        )
+        let sessionID = UUID()
+        backend.failNextCreation()
+
+        #expect(throws: InMemoryFingerprintEvidenceKeyBackendError.self) {
+            try authority.enroll(sessionID: sessionID)
+        }
+        #expect(backend.reservationCount == 0)
+        #expect(backend.keyCount == 0)
+        #expect(backend.deleteCallCount == 1)
+        #expect(backend.releaseCallCount == 1)
+
+        let publicKey = try authority.enroll(sessionID: sessionID)
+
+        #expect(publicKey.count == 65)
+        #expect(backend.reservationCount == 1)
+        #expect(backend.keyCount == 1)
+    }
+
+    @Test
     func concurrentSecureEnclaveEnrollmentHasOneWinner() {
         let backend = InMemoryFingerprintEvidenceKeyBackend()
         let authority = SecureEnclaveFingerprintEvidenceAuthority(
@@ -294,6 +318,7 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
     private var signatureCalls = 0
     private var deleteCalls = 0
     private var releaseCalls = 0
+    private var createFailuresRemaining = 0
 
     var publicKeyCallCount: Int {
         locked { publicKeyCalls }
@@ -347,6 +372,11 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
     func createPrivateKey(applicationTag: Data) throws -> Data {
         try locked {
             createCalls += 1
+            if createFailuresRemaining > 0 {
+                createFailuresRemaining -= 1
+                throw InMemoryFingerprintEvidenceKeyBackendError
+                    .creationFailed
+            }
             guard keys[applicationTag] == nil else {
                 throw InMemoryFingerprintEvidenceKeyBackendError
                     .duplicateKey
@@ -395,6 +425,12 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
         }
     }
 
+    func failNextCreation() {
+        locked {
+            createFailuresRemaining += 1
+        }
+    }
+
     private func locked<T>(
         _ operation: () throws -> T
     ) rethrows -> T {
@@ -406,6 +442,7 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
 
 private enum InMemoryFingerprintEvidenceKeyBackendError: Error {
     case duplicateKey
+    case creationFailed
 }
 
 private final class EnrollmentOutcomeRecorder: @unchecked Sendable {

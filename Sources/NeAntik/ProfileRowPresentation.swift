@@ -14,6 +14,18 @@ struct ProfileRowPresentation: Equatable, Sendable {
     let routeTitle: String
     let noteSummary: String
 
+    var statusAccessibilityLabel: String {
+        "Статус: \(statusTitle)"
+    }
+
+    var routeAccessibilityLabel: String {
+        "Подключение: \(routeTitle)"
+    }
+
+    static func profileAccessibilityLabel(_ profile: BrowserProfile) -> String {
+        "Профиль: \(profile.name)"
+    }
+
     static func resolve(
         profile: BrowserProfile,
         processState: BrowserProfileProcessState

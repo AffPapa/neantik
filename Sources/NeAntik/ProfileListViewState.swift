@@ -13,7 +13,6 @@ struct ProfileListViewState: Equatable, Sendable {
     let visibleProfiles: [BrowserProfile]
     let tagSummaries: [ProfileTagSummary]
     let selectedTagDisplayName: String?
-    let availableTags: [String]
 
     init(
         profiles: [BrowserProfile],
@@ -55,7 +54,6 @@ struct ProfileListViewState: Equatable, Sendable {
         self.ordering = ordering
         self.tagSummaries = tagSummaries
         self.selectedTagDisplayName = selectedTagDisplayName
-        availableTags = tagSummaries.map(\.name)
         visibleProfiles = index.filtered(
             searchText: searchText,
             tag: selectedTagDisplayName,

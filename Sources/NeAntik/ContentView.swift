@@ -235,6 +235,34 @@ struct ContentView: View {
     @State private var workspaceAnnouncementGate =
         AccessibilityAnnouncementGate<String>()
 
+    init(
+        store: ProfileStore,
+        processes: BrowserProcessManager,
+        telemetry: TelemetryController,
+        fingerprintObservationStore: FingerprintObservationStore,
+        proxyHealthCoordinator: ProxyHealthCoordinator,
+        keychain: KeychainStore,
+        credentialCleanup: DeletedProfileCredentialCleanup,
+        runtimeLocator: BrowserRuntimeLocator,
+        launchIntent: NeAntikLaunchIntent,
+        fingerprintEvidenceReleaseContext: FingerprintEvidenceReleaseContext?,
+        initialRuntime: BrowserRuntime? = nil
+    ) {
+        self.store = store
+        self.processes = processes
+        self.telemetry = telemetry
+        self.fingerprintObservationStore = fingerprintObservationStore
+        self.proxyHealthCoordinator = proxyHealthCoordinator
+        self.keychain = keychain
+        self.credentialCleanup = credentialCleanup
+        self.runtimeLocator = runtimeLocator
+        self.launchIntent = launchIntent
+        self.fingerprintEvidenceReleaseContext =
+            fingerprintEvidenceReleaseContext
+        _resolvedRuntime = State(initialValue: initialRuntime)
+        _isResolvingRuntime = State(initialValue: initialRuntime == nil)
+    }
+
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
     }
@@ -344,10 +372,6 @@ struct ContentView: View {
 
     private var selectedFolder: ProfileFolder? {
         store.folder(withID: selectedFolderID)
-    }
-
-    private var hasArchivedProfiles: Bool {
-        store.profiles.contains(where: \.isArchived)
     }
 
     private var bulkProxyActionProjection: BulkProxyActionProjection {
@@ -609,7 +633,7 @@ struct ContentView: View {
         ) { profile in
             Button("Переместить в Корзину", role: .destructive) {
                 do {
-                    try store.delete(
+                    let outcome = try store.delete(
                         profile,
                         processManager: processes
                     ) { deletedProfile in
@@ -617,24 +641,10 @@ struct ContentView: View {
                             profileID: deletedProfile.id
                         )
                     }
-                    if store.profiles.isEmpty {
-                        profileSearchText = ""
-                        selectedProfileTag = nil
-                        profileListScope = .active
+                    finishDeletedProfile(profile)
+                    if let warning = outcome.warningDescription {
+                        localError = warning
                     }
-                    normalizeSelection()
-                    telemetry.record(
-                        .profileDeleted,
-                        snapshot: telemetrySnapshot
-                    )
-                    if profile.proxy != nil {
-                        telemetry.record(
-                            .proxyDisabled,
-                            snapshot: telemetrySnapshot
-                        )
-                    }
-                    fingerprintObservationStore.remove(profileID: profile.id)
-                    clearProxyHealth(for: profile.id)
                 } catch {
                     localError = error.localizedDescription
                 }
@@ -728,7 +738,7 @@ struct ContentView: View {
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: selection) { _, selectedProfileID in
-            if selectedProfileID == nil {
+            if selectedProfileID == nil, store.profiles.isEmpty {
                 showsProfileInspector = false
             }
         }
@@ -806,7 +816,9 @@ struct ContentView: View {
     private var workspaceLifecycle: some View {
         workspaceNotifications
         .task {
-            await resolveRuntime()
+            if resolvedRuntime == nil {
+                await resolveRuntime()
+            }
         }
         .task {
             await recoverDeletedProfileCredentials()
@@ -946,6 +958,27 @@ struct ContentView: View {
             localError =
                 "Не удалось завершить очистку некоторых ранее удалённых паролей прокси. NeAntik безопасно повторит попытку при следующем запуске."
         }
+    }
+
+    private func finishDeletedProfile(_ profile: BrowserProfile) {
+        if store.profiles.isEmpty {
+            profileSearchText = ""
+            selectedProfileTag = nil
+            profileListScope = .active
+        }
+        normalizeSelection()
+        telemetry.record(
+            .profileDeleted,
+            snapshot: telemetrySnapshot
+        )
+        if profile.proxy != nil {
+            telemetry.record(
+                .proxyDisabled,
+                snapshot: telemetrySnapshot
+            )
+        }
+        fingerprintObservationStore.remove(profileID: profile.id)
+        clearProxyHealth(for: profile.id)
     }
 
     private func normalizeSelection(preferred: UUID? = nil) {
@@ -1636,7 +1669,7 @@ struct ContentView: View {
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
         let runningCount = listState.visibleProfiles.lazy.filter {
-            processes.runningProfileIDs.contains($0.id)
+            processes.processState(for: $0.id).isConfirmedRunning
         }.count
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
@@ -1649,7 +1682,7 @@ struct ContentView: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                 if runningCount > 0 {
-                    Label("\(runningCount) запущено", systemImage: "circle.fill")
+                    Label("Запущено: \(runningCount)", systemImage: "circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
                 }
@@ -3254,6 +3287,9 @@ private struct ProfileRow<Actions: View>: View {
                     )
                     .foregroundStyle(statusColor(for: presentation.statusTone))
                     .layoutPriority(2)
+                    .accessibilityLabel(
+                        presentation.statusAccessibilityLabel
+                    )
                     Text("·")
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
@@ -3305,7 +3341,7 @@ private struct ProfileRow<Actions: View>: View {
                             for: profile.colorHex
                         ) ? Color.black : Color.white
                     )
-                if processState.isRunning {
+                if processState.isConfirmedRunning {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(
                             processState.statusTone == .healthy
@@ -3325,6 +3361,9 @@ private struct ProfileRow<Actions: View>: View {
                 .fontWeight(.medium)
                 .lineLimit(1)
                 .help(profile.name)
+                .accessibilityLabel(
+                    ProfileRowPresentation.profileAccessibilityLabel(profile)
+                )
             if profile.isPinned {
                 Image(systemName: "pin.fill")
                     .font(.caption2)
@@ -3350,6 +3389,7 @@ private struct ProfileRow<Actions: View>: View {
             statusColor(for: presentation.statusTone).opacity(0.12),
             in: Capsule()
         )
+        .accessibilityLabel(presentation.statusAccessibilityLabel)
     }
 
     private func routeBlock(
@@ -3360,6 +3400,9 @@ private struct ProfileRow<Actions: View>: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .help(presentation.routeTitle)
+                .accessibilityLabel(
+                    presentation.routeAccessibilityLabel
+                )
             routeHealthIndicator
         }
         .font(.caption)
