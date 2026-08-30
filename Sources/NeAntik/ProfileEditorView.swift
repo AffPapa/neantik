@@ -459,6 +459,21 @@ struct ProfileEditorView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
             }
+          } else {
+            Label(
+              "Прямое подключение",
+              systemImage: "exclamationmark.shield"
+            )
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.primary)
+            Text(
+              "Сайты увидят обычный публичный адрес этого Mac или " +
+                "системного VPN. Для профиля не настроен отдельный прокси."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .combine)
           }
         }
 

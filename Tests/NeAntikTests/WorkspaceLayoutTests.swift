@@ -16,6 +16,7 @@ struct WorkspaceLayoutTests {
         #expect(WorkspaceLayout.maximumInspectorWidth == 560)
         #expect(WorkspaceLayout.minimumWindowWidth == 820)
         #expect(WorkspaceLayout.minimumWindowHeight == 560)
+        #expect(WorkspaceLayout.titlebarContentInset == 40)
     }
 
     @Test func listAndInspectorWidthRangesAreStrictlyOrdered() {
@@ -43,5 +44,7 @@ struct WorkspaceLayoutTests {
             WorkspaceLayout.idealInspectorWidth <
                 WorkspaceLayout.maximumInspectorWidth
         )
+        #expect(WorkspaceLayout.titlebarContentInset > 0)
+        #expect(WorkspaceLayout.titlebarContentInset < 64)
     }
 }

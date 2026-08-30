@@ -45,6 +45,7 @@ case "$SUITE" in
   ProfileEnvironmentPresentationTests|\
   ProfileEnvironmentAccessibilityTests|\
   ProfileListProjectionTests|\
+  ProfileOperationalProjectionTests|\
   ProfileListOrderingTests|\
   ProfileOrganizationTests|\
   ProfileOrganizationPersistenceTests|\

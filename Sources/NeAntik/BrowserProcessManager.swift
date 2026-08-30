@@ -515,6 +515,10 @@ private struct QueuedBrowserReconcile {
 @MainActor
 final class BrowserProcessManager: ObservableObject {
     @Published private(set) var runningProfileIDs = Set<UUID>()
+    /// Monotonic UI invalidation token for process states that can change
+    /// without changing `runningProfileIDs` (for example, managed to
+    /// recovery-required while the profile remains locked).
+    @Published private(set) var processStateRevision: UInt64 = 0
     @Published var lastError: String?
 
     private let paths: AppPaths
@@ -532,14 +536,22 @@ final class BrowserProcessManager: ObservableObject {
     private let observationIntervalNanoseconds: UInt64
     private let startingLeaseTimeout: TimeInterval
     private let now: () -> Date
-    private var processes: [UUID: Process] = [:]
+    private var processes: [UUID: Process] = [:] {
+        didSet { processStateRevision &+= 1 }
+    }
     private var managedStopTasks: [UUID: Task<Void, Never>] = [:]
     private var managedLeaseOwners: [UUID: UUID] = [:]
     private var managedBrowserDataDirectories: [UUID: URL] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
-    private var externalLocks: [UUID: BrowserProcessLock] = [:]
-    private var externalUnverifiedProfileIDs = Set<UUID>()
-    private var recoveryProfileIDs = Set<UUID>()
+    private var externalLocks: [UUID: BrowserProcessLock] = [:] {
+        didSet { processStateRevision &+= 1 }
+    }
+    private var externalUnverifiedProfileIDs = Set<UUID>() {
+        didSet { processStateRevision &+= 1 }
+    }
+    private var recoveryProfileIDs = Set<UUID>() {
+        didSet { processStateRevision &+= 1 }
+    }
     private var recoveryRecords: [UUID: BrowserProcessRecoveryRecord] = [:]
     private var externalStopTasks: [UUID: Task<Void, Never>] = [:]
     private var externalObservationTasks: [UUID: Task<Void, Never>] = [:]
@@ -551,7 +563,9 @@ final class BrowserProcessManager: ObservableObject {
     private var reconcileGeneration: UInt64 = 0
     private var queuedReconcile: QueuedBrowserReconcile?
     private var lastReconciledProfiles: [BrowserProfile] = []
-    private var pendingReconciliationProfileIDs = Set<UUID>()
+    private var pendingReconciliationProfileIDs = Set<UUID>() {
+        didSet { processStateRevision &+= 1 }
+    }
     private var passiveInventoryObservationTask: Task<Void, Never>?
     private var fingerprintAuditReservations:
         [UUID: FingerprintAuditLaunchReservation] = [:]

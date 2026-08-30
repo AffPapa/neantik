@@ -83,6 +83,23 @@ struct ResponsiveLayoutRenderTests {
 
             try render(
                 ProfileEditorView(
+                    original: nil,
+                    keychain: KeychainStore(
+                        backend: LayoutRenderKeychainBackend(),
+                        service: "layout.render.direct-warning.\(appearanceName)",
+                        legacyService: nil
+                    ),
+                    folders: [],
+                    initialFolderID: nil,
+                    suggestedTags: []
+                ) { _, _, _ in },
+                name: "profile-editor-direct-warning-\(appearanceName)",
+                size: CGSize(width: 540, height: 620),
+                colorScheme: colorScheme
+            )
+
+            try render(
+                ProfileEditorView(
                     original: profileA,
                     keychain: KeychainStore(
                         backend: LayoutRenderKeychainBackend(),
@@ -624,6 +641,61 @@ struct ResponsiveLayoutRenderTests {
                     settleTime: 0.4
                 )
             }
+        }
+
+        for (name, filter, density) in [
+            (
+                "actual-content-running-selected-empty",
+                ProfileOperationalFilter.running,
+                ProfileRowDensity.comfortable
+            ),
+            (
+                "actual-content-attention-selected-empty",
+                ProfileOperationalFilter.attention,
+                ProfileRowDensity.comfortable
+            ),
+            (
+                "actual-content-compact-density",
+                ProfileOperationalFilter.all,
+                ProfileRowDensity.compact
+            ),
+        ] {
+            try render(
+                ContentView(
+                    store: store,
+                    processes: processes,
+                    telemetry: telemetry,
+                    fingerprintObservationStore:
+                        FingerprintObservationStore(),
+                    proxyHealthCoordinator: ProxyHealthCoordinator(
+                        fileURL: paths.proxyHealthFile
+                    ),
+                    keychain: keychain,
+                    credentialCleanup:
+                        DeletedProfileCredentialCleanup(
+                            paths: paths,
+                            keychain: keychain
+                        ),
+                    runtimeLocator: runtimeLocator,
+                    launchIntent: intent,
+                    fingerprintEvidenceReleaseContext: nil,
+                    initialRuntime: initialRuntime,
+                    initialOperationalFilter: filter,
+                    initialRowDensity: density
+                ),
+                name: name,
+                size: CGSize(
+                    width: WorkspaceLayout.minimumWindowWidth,
+                    height: WorkspaceLayout.minimumWindowHeight
+                ),
+                styleMask: [
+                    .titled,
+                    .closable,
+                    .resizable,
+                ],
+                colorScheme: .light,
+                settleTime: 0.4
+            )
         }
     }
 
