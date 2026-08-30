@@ -899,15 +899,6 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var workspaceToolbar: some ToolbarContent {
-        ToolbarItem(placement: .automatic) {
-            Button {
-                beginCreatingProfile()
-            } label: {
-                Label("Новый профиль…", systemImage: "plus")
-            }
-            .help("Создать профиль (⌘N)")
-        }
-
         ToolbarItemGroup(placement: .primaryAction) {
             if let profile = selectedProfile {
                 let processState = presentedProcessState(for: profile)
@@ -1615,58 +1606,85 @@ struct ContentView: View {
         )
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text(
-                    "\(listState.visibleProfiles.count) " +
-                        profileCountWord(listState.visibleProfiles.count)
-                )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button {
-                    bulkProxyImportRequest = BulkProxyImportRequest(
-                        targetFolderID: selectedFolderID
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Профили")
+                        .font(.headline)
+                    Text(
+                        "\(listState.visibleProfiles.count) " +
+                            profileCountWord(listState.visibleProfiles.count)
                     )
-                } label: {
-                    Label(
-                        "Создать из прокси…",
-                        systemImage: "list.bullet.clipboard"
-                    )
-                    .frame(minHeight: 28)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.bordered)
-                .help("Создать профили из списка прокси")
-                .accessibilityLabel("Создать профили из списка прокси")
+                Spacer()
+                Menu {
+                    Button {
+                        bulkProxyImportRequest = BulkProxyImportRequest(
+                            targetFolderID: selectedFolderID
+                        )
+                    } label: {
+                        Label(
+                            "Создать из списка прокси…",
+                            systemImage: "list.bullet.clipboard"
+                        )
+                    }
+                    if bulkProxyTestTask == nil,
+                       bulkProxyAction.isVisible
+                    {
+                        Divider()
+                        Button {
+                            toggleBulkProxyTests()
+                        } label: {
+                            Label(
+                                "Проверить прокси (\(bulkProxyAction.count))",
+                                systemImage: "checkmark.shield"
+                            )
+                        }
+                    }
+                } label: {
+                    Label("Ещё", systemImage: "ellipsis.circle")
+                        .frame(minHeight: 28)
+                }
+                .help("Дополнительные действия со списком профилей")
+                .accessibilityLabel(
+                    "Дополнительные действия со списком профилей"
+                )
+
+                if !store.profiles.isEmpty {
+                    Button {
+                        beginCreatingProfile()
+                    } label: {
+                        ViewThatFits(in: .horizontal) {
+                            Label("Новый профиль", systemImage: "plus")
+                            Image(systemName: "plus")
+                                .accessibilityHidden(true)
+                        }
+                        .frame(minHeight: 28)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .help("Создать профиль (⌘N)")
+                    .accessibilityLabel("Новый профиль")
+                }
             }
 
-            profileSearchField
+            if !store.profiles.isEmpty {
+                profileSearchField
+            }
 
-            if bulkProxyTestTask != nil || bulkProxyAction.isVisible {
+            if bulkProxyTestTask != nil {
                 Button {
                     toggleBulkProxyTests()
                 } label: {
                     Label(
-                        bulkProxyTestTask == nil
-                            ? "Проверить прокси (\(bulkProxyAction.count))"
-                            : "Остановить проверку",
-                        systemImage:
-                            bulkProxyTestTask == nil
-                            ? "checkmark.shield"
-                            : "stop.circle"
+                        "Остановить проверку",
+                        systemImage: "stop.circle"
                     )
                     .frame(maxWidth: .infinity, minHeight: 28)
                 }
                 .buttonStyle(.bordered)
-                .help(
-                    bulkProxyTestTask == nil
-                        ? "Проверить доступные остановленные прокси-профили, не более трёх одновременно"
-                        : "Остановить массовую проверку прокси"
-                )
-                .accessibilityLabel(
-                    bulkProxyTestTask == nil
-                        ? "Проверить прокси доступных профилей: \(bulkProxyAction.count)"
-                        : "Остановить массовую проверку прокси"
-                )
-                if let bulkProxyProgress, bulkProxyTestTask != nil {
+                .help("Остановить массовую проверку прокси")
+                .accessibilityLabel("Остановить массовую проверку прокси")
+                if let bulkProxyProgress {
                     ProgressView(
                         value: Double(bulkProxyProgress.completed),
                         total: Double(max(1, bulkProxyProgress.total))
@@ -1681,11 +1699,6 @@ struct ContentView: View {
                         "Проверено \(bulkProxyProgress.completed) из " +
                             "\(bulkProxyProgress.total)"
                     )
-                } else if let bulkProxyStatusMessage {
-                    Text(bulkProxyStatusMessage)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(bulkProxyStatusMessage)
                 }
             }
         }
@@ -3039,6 +3052,11 @@ private struct ProfileRow: View {
     var onToggleRunning: () -> Void = {}
 
     var body: some View {
+        let presentation = ProfileRowPresentation.resolve(
+            profile: profile,
+            processState: processState
+        )
+
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color(hex: profile.colorHex))
@@ -3066,23 +3084,41 @@ private struct ProfileRow: View {
                 }
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
                     Text(profile.name)
+                        .fontWeight(.medium)
                         .lineLimit(1)
+                        .help(profile.name)
                     if profile.isPinned {
                         Image(systemName: "pin.fill")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("Закреплён")
                     }
-                    if !profile.note.isEmpty {
-                        Image(systemName: "note.text")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .help("Есть заметка")
-                            .accessibilityLabel("Есть заметка")
-                    }
+                }
+
+                HStack(spacing: 4) {
+                    Label(
+                        presentation.statusTitle,
+                        systemImage: presentation.statusSystemImage
+                    )
+                        .foregroundStyle(
+                            statusColor(for: presentation.statusTone)
+                        )
+                        .lineLimit(1)
+                        .layoutPriority(2)
+                    Text("·")
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                    Label(
+                        presentation.routeTitle,
+                        systemImage: "network"
+                    )
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .help(presentation.routeTitle)
+                        .layoutPriority(1)
                     if !isTestingProxy,
                        let attempt = proxyHealth?.latestAttempt
                     {
@@ -3108,57 +3144,83 @@ private struct ProfileRow: View {
                         )
                     }
                 }
-                ViewThatFits(in: .horizontal) {
-                    secondaryMetadata(includeTags: true)
-                    secondaryMetadata(includeTags: false)
-                }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+
+                if !presentation.noteSummary.isEmpty {
+                    Label(
+                        presentation.noteSummary,
+                        systemImage: "note.text"
+                    )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .privacySensitive()
+                        .accessibilityLabel(
+                            "Заметка: \(presentation.noteSummary)"
+                        )
+                } else if folderName != nil || !profile.tags.isEmpty {
+                    organizationMetadata
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 4)
 
-            if isTestingProxy && processState == .stopped {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(width: 28, height: 28)
-                    .accessibilityLabel("Проверяется прокси")
-            } else if processState == .checking && !launchAction.isEnabled {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(width: 28, height: 28)
-                    .accessibilityLabel("Профиль подготавливается")
-            } else {
-                Button(action: onToggleRunning) {
-                    Image(systemName: launchAction.systemImage)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(
-                    processState.statusTone == .healthy
-                        ? Color.red
-                        : (
-                            processState.isRunning
-                                ? Color.orange
-                                : Color.accentColor
+            Button(action: onToggleRunning) {
+                if presentation.statusTone == .activity,
+                   !launchAction.isEnabled
+                {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityHidden(true)
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        Label(
+                            ProfileRowPresentation.compactLaunchTitle(
+                                launchAction.title
+                            ),
+                            systemImage: launchAction.systemImage
                         )
-                )
-                .disabled(!launchAction.isEnabled)
-                .help("\(launchAction.help): «\(profile.name)»")
-                .accessibilityLabel(
-                    "\(launchAction.title) профиль \(profile.name)"
-                )
+                        Image(systemName: launchAction.systemImage)
+                            .accessibilityHidden(true)
+                    }
+                }
             }
+            .frame(minWidth: 28, minHeight: 28)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .tint(launchTint)
+            .disabled(!launchAction.isEnabled)
+            .help("\(launchAction.help): «\(profile.name)»")
+            .accessibilityLabel(
+                "\(launchAction.title) профиль \(profile.name)"
+            )
+            .layoutPriority(2)
         }
-        .padding(.vertical, 6)
-        .frame(minHeight: 48)
+        .padding(.vertical, 7)
+        .frame(minHeight: 62)
         .accessibilityElement(children: .contain)
     }
 
-    private func secondaryMetadata(
-        includeTags: Bool
-    ) -> some View {
+    private func statusColor(for tone: BrowserProcessStatusTone) -> Color {
+        switch tone {
+        case .neutral:
+            return .secondary
+        case .activity, .attention:
+            return .orange
+        case .healthy:
+            return .green
+        }
+    }
+
+    private var launchTint: Color {
+        processState.statusTone == .healthy ? .red : .accentColor
+    }
+
+    private var organizationMetadata: some View {
         HStack(spacing: 5) {
             if let folderName {
                 Label(folderName, systemImage: "folder")
@@ -3166,24 +3228,14 @@ private struct ProfileRow: View {
                     .help(folderName)
                     .layoutPriority(2)
             }
-            if profile.isArchived {
-                Text("В архиве")
-                    .lineLimit(1)
-                    .layoutPriority(1)
-            } else if let proxy = profile.proxy {
-                Text(proxy.displayName)
-                    .lineLimit(1)
-                    .help(proxy.displayName)
-                    .layoutPriority(1)
-            }
-            if includeTags, let tag = profile.tags.first {
+            if let tag = profile.tags.first {
                 ProfileTagChip(
                     tag: tag,
                     horizontalPadding: 5,
                     verticalPadding: 1
                 )
             }
-            if includeTags, profile.tags.count > 1 {
+            if profile.tags.count > 1 {
                 Text("+\(profile.tags.count - 1)")
             }
         }

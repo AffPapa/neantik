@@ -507,6 +507,8 @@ struct ResponsiveLayoutRenderTests {
                 name:
                     "Очень длинное Unicode-название рабочего профиля",
                 tags: ["Работа", "Проверка"],
+                note:
+                    "Клиент: утренний запуск. Сначала проверь заказ и статус кабинета.",
                 proxy: ProxyConfiguration(
                     kind: .https,
                     host: "2001:db8::1",

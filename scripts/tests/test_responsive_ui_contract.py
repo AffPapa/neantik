@@ -11,6 +11,9 @@ MODELS = ROOT / "Sources" / "NeAntik" / "Models.swift"
 PROFILE_LIST_PROJECTION = (
     ROOT / "Sources" / "NeAntik" / "ProfileListProjection.swift"
 )
+PROFILE_ROW_PRESENTATION = (
+    ROOT / "Sources" / "NeAntik" / "ProfileRowPresentation.swift"
+)
 WORKSPACE_DOMAIN = ROOT / "Sources" / "NeAntik" / "WorkspaceDomain.swift"
 PROFILE_ENVIRONMENT = (
     ROOT / "Sources" / "NeAntik" / "ProfileEnvironmentView.swift"
@@ -84,7 +87,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             2,
         )
 
-    def test_workspace_toolbar_owns_profile_actions_and_dead_sidebar_is_absent(
+    def test_workspace_header_owns_create_and_toolbar_owns_selected_profile_actions(
         self,
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
@@ -97,7 +100,6 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         toolbar = text[toolbar_start:toolbar_end]
 
-        self.assertIn("ToolbarItem(placement: .automatic)", toolbar)
         self.assertIn(
             "ToolbarItemGroup(placement: .primaryAction)", toolbar
         )
@@ -105,7 +107,6 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("profileCommandSet(", toolbar)
         self.assertIn("commands.presentation.launchTitle", toolbar)
         for action in (
-            '"Новый профиль…"',
             '"Изменить…"',
             '"Показать папку данных в Finder"',
             '"Другие действия с профилем"',
@@ -113,6 +114,24 @@ class ResponsiveUIContractTests(unittest.TestCase):
         ):
             self.assertIn(action, toolbar)
         self.assertIn("profileOrganizationActions(commands)", toolbar)
+        self.assertNotIn('"Новый профиль', toolbar)
+
+        header_start = text.index("private func profileListHeader(")
+        search_start = text.index(
+            "private var profileSearchField", header_start
+        )
+        header = text[header_start:search_start]
+        self.assertIn('Label("Новый профиль", systemImage: "plus")', header)
+        self.assertIn(".buttonStyle(.borderedProminent)", header)
+        self.assertIn('Label("Ещё", systemImage: "ellipsis.circle")', header)
+        self.assertIn('"Создать из списка прокси…"', header)
+        self.assertIn('"Проверить прокси (\\(bulkProxyAction.count))"', header)
+        self.assertIn("if bulkProxyTestTask == nil,", header)
+        self.assertIn("if bulkProxyTestTask != nil", header)
+        self.assertLess(
+            header.index('Label("Ещё", systemImage: "ellipsis.circle")'),
+            header.index('Label("Новый профиль", systemImage: "plus")'),
+        )
 
         for dead_symbol in (
             "isSidebarVisible",
@@ -334,12 +353,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         editor = EDITOR.read_text(encoding="utf-8")
-        organization_start = editor.index('Section("Организация")')
-        organization_end = editor.index(
-            "\n        Section {",
-            organization_start,
-        )
-        organization = editor[organization_start:organization_end]
+        profile_start = editor.index('Section("Профиль")')
+        network_start = editor.index('Section("Сеть")', profile_start)
+        profile = editor[profile_start:network_start]
         note_editor_start = editor.index("private var noteEditor")
         note_editor_end = editor.index(
             "private var proxyImportOrderPicker",
@@ -347,7 +363,22 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         note_editor = editor[note_editor_start:note_editor_end]
 
-        self.assertIn("noteEditor", organization)
+        self.assertIn("noteEditor", profile)
+        self.assertLess(
+            profile.index('TextField("Название"'),
+            profile.index("noteEditor"),
+        )
+        self.assertLess(profile_start, network_start)
+        advanced_call = editor.index("advancedOptionsSection", network_start)
+        self.assertLess(network_start, advanced_call)
+        advanced_definition = editor.index(
+            "private var advancedOptionsSection"
+        )
+        advanced = editor[advanced_definition:note_editor_start]
+        self.assertIn('Text("Организация")', advanced)
+        self.assertIn("folderControl", advanced)
+        self.assertIn("ProfileTagEditor(", advanced)
+        self.assertIn('TextField("Стартовая страница"', advanced)
         self.assertIn('Text("Заметка (необязательно)")', note_editor)
         self.assertGreaterEqual(
             note_editor.count(
@@ -363,6 +394,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('"Добавлена"', note_editor)
         self.assertIn("Button", note_editor)
         self.assertIn("TextEditor(text:", note_editor)
+        self.assertIn(
+            '"Без паролей, ключей и seed-фраз"',
+            note_editor,
+        )
         self.assertIn(".frame(maxWidth: .infinity", note_editor)
         self.assertIn(".contentShape(Rectangle())", note_editor)
         self.assertNotIn("DisclosureGroup", note_editor)
@@ -372,12 +407,34 @@ class ResponsiveUIContractTests(unittest.TestCase):
     ) -> None:
         content = CONTENT.read_text(encoding="utf-8")
         projection = PROFILE_LIST_PROJECTION.read_text(encoding="utf-8")
+        row_presentation = PROFILE_ROW_PRESENTATION.read_text(
+            encoding="utf-8"
+        )
 
         row_start = content.index("private struct ProfileRow")
         detail_start = content.index("struct ProfileDetailView", row_start)
         row = content[row_start:detail_start]
-        self.assertIn("profile.note", row)
-        self.assertIn('systemName: "note.text"', row)
+        self.assertIn("presentation.noteSummary", row)
+        self.assertIn('systemImage: "note.text"', row)
+        self.assertIn("presentation.statusTitle", row)
+        self.assertIn("presentation.routeTitle", row)
+        self.assertIn("launchAction.title", row)
+        self.assertIn(".buttonStyle(.bordered)", row)
+        self.assertIn(".privacySensitive()", row)
+        self.assertNotIn(".help(presentation.noteSummary)", row)
+        self.assertIn("processState.title", row_presentation)
+        self.assertIn(
+            'profile.proxy?.displayName ?? "Без прокси"',
+            row_presentation,
+        )
+        self.assertIn(
+            "ProfileNotePresentation.resolve(", row_presentation
+        )
+        self.assertIn("profile.note", row_presentation)
+        self.assertIn(
+            "static let maximumNoteSummaryLength = 120",
+            row_presentation,
+        )
 
         detail_content_start = content.index(
             "private var detailContent: some View",
@@ -477,6 +534,23 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertGreaterEqual(editor.count("ViewThatFits"), 2)
         self.assertGreaterEqual(audit.count("ViewThatFits"), 2)
         self.assertIn(".focused($primaryActionIsFocused)", audit)
+
+    def test_editor_footer_remains_visible_at_minimum_height(self) -> None:
+        editor = EDITOR.read_text(encoding="utf-8")
+        footer_start = editor.index('Button("Отмена")')
+        frame_start = editor.index(
+            ".frame(\n      minWidth: 460",
+            footer_start,
+        )
+        footer = editor[footer_start:frame_start]
+
+        self.assertIn(".fixedSize(horizontal: false, vertical: true)", footer)
+        self.assertIn(".background(.bar)", footer)
+        self.assertIn(
+            ".frame(minHeight: 0, maxHeight: .infinity)",
+            editor[:footer_start],
+        )
+        self.assertIn(".layoutPriority(-1)", editor[:footer_start])
 
     def test_environment_section_uses_the_full_row_as_disclosure_control(
         self,
