@@ -222,10 +222,10 @@ struct ContentView: View {
     @State private var bulkProxyProgress: BulkProxyProgress?
     @State private var bulkProxyStatusMessage: String?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showsProfileInspector = false
     @State private var preferredProfileSelection: UUID?
     @FocusState private var profileSearchIsFocused: Bool
     @FocusState private var focusedWorkspaceSource: WorkspaceSourceFocus?
-    @State private var usesCompactWorkspaceColumns: Bool?
     @State private var foldersSourceExpanded = true
     @State private var tagsSourceExpanded = true
     @State private var showsAllFolders = false
@@ -455,17 +455,7 @@ struct ContentView: View {
         workspaceLifecycle
     }
 
-    private var workspaceBase: some View {
-        GeometryReader { proxy in
-            workspaceNavigation
-                .onAppear {
-                    updateWorkspaceColumns(for: proxy.size.width)
-                }
-                .onChange(of: proxy.size.width) { _, width in
-                    updateWorkspaceColumns(for: width)
-                }
-        }
-    }
+    private var workspaceBase: some View { workspaceNavigation }
 
     private var workspaceNavigation: some View {
         let listState = currentProfileListViewState
@@ -476,22 +466,23 @@ struct ContentView: View {
                     ideal: WorkspaceLayout.idealSourceColumnWidth,
                     max: WorkspaceLayout.maximumSourceColumnWidth
                 )
-        } content: {
+        } detail: {
             profileListPane(listState)
                 .navigationSplitViewColumnWidth(
                     min: WorkspaceLayout.minimumProfileColumnWidth,
                     ideal: WorkspaceLayout.idealProfileColumnWidth,
                     max: WorkspaceLayout.maximumProfileColumnWidth
                 )
-        } detail: {
-            detail
-                .frame(
-                    minWidth: WorkspaceLayout.minimumDetailColumnWidth,
-                    maxWidth: .infinity,
-                    maxHeight: .infinity
-                )
         }
         .navigationSplitViewStyle(.balanced)
+        .inspector(isPresented: $showsProfileInspector) {
+            detail
+                .inspectorColumnWidth(
+                    min: WorkspaceLayout.minimumInspectorWidth,
+                    ideal: WorkspaceLayout.idealInspectorWidth,
+                    max: WorkspaceLayout.maximumInspectorWidth
+                )
+        }
         .frame(
             minWidth: WorkspaceLayout.minimumWindowWidth,
             minHeight: WorkspaceLayout.minimumWindowHeight
@@ -736,6 +727,11 @@ struct ContentView: View {
         .onChange(of: profileSearchText) { _, _ in
             normalizeSelection(preferred: preferredProfileSelection)
         }
+        .onChange(of: selection) { _, selectedProfileID in
+            if selectedProfileID == nil {
+                showsProfileInspector = false
+            }
+        }
         .onChange(of: selectedProfileTag) { _, _ in
             normalizeSelection(preferred: preferredProfileSelection)
         }
@@ -912,62 +908,27 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var workspaceToolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            if let profile = selectedProfile {
-                let processState = presentedProcessState(for: profile)
-                let commands = profileCommandSet(
-                    for: profile,
-                    processState: processState
-                )
-                Button(action: commands.toggleRunning) {
-                    Label(
-                        commands.presentation.launchTitle,
-                        systemImage:
-                            commands.presentation.launchSystemImage
-                    )
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!commands.presentation.launchIsEnabled)
-                .help(commands.presentation.launchHelp)
-                .accessibilityLabel(
-                    "\(commands.presentation.launchTitle) профиль " +
-                        profile.name
-                )
-
-                Button(action: commands.edit) {
-                    Label("Изменить…", systemImage: "pencil")
-                }
-                .disabled(!commands.presentation.editIsEnabled)
-                .help(
-                    commands.presentation.editIsEnabled
-                        ? "Изменить профиль"
-                        : "Сначала останови профиль"
-                )
-
-                Menu {
-                    profileOrganizationActions(commands)
-                    Divider()
-                    Button(action: commands.revealInFinder) {
-                        Label(
-                            "Показать папку данных в Finder",
-                            systemImage: "folder"
-                        )
-                    }
-                    Divider()
-                    Button(role: .destructive, action: commands.delete) {
-                        Label("Удалить профиль", systemImage: "trash")
-                    }
-                    .disabled(!commands.presentation.deleteIsEnabled)
-                } label: {
-                    Text("Действия")
-                        .fixedSize()
-                }
-                .help("Другие действия с профилем")
-                .accessibilityLabel("Другие действия с профилем")
-                .accessibilityHint(
-                    "Открывает меню управления выбранным профилем"
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                showsProfileInspector.toggle()
+            } label: {
+                Label(
+                    showsProfileInspector ? "Скрыть сведения" : "Сведения",
+                    systemImage: "sidebar.right"
                 )
             }
+            .keyboardShortcut("i", modifiers: [.command])
+            .disabled(selectedProfile == nil)
+            .help(
+                showsProfileInspector
+                    ? "Скрыть сведения о профиле (⌘I)"
+                    : "Показать сведения о профиле (⌘I)"
+            )
+            .accessibilityLabel(
+                showsProfileInspector
+                    ? "Скрыть сведения о выбранном профиле"
+                    : "Показать сведения о выбранном профиле"
+            )
         }
     }
 
@@ -1085,18 +1046,6 @@ struct ContentView: View {
         if normalize {
             normalizeSelection(preferred: preferredProfileSelection)
         }
-    }
-
-    private func updateWorkspaceColumns(for width: CGFloat) {
-        let shouldUseCompactColumns =
-            width < WorkspaceLayout.minimumSourceColumnWidth +
-                WorkspaceLayout.minimumProfileColumnWidth +
-                WorkspaceLayout.minimumDetailColumnWidth
-        guard shouldUseCompactColumns != usesCompactWorkspaceColumns else {
-            return
-        }
-        usesCompactWorkspaceColumns = shouldUseCompactColumns
-        columnVisibility = shouldUseCompactColumns ? .doubleColumn : .all
     }
 
     private func beginCreatingProfile() {
@@ -1526,89 +1475,155 @@ struct ContentView: View {
     private func profileListPane(
         _ listState: ProfileListViewState
     ) -> some View {
-        VStack(spacing: 0) {
-            profileListHeader(listState)
-            Divider()
-            runtimeReadinessBanner
-            activeFiltersBar
+        GeometryReader { proxy in
+            let usesWideLayout =
+                proxy.size.width >= ProfileRowLayout.minimumWideWidth
+            VStack(spacing: 0) {
+                profileListHeader(listState)
+                Divider()
+                runtimeReadinessBanner
+                activeFiltersBar
 
-            if store.profiles.isEmpty {
-                ContentUnavailableView {
-                    Label(
-                        "Нет профилей",
-                        systemImage: "person.crop.rectangle.stack"
+                if store.profiles.isEmpty {
+                    FirstProfileOnboardingView(
+                        runtimeAvailability: runtimeAvailability,
+                        isCreatingProfile: isCreatingFirstProfile,
+                        onCreateAndOpen: createAndOpenFirstProfile,
+                        onRetryRuntimeCheck: {
+                            Task { await resolveRuntime() }
+                        },
+                        onConfigure: beginCreatingProfile
                     )
-                } description: {
-                    Text("Первый профиль создаётся в основной области окна.")
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if listState.visibleProfiles.isEmpty {
-                ContentUnavailableView {
-                    Label(
-                        "Ничего не найдено",
-                        systemImage: "magnifyingglass"
-                    )
-                } description: {
-                    Text("Измени поиск или фильтры.")
-                } actions: {
-                    Button("Сбросить все фильтры") {
-                        resetProfileFilters()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List(selection: profileSelectionBinding) {
-                    ForEach(listState.visibleProfiles) { profile in
-                        let processState = presentedProcessState(
-                            for: profile
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if listState.visibleProfiles.isEmpty {
+                    ContentUnavailableView {
+                        Label(
+                            "Ничего не найдено",
+                            systemImage: "magnifyingglass"
                         )
-                        let launchAction = BrowserLaunchActionPresentation.resolve(
-                            processState: processState,
-                            isArchived: profile.isArchived,
-                            runtimeAvailability: runtimeAvailability,
-                            isProxyTesting: isProxyTestInFlight(
-                                profileID: profile.id
-                            ),
-                            isLaunchPreparation:
-                                launchPreparingProfileIDs.contains(profile.id)
-                        )
-                        ProfileRow(
-                            profile: profile,
-                            processState: processState,
-                            launchAction: launchAction,
-                            proxyHealth: proxyHealthCoordinator.state(
-                                for: profile
-                            ),
-                            isTestingProxy:
-                                isProxyTestInFlight(profileID: profile.id),
-                            folderName: store.folderID(forProfileID: profile.id)
-                                .flatMap { listState.index.folderNameByID[$0] },
-                            onToggleRunning: {
-                                if launchPreparingProfileIDs.contains(
-                                    profile.id
-                                ) {
-                                    cancelLaunchPreparation(
-                                        profileID: profile.id
-                                    )
-                                } else if processState.isRunning {
-                                    processes.stop(profileID: profile.id)
-                                } else {
-                                    launch(profile)
-                                }
-                            }
-                        )
-                        .tag(profile.id)
-                        .contextMenu {
-                            profileContextMenu(profile, processState: processState)
+                    } description: {
+                        Text("Измени поиск или фильтры.")
+                    } actions: {
+                        Button("Сбросить все фильтры") {
+                            resetProfileFilters()
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    VStack(spacing: 0) {
+                        profileTableHeader(usesWideLayout: usesWideLayout)
+                        List(selection: profileSelectionBinding) {
+                            ForEach(listState.visibleProfiles) { profile in
+                                let processState = presentedProcessState(
+                                    for: profile
+                                )
+                                let launchAction = BrowserLaunchActionPresentation.resolve(
+                                    processState: processState,
+                                    isArchived: profile.isArchived,
+                                    runtimeAvailability: runtimeAvailability,
+                                    isProxyTesting: isProxyTestInFlight(
+                                        profileID: profile.id
+                                    ),
+                                    isLaunchPreparation:
+                                        launchPreparingProfileIDs.contains(profile.id)
+                                )
+                                ProfileRow(
+                                    profile: profile,
+                                    processState: processState,
+                                    launchAction: launchAction,
+                                    proxyHealth: proxyHealthCoordinator.state(
+                                        for: profile
+                                    ),
+                                    isTestingProxy:
+                                        isProxyTestInFlight(profileID: profile.id),
+                                    folderName: store.folderID(forProfileID: profile.id)
+                                        .flatMap { listState.index.folderNameByID[$0] },
+                                    usesWideLayout: usesWideLayout,
+                                    onToggleRunning: {
+                                        if launchPreparingProfileIDs.contains(
+                                            profile.id
+                                        ) {
+                                            cancelLaunchPreparation(
+                                                profileID: profile.id
+                                            )
+                                        } else if processState.isRunning {
+                                            processes.stop(profileID: profile.id)
+                                        } else {
+                                            launch(profile)
+                                        }
+                                    }
+                                ) {
+                                    profileContextMenu(
+                                        profile,
+                                        processState: processState
+                                    )
+                                }
+                                .tag(profile.id)
+                                .contextMenu {
+                                    profileContextMenu(
+                                        profile,
+                                        processState: processState
+                                    )
+                                }
+                            }
+                        }
+                        .listStyle(.inset)
+                    }
                 }
-                .listStyle(.inset)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .controlBackgroundColor))
         .navigationTitle("Профили")
+    }
+
+    @ViewBuilder
+    private func profileTableHeader(
+        usesWideLayout: Bool
+    ) -> some View {
+        if usesWideLayout {
+            VStack(spacing: 0) {
+                HStack(spacing: ProfileRowLayout.spacing) {
+                    Text("Действие")
+                        .frame(width: ProfileRowLayout.actionWidth)
+                    Text("Профиль")
+                        .frame(
+                            minWidth: ProfileRowLayout.minimumIdentityWidth,
+                            maxWidth: .infinity,
+                            alignment: .leading
+                        )
+                    Text("Статус")
+                        .frame(
+                            width: ProfileRowLayout.statusWidth,
+                            alignment: .leading
+                        )
+                    Text("Подключение")
+                        .frame(
+                            minWidth: ProfileRowLayout.minimumRouteWidth,
+                            maxWidth: .infinity,
+                            alignment: .leading
+                        )
+                    Text("Контекст")
+                        .frame(
+                            minWidth: ProfileRowLayout.minimumContextWidth,
+                            maxWidth: .infinity,
+                            alignment: .leading
+                        )
+                    Color.clear
+                        .frame(
+                            width: ProfileRowLayout.menuWidth,
+                            height: 1
+                        )
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, ProfileRowLayout.horizontalPadding)
+                .padding(.vertical, 7)
+                Divider()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityHidden(true)
+        }
     }
 
     private func profileListHeader(
@@ -1620,103 +1635,85 @@ struct ContentView: View {
             isPreparing: { launchPreparingProfileIDs.contains($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
+        let runningCount = listState.visibleProfiles.lazy.filter {
+            processes.runningProfileIDs.contains($0.id)
+        }.count
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                ViewThatFits(in: .horizontal) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Профили")
-                            .font(.headline)
-                        Text(
-                            "\(listState.visibleProfiles.count) " +
-                                profileCountWord(
-                                    listState.visibleProfiles.count
-                                )
-                        )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-
-                    Text("\(listState.visibleProfiles.count) проф.")
+                Text("Профили")
+                    .font(.headline)
+                Text(
+                    "\(listState.visibleProfiles.count) " +
+                        profileCountWord(listState.visibleProfiles.count)
+                )
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                if runningCount > 0 {
+                    Label("\(runningCount) запущено", systemImage: "circle.fill")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .accessibilityLabel(
-                            "\(listState.visibleProfiles.count) " +
-                                profileCountWord(
-                                    listState.visibleProfiles.count
-                                )
-                        )
-
-                    Text(listState.visibleProfiles.count, format: .number)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(
-                            "\(listState.visibleProfiles.count) " +
-                                profileCountWord(
-                                    listState.visibleProfiles.count
-                                )
-                        )
+                        .foregroundStyle(.green)
                 }
                 Spacer()
-                Menu {
-                    Button {
-                        bulkProxyImportRequest = BulkProxyImportRequest(
-                            targetFolderID: selectedFolderID
-                        )
-                    } label: {
-                        Label(
-                            "Создать из списка прокси…",
-                            systemImage: "list.bullet.clipboard"
-                        )
-                    }
-                    if bulkProxyTestTask == nil,
-                       bulkProxyAction.isVisible
-                    {
-                        Divider()
+            }
+
+            if !store.profiles.isEmpty {
+                HStack(spacing: 8) {
+                    profileSearchField
+
+                    Menu {
                         Button {
-                            toggleBulkProxyTests()
+                            bulkProxyImportRequest = BulkProxyImportRequest(
+                                targetFolderID: selectedFolderID
+                            )
                         } label: {
                             Label(
-                                "Проверить прокси (\(bulkProxyAction.count))",
-                                systemImage: "checkmark.shield"
+                                "Создать из списка прокси…",
+                                systemImage: "list.bullet.clipboard"
                             )
                         }
+                        if bulkProxyTestTask == nil,
+                           bulkProxyAction.isVisible
+                        {
+                            Divider()
+                            Button {
+                                toggleBulkProxyTests()
+                            } label: {
+                                Label(
+                                    "Проверить прокси (\(bulkProxyAction.count))",
+                                    systemImage: "checkmark.shield"
+                                )
+                            }
+                        }
+                    } label: {
+                        ViewThatFits(in: .horizontal) {
+                            Label("Ещё", systemImage: "ellipsis.circle")
+                            Image(systemName: "ellipsis.circle")
+                                .accessibilityHidden(true)
+                        }
+                        .frame(minHeight: 28)
                     }
-                } label: {
-                    ViewThatFits(in: .horizontal) {
-                        Label("Ещё", systemImage: "ellipsis.circle")
-                        Image(systemName: "ellipsis.circle")
-                            .accessibilityHidden(true)
-                    }
-                    .frame(minHeight: 28)
-                }
-                .help("Дополнительные действия со списком профилей")
-                .accessibilityLabel(
-                    "Дополнительные действия со списком профилей"
-                )
+                    .help("Дополнительные действия со списком профилей")
+                    .accessibilityLabel(
+                        "Дополнительные действия со списком профилей"
+                    )
 
-                profileListViewMenu
+                    profileListViewMenu
 
-                if !store.profiles.isEmpty {
                     Button {
                         beginCreatingProfile()
                     } label: {
                         ViewThatFits(in: .horizontal) {
-                            Label("Новый профиль", systemImage: "plus")
+                            Label("Создать профиль", systemImage: "plus")
                             Image(systemName: "plus")
                                 .accessibilityHidden(true)
                         }
                         .frame(minHeight: 28)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(.green)
                     .help("Создать профиль (⌘N)")
-                    .accessibilityLabel("Новый профиль")
+                    .accessibilityLabel("Создать профиль")
                 }
-            }
-
-            if !store.profiles.isEmpty {
-                profileSearchField
             }
 
             if bulkProxyTestTask != nil {
@@ -1759,7 +1756,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             TextField(
-                "Поиск профилей, маршрутов, заметок, тегов и папок",
+                "Поиск профилей, прокси и заметок",
                 text: $profileSearchText
             )
             .textFieldStyle(.plain)
@@ -1782,7 +1779,7 @@ struct ContentView: View {
             }
         }
         .padding(.horizontal, 8)
-        .frame(minHeight: 28)
+        .frame(minWidth: 180, minHeight: 28)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
     }
 
@@ -1801,14 +1798,14 @@ struct ContentView: View {
             }
         } label: {
             ViewThatFits(in: .horizontal) {
-                Label("Вид", systemImage: "line.3.horizontal.decrease")
+                Label("Фильтры", systemImage: "line.3.horizontal.decrease")
                 Image(systemName: "line.3.horizontal.decrease")
                     .accessibilityHidden(true)
             }
             .frame(minHeight: 28)
         }
         .help("Сортировка и фильтр подключения")
-        .accessibilityLabel("Вид списка профилей")
+        .accessibilityLabel("Фильтры и сортировка профилей")
         .accessibilityValue(
             "\(profileListOrdering.title), \(profileRouteFilter.title)"
         )
@@ -3144,14 +3141,50 @@ struct ContentView: View {
     }
 }
 
-private struct ProfileRow: View {
+private enum ProfileRowLayout {
+    static let minimumWideWidth: CGFloat = 780
+    static let spacing: CGFloat = 10
+    static let horizontalPadding: CGFloat = 4
+    static let actionWidth: CGFloat = 82
+    static let minimumIdentityWidth: CGFloat = 180
+    static let statusWidth: CGFloat = 105
+    static let minimumRouteWidth: CGFloat = 140
+    static let minimumContextWidth: CGFloat = 135
+    static let menuWidth: CGFloat = 28
+}
+
+private struct ProfileRow<Actions: View>: View {
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let launchAction: BrowserLaunchActionPresentation
     let proxyHealth: ProxyHealthState?
     let isTestingProxy: Bool
     let folderName: String?
-    var onToggleRunning: () -> Void = {}
+    let usesWideLayout: Bool
+    let onToggleRunning: () -> Void
+    let actions: Actions
+
+    init(
+        profile: BrowserProfile,
+        processState: BrowserProfileProcessState,
+        launchAction: BrowserLaunchActionPresentation,
+        proxyHealth: ProxyHealthState?,
+        isTestingProxy: Bool,
+        folderName: String?,
+        usesWideLayout: Bool,
+        onToggleRunning: @escaping () -> Void,
+        @ViewBuilder actions: () -> Actions
+    ) {
+        self.profile = profile
+        self.processState = processState
+        self.launchAction = launchAction
+        self.proxyHealth = proxyHealth
+        self.isTestingProxy = isTestingProxy
+        self.folderName = folderName
+        self.usesWideLayout = usesWideLayout
+        self.onToggleRunning = onToggleRunning
+        self.actions = actions()
+    }
 
     var body: some View {
         let presentation = ProfileRowPresentation.resolve(
@@ -3159,108 +3192,79 @@ private struct ProfileRow: View {
             processState: processState
         )
 
+        Group {
+            if usesWideLayout {
+                wideRow(presentation)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                compactRow(presentation)
+            }
+        }
+        .padding(.vertical, 7)
+        .frame(minHeight: 62)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func wideRow(
+        _ presentation: ProfileRowPresentation
+    ) -> some View {
+        HStack(spacing: ProfileRowLayout.spacing) {
+            launchButton(presentation)
+                .frame(width: ProfileRowLayout.actionWidth)
+            identityBlock
+                .frame(
+                    minWidth: ProfileRowLayout.minimumIdentityWidth,
+                    maxWidth: .infinity,
+                    alignment: .leading
+                )
+            statusBadge(presentation)
+                .frame(
+                    width: ProfileRowLayout.statusWidth,
+                    alignment: .leading
+                )
+            routeBlock(presentation)
+                .frame(
+                    minWidth: ProfileRowLayout.minimumRouteWidth,
+                    maxWidth: .infinity,
+                    alignment: .leading
+                )
+            contextBlock(presentation)
+                .frame(
+                    minWidth: ProfileRowLayout.minimumContextWidth,
+                    maxWidth: .infinity,
+                    alignment: .leading
+                )
+            actionsMenu
+                .frame(width: ProfileRowLayout.menuWidth)
+        }
+        .padding(.horizontal, ProfileRowLayout.horizontalPadding)
+    }
+
+    private func compactRow(
+        _ presentation: ProfileRowPresentation
+    ) -> some View {
         HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(hex: profile.colorHex))
-                .frame(width: 30, height: 30)
-                .overlay {
-                    Image(systemName: profile.displaySymbolName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(
-                            ProfileAppearance.usesDarkForeground(
-                                for: profile.colorHex
-                            )
-                                ? Color.black
-                                : Color.white
-                        )
-                    if processState.isRunning {
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(
-                                processState.statusTone == .healthy
-                                    ? Color.green
-                                    : Color.orange,
-                                lineWidth: 2
-                            )
-                            .padding(-2)
-                    }
-                }
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
+            profileAvatar
+            VStack(alignment: .leading, spacing: 4) {
+                profileName
                 HStack(spacing: 5) {
-                    Text(profile.name)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-                        .help(profile.name)
-                    if profile.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("Закреплён")
-                    }
-                }
-
-                HStack(spacing: 4) {
                     Label(
                         presentation.statusTitle,
                         systemImage: presentation.statusSystemImage
                     )
-                        .foregroundStyle(
-                            statusColor(for: presentation.statusTone)
-                        )
-                        .lineLimit(1)
-                        .layoutPriority(2)
+                    .foregroundStyle(statusColor(for: presentation.statusTone))
+                    .layoutPriority(2)
                     Text("·")
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
-                    Label(
-                        presentation.routeTitle,
-                        systemImage: "network"
-                    )
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .help(presentation.routeTitle)
+                    routeBlock(presentation)
                         .layoutPriority(1)
-                    if !isTestingProxy,
-                       let attempt = proxyHealth?.latestAttempt
-                    {
-                        let routeContextIsComplete =
-                            proxyHealth?.hasCompleteRouteContext == true
-                        Image(
-                            systemName:
-                                routeContextIsComplete
-                                ? "checkmark.circle.fill"
-                                : "exclamationmark.triangle.fill"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(
-                            routeContextIsComplete
-                                ? Color.green
-                                : Color.orange
-                        )
-                        .help(
-                            "Прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.") \(attempt.checkedAt.neAntikDisplayDateTime)"
-                        )
-                        .accessibilityLabel(
-                            "Проверка прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.")"
-                        )
-                    }
                 }
                 .font(.caption)
+                .lineLimit(1)
 
                 if !presentation.noteSummary.isEmpty {
-                    Label(
-                        presentation.noteSummary,
-                        systemImage: "note.text"
-                    )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .privacySensitive()
-                        .accessibilityLabel(
-                            "Заметка: \(presentation.noteSummary)"
-                        )
+                    noteLabel(presentation.noteSummary)
                 } else if folderName != nil || !profile.tags.isEmpty {
                     organizationMetadata
                         .font(.caption)
@@ -3270,41 +3274,195 @@ private struct ProfileRow: View {
             .layoutPriority(1)
 
             Spacer(minLength: 4)
+            launchButton(presentation)
+            actionsMenu
+        }
+    }
 
-            Button(action: onToggleRunning) {
-                if presentation.statusTone == .activity,
-                   !launchAction.isEnabled
-                {
-                    ProgressView()
-                        .controlSize(.small)
-                        .accessibilityHidden(true)
-                } else {
-                    ViewThatFits(in: .horizontal) {
-                        Label(
-                            ProfileRowPresentation.compactLaunchTitle(
-                                launchAction.title
-                            ),
-                            systemImage: launchAction.systemImage
-                        )
-                        Image(systemName: launchAction.systemImage)
-                            .accessibilityHidden(true)
-                    }
+    private var identityBlock: some View {
+        HStack(spacing: 8) {
+            profileAvatar
+            VStack(alignment: .leading, spacing: 3) {
+                profileName
+                if folderName != nil || !profile.tags.isEmpty {
+                    organizationMetadata
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(minWidth: 28, minHeight: 28)
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .tint(launchTint)
-            .disabled(!launchAction.isEnabled)
-            .help("\(launchAction.help): «\(profile.name)»")
-            .accessibilityLabel(
-                "\(launchAction.title) профиль \(profile.name)"
-            )
-            .layoutPriority(2)
         }
-        .padding(.vertical, 7)
-        .frame(minHeight: 62)
-        .accessibilityElement(children: .contain)
+    }
+
+    private var profileAvatar: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(Color(hex: profile.colorHex))
+            .frame(width: 30, height: 30)
+            .overlay {
+                Image(systemName: profile.displaySymbolName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(
+                        ProfileAppearance.usesDarkForeground(
+                            for: profile.colorHex
+                        ) ? Color.black : Color.white
+                    )
+                if processState.isRunning {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(
+                            processState.statusTone == .healthy
+                                ? Color.green
+                                : Color.orange,
+                            lineWidth: 2
+                        )
+                        .padding(-2)
+                }
+            }
+            .accessibilityHidden(true)
+    }
+
+    private var profileName: some View {
+        HStack(spacing: 5) {
+            Text(profile.name)
+                .fontWeight(.medium)
+                .lineLimit(1)
+                .help(profile.name)
+            if profile.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Закреплён")
+            }
+        }
+    }
+
+    private func statusBadge(
+        _ presentation: ProfileRowPresentation
+    ) -> some View {
+        Label(
+            presentation.statusTitle,
+            systemImage: presentation.statusSystemImage
+        )
+        .font(.caption)
+        .foregroundStyle(statusColor(for: presentation.statusTone))
+        .lineLimit(1)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(
+            statusColor(for: presentation.statusTone).opacity(0.12),
+            in: Capsule()
+        )
+    }
+
+    private func routeBlock(
+        _ presentation: ProfileRowPresentation
+    ) -> some View {
+        HStack(spacing: 4) {
+            Label(presentation.routeTitle, systemImage: "network")
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .help(presentation.routeTitle)
+            routeHealthIndicator
+        }
+        .font(.caption)
+    }
+
+    @ViewBuilder
+    private var routeHealthIndicator: some View {
+        if !isTestingProxy,
+           let attempt = proxyHealth?.latestAttempt
+        {
+            let routeContextIsComplete =
+                proxyHealth?.hasCompleteRouteContext == true
+            Image(
+                systemName:
+                    routeContextIsComplete
+                    ? "checkmark.circle.fill"
+                    : "exclamationmark.triangle.fill"
+            )
+            .font(.caption)
+            .foregroundStyle(routeContextIsComplete ? Color.green : .orange)
+            .help(
+                "Прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.") \(attempt.checkedAt.neAntikDisplayDateTime)"
+            )
+            .accessibilityLabel(
+                "Проверка прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.")"
+            )
+        }
+    }
+
+    private func contextBlock(
+        _ presentation: ProfileRowPresentation
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if !presentation.noteSummary.isEmpty {
+                noteLabel(presentation.noteSummary)
+            }
+            Label(
+                profile.lastLaunchedAt.map {
+                    "Запуск \($0.neAntikDisplayDateTime)"
+                } ?? "Не запускался",
+                systemImage: "clock"
+            )
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .lineLimit(1)
+        }
+    }
+
+    private func noteLabel(_ summary: String) -> some View {
+        Label(summary, systemImage: "note.text")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .privacySensitive()
+            .accessibilityLabel("Заметка: \(summary)")
+    }
+
+    private func launchButton(
+        _ presentation: ProfileRowPresentation
+    ) -> some View {
+        Button(action: onToggleRunning) {
+            if presentation.statusTone == .activity,
+               !launchAction.isEnabled
+            {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityHidden(true)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    Label(
+                        ProfileRowPresentation.compactLaunchTitle(
+                            launchAction.title
+                        ),
+                        systemImage: launchAction.systemImage
+                    )
+                    Image(systemName: launchAction.systemImage)
+                        .accessibilityHidden(true)
+                }
+            }
+        }
+        .frame(minWidth: 28, minHeight: 28)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .tint(launchTint)
+        .disabled(!launchAction.isEnabled)
+        .help("\(launchAction.help): «\(profile.name)»")
+        .accessibilityLabel("\(launchAction.title) профиль \(profile.name)")
+        .layoutPriority(2)
+    }
+
+    private var actionsMenu: some View {
+        Menu {
+            actions
+        } label: {
+            Image(systemName: "ellipsis")
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Действия с профилем «\(profile.name)»")
+        .accessibilityLabel("Действия с профилем \(profile.name)")
     }
 
     private func statusColor(for tone: BrowserProcessStatusTone) -> Color {
@@ -3319,7 +3477,7 @@ private struct ProfileRow: View {
     }
 
     private var launchTint: Color {
-        processState.statusTone == .healthy ? .red : .accentColor
+        processState.statusTone == .healthy ? .red : .green
     }
 
     private var organizationMetadata: some View {

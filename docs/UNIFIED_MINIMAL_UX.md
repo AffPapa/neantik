@@ -62,6 +62,11 @@ with deterministic creation-time and UUID tie-breaks. The next increment
 extends this projection instead of introducing a table builder or another
 workspace model.
 
+The list-first follow-up and its twenty bounded candidates are recorded in
+[Vision Lean Workspace](VISION_LEAN_WORKSPACE.md). That slice keeps the same
+profile store and commands while replacing the permanent detail column with an
+optional native inspector.
+
 ## Accepted P0 increment
 
 One compact `Вид` menu contains sorting and route filtering. It does not add a

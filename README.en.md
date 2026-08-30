@@ -79,6 +79,13 @@ The capabilities below are included in the published, signed, and notarized
   connections.
 - Search includes the visible proxy type and endpoint, but never proxy
   usernames, passwords, Keychain content, or other credentials.
+- The profile list is now the primary workspace. A wide adaptive row keeps
+  launch, identity, status, route, note, and last-launch context together,
+  while the minimum window falls back to a compact row.
+- Full profile detail is available in an optional native inspector, and every
+  row exposes a visible action menu. See
+  [Vision Lean Workspace](docs/VISION_LEAN_WORKSPACE.md) for the bounded
+  design decisions and deferred candidates.
 
 The public download remains the signed and notarized `0.3.21 (24)` release
 until this exact candidate completes the full Direct Distribution gate.
