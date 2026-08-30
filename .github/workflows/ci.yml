@@ -45,6 +45,7 @@ jobs:
           - KeychainStoreTests
           - LaunchIntentTests
           - NativeMenuLocalizationTests
+          - NeAntikErrorPresentationTests
           - ProfileCommandPresentationTests
           - ProfileEditorPasswordTests
           - ProfileEditorPresentationTests

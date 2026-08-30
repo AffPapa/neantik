@@ -52,6 +52,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertNotIn("notarytool submit", text)
         self.assertLess(
             text.index("sign-runtime.sh"),
+            text.index("verify-built-runtime.sh"),
+        )
+        self.assertLess(
+            text.index("verify-built-runtime.sh"),
             text.index("promote-runtime-candidate-lock.py"),
         )
         self.assertLess(

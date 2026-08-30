@@ -180,7 +180,9 @@ struct ProfileEditorView: View {
     _symbolName = State(initialValue: profile.displaySymbolName)
     _tags = State(initialValue: profile.tags)
     _note = State(initialValue: profile.note)
-    _showsNoteEditor = State(initialValue: initialFocus == .note)
+    _showsNoteEditor = State(
+      initialValue: original == nil || initialFocus == .note
+    )
     _selectedFolderID = State(
       initialValue: folders.contains { $0.id == initialFolderID }
         ? initialFolderID
@@ -842,7 +844,7 @@ struct ProfileEditorView: View {
         .font(.caption.weight(.semibold))
         Image(systemName: "note.text")
           .accessibilityHidden(true)
-        Text("Заметка")
+        Text("Заметка (необязательно)")
           .fontWeight(.semibold)
         Spacer()
         Text(
@@ -857,7 +859,7 @@ struct ProfileEditorView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("Заметка профиля")
+    .accessibilityLabel("Необязательная заметка профиля")
     .accessibilityValue(
       showsNoteEditor
         ? "Развёрнуто"
@@ -890,7 +892,7 @@ struct ProfileEditorView: View {
         TextEditor(text: $note)
           .focused($focusedField, equals: .note)
           .id(ProfileEditorField.note)
-          .accessibilityLabel("Заметка профиля")
+          .accessibilityLabel("Необязательная заметка профиля")
           .accessibilityHint(
             "До \(BrowserProfile.maximumNoteLength) символов"
           )

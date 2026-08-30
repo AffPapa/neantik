@@ -36,6 +36,7 @@ case "$SUITE" in
   KeychainStoreTests|\
   LaunchIntentTests|\
   NativeMenuLocalizationTests|\
+  NeAntikErrorPresentationTests|\
   ProfileCommandPresentationTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
