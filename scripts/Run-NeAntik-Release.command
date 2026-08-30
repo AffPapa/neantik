@@ -224,6 +224,38 @@ for EXISTING_SCHEMA8_SOURCE in \
   fi
 done
 
+verify_current_gui_attempt_evidence() {
+  python3 "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" \
+    --source "$SCHEMA8_SOURCE" \
+    --integrated-app "$APP_PATH" \
+    --candidate-manifest "$CANDIDATE_MANIFEST" \
+    --release-channel "$NEANTIK_RELEASE_CHANNEL" \
+    --not-before "$GUI_NOT_BEFORE" \
+    --output "$REPORT_PATH"
+}
+
+evaluate_current_gui_attempt() {
+  if (( GUI_TIMED_OUT == 0 && GUI_EXIT_STATUS != 0 )); then
+    echo "NeAntik завершил автоматическую проверку с кодом $GUI_EXIT_STATUS." >&2
+    echo "Notarization не запускалась." >&2
+    return 66
+  fi
+
+  if verify_current_gui_attempt_evidence; then
+    if (( GUI_TIMED_OUT != 0 )); then
+      echo
+      echo "PASS: GUI превысил timeout, но успел сохранить свежий проверенный отчёт для этого точного кандидата."
+    fi
+    return 0
+  fi
+
+  if (( GUI_TIMED_OUT != 0 )); then
+    echo "После timeout не найден свежий валидный отчёт этого GUI-attempt; notarization не запускалась." >&2
+    return 67
+  fi
+  return 1
+}
+
 attempt=1
 while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
   python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
@@ -271,25 +303,16 @@ while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
   wait "$GUI_PID" >/dev/null 2>&1 || GUI_EXIT_STATUS="$?"
   python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
     --app "$APP_PATH"
-  if (( GUI_TIMED_OUT != 0 )); then
-    echo "Повторная попытка после timeout запрещена; notarization не запускалась." >&2
-    exit 67
-  fi
-  if (( GUI_EXIT_STATUS != 0 )); then
-    echo "NeAntik завершил автоматическую проверку с кодом $GUI_EXIT_STATUS." >&2
-    echo "Notarization не запускалась." >&2
-    exit 66
-  fi
-
-  if python3 "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" \
-    --source "$SCHEMA8_SOURCE" \
-    --integrated-app "$APP_PATH" \
-    --candidate-manifest "$CANDIDATE_MANIFEST" \
-    --release-channel "$NEANTIK_RELEASE_CHANNEL" \
-    --not-before "$GUI_NOT_BEFORE" \
-    --output "$REPORT_PATH"; then
-    break
-  fi
+  GUI_ATTEMPT_STATUS=0
+  evaluate_current_gui_attempt || GUI_ATTEMPT_STATUS="$?"
+  case "$GUI_ATTEMPT_STATUS" in
+    0)
+      break
+      ;;
+    66|67)
+      exit "$GUI_ATTEMPT_STATUS"
+      ;;
+  esac
 
   if (( attempt == 3 )); then
     echo
