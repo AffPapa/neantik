@@ -30,8 +30,10 @@ Direct before the click; the full editor remains a secondary action.
   note.
 - Notes use progressive disclosure: the full editor row opens a multiline
   plaintext field, the selected profile reveals its text in the detail pane,
-  and compact profile rows show only a note glyph. Notes remain ordinary
-  local profile metadata: no rich text, cloud sync or Keychain storage.
+  and compact profile rows show one normalized, truncated plaintext line.
+  Notes remain ordinary local profile metadata: no rich text, cloud sync or
+  Keychain storage. The editor warns not to store passwords, API keys or seed
+  phrases there.
 - Tags keep their text label and receive a stable dynamic system-color marker
   as a secondary visual cue; status red, orange and green remain reserved.
 - Move-to-folder menus stay bounded to eight useful choices. Larger
@@ -112,12 +114,18 @@ Direct before the click; the full editor remains a secondary action.
 ### Judge
 
 - The profile creation form has no nonessential settings.
+- The creation order is name, visible optional note and optional proxy;
+  folders, tags, start URL and appearance stay under one additional-settings
+  disclosure.
 - The empty workspace exposes `Create and open`, states `Direct connection`
   before launch, and keeps `Configure...` as the secondary path.
 - The main screen exposes create, edit, start, stop, reveal, and delete.
 - An optional note can be opened by clicking the whole editor row, accepts
-  multiline plaintext, is readable from the selected profile and searchable
-  without increasing the compact profile-row height. A clone has no note.
+  multiline plaintext, is readable from the selected profile, searchable and
+  represented by a normalized one-line preview in the compact profile row. A
+  clone has no note.
+- Every profile row exposes state and route as text plus a symbol and keeps a
+  labelled launch/stop action visible without relying on color alone.
 - Proxy credentials are absent from `profiles.json` and process arguments.
 - Foreground profile reconciliation does not perform the process-table or
   full argument-buffer scan on the main thread. A stale or cancelled

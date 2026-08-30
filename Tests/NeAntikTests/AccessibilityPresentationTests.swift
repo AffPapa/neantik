@@ -162,4 +162,91 @@ struct AccessibilityPresentationTests {
             ).shouldOfferExpansion
         )
     }
+
+    @Test
+    func profileRowsExposeTextStateRouteAndNormalizedNote() {
+        let direct = ProfileRowPresentation.resolve(
+            profile: BrowserProfile(
+                name: "Direct",
+                note: "  Первый шаг\nВторой шаг  "
+            ),
+            processState: .stopped
+        )
+        #expect(direct.statusTitle == "Остановлен")
+        #expect(direct.statusSystemImage == "circle")
+        #expect(direct.routeTitle == "Без прокси")
+        #expect(direct.noteSummary == "Первый шаг Второй шаг")
+
+        let proxy = ProfileRowPresentation.resolve(
+            profile: BrowserProfile(
+                name: "Proxy",
+                proxy: ProxyConfiguration(
+                    kind: .https,
+                    host: "proxy.example",
+                    port: 443,
+                    username: ""
+                )
+            ),
+            processState: .managed
+        )
+        #expect(proxy.statusTitle == "Запущен")
+        #expect(proxy.statusSystemImage == "circle.fill")
+        #expect(proxy.routeTitle.contains("proxy.example"))
+    }
+
+    @Test
+    func profileRowNotePreviewIsBoundedAndDoesNotExposeFullNote() {
+        let privateSuffix = "private-tail-marker"
+        let presentation = ProfileRowPresentation.resolve(
+            profile: BrowserProfile(
+                name: "Bounded note",
+                note: String(repeating: "контекст ", count: 30) +
+                    privateSuffix
+            ),
+            processState: .stopped
+        )
+
+        #expect(
+            presentation.noteSummary.count <=
+                ProfileRowPresentation.maximumNoteSummaryLength + 1
+        )
+        #expect(presentation.noteSummary.hasSuffix("…"))
+        #expect(!presentation.noteSummary.contains(privateSuffix))
+    }
+
+    @Test
+    func archivedProfileRowUsesTextAndSymbolInsteadOfColorAlone() {
+        var profile = BrowserProfile(name: "Archive")
+        profile.isArchived = true
+
+        let presentation = ProfileRowPresentation.resolve(
+            profile: profile,
+            processState: .stopped
+        )
+
+        #expect(presentation.statusTitle == "В архиве")
+        #expect(presentation.statusSystemImage == "archivebox")
+        #expect(presentation.statusTone == .neutral)
+    }
+
+    @Test
+    func profileRowUsesShortUnambiguousLaunchLabels() {
+        #expect(
+            ProfileRowPresentation.compactLaunchTitle("Запустить") ==
+                "Старт"
+        )
+        #expect(
+            ProfileRowPresentation.compactLaunchTitle("Остановить") ==
+                "Стоп"
+        )
+        #expect(
+            ProfileRowPresentation.compactLaunchTitle(
+                "Отменить подготовку"
+            ) == "Отмена"
+        )
+        #expect(
+            ProfileRowPresentation.compactLaunchTitle("Неизвестно") ==
+                "Неизвестно"
+        )
+    }
 }

@@ -282,170 +282,8 @@ struct ProfileEditorView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
           validationLabel(for: .name)
-        }
-
-        Section("Организация") {
-          folderControl
-
-          ProfileTagEditor(
-            tags: $tags,
-            suggestions: suggestedTags
-          )
-          .id(ProfileEditorField.tags)
-          validationLabel(for: .tags)
 
           noteEditor
-        }
-
-        Section {
-          Button {
-            focusedField = nil
-            if reduceMotion {
-              showsAdvancedOptions.toggle()
-            } else {
-              withAnimation(.easeInOut(duration: 0.18)) {
-                showsAdvancedOptions.toggle()
-              }
-            }
-          } label: {
-            HStack {
-              Image(
-                systemName:
-                  showsAdvancedOptions
-                    ? "chevron.down"
-                    : "chevron.right"
-              )
-              .font(.caption.weight(.semibold))
-              .accessibilityHidden(true)
-              Text("Дополнительно")
-                .fontWeight(.semibold)
-              Spacer()
-            }
-            .frame(
-              maxWidth: .infinity,
-              minHeight: 28,
-              alignment: .leading
-            )
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("Дополнительные настройки профиля")
-          .accessibilityValue(
-            showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
-          )
-          .accessibilityHint(
-            showsAdvancedOptions
-              ? "Скрывает дополнительные настройки профиля"
-              : "Показывает дополнительные настройки профиля"
-          )
-
-          if showsAdvancedOptions {
-            TextField("Стартовая страница", text: $startURL)
-              .accessibilityLabel("Стартовая страница")
-              .focused($focusedField, equals: .startURL)
-              .id(ProfileEditorField.startURL)
-            validationLabel(for: .startURL)
-
-            Text("Иконка")
-              .font(.headline)
-            LazyVGrid(
-              columns: [
-                GridItem(
-                  .adaptive(minimum: 42, maximum: 46),
-                  spacing: 10
-                )
-              ],
-              alignment: .leading,
-              spacing: 10
-            ) {
-              ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
-                Button {
-                  symbolName = symbol
-                } label: {
-                  RoundedRectangle(cornerRadius: 10)
-                    .fill(
-                      symbolName == symbol
-                        ? Color.accentColor
-                        : Color.secondary.opacity(0.12)
-                    )
-                    .frame(width: 42, height: 42)
-                    .overlay {
-                      Image(systemName: symbol)
-                        .font(
-                          .system(
-                            size: 18,
-                            weight: .medium
-                          )
-                        )
-                        .foregroundStyle(
-                          symbolName == symbol
-                            ? Color.white
-                            : Color.primary
-                        )
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                  "Иконка \(ProfileAppearance.title(for: symbol))"
-                )
-                .accessibilityValue(
-                  symbolName == symbol
-                    ? "Выбрана"
-                    : "Не выбрана"
-                )
-              }
-            }
-
-            Text("Цвет")
-              .font(.headline)
-            LazyVGrid(
-              columns: [
-                GridItem(
-                  .adaptive(minimum: 28, maximum: 32),
-                  spacing: 9
-                )
-              ],
-              alignment: .leading,
-              spacing: 9
-            ) {
-              ForEach(ProfileAppearance.colors, id: \.self) { hex in
-                Button {
-                  colorHex = hex
-                } label: {
-                  Circle()
-                    .fill(Color(hex: hex))
-                    .frame(width: 24, height: 24)
-                    .overlay {
-                      if colorHex == hex {
-                        Image(systemName: "checkmark")
-                          .font(
-                            .system(
-                              size: 9,
-                              weight: .bold
-                            )
-                          )
-                          .foregroundStyle(
-                            ProfileAppearance
-                              .usesDarkForeground(for: hex)
-                              ? Color.black
-                              : Color.white
-                          )
-                      }
-                    }
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                  ProfileAppearance.title(forColor: hex)
-                )
-                .accessibilityValue(
-                  colorHex == hex ? "Выбран" : "Не выбран"
-                )
-              }
-            }
-
-          }
         }
 
         Section("Сеть") {
@@ -624,6 +462,8 @@ struct ProfileEditorView: View {
           }
         }
 
+        advancedOptionsSection
+
         if let errorMessage {
           Section {
             Text(errorMessage)
@@ -643,6 +483,8 @@ struct ProfileEditorView: View {
           }
         }
       }
+      .frame(minHeight: 0, maxHeight: .infinity)
+      .layoutPriority(-1)
 
       Divider()
 
@@ -660,12 +502,14 @@ struct ProfileEditorView: View {
         .keyboardShortcut(.defaultAction)
       }
       .padding()
+      .fixedSize(horizontal: false, vertical: true)
+      .background(.bar)
     }
     .frame(
       minWidth: 460,
       idealWidth: 540,
       minHeight: 380,
-      idealHeight: usesProxy ? 580 : 430
+      idealHeight: usesProxy ? 620 : 500
     )
     .sheet(isPresented: $showingFolderPicker) {
       ProfileFolderPickerSheet(
@@ -770,6 +614,164 @@ struct ProfileEditorView: View {
       folders: folders,
       selectedFolderID: selectedFolderID
     )
+  }
+
+  private var advancedOptionsSection: some View {
+    Section {
+      Button {
+        focusedField = nil
+        if reduceMotion {
+          showsAdvancedOptions.toggle()
+        } else {
+          withAnimation(.easeInOut(duration: 0.18)) {
+            showsAdvancedOptions.toggle()
+          }
+        }
+      } label: {
+        HStack {
+          Image(
+            systemName:
+              showsAdvancedOptions
+                ? "chevron.down"
+                : "chevron.right"
+          )
+          .font(.caption.weight(.semibold))
+          .accessibilityHidden(true)
+          Text("Дополнительно")
+            .fontWeight(.semibold)
+          Spacer()
+          Text("Папка, теги и оформление")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .frame(
+          maxWidth: .infinity,
+          minHeight: 28,
+          alignment: .leading
+        )
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Дополнительные настройки профиля")
+      .accessibilityValue(
+        showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
+      )
+      .accessibilityHint(
+        showsAdvancedOptions
+          ? "Скрывает папку, теги, стартовую страницу и оформление"
+          : "Показывает папку, теги, стартовую страницу и оформление"
+      )
+
+      if showsAdvancedOptions {
+        Text("Организация")
+          .font(.headline)
+        folderControl
+        ProfileTagEditor(
+          tags: $tags,
+          suggestions: suggestedTags
+        )
+        .id(ProfileEditorField.tags)
+        validationLabel(for: .tags)
+
+        Divider()
+
+        TextField("Стартовая страница", text: $startURL)
+          .accessibilityLabel("Стартовая страница")
+          .focused($focusedField, equals: .startURL)
+          .id(ProfileEditorField.startURL)
+        validationLabel(for: .startURL)
+
+        Divider()
+
+        Text("Иконка")
+          .font(.headline)
+        appearanceIconGrid
+
+        Text("Цвет")
+          .font(.headline)
+        appearanceColorGrid
+      }
+    }
+  }
+
+  private var appearanceIconGrid: some View {
+    LazyVGrid(
+      columns: [
+        GridItem(
+          .adaptive(minimum: 42, maximum: 46),
+          spacing: 10
+        )
+      ],
+      alignment: .leading,
+      spacing: 10
+    ) {
+      ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
+        Button {
+          symbolName = symbol
+        } label: {
+          RoundedRectangle(cornerRadius: 10)
+            .fill(
+              symbolName == symbol
+                ? Color.accentColor
+                : Color.secondary.opacity(0.12)
+            )
+            .frame(width: 42, height: 42)
+            .overlay {
+              Image(systemName: symbol)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(
+                  symbolName == symbol ? Color.white : Color.primary
+                )
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+          "Иконка \(ProfileAppearance.title(for: symbol))"
+        )
+        .accessibilityValue(
+          symbolName == symbol ? "Выбрана" : "Не выбрана"
+        )
+      }
+    }
+  }
+
+  private var appearanceColorGrid: some View {
+    LazyVGrid(
+      columns: [
+        GridItem(
+          .adaptive(minimum: 28, maximum: 32),
+          spacing: 9
+        )
+      ],
+      alignment: .leading,
+      spacing: 9
+    ) {
+      ForEach(ProfileAppearance.colors, id: \.self) { hex in
+        Button {
+          colorHex = hex
+        } label: {
+          Circle()
+            .fill(Color(hex: hex))
+            .frame(width: 24, height: 24)
+            .overlay {
+              if colorHex == hex {
+                Image(systemName: "checkmark")
+                  .font(.system(size: 9, weight: .bold))
+                  .foregroundStyle(
+                    ProfileAppearance.usesDarkForeground(for: hex)
+                      ? Color.black
+                      : Color.white
+                  )
+              }
+            }
+            .frame(width: 32, height: 32)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(ProfileAppearance.title(forColor: hex))
+        .accessibilityValue(colorHex == hex ? "Выбран" : "Не выбран")
+      }
+    }
   }
 
   @ViewBuilder
@@ -905,7 +907,7 @@ struct ProfileEditorView: View {
             .allowsHitTesting(false)
         }
       }
-      .frame(minHeight: 96, idealHeight: 108, maxHeight: 120)
+      .frame(minHeight: 72, idealHeight: 84, maxHeight: 96)
 
       HStack(alignment: .firstTextBaseline) {
         Text(notePresentation.countLabel)
@@ -924,6 +926,15 @@ struct ProfileEditorView: View {
           )
           .foregroundStyle(.red)
         }
+        Label(
+          "Без паролей, ключей и seed-фраз",
+          systemImage: "exclamationmark.shield"
+        )
+        .foregroundStyle(.secondary)
+        .accessibilityLabel(
+          "Заметка хранится локально открытым текстом. " +
+            "Не сохраняй здесь пароли, API-ключи или seed-фразы."
+        )
       }
       .font(.caption)
 
@@ -1069,9 +1080,9 @@ struct ProfileEditorView: View {
     validationIssue = issue
     errorMessage = nil
     switch issue.field {
-    case .startURL, .proxyHost, .proxyPort, .proxyPassword:
+    case .startURL, .tags:
       showsAdvancedOptions = true
-    case .name, .tags, .note:
+    case .name, .note, .proxyHost, .proxyPort, .proxyPassword:
       break
     }
     if issue.field == .note {
