@@ -79,6 +79,8 @@ private final class ProfileListStateResolver {
         let revision: UInt64
         let query: WorkspaceQueryState
         let searchText: String
+        let routeFilter: ProfileRouteFilter
+        let ordering: ProfileListOrdering
     }
 
     func resolve(
@@ -86,7 +88,9 @@ private final class ProfileListStateResolver {
         profiles: [BrowserProfile],
         organization: ProfileOrganizationState,
         query: WorkspaceQueryState,
-        searchText: String
+        searchText: String,
+        routeFilter: ProfileRouteFilter,
+        ordering: ProfileListOrdering
     ) -> ProfileListViewState {
         let currentIndex = resolveIndex(
             revision: requestedRevision,
@@ -96,7 +100,9 @@ private final class ProfileListStateResolver {
         let key = ViewStateKey(
             revision: requestedRevision,
             query: query,
-            searchText: searchText
+            searchText: searchText,
+            routeFilter: routeFilter,
+            ordering: ordering
         )
         if viewStateKey == key, let viewState {
             return viewState
@@ -104,7 +110,9 @@ private final class ProfileListStateResolver {
         let resolved = ProfileListViewState(
             index: currentIndex,
             query: query,
-            searchText: searchText
+            searchText: searchText,
+            routeFilter: routeFilter,
+            ordering: ordering
         )
         viewStateKey = key
         viewState = resolved
@@ -195,6 +203,9 @@ struct ContentView: View {
     @State private var selectedProfileTag: ProfileTagID?
     @State private var profileListScope: ProfileListScope = .active
     @State private var selectedFolderFilter: ProfileFolderFilter = .all
+    @State private var profileRouteFilter: ProfileRouteFilter = .all
+    @State private var profileListOrdering: ProfileListOrdering =
+        .pinnedThenName
     @State private var folderNameRequest: FolderNameRequest?
     @State private var profileFolderPickerRequest:
         ProfileFolderPickerRequest?
@@ -310,7 +321,9 @@ struct ContentView: View {
             profiles: store.profiles,
             organization: store.organization,
             query: workspaceQuery,
-            searchText: profileSearchText
+            searchText: profileSearchText,
+            routeFilter: profileRouteFilter,
+            ordering: profileListOrdering
         )
     }
 
@@ -986,9 +999,11 @@ struct ContentView: View {
             savedProfile: profile,
             currentQuery: workspaceQuery,
             currentSearchText: profileSearchText,
+            currentRouteFilter: profileRouteFilter,
             organization: store.organization
         )
         profileSearchText = decision.searchText
+        profileRouteFilter = decision.routeFilter
         applyWorkspaceQuery(decision.query, normalize: false)
         preferredProfileSelection = decision.selectedProfileID
         selection = decision.selectedProfileID
@@ -1055,6 +1070,7 @@ struct ContentView: View {
 
     private func resetProfileFilters() {
         profileSearchText = ""
+        profileRouteFilter = .all
         applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
         normalizeSelection(preferred: preferredProfileSelection)
     }
@@ -1533,7 +1549,7 @@ struct ContentView: View {
                         systemImage: "magnifyingglass"
                     )
                 } description: {
-                    Text("Измени поиск, папку, раздел или выбранный тег.")
+                    Text("Измени поиск или фильтры.")
                 } actions: {
                     Button("Сбросить все фильтры") {
                         resetProfileFilters()
@@ -1606,15 +1622,41 @@ struct ContentView: View {
         )
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Профили")
-                        .font(.headline)
-                    Text(
-                        "\(listState.visibleProfiles.count) " +
-                            profileCountWord(listState.visibleProfiles.count)
-                    )
+                ViewThatFits(in: .horizontal) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Профили")
+                            .font(.headline)
+                        Text(
+                            "\(listState.visibleProfiles.count) " +
+                                profileCountWord(
+                                    listState.visibleProfiles.count
+                                )
+                        )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .fixedSize(horizontal: true, vertical: false)
+
+                    Text("\(listState.visibleProfiles.count) проф.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .accessibilityLabel(
+                            "\(listState.visibleProfiles.count) " +
+                                profileCountWord(
+                                    listState.visibleProfiles.count
+                                )
+                        )
+
+                    Text(listState.visibleProfiles.count, format: .number)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(
+                            "\(listState.visibleProfiles.count) " +
+                                profileCountWord(
+                                    listState.visibleProfiles.count
+                                )
+                        )
                 }
                 Spacer()
                 Menu {
@@ -1642,13 +1684,19 @@ struct ContentView: View {
                         }
                     }
                 } label: {
-                    Label("Ещё", systemImage: "ellipsis.circle")
-                        .frame(minHeight: 28)
+                    ViewThatFits(in: .horizontal) {
+                        Label("Ещё", systemImage: "ellipsis.circle")
+                        Image(systemName: "ellipsis.circle")
+                            .accessibilityHidden(true)
+                    }
+                    .frame(minHeight: 28)
                 }
                 .help("Дополнительные действия со списком профилей")
                 .accessibilityLabel(
                     "Дополнительные действия со списком профилей"
                 )
+
+                profileListViewMenu
 
                 if !store.profiles.isEmpty {
                     Button {
@@ -1711,12 +1759,14 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             TextField(
-                "Поиск профилей, заметок, тегов и папок",
+                "Поиск профилей, маршрутов, заметок, тегов и папок",
                 text: $profileSearchText
             )
             .textFieldStyle(.plain)
             .focused($profileSearchIsFocused)
-            .accessibilityLabel("Поиск профилей, заметок, тегов и папок")
+            .accessibilityLabel(
+                "Поиск профилей, маршрутов, заметок, тегов и папок"
+            )
             if !profileSearchText.isEmpty {
                 Button {
                     profileSearchText = ""
@@ -1734,6 +1784,44 @@ struct ContentView: View {
         .padding(.horizontal, 8)
         .frame(minHeight: 28)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var profileListViewMenu: some View {
+        Menu {
+            Picker("Сортировка", selection: $profileListOrdering) {
+                ForEach(ProfileListOrdering.allCases) { ordering in
+                    Text(ordering.title).tag(ordering)
+                }
+            }
+            Divider()
+            Picker("Подключение", selection: profileRouteFilterBinding) {
+                ForEach(ProfileRouteFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
+                }
+            }
+        } label: {
+            ViewThatFits(in: .horizontal) {
+                Label("Вид", systemImage: "line.3.horizontal.decrease")
+                Image(systemName: "line.3.horizontal.decrease")
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 28)
+        }
+        .help("Сортировка и фильтр подключения")
+        .accessibilityLabel("Вид списка профилей")
+        .accessibilityValue(
+            "\(profileListOrdering.title), \(profileRouteFilter.title)"
+        )
+    }
+
+    private var profileRouteFilterBinding: Binding<ProfileRouteFilter> {
+        Binding(
+            get: { profileRouteFilter },
+            set: { filter in
+                profileRouteFilter = filter
+                normalizeSelection(preferred: preferredProfileSelection)
+            }
+        )
     }
 
     @ViewBuilder
@@ -1776,7 +1864,7 @@ struct ContentView: View {
     @ViewBuilder
     private var activeFiltersBar: some View {
         if selectedProfileTag != nil || selectedFolderFilter != .all ||
-            profileListScope != .active
+            profileListScope != .active || profileRouteFilter != .all
         {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
@@ -1813,6 +1901,17 @@ struct ContentView: View {
                             )
                         }
                     }
+                    if profileRouteFilter != .all {
+                        filterChip(
+                            profileRouteFilter.title,
+                            systemImage: "point.3.connected.trianglepath.dotted"
+                        ) {
+                            profileRouteFilter = .all
+                            normalizeSelection(
+                                preferred: preferredProfileSelection
+                            )
+                        }
+                    }
                     Button("Сбросить") { resetProfileFilters() }
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
@@ -1843,10 +1942,12 @@ struct ContentView: View {
                         .accessibilityHidden(true)
                 } else {
                     Image(systemName: systemImage)
+                        .accessibilityHidden(true)
                 }
                 Text(title).lineLimit(1)
                 Image(systemName: "xmark")
                     .font(.caption2.weight(.bold))
+                    .accessibilityHidden(true)
             }
             .font(.caption)
             .padding(.horizontal, 8)
@@ -1855,6 +1956,7 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
         .help("Убрать фильтр «\(title)»")
+        .accessibilityLabel("Убрать фильтр \(title)")
     }
 
     private func sourceButton(

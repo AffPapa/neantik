@@ -515,11 +515,13 @@ final class BrowserProcessManager: ObservableObject {
         (@Sendable () -> BrowserProcessInventory)?
     private let processSignaler: (pid_t, Int32) -> Int32
     private let managedProcessTerminator: (Process) -> Void
+    private let managedStopGracePeriodNanoseconds: UInt64
     private let allowsExternalProcessSignaling: Bool
     private let observationIntervalNanoseconds: UInt64
     private let startingLeaseTimeout: TimeInterval
     private let now: () -> Date
     private var processes: [UUID: Process] = [:]
+    private var managedStopTasks: [UUID: Task<Void, Never>] = [:]
     private var managedLeaseOwners: [UUID: UUID] = [:]
     private var managedBrowserDataDirectories: [UUID: URL] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
@@ -564,6 +566,7 @@ final class BrowserProcessManager: ObservableObject {
         }
         self.processSignaler = { Darwin.kill($0, $1) }
         self.managedProcessTerminator = { $0.terminate() }
+        self.managedStopGracePeriodNanoseconds = 3_000_000_000
         self.allowsExternalProcessSignaling = false
         self.observationIntervalNanoseconds = 1_000_000_000
         self.startingLeaseTimeout = 30
@@ -582,6 +585,7 @@ final class BrowserProcessManager: ObservableObject {
         managedProcessTerminator: @escaping (Process) -> Void = {
             $0.terminate()
         },
+        managedStopGracePeriodNanoseconds: UInt64 = 3_000_000_000,
         observationIntervalNanoseconds: UInt64 = 1_000_000_000,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection = {
@@ -600,6 +604,8 @@ final class BrowserProcessManager: ObservableObject {
         self.processInventoryProvider = nil
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
+        self.managedStopGracePeriodNanoseconds =
+            managedStopGracePeriodNanoseconds
         self.allowsExternalProcessSignaling =
             allowsExternalProcessSignaling
         self.observationIntervalNanoseconds =
@@ -619,6 +625,7 @@ final class BrowserProcessManager: ObservableObject {
         managedProcessTerminator: @escaping (Process) -> Void = {
             $0.terminate()
         },
+        managedStopGracePeriodNanoseconds: UInt64 = 3_000_000_000,
         observationIntervalNanoseconds: UInt64 = 1_000_000_000,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection = {
@@ -647,6 +654,8 @@ final class BrowserProcessManager: ObservableObject {
         }
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
+        self.managedStopGracePeriodNanoseconds =
+            managedStopGracePeriodNanoseconds
         self.allowsExternalProcessSignaling =
             allowsExternalProcessSignaling
         self.observationIntervalNanoseconds =
@@ -1640,6 +1649,10 @@ final class BrowserProcessManager: ObservableObject {
         if let process = processes[profileID] {
             if process.isRunning {
                 managedProcessTerminator(process)
+                scheduleManagedStopEscalation(
+                    profileID: profileID,
+                    process: process
+                )
             } else {
                 handleTermination(
                     profileID: profileID,
@@ -1711,6 +1724,39 @@ final class BrowserProcessManager: ObservableObject {
         handleTermination(profileID: profileID, process: nil)
     }
 
+    private func scheduleManagedStopEscalation(
+        profileID: UUID,
+        process: Process
+    ) {
+        guard managedStopTasks[profileID] == nil else {
+            return
+        }
+        let pid = process.processIdentifier
+        managedStopTasks[profileID] = Task { @MainActor [weak self, weak process] in
+            guard let self else { return }
+            defer {
+                managedStopTasks.removeValue(forKey: profileID)
+            }
+            do {
+                try await Task.sleep(
+                    nanoseconds: managedStopGracePeriodNanoseconds
+                )
+            } catch {
+                return
+            }
+            guard let process,
+                  processes[profileID] === process,
+                  process.isRunning
+            else {
+                return
+            }
+            if processSignaler(pid, SIGKILL) != 0, errno != ESRCH {
+                lastError =
+                    "Браузер не ответил на завершение. Закрой его окно вручную; профиль останется заблокированным до безопасной проверки."
+            }
+        }
+    }
+
     private func handleTermination(profileID: UUID, process: Process?) {
         if let process {
             guard let current = processes[profileID],
@@ -1733,6 +1779,8 @@ final class BrowserProcessManager: ObservableObject {
             externalLock: externalLock
         )
         processes.removeValue(forKey: profileID)
+        managedStopTasks[profileID]?.cancel()
+        managedStopTasks.removeValue(forKey: profileID)
         externalStopTasks[profileID]?.cancel()
         externalStopTasks.removeValue(forKey: profileID)
         externalObservationTasks[profileID]?.cancel()

@@ -6,6 +6,67 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func managedStopEscalatesOnlyItsOwnUnresponsiveProcess() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data(
+                "#!/bin/sh\ntrap '' TERM\nwhile :; do :; done\n".utf8
+            )
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+
+        let paths = AppPaths(
+            rootDirectory: root.appendingPathComponent("data")
+        )
+        let profile = BrowserProfile(name: "Unresponsive managed browser")
+        var forcedSignals: [(pid_t, Int32)] = []
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            processSignaler: { pid, signal in
+                forcedSignals.append((pid, signal))
+                return Darwin.kill(pid, signal)
+            },
+            managedProcessTerminator: { _ in },
+            managedStopGracePeriodNanoseconds: 20_000_000,
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+
+        try manager.launch(profile: profile, runtime: runtime)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        manager.stop(profileID: profile.id)
+
+        for _ in 0..<100 {
+            if manager.processState(for: profile.id) == .stopped {
+                break
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(forcedSignals.count == 1)
+        #expect((forcedSignals.first?.0 ?? 0) > 0)
+        #expect(forcedSignals.first?.1 == SIGKILL)
+        #expect(manager.processState(for: profile.id) == .stopped)
+    }
+
+    @Test
     func proxiedNormalLaunchRequiresPreparationReceipt() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

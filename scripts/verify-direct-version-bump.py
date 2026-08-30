@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import plistlib
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -86,7 +87,7 @@ def read_published(project_root: Path) -> tuple[str, int]:
     if not releases_root.is_dir():
         raise VersionBumpError("releases directory is missing")
 
-    contract_paths = sorted(releases_root.glob("v*.json"))
+    contract_paths = checked_in_release_contracts(project_root)
     if not contract_paths:
         raise VersionBumpError("no checked-in release contracts found")
 
@@ -114,6 +115,30 @@ def read_published(project_root: Path) -> tuple[str, int]:
             )
     latest = ordered[-1]
     return latest.version, latest.build
+
+
+def checked_in_release_contracts(project_root: Path) -> list[Path]:
+    """Return release contracts tracked by Git, or fixture files outside Git."""
+    if (project_root / ".git").exists():
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(project_root),
+                "ls-files",
+                "--",
+                "releases/v*.json",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return sorted(
+            project_root / relative
+            for relative in result.stdout.splitlines()
+            if relative
+        )
+    return sorted((project_root / "releases").glob("v*.json"))
 
 
 def verify(project_root: Path = PROJECT_ROOT) -> dict[str, object]:

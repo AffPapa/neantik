@@ -8,6 +8,7 @@ import Foundation
 struct ProfilePostSaveRevealDecision: Equatable, Sendable {
     let query: WorkspaceQueryState
     let searchText: String
+    let routeFilter: ProfileRouteFilter
     let selectedProfileID: UUID
 }
 
@@ -16,6 +17,7 @@ enum ProfilePostSaveRevealPolicy {
         savedProfile: BrowserProfile,
         currentQuery: WorkspaceQueryState,
         currentSearchText: String,
+        currentRouteFilter: ProfileRouteFilter = .all,
         organization: ProfileOrganizationState
     ) -> ProfilePostSaveRevealDecision {
         let scope = revealedScope(
@@ -47,8 +49,28 @@ enum ProfilePostSaveRevealPolicy {
         return ProfilePostSaveRevealDecision(
             query: query,
             searchText: searchText,
+            routeFilter: revealedRouteFilter(
+                for: savedProfile,
+                current: currentRouteFilter
+            ),
             selectedProfileID: savedProfile.id
         )
+    }
+
+    private static func revealedRouteFilter(
+        for profile: BrowserProfile,
+        current: ProfileRouteFilter
+    ) -> ProfileRouteFilter {
+        switch current {
+        case .all:
+            return .all
+        case .withProxy where profile.proxy != nil:
+            return .withProxy
+        case .withoutProxy where profile.proxy == nil:
+            return .withoutProxy
+        default:
+            return .all
+        }
     }
 
     private static func revealedScope(

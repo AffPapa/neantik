@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import plistlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -128,6 +129,32 @@ class DirectVersionBumpTests(unittest.TestCase):
             result = MODULE.verify(root)
             self.assertEqual(result["publishedVersion"], "0.3.12")
             self.assertEqual(result["publishedBuild"], 16)
+
+    def test_git_repo_ignores_untracked_release_contracts(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_candidate(root, ("0.3.12", "16"))
+            write_release(root, ("0.3.10", "14"))
+            subprocess.run(
+                ["git", "init", "-q", str(root)],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "add",
+                    "releases/v0.3.10.json",
+                ],
+                check=True,
+            )
+            write_release(root, ("0.3.11", "15"))
+
+            result = MODULE.verify(root)
+
+            self.assertEqual(result["publishedVersion"], "0.3.10")
+            self.assertEqual(result["publishedBuild"], 14)
 
 
 def write_project(

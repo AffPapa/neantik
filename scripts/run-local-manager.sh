@@ -114,6 +114,23 @@ if (( REFRESH_RUNTIME == 1 )) || \
 fi
 
 INFO_PLIST="$DEVELOPMENT_APP/Contents/Info.plist"
+CANDIDATE_INFO_PLIST="$PROJECT_DIR/Resources/Info.plist"
+CANDIDATE_VERSION="$(
+  /usr/libexec/PlistBuddy \
+    -c "Print :CFBundleShortVersionString" \
+    "$CANDIDATE_INFO_PLIST"
+)"
+CANDIDATE_BUILD="$(
+  /usr/libexec/PlistBuddy \
+    -c "Print :CFBundleVersion" \
+    "$CANDIDATE_INFO_PLIST"
+)"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleShortVersionString $CANDIDATE_VERSION" \
+  "$INFO_PLIST"
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleVersion $CANDIDATE_BUILD" \
+  "$INFO_PLIST"
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleIdentifier app.neantik.desktop.dev" \
   "$INFO_PLIST"

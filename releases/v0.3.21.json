@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.3.21",
+  "version": "0.3.21",
+  "build": 24,
+  "releasedAt": "2026-08-30",
+  "channel": "public-alpha",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "sourceCommit": "f436a66bd4f7e083fd8bf7b0cc56f0db448feb7f",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "152.0.7977.64",
+    "gpuMode": "metal"
+  },
+  "archive": {
+    "name": "NeAntik-0.3.21-arm64-notarized.zip",
+    "sizeBytes": 172841410,
+    "sha256": "8a0142097bddf47aa36c4139a8d40fd6338bb50fdeca69716ad3221908f01a7d"
+  },
+  "diskImage": {
+    "name": "NeAntik-0.3.21-arm64-notarized.dmg",
+    "sizeBytes": 197412542,
+    "sha256": "b2cec051e1f2a4df9608173d3619f8c54980c25b8afa7a7cec5596020428f594"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "passed",
+    "fingerprint": "public-alpha-qualified",
+    "strictProductionFingerprintCoherence": "incomplete"
+  },
+  "mirror": "https://affpapa.org/neantik/downloads/NeAntik-0.3.21-arm64-notarized.zip"
+}
