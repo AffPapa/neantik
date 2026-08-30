@@ -1045,7 +1045,10 @@ enum NeAntikError: LocalizedError {
             "Браузерный движок не готов: \(message)"
         case let .processLaunchFailed(message):
             if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                "Не удалось запустить браузер. Проверь целостность приложения и доступ к папке профиля."
+                "Не удалось запустить браузер. " +
+                    "Открой Действия → Диагностика среды; если проверка " +
+                    "не пройдена, переустанови NeAntik из официального DMG. " +
+                    "Данные профиля удалять не нужно."
             } else {
                 "Не удалось запустить браузер: \(message)"
             }

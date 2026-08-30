@@ -3262,9 +3262,14 @@ struct ProfileDetailView: View {
                 .padding(.vertical, 4)
             }
 
-            if !profile.note.isEmpty {
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 10) {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 10) {
+                    if profile.note.isEmpty {
+                        Text("Не добавлена")
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Заметка профиля")
+                            .accessibilityValue("Не добавлена")
+                    } else {
                         Text(profile.note)
                             .lineLimit(
                                 notePresentation.shouldOfferExpansion &&
@@ -3276,20 +3281,20 @@ struct ProfileDetailView: View {
                             .textSelection(.enabled)
                             .accessibilityLabel("Заметка профиля")
                             .accessibilityValue(profile.note)
+                    }
 
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 10) {
-                                noteActions
-                            }
-                            VStack(alignment: .leading, spacing: 8) {
-                                noteActions
-                            }
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 10) {
+                            noteActions
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            noteActions
                         }
                     }
-                    .padding(.vertical, 4)
-                } label: {
-                    Label("Заметка", systemImage: "note.text")
                 }
+                .padding(.vertical, 4)
+            } label: {
+                Label("Заметка", systemImage: "note.text")
             }
 
             if profile.proxy != nil {
@@ -3384,14 +3389,23 @@ struct ProfileDetailView: View {
         }
 
         Button(action: onChangeNote) {
-            Label("Изменить заметку…", systemImage: "pencil")
+            Label(
+                profile.note.isEmpty
+                    ? "Добавить заметку…"
+                    : "Изменить заметку…",
+                systemImage: profile.note.isEmpty ? "plus" : "pencil"
+            )
                 .frame(minHeight: 28)
         }
         .disabled(isRunning)
         .help(
             isRunning
                 ? "Сначала останови профиль"
-                : "Открыть заметку в редакторе профиля"
+                : (
+                    profile.note.isEmpty
+                        ? "Добавить заметку в редакторе профиля"
+                        : "Открыть заметку в редакторе профиля"
+                )
         )
     }
 

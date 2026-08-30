@@ -348,7 +348,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
         note_editor = editor[note_editor_start:note_editor_end]
 
         self.assertIn("noteEditor", organization)
-        self.assertIn('Text("Заметка")', note_editor)
+        self.assertIn('Text("Заметка (необязательно)")', note_editor)
+        self.assertIn(
+            "initialValue: original == nil || initialFocus == .note",
+            editor,
+        )
         self.assertIn('"Не добавлена"', note_editor)
         self.assertIn('"Добавлена"', note_editor)
         self.assertIn("Button", note_editor)
@@ -380,6 +384,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         detail = content[detail_content_start:detail_content_end]
         self.assertIn("profile.note", detail)
         self.assertIn('Label("Заметка", systemImage: "note.text")', detail)
+        self.assertIn('Text("Не добавлена")', detail)
         self.assertIn(".lineLimit(", detail)
         self.assertIn(
             "notePresentation.shouldOfferExpansion &&",
@@ -391,6 +396,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('"Показать полностью"', detail_view)
         self.assertIn('"Свернуть"', detail_view)
         self.assertIn('"Изменить заметку…"', detail_view)
+        self.assertIn('"Добавить заметку…"', detail_view)
 
         search_start = content.index("private var profileSearchField")
         search_end = content.index(
