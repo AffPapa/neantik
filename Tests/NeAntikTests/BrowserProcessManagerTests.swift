@@ -1015,6 +1015,8 @@ struct BrowserProcessManagerTests {
         )
 
         try manager.launch(profile: profile, runtime: runtime)
+        let runningIDsAfterLaunch = manager.runningProfileIDs
+        let stateRevisionAfterLaunch = manager.processStateRevision
         inspection = .found
         manager.suspendPassiveObservations()
         for _ in 0..<100 {
@@ -1026,6 +1028,8 @@ struct BrowserProcessManagerTests {
         #expect(
             manager.processState(for: profile.id) == .recoveryRequired
         )
+        #expect(manager.runningProfileIDs == runningIDsAfterLaunch)
+        #expect(manager.processStateRevision > stateRevisionAfterLaunch)
 
         inspection = .absent
         try await Task.sleep(nanoseconds: 120_000_000)

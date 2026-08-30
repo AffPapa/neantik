@@ -76,7 +76,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         list_start = text.index("private func profileListPane(")
         sources = text[sources_start:list_start]
 
-        self.assertIn('Section("Профили")', sources)
+        self.assertIn('Text("Профили")', sources)
+        self.assertIn("Color(nsColor: .secondaryLabelColor)", sources)
+        self.assertIn("Color(nsColor: .labelColor)", text)
         self.assertIn('title: "Все профили"', sources)
         self.assertIn('title: "Закреплённые"', sources)
         self.assertIn('title: "Папки"', sources)
@@ -123,8 +125,14 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn(".tint(.green)", header)
         self.assertIn('Label("Ещё", systemImage: "ellipsis.circle")', header)
         self.assertIn("profileListViewMenu", header)
-        self.assertIn('Label("Запущено: \\(runningCount)"', header)
-        self.assertIn(".isConfirmedRunning", header)
+        self.assertIn("operationalFilterBar(summary)", header)
+        self.assertIn("ProfileOperationalFilter.allCases", header)
+        self.assertIn("summary.count(for: filter)", header)
+        self.assertIn(
+            ".accessibilityAddTraits(isSelected ? .isSelected : [])",
+            header,
+        )
+        self.assertIn("ProfileOperationalProjection.resolve", text)
         self.assertNotIn("processes.runningProfileIDs.contains($0.id)", header)
         self.assertIn('"Создать из списка прокси…"', header)
         self.assertIn('"Проверить прокси (\\(bulkProxyAction.count))"', header)
@@ -157,6 +165,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('Text("Измени поиск или фильтры.")', text)
         self.assertIn('.accessibilityLabel("Убрать фильтр \\(title)")', text)
 
+        active_filters_start = text.index(
+            "private var activeFiltersBar", search_start
+        )
+        active_filters_end = text.index(
+            "private func filterChip", active_filters_start
+        )
+        active_filters = text[active_filters_start:active_filters_end]
+        self.assertNotIn("profileOperationalFilter", active_filters)
+
         for dead_symbol in (
             "isSidebarVisible",
             "profileListTitle",
@@ -170,6 +187,42 @@ class ResponsiveUIContractTests(unittest.TestCase):
             "onToggleSidebar",
         ):
             self.assertNotIn(dead_symbol, text)
+
+    def test_v4_workspace_keeps_notes_visible_and_direct_route_explicit(
+        self,
+    ) -> None:
+        content = CONTENT.read_text(encoding="utf-8")
+        editor = EDITOR.read_text(encoding="utf-8")
+
+        self.assertIn('"Добавить заметку…"', content)
+        self.assertIn('"Изменить заметку…"', content)
+        self.assertIn(
+            ".onChange(of: processes.runningProfileIDs)", content
+        )
+        self.assertIn(
+            ".onChange(of: processes.processStateRevision)", content
+        )
+        self.assertIn(
+            ".onChange(of: proxyHealthCoordinator.healthByProfileID)",
+            content,
+        )
+        self.assertIn(
+            "initialOperationalFilter: ProfileOperationalFilter = .all",
+            content,
+        )
+        self.assertIn(
+            "initialRowDensity: ProfileRowDensity = .comfortable",
+            content,
+        )
+        self.assertIn('"Прямое подключение"', editor)
+        self.assertIn(
+            '"Сайты увидят обычный публичный адрес этого Mac или "',
+            editor,
+        )
+        self.assertIn(
+            '"системного VPN. Для профиля не настроен отдельный прокси."',
+            editor,
+        )
 
     def test_app_is_single_window_and_profile_commands_are_focus_aware(
         self,

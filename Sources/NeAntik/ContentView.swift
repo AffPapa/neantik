@@ -206,6 +206,9 @@ struct ContentView: View {
     @State private var profileRouteFilter: ProfileRouteFilter = .all
     @State private var profileListOrdering: ProfileListOrdering =
         .pinnedThenName
+    @State private var profileOperationalFilter: ProfileOperationalFilter =
+        .all
+    @State private var profileRowDensity: ProfileRowDensity = .comfortable
     @State private var folderNameRequest: FolderNameRequest?
     @State private var profileFolderPickerRequest:
         ProfileFolderPickerRequest?
@@ -246,7 +249,9 @@ struct ContentView: View {
         runtimeLocator: BrowserRuntimeLocator,
         launchIntent: NeAntikLaunchIntent,
         fingerprintEvidenceReleaseContext: FingerprintEvidenceReleaseContext?,
-        initialRuntime: BrowserRuntime? = nil
+        initialRuntime: BrowserRuntime? = nil,
+        initialOperationalFilter: ProfileOperationalFilter = .all,
+        initialRowDensity: ProfileRowDensity = .comfortable
     ) {
         self.store = store
         self.processes = processes
@@ -261,6 +266,10 @@ struct ContentView: View {
             fingerprintEvidenceReleaseContext
         _resolvedRuntime = State(initialValue: initialRuntime)
         _isResolvingRuntime = State(initialValue: initialRuntime == nil)
+        _profileOperationalFilter = State(
+            initialValue: initialOperationalFilter
+        )
+        _profileRowDensity = State(initialValue: initialRowDensity)
     }
 
     private var selectedProfile: BrowserProfile? {
@@ -328,7 +337,17 @@ struct ContentView: View {
     }
 
     private var visibleProfiles: [BrowserProfile] {
-        currentProfileListViewState.visibleProfiles
+        currentOperationalProjection.profiles(
+            for: profileOperationalFilter
+        )
+    }
+
+    private var currentOperationalProjection: ProfileOperationalProjection {
+        ProfileOperationalProjection.resolve(
+            profiles: currentProfileListViewState.visibleProfiles,
+            processState: { processes.processState(for: $0) },
+            proxyHealth: { proxyHealthCoordinator.state(for: $0) }
+        )
     }
 
     private var selectedProfileTagName: String? {
@@ -748,6 +767,18 @@ struct ContentView: View {
         .onChange(of: profileListScope) { _, _ in
             normalizeSelection(preferred: preferredProfileSelection)
         }
+        .onChange(of: profileOperationalFilter) { _, _ in
+            normalizeSelection(preferred: preferredProfileSelection)
+        }
+        .onChange(of: processes.runningProfileIDs) { _, _ in
+            normalizeSelection(preferred: preferredProfileSelection)
+        }
+        .onChange(of: processes.processStateRevision) { _, _ in
+            normalizeSelection(preferred: preferredProfileSelection)
+        }
+        .onChange(of: proxyHealthCoordinator.healthByProfileID) { _, _ in
+            normalizeSelection(preferred: preferredProfileSelection)
+        }
         .onChange(of: selectedFolderFilter) { _, _ in
             normalizeSelection(preferred: preferredProfileSelection)
         }
@@ -965,6 +996,7 @@ struct ContentView: View {
             profileSearchText = ""
             selectedProfileTag = nil
             profileListScope = .active
+            profileOperationalFilter = .all
         }
         normalizeSelection()
         telemetry.record(
@@ -998,6 +1030,7 @@ struct ContentView: View {
         )
         profileSearchText = decision.searchText
         profileRouteFilter = decision.routeFilter
+        profileOperationalFilter = .all
         applyWorkspaceQuery(decision.query, normalize: false)
         preferredProfileSelection = decision.selectedProfileID
         selection = decision.selectedProfileID
@@ -1065,6 +1098,7 @@ struct ContentView: View {
     private func resetProfileFilters() {
         profileSearchText = ""
         profileRouteFilter = .all
+        profileOperationalFilter = .all
         applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
         normalizeSelection(preferred: preferredProfileSelection)
     }
@@ -1280,7 +1314,7 @@ struct ContentView: View {
                 : ProfileListProjection.defaultPreviewLimit
         )
         return List {
-            Section("Профили") {
+            Section {
                 sourceButton(
                     title: "Все профили",
                     systemImage: "rectangle.stack.person.crop",
@@ -1330,6 +1364,9 @@ struct ContentView: View {
                         )
                     }
                 }
+            } header: {
+                Text("Профили")
+                    .foregroundStyle(Color(nsColor: .secondaryLabelColor))
             }
 
             Section {
@@ -1375,7 +1412,7 @@ struct ContentView: View {
                     }
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
                 .listRowBackground(Color.clear)
 
                 if foldersSourceExpanded {
@@ -1508,11 +1545,21 @@ struct ContentView: View {
     private func profileListPane(
         _ listState: ProfileListViewState
     ) -> some View {
-        GeometryReader { proxy in
+        let operationalProjection = ProfileOperationalProjection.resolve(
+            profiles: listState.visibleProfiles,
+            processState: { processes.processState(for: $0) },
+            proxyHealth: { proxyHealthCoordinator.state(for: $0) }
+        )
+        let operationalProfiles = operationalProjection.profiles(
+            for: profileOperationalFilter
+        )
+        return GeometryReader { proxy in
             let usesWideLayout =
                 proxy.size.width >= ProfileRowLayout.minimumWideWidth
             VStack(spacing: 0) {
-                profileListHeader(listState)
+                profileListHeader(
+                    operationalProjection: operationalProjection
+                )
                 Divider()
                 runtimeReadinessBanner
                 activeFiltersBar
@@ -1542,11 +1589,25 @@ struct ContentView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if operationalProfiles.isEmpty {
+                    ContentUnavailableView {
+                        Label(
+                            profileOperationalFilter.emptyTitle,
+                            systemImage: profileOperationalFilter.systemImage
+                        )
+                    } description: {
+                        Text(profileOperationalFilter.emptyMessage)
+                    } actions: {
+                        Button("Показать все") {
+                            profileOperationalFilter = .all
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     VStack(spacing: 0) {
                         profileTableHeader(usesWideLayout: usesWideLayout)
                         List(selection: profileSelectionBinding) {
-                            ForEach(listState.visibleProfiles) { profile in
+                            ForEach(operationalProfiles) { profile in
                                 let processState = presentedProcessState(
                                     for: profile
                                 )
@@ -1572,6 +1633,7 @@ struct ContentView: View {
                                     folderName: store.folderID(forProfileID: profile.id)
                                         .flatMap { listState.index.folderNameByID[$0] },
                                     usesWideLayout: usesWideLayout,
+                                    density: profileRowDensity,
                                     onToggleRunning: {
                                         if launchPreparingProfileIDs.contains(
                                             profile.id
@@ -1607,7 +1669,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .controlBackgroundColor))
-        .navigationTitle("Профили")
+        .navigationTitle(workspaceHeaderTitle)
     }
 
     @ViewBuilder
@@ -1660,93 +1722,77 @@ struct ContentView: View {
     }
 
     private func profileListHeader(
-        _ listState: ProfileListViewState
+        operationalProjection: ProfileOperationalProjection
     ) -> some View {
         let bulkProxyAction = BulkProxyActionProjection.resolve(
-            visibleProfiles: listState.visibleProfiles,
+            visibleProfiles: operationalProjection.profiles(
+                for: profileOperationalFilter
+            ),
             processState: { processes.processState(for: $0) },
             isPreparing: { launchPreparingProfileIDs.contains($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
-        let runningCount = listState.visibleProfiles.lazy.filter {
-            processes.processState(for: $0.id).isConfirmedRunning
-        }.count
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Text("Профили")
-                    .font(.headline)
-                Text(
-                    "\(listState.visibleProfiles.count) " +
-                        profileCountWord(listState.visibleProfiles.count)
-                )
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                if runningCount > 0 {
-                    Label("Запущено: \(runningCount)", systemImage: "circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                }
-                Spacer()
-            }
+        let summary = operationalProjection.summary
+        let commandRow = HStack(spacing: 8) {
+            profileSearchField
 
-            if !store.profiles.isEmpty {
-                HStack(spacing: 8) {
-                    profileSearchField
-
-                    Menu {
-                        Button {
-                            bulkProxyImportRequest = BulkProxyImportRequest(
-                                targetFolderID: selectedFolderID
-                            )
-                        } label: {
-                            Label(
-                                "Создать из списка прокси…",
-                                systemImage: "list.bullet.clipboard"
-                            )
-                        }
-                        if bulkProxyTestTask == nil,
-                           bulkProxyAction.isVisible
-                        {
-                            Divider()
-                            Button {
-                                toggleBulkProxyTests()
-                            } label: {
-                                Label(
-                                    "Проверить прокси (\(bulkProxyAction.count))",
-                                    systemImage: "checkmark.shield"
-                                )
-                            }
-                        }
-                    } label: {
-                        ViewThatFits(in: .horizontal) {
-                            Label("Ещё", systemImage: "ellipsis.circle")
-                            Image(systemName: "ellipsis.circle")
-                                .accessibilityHidden(true)
-                        }
-                        .frame(minHeight: 28)
-                    }
-                    .help("Дополнительные действия со списком профилей")
-                    .accessibilityLabel(
-                        "Дополнительные действия со списком профилей"
+            Menu {
+                Button {
+                    bulkProxyImportRequest = BulkProxyImportRequest(
+                        targetFolderID: selectedFolderID
                     )
-
-                    profileListViewMenu
-
-                    Button {
-                        beginCreatingProfile()
-                    } label: {
-                        ViewThatFits(in: .horizontal) {
-                            Label("Создать профиль", systemImage: "plus")
-                            Image(systemName: "plus")
-                                .accessibilityHidden(true)
-                        }
-                        .frame(minHeight: 28)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.green)
-                    .help("Создать профиль (⌘N)")
-                    .accessibilityLabel("Создать профиль")
+                } label: {
+                    Label(
+                        "Создать из списка прокси…",
+                        systemImage: "list.bullet.clipboard"
+                    )
                 }
+                if bulkProxyTestTask == nil,
+                   bulkProxyAction.isVisible
+                {
+                    Divider()
+                    Button {
+                        toggleBulkProxyTests()
+                    } label: {
+                        Label(
+                            "Проверить прокси (\(bulkProxyAction.count))",
+                            systemImage: "checkmark.shield"
+                        )
+                    }
+                }
+            } label: {
+                Label("Ещё", systemImage: "ellipsis.circle")
+                    .labelStyle(.iconOnly)
+                    .frame(width: 28, height: 28)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("Дополнительные действия со списком профилей")
+            .accessibilityLabel(
+                "Дополнительные действия со списком профилей"
+            )
+
+            profileListViewMenu
+
+            Button {
+                beginCreatingProfile()
+            } label: {
+                ViewThatFits(in: .horizontal) {
+                    Label("Создать профиль", systemImage: "plus")
+                    Image(systemName: "plus")
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: 28)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.green)
+            .help("Создать профиль (⌘N)")
+            .accessibilityLabel("Создать профиль")
+        }
+        return VStack(alignment: .leading, spacing: 10) {
+            if !store.profiles.isEmpty {
+                commandRow
+                operationalFilterBar(summary)
             }
 
             if bulkProxyTestTask != nil {
@@ -1780,7 +1826,85 @@ struct ContentView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
+        .padding(.top, WorkspaceLayout.titlebarContentInset)
+    }
+
+    private var workspaceHeaderTitle: String {
+        if let selectedFolder {
+            return selectedFolder.name
+        }
+        if selectedFolderFilter == .unfiled {
+            return "Без папки"
+        }
+        return profileListScope.title
+    }
+
+    private func operationalFilterBar(
+        _ summary: ProfileOperationalSummary
+    ) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(ProfileOperationalFilter.allCases) { filter in
+                    let isSelected = profileOperationalFilter == filter
+                    Button {
+                        profileOperationalFilter = filter
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: filter.systemImage)
+                                .accessibilityHidden(true)
+                            Text(filter.title)
+                            Text("\(summary.count(for: filter))")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(
+                                    isSelected ? Color.primary : .secondary
+                                )
+                        }
+                        .font(.caption.weight(isSelected ? .semibold : .regular))
+                        .padding(.horizontal, 9)
+                        .frame(minHeight: 28)
+                        .background(
+                            operationalFilterTint(filter).opacity(
+                                isSelected ? 0.18 : 0.07
+                            ),
+                            in: Capsule()
+                        )
+                        .overlay {
+                            Capsule()
+                                .stroke(
+                                    isSelected
+                                        ? operationalFilterTint(filter).opacity(0.55)
+                                        : Color.clear,
+                                    lineWidth: 1
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        "\(filter.title): \(summary.count(for: filter))"
+                    )
+                    .accessibilityValue(
+                        isSelected ? "Выбрано" : "Не выбрано"
+                    )
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+            }
+        }
+        .accessibilityLabel("Быстрые представления профилей")
+    }
+
+    private func operationalFilterTint(
+        _ filter: ProfileOperationalFilter
+    ) -> Color {
+        switch filter {
+        case .running:
+            .green
+        case .attention:
+            .orange
+        case .all, .neverLaunched:
+            .accentColor
+        }
     }
 
     private var profileSearchField: some View {
@@ -1829,6 +1953,13 @@ struct ContentView: View {
                     Text(filter.title).tag(filter)
                 }
             }
+            Divider()
+            Picker("Плотность", selection: $profileRowDensity) {
+                ForEach(ProfileRowDensity.allCases) { density in
+                    Label(density.title, systemImage: density.systemImage)
+                        .tag(density)
+                }
+            }
         } label: {
             ViewThatFits(in: .horizontal) {
                 Label("Фильтры", systemImage: "line.3.horizontal.decrease")
@@ -1840,7 +1971,8 @@ struct ContentView: View {
         .help("Сортировка и фильтр подключения")
         .accessibilityLabel("Фильтры и сортировка профилей")
         .accessibilityValue(
-            "\(profileListOrdering.title), \(profileRouteFilter.title)"
+            "\(profileListOrdering.title), \(profileRouteFilter.title), " +
+                profileRowDensity.title
         )
     }
 
@@ -2002,6 +2134,7 @@ struct ContentView: View {
             HStack(spacing: 8) {
                 Label {
                     Text(title)
+                        .foregroundStyle(Color(nsColor: .labelColor))
                 } icon: {
                     if let tagTone {
                         Image(systemName: systemImage)
@@ -2010,18 +2143,21 @@ struct ContentView: View {
                             )
                     } else {
                         Image(systemName: systemImage)
+                            .foregroundStyle(Color(nsColor: .labelColor))
                     }
                 }
                     .lineLimit(1)
                 Spacer(minLength: 6)
                 Text(count, format: .number)
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(nsColor: .secondaryLabelColor))
             }
+            .foregroundStyle(Color(nsColor: .labelColor))
             .frame(minHeight: 28)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .tint(Color(nsColor: .labelColor))
         .focusable()
         .focused($focusedWorkspaceSource, equals: focusID)
         .onKeyPress(.upArrow) {
@@ -2062,12 +2198,16 @@ struct ContentView: View {
                         : "chevron.right"
                 )
                 .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color(nsColor: .labelColor))
                 Text(title)
+                    .foregroundStyle(Color(nsColor: .labelColor))
             }
             .frame(minHeight: 28)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .tint(Color(nsColor: .labelColor))
+        .foregroundStyle(Color(nsColor: .labelColor))
         .accessibilityLabel(title)
         .accessibilityValue(
             isExpanded.wrappedValue ? "Развёрнуто" : "Свёрнуто"
@@ -2166,6 +2306,17 @@ struct ContentView: View {
             systemImage: "pencil",
             action: commands.edit
         )
+        .disabled(!commands.presentation.editIsEnabled)
+        Button {
+            beginEditing(profile, initialFocus: .note)
+        } label: {
+            Label(
+                profile.note.isEmpty
+                    ? "Добавить заметку…"
+                    : "Изменить заметку…",
+                systemImage: "note.text"
+            )
+        }
         .disabled(!commands.presentation.editIsEnabled)
         Button(
             commands.presentation.launchTitle,
@@ -3194,6 +3345,7 @@ private struct ProfileRow<Actions: View>: View {
     let isTestingProxy: Bool
     let folderName: String?
     let usesWideLayout: Bool
+    let density: ProfileRowDensity
     let onToggleRunning: () -> Void
     let actions: Actions
 
@@ -3205,6 +3357,7 @@ private struct ProfileRow<Actions: View>: View {
         isTestingProxy: Bool,
         folderName: String?,
         usesWideLayout: Bool,
+        density: ProfileRowDensity = .comfortable,
         onToggleRunning: @escaping () -> Void,
         @ViewBuilder actions: () -> Actions
     ) {
@@ -3215,6 +3368,7 @@ private struct ProfileRow<Actions: View>: View {
         self.isTestingProxy = isTestingProxy
         self.folderName = folderName
         self.usesWideLayout = usesWideLayout
+        self.density = density
         self.onToggleRunning = onToggleRunning
         self.actions = actions()
     }
@@ -3233,8 +3387,8 @@ private struct ProfileRow<Actions: View>: View {
                 compactRow(presentation)
             }
         }
-        .padding(.vertical, 7)
-        .frame(minHeight: 62)
+        .padding(.vertical, density == .compact ? 3 : 7)
+        .frame(minHeight: density == .compact ? 50 : 62)
         .accessibilityElement(children: .contain)
     }
 
@@ -3305,6 +3459,8 @@ private struct ProfileRow<Actions: View>: View {
                     organizationMetadata
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                } else {
+                    lastLaunchLabel
                 }
             }
             .layoutPriority(1)
@@ -3439,16 +3595,20 @@ private struct ProfileRow<Actions: View>: View {
             if !presentation.noteSummary.isEmpty {
                 noteLabel(presentation.noteSummary)
             }
-            Label(
-                profile.lastLaunchedAt.map {
-                    "Запуск \($0.neAntikDisplayDateTime)"
-                } ?? "Не запускался",
-                systemImage: "clock"
-            )
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-            .lineLimit(1)
+            lastLaunchLabel
         }
+    }
+
+    private var lastLaunchLabel: some View {
+        Label(
+            profile.lastLaunchedAt.map {
+                "Запуск \($0.neAntikDisplayDateTime)"
+            } ?? "Не запускался",
+            systemImage: "clock"
+        )
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
     }
 
     private func noteLabel(_ summary: String) -> some View {

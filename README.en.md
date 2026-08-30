@@ -82,10 +82,20 @@ The capabilities below are included in the published, signed, and notarized
 - The profile list is now the primary workspace. A wide adaptive row keeps
   launch, identity, status, route, note, and last-launch context together,
   while the minimum window falls back to a compact row.
+- One command header combines search, list controls, secondary actions, and
+  profile creation. Local smart views show **All**, **Running**,
+  **Attention**, and **Never launched** counts without changing profile
+  storage or performing network requests.
+- Comfortable and compact row densities are session-only. Contextual empty
+  states offer a direct way back to all profiles, and each row can open its
+  note directly from the action menu.
+- The editor explicitly warns that a direct connection exposes the Mac's
+  ordinary public address or its system VPN address to websites.
 - Full profile detail is available in an optional native inspector, and every
-  row exposes a visible action menu. See
-  [Vision Lean Workspace](docs/VISION_LEAN_WORKSPACE.md) for the bounded
-  design decisions and deferred candidates.
+  row exposes a visible action menu. See the
+  [NeAntik v4 workspace](docs/NEANTIK_V4_WORKSPACE.md) research and its 75
+  bounded decisions, plus the earlier
+  [Vision Lean Workspace](docs/VISION_LEAN_WORKSPACE.md) foundation.
 
 The public download remains the signed and notarized `0.3.21 (24)` release
 until this exact candidate completes the full Direct Distribution gate.
