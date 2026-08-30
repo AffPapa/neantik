@@ -349,6 +349,12 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
         self.assertIn("noteEditor", organization)
         self.assertIn('Text("Заметка (необязательно)")', note_editor)
+        self.assertGreaterEqual(
+            note_editor.count(
+                '.accessibilityLabel("Необязательная заметка профиля")'
+            ),
+            2,
+        )
         self.assertIn(
             "initialValue: original == nil || initialFocus == .note",
             editor,

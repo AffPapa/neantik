@@ -859,7 +859,7 @@ struct ProfileEditorView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("Заметка профиля")
+    .accessibilityLabel("Необязательная заметка профиля")
     .accessibilityValue(
       showsNoteEditor
         ? "Развёрнуто"
@@ -892,7 +892,7 @@ struct ProfileEditorView: View {
         TextEditor(text: $note)
           .focused($focusedField, equals: .note)
           .id(ProfileEditorField.note)
-          .accessibilityLabel("Заметка профиля")
+          .accessibilityLabel("Необязательная заметка профиля")
           .accessibilityHint(
             "До \(BrowserProfile.maximumNoteLength) символов"
           )

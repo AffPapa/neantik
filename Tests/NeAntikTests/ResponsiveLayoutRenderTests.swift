@@ -63,6 +63,23 @@ struct ResponsiveLayoutRenderTests {
         ] {
             try render(
                 ProfileEditorView(
+                    original: nil,
+                    keychain: KeychainStore(
+                        backend: LayoutRenderKeychainBackend(),
+                        service: "layout.render.new-note.\(appearanceName)",
+                        legacyService: nil
+                    ),
+                    folders: [],
+                    initialFolderID: nil,
+                    suggestedTags: []
+                ) { _, _, _ in },
+                name: "profile-editor-new-note-visible-\(appearanceName)",
+                size: CGSize(width: 460, height: 430),
+                colorScheme: colorScheme
+            )
+
+            try render(
+                ProfileEditorView(
                     original: profileA,
                     keychain: KeychainStore(
                         backend: LayoutRenderKeychainBackend(),
@@ -344,6 +361,22 @@ struct ResponsiveLayoutRenderTests {
             ("light", ColorScheme.light),
             ("dark", ColorScheme.dark),
         ] {
+            try render(
+                ProfileDetailView(
+                    profile: BrowserProfile(name: "Профиль без заметки"),
+                    processState: .stopped,
+                    browserDataPath:
+                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/EMPTY/BrowserData",
+                    clipboardNotice: nil,
+                    onCopyProxyUsername: {},
+                    onCopyProxyPassword: {},
+                    onChangeNote: {}
+                ),
+                name: "profile-detail-empty-note-minimum-\(appearanceName)",
+                size: CGSize(width: 550, height: 520),
+                colorScheme: colorScheme
+            )
+
             try render(
                 ProfileDetailView(
                     profile: profile,

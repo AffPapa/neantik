@@ -8,7 +8,7 @@ struct NeAntikErrorPresentationTests {
         let message = NeAntikError.processLaunchFailed(" \n ")
             .localizedDescription
 
-        #expect(message.contains("Диагностика среды"))
+        #expect(message.contains("Среда профиля → Показать подробности"))
         #expect(message.contains("официального DMG"))
         #expect(message.contains("Данные профиля удалять не нужно"))
     }

@@ -26,6 +26,7 @@ FAT_MAGICS = {
     b"\xbf\xba\xfe\xca",
 }
 CPU_TYPE_ARM64 = 0x0100000C
+LC_SYMTAB = 0x02
 LC_DYSYMTAB = 0x0B
 
 
@@ -37,6 +38,7 @@ class OptimizationError(RuntimeError):
 class MachOInspection:
     cpu_type: int
     local_symbol_count: int
+    string_table_offset: int
 
 
 def inspect_macho(path: Path) -> MachOInspection | None:
@@ -66,13 +68,20 @@ def inspect_macho(path: Path) -> MachOInspection | None:
 
     offset = 0
     local_symbol_count: int | None = None
+    string_table_offset: int | None = None
     for _ in range(command_count):
         if offset + 8 > len(commands):
             raise OptimizationError(f"Invalid Mach-O command table: {path}")
         command, command_size = struct.unpack_from("<II", commands, offset)
         if command_size < 8 or offset + command_size > len(commands):
             raise OptimizationError(f"Invalid Mach-O load command: {path}")
-        if command == LC_DYSYMTAB:
+        if command == LC_SYMTAB:
+            if command_size < 24:
+                raise OptimizationError(f"Invalid LC_SYMTAB command: {path}")
+            string_table_offset = struct.unpack_from(
+                "<I", commands, offset + 16
+            )[0]
+        elif command == LC_DYSYMTAB:
             if command_size < 16:
                 raise OptimizationError(f"Invalid LC_DYSYMTAB command: {path}")
             local_symbol_count = struct.unpack_from(
@@ -84,9 +93,17 @@ def inspect_macho(path: Path) -> MachOInspection | None:
         raise OptimizationError(f"Unexpected Mach-O command padding: {path}")
     if local_symbol_count is None:
         raise OptimizationError(f"Mach-O has no LC_DYSYMTAB command: {path}")
+    if string_table_offset is None:
+        raise OptimizationError(f"Mach-O has no LC_SYMTAB command: {path}")
+    if string_table_offset % 8 != 0:
+        raise OptimizationError(
+            "Misaligned 64-bit Mach-O LINKEDIT string table: "
+            f"{path} ({string_table_offset})"
+        )
     return MachOInspection(
         cpu_type=cpu_type,
         local_symbol_count=local_symbol_count,
+        string_table_offset=string_table_offset,
     )
 
 

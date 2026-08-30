@@ -1046,7 +1046,7 @@ enum NeAntikError: LocalizedError {
         case let .processLaunchFailed(message):
             if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 "Не удалось запустить браузер. " +
-                    "Открой Действия → Диагностика среды; если проверка " +
+                    "Выбери профиль → Среда профиля → Показать подробности; если проверка " +
                     "не пройдена, переустанови NeAntik из официального DMG. " +
                     "Данные профиля удалять не нужно."
             } else {
