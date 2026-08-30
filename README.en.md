@@ -16,22 +16,20 @@ archive contains source code, not `NeAntik.app`.
 
 Current published GitHub public-alpha release:
 
-- NeAntik `0.3.20` build `23`;
+- NeAntik `0.3.21` build `24`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `152.0.7977.64`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.20-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.20-arm64-notarized.dmg`;
+- ZIP: `NeAntik-0.3.21-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.21-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
 New branch changes are not a binary release until separately signed and
 notarized DMG/ZIP assets appear in GitHub Releases.
-The Direct candidate being prepared is version `0.3.21`, build `24`, but it
-remains a development preview until those artifacts are published.
 
 Product website: <https://affpapa.org/neantik>.
 
 The capabilities below are included in the published, signed, and notarized
-`0.3.20 (23)` release.
+`0.3.21 (24)` release.
 
 ## Quick start
 
@@ -64,7 +62,7 @@ The capabilities below are included in the published, signed, and notarized
   separation without exposing it in the normal user flow;
 - keeps Direct telemetry disabled.
 
-## In candidate 0.3.21 (24)
+## New in published 0.3.21 (24)
 
 - The optional profile note is expanded during creation, and an empty profile
   detail always offers **Add note…**.
@@ -86,7 +84,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.20` is published for public-alpha profile isolation. Strict
+Version `0.3.21` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
