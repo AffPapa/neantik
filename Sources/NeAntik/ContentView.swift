@@ -6,15 +6,18 @@ private struct EditorRequest: Identifiable {
     let profile: BrowserProfile?
     let targetFolderID: UUID?
     let initialFocus: ProfileEditorField?
+    let openedProcessState: BrowserProfileProcessState?
 
     init(
         profile: BrowserProfile?,
         targetFolderID: UUID? = nil,
-        initialFocus: ProfileEditorField? = nil
+        initialFocus: ProfileEditorField? = nil,
+        openedProcessState: BrowserProfileProcessState? = nil
     ) {
         self.profile = profile
         self.targetFolderID = targetFolderID
         self.initialFocus = initialFocus
+        self.openedProcessState = openedProcessState
     }
 }
 
@@ -52,11 +55,6 @@ private struct WorkspaceAlertPresentation: Identifiable {
 private struct ClipboardNotice: Equatable {
     let profileID: UUID
     let message: String
-}
-
-private struct BulkProxyProgress: Equatable {
-    let completed: Int
-    let total: Int
 }
 
 private struct LaunchPreparationFailure: Identifiable, Equatable {
@@ -190,6 +188,7 @@ struct ContentView: View {
     @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
+    @State private var forceStopRequest: BrowserProfile?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
     @State private var clipboardLease = ClipboardLeaseState()
@@ -222,8 +221,9 @@ struct ContentView: View {
     @State private var launchPreparationTokens: [UUID: UUID] = [:]
     @State private var bulkProxyTestTask: Task<Void, Never>?
     @State private var bulkProxyTestID: UUID?
-    @State private var bulkProxyProgress: BulkProxyProgress?
+    @State private var bulkProxyProgress: BulkProxyRunProgress?
     @State private var bulkProxyStatusMessage: String?
+    @State private var bulkProxyFailedProfileIDs: [UUID] = []
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
     @State private var showingWorkspaceReadiness = false
@@ -502,7 +502,9 @@ struct ContentView: View {
                 processAttentionCount: processAttentionCount,
                 directRouteCount: directRouteCount,
                 proxiedRouteCount: proxiedRouteCount,
-                proxyAttentionCount: proxyAttentionCount
+                proxyAttentionCount: proxyAttentionCount,
+                recoveredInterruptedManagerSession:
+                    processes.recoveredInterruptedManagerSession
             )
         )
     }
@@ -557,6 +559,7 @@ struct ContentView: View {
         let listState = currentProfileListViewState
         return NavigationSplitView(columnVisibility: $columnVisibility) {
             workspaceSources(listState)
+                .workspaceKeyboardRegion(.sidebar)
                 .navigationSplitViewColumnWidth(
                     min: WorkspaceLayout.minimumSourceColumnWidth,
                     ideal: WorkspaceLayout.idealSourceColumnWidth,
@@ -564,6 +567,7 @@ struct ContentView: View {
                 )
         } detail: {
             profileListPane(listState)
+                .workspaceKeyboardRegion(.profileList)
                 .navigationSplitViewColumnWidth(
                     min: WorkspaceLayout.minimumProfileColumnWidth,
                     ideal: WorkspaceLayout.idealProfileColumnWidth,
@@ -573,6 +577,7 @@ struct ContentView: View {
         .navigationSplitViewStyle(.balanced)
         .inspector(isPresented: $showsProfileInspector) {
             detail
+                .workspaceKeyboardRegion(.inspector)
                 .inspectorColumnWidth(
                     min: WorkspaceLayout.minimumInspectorWidth,
                     ideal: WorkspaceLayout.idealInspectorWidth,
@@ -662,7 +667,8 @@ struct ContentView: View {
                 },
                 onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
                 onCopyApplicationPath: copyWorkspaceApplicationPath,
-                onRevealApplication: revealWorkspaceApplication
+                onRevealApplication: revealWorkspaceApplication,
+                onOpenSystemSettings: openWorkspaceSystemSettings
             )
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
@@ -796,6 +802,28 @@ struct ContentView: View {
         } message: { failure in
             Text(failure.message)
         }
+        .alert(
+            "Принудительно остановить?",
+            isPresented: Binding(
+                get: { forceStopRequest != nil },
+                set: { visible in
+                    if !visible { forceStopRequest = nil }
+                }
+            ),
+            presenting: forceStopRequest
+        ) { profile in
+            Button("Оставить работающим", role: .cancel) {
+                forceStopRequest = nil
+            }
+            Button("Принудительно остановить", role: .destructive) {
+                _ = processes.forceStop(profileID: profile.id)
+                forceStopRequest = nil
+            }
+        } message: { profile in
+            Text(
+                "Chromium профиля «\(profile.name)» не ответил на обычную остановку. Принудительное завершение может потерять незаписанные вкладки или данные сессии."
+            )
+        }
         .alert(item: workspaceAlertBinding) { presentation in
             Alert(
                 title: Text(presentation.title),
@@ -890,6 +918,9 @@ struct ContentView: View {
             )
         ) { _ in
             processes.reconcile(profiles: store.profiles)
+            if showingWorkspaceReadiness {
+                Task { await refreshWorkspaceReadiness() }
+            }
         }
         .onReceive(
             NSWorkspace.shared.notificationCenter.publisher(
@@ -909,6 +940,7 @@ struct ContentView: View {
         ) { _ in
             cancelClipboardTasks()
             clearClipboardIfLeaseIsActive()
+            processes.markManagerShutdownClean()
         }
     }
 
@@ -945,13 +977,16 @@ struct ContentView: View {
             folders: store.organization.folders,
             initialFolderID: initialFolderID,
             suggestedTags: suggestedTags,
+            appliesOnNextLaunch:
+                request.openedProcessState?.isConfirmedRunning == true,
             initialFocus: request.initialFocus
         ) { profile, passwordUpdate, folderID in
             try saveProfileEditorDraft(
                 profile,
                 passwordUpdate: passwordUpdate,
                 folderID: folderID,
-                original: request.profile
+                original: request.profile,
+                openedProcessState: request.openedProcessState
             )
         }
     }
@@ -960,12 +995,14 @@ struct ContentView: View {
         _ profile: BrowserProfile,
         passwordUpdate: ProxyPasswordUpdate,
         folderID: UUID?,
-        original: BrowserProfile?
+        original: BrowserProfile?,
+        openedProcessState: BrowserProfileProcessState?
     ) throws {
-        if original != nil,
-           presentedProcessState(for: profile).isRunning
-        {
-            throw NeAntikError.profileAlreadyRunning
+        if let original {
+            try ProfileEditorProcessPolicy.validateSave(
+                openedState: openedProcessState ?? .checking,
+                currentState: presentedProcessState(for: original)
+            )
         }
         var profile = profile
         if passwordUpdate != .keepExisting {
@@ -1144,14 +1181,15 @@ struct ContentView: View {
         _ profile: BrowserProfile,
         initialFocus: ProfileEditorField? = nil
     ) {
-        guard !processes.runningProfileIDs.contains(profile.id) else {
-            localError =
-                "Сначала останови профиль. Изменения применяются при следующем запуске."
+        let state = presentedProcessState(for: profile)
+        guard state == .stopped || state.isConfirmedRunning else {
+            localError = "Состояние профиля пока не подтверждено. Повтори после проверки процесса."
             return
         }
         editorRequest = EditorRequest(
             profile: profile,
-            initialFocus: initialFocus
+            initialFocus: initialFocus,
+            openedProcessState: state
         )
     }
 
@@ -1324,6 +1362,11 @@ struct ContentView: View {
                 }
             }
             revealSavedProfile(saved)
+            bulkProxyStatusMessage =
+                "Создан похожий профиль «\(saved.name)»: отдельная сессия и новая цифровая идентичность"
+            if let bulkProxyStatusMessage {
+                announceWorkspaceStatus(bulkProxyStatusMessage)
+            }
             telemetry.record(
                 .profileCreated,
                 snapshot: telemetrySnapshot
@@ -1638,6 +1681,7 @@ struct ContentView: View {
                 Divider()
                 runtimeReadinessBanner
                 activeFiltersBar
+                runningProfilesStrip
 
                 if store.profiles.isEmpty {
                     FirstProfileOnboardingView(
@@ -1796,6 +1840,34 @@ struct ContentView: View {
         }
     }
 
+    private var runningProfilesStrip: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            RunningProfilesStrip(
+                items: BrowserProcessLifecycleProjection.resolve(
+                    profiles: store.profiles,
+                    processState: { processes.processState(for: $0) },
+                    stopPhase: { processes.stopPhase(for: $0) },
+                    startedAt: { processes.startedAt(for: $0) },
+                    now: context.date
+                ),
+                onSelect: { profileID in
+                    selection = profileID
+                    preferredProfileSelection = profileID
+                    showsProfileInspector = true
+                },
+                onFocus: { profileID in
+                    _ = processes.focus(profileID: profileID)
+                },
+                onStop: { profileID in
+                    processes.stop(profileID: profileID)
+                },
+                onForceStop: { profileID in
+                    forceStopRequest = store.profile(withID: profileID)
+                }
+            )
+        }
+    }
+
     private func profileListHeader(
         operationalProjection: ProfileOperationalProjection
     ) -> some View {
@@ -1884,21 +1956,24 @@ struct ContentView: View {
                 .help("Остановить массовую проверку прокси")
                 .accessibilityLabel("Остановить массовую проверку прокси")
                 if let bulkProxyProgress {
-                    ProgressView(
-                        value: Double(bulkProxyProgress.completed),
-                        total: Double(max(1, bulkProxyProgress.total))
-                    ) {
-                        Text(
-                            "Проверено \(bulkProxyProgress.completed) из " +
-                                "\(bulkProxyProgress.total)"
-                        )
-                    }
-                    .font(.caption)
-                    .accessibilityLabel(
-                        "Проверено \(bulkProxyProgress.completed) из " +
-                            "\(bulkProxyProgress.total)"
-                    )
+                    BulkProxyProgressView(progress: bulkProxyProgress)
                 }
+            } else if let bulkProxyStatusMessage {
+                HStack(spacing: 8) {
+                    Label(bulkProxyStatusMessage, systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    Spacer(minLength: 8)
+                    if !bulkProxyFailedProfileIDs.isEmpty {
+                        Button("Повторить ошибки") {
+                            retryFailedBulkProxyTests()
+                        }
+                        .controlSize(.small)
+                        .help("Повторить только неуспешные проверки")
+                    }
+                }
+                .accessibilityElement(children: .contain)
             }
         }
         .padding(.horizontal, 12)
@@ -2376,6 +2451,13 @@ struct ContentView: View {
         )
         profileOrganizationActions(commands)
         Divider()
+        Button {
+            selection = profile.id
+            preferredProfileSelection = profile.id
+            showsProfileInspector = true
+        } label: {
+            Label("Открыть сведения", systemImage: "sidebar.right")
+        }
         Button(
             "Изменить…",
             systemImage: "pencil",
@@ -2399,6 +2481,16 @@ struct ContentView: View {
             action: commands.toggleRunning
         )
         .disabled(!commands.presentation.launchIsEnabled)
+        if processState == .forceStopAvailable {
+            Button(role: .destructive) {
+                forceStopRequest = profile
+            } label: {
+                Label(
+                    "Принудительно остановить…",
+                    systemImage: "bolt.trianglebadge.exclamationmark.fill"
+                )
+            }
+        }
         Divider()
         Button(
             "Удалить профиль",
@@ -2419,7 +2511,7 @@ struct ContentView: View {
             action: commands.togglePinned
         )
         Button(
-            "Дублировать",
+            "Создать похожий",
             systemImage: "plus.square.on.square",
             action: commands.duplicate
         )
@@ -2707,6 +2799,7 @@ struct ContentView: View {
     private func launch(_ profile: BrowserProfile) {
         do {
             let runtime = try launchReadyRuntime()
+            try validateLaunchPreflight(profile, runtime: runtime)
             switch BrowserLaunchPreparationPolicy.resolveForUserStart(
                 profile: profile
             ) {
@@ -2753,6 +2846,7 @@ struct ContentView: View {
         runtime: BrowserRuntime,
         preparationReceipt: BrowserLaunchPreparationReceipt?
     ) throws {
+        try validateLaunchPreflight(profile, runtime: runtime)
         try processes.launch(
             profile: profile,
             runtime: runtime,
@@ -2765,6 +2859,29 @@ struct ContentView: View {
         telemetry.record(
             .browserLaunched,
             snapshot: telemetrySnapshot
+        )
+    }
+
+    private func validateLaunchPreflight(
+        _ profile: BrowserProfile,
+        runtime: BrowserRuntime
+    ) throws {
+        let inspection = WorkspaceReadinessSystemInspector.inspect(
+            application: WorkspaceApplicationIdentity.current(),
+            dataRootURL: store.paths.rootDirectory
+        )
+        try BrowserLaunchStagedPreflight.validate(
+            BrowserLaunchPreflightInput(
+                profile: profile,
+                // Presentation can synthesize `.checking` while proxy launch
+                // preparation is in flight. Safety must inspect the actual
+                // process state so a successful preparation can launch.
+                processState: processes.processState(for: profile.id),
+                runtimePreflight: BrowserRuntimePreflightValidator.validate(
+                    runtime
+                ),
+                storage: inspection.storage
+            )
         )
     }
 
@@ -2961,6 +3078,18 @@ struct ContentView: View {
         ])
     }
 
+    private func openWorkspaceSystemSettings() {
+        guard let settingsURL = NSWorkspace.shared.urlForApplication(
+            withBundleIdentifier: "com.apple.systempreferences"
+        ) else {
+            workspaceReadinessNotice = "Системные настройки не найдены"
+            return
+        }
+        NSWorkspace.shared.open(settingsURL)
+        workspaceReadinessNotice =
+            "NeAntik не читает статус разрешений macOS. Проверь нужный переключатель вручную."
+    }
+
     private func announceRuntimeAvailability(
         _ availability: BrowserRuntimeAvailability
     ) {
@@ -3035,17 +3164,19 @@ struct ContentView: View {
     }
 
     @MainActor
-    private func performProxyTest(_ profile: BrowserProfile) async -> Bool {
+    private func performProxyTest(
+        _ profile: BrowserProfile
+    ) async -> ProxyHealthOutcome? {
         guard processes.processState(for: profile.id) == .stopped,
               !launchPreparingProfileIDs.contains(profile.id),
               !isProxyTestInFlight(profileID: profile.id)
-        else { return false }
-        guard let token = beginProxyTest(for: profile) else { return false }
+        else { return nil }
+        guard let token = beginProxyTest(for: profile) else { return nil }
         return await executeProxyTest(
             profile,
             token: token,
             clearsDedicatedTask: false
-        ) != nil
+        )?.latestAttempt.outcome
     }
 
     @MainActor
@@ -3195,34 +3326,60 @@ struct ContentView: View {
             bulkProxyTestTask.cancel()
             return
         }
-        let profiles = bulkProxyActionProjection.profiles
+        startBulkProxyTests(bulkProxyActionProjection.profiles)
+    }
+
+    @MainActor
+    private func retryFailedBulkProxyTests() {
+        let failed = Set(bulkProxyFailedProfileIDs)
+        let eligible = bulkProxyActionProjection.profiles.filter {
+            failed.contains($0.id)
+        }
+        guard !eligible.isEmpty else {
+            bulkProxyFailedProfileIDs = []
+            bulkProxyStatusMessage =
+                "Неуспешные профили больше недоступны для проверки в текущем списке"
+            if let bulkProxyStatusMessage {
+                announceWorkspaceStatus(bulkProxyStatusMessage)
+            }
+            return
+        }
+        startBulkProxyTests(eligible)
+    }
+
+    @MainActor
+    private func startBulkProxyTests(_ profiles: [BrowserProfile]) {
         guard !profiles.isEmpty else { return }
         let runID = UUID()
         bulkProxyTestID = runID
-        bulkProxyProgress = BulkProxyProgress(
-            completed: 0,
-            total: profiles.count
-        )
+        bulkProxyProgress = BulkProxyRunProgress(total: profiles.count)
         bulkProxyStatusMessage = nil
+        bulkProxyFailedProfileIDs = []
         bulkProxyTestTask = Task { @MainActor in
-            var completed = 0
+            var progress = BulkProxyRunProgress(total: profiles.count)
             for batchStart in stride(from: 0, to: profiles.count, by: 3) {
                 guard !Task.isCancelled else { break }
                 let batchEnd = min(batchStart + 3, profiles.count)
                 let batch = Array(profiles[batchStart..<batchEnd])
-                await withTaskGroup(of: Bool.self) { group in
+                await withTaskGroup(
+                    of: (UUID, ProxyHealthOutcome?).self
+                ) { group in
                     for profile in batch {
                         group.addTask {
-                            await performProxyTest(profile)
+                            (
+                                profile.id,
+                                await performProxyTest(profile)
+                            )
                         }
                     }
-                    for await didFinish in group where didFinish {
-                        completed += 1
-                        guard bulkProxyTestID == runID else { continue }
-                        bulkProxyProgress = BulkProxyProgress(
-                            completed: completed,
-                            total: profiles.count
+                    for await (profileID, outcome) in group {
+                        guard !Task.isCancelled else { continue }
+                        progress.record(
+                            profileID: profileID,
+                            outcome: outcome
                         )
+                        guard bulkProxyTestID == runID else { continue }
+                        bulkProxyProgress = progress
                     }
                 }
                 guard bulkProxyTestID == runID else { return }
@@ -3230,7 +3387,8 @@ struct ContentView: View {
             if bulkProxyTestID == runID {
                 if !Task.isCancelled {
                     bulkProxyStatusMessage =
-                        "Проверено \(completed) из \(profiles.count)"
+                        progress.summary
+                    bulkProxyFailedProfileIDs = progress.failedProfileIDs
                     if let bulkProxyStatusMessage {
                         announceWorkspaceStatus(bulkProxyStatusMessage)
                     }
@@ -4057,10 +4215,9 @@ struct ProfileDetailView: View {
             )
                 .frame(minHeight: 28)
         }
-        .disabled(isRunning)
         .help(
             isRunning
-                ? "Сначала останови профиль"
+                ? "Заметка сохранится сразу; браузер не перезапускается"
                 : (
                     profile.note.isEmpty
                         ? "Добавить заметку в редакторе профиля"

@@ -1020,6 +1020,7 @@ enum NeAntikError: LocalizedError {
     case profileLimitReached
     case invalidProxy
     case profileArchived
+    case concurrentLaunchLimitReached(Int)
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -1041,6 +1042,8 @@ enum NeAntikError: LocalizedError {
             "Укажи корректный хост и порт прокси."
         case .profileArchived:
             "Сначала верни профиль из архива."
+        case let .concurrentLaunchLimitReached(limit):
+            "Одновременно можно запускать не больше \(limit) профилей. Останови ненужный браузер и повтори запуск."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case let .processLaunchFailed(message):

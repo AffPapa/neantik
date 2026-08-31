@@ -184,6 +184,35 @@ struct WorkspaceReadinessInput: Equatable, Sendable {
     let directRouteCount: Int
     let proxiedRouteCount: Int
     let proxyAttentionCount: Int
+
+    let recoveredInterruptedManagerSession: Bool
+
+    init(
+        system: WorkspaceReadinessSystemInspection,
+        runtimeAvailability: BrowserRuntimeAvailability,
+        runtimeVersion: String?,
+        runtimeArchitectures: [String],
+        profileCount: Int,
+        runningCount: Int,
+        processAttentionCount: Int,
+        directRouteCount: Int,
+        proxiedRouteCount: Int,
+        proxyAttentionCount: Int,
+        recoveredInterruptedManagerSession: Bool = false
+    ) {
+        self.system = system
+        self.runtimeAvailability = runtimeAvailability
+        self.runtimeVersion = runtimeVersion
+        self.runtimeArchitectures = runtimeArchitectures
+        self.profileCount = profileCount
+        self.runningCount = runningCount
+        self.processAttentionCount = processAttentionCount
+        self.directRouteCount = directRouteCount
+        self.proxiedRouteCount = proxiedRouteCount
+        self.proxyAttentionCount = proxyAttentionCount
+        self.recoveredInterruptedManagerSession =
+            recoveredInterruptedManagerSession
+    }
 }
 
 struct WorkspaceReadinessSnapshot: Equatable, Sendable {
@@ -205,7 +234,9 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
             processItem(
                 profileCount: input.profileCount,
                 runningCount: input.runningCount,
-                attentionCount: input.processAttentionCount
+                attentionCount: input.processAttentionCount,
+                recoveredInterruptedManagerSession:
+                    input.recoveredInterruptedManagerSession
             ),
             routeItem(
                 profileCount: input.profileCount,
@@ -373,7 +404,8 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
     private static func processItem(
         profileCount: Int,
         runningCount: Int,
-        attentionCount: Int
+        attentionCount: Int,
+        recoveredInterruptedManagerSession: Bool
     ) -> WorkspaceReadinessItem {
         if attentionCount > 0 {
             return WorkspaceReadinessItem(
@@ -381,6 +413,15 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
                 title: "Процессы",
                 value: "Требуют внимания: \(attentionCount)",
                 detail: "Закрой отмеченные окна вручную или выполни повторную сверку состояния.",
+                level: .attention
+            )
+        }
+        if recoveredInterruptedManagerSession {
+            return WorkspaceReadinessItem(
+                id: .processes,
+                title: "Процессы",
+                value: "Предыдущая сессия завершилась неожиданно",
+                detail: "NeAntik сверил файлы запуска и процессы. Проверь отмеченные профили перед продолжением.",
                 level: .attention
             )
         }
@@ -466,6 +507,7 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
             "profiles=\(input.profileCount)",
             "running=\(input.runningCount)",
             "processAttention=\(input.processAttentionCount)",
+            "previousManagerInterrupted=\(input.recoveredInterruptedManagerSession)",
             "directRoutes=\(input.directRouteCount)",
             "proxiedRoutes=\(input.proxiedRouteCount)",
             "proxyAttention=\(input.proxyAttentionCount)",

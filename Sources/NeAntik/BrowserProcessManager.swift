@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Darwin
 import Foundation
@@ -144,6 +145,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
     case stopped
     case checking
     case managed
+    case closing
+    case forceStopAvailable
     case externalVerified
     case externalManualOnly
     case externalUnverified
@@ -158,7 +161,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
     /// not be presented to the user as running processes.
     var isConfirmedRunning: Bool {
         switch self {
-        case .managed, .externalVerified, .externalManualOnly:
+        case .managed, .closing, .forceStopAvailable,
+             .externalVerified, .externalManualOnly:
             true
         case .stopped, .checking, .externalUnverified, .recoveryRequired:
             false
@@ -167,6 +171,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
 
     var canRequestStop: Bool {
         self != .checking &&
+            self != .closing &&
+            self != .forceStopAvailable &&
             self != .externalManualOnly &&
             self != .externalUnverified &&
             self != .recoveryRequired
@@ -180,10 +186,14 @@ enum BrowserProfileProcessState: Equatable, Sendable {
             "Подготовка…"
         case .managed:
             "Запущен"
+        case .closing:
+            "Закрывается…"
+        case .forceStopAvailable:
+            "Не отвечает"
         case .externalVerified:
             "Запущен другим NeAntik"
         case .externalManualOnly:
-            "Запущен другим NeAntik"
+            "Запущен вручную"
         case .externalUnverified:
             "Требуется закрыть вручную"
         case .recoveryRequired:
@@ -195,6 +205,10 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         switch self {
         case .stopped, .managed:
             nil
+        case .closing:
+            "Chromium завершает работу. Профиль остаётся заблокированным до выхода процесса."
+        case .forceStopAvailable:
+            "Chromium не завершился вовремя. Принудительная остановка доступна отдельно и может повредить незаписанную сессию."
         case .checking:
             "NeAntik подготавливает данные профиля. Это займёт несколько секунд."
         case .externalVerified:
@@ -207,6 +221,13 @@ enum BrowserProfileProcessState: Equatable, Sendable {
             "Файл состояния запуска повреждён или недоступен. Закрой окно браузера вручную; NeAntik разблокирует профиль только после безопасной проверки."
         }
     }
+}
+
+enum BrowserStopPhase: Equatable, Sendable {
+    case idle
+    case closing(requestedAt: Date)
+    case forceStopAvailable(requestedAt: Date)
+    case completed(completedAt: Date, wasForced: Bool)
 }
 
 enum BrowserLaunchPurpose: Equatable, Sendable {
@@ -514,12 +535,16 @@ private struct QueuedBrowserReconcile {
 
 @MainActor
 final class BrowserProcessManager: ObservableObject {
+    static let maximumConcurrentProfiles = 12
+
     @Published private(set) var runningProfileIDs = Set<UUID>()
     /// Monotonic UI invalidation token for process states that can change
     /// without changing `runningProfileIDs` (for example, managed to
     /// recovery-required while the profile remains locked).
     @Published private(set) var processStateRevision: UInt64 = 0
     @Published var lastError: String?
+    @Published private(set) var stopPhases: [UUID: BrowserStopPhase] = [:]
+    @Published private(set) var recoveredInterruptedManagerSession = false
 
     private let paths: AppPaths
     private let processIdentityInspector:
@@ -540,6 +565,9 @@ final class BrowserProcessManager: ObservableObject {
         didSet { processStateRevision &+= 1 }
     }
     private var managedStopTasks: [UUID: Task<Void, Never>] = [:]
+    private var stopCompletionTasks: [UUID: Task<Void, Never>] = [:]
+    private var forcedStopProfileIDs = Set<UUID>()
+    private var managedStartedAt: [UUID: Date] = [:]
     private var managedLeaseOwners: [UUID: UUID] = [:]
     private var managedBrowserDataDirectories: [UUID: URL] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
@@ -571,6 +599,8 @@ final class BrowserProcessManager: ObservableObject {
         [UUID: FingerprintAuditLaunchReservation] = [:]
     private var consumedProxyPreparationKeys =
         Set<BrowserLaunchPreparationConsumptionKey>()
+    private var managerSessionStore: ManagerSessionEvidenceStore?
+    private var managerSessionToken: UUID?
 
     init(paths: AppPaths) {
         self.paths = paths
@@ -597,6 +627,18 @@ final class BrowserProcessManager: ObservableObject {
         self.observationIntervalNanoseconds = 1_000_000_000
         self.startingLeaseTimeout = 30
         self.now = Date.init
+        let sessionStore = ManagerSessionEvidenceStore(
+            paths: paths,
+            processIsAlive: { pid in
+                BrowserProcessManager.isProcessAlive(pid)
+            }
+        )
+        if let evidence = try? sessionStore.begin() {
+            self.managerSessionStore = sessionStore
+            self.managerSessionToken = evidence.token
+            self.recoveredInterruptedManagerSession =
+                evidence.interruptedSessionCount > 0
+        }
     }
 
     init(
@@ -733,6 +775,19 @@ final class BrowserProcessManager: ObservableObject {
             retryCount: 0,
             processInventoryProvider: processInventoryProvider
         )
+    }
+
+    func markManagerShutdownClean() {
+        guard let managerSessionStore,
+              let managerSessionToken
+        else { return }
+        do {
+            try managerSessionStore.finish(token: managerSessionToken)
+            self.managerSessionToken = nil
+        } catch {
+            lastError =
+                "Не удалось сохранить отметку штатного завершения менеджера. Данные профилей не изменены."
+        }
     }
 
     func reserveFingerprintAuditLaunch(
@@ -1042,6 +1097,14 @@ final class BrowserProcessManager: ObservableObject {
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
         if processes[profileID]?.isRunning == true {
+            switch stopPhase(for: profileID) {
+            case .closing:
+                return .closing
+            case .forceStopAvailable:
+                return .forceStopAvailable
+            case .idle, .completed:
+                break
+            }
             return .managed
         }
         if recoveryProfileIDs.contains(profileID) {
@@ -1062,6 +1125,29 @@ final class BrowserProcessManager: ObservableObject {
             return .externalVerified
         }
         return runningProfileIDs.contains(profileID) ? .managed : .stopped
+    }
+
+    func stopPhase(for profileID: UUID) -> BrowserStopPhase {
+        stopPhases[profileID] ?? .idle
+    }
+
+    func startedAt(for profileID: UUID) -> Date? {
+        managedStartedAt[profileID] ?? externalLocks[profileID]?.createdAt
+    }
+
+    @discardableResult
+    func focus(profileID: UUID) -> Bool {
+        let pid = processes[profileID]?.processIdentifier ??
+            externalLocks[profileID]?.pid
+        guard let pid,
+              let application = NSRunningApplication(
+                processIdentifier: pid
+              )
+        else {
+            lastError = "Не удалось найти окно этого браузера."
+            return false
+        }
+        return application.activate(options: [.activateAllWindows])
     }
 
     func withVerifiedProfileDeletion<T>(
@@ -1448,6 +1534,14 @@ final class BrowserProcessManager: ObservableObject {
             FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
+        let concurrentProfileCount = Self.confirmedConcurrentProfileCount(
+            runningProfileIDs.map { processState(for: $0) }
+        )
+        guard concurrentProfileCount < Self.maximumConcurrentProfiles else {
+            throw NeAntikError.concurrentLaunchLimitReached(
+                Self.maximumConcurrentProfiles
+            )
+        }
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
         }
@@ -1600,6 +1694,8 @@ final class BrowserProcessManager: ObservableObject {
             try prepareDiagnosticLog(logURL)
             try process.run()
             processes[profile.id] = process
+            managedStartedAt[profile.id] = createdAt
+            setStopPhase(.idle, profileID: profile.id)
             runningProfileIDs.insert(profile.id)
             try? appendDiagnostic(
                 "browser_launch version=\(runtime.inspection.version ?? "unknown")",
@@ -1636,6 +1732,7 @@ final class BrowserProcessManager: ObservableObject {
                 )
             }
             processes.removeValue(forKey: profile.id)
+            managedStartedAt.removeValue(forKey: profile.id)
             runningProfileIDs.remove(profile.id)
             managedLeaseOwners.removeValue(forKey: profile.id)
             managedBrowserDataDirectories.removeValue(forKey: profile.id)
@@ -1650,6 +1747,12 @@ final class BrowserProcessManager: ObservableObject {
             )
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
         }
+    }
+
+    static func confirmedConcurrentProfileCount(
+        _ states: [BrowserProfileProcessState]
+    ) -> Int {
+        states.count(where: \.isConfirmedRunning)
     }
 
     private static func fingerprintAuditArgumentsAreSafe(
@@ -1674,6 +1777,13 @@ final class BrowserProcessManager: ObservableObject {
     func stop(profileID: UUID) {
         if let process = processes[profileID] {
             if process.isRunning {
+                guard stopPhase(for: profileID) == .idle else {
+                    return
+                }
+                setStopPhase(
+                    .closing(requestedAt: now()),
+                    profileID: profileID
+                )
                 managedProcessTerminator(process)
                 scheduleManagedStopEscalation(
                     profileID: profileID,
@@ -1712,7 +1822,12 @@ final class BrowserProcessManager: ObservableObject {
             guard externalStopTasks[profileID] == nil else {
                 return
             }
+            setStopPhase(
+                .closing(requestedAt: now()),
+                profileID: profileID
+            )
             if processSignaler(lock.pid, SIGTERM) != 0 {
+                setStopPhase(.idle, profileID: profileID)
                 if errno == ESRCH {
                     handleTermination(profileID: profileID, process: nil)
                     return
@@ -1757,7 +1872,6 @@ final class BrowserProcessManager: ObservableObject {
         guard managedStopTasks[profileID] == nil else {
             return
         }
-        let pid = process.processIdentifier
         managedStopTasks[profileID] = Task { @MainActor [weak self, weak process] in
             guard let self else { return }
             defer {
@@ -1776,11 +1890,34 @@ final class BrowserProcessManager: ObservableObject {
             else {
                 return
             }
-            if processSignaler(pid, SIGKILL) != 0, errno != ESRCH {
-                lastError =
-                    "Браузер не ответил на завершение. Закрой его окно вручную; профиль останется заблокированным до безопасной проверки."
-            }
+            guard case let .closing(requestedAt) =
+                stopPhase(for: profileID)
+            else { return }
+            setStopPhase(
+                .forceStopAvailable(requestedAt: requestedAt),
+                profileID: profileID
+            )
         }
+    }
+
+    @discardableResult
+    func forceStop(profileID: UUID) -> Bool {
+        guard case .forceStopAvailable = stopPhase(for: profileID),
+              let process = processes[profileID],
+              process.isRunning
+        else {
+            return false
+        }
+        forcedStopProfileIDs.insert(profileID)
+        if processSignaler(process.processIdentifier, SIGKILL) != 0,
+           errno != ESRCH
+        {
+            forcedStopProfileIDs.remove(profileID)
+            lastError =
+                "Не удалось принудительно остановить браузер. Закрой его окно вручную; профиль останется заблокированным."
+            return false
+        }
+        return true
     }
 
     private func handleTermination(profileID: UUID, process: Process?) {
@@ -1791,6 +1928,8 @@ final class BrowserProcessManager: ObservableObject {
                 return
             }
         }
+        let priorStopPhase = stopPhase(for: profileID)
+        let wasForced = forcedStopProfileIDs.remove(profileID) != nil
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
         )
@@ -1805,6 +1944,7 @@ final class BrowserProcessManager: ObservableObject {
             externalLock: externalLock
         )
         processes.removeValue(forKey: profileID)
+        managedStartedAt.removeValue(forKey: profileID)
         managedStopTasks[profileID]?.cancel()
         managedStopTasks.removeValue(forKey: profileID)
         externalStopTasks[profileID]?.cancel()
@@ -1836,7 +1976,22 @@ final class BrowserProcessManager: ObservableObject {
                     at: lockURL
                 )
             }
+            if priorStopPhase != .idle,
+               !FileManager.default.fileExists(atPath: lockURL.path)
+            {
+                setStopPhase(
+                    .completed(
+                        completedAt: now(),
+                        wasForced: wasForced
+                    ),
+                    profileID: profileID
+                )
+                scheduleStopCompletionRemoval(profileID: profileID)
+            } else {
+                setStopPhase(.idle, profileID: profileID)
+            }
         case .found, .unknown:
+            setStopPhase(.idle, profileID: profileID)
             registerRecovery(
                 profileID: profileID,
                 lockURL: lockURL,
@@ -1847,6 +2002,37 @@ final class BrowserProcessManager: ObservableObject {
                 message:
                     "Основной процесс браузера завершён, но его вспомогательные процессы ещё используют данные профиля. Профиль разблокируется автоматически после их завершения."
             )
+        }
+    }
+
+    private func setStopPhase(
+        _ phase: BrowserStopPhase,
+        profileID: UUID
+    ) {
+        stopCompletionTasks[profileID]?.cancel()
+        stopCompletionTasks.removeValue(forKey: profileID)
+        if phase == .idle {
+            stopPhases.removeValue(forKey: profileID)
+        } else {
+            stopPhases[profileID] = phase
+        }
+        processStateRevision &+= 1
+    }
+
+    private func scheduleStopCompletionRemoval(profileID: UUID) {
+        stopCompletionTasks[profileID] = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+            } catch {
+                return
+            }
+            guard case .completed = stopPhase(for: profileID) else {
+                return
+            }
+            stopPhases.removeValue(forKey: profileID)
+            stopCompletionTasks.removeValue(forKey: profileID)
+            processStateRevision &+= 1
         }
     }
 

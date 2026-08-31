@@ -45,7 +45,7 @@ struct ProfileCommandPresentationTests {
     }
 
     @Test
-    func runningProfileKeepsStopButProtectsMetadataActions() {
+    func runningProfileAllowsNextLaunchEditsButProtectsDestructiveActions() {
         let profile = BrowserProfile(name: "Запущен")
         let launch = BrowserLaunchActionPresentation.resolve(
             processState: .managed,
@@ -61,7 +61,7 @@ struct ProfileCommandPresentationTests {
 
         #expect(presentation.launchTitle == "Остановить")
         #expect(presentation.launchIsEnabled)
-        #expect(!presentation.editIsEnabled)
+        #expect(presentation.editIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
     }

@@ -6,7 +6,91 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
-    func managedStopEscalatesOnlyItsOwnUnresponsiveProcess() async throws {
+    func recoveryAndUnverifiedLocksDoNotConsumeManagedLaunchCapacity() {
+        #expect(
+            BrowserProcessManager.confirmedConcurrentProfileCount(
+                Array(
+                    repeating: BrowserProfileProcessState.recoveryRequired,
+                    count: BrowserProcessManager.maximumConcurrentProfiles
+                ) + [.checking, .externalUnverified]
+            ) == 0
+        )
+        #expect(
+            BrowserProcessManager.confirmedConcurrentProfileCount([
+                .managed,
+                .closing,
+                .forceStopAvailable,
+                .externalVerified,
+                .externalManualOnly,
+            ]) == 5
+        )
+    }
+
+    @Test
+    func boundsConcurrentManagedProfileLaunches() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 5\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+        let manager = BrowserProcessManager(
+            paths: AppPaths(
+                rootDirectory: root.appendingPathComponent("data")
+            ),
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+        let profiles = (0...BrowserProcessManager.maximumConcurrentProfiles)
+            .map { BrowserProfile(name: "Profile \($0)") }
+
+        for profile in profiles.dropLast() {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        do {
+            try manager.launch(
+                profile: try #require(profiles.last),
+                runtime: runtime
+            )
+            Issue.record("Expected concurrent launch limit")
+        } catch let error as NeAntikError {
+            #expect(
+                error.localizedDescription.contains(
+                    "\(BrowserProcessManager.maximumConcurrentProfiles)"
+                )
+            )
+        }
+        #expect(
+            manager.runningProfileIDs.count ==
+                BrowserProcessManager.maximumConcurrentProfiles
+        )
+
+        for profile in profiles.dropLast() {
+            manager.stop(profileID: profile.id)
+        }
+        for _ in 0..<100 where !manager.runningProfileIDs.isEmpty {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        #expect(manager.runningProfileIDs.isEmpty)
+    }
+
+    @Test
+    func managedStopRequiresExplicitForceForUnresponsiveProcess() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -54,12 +138,22 @@ struct BrowserProcessManagerTests {
         manager.stop(profileID: profile.id)
 
         for _ in 0..<100 {
-            if manager.processState(for: profile.id) == .stopped {
+            if manager.processState(for: profile.id) == .forceStopAvailable {
                 break
             }
             try await Task.sleep(nanoseconds: 10_000_000)
         }
 
+        #expect(forcedSignals.isEmpty)
+        #expect(manager.processState(for: profile.id) == .forceStopAvailable)
+        #expect(manager.forceStop(profileID: profile.id))
+
+        for _ in 0..<100 {
+            if manager.processState(for: profile.id) == .stopped {
+                break
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
         #expect(forcedSignals.count == 1)
         #expect((forcedSignals.first?.0 ?? 0) > 0)
         #expect(forcedSignals.first?.1 == SIGKILL)

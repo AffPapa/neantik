@@ -65,7 +65,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("profileListPane", text)
         self.assertIn("} detail: {", text)
         self.assertIn(".inspector(isPresented: $showsProfileInspector)", text)
-        self.assertIn("detail\n                .inspectorColumnWidth(", text)
+        self.assertIn(
+            "detail\n                .workspaceKeyboardRegion(.inspector)\n                .inspectorColumnWidth(",
+            text,
+        )
         self.assertIn("WorkspaceLayout.minimumSourceColumnWidth", text)
         self.assertIn("WorkspaceLayout.minimumProfileColumnWidth", text)
         self.assertIn("WorkspaceLayout.minimumInspectorWidth", text)
@@ -280,7 +283,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('CommandMenu("Профиль")', commands)
         for action in (
             '"Изменить…"',
-            '"Дублировать"',
+            '"Создать похожий"',
             '"Переместить в папку"',
             '"Показать папку данных в Finder"',
             '"Удалить профиль"',
@@ -298,7 +301,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("static let unavailable = WorkspaceCommandSet", commands)
         self.assertNotIn("neAntikCreateProfile", content)
         self.assertNotIn("neAntikCreateProfile", APP.read_text(encoding="utf-8"))
-        self.assertIn("presentedProcessState(for: profile).isRunning", content)
+        self.assertIn("state == .stopped || state.isConfirmedRunning", content)
+        self.assertIn("appliesOnNextLaunch", content)
         self.assertIn("ProfileFolderCommandProjection.resolve", content)
         self.assertIn("static let defaultLimit = 8", commands)
         projection_start = commands.index(
