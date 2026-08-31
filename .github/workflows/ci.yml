@@ -52,6 +52,7 @@ jobs:
           - NativeMenuLocalizationTests
           - NeAntikErrorPresentationTests
           - ProfileCommandPresentationTests
+          - ProfileBatchActionsTests
           - ProfileEditorProcessPolicyTests
           - ProfileEditorPasswordTests
           - ProfileEditorPresentationTests
@@ -69,6 +70,7 @@ jobs:
           - ProfileTagAppearanceTests
           - ProfileTagEditorTests
           - ProfileStoreTests
+          - ProfileStorageMeasurementTests
           - ProxyHealthTests
           - ProxyImportParserTests
           - ProxyTestOperationRegistryTests

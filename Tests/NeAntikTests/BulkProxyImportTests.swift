@@ -3,6 +3,66 @@ import Testing
 @testable import NeAntik
 
 struct BulkProxyImportTests {
+    @Test
+    func safeFileReaderAcceptsUTF8AndRemovesByteOrderMark() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let file = root.appendingPathComponent("proxies.txt")
+        try Data([0xEF, 0xBB, 0xBF] + Array("host:8080\n".utf8))
+            .write(to: file)
+
+        #expect(
+            try ProxyImportFileReader.readText(from: file) == "host:8080\n"
+        )
+    }
+
+    @Test
+    func safeFileReaderRejectsSymlinkOversizeAndInvalidUTF8() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let target = root.appendingPathComponent("target.txt")
+        let link = root.appendingPathComponent("link.txt")
+        try Data("host:8080".utf8).write(to: target)
+        try FileManager.default.createSymbolicLink(
+            at: link,
+            withDestinationURL: target
+        )
+        #expect(throws: ProxyImportFileReadError.self) {
+            try ProxyImportFileReader.readText(from: link)
+        }
+
+        let oversized = root.appendingPathComponent("oversized.txt")
+        #expect(
+            FileManager.default.createFile(
+                atPath: oversized.path,
+                contents: nil
+            )
+        )
+        let handle = try FileHandle(forWritingTo: oversized)
+        try handle.truncate(
+            atOffset: UInt64(BulkProxyImportParser.maximumInputBytes + 1)
+        )
+        try handle.close()
+        #expect(throws: ProxyImportFileReadError.self) {
+            try ProxyImportFileReader.readText(from: oversized)
+        }
+
+        let invalid = root.appendingPathComponent("invalid.txt")
+        try Data([0xC3, 0x28]).write(to: invalid)
+        #expect(throws: ProxyImportFileReadError.self) {
+            try ProxyImportFileReader.readText(from: invalid)
+        }
+    }
     @Test func parsesOneProxyPerNonEmptyLine() throws {
         let drafts = try BulkProxyImportParser.parse(
             """

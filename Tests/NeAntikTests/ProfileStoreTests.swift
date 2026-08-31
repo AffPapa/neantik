@@ -1297,6 +1297,137 @@ struct ProfileStoreTests {
         let reloaded = ProfileStore(paths: paths)
         #expect(reloaded.profiles == repaired.profiles)
     }
+
+    @Test
+    func batchMetadataMutationPersistsOnceAndUndoRestoresEveryProfile() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let first = try store.upsert(BrowserProfile(name: "First"))
+        let second = try store.upsert(BrowserProfile(name: "Second"))
+        let untouched = try store.upsert(BrowserProfile(name: "Untouched"))
+        let committedAt = Date(timeIntervalSince1970: 1_000)
+
+        let receipt = try store.applyBatch(
+            .setPinned(true),
+            to: [first.id, second.id],
+            at: committedAt
+        )
+
+        #expect(receipt.affectedCount == 2)
+        #expect(receipt.canUndo)
+        #expect(store.profile(withID: first.id)?.isPinned == true)
+        #expect(store.profile(withID: second.id)?.isPinned == true)
+        #expect(store.profile(withID: untouched.id)?.isPinned == false)
+        #expect(store.profile(withID: first.id)?.updatedAt == committedAt)
+        #expect(store.profile(withID: first.id)?.revision == 2)
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: first.id)?.isPinned == true)
+        #expect(reloaded.profile(withID: second.id)?.isPinned == true)
+
+        let undoneAt = Date(timeIntervalSince1970: 2_000)
+        try reloaded.undoBatch(receipt, at: undoneAt)
+
+        #expect(reloaded.profile(withID: first.id)?.isPinned == false)
+        #expect(reloaded.profile(withID: second.id)?.isPinned == false)
+        #expect(reloaded.profile(withID: untouched.id)?.revision == 1)
+        #expect(reloaded.profile(withID: first.id)?.revision == 3)
+        #expect(reloaded.profile(withID: first.id)?.updatedAt == undoneAt)
+    }
+
+    @Test
+    func batchUndoRejectsNewerRevisionWithoutPartialRollback() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let first = try store.upsert(BrowserProfile(name: "First"))
+        let second = try store.upsert(BrowserProfile(name: "Second"))
+        let receipt = try store.applyBatch(
+            .setPinned(true),
+            to: [first.id, second.id]
+        )
+        _ = try store.mutateProfile(withID: first.id) {
+            $0.note = "Newer note"
+        }
+
+        #expect(throws: ProfileBatchMutationError.self) {
+            try store.undoBatch(receipt)
+        }
+        #expect(store.profile(withID: first.id)?.isPinned == true)
+        #expect(store.profile(withID: first.id)?.note == "Newer note")
+        #expect(store.profile(withID: second.id)?.isPinned == true)
+    }
+
+    @Test
+    func batchTagLimitFailureChangesNoProfile() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let available = try store.upsert(BrowserProfile(name: "Available"))
+        let full = try store.upsert(
+            BrowserProfile(
+                name: "Full",
+                tags: (0..<BrowserProfile.maximumTagCount).map {
+                    "Tag \($0)"
+                }
+            )
+        )
+
+        #expect(throws: ProfileBatchMutationError.self) {
+            try store.applyBatch(
+                .addTag("Campaign"),
+                to: [available.id, full.id]
+            )
+        }
+        #expect(store.profile(withID: available.id)?.tags.isEmpty == true)
+        #expect(
+            store.profile(withID: full.id)?.tags.count ==
+                BrowserProfile.maximumTagCount
+        )
+        let reloaded = ProfileStore(paths: store.paths)
+        #expect(reloaded.profile(withID: available.id)?.tags.isEmpty == true)
+    }
+
+    @Test
+    func batchFolderAssignmentCanBeUndoneAndRejectsConflicts() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let first = try store.upsert(BrowserProfile(name: "First"))
+        let second = try store.upsert(BrowserProfile(name: "Second"))
+        let source = try store.createFolder(named: "Source")
+        let target = try store.createFolder(named: "Target")
+        try store.assignProfile(first.id, toFolderID: source.id)
+
+        let receipt = try store.assignProfilesRecordingUndo(
+            [first.id, second.id],
+            toFolderID: target.id
+        )
+        #expect(receipt.affectedCount == 2)
+        #expect(store.folderID(forProfileID: first.id) == target.id)
+        #expect(store.folderID(forProfileID: second.id) == target.id)
+
+        try store.undoFolderAssignments(receipt)
+        #expect(store.folderID(forProfileID: first.id) == source.id)
+        #expect(store.folderID(forProfileID: second.id) == nil)
+
+        let conflictingReceipt = try store.assignProfilesRecordingUndo(
+            [first.id, second.id],
+            toFolderID: target.id
+        )
+        try store.assignProfile(second.id, toFolderID: nil)
+        #expect(throws: ProfileBatchMutationError.self) {
+            try store.undoFolderAssignments(conflictingReceipt)
+        }
+        #expect(store.folderID(forProfileID: first.id) == target.id)
+        #expect(store.folderID(forProfileID: second.id) == nil)
+    }
 }
 
 private struct ProfileStoreTestError: Error {}

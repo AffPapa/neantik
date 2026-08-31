@@ -43,6 +43,7 @@ case "$SUITE" in
   NativeMenuLocalizationTests|\
   NeAntikErrorPresentationTests|\
   ProfileCommandPresentationTests|\
+  ProfileBatchActionsTests|\
   ProfileEditorProcessPolicyTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
@@ -60,6 +61,7 @@ case "$SUITE" in
   ProfileTagAppearanceTests|\
   ProfileTagEditorTests|\
   ProfileStoreTests|\
+  ProfileStorageMeasurementTests|\
   ProxyHealthTests|\
   ProxyImportParserTests|\
   ProxyTestOperationRegistryTests|\

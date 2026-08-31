@@ -1,6 +1,8 @@
 import AppKit
+import Darwin
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct AccessibilityAnnouncementGate<Value: Equatable> {
     private(set) var lastValue: Value?
@@ -206,6 +208,87 @@ enum BulkProxyImportError: LocalizedError, Equatable {
         case .rollbackFailed:
             "Импорт остановлен, но часть данных Связки ключей не удалось очистить. Профили не созданы; обратись в поддержку, не передавая пароль."
         }
+    }
+}
+
+enum ProxyImportFileReadError: LocalizedError, Equatable {
+    case unsupportedFile
+    case tooLarge
+    case invalidEncoding
+    case unreadable
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedFile:
+            "Выбери обычный текстовый файл, а не папку или ссылку."
+        case .tooLarge:
+            "Файл больше 512 КиБ. Раздели список на несколько файлов."
+        case .invalidEncoding:
+            "Файл должен быть сохранён в UTF-8."
+        case .unreadable:
+            "Не удалось безопасно прочитать выбранный файл."
+        }
+    }
+}
+
+enum ProxyImportFileReader {
+    static func readText(from url: URL) throws -> String {
+        let descriptor = Darwin.open(
+            url.path,
+            O_RDONLY | O_NOFOLLOW | O_CLOEXEC
+        )
+        guard descriptor >= 0 else {
+            if errno == ELOOP {
+                throw ProxyImportFileReadError.unsupportedFile
+            }
+            throw ProxyImportFileReadError.unreadable
+        }
+        defer { _ = Darwin.close(descriptor) }
+
+        var metadata = stat()
+        guard fstat(descriptor, &metadata) == 0 else {
+            throw ProxyImportFileReadError.unreadable
+        }
+        guard metadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else {
+            throw ProxyImportFileReadError.unsupportedFile
+        }
+        guard metadata.st_size >= 0,
+              metadata.st_size <= BulkProxyImportParser.maximumInputBytes
+        else {
+            throw ProxyImportFileReadError.tooLarge
+        }
+
+        let handle = FileHandle(
+            fileDescriptor: descriptor,
+            closeOnDealloc: false
+        )
+        var data = Data()
+        do {
+            while data.count <= BulkProxyImportParser.maximumInputBytes {
+                guard let chunk = try handle.read(
+                    upToCount: min(
+                        64 * 1_024,
+                        BulkProxyImportParser.maximumInputBytes + 1 -
+                            data.count
+                    )
+                ), !chunk.isEmpty else {
+                    break
+                }
+                data.append(chunk)
+            }
+        } catch {
+            throw ProxyImportFileReadError.unreadable
+        }
+        guard data.count <= BulkProxyImportParser.maximumInputBytes else {
+            throw ProxyImportFileReadError.tooLarge
+        }
+        if data.starts(with: [0xEF, 0xBB, 0xBF]) {
+            data.removeFirst(3)
+        }
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw ProxyImportFileReadError.invalidEncoding
+        }
+        return text
     }
 }
 
@@ -463,6 +546,8 @@ struct BulkProxyImportView: View {
     @State private var creationError: String?
     @State private var isCreating = false
     @State private var showsOptions = false
+    @State private var showingFileImporter = false
+    @State private var importedFileName: String?
     @FocusState private var proxyInputIsFocused: Bool
     @State private var announcementGate =
         AccessibilityAnnouncementGate<
@@ -502,12 +587,33 @@ struct BulkProxyImportView: View {
 
             Form {
                 Section("Прокси — по одному на строку") {
-                    Text(
-                        "Вставь список. Каждая непустая строка станет " +
-                            "отдельным постоянным профилем."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Text(
+                            "Вставь список или выбери текстовый файл. " +
+                                "Каждая непустая строка станет отдельным " +
+                                "постоянным профилем."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        Spacer(minLength: 8)
+                        Button("Из файла…", systemImage: "doc.text") {
+                            showingFileImporter = true
+                        }
+                        .controlSize(.small)
+                        .accessibilityHint(
+                            "Выбирает локальный UTF-8 файл размером до 512 КиБ"
+                        )
+                    }
+
+                    if let importedFileName {
+                        Label(
+                            "Загружен файл: \(importedFileName)",
+                            systemImage: "checkmark.circle"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    }
 
                     ZStack(alignment: .topLeading) {
                         if text.isEmpty {
@@ -663,9 +769,40 @@ struct BulkProxyImportView: View {
         .onChange(of: kind) { _, _ in refreshPreview() }
         .onChange(of: order) { _, _ in refreshPreview() }
         .onChange(of: baseName) { _, _ in validateBaseName() }
+        .fileImporter(
+            isPresented: $showingFileImporter,
+            allowedContentTypes: [.plainText, .commaSeparatedText],
+            allowsMultipleSelection: false,
+            onCompletion: importProxyFile
+        )
         .onDisappear {
             text = ""
             preview = .empty
+        }
+    }
+
+    private func importProxyFile(_ result: Result<[URL], Error>) {
+        do {
+            let url = try result.get().first
+            guard let url else { return }
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess { url.stopAccessingSecurityScopedResource() }
+            }
+            text = try ProxyImportFileReader.readText(from: url)
+            importedFileName = url.lastPathComponent
+            inputMessage = nil
+            creationError = nil
+            refreshPreview()
+            proxyInputIsFocused = true
+        } catch let error as CocoaError where error.code == .userCancelled {
+            return
+        } catch {
+            preview = .empty
+            importedFileName = nil
+            inputMessage = error.localizedDescription
+            creationError = nil
+            announce(.validationFailed)
         }
     }
 

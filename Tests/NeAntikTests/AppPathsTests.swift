@@ -192,6 +192,85 @@ struct AppPathsTests {
         )
     }
 
+    @Test
+    func privateReaderReturnsExactRegularFileBytes() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let file = root.appendingPathComponent("private.json")
+        let expected = Data("{\"ok\":true}".utf8)
+        try paths.writePrivateFile(expected, to: file)
+
+        let observed = try paths.readPrivateFile(
+            file,
+            maximumBytes: 1_024
+        )
+
+        #expect(observed == expected)
+    }
+
+    @Test
+    func privateReaderRejectsSymlinkAndHardLinkWithoutReadingTarget() throws {
+        let root = temporaryDirectory()
+        let outsideRoot = temporaryDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outsideRoot)
+        }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        try FileManager.default.createDirectory(
+            at: outsideRoot,
+            withIntermediateDirectories: true
+        )
+        let outside = outsideRoot.appendingPathComponent("secret.json")
+        let secret = Data("never-read".utf8)
+        try secret.write(to: outside)
+
+        let symlink = root.appendingPathComponent("symlink.json")
+        try FileManager.default.createSymbolicLink(
+            at: symlink,
+            withDestinationURL: outside
+        )
+        #expect(throws: (any Error).self) {
+            _ = try paths.readPrivateFile(
+                symlink,
+                maximumBytes: 1_024
+            )
+        }
+
+        let hardLink = root.appendingPathComponent("hardlink.json")
+        try FileManager.default.linkItem(at: outside, to: hardLink)
+        #expect(throws: (any Error).self) {
+            _ = try paths.readPrivateFile(
+                hardLink,
+                maximumBytes: 1_024
+            )
+        }
+        #expect(try Data(contentsOf: outside) == secret)
+    }
+
+    @Test
+    func privateReaderEnforcesMaximumBeforeAllocatingFileSize() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let file = root.appendingPathComponent("oversized.json")
+        try paths.writePrivateFile(
+            Data(repeating: 0x41, count: 4_096),
+            to: file
+        )
+
+        #expect(throws: (any Error).self) {
+            _ = try paths.readPrivateFile(
+                file,
+                maximumBytes: 1_024
+            )
+        }
+    }
+
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent(
             UUID().uuidString,

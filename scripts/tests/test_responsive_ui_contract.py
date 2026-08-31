@@ -4,6 +4,9 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "Sources" / "NeAntik" / "ContentView.swift"
+PROFILE_WORKSPACE_VIEWS = (
+    ROOT / "Sources" / "NeAntik" / "ProfileWorkspaceViews.swift"
+)
 EDITOR = ROOT / "Sources" / "NeAntik" / "ProfileEditorView.swift"
 AUDIT = ROOT / "Sources" / "NeAntik" / "FingerprintAuditView.swift"
 BULK_IMPORT = ROOT / "Sources" / "NeAntik" / "BulkProxyImport.swift"
@@ -108,6 +111,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
+        workspace_views = PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
         toolbar_start = text.index(
             "private var workspaceToolbar: some ToolbarContent"
         )
@@ -157,13 +161,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("private func profileTableHeader", text)
         self.assertIn("ProfileRowLayout.minimumWideWidth", text)
         self.assertIn("GeometryReader", text)
-        self.assertIn('Text("Действие")', text)
+        self.assertIn('Text("Выбор / действие")', text)
         self.assertIn('Text("Подключение")', text)
-        self.assertIn("wideRow(presentation)", text)
-        self.assertIn("compactRow(presentation)", text)
-        self.assertIn("ProfileRowLayout.minimumIdentityWidth", text)
-        self.assertIn("maxWidth: .infinity", text)
-        self.assertIn("private var actionsMenu", text)
+        self.assertIn("wideRow(presentation)", workspace_views)
+        self.assertIn("compactRow(presentation)", workspace_views)
+        self.assertIn("ProfileRowLayout.minimumIdentityWidth", workspace_views)
+        self.assertIn("maxWidth: .infinity", workspace_views)
+        self.assertIn("private var actionsMenu", workspace_views)
         self.assertIn("private var profileListViewMenu", text)
         self.assertIn('Picker("Сортировка"', text)
         self.assertIn('Picker("Подключение"', text)
@@ -330,7 +334,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_tag_color_is_stable_supplemental_and_schema_free(self) -> None:
         appearance = TAG_APPEARANCE.read_text(encoding="utf-8")
-        content = CONTENT.read_text(encoding="utf-8")
+        content = (
+            CONTENT.read_text(encoding="utf-8")
+            + PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
+        )
 
         self.assertIn("stableHash(tagID.rawValue)", appearance)
         self.assertIn("ProfileTagID(displayName: displayName)", appearance)
@@ -522,13 +529,14 @@ class ResponsiveUIContractTests(unittest.TestCase):
     def test_profile_note_stays_compact_but_readable_and_searchable(
         self,
     ) -> None:
-        content = CONTENT.read_text(encoding="utf-8")
+        content = PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
+        workspace_content = CONTENT.read_text(encoding="utf-8")
         projection = PROFILE_LIST_PROJECTION.read_text(encoding="utf-8")
         row_presentation = PROFILE_ROW_PRESENTATION.read_text(
             encoding="utf-8"
         )
 
-        row_start = content.index("private struct ProfileRow")
+        row_start = content.index("struct ProfileRow")
         detail_start = content.index("struct ProfileDetailView", row_start)
         row = content[row_start:detail_start]
         self.assertIn("presentation.noteSummary", row)
@@ -578,13 +586,16 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('"Изменить заметку…"', detail_view)
         self.assertIn('"Добавить заметку…"', detail_view)
 
-        search_start = content.index("private var profileSearchField")
-        search_end = content.index(
+        search_start = workspace_content.index("private var profileSearchField")
+        search_end = workspace_content.index(
             "private var runtimeReadinessBanner",
             search_start,
         )
-        search = content[search_start:search_end]
-        self.assertIn('"Поиск профилей, прокси и заметок"', search)
+        search = workspace_content[search_start:search_end]
+        self.assertIn(
+            '"Поиск или тег:, папка:, прокси:, статус:"',
+            search,
+        )
         self.assertIn(
             '"Поиск профилей, маршрутов, заметок, тегов и папок"',
             search,

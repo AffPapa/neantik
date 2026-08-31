@@ -6,8 +6,12 @@ protocol ProfileCredentialCleanupRecoveryProviding: Error {
     var profileIDsRequiringCredentialCleanup: [UUID] { get }
 }
 
+
 @MainActor
 final class ProfileStore: ObservableObject {
+    private static let maximumProfilesMetadataBytes = 512 * 1_024 * 1_024
+    private static let maximumOrganizationMetadataBytes = 64 * 1_024 * 1_024
+
     @Published private(set) var profiles: [BrowserProfile] = [] {
         didSet { profileListRevision &+= 1 }
     }
@@ -211,23 +215,6 @@ final class ProfileStore: ObservableObject {
         try assignProfiles([profileID], toFolderID: folderID)
     }
 
-    func assignProfiles(
-        _ requestedProfileIDs: [UUID],
-        toFolderID folderID: UUID?
-    ) throws {
-        let profileIDs = Set(requestedProfileIDs)
-        try mutateOrganization { state in
-            let knownProfileIDs = Set(profiles.map(\.id))
-            guard profileIDs.isSubset(of: knownProfileIDs) else {
-                throw ProfileOrganizationError.profileNotFound
-            }
-            if let folderID,
-               state.folder(withID: folderID) == nil {
-                throw ProfileOrganizationError.folderNotFound
-            }
-            state.assign(profileIDs: profileIDs, toFolderID: folderID)
-        }
-    }
 
     func validateInsertionCapacity(
         forAdditionalProfileCount additionalCount: Int
@@ -290,6 +277,28 @@ final class ProfileStore: ObservableObject {
                 current,
                 afterPersist: { _ in }
             )
+        }
+    }
+
+    func mutateProfilesAtomically<Result>(
+        _ mutation: (inout [BrowserProfile]) throws -> Result
+    ) throws -> Result {
+        try paths.withProfilesMetadataGuard {
+            try reloadLatestProfilesForMutation()
+            try requireStorage()
+            let previousProfiles = profiles
+            var nextProfiles = previousProfiles
+            let result = try mutation(&nextProfiles)
+            guard nextProfiles != previousProfiles else { return result }
+            profiles = nextProfiles
+            sortProfiles()
+            do {
+                try persist()
+            } catch {
+                profiles = previousProfiles
+                throw error
+            }
+            return result
         }
     }
 
@@ -994,7 +1003,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private func mutateOrganization<Result>(
+    func mutateOrganization<Result>(
         _ mutation: (inout ProfileOrganizationState) throws -> Result
     ) throws -> Result {
         try requireStorage()
@@ -1097,7 +1106,10 @@ final class ProfileStore: ObservableObject {
         }
         if FileManager.default.fileExists(atPath: paths.profilesFile.path) {
             try paths.validatePrivateFile(paths.profilesFile)
-            let previousData = try Data(contentsOf: paths.profilesFile)
+            let previousData = try paths.readPrivateFile(
+                paths.profilesFile,
+                maximumBytes: Self.maximumProfilesMetadataBytes
+            )
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             _ = try decoder.decode(
@@ -1130,7 +1142,10 @@ final class ProfileStore: ObservableObject {
             return
         }
         try paths.validatePrivateFile(paths.profilesFile)
-        let data = try Data(contentsOf: paths.profilesFile)
+        let data = try paths.readPrivateFile(
+            paths.profilesFile,
+            maximumBytes: Self.maximumProfilesMetadataBytes
+        )
         try paths.writePrivateFile(
             data,
             to: paths.profilesBackupFile
@@ -1159,8 +1174,9 @@ final class ProfileStore: ObservableObject {
         ) {
         case .regular:
             try paths.validatePrivateFile(paths.profileOrganizationFile)
-            let previousData = try Data(
-                contentsOf: paths.profileOrganizationFile
+            let previousData = try paths.readPrivateFile(
+                paths.profileOrganizationFile,
+                maximumBytes: Self.maximumOrganizationMetadataBytes
             )
             _ = try Self.decodeOrganization(
                 previousData,
@@ -1201,7 +1217,10 @@ final class ProfileStore: ObservableObject {
                 paths.profileOrganizationBackupFile
             )
         case .missing:
-            let data = try Data(contentsOf: paths.profileOrganizationFile)
+            let data = try paths.readPrivateFile(
+                paths.profileOrganizationFile,
+                maximumBytes: Self.maximumOrganizationMetadataBytes
+            )
             _ = try Self.decodeOrganization(
                 data,
                 knownProfileIDs: Set(profiles.map(\.id))
@@ -1227,11 +1246,19 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func readProfiles(from url: URL) throws -> [BrowserProfile] {
-        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+    private static func readProfiles(paths: AppPaths) throws -> [BrowserProfile] {
+        guard FileManager.default.fileExists(
+            atPath: paths.profilesFile.path
+        ) else { return [] }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode([BrowserProfile].self, from: Data(contentsOf: url))
+        return try decoder.decode(
+            [BrowserProfile].self,
+            from: paths.readPrivateFile(
+                paths.profilesFile,
+                maximumBytes: Self.maximumProfilesMetadataBytes
+            )
+        )
     }
 
     private static func readProfilesWithRecovery(
@@ -1244,20 +1271,26 @@ final class ProfileStore: ObservableObject {
         try paths.validatePrivateFile(paths.profilesFile)
         do {
             return (
-                try readProfiles(from: paths.profilesFile),
+                try readProfiles(paths: paths),
                 nil
             )
         } catch is DecodingError {
             try paths.validatePrivateFile(paths.profilesFile)
             try paths.validatePrivateFile(paths.profilesBackupFile)
-            let backupData = try Data(contentsOf: paths.profilesBackupFile)
+            let backupData = try paths.readPrivateFile(
+                paths.profilesBackupFile,
+                maximumBytes: Self.maximumProfilesMetadataBytes
+            )
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let recovered = try decoder.decode(
                 [BrowserProfile].self,
                 from: backupData
             )
-            let rejectedData = try Data(contentsOf: paths.profilesFile)
+            let rejectedData = try paths.readPrivateFile(
+                paths.profilesFile,
+                maximumBytes: Self.maximumProfilesMetadataBytes
+            )
             let rejectedURL = paths.profilesRecoveryDirectory
                 .appendingPathComponent(
                     "profiles-rejected-\(UUID().uuidString).json"
@@ -1290,8 +1323,9 @@ final class ProfileStore: ObservableObject {
             break
         }
 
-        let currentData = try Data(
-            contentsOf: paths.profileOrganizationFile
+        let currentData = try paths.readPrivateFile(
+            paths.profileOrganizationFile,
+            maximumBytes: Self.maximumOrganizationMetadataBytes
         )
         do {
             let decoded = try decodeOrganization(
@@ -1315,8 +1349,9 @@ final class ProfileStore: ObservableObject {
                 break
             }
 
-            let backupData = try Data(
-                contentsOf: paths.profileOrganizationBackupFile
+            let backupData = try paths.readPrivateFile(
+                paths.profileOrganizationBackupFile,
+                maximumBytes: Self.maximumOrganizationMetadataBytes
             )
             let recovered = try decodeOrganization(
                 backupData,
@@ -1466,7 +1501,7 @@ final class ProfileStore: ObservableObject {
         throw BrowserIdentityAllocationError()
     }
 
-    private static func nextRevision(after revision: UInt64) throws -> UInt64 {
+    static func nextRevision(after revision: UInt64) throws -> UInt64 {
         guard revision < UInt64.max else {
             throw BrowserProfileRevisionExhaustedError()
         }

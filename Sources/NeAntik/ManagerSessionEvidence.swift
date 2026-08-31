@@ -16,6 +16,7 @@ struct ManagerSessionStartEvidence: Equatable, Sendable {
 /// includes profile identifiers, paths, proxy data or browser output.
 struct ManagerSessionEvidenceStore: Sendable {
     private static let maximumRecords = 32
+    private static let maximumFileBytes = 64 * 1_024
 
     let paths: AppPaths
     let processIsAlive: @Sendable (pid_t) -> Bool
@@ -71,7 +72,10 @@ struct ManagerSessionEvidenceStore: Sendable {
         case .unsafe:
             throw POSIXError(.EFTYPE)
         case .regular:
-            let data = try Data(contentsOf: paths.managerSessionsFile)
+            let data = try paths.readPrivateFile(
+                paths.managerSessionsFile,
+                maximumBytes: Self.maximumFileBytes
+            )
             let decoded = try JSONDecoder().decode(
                 [ManagerSessionRecord].self,
                 from: data
