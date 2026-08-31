@@ -61,6 +61,10 @@ if [[ ! -d "$RUNTIME_APP" ]]; then
   exit 66
 fi
 
+python3 "$PROJECT_DIR/scripts/audit-app-size.py" \
+  --check \
+  "$APP_PATH"
+
 RUNTIME_PLIST="$RUNTIME_APP/Contents/Info.plist"
 for expectation in \
   "CFBundleDisplayName:NeAntik Browser" \

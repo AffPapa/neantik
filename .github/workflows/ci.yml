@@ -71,6 +71,7 @@ jobs:
           - WorkspaceDomainTests
           - WorkspaceLayoutTests
           - WorkspaceQueryStateTests
+          - WorkspaceReadinessTests
           - RuntimePreferenceStoreTests
           - TelemetryTests
           - UpdateManifestTests

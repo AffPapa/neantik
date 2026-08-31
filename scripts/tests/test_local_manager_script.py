@@ -38,6 +38,8 @@ class LocalManagerScriptTests(unittest.TestCase):
             'exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"',
             text,
         )
+        self.assertIn("scripts/audit-app-size.py", text)
+        self.assertIn("--check", text)
         self.assertNotIn("/usr/bin/open -n", text)
 
         for forbidden in (
