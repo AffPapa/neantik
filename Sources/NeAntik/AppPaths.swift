@@ -328,6 +328,92 @@ struct AppPaths: Sendable {
         )
     }
 
+    /// Reads one private regular file through the descriptor that was actually
+    /// opened. Path validation alone leaves a validate/open race where an
+    /// unrelated local process can replace the entry between `lstat` and
+    /// `Data(contentsOf:)`. `O_NOFOLLOW`, descriptor/path identity checks and
+    /// a stable before/after stat make that replacement fail closed.
+    func readPrivateFile(
+        _ url: URL,
+        maximumBytes: Int
+    ) throws -> Data {
+        guard maximumBytes >= 0 else {
+            throw POSIXError(.EINVAL)
+        }
+        let descriptor = url.path.withCString {
+            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard descriptor >= 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        defer { _ = Darwin.close(descriptor) }
+
+        var openedBefore = stat()
+        var pathBefore = stat()
+        guard Darwin.fstat(descriptor, &openedBefore) == 0,
+              url.path.withCString({ Darwin.lstat($0, &pathBefore) }) == 0,
+              Self.isSamePrivateRegularFile(openedBefore, pathBefore),
+              openedBefore.st_size >= 0,
+              openedBefore.st_size <= off_t(maximumBytes)
+        else {
+            throw POSIXError(
+                openedBefore.st_size > off_t(maximumBytes)
+                    ? .EFBIG
+                    : .ELOOP
+            )
+        }
+
+        var data = Data()
+        data.reserveCapacity(Int(openedBefore.st_size))
+        var buffer = [UInt8](repeating: 0, count: 64 * 1_024)
+        while true {
+            let count = buffer.withUnsafeMutableBytes { bytes in
+                Darwin.read(
+                    descriptor,
+                    bytes.baseAddress,
+                    bytes.count
+                )
+            }
+            if count < 0 {
+                guard errno == EINTR else {
+                    throw POSIXError(
+                        POSIXErrorCode(rawValue: errno) ?? .EIO
+                    )
+                }
+                continue
+            }
+            guard count > 0 else { break }
+            guard data.count <= maximumBytes - count else {
+                throw POSIXError(.EFBIG)
+            }
+            data.append(contentsOf: buffer.prefix(count))
+        }
+
+        var openedAfter = stat()
+        var pathAfter = stat()
+        guard Darwin.fstat(descriptor, &openedAfter) == 0,
+              url.path.withCString({ Darwin.lstat($0, &pathAfter) }) == 0,
+              Self.isSamePrivateRegularFile(openedAfter, pathAfter),
+              openedBefore.st_dev == openedAfter.st_dev,
+              openedBefore.st_ino == openedAfter.st_ino,
+              openedBefore.st_size == openedAfter.st_size,
+              openedBefore.st_mtimespec.tv_sec ==
+                openedAfter.st_mtimespec.tv_sec,
+              openedBefore.st_mtimespec.tv_nsec ==
+                openedAfter.st_mtimespec.tv_nsec,
+              openedBefore.st_ctimespec.tv_sec ==
+                openedAfter.st_ctimespec.tv_sec,
+              openedBefore.st_ctimespec.tv_nsec ==
+                openedAfter.st_ctimespec.tv_nsec,
+              data.count == Int(openedAfter.st_size)
+        else {
+            throw POSIXError(.EBUSY)
+        }
+        return data
+    }
+
     func createPrivateFileExclusively(_ data: Data, at url: URL) throws {
         try createPrivateDirectory(url.deletingLastPathComponent())
         let descriptor = url.path.withCString {
@@ -625,6 +711,18 @@ struct AppPaths: Sendable {
             )
         }
         return nil
+    }
+
+    private static func isSamePrivateRegularFile(
+        _ opened: stat,
+        _ path: stat
+    ) -> Bool {
+        (opened.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG) &&
+            (path.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG) &&
+            opened.st_dev == path.st_dev &&
+            opened.st_ino == path.st_ino &&
+            opened.st_nlink == 1 &&
+            path.st_nlink == 1
     }
 
     private struct RootResolution {

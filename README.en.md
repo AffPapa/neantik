@@ -111,6 +111,17 @@ The capabilities below are included in the published, signed, and notarized
   [NeAntik v4 workspace](docs/NEANTIK_V4_WORKSPACE.md) research and its 75
   bounded decisions, plus the earlier
   [Vision Lean Workspace](docs/VISION_LEAN_WORKSPACE.md) foundation.
+- Explicit multi-selection supports atomic pin, folder, tag, and archive
+  actions with conflict-safe undo of the latest batch.
+- Local search understands `tag:`, `folder:`, `proxy:`, and `status:` tokens.
+  Bulk import accepts pasted text or a bounded TXT/CSV file without following
+  symlinks or starting automatic network requests.
+- BrowserData size is measured only on demand in profile detail. Private
+  metadata uses descriptor-first bounded reads that reject symlinks, hardlinks,
+  oversized files, and file-identity changes.
+- A local Readiness Center and deterministic source, startup, CPU/RSS, and
+  installed-size budgets keep the release compact and auditable without new
+  dependencies or a Chromium runtime change.
 
 The public download remains the signed and notarized `0.3.21 (24)` release
 until this exact candidate completes the full Direct Distribution gate.

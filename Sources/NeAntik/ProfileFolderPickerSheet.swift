@@ -27,9 +27,10 @@ struct ProfileFolderPickerPresentation: Equatable, Sendable {
 struct ProfileFolderPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    let profileName: String
+    let selectionDescription: String
     let folders: [ProfileFolder]
     let selectedFolderID: UUID?
+    let hasMixedSelection: Bool
     let onSelect: (UUID?) -> Void
 
     @State private var searchText = ""
@@ -42,6 +43,33 @@ struct ProfileFolderPickerSheet: View {
         )
     }
 
+    init(
+        profileName: String,
+        folders: [ProfileFolder],
+        selectedFolderID: UUID?,
+        onSelect: @escaping (UUID?) -> Void
+    ) {
+        selectionDescription = "Профиль «\(profileName)»"
+        self.folders = folders
+        self.selectedFolderID = selectedFolderID
+        hasMixedSelection = false
+        self.onSelect = onSelect
+    }
+
+    init(
+        selectionDescription: String,
+        folders: [ProfileFolder],
+        selectedFolderID: UUID?,
+        hasMixedSelection: Bool = false,
+        onSelect: @escaping (UUID?) -> Void
+    ) {
+        self.selectionDescription = selectionDescription
+        self.folders = folders
+        self.selectedFolderID = selectedFolderID
+        self.hasMixedSelection = hasMixedSelection
+        self.onSelect = onSelect
+    }
+
     var body: some View {
         let visibleFolders = presentation.filteredFolders
         VStack(spacing: 0) {
@@ -49,10 +77,15 @@ struct ProfileFolderPickerSheet: View {
                 Text("Выбрать папку")
                     .font(.headline)
                     .accessibilityHeading(.h1)
-                Text("Профиль «\(profileName)»")
+                Text(selectionDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                if hasMixedSelection {
+                    Text("Текущие папки различаются")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
@@ -129,7 +162,7 @@ struct ProfileFolderPickerSheet: View {
         systemImage: String,
         folderID: UUID?
     ) -> some View {
-        let isSelected = selectedFolderID == folderID
+        let isSelected = !hasMixedSelection && selectedFolderID == folderID
         return Button {
             onSelect(folderID)
             dismiss()

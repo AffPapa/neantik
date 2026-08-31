@@ -501,6 +501,87 @@ struct ProfileListProjectionTests {
         #expect(elapsed < 3)
     }
 
+    @Test
+    func structuredSearchCombinesTagsFoldersProxyStatusAndFreeText() {
+        let paidID = UUID()
+        let organicID = UUID()
+        let matching = BrowserProfile(
+            name: "TikTok campaign",
+            tags: ["TikTok", "Scale"],
+            note: "Creative batch 12",
+            isPinned: true,
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "de.proxy.example",
+                port: 8_080,
+                username: ""
+            )
+        )
+        let archived = BrowserProfile(
+            name: "Archived direct",
+            tags: ["TikTok"],
+            isArchived: true
+        )
+        let organization = ProfileOrganizationState(
+            folders: [
+                ProfileFolder(id: paidID, name: "Paid Social"),
+                ProfileFolder(id: organicID, name: "Organic"),
+            ],
+            assignmentsByProfileID: [
+                matching.id: paidID,
+                archived.id: organicID,
+            ]
+        )
+        let profiles = [matching, archived]
+        let query =
+            "campaign tag:tiktok folder:\"Paid Social\" proxy:yes status:pinned"
+
+        let directResult = ProfileListProjection.filtered(
+            profiles,
+            searchText: query,
+            tag: nil,
+            organization: organization
+        )
+        let indexedResult = ProfileListIndex(
+            profiles: profiles,
+            organization: organization
+        ).filtered(
+            searchText: query,
+            tag: nil,
+            scope: .active,
+            folderFilter: .all
+        )
+
+        #expect(directResult.map(\.id) == [matching.id])
+        #expect(indexedResult.map(\.id) == [matching.id])
+    }
+
+    @Test
+    func structuredSearchSupportsRussianAliasesAndFailClosedStatus() {
+        let active = BrowserProfile(name: "Active", tags: ["Тизерки"])
+        let archived = BrowserProfile(
+            name: "Archived",
+            tags: ["Тизерки"],
+            isArchived: true
+        )
+        let profiles = [active, archived]
+
+        let archivedResult = ProfileListProjection.filtered(
+            profiles,
+            searchText: "тег:тизерки прокси:нет статус:архив",
+            tag: nil,
+            scope: .archived
+        )
+        let unsupportedStatus = ProfileListProjection.filtered(
+            profiles,
+            searchText: "status:running",
+            tag: nil
+        )
+
+        #expect(archivedResult.map(\.id) == [archived.id])
+        #expect(unsupportedStatus.isEmpty)
+    }
+
     private static func counts(
         _ summaries: [ProfileTagSummary]
     ) -> [ProfileTagID: Int] {

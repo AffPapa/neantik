@@ -88,6 +88,7 @@ struct ProfileListIndex: Equatable, Sendable {
         let folderID: UUID?
         let profileSearchText: String
         let folderSearchText: String?
+        let proxySearchText: String?
     }
 
     private struct TagAccumulatorKey: Hashable {
@@ -192,7 +193,13 @@ struct ProfileListIndex: Equatable, Sendable {
                     ),
                     folderSearchText: folderFilter.folderID.flatMap {
                         resolvedFolderNameByID[$0]
-                    }.map(ProfileSearchText.fold)
+                    }.map(ProfileSearchText.fold),
+                    proxySearchText: profile.proxy.map { _ in
+                        ProfileSearchText.document(
+                            profileValues:
+                                ProfileRouteSearchDocument.values(for: profile)
+                        )
+                    }
                 )
             )
             for scope in scopes {
@@ -312,7 +319,7 @@ struct ProfileListIndex: Equatable, Sendable {
         routeFilter: ProfileRouteFilter = .all,
         ordering: ProfileListOrdering = .pinnedThenName
     ) -> [BrowserProfile] {
-        let searchQuery = ProfileSearchText.query(searchText)
+        let searchQuery = ProfileSearchQuery(rawValue: searchText)
         let orderedIndices = orderedProfileIndicesByOrdering[ordering] ??
             Array(indexedProfiles.indices)
         return orderedIndices.compactMap { index in
@@ -344,15 +351,13 @@ struct ProfileListIndex: Equatable, Sendable {
             }) {
                 return nil
             }
-            guard !searchQuery.isEmpty else { return entry.profile }
-            if entry.profileSearchText.contains(searchQuery) {
-                return entry.profile
-            }
-            if case .all = folderFilter,
-               entry.folderSearchText?.contains(searchQuery) == true {
-                return entry.profile
-            }
-            return nil
+            return searchQuery.matches(
+                profile: entry.profile,
+                profileSearchText: entry.profileSearchText,
+                folderSearchText: entry.folderSearchText,
+                proxySearchText: entry.proxySearchText,
+                includesFolderInGeneralSearch: folderFilter == .all
+            ) ? entry.profile : nil
         }
     }
 
@@ -402,7 +407,7 @@ enum ProfileListProjection {
         routeFilter: ProfileRouteFilter = .all,
         ordering: ProfileListOrdering = .pinnedThenName
     ) -> [BrowserProfile] {
-        let query = ProfileSearchText.query(searchText)
+        let query = ProfileSearchQuery(rawValue: searchText)
         let folderNameByID = Dictionary(
             uniqueKeysWithValues: organization.folders.map {
                 ($0.id, $0.name)
@@ -446,19 +451,25 @@ enum ProfileListProjection {
                 matchesTag = true
             }
             guard matchesTag else { return false }
-            guard !query.isEmpty else { return true }
-            if ProfileSearchText.document(
-                profileValues: [profile.name] + profile.tags + [profile.note] +
-                    ProfileRouteSearchDocument.values(for: profile)
-            ).contains(query) {
-                return true
-            }
-            if case .all = folderFilter,
-               let folderID,
-               let folderName = folderNameByID[folderID] {
-                return ProfileSearchText.fold(folderName).contains(query)
-            }
-            return false
+            let folderSearchText = folderID.flatMap {
+                folderNameByID[$0]
+            }.map(ProfileSearchText.fold)
+            return query.matches(
+                profile: profile,
+                profileSearchText: ProfileSearchText.document(
+                    profileValues: [profile.name] + profile.tags +
+                        [profile.note] +
+                        ProfileRouteSearchDocument.values(for: profile)
+                ),
+                folderSearchText: folderSearchText,
+                proxySearchText: profile.proxy.map { _ in
+                    ProfileSearchText.document(
+                        profileValues:
+                            ProfileRouteSearchDocument.values(for: profile)
+                    )
+                },
+                includesFolderInGeneralSearch: folderFilter == .all
+            )
         }.sorted(by: ordering.areInIncreasingOrder)
     }
 
@@ -617,14 +628,178 @@ enum ProfileListProjection {
     }
 }
 
+private struct ProfileSearchQuery {
+    private enum StatusConstraint: Equatable {
+        case active
+        case archived
+        case pinned
+        case neverLaunched
+
+        init?(value: String) {
+            switch value {
+            case "active", "активный", "активные": self = .active
+            case "archived", "archive", "архив": self = .archived
+            case "pinned", "pin", "закреплен", "закреплено": self = .pinned
+            case "never", "new", "никогда", "новый": self = .neverLaunched
+            default: return nil
+            }
+        }
+
+        func matches(_ profile: BrowserProfile) -> Bool {
+            switch self {
+            case .active: !profile.isArchived
+            case .archived: profile.isArchived
+            case .pinned: profile.isPinned
+            case .neverLaunched: profile.lastLaunchedAt == nil
+            }
+        }
+    }
+
+    private enum ProxyConstraint: Equatable {
+        case present
+        case direct
+        case text(String)
+
+        init(value: String) {
+            switch value {
+            case "yes", "on", "есть", "proxy", "прокси": self = .present
+            case "no", "off", "нет", "direct", "напрямую": self = .direct
+            default: self = .text(value)
+            }
+        }
+
+        func matches(
+            profile: BrowserProfile,
+            proxySearchText: String?
+        ) -> Bool {
+            switch self {
+            case .present: profile.proxy != nil
+            case .direct: profile.proxy == nil
+            case let .text(value):
+                proxySearchText?.contains(value) == true
+            }
+        }
+    }
+
+    private var generalTerms: [String] = []
+    private var tagTerms: [String] = []
+    private var folderTerms: [String] = []
+    private var proxyConstraints: [ProxyConstraint] = []
+    private var statusConstraints: [StatusConstraint] = []
+    private var impossible = false
+
+    init(rawValue: String) {
+        var generalValues: [String] = []
+        for token in Self.tokens(rawValue) {
+            let parts = token.split(
+                separator: ":",
+                maxSplits: 1,
+                omittingEmptySubsequences: false
+            )
+            guard parts.count == 2,
+                  !parts[1].isEmpty
+            else {
+                generalValues.append(token)
+                continue
+            }
+            let key = ProfileSearchText.fold(String(parts[0]))
+            let value = ProfileSearchText.fold(String(parts[1]))
+            switch key {
+            case "tag", "тег":
+                tagTerms.append(value)
+            case "folder", "папка":
+                folderTerms.append(value)
+            case "proxy", "прокси":
+                proxyConstraints.append(.init(value: value))
+            case "status", "статус":
+                if let constraint = StatusConstraint(value: value) {
+                    statusConstraints.append(constraint)
+                } else {
+                    impossible = true
+                }
+            default:
+                generalValues.append(token)
+            }
+        }
+        if !generalValues.isEmpty {
+            generalTerms = [
+                ProfileSearchText.fold(
+                    generalValues.joined(separator: " ")
+                )
+            ]
+        }
+    }
+
+    func matches(
+        profile: BrowserProfile,
+        profileSearchText: String,
+        folderSearchText: String?,
+        proxySearchText: String?,
+        includesFolderInGeneralSearch: Bool
+    ) -> Bool {
+        guard !impossible else { return false }
+        let generalMatches = generalTerms.allSatisfy { term in
+            profileSearchText.contains(term) ||
+                (includesFolderInGeneralSearch &&
+                    folderSearchText?.contains(term) == true)
+        }
+        guard generalMatches else { return false }
+        let foldedTags = profile.tags.map(ProfileSearchText.fold)
+        guard tagTerms.allSatisfy({ term in
+            foldedTags.contains(where: { $0.contains(term) })
+        }) else {
+            return false
+        }
+        guard folderTerms.allSatisfy({ term in
+            folderSearchText?.contains(term) == true
+        }) else {
+            return false
+        }
+        guard proxyConstraints.allSatisfy({ constraint in
+            constraint.matches(
+                profile: profile,
+                proxySearchText: proxySearchText
+            )
+        }) else {
+            return false
+        }
+        return statusConstraints.allSatisfy { $0.matches(profile) }
+    }
+
+    private static func tokens(_ value: String) -> [String] {
+        var result: [String] = []
+        var current = ""
+        var quote: Character?
+        func appendCurrent() {
+            guard !current.isEmpty else { return }
+            result.append(current)
+            current = ""
+        }
+
+        for character in value.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        ) {
+            if let activeQuote = quote {
+                if character == activeQuote {
+                    quote = nil
+                } else {
+                    current.append(character)
+                }
+            } else if character == "\"" || character == "'" {
+                quote = character
+            } else if character.isWhitespace {
+                appendCurrent()
+            } else {
+                current.append(character)
+            }
+        }
+        appendCurrent()
+        return result
+    }
+}
+
 private enum ProfileSearchText {
     private static let locale = Locale(identifier: "en_US_POSIX")
-
-    static func query(_ value: String) -> String {
-        fold(
-            value.trimmingCharacters(in: .whitespacesAndNewlines)
-        )
-    }
 
     static func document(profileValues: [String]) -> String {
         profileValues.map(fold).joined(separator: "\u{0}")
