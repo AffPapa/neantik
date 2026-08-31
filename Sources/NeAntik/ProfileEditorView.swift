@@ -111,6 +111,7 @@ struct ProfileEditorView: View {
   private let proxyPasswordReadFailed: Bool
   private let draftProfileID: UUID
   private let initialFocus: ProfileEditorField?
+  private let appliesOnNextLaunch: Bool
 
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
@@ -155,6 +156,7 @@ struct ProfileEditorView: View {
     folders: [ProfileFolder],
     initialFolderID: UUID?,
     suggestedTags: [String],
+    appliesOnNextLaunch: Bool = false,
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
     onSave: @escaping (
@@ -167,6 +169,7 @@ struct ProfileEditorView: View {
     self.keychain = keychain
     self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
     self.suggestedTags = suggestedTags
+    self.appliesOnNextLaunch = appliesOnNextLaunch
     self.onSave = onSave
     self.initialFocus = initialFocus
     _showsAdvancedOptions = State(
@@ -247,6 +250,7 @@ struct ProfileEditorView: View {
       folders: [],
       initialFolderID: nil,
       suggestedTags: original?.tags ?? [],
+      appliesOnNextLaunch: false,
       showsAdvancedOptionsInitially: showsAdvancedOptionsInitially
     ) { profile, passwordUpdate, _ in
       try onSave(profile, passwordUpdate)
@@ -257,6 +261,17 @@ struct ProfileEditorView: View {
     VStack(spacing: 0) {
       ScrollViewReader { scrollProxy in
         Form {
+        if appliesOnNextLaunch {
+          Section {
+            Label(
+              "Профиль запущен. Название, заметка, теги и папка сохранятся сразу; параметры Chromium и прокси применятся при следующем запуске.",
+              systemImage: "clock.arrow.circlepath"
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .accessibilityElement(children: .combine)
+          }
+        }
         Section("Профиль") {
           TextField("Название", text: $name)
             .accessibilityLabel("Название профиля")
@@ -300,9 +315,7 @@ struct ProfileEditorView: View {
               text: $proxyImportText
             )
             .accessibilityLabel("Строка прокси для импорта")
-            Text(
-              "Вставь строку в поле или просто скопируй её и нажми кнопку. Поддерживаются login:password@ip:port, ip:port@login:password и оба варианта через четыре двоеточия."
-            )
+            Text("Например: login:password@ip:port или ip:port@login:password")
             .font(.caption)
             .foregroundStyle(.secondary)
 
@@ -393,27 +406,19 @@ struct ProfileEditorView: View {
               }
             }
 
-            Text(
-              "Ручная проверка обращается к ipapi.co через прокси, " +
-              "чтобы увидеть внешний IP и примерную локацию. " +
-              "Перед каждым запуском профиля NeAntik выполняет " +
-              "свежую проверку прокси. Она не подтверждает маршрут Chromium."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            if !proxyUsername.isEmpty {
+            DisclosureGroup("Как работает проверка и авторизация") {
               Text(
-                "Chromium может попросить логин и пароль при первом запуске. NeAntik не подставляет их автоматически: скопируй логин и пароль из карточки профиля. Пароль хранится только в Связке ключей."
+                "Проверка обращается к ipapi.co через прокси и показывает внешний IP и примерную локацию. Перед каждым запуском NeAntik проверяет прокси заново. Проверка не доказывает маршрут Chromium."
               )
               .font(.caption)
               .foregroundStyle(.secondary)
-              Text(
-                "Проверка подтверждает доступность прокси и его внешний " +
-                "адрес, но не ввод логина в окне Chromium."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
+              if !proxyUsername.isEmpty {
+                Text(
+                  "Chromium может запросить логин и пароль при первом запуске. NeAntik не вводит их автоматически; пароль хранится только в Связке ключей."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+              }
             }
 
             if let detectedTimezone {

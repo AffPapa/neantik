@@ -16,11 +16,12 @@ extension BrowserProfileProcessState {
         switch self {
         case .stopped:
             .neutral
-        case .checking:
+        case .checking, .closing:
             .activity
         case .managed, .externalVerified:
             .healthy
-        case .externalManualOnly, .externalUnverified, .recoveryRequired:
+        case .forceStopAvailable, .externalManualOnly,
+             .externalUnverified, .recoveryRequired:
             .attention
         }
     }
@@ -65,6 +66,23 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
                 systemImage: "stop.fill",
                 isEnabled: true,
                 help: processState.guidance ?? "Остановить профиль"
+            )
+
+        case .closing:
+            return Self(
+                title: "Закрывается…",
+                systemImage: "hourglass",
+                isEnabled: false,
+                help: processState.guidance ?? "Chromium завершает работу"
+            )
+
+        case .forceStopAvailable:
+            return Self(
+                title: "Не отвечает",
+                systemImage: "exclamationmark.octagon.fill",
+                isEnabled: false,
+                help: processState.guidance ??
+                    "Принудительная остановка доступна в сведениях профиля"
             )
 
         case .checking:

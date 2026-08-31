@@ -84,15 +84,39 @@ struct NeAntikApp: App {
         let environment = NeAntikApplicationEnvironment.resolve(
             bundleIdentifier: Bundle.main.bundleIdentifier
         )
-        let paths = environment.isDevelopment
-            ? AppPaths(
-                rootDirectory: environment.applicationSupportRoot()
-            )
-            : AppPaths()
-        let keychain = KeychainStore(
-            service: environment.keychainService,
-            legacyService: environment.legacyKeychainService
+        let processEnvironment = ProcessInfo.processInfo.environment
+        let startupIsolation = ManagerStartupProbe.isolationConfiguration(
+            environment: processEnvironment,
+            bundleIdentifier: Bundle.main.bundleIdentifier
         )
+        if ManagerStartupProbe.isRequested(environment: processEnvironment),
+           startupIsolation == nil
+        {
+            Self.writeControlErrorAndExit(
+                "Небезопасная конфигурация измерения запуска NeAntik.\n",
+                code: EX_USAGE
+            )
+        }
+        let paths: AppPaths
+        let keychain: KeychainStore
+        if let startupIsolation {
+            paths = AppPaths(rootDirectory: startupIsolation.dataRoot)
+            keychain = KeychainStore(
+                backend: ManagerStartupKeychainBackend(),
+                service: startupIsolation.keychainService,
+                legacyService: nil
+            )
+        } else {
+            paths = environment.isDevelopment
+                ? AppPaths(
+                    rootDirectory: environment.applicationSupportRoot()
+                )
+                : AppPaths()
+            keychain = KeychainStore(
+                service: environment.keychainService,
+                legacyService: environment.legacyKeychainService
+            )
+        }
         self.keychain = keychain
         credentialCleanup = DeletedProfileCredentialCleanup(
             paths: paths,
@@ -140,6 +164,7 @@ struct NeAntikApp: App {
             }
             .onAppear {
                 NativeMenuLocalization.applyAfterMenuCreation()
+                ManagerStartupProbe.signalReadyIfRequested()
             }
             .onReceive(
                 NotificationCenter.default.publisher(

@@ -9,6 +9,7 @@ struct WorkspaceReadinessView: View {
     let onCopyDiagnostics: () -> Void
     let onCopyApplicationPath: () -> Void
     let onRevealApplication: () -> Void
+    let onOpenSystemSettings: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -19,6 +20,7 @@ struct WorkspaceReadinessView: View {
                     permissionGuidance
                     readinessItems
                     privacyBoundary
+                    diagnosticPreview
                 }
                 .padding(20)
             }
@@ -93,8 +95,18 @@ struct WorkspaceReadinessView: View {
                         action: onCopyApplicationPath
                     )
                     Button("Показать в Finder", action: onRevealApplication)
+                    Button(
+                        "Системные настройки",
+                        action: onOpenSystemSettings
+                    )
                 }
                 .controlSize(.small)
+                Text(
+                    "Разрешения приложения относятся к менеджеру NeAntik. Доступ камеры, микрофона и сайтов Chromium запрашивает отдельно внутри профиля."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 if let notice {
                     Label(notice, systemImage: "checkmark.circle.fill")
                         .font(.caption)
@@ -170,6 +182,21 @@ struct WorkspaceReadinessView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
+    }
+
+    private var diagnosticPreview: some View {
+        DisclosureGroup("Предпросмотр безопасной диагностики") {
+            Text(snapshot.diagnosticText)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 8)
+        }
+        .font(.caption.weight(.semibold))
+        .accessibilityHint(
+            "Показывает локальный текст до копирования; секреты и пути профилей исключены"
+        )
     }
 
     private var footer: some View {

@@ -47,4 +47,27 @@ struct WorkspaceLayoutTests {
         #expect(WorkspaceLayout.titlebarContentInset > 0)
         #expect(WorkspaceLayout.titlebarContentInset < 64)
     }
+
+    @Test func keyboardTraversalFollowsVisibleWorkspaceHierarchy() {
+        #expect(
+            WorkspaceLayout.keyboardRegionOrder == [
+                .sidebar,
+                .profileList,
+                .inspector,
+            ]
+        )
+        #expect(Set(WorkspaceLayout.keyboardRegionOrder).count == 3)
+        #expect(
+            WorkspaceLayout.keyboardRegionOrder.map(\.accessibilityIdentifier)
+                == [
+                    "workspace.sidebar",
+                    "workspace.profile-list",
+                    "workspace.inspector",
+                ]
+        )
+        #expect(
+            WorkspaceLayout.keyboardRegionOrder.map(\.accessibilityPriority)
+                == [3, 2, 1]
+        )
+    }
 }

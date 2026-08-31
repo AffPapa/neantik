@@ -177,6 +177,21 @@ follow-up. The current delivery slice is marked **NOW**.
 99. **P0** Never use SSH, SCP, SFTP, rsync or manual server edits.
 100. **P0** Re-download public artifacts and compare SHA-256 after any future publish.
 
+## Priority source slice implemented on 2026-08-31
+
+This branch closes plan items
+`8–10, 16–17, 19, 21–23, 26–27, 29–30, 33, 35, 42, 44, 47,
+52–54, 57–58, 65, 69, 73, 75, 85, 88 and 92` through new behavior or an
+explicit regression gate. Existing safe launch cancellation, stale-lock
+reconciliation, fresh proxy checks and environment details were retained and
+connected to the new presentation instead of duplicated.
+
+The lifecycle deliberately says that the process ended and the profile was
+unlocked; it does not claim that Chromium saved every page or session byte.
+Force Stop remains a separately confirmed destructive action. Startup and
+idle-resource scripts operate only on the isolated Dev manager and never
+change the public release.
+
 ## Current delivery gate
 
 This source slice is complete only when:

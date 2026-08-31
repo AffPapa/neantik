@@ -40,7 +40,8 @@ struct ProfileCommandPresentation: Equatable, Sendable {
             launchSystemImage: launchAction.systemImage,
             launchHelp: launchAction.help,
             launchIsEnabled: launchAction.isEnabled,
-            editIsEnabled: !processState.isRunning,
+            editIsEnabled:
+                processState == .stopped || processState.isConfirmedRunning,
             pinTitle: profile.isPinned ? "Открепить" : "Закрепить",
             pinSystemImage: profile.isPinned ? "pin.slash" : "pin",
             archiveTitle:
@@ -277,7 +278,7 @@ struct ProfileCommandMenu: Commands {
             .disabled(!resolved.hasProfile)
 
             Button(
-                "Дублировать",
+                "Создать похожий",
                 systemImage: "plus.square.on.square",
                 action: resolved.duplicate
             )

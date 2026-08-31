@@ -71,6 +71,23 @@ struct WorkspaceReadinessTests {
         #expect(snapshot.items.first { $0.id == .routes }?.level == .attention)
     }
 
+    @Test func interruptedManagerSessionIsVisibleWithoutBlockingLaunch() {
+        let snapshot = WorkspaceReadinessSnapshot.resolve(
+            input(
+                storage: .ready(availableCapacity: nil),
+                runtimeAvailability: .ready,
+                profileCount: 1,
+                proxiedRouteCount: 1,
+                recoveredInterruptedManagerSession: true
+            )
+        )
+
+        let processes = snapshot.items.first { $0.id == .processes }
+        #expect(snapshot.level == .attention)
+        #expect(processes?.value.contains("неожиданно") == true)
+        #expect(snapshot.diagnosticText.contains("previousManagerInterrupted=true"))
+    }
+
     @Test func copiedDiagnosticExcludesPathsMessagesAndSecrets() {
         let snapshot = WorkspaceReadinessSnapshot.resolve(
             input(
@@ -143,7 +160,8 @@ struct WorkspaceReadinessTests {
         processAttentionCount: Int = 0,
         directRouteCount: Int = 0,
         proxiedRouteCount: Int = 0,
-        proxyAttentionCount: Int = 0
+        proxyAttentionCount: Int = 0,
+        recoveredInterruptedManagerSession: Bool = false
     ) -> WorkspaceReadinessInput {
         WorkspaceReadinessInput(
             system: WorkspaceReadinessSystemInspection(
@@ -161,7 +179,9 @@ struct WorkspaceReadinessTests {
             processAttentionCount: processAttentionCount,
             directRouteCount: directRouteCount,
             proxiedRouteCount: proxiedRouteCount,
-            proxyAttentionCount: proxyAttentionCount
+            proxyAttentionCount: proxyAttentionCount,
+            recoveredInterruptedManagerSession:
+                recoveredInterruptedManagerSession
         )
     }
 

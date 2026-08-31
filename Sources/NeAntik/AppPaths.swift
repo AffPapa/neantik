@@ -165,6 +165,14 @@ struct AppPaths: Sendable {
         )
     }
 
+    var managerSessionsFile: URL {
+        processLocksDirectory.appendingPathComponent("ManagerSessions.json")
+    }
+
+    var managerSessionsGuardFile: URL {
+        processLocksDirectory.appendingPathComponent("ManagerSessions.guard")
+    }
+
     func profileDeletionTombstone(for id: UUID) -> URL {
         processLocksDirectory.appendingPathComponent(
             "\(id.uuidString).deleted"
@@ -388,6 +396,15 @@ struct AppPaths: Sendable {
     ) throws -> T {
         try withPrivateFileGuard(
             at: profilesMetadataGuardFile,
+            operation
+        )
+    }
+
+    func withManagerSessionsGuard<T>(
+        _ operation: () throws -> T
+    ) throws -> T {
+        try withPrivateFileGuard(
+            at: managerSessionsGuardFile,
             operation
         )
     }

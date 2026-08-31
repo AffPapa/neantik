@@ -96,6 +96,16 @@ The capabilities below are included in the published, signed, and notarized
   note directly from the action menu.
 - The editor explicitly warns that a direct connection exposes the Mac's
   ordinary public address or its system VPN address to websites.
+- Launch preflight is split into runtime, storage, proxy, consistency, and
+  process stages, with an actionable failure and a 1 GiB free-space floor.
+- A compact global strip keeps running, closing, unresponsive, and recently
+  completed profiles visible even when search or smart views hide their rows;
+  Force Stop remains a separate destructive confirmation.
+- Running profiles can be edited with an explicit next-launch boundary for
+  Chromium and proxy settings. **Create similar** produces fresh session and
+  identity data, and bulk proxy checks can retry only failed profiles.
+- The Dev-only cold/warm startup and manager CPU/RSS measurements use a
+  private temporary data root and a fail-closed non-system Keychain backend.
 - Full profile detail is available in an optional native inspector, and every
   row exposes a visible action menu. See the
   [NeAntik v4 workspace](docs/NEANTIK_V4_WORKSPACE.md) research and its 75

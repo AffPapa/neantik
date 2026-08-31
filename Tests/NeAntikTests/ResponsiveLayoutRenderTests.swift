@@ -64,6 +64,38 @@ struct ResponsiveLayoutRenderTests {
             ("light", ColorScheme.light),
             ("dark", ColorScheme.dark),
         ] {
+            for (itemIndex, item) in lifecycleRenderItems().enumerated() {
+                try render(
+                    RunningProfilesStrip(
+                        items: [item],
+                        onSelect: { _ in },
+                        onFocus: { _ in },
+                        onStop: { _ in },
+                        onForceStop: { _ in }
+                    ),
+                    name:
+                        "running-strip-\(itemIndex)-\(appearanceName)",
+                    size: CGSize(
+                        width: WorkspaceLayout.minimumWindowWidth,
+                        height: 200
+                    ),
+                    colorScheme: colorScheme
+                )
+            }
+
+            var proxyProgress = BulkProxyRunProgress(total: 5)
+            proxyProgress.record(profileID: layoutFixtureID(30), outcome: .succeeded)
+            proxyProgress.record(
+                profileID: layoutFixtureID(31),
+                outcome: .connectionFailed
+            )
+            try render(
+                BulkProxyProgressView(progress: proxyProgress),
+                name: "bulk-proxy-progress-\(appearanceName)",
+                size: CGSize(width: 420, height: 80),
+                colorScheme: colorScheme
+            )
+
             try render(
                 ProfileEditorView(
                     original: nil,
@@ -285,7 +317,8 @@ struct ResponsiveLayoutRenderTests {
                     onRecheck: {},
                     onCopyDiagnostics: {},
                     onCopyApplicationPath: {},
-                    onRevealApplication: {}
+                    onRevealApplication: {},
+                    onOpenSystemSettings: {}
                 ),
                 name: "workspace-readiness-attention-\(appearanceName)",
                 size: CGSize(width: 620, height: 620),
@@ -388,6 +421,55 @@ struct ResponsiveLayoutRenderTests {
             name: "profile-audit-minimum",
             size: CGSize(width: 540, height: 480)
         )
+    }
+
+    private func lifecycleRenderItems() -> [BrowserProcessLifecycleItem] {
+        [
+            BrowserProcessLifecycleItem(
+                id: layoutFixtureID(20),
+                profileName: "TikTok · FR · UGC с длинным названием",
+                stateTitle: "Запущен",
+                detail: "Этот NeAntik · 2 ч 15 мин",
+                systemImage: "circle.fill",
+                origin: .currentManager,
+                canFocus: true,
+                canStop: true,
+                canForceStop: false
+            ),
+            BrowserProcessLifecycleItem(
+                id: layoutFixtureID(21),
+                profileName: "Facebook Ads · DE · BM 04",
+                stateTitle: "Закрывается…",
+                detail: "Завершаем Chromium без потери сессии",
+                systemImage: "hourglass",
+                origin: .currentManager,
+                canFocus: true,
+                canStop: false,
+                canForceStop: false
+            ),
+            BrowserProcessLifecycleItem(
+                id: layoutFixtureID(22),
+                profileName: "Native · RU · Teaser 07",
+                stateTitle: "Не отвечает",
+                detail: "Не ответил на обычную остановку",
+                systemImage: "exclamationmark.octagon.fill",
+                origin: .currentManager,
+                canFocus: true,
+                canStop: false,
+                canForceStop: true
+            ),
+            BrowserProcessLifecycleItem(
+                id: layoutFixtureID(23),
+                profileName: "Завершённый профиль",
+                stateTitle: "Остановлен",
+                detail: "Процесс завершён, профиль безопасно разблокирован",
+                systemImage: "checkmark.circle.fill",
+                origin: .currentManager,
+                canFocus: false,
+                canStop: false,
+                canForceStop: false
+            ),
+        ]
     }
 
     @Test func profileDetailRendersAtOrdinaryAndWideSizes() throws {
@@ -813,7 +895,8 @@ struct ResponsiveLayoutRenderTests {
                   using: .png,
                   properties: [:]
               ),
-              data.count > 10_000
+              data.count > 1_000,
+              hasVisualVariation(representation)
         else {
             throw LayoutRenderError.invalidImage(name)
         }
@@ -834,6 +917,38 @@ struct ResponsiveLayoutRenderTests {
                 options: .atomic
             )
         }
+    }
+
+    private func hasVisualVariation(
+        _ representation: NSBitmapImageRep
+    ) -> Bool {
+        let horizontalStep = max(1, representation.pixelsWide / 80)
+        let verticalStep = max(1, representation.pixelsHigh / 50)
+        var colors = Set<UInt64>()
+        for y in stride(
+            from: 0,
+            to: representation.pixelsHigh,
+            by: verticalStep
+        ) {
+            for x in stride(
+                from: 0,
+                to: representation.pixelsWide,
+                by: horizontalStep
+            ) {
+                guard let color = representation.colorAt(x: x, y: y)?
+                    .usingColorSpace(.deviceRGB)
+                else { continue }
+                let red = UInt64((color.redComponent * 255).rounded())
+                let green = UInt64((color.greenComponent * 255).rounded())
+                let blue = UInt64((color.blueComponent * 255).rounded())
+                let alpha = UInt64((color.alphaComponent * 255).rounded())
+                colors.insert(
+                    (red << 24) | (green << 16) | (blue << 8) | alpha
+                )
+                if colors.count >= 3 { return true }
+            }
+        }
+        return false
     }
 }
 

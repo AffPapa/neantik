@@ -15,13 +15,16 @@ case "$SUITE" in
   BrowserLaunchActionPresentationTests|\
   BrowserLaunchBuilderTests|\
   BrowserLaunchPreparationPolicyTests|\
+  BrowserLaunchStagedPreflightTests|\
   BrowserLaunchPolicyTests|\
   BrowserProcessInventoryTests|\
+  BrowserProcessLifecyclePresentationTests|\
   BrowserProcessManagerTests|\
   BrowserRuntimeInspectorTests|\
   BrowserRuntimePreflightTests|\
   BulkProxyActionProjectionTests|\
   BulkProxyImportTests|\
+  BulkProxyRunProgressTests|\
   DisplayDateFormattingTests|\
   EnvironmentDiagnosticAssessmentTests|\
   FingerprintAuditAutomationPolicyTests|\
@@ -35,9 +38,12 @@ case "$SUITE" in
   SecureEnclaveFingerprintEvidenceSignerTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
+  ManagerSessionEvidenceTests|\
+  ManagerStartupProbeTests|\
   NativeMenuLocalizationTests|\
   NeAntikErrorPresentationTests|\
   ProfileCommandPresentationTests|\
+  ProfileEditorProcessPolicyTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
   ProfileEditorValidationTests|\
