@@ -244,6 +244,55 @@ struct ResponsiveLayoutRenderTests {
             size: CGSize(width: 460, height: 280)
         )
 
+        let readinessSnapshot = WorkspaceReadinessSnapshot.resolve(
+            WorkspaceReadinessInput(
+                system: WorkspaceReadinessSystemInspection(
+                    application: WorkspaceApplicationIdentity(
+                        displayName: "NeAntik Dev",
+                        version: "0.3.22",
+                        build: "25",
+                        bundleIdentifier: "app.neantik.desktop.dev",
+                        bundlePath:
+                            "/Users/example/Applications/NeAntik Dev.app",
+                        location: .development
+                    ),
+                    storage: .ready(
+                        availableCapacity: 84_000_000_000
+                    )
+                ),
+                runtimeAvailability: .ready,
+                runtimeVersion: "152.0.7977.64",
+                runtimeArchitectures: ["arm64"],
+                profileCount: 4,
+                runningCount: 1,
+                processAttentionCount: 0,
+                directRouteCount: 2,
+                proxiedRouteCount: 2,
+                proxyAttentionCount: 0
+            )
+        )
+        for (appearanceName, colorScheme) in [
+            ("light", ColorScheme.light),
+            ("dark", ColorScheme.dark),
+        ] {
+            try render(
+                WorkspaceReadinessView(
+                    snapshot: readinessSnapshot,
+                    applicationPath:
+                        "~/Applications/NeAntik Dev.app",
+                    isRefreshing: false,
+                    notice: nil,
+                    onRecheck: {},
+                    onCopyDiagnostics: {},
+                    onCopyApplicationPath: {},
+                    onRevealApplication: {}
+                ),
+                name: "workspace-readiness-attention-\(appearanceName)",
+                size: CGSize(width: 620, height: 620),
+                colorScheme: colorScheme
+            )
+        }
+
         let temporaryRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "neantik-layout-\(UUID().uuidString)",

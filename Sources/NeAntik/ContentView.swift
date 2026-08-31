@@ -226,6 +226,11 @@ struct ContentView: View {
     @State private var bulkProxyStatusMessage: String?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
+    @State private var showingWorkspaceReadiness = false
+    @State private var isRefreshingWorkspaceReadiness = false
+    @State private var workspaceReadinessNotice: String?
+    @State private var readinessSystemInspection:
+        WorkspaceReadinessSystemInspection
     @State private var preferredProfileSelection: UUID?
     @FocusState private var profileSearchIsFocused: Bool
     @FocusState private var focusedWorkspaceSource: WorkspaceSourceFocus?
@@ -270,6 +275,11 @@ struct ContentView: View {
             initialValue: initialOperationalFilter
         )
         _profileRowDensity = State(initialValue: initialRowDensity)
+        _readinessSystemInspection = State(
+            initialValue: WorkspaceReadinessSystemInspection.checking(
+                application: WorkspaceApplicationIdentity.current()
+            )
+        )
     }
 
     private var selectedProfile: BrowserProfile? {
@@ -292,6 +302,7 @@ struct ContentView: View {
             bulkProxyImportRequest != nil ||
             showingReleaseFingerprintAudit ||
             fingerprintAuditRequest != nil ||
+            showingWorkspaceReadiness ||
             showingDeleteConfirmation ||
             folderPendingDelete != nil ||
             launchPreparationFailure != nil ||
@@ -454,6 +465,48 @@ struct ContentView: View {
         )
     }
 
+    private var workspaceReadinessSnapshot: WorkspaceReadinessSnapshot {
+        var runningCount = 0
+        var processAttentionCount = 0
+        var directRouteCount = 0
+        var proxiedRouteCount = 0
+        var proxyAttentionCount = 0
+        let activeProfiles = store.profiles.filter { !$0.isArchived }
+        for profile in activeProfiles {
+            let state = presentedProcessState(for: profile)
+            if state.isConfirmedRunning {
+                runningCount += 1
+            }
+            if state.statusTone == .attention {
+                processAttentionCount += 1
+            }
+            if profile.proxy == nil {
+                directRouteCount += 1
+            } else {
+                proxiedRouteCount += 1
+                if let health = proxyHealthCoordinator.state(for: profile),
+                   !health.hasCompleteRouteContext
+                {
+                    proxyAttentionCount += 1
+                }
+            }
+        }
+        return WorkspaceReadinessSnapshot.resolve(
+            WorkspaceReadinessInput(
+                system: readinessSystemInspection,
+                runtimeAvailability: runtimeAvailability,
+                runtimeVersion: runtime?.inspection.version,
+                runtimeArchitectures: runtime?.inspection.architectures ?? [],
+                profileCount: activeProfiles.count,
+                runningCount: runningCount,
+                processAttentionCount: processAttentionCount,
+                directRouteCount: directRouteCount,
+                proxiedRouteCount: proxiedRouteCount,
+                proxyAttentionCount: proxyAttentionCount
+            )
+        )
+    }
+
     private var workspaceAlert: WorkspaceAlertPresentation? {
         guard fingerprintEvidenceReleaseContext == nil else { return nil }
         if let localError {
@@ -596,6 +649,21 @@ struct ContentView: View {
                     targetFolderID: request.targetFolderID
                 )
             }
+        }
+        .sheet(isPresented: $showingWorkspaceReadiness) {
+            WorkspaceReadinessView(
+                snapshot: workspaceReadinessSnapshot,
+                applicationPath:
+                    readinessSystemInspection.application.displayPath,
+                isRefreshing: isRefreshingWorkspaceReadiness,
+                notice: workspaceReadinessNotice,
+                onRecheck: {
+                    Task { await refreshWorkspaceReadiness() }
+                },
+                onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
+                onCopyApplicationPath: copyWorkspaceApplicationPath,
+                onRevealApplication: revealWorkspaceApplication
+            )
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -951,6 +1019,13 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var workspaceToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button(action: presentWorkspaceReadiness) {
+                Label("Готовность", systemImage: "checkmark.shield")
+            }
+            .help("Проверить приложение, движок, данные и процессы")
+            .accessibilityLabel("Открыть центр готовности NeAntik")
+        }
         ToolbarItem(placement: .primaryAction) {
             Button {
                 showsProfileInspector.toggle()
@@ -2006,13 +2081,13 @@ struct ContentView: View {
                 }
                 Spacer(minLength: 0)
                 if !isResolvingRuntime {
-                    Button("Повторить") {
-                        Task { await resolveRuntime() }
+                    Button("Подробнее") {
+                        presentWorkspaceReadiness()
                     }
                     .controlSize(.small)
-                    .help("Повторно проверить браузерный движок")
+                    .help("Открыть центр готовности и повторить проверку")
                     .accessibilityLabel(
-                        "Повторно проверить браузерный движок"
+                        "Открыть центр готовности NeAntik"
                     )
                 }
             }
@@ -2814,6 +2889,76 @@ struct ContentView: View {
         resolvedRuntime = value
         isResolvingRuntime = false
         presentReleaseFingerprintAuditIfNeeded()
+    }
+
+    private func presentWorkspaceReadiness() {
+        guard !showingWorkspaceReadiness else { return }
+        workspaceReadinessNotice = nil
+        showingWorkspaceReadiness = true
+        Task { await refreshWorkspaceReadiness() }
+    }
+
+    private func refreshWorkspaceReadiness() async {
+        guard !isRefreshingWorkspaceReadiness else { return }
+        isRefreshingWorkspaceReadiness = true
+        workspaceReadinessNotice = nil
+        readinessSystemInspection = .checking(
+            application: WorkspaceApplicationIdentity.current()
+        )
+        let application = readinessSystemInspection.application
+        let dataRootURL = store.paths.rootDirectory
+        let inspectionTask = Task.detached(priority: .userInitiated) {
+            WorkspaceReadinessSystemInspector.inspect(
+                application: application,
+                dataRootURL: dataRootURL
+            )
+        }
+        await resolveRuntime()
+        let inspection = await inspectionTask.value
+        guard !Task.isCancelled else {
+            isRefreshingWorkspaceReadiness = false
+            return
+        }
+        readinessSystemInspection = inspection
+        processes.reconcile(profiles: store.profiles)
+        isRefreshingWorkspaceReadiness = false
+        announceWorkspaceStatus(workspaceReadinessSnapshot.title)
+    }
+
+    private func copyWorkspaceReadinessDiagnostics() {
+        writeWorkspaceReadinessClipboard(
+            workspaceReadinessSnapshot.diagnosticText,
+            notice: "Диагностика скопирована без секретов"
+        )
+    }
+
+    private func copyWorkspaceApplicationPath() {
+        writeWorkspaceReadinessClipboard(
+            readinessSystemInspection.application.bundlePath,
+            notice: "Путь к NeAntik.app скопирован"
+        )
+    }
+
+    private func writeWorkspaceReadinessClipboard(
+        _ value: String,
+        notice: String
+    ) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        guard pasteboard.setString(value, forType: .string) else {
+            workspaceReadinessNotice = "Не удалось скопировать"
+            return
+        }
+        workspaceReadinessNotice = notice
+    }
+
+    private func revealWorkspaceApplication() {
+        NSWorkspace.shared.activateFileViewerSelecting([
+            URL(
+                fileURLWithPath:
+                    readinessSystemInspection.application.bundlePath
+            )
+        ])
     }
 
     private func announceRuntimeAvailability(

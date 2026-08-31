@@ -221,6 +221,10 @@ fi
   --strict \
   "$DEVELOPMENT_APP"
 
+python3 "$PROJECT_DIR/scripts/audit-app-size.py" \
+  --check \
+  "$DEVELOPMENT_APP"
+
 echo
 echo "PASS: NeAntik Dev.app готов за ${BUILD_SECONDS} с."
 echo "Приложение: $DEVELOPMENT_APP"

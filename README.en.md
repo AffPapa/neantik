@@ -26,6 +26,11 @@ Current published GitHub public-alpha release:
 Source candidate `0.3.22 (25)` is not a public binary release until its own
 signed and notarized DMG/ZIP assets appear in GitHub Releases.
 
+The source preview also includes a local Readiness Center. It identifies the
+exact `NeAntik.app` users should select in macOS permissions, rechecks the
+runtime and shared data root without restarting, and copies only bounded,
+redacted diagnostics. Public `0.3.21 (24)` remains unchanged.
+
 Product website: <https://affpapa.org/neantik>.
 
 The capabilities below are included in the published, signed, and notarized

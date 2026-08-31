@@ -144,6 +144,16 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         )
         self.assertIn('cmp -s "$expected" "$packaged"', verifier)
 
+    def test_integrated_release_enforces_component_size_budgets(self) -> None:
+        text = INTEGRATED_VERIFIER.read_text(encoding="utf-8")
+
+        self.assertIn("scripts/audit-app-size.py", text)
+        self.assertIn("--check", text)
+        self.assertLess(
+            text.index("scripts/audit-app-size.py"),
+            text.index('RUNTIME_PLIST="$RUNTIME_APP/Contents/Info.plist"'),
+        )
+
     def test_enrollment_helper_is_exact_private_and_bounded(self) -> None:
         text = ENROLL.read_text(encoding="utf-8")
 

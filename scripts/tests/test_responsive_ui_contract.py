@@ -15,6 +15,12 @@ PROFILE_ROW_PRESENTATION = (
     ROOT / "Sources" / "NeAntik" / "ProfileRowPresentation.swift"
 )
 WORKSPACE_DOMAIN = ROOT / "Sources" / "NeAntik" / "WorkspaceDomain.swift"
+WORKSPACE_READINESS = (
+    ROOT / "Sources" / "NeAntik" / "WorkspaceReadiness.swift"
+)
+WORKSPACE_READINESS_VIEW = (
+    ROOT / "Sources" / "NeAntik" / "WorkspaceReadinessView.swift"
+)
 PROFILE_ENVIRONMENT = (
     ROOT / "Sources" / "NeAntik" / "ProfileEnvironmentView.swift"
 )
@@ -109,6 +115,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         toolbar = text[toolbar_start:toolbar_end]
 
         self.assertIn("ToolbarItem(placement: .primaryAction)", toolbar)
+        self.assertIn('Label("Готовность", systemImage: "checkmark.shield")', toolbar)
+        self.assertIn("presentWorkspaceReadiness", toolbar)
         self.assertIn("showsProfileInspector.toggle()", toolbar)
         self.assertIn('systemImage: "sidebar.right"', toolbar)
         self.assertIn('.keyboardShortcut("i", modifiers: [.command])', toolbar)
@@ -223,6 +231,34 @@ class ResponsiveUIContractTests(unittest.TestCase):
             '"системного VPN. Для профиля не настроен отдельный прокси."',
             editor,
         )
+
+    def test_readiness_center_is_local_actionable_and_redacted(self) -> None:
+        content = CONTENT.read_text(encoding="utf-8")
+        readiness = WORKSPACE_READINESS.read_text(encoding="utf-8")
+        view = WORKSPACE_READINESS_VIEW.read_text(encoding="utf-8")
+
+        self.assertIn("WorkspaceReadinessSystemInspector.inspect", content)
+        self.assertIn("Task.detached(priority: .userInitiated)", content)
+        self.assertIn("processes.reconcile(profiles: store.profiles)", content)
+        self.assertIn('"Проверить снова"', view)
+        self.assertIn('"Скопировать путь"', view)
+        self.assertIn('"Показать в Finder"', view)
+        self.assertIn(
+            "Не добавляй вложенный NeAntik Browser.app",
+            view,
+        )
+        self.assertIn(
+            "Диагностика не содержит пароли, адреса прокси",
+            view,
+        )
+        self.assertNotIn("URLSession", readiness)
+        self.assertNotIn("NWConnection", readiness)
+        diagnostic_start = readiness.index(
+            "private static func diagnosticText("
+        )
+        diagnostic = readiness[diagnostic_start:]
+        self.assertNotIn("bundlePath", diagnostic)
+        self.assertNotIn("message", diagnostic)
 
     def test_app_is_single_window_and_profile_commands_are_focus_aware(
         self,

@@ -62,6 +62,7 @@ case "$SUITE" in
   WorkspaceDomainTests|\
   WorkspaceLayoutTests|\
   WorkspaceQueryStateTests|\
+  WorkspaceReadinessTests|\
   RuntimePreferenceStoreTests|\
   TelemetryTests|\
   UpdateManifestTests)
