@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 import subprocess
 import unittest
 
@@ -27,9 +26,6 @@ OPEN_SOURCE_VERIFIER = (
     Path(__file__).resolve().parents[1]
     / "verify-open-source-tree.py"
 )
-SWIFT_TESTS = Path(__file__).resolve().parents[2] / "Tests" / "NeAntikTests"
-
-
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
     def test_uses_isolated_writable_swift_caches(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
@@ -64,61 +60,16 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("UpdateManifestTests)", text)
         self.assertIn('--filter "$SUITE"', text)
 
-    def test_ci_suite_runner_includes_authenticated_evidence_tests(
-        self,
-    ) -> None:
+    def test_ci_runs_complete_swift_suite(self) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
 
-        self.assertIn("- FingerprintEvidenceEnvelopeTests", workflow)
-        self.assertIn("FingerprintEvidenceEnvelopeTests|\\", runner)
         self.assertIn(
-            "- SecureEnclaveFingerprintEvidenceSignerTests",
+            "run: ./scripts/verify-native-swift-tests.sh",
             workflow,
         )
-        self.assertIn(
-            "SecureEnclaveFingerprintEvidenceSignerTests|\\",
-            runner,
-        )
-
-    def test_ci_matrix_suites_are_allowed_by_runner(self) -> None:
-        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-        matrix_suites = re.findall(
-            r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
-            workflow,
-            flags=re.MULTILINE,
-        )
-
-        self.assertGreater(len(matrix_suites), 0)
-        for suite in matrix_suites:
-            self.assertIn(suite, runner)
-
-    def test_ci_runs_every_non_live_swift_suite_and_excludes_live_suites(
-        self,
-    ) -> None:
-        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-        matrix_suites = set(
-            re.findall(
-                r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
-                workflow,
-                flags=re.MULTILINE,
-            )
-        )
-        discovered_suites = {
-            path.stem
-            for path in SWIFT_TESTS.glob("*Tests.swift")
-        }
-        live_suites = {
-            suite for suite in discovered_suites if suite.startswith("Live")
-        }
-        non_live_suites = discovered_suites - live_suites
-
-        self.assertEqual(matrix_suites, non_live_suites)
-        self.assertTrue(live_suites.isdisjoint(matrix_suites))
-        for suite in non_live_suites:
-            self.assertIn(suite, runner)
+        self.assertNotIn("matrix:", workflow)
+        self.assertNotIn("verify-native-swift-suite.sh", workflow)
+        self.assertNotIn("--filter", SCRIPT.read_text(encoding="utf-8"))
 
     def test_suite_runner_requires_a_positive_test_count(self) -> None:
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")
