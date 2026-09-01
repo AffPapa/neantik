@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## Direct 0.3.23 (26) — September 1, 2026
+
 - GitHub README and project documentation now identify the actual immutable
   `0.3.22 (25)` release instead of continuing to label it a source candidate.
   A current code-owner map and a dated comparison of twenty profile browsers

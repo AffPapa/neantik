@@ -23,6 +23,12 @@ Current published GitHub public-alpha release:
 - DMG: `NeAntik-0.3.22-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
+The current `0.3.23 (26)` source candidate adds a dedicated note editor,
+semantically honest notices, clearer list actions, and compact permission
+guidance. It becomes a downloadable release only after a separate Developer
+ID, notarization, stapling, Gatekeeper, and immutable GitHub gate. Until then,
+download the published `0.3.22 (25)` release above.
+
 Published `0.3.22 (25)` includes a local Readiness Center. It identifies the
 exact `NeAntik.app` users should select in macOS permissions, rechecks the
 runtime and shared data root without restarting, and copies only bounded,
