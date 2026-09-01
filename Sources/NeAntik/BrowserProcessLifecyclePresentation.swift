@@ -28,7 +28,42 @@ struct BrowserProcessLifecycleItem: Identifiable, Equatable, Sendable {
     let canForceStop: Bool
 }
 
+struct BrowserProcessStopAllPresentation: Equatable, Sendable {
+    let eligibleProfileIDs: [UUID]
+    let excludedCount: Int
+
+    var eligibleCount: Int { eligibleProfileIDs.count }
+    var shouldOfferAction: Bool { eligibleCount > 1 }
+
+    var confirmationMessage: String {
+        var message =
+            "NeAntik отправит обычную команду завершения " +
+            "\(eligibleCount) профилям. Принудительная остановка не используется."
+        if excludedCount > 0 {
+            message +=
+                " Ещё \(excludedCount) профилей уже завершились, завершаются или требуют отдельного действия."
+        }
+        return message
+    }
+
+    static func resolve(
+        items: [BrowserProcessLifecycleItem]
+    ) -> Self {
+        let eligible = items.filter(\.canStop).map(\.id)
+        return Self(
+            eligibleProfileIDs: eligible,
+            excludedCount: items.count - eligible.count
+        )
+    }
+}
+
 enum BrowserProcessLifecycleProjection {
+    static func requiresPeriodicRefresh(
+        for items: [BrowserProcessLifecycleItem]
+    ) -> Bool {
+        !items.isEmpty
+    }
+
     static func resolve(
         profiles: [BrowserProfile],
         processState: (UUID) -> BrowserProfileProcessState,

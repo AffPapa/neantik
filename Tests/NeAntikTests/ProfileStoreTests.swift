@@ -9,7 +9,8 @@ struct ProfileStoreTests {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
 
         #expect(throws: NeAntikError.self) {
             try store.upsert(BrowserProfile(name: "строка\nвторая"))
@@ -61,6 +62,33 @@ struct ProfileStoreTests {
             (directoryAttributes[.posixPermissions] as? NSNumber)?.intValue ==
                     0o700
         )
+    }
+
+    @Test
+    func markingLaunchDoesNotRewriteLastUserModificationDate() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let editedAt = Date(timeIntervalSince1970: 1_000)
+        let profile = try store.upsert(
+            BrowserProfile(
+                name: "Recency",
+                createdAt: editedAt,
+                updatedAt: editedAt
+            )
+        )
+        let reloaded = ProfileStore(paths: paths)
+        let beforeLaunch = try #require(
+            reloaded.profile(withID: profile.id)
+        )
+
+        #expect(reloaded.markLaunched(profile.id))
+        let launched = try #require(reloaded.profile(withID: profile.id))
+        #expect(launched.lastLaunchedAt != nil)
+        #expect(launched.updatedAt == beforeLaunch.updatedAt)
+        #expect(launched.revision == beforeLaunch.revision + 1)
     }
 
     @Test

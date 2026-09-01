@@ -136,6 +136,7 @@ struct ProfileEditorView: View {
   let keychain: KeychainStore
   let folders: [ProfileFolder]
   let suggestedTags: [String]
+  let proxyReuseInputs: [ProxyReuseInput]
   let onSave: (
     BrowserProfile,
     ProxyPasswordUpdate,
@@ -162,7 +163,8 @@ struct ProfileEditorView: View {
   @State private var proxyPort: String
   @State private var proxyUsername: String
   @State private var proxyPassword: String
-  @State private var showsProxyPassword = false
+  @State private var proxyPasswordRevealLease = SensitiveRevealLeaseState()
+  @State private var proxyPasswordRevealTask: Task<Void, Never>?
   @State private var proxyImportText = ""
   @State private var proxyImportOrder: ProxyImportOrder = .automatic
   @State private var proxyImportNotice: UserNotice?
@@ -190,6 +192,7 @@ struct ProfileEditorView: View {
     folders: [ProfileFolder],
     initialFolderID: UUID?,
     suggestedTags: [String],
+    proxyReuseInputs: [ProxyReuseInput] = [],
     appliesOnNextLaunch: Bool = false,
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
@@ -203,6 +206,7 @@ struct ProfileEditorView: View {
     self.keychain = keychain
     self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
     self.suggestedTags = suggestedTags
+    self.proxyReuseInputs = proxyReuseInputs
     self.appliesOnNextLaunch = appliesOnNextLaunch
     self.onSave = onSave
     self.initialFocus = initialFocus
@@ -412,6 +416,18 @@ struct ProfileEditorView: View {
             }
             validationLabel(for: .proxyHost)
             validationLabel(for: .proxyPort)
+            if let warning = draftProxyReuseAssessment.warningText {
+              Label(
+                title: { Text(warning).foregroundStyle(.primary) },
+                icon: {
+                  Image(systemName: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                }
+              )
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHint("Предупреждение не блокирует сохранение")
+            }
             if proxyKind == .socks5 {
               Text(
                 "Chromium поддерживает SOCKS5 только без логина и пароля. DNS для сайтов будет идти через прокси."
@@ -425,7 +441,7 @@ struct ProfileEditorView: View {
               )
               HStack(spacing: 8) {
                 Group {
-                  if showsProxyPassword {
+                  if proxyPasswordRevealLease.isRevealed {
                     TextField(
                       "Пароль (хранится в Связке ключей)",
                       text: $proxyPassword
@@ -441,18 +457,23 @@ struct ProfileEditorView: View {
                 .id(ProfileEditorField.proxyPassword)
 
                 Button {
-                  showsProxyPassword.toggle()
+                  toggleProxyPasswordReveal()
                 } label: {
                   Image(
-                    systemName: showsProxyPassword ? "eye.slash" : "eye"
+                    systemName: proxyPasswordRevealLease.isRevealed
+                      ? "eye.slash"
+                      : "eye"
                   )
                 }
                 .buttonStyle(.borderless)
                 .help(
-                  showsProxyPassword ? "Скрыть пароль" : "Показать пароль"
+                  proxyPasswordRevealLease.isRevealed
+                    ? "Скрыть пароль"
+                    : "Показать пароль"
                 )
                 .accessibilityLabel(
-                  showsProxyPassword ? "Скрыть пароль прокси" :
+                  proxyPasswordRevealLease.isRevealed
+                    ? "Скрыть пароль прокси" :
                     "Показать пароль прокси"
                 )
               }
@@ -644,13 +665,27 @@ struct ProfileEditorView: View {
     }
     .onDisappear {
       proxyTestTask?.cancel()
+      hideProxyPassword()
+    }
+    .onReceive(
+      NotificationCenter.default.publisher(
+        for: NSApplication.willResignActiveNotification
+      )
+    ) { _ in
+      hideProxyPassword()
     }
     .onChange(of: usesProxy) { _, _ in
       hasUnsavedChanges = true
+      if !usesProxy {
+        hideProxyPassword()
+      }
       proxyInputDidChange()
     }
     .onChange(of: proxyKind) { _, _ in
       hasUnsavedChanges = true
+      if proxyKind == .socks5 {
+        hideProxyPassword()
+      }
       proxyInputDidChange()
     }
     .onChange(of: proxyHost) { _, _ in
@@ -670,7 +705,13 @@ struct ProfileEditorView: View {
     .onChange(of: proxyPassword) { _, _ in
       hasUnsavedChanges = true
       clearValidation(for: .proxyPassword)
+      refreshProxyPasswordRevealLease()
       proxyInputDidChange()
+    }
+    .onChange(of: draftProxyReuseAssessment.warningText) { _, warning in
+      if let warning {
+        announce(warning)
+      }
     }
     .onChange(of: proxyImportOrder) { _, _ in
       hasUnsavedChanges = true
@@ -699,6 +740,42 @@ struct ProfileEditorView: View {
     } else {
       dismiss()
     }
+  }
+
+  private func toggleProxyPasswordReveal() {
+    if proxyPasswordRevealLease.isRevealed {
+      hideProxyPassword()
+      return
+    }
+    let generation = proxyPasswordRevealLease.reveal()
+    scheduleProxyPasswordAutoHide(generation: generation)
+  }
+
+  private func refreshProxyPasswordRevealLease() {
+    guard let generation = proxyPasswordRevealLease.refreshIfRevealed()
+    else {
+      return
+    }
+    scheduleProxyPasswordAutoHide(generation: generation)
+  }
+
+  private func scheduleProxyPasswordAutoHide(generation: UInt64) {
+    proxyPasswordRevealTask?.cancel()
+    proxyPasswordRevealTask = Task { @MainActor in
+      do {
+        try await Task.sleep(for: SensitiveRevealLeaseState.defaultLifetime)
+      } catch {
+        return
+      }
+      _ = proxyPasswordRevealLease.expire(generation: generation)
+      proxyPasswordRevealTask = nil
+    }
+  }
+
+  private func hideProxyPassword() {
+    proxyPasswordRevealTask?.cancel()
+    proxyPasswordRevealTask = nil
+    proxyPasswordRevealLease.hide()
   }
 
   private var notePresentation: ProfileNotePresentation {
@@ -1086,6 +1163,19 @@ struct ProfileEditorView: View {
       throw NeAntikError.invalidProxy
     }
     return value
+  }
+
+  private var draftProxyReuseAssessment: ProxyReuseAssessment {
+    let draft = ProxyReuseInput(
+      profileID: draftProfileID,
+      kind: usesProxy ? proxyKind : nil,
+      host: usesProxy ? proxyHost : nil,
+      port: usesProxy ? Int(proxyPort) : nil
+    )
+    return .assess(
+      selectedProfileID: draftProfileID,
+      among: proxyReuseInputs + [draft]
+    )
   }
 
   private func save() {

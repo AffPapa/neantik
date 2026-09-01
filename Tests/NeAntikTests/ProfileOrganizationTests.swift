@@ -134,7 +134,7 @@ struct ProfileOrganizationTests {
         #expect(copy.identity.runtimeSeed != original.identity.runtimeSeed)
         #expect(copy.name.count <= BrowserProfile.maximumNameLength)
         #expect(copy.name.hasSuffix(" — копия"))
-        #expect(copy.proxy == original.proxy)
+        #expect(copy.proxy == nil)
         #expect(copy.tags == original.tags)
         #expect(copy.note.isEmpty)
         #expect(!copy.isPinned)

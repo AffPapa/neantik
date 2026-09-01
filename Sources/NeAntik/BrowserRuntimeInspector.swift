@@ -1,6 +1,15 @@
 import CryptoKit
+import Darwin
 import Foundation
 import Security
+
+struct BrowserRuntimeFileIdentity: Equatable, Hashable, Sendable {
+    let device: UInt64
+    let inode: UInt64
+    let size: UInt64
+    let modificationSeconds: Int64
+    let modificationNanoseconds: Int64
+}
 
 struct BrowserRuntimeInspection: Equatable, Hashable, Sendable {
     let version: String?
@@ -8,19 +17,22 @@ struct BrowserRuntimeInspection: Equatable, Hashable, Sendable {
     let codeSignatureValid: Bool?
     let executableSHA256: String?
     let frameworkSHA256: String?
+    let executableIdentity: BrowserRuntimeFileIdentity?
 
     init(
         version: String?,
         architectures: [String],
         codeSignatureValid: Bool?,
         executableSHA256: String? = nil,
-        frameworkSHA256: String? = nil
+        frameworkSHA256: String? = nil,
+        executableIdentity: BrowserRuntimeFileIdentity? = nil
     ) {
         self.version = version
         self.architectures = architectures
         self.codeSignatureValid = codeSignatureValid
         self.executableSHA256 = executableSHA256
         self.frameworkSHA256 = frameworkSHA256
+        self.executableIdentity = executableIdentity
     }
 
     var supportsAppleSilicon: Bool {
@@ -41,7 +53,8 @@ enum BrowserRuntimeInspector {
                 for: executableURL
             ),
             executableSHA256: sha256(of: executableURL),
-            frameworkSHA256: frameworkURL.flatMap(sha256)
+            frameworkSHA256: frameworkURL.flatMap(sha256),
+            executableIdentity: fileIdentity(at: executableURL)
         )
     }
 
@@ -53,7 +66,32 @@ enum BrowserRuntimeInspector {
             architectures: machOArchitectures(at: executableURL),
             codeSignatureValid: codeSignatureValidity(
                 for: executableURL
-            )
+            ),
+            executableIdentity: fileIdentity(at: executableURL)
+        )
+    }
+
+    static func inspectForLaunch(
+        executableURL: URL
+    ) -> BrowserRuntimeInspection {
+        inspectForStartup(executableURL: executableURL)
+    }
+
+    private static func fileIdentity(
+        at url: URL
+    ) -> BrowserRuntimeFileIdentity? {
+        var value = stat()
+        guard lstat(url.path, &value) == 0,
+              (value.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG)
+        else {
+            return nil
+        }
+        return BrowserRuntimeFileIdentity(
+            device: UInt64(value.st_dev),
+            inode: UInt64(value.st_ino),
+            size: UInt64(max(0, value.st_size)),
+            modificationSeconds: Int64(value.st_mtimespec.tv_sec),
+            modificationNanoseconds: Int64(value.st_mtimespec.tv_nsec)
         )
     }
 

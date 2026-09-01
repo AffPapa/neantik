@@ -21,6 +21,7 @@ case "$SUITE" in
   BrowserProcessLifecyclePresentationTests|\
   BrowserProcessManagerTests|\
   BrowserRuntimeInspectorTests|\
+  BrowserRuntimeLaunchTrustTests|\
   BrowserRuntimePreflightTests|\
   BulkProxyActionProjectionTests|\
   BulkProxyImportTests|\
@@ -36,6 +37,7 @@ case "$SUITE" in
   FingerprintEvidenceReleaseContextTests|\
   FirstProfileBootstrapTests|\
   SecureEnclaveFingerprintEvidenceSignerTests|\
+  SensitiveRevealLeaseTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
   ManagerSessionEvidenceTests|\
@@ -49,6 +51,7 @@ case "$SUITE" in
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
   ProfileEditorValidationTests|\
+  ProfileDuplicationTests|\
   ProfileEnvironmentInspectorTests|\
   ProfileEnvironmentPresentationTests|\
   ProfileEnvironmentAccessibilityTests|\
@@ -65,6 +68,7 @@ case "$SUITE" in
   ProfileStorageMeasurementTests|\
   ProxyHealthTests|\
   ProxyImportParserTests|\
+  ProxyReuseAssessmentTests|\
   ProxyTestOperationRegistryTests|\
   ProxyTesterTests|\
   ResponsiveLayoutRenderTests|\

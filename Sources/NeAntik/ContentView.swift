@@ -34,6 +34,8 @@ struct ContentView: View {
     @State private var workspaceBatchUndo: WorkspaceBatchUndo?
     @State private var profileBatchTagRequest: ProfileBatchTagRequest?
     @State private var editorRequest: EditorRequest?
+    @State private var profileDuplicationRequest:
+        ProfileDuplicationRequest?
     @State private var profileNoteRequest: ProfileNoteRequest?
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
@@ -148,6 +150,7 @@ struct ContentView: View {
 
     private var isWorkspaceModalPresented: Bool {
         editorRequest != nil ||
+            profileDuplicationRequest != nil ||
             profileNoteRequest != nil ||
             folderNameRequest != nil ||
             profileFolderPickerRequest != nil ||
@@ -452,6 +455,19 @@ struct ContentView: View {
         workspaceBase
         .sheet(item: $editorRequest) { request in
             profileEditorSheet(for: request)
+        }
+        .sheet(item: $profileDuplicationRequest) { request in
+            ProfileDuplicationSheet(
+                source: request.source,
+                folders: store.organization.folders,
+                initialOptions: request.initialOptions
+            ) { options in
+                try saveDuplicate(
+                    sourceProfileID: request.source.id,
+                    expectedSourceRevision: request.source.revision,
+                    options: options
+                )
+            }
         }
         .sheet(item: $profileNoteRequest) { request in
             ProfileNoteEditorView(
@@ -823,6 +839,8 @@ struct ContentView: View {
                 for: NSApplication.willResignActiveNotification
             )
         ) { _ in
+            clearClipboardIfLeaseIsActive()
+            cancelClipboardTasks()
             processes.suspendPassiveObservations()
         }
         .onReceive(
@@ -890,6 +908,10 @@ struct ContentView: View {
             folders: store.organization.folders,
             initialFolderID: initialFolderID,
             suggestedTags: suggestedTags,
+            proxyReuseInputs: ProxyReuseInput.profiles(
+                store.profiles,
+                excluding: request.profile?.id
+            ),
             appliesOnNextLaunch:
                 request.openedProcessState?.isConfirmedRunning == true
         ) { profile, passwordUpdate, folderID in
@@ -1330,31 +1352,31 @@ struct ContentView: View {
         }
     }
 
-    private func duplicate(_ profile: BrowserProfile) {
-        do {
-            let copy = profile.duplicated()
-            let password = try keychain.proxyPassword(
-                profileID: profile.id
-            )
-            let saved = try store.upsert(
-                copy,
-                toFolderID: store.folderID(forProfileID: profile.id)
-            ) { saved in
-                if let password, !password.isEmpty {
-                    try keychain.saveProxyPassword(
-                        password,
-                        profileID: saved.id
-                    )
-                }
-            }
-            revealSavedProfile(saved)
-            bulkProxyStatusMessage =
-                "Создан похожий профиль «\(saved.name)»: отдельная сессия и новая цифровая идентичность"
-            if let bulkProxyStatusMessage {
-                announceWorkspaceStatus(bulkProxyStatusMessage)
-            }
-        } catch {
-            localError = error.localizedDescription
+    private func beginDuplicating(_ profile: BrowserProfile) {
+        profileDuplicationRequest = ProfileDuplicationRequest(
+            source: profile,
+            existingNames: store.profiles.map(\.name),
+            destinationFolderID: store.folderID(forProfileID: profile.id)
+        )
+    }
+
+    private func saveDuplicate(
+        sourceProfileID: UUID,
+        expectedSourceRevision: UInt64,
+        options: ProfileDuplicationOptions
+    ) throws {
+        let saved = try ProfileDuplicator.saveCopy(
+            sourceProfileID: sourceProfileID,
+            expectedSourceRevision: expectedSourceRevision,
+            options: options,
+            store: store,
+            keychain: keychain
+        )
+        revealSavedProfile(saved)
+        bulkProxyStatusMessage =
+            "Создан профиль «\(saved.name)»: новые BrowserData и цифровая идентичность"
+        if let bulkProxyStatusMessage {
+            announceWorkspaceStatus(bulkProxyStatusMessage)
         }
     }
 
@@ -1876,31 +1898,24 @@ struct ContentView: View {
     }
 
     private var runningProfilesStrip: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            RunningProfilesStrip(
-                items: BrowserProcessLifecycleProjection.resolve(
-                    profiles: store.profiles,
-                    processState: { processes.processState(for: $0) },
-                    stopPhase: { processes.stopPhase(for: $0) },
-                    startedAt: { processes.startedAt(for: $0) },
-                    now: context.date
-                ),
-                onSelect: { profileID in
-                    selection = profileID
-                    preferredProfileSelection = profileID
-                    showsProfileInspector = true
-                },
-                onFocus: { profileID in
-                    _ = processes.focus(profileID: profileID)
-                },
-                onStop: { profileID in
-                    processes.stop(profileID: profileID)
-                },
-                onForceStop: { profileID in
-                    forceStopRequest = store.profile(withID: profileID)
-                }
-            )
-        }
+        RunningProfilesTimelineStrip(
+            itemProvider: { now in
+                processes.lifecycleItems(profiles: store.profiles, now: now)
+            },
+            onSelect: { profileID in
+                selection = profileID
+                preferredProfileSelection = profileID
+                showsProfileInspector = true
+            },
+            onFocus: { _ = processes.focus(profileID: $0) },
+            onStop: { processes.stop(profileID: $0) },
+            onForceStop: {
+                forceStopRequest = store.profile(withID: $0)
+            },
+            onRequestStopAll: {
+                processes.requestOrdinaryStop(profileIDs: $0)
+            }
+        )
     }
 
     private func profileListHeader(
@@ -2730,7 +2745,7 @@ struct ContentView: View {
             edit: { beginEditing(profile) },
             editNote: { beginEditingNote(profile) },
             togglePinned: { togglePinned(profile) },
-            duplicate: { duplicate(profile) },
+            duplicate: { beginDuplicating(profile) },
             moveToFolder: { moveProfile(profile, toFolderID: $0) },
             chooseFolder: {
                 profileFolderPickerRequest = ProfileFolderPickerRequest(
@@ -2754,6 +2769,10 @@ struct ContentView: View {
                     store.folder(withID: $0)?.name
                 },
                 environmentSnapshot: selectedEnvironmentSnapshot,
+                proxyReuseAssessment: ProxyReuseAssessment.assess(
+                    selectedProfileID: profile.id,
+                    profiles: store.profiles
+                ),
                 isTestingProxy: isProxyTestInFlight(profileID: profile.id),
                 canCancelProxyTest:
                     proxyTestingProfileIDs.contains(profile.id) ||
@@ -2929,13 +2948,9 @@ struct ContentView: View {
         guard let runtime else {
             throw NeAntikError.browserNotFound
         }
-        let preflight = BrowserRuntimePreflightValidator.validate(runtime)
-        guard preflight.isReady else {
-            throw NeAntikError.runtimeValidationFailed(
-                preflight.errors.joined(separator: " ")
-            )
-        }
-        return runtime
+        return try BrowserRuntimeLaunchTrustPolicy.validatedRuntime(
+            resolved: runtime
+        )
     }
 
     private func launchPreparedProfile(
@@ -2943,10 +2958,12 @@ struct ContentView: View {
         runtime: BrowserRuntime,
         preparationReceipt: BrowserLaunchPreparationReceipt?
     ) throws {
-        try validateLaunchPreflight(profile, runtime: runtime)
+        let launchRuntime = try BrowserRuntimeLaunchTrustPolicy
+            .validatedRuntime(resolved: runtime)
+        try validateLaunchPreflight(profile, runtime: launchRuntime)
         try processes.launch(
             profile: profile,
-            runtime: runtime,
+            runtime: launchRuntime,
             preparationReceipt: preparationReceipt
         )
         guard store.markLaunched(profile.id) else {

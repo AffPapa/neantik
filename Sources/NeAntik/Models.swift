@@ -822,16 +822,22 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         return nil
     }
 
-    func duplicated(at date: Date = Date()) -> BrowserProfile {
-        let suffix = " — копия"
+    func duplicated(
+        named requestedName: String? = nil,
+        copyingProxy: Bool = false,
+        at date: Date = Date()
+    ) -> BrowserProfile {
+        let name = requestedName ??
+            Self.nameByAppendingSuffix(" — копия", to: self.name) ??
+            "Копия"
         return BrowserProfile(
-            name: Self.nameByAppendingSuffix(suffix, to: name) ?? "Копия",
+            name: name,
             colorHex: colorHex,
             symbolName: symbolName,
             tags: tags,
             note: "",
             startURL: startURL,
-            proxy: proxy,
+            proxy: copyingProxy ? proxy : nil,
             identity: BrowserIdentity(),
             createdAt: date,
             updatedAt: date

@@ -8,6 +8,7 @@ import Foundation
 enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
     case pinnedThenName
     case recentLaunch
+    case recentlyModified
     case newest
 
     var id: Self { self }
@@ -18,6 +19,8 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
             "Закреплённые и название"
         case .recentLaunch:
             "Недавно запускались"
+        case .recentlyModified:
+            "Недавно изменённые"
         case .newest:
             "Сначала новые"
         }
@@ -46,6 +49,12 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
             default:
                 return Self.nameCreationAndIDOrder(lhs, rhs)
             }
+
+        case .recentlyModified:
+            if lhs.updatedAt != rhs.updatedAt {
+                return lhs.updatedAt > rhs.updatedAt
+            }
+            return Self.nameCreationAndIDOrder(lhs, rhs)
 
         case .newest:
             if lhs.createdAt != rhs.createdAt {

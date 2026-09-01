@@ -37,14 +37,21 @@ enum ProfileStorageMeasurer {
     static let maximumEntries = 500_000
 
     static func measure(at directory: URL) async throws -> ProfileStorageUsage {
-        try await Task.detached(priority: .utility) {
+        try Task.checkCancellation()
+        let worker = Task.detached(priority: .utility) {
             try measureSynchronously(at: directory)
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: {
+            worker.cancel()
+        }
     }
 
     static func measureSynchronously(
         at directory: URL
     ) throws -> ProfileStorageUsage {
+        try Task.checkCancellation()
         var rootMetadata = stat()
         if lstat(directory.path, &rootMetadata) != 0 {
             if errno == ENOENT {

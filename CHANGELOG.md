@@ -4,6 +4,20 @@
 
 ## Direct 0.3.24 (27) — September 1, 2026
 
+- A 29-product research pass records exactly one hundred bounded candidates
+  and implements twenty-five dependency-free, asset-free operator safeguards.
+  Password reveal is now a short focus-bound lease, proxy stdin and storage
+  measurement are cancellable, and the running-session timeline no longer
+  exists while idle.
+- Profile duplication is now an explicit reviewed operation: Direct is the
+  default, proxy and Keychain password require separate consent, the target
+  folder is visible, and every copy gets fresh UUID, BrowserData and browser
+  identity. Profile metadata adds recent-change ordering and a credential-free
+  warning when a normalized proxy endpoint is shared.
+- A confirmed Stop All action sends only ordinary stop requests and revalidates
+  each process before acting; force stop remains per-profile. The embedded
+  runtime is also re-inspected immediately before every launch and fails closed
+  if trust, architecture, version or executable identity drifted.
 - Note and bulk-proxy drafts now confirm destructive Cancel/Escape/interactive
   dismissal. Profile create/edit mode is explicit, compact bulk actions no
   longer hide horizontally, structured-search examples are visible, shortcut

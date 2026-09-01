@@ -225,12 +225,13 @@ struct ProxyTester: Sendable {
         let completion = ProcessOutputCompletion()
         let input = Pipe()
         let output = Pipe()
+        let inputWriter = CancellableProcessInputWriter(
+            handle: input.fileHandleForWriting,
+            data: standardInput
+        )
         runner.process.standardInput = input
         runner.process.standardOutput = output
         runner.process.standardError = FileHandle.nullDevice
-
-        input.fileHandleForWriting.write(standardInput)
-        try input.fileHandleForWriting.close()
 
         return try await withTaskCancellationHandler {
             try Task.checkCancellation()
@@ -244,6 +245,12 @@ struct ProxyTester: Sendable {
                 }
                 do {
                     try runner.start()
+                    inputWriter.start { error in
+                        if error != nil {
+                            runner.cancel()
+                        }
+                        completion.writerFinished(error)
+                    }
                     DispatchQueue.global(qos: .utility).async {
                         do {
                             while let chunk = try output
@@ -262,11 +269,13 @@ struct ProxyTester: Sendable {
                         }
                     }
                 } catch {
+                    inputWriter.cancel()
                     completion.fail(error)
                 }
             }
         } onCancel: {
             completion.markCancelled()
+            inputWriter.cancel()
             runner.cancel()
         }
     }
@@ -434,6 +443,8 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         CheckedContinuation<ProxyProcessResult, Error>?
     private var terminationStatus: Int32?
     private var readerSnapshot: (data: Data, exceeded: Bool)?
+    private var writerDidFinish = false
+    private var writerError: Error?
     private var cancelled = false
 
     func install(
@@ -462,6 +473,15 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         completion?()
     }
 
+    func writerFinished(_ error: Error?) {
+        lock.lock()
+        writerDidFinish = true
+        writerError = error
+        let completion = takeCompletionIfReady()
+        lock.unlock()
+        completion?()
+    }
+
     func markCancelled() {
         lock.lock()
         cancelled = true
@@ -481,7 +501,8 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
     private func takeCompletionIfReady() -> (() -> Void)? {
         guard let continuation,
               let terminationStatus,
-              let readerSnapshot
+              let readerSnapshot,
+              writerDidFinish
         else {
             return nil
         }
@@ -489,6 +510,11 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         if cancelled {
             return {
                 continuation.resume(throwing: CancellationError())
+            }
+        }
+        if let writerError {
+            return {
+                continuation.resume(throwing: writerError)
             }
         }
         let result = ProxyProcessResult(
@@ -499,6 +525,134 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         return {
             continuation.resume(returning: result)
         }
+    }
+}
+
+private final class CancellableProcessInputWriter: @unchecked Sendable {
+    private static let writeChunkBytes = 16_384
+    private static let retryDelayMicroseconds: useconds_t = 5_000
+
+    private let handle: FileHandle
+    private var data: Data
+    private let lock = NSLock()
+    private var cancelled = false
+    private var started = false
+    private var finished = false
+
+    init(handle: FileHandle, data: Data) {
+        self.handle = handle
+        self.data = data
+    }
+
+    func start(
+        completion: @escaping @Sendable (Error?) -> Void
+    ) {
+        lock.lock()
+        guard !started, !finished else {
+            lock.unlock()
+            completion(nil)
+            return
+        }
+        started = true
+        lock.unlock()
+
+        DispatchQueue.global(qos: .utility).async { [self] in
+            let error = writeInput()
+            try? handle.close()
+
+            lock.lock()
+            data.removeAll(keepingCapacity: false)
+            finished = true
+            lock.unlock()
+            completion(error)
+        }
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        let shouldClose = !started && !finished
+        if shouldClose {
+            data.removeAll(keepingCapacity: false)
+            finished = true
+        }
+        lock.unlock()
+
+        if shouldClose {
+            try? handle.close()
+        }
+    }
+
+    private func writeInput() -> Error? {
+        let descriptor = handle.fileDescriptor
+        let currentFlags = Darwin.fcntl(descriptor, F_GETFL)
+        guard currentFlags >= 0 else {
+            return POSIXError(.EIO)
+        }
+        guard Darwin.fcntl(
+            descriptor,
+            F_SETFL,
+            currentFlags | O_NONBLOCK
+        ) >= 0 else {
+            return POSIXError(.EIO)
+        }
+        guard Darwin.fcntl(descriptor, F_SETNOSIGPIPE, 1) >= 0 else {
+            return POSIXError(.EIO)
+        }
+
+        return data.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else {
+                return nil
+            }
+            var offset = 0
+            while offset < rawBuffer.count {
+                if isCancelled {
+                    return nil
+                }
+                let count = min(
+                    Self.writeChunkBytes,
+                    rawBuffer.count - offset
+                )
+                let written = Darwin.write(
+                    descriptor,
+                    baseAddress.advanced(by: offset),
+                    count
+                )
+                if written > 0 {
+                    offset += written
+                    continue
+                }
+                if written == 0 {
+                    Darwin.usleep(Self.retryDelayMicroseconds)
+                    continue
+                }
+
+                let errorCode = errno
+                switch errorCode {
+                case EINTR:
+                    continue
+                case EAGAIN:
+                    Darwin.usleep(Self.retryDelayMicroseconds)
+                case EPIPE:
+                    // The child exited or deliberately stopped reading stdin.
+                    return nil
+                default:
+                    if isCancelled && errorCode == EBADF {
+                        return nil
+                    }
+                    return POSIXError(
+                        POSIXErrorCode(rawValue: errorCode) ?? .EIO
+                    )
+                }
+            }
+            return nil
+        }
+    }
+
+    private var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
     }
 }
 
