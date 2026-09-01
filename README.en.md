@@ -44,6 +44,13 @@ Product website: <https://affpapa.org/neantik>. Its version, build, hashes, and
 download links are synchronized with GitHub Release `v0.3.23`; GitHub serves
 the files and AffPapa keeps no second binary copy.
 
+Development preview `0.3.24 (27)` is going through the release gates. At a
+normal window width, the source keeps visible Filters and Create profile text,
+search explicitly mentions profiles and notes, and the wide table names its
+selection/start and note/last-launch content more clearly. CI now adds
+SHA-pinned CodeQL for Swift and Python. Until a new ZIP and DMG are published
+and re-downloaded successfully, `0.3.23 (26)` remains the public download.
+
 The capabilities below are included in the published, signed, and notarized
 `0.3.23 (26)` release.
 

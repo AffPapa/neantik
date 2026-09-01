@@ -6,6 +6,8 @@ product and code work. The older v4 documents remain dated design records.
 ## Release truth and boundary
 
 - Latest immutable GitHub release: `v0.3.23`, version/build `0.3.23 (26)`.
+- Current source candidate: `0.3.24 (27)`; it is not a public binary release
+  until the exact merged commit passes the complete Direct gate.
 - Exact released source commit:
   `fdc520391c58a76622936519ca38b382f629fc47`.
 - Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
@@ -50,6 +52,7 @@ and updates remain immutable manual GitHub releases.
 | Fingerprint evidence | `FingerprintAudit*.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics |
 | Readiness and notices | `WorkspaceReadiness*.swift`, `UserNotice.swift` | Redacted, actionable, semantically honest local diagnostics |
 | Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/verify-direct-provisioning-profile.py`, `scripts/neantik-affpapa-release` | Exact candidate only; profile must authorize the selected signing certificate; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
+| CI and repository security | `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/dependabot.yml`, `scripts/audit-git-history-secrets.py` | SHA-pinned Actions, least privilege, Swift/Python CodeQL, dependency updates and separate current-tree/history/GitHub secret gates |
 
 ## Current capability state
 
@@ -124,6 +127,8 @@ and updates remain immutable manual GitHub releases.
 
 ## Research routing
 
+- Current zero-base security, UX and release matrix with fifteen role prompts:
+  [0.3.24 audit plan](NEANTIK_0324_ZERO_BASE_AUDIT_PLAN.md).
 - Current 20-product comparison:
   [Competitor UX research](COMPETITOR_UX_RESEARCH_2026-09-01.md).
 - Historical 75-candidate design record:

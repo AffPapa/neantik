@@ -12,6 +12,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_WORKFLOW_ENTRYPOINTS = (
     ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
     "README.md",
     "README.en.md",
     "CONTRIBUTING.md",

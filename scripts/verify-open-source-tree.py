@@ -113,13 +113,16 @@ TEXT_SUFFIXES = {
     ".yaml",
 }
 REQUIRED_PUBLIC_PATHS = {
+    ".github/dependabot.yml",
     ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
     "CONTRIBUTING.md",
     "Develop-NeAntik.command",
     "LICENSE",
     "Release-NeAntik.command",
     "Resources/NeAntik.entitlements",
     "SECURITY.md",
+    "scripts/verify-github-security-contract.py",
     "Sources/NeAntik/BrowserProcessInventory.swift",
     "Sources/NeAntik/ApplicationEnvironment.swift",
     "Sources/NeAntik/FingerprintEvidenceEnrollment.swift",

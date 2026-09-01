@@ -326,6 +326,9 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
             throw SecureEnclaveFingerprintEvidenceAuthorityError
                 .invalidPublicKey
         }
+        // SAFETY: Security.framework returns CFTypeRef here. The runtime type
+        // check above proves that this exact reference is a SecKey before the
+        // unavoidable CoreFoundation-to-Swift bridge.
         let privateKey = reference as! SecKey
         try validateSecureEnclaveKey(privateKey)
         return privateKey

@@ -1801,7 +1801,7 @@ struct ContentView: View {
         if usesWideLayout {
             VStack(spacing: 0) {
                 HStack(spacing: ProfileRowLayout.spacing) {
-                    Text("Выбор / действие")
+                    Text("Выбор / запуск")
                         .frame(width: ProfileRowLayout.actionWidth)
                     Text("Профиль")
                         .frame(
@@ -1820,7 +1820,7 @@ struct ContentView: View {
                             maxWidth: .infinity,
                             alignment: .leading
                         )
-                    Text("Контекст")
+                    Text("Заметка / запуск")
                         .frame(
                             minWidth: ProfileRowLayout.minimumContextWidth,
                             maxWidth: .infinity,
@@ -1949,11 +1949,8 @@ struct ContentView: View {
                     )
                 }
             } label: {
-                ViewThatFits(in: .horizontal) {
-                    Label("Создать профиль", systemImage: "plus")
-                    Image(systemName: "plus")
-                        .accessibilityHidden(true)
-                }
+                Label("Создать профиль", systemImage: "plus")
+                    .fixedSize(horizontal: true, vertical: false)
                 .frame(minHeight: 28)
             } primaryAction: {
                 beginCreatingProfile()
@@ -2094,7 +2091,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             TextField(
-                "Поиск профилей",
+                "Профиль или заметка",
                 text: $profileSearchText
             )
             .textFieldStyle(.plain)
@@ -2173,13 +2170,11 @@ struct ContentView: View {
                 resetProfileView()
             }
         } label: {
-            ViewThatFits(in: .horizontal) {
-                Label("Фильтры", systemImage: "line.3.horizontal.decrease")
-                Image(systemName: "line.3.horizontal.decrease")
-                    .accessibilityHidden(true)
-            }
-            .frame(minHeight: 28)
+            Label("Фильтры", systemImage: "line.3.horizontal.decrease")
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(minHeight: 28)
         }
+        .menuStyle(.borderlessButton)
         .help("Сортировка и фильтр подключения")
         .accessibilityLabel("Фильтры и сортировка профилей")
         .accessibilityValue(
