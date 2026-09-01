@@ -164,6 +164,41 @@ class FakeReleaseRunner:
 
 
 class DirectNotaryTransactionTests(unittest.TestCase):
+    def test_explicit_notary_keychain_is_private_absolute_and_forwarded(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            keychain = Path(temporary) / "release.keychain-db"
+            keychain.write_bytes(b"not a real keychain")
+            keychain.chmod(0o600)
+
+            self.assertEqual(
+                MODULE.notarytool_auth_arguments("profile", keychain),
+                (
+                    "--keychain-profile",
+                    "profile",
+                    "--keychain",
+                    str(keychain),
+                ),
+            )
+
+    def test_explicit_notary_keychain_rejects_relative_or_shared_files(self) -> None:
+        with self.assertRaisesRegex(
+            MODULE.DirectNotaryTransactionError,
+            "must be absolute",
+        ):
+            MODULE.notarytool_auth_arguments(
+                "profile",
+                Path("relative.keychain-db"),
+            )
+        with tempfile.TemporaryDirectory() as temporary:
+            keychain = Path(temporary) / "shared.keychain-db"
+            keychain.write_bytes(b"not a real keychain")
+            keychain.chmod(0o640)
+            with self.assertRaisesRegex(
+                MODULE.DirectNotaryTransactionError,
+                "owner-only",
+            ):
+                MODULE.notarytool_auth_arguments("profile", keychain)
+
     def test_missing_notary_profile_fails_before_durable_transaction(
         self,
     ) -> None:

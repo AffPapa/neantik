@@ -172,8 +172,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
     def test_enrollment_helper_is_exact_private_and_bounded(self) -> None:
         text = ENROLL.read_text(encoding="utf-8")
 
-        self.assertIn('stat -f \'%u\' /dev/console', text)
-        self.assertIn('launchctl print "gui/$EUID"', text)
+        self.assertIn("verify-active-gui-session-unlocked.py", text)
         self.assertIn("Authority=Developer ID Application:", text)
         self.assertIn("Timestamp=", text)
         self.assertIn("verify-direct-provisioning-profile.py", text)
@@ -182,6 +181,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("--timeout 60", text)
         self.assertIn("--neantik-enroll-fingerprint-evidence", text)
         self.assertIn("--output \"$OUTPUT_PATH\"", text)
+        self.assertLess(
+            text.index("verify-active-gui-session-unlocked.py"),
+            text.index("--neantik-enroll-fingerprint-evidence"),
+        )
         self.assertNotIn("cat \"$LOG_PATH\"", text)
         self.assertNotIn("open -", text)
 

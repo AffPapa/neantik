@@ -319,10 +319,7 @@ def profile_developer_certificate_sha1s(
     return frozenset(fingerprints)
 
 
-def resolve_signing_identity_sha1(identity: str) -> str:
-    identity = identity.strip()
-    if not identity:
-        raise ProvisioningProfileError("signing identity is empty")
+def installed_signing_identities() -> tuple[tuple[str, str], ...]:
     completed = subprocess.run(
         ["/usr/bin/security", "find-identity", "-v", "-p", "codesigning"],
         stdout=subprocess.PIPE,
@@ -345,6 +342,14 @@ def resolve_signing_identity_sha1(identity: str) -> str:
         )
         if match:
             available.append((match.group(1).upper(), match.group(2)))
+    return tuple(available)
+
+
+def resolve_signing_identity_sha1(identity: str) -> str:
+    identity = identity.strip()
+    if not identity:
+        raise ProvisioningProfileError("signing identity is empty")
+    available = installed_signing_identities()
     requested_sha1 = (
         identity.upper()
         if re.fullmatch(r"[0-9A-Fa-f]{40}", identity)
@@ -362,6 +367,27 @@ def resolve_signing_identity_sha1(identity: str) -> str:
     if len(matches) != 1:
         raise ProvisioningProfileError(
             "declared Developer ID signing identity is ambiguous; use its SHA-1"
+        )
+    return next(iter(matches))
+
+
+def select_profile_authorized_signing_identity(
+    profile: dict[str, Any],
+) -> str:
+    authorized = profile_developer_certificate_sha1s(profile)
+    matches = {
+        fingerprint
+        for fingerprint, common_name in installed_signing_identities()
+        if fingerprint in authorized
+        and common_name.startswith("Developer ID Application:")
+    }
+    if not matches:
+        raise ProvisioningProfileError(
+            "no installed Developer ID Application identity is authorized by profile"
+        )
+    if len(matches) != 1:
+        raise ProvisioningProfileError(
+            "multiple installed Developer ID identities are authorized; declare one explicitly"
         )
     return next(iter(matches))
 
@@ -600,6 +626,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--info-plist", type=Path, default=DEFAULT_INFO_PLIST)
     parser.add_argument("--entitlements", type=Path, default=DEFAULT_ENTITLEMENTS)
     parser.add_argument("--signing-identity")
+    parser.add_argument("--print-signing-identity", action="store_true")
     parser.add_argument("--copy-to", type=Path)
     parser.add_argument("--app", type=Path)
     return parser.parse_args()
@@ -627,6 +654,13 @@ def main() -> None:
         )
         if args.signing_identity is not None:
             validate_declared_signing_identity(profile, args.signing_identity)
+        selected_identity: str | None = None
+        if args.print_signing_identity:
+            if args.signing_identity is not None:
+                raise ProvisioningProfileError(
+                    "choose either --signing-identity or --print-signing-identity"
+                )
+            selected_identity = select_profile_authorized_signing_identity(profile)
         if args.copy_to is not None:
             _copy_profile(profile_bytes, args.copy_to)
         if args.app is not None:
@@ -641,6 +675,9 @@ def main() -> None:
             )
     except ProvisioningProfileError as error:
         raise SystemExit(f"Direct provisioning profile verification failed: {error}")
+    if selected_identity is not None:
+        print(selected_identity)
+        return
     print(
         "PASS: Developer ID distribution profile authorizes "
         f"{application_id} and expires {expiration.date().isoformat()}."

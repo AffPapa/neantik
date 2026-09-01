@@ -16,15 +16,8 @@ DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-152/build/source-prove
 EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
 
-export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-62831D7DD86D5EDE0C44130F980325C4BFBC1B43}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"
-if [[ -z "${NEANTIK_PROVISIONING_PROFILE:-}" ]]; then
-  echo "Не задан внешний Developer ID provisioning profile." >&2
-  echo "Запустите с NEANTIK_PROVISIONING_PROFILE=/absolute/path/to/profile.provisionprofile." >&2
-  echo "Профиль должен разрешать Keychain Sharing для app.neantik.desktop." >&2
-  exit 64
-fi
 pause_on_error() {
   local exit_code=$?
   trap - ERR
@@ -37,6 +30,25 @@ pause_on_error() {
   exit "$exit_code"
 }
 trap pause_on_error ERR
+
+if [[ -z "${NEANTIK_PROVISIONING_PROFILE:-}" ]]; then
+  echo "Не задан внешний Developer ID provisioning profile." >&2
+  echo "Запустите с NEANTIK_PROVISIONING_PROFILE=/absolute/path/to/profile.provisionprofile." >&2
+  echo "Профиль должен разрешать Keychain Sharing для app.neantik.desktop." >&2
+  exit 64
+fi
+python3 "$PROJECT_DIR/scripts/verify-active-gui-session-unlocked.py"
+if [[ -z "${NEANTIK_SIGNING_IDENTITY:-}" ]]; then
+  export NEANTIK_SIGNING_IDENTITY="$(
+    python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+      --profile "$NEANTIK_PROVISIONING_PROFILE" \
+      --print-signing-identity
+  )"
+else
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+    --profile "$NEANTIK_PROVISIONING_PROFILE" \
+    --signing-identity "$NEANTIK_SIGNING_IDENTITY" >/dev/null
+fi
 
 cache_runtime_source_evidence() {
   local cached_dir="$ATTEMPT_STATE_ROOT/runtime-source-evidence"
