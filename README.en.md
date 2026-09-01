@@ -24,9 +24,10 @@ Current published GitHub public-alpha release:
 - SHA-256 sidecars are published with both GitHub Release assets.
 
 The current `0.3.23 (26)` source candidate adds a dedicated note editor,
-semantically honest notices, clearer list actions, and compact permission
-guidance. It becomes a downloadable release only after a separate Developer
-ID, notarization, stapling, Gatekeeper, and immutable GitHub gate. Until then,
+semantically honest notices, clearer list actions, safe quick Direct profile
+creation, and a command to reveal an already running browser window. It
+becomes a downloadable release only after a separate Developer ID,
+notarization, stapling, Gatekeeper, and immutable GitHub gate. Until then,
 download the published `0.3.22 (25)` release above.
 
 Published `0.3.22 (25)` includes a local Readiness Center. It identifies the

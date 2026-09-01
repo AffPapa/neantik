@@ -110,6 +110,14 @@ commands, modal safety, native Settings and density persistence replace a
 larger remapping subsystem. This reduces daily clicks without creating hidden
 global behavior.
 
+The matrix was rechecked again on 2026-09-01 against current official pages.
+The additional signal did not justify a dashboard, templates, cloud recovery
+or configurable fingerprint surface. It did justify two bounded daily-path
+changes: a disclosure-only quick Direct profile with a generated local name,
+and a selected-profile command that reuses the existing verified process focus
+operation. Full creation remains the primary click; Stop and Force Stop remain
+separate actions.
+
 Do not import cloud teams, RPA, marketplaces, mobile farms, a configurable
 dashboard, dozens of fingerprint toggles or an anonymity score. They add code,
 weight and failure surface without improving the local daily path.

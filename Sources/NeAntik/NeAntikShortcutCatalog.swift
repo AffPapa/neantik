@@ -25,6 +25,7 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
     case settings
     case shortcutReference
     case toggleSelectedProfile
+    case focusSelectedProfile
     case editSelectedProfile
     case editSelectedNote
     case toggleInspector
@@ -37,7 +38,8 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
         case .newProfile, .newFolder, .findProfiles, .settings,
              .shortcutReference:
             .workspace
-        case .toggleSelectedProfile, .editSelectedProfile,
+        case .toggleSelectedProfile, .focusSelectedProfile,
+             .editSelectedProfile,
              .editSelectedNote, .toggleInspector, .duplicateProfile:
             .profile
         }
@@ -51,6 +53,7 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
         case .settings: "Открыть настройки"
         case .shortcutReference: "Показать сочетания клавиш"
         case .toggleSelectedProfile: "Запустить или остановить"
+        case .focusSelectedProfile: "Показать окно браузера"
         case .editSelectedProfile: "Изменить профиль"
         case .editSelectedNote: "Изменить заметку"
         case .toggleInspector: "Показать или скрыть сведения"
@@ -60,7 +63,7 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
 
     var keyEquivalent: KeyEquivalent {
         switch self {
-        case .toggleSelectedProfile:
+        case .toggleSelectedProfile, .focusSelectedProfile:
             .return
         case .newProfile, .editSelectedNote:
             "n"
@@ -83,7 +86,7 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
 
     var modifiers: EventModifiers {
         switch self {
-        case .newFolder:
+        case .newFolder, .focusSelectedProfile:
             [.command, .shift]
         case .editSelectedProfile, .editSelectedNote:
             [.command, .option]
@@ -99,7 +102,7 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
         if modifiers.contains(.shift) { result += "⇧" }
         if modifiers.contains(.command) { result += "⌘" }
         switch self {
-        case .toggleSelectedProfile:
+        case .toggleSelectedProfile, .focusSelectedProfile:
             result += "↩"
         default:
             result += String(keyEquivalent.character).uppercased()

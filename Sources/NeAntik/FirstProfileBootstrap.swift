@@ -14,6 +14,46 @@ enum FirstProfileBootstrap {
     }
 }
 
+/// A bounded fast path for an existing workspace.
+///
+/// It deliberately creates only a permanent Direct profile. Proxy, note, tags
+/// and appearance stay at safe defaults, while BrowserProfile issues a fresh
+/// identifier and identity for every invocation. The workspace may still put
+/// the result into the currently selected folder.
+enum QuickProfileBootstrap {
+    static let namePrefix = "Профиль"
+
+    static func makeProfile(
+        existingProfiles: [BrowserProfile]
+    ) -> BrowserProfile {
+        BrowserProfile(
+            name: nextAvailableName(existingProfiles: existingProfiles)
+        )
+    }
+
+    static func nextAvailableName(
+        existingProfiles: [BrowserProfile]
+    ) -> String {
+        let existingNames = Set(existingProfiles.map {
+            comparisonKey($0.name)
+        })
+        var number = max(2, existingProfiles.count + 1)
+        while existingNames.contains(
+            comparisonKey("\(namePrefix) \(number)")
+        ) {
+            number += 1
+        }
+        return "\(namePrefix) \(number)"
+    }
+
+    private static func comparisonKey(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "ru_RU")
+        )
+    }
+}
+
 enum FirstProfilePrimaryAction: Equatable, Sendable {
     case createAndOpen
     case retryRuntimeCheck

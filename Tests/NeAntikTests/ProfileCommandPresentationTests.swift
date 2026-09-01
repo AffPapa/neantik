@@ -10,6 +10,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.profileName == nil)
         #expect(presentation.launchTitle == "Запустить")
         #expect(!presentation.launchIsEnabled)
+        #expect(!presentation.focusIsEnabled)
         #expect(!presentation.editIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
@@ -36,6 +37,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.profileName == "Работа")
         #expect(presentation.launchTitle == "Запустить")
         #expect(presentation.launchIsEnabled)
+        #expect(!presentation.focusIsEnabled)
         #expect(presentation.editIsEnabled)
         #expect(presentation.pinTitle == "Открепить")
         #expect(presentation.pinSystemImage == "pin.slash")
@@ -61,6 +63,7 @@ struct ProfileCommandPresentationTests {
 
         #expect(presentation.launchTitle == "Остановить")
         #expect(presentation.launchIsEnabled)
+        #expect(presentation.focusIsEnabled)
         #expect(presentation.editIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
