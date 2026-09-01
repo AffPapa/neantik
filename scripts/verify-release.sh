@@ -61,6 +61,17 @@ if ! cmp -s \
 fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
+  if [[ -e "$APP_PATH/Contents/embedded.provisionprofile" ||
+        -L "$APP_PATH/Contents/embedded.provisionprofile" ]]; then
+    echo "Local ad-hoc QA must not embed a distribution profile." >&2
+    exit 65
+  fi
+else
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+    --profile "$APP_PATH/Contents/embedded.provisionprofile" \
+    --app "$APP_PATH"
+fi
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py" \
   --info-plist "$INFO_PLIST"

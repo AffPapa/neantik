@@ -13,6 +13,10 @@ SUITE_SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "verify-native-swift-suite.sh"
 )
+SHARD_SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "verify-native-swift-shard.sh"
+)
 LIVE_SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "verify-native-swift-live.sh"
@@ -64,61 +68,47 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("UpdateManifestTests)", text)
         self.assertIn('--filter "$SUITE"', text)
 
-    def test_ci_suite_runner_includes_authenticated_evidence_tests(
-        self,
-    ) -> None:
+    def test_ci_runs_four_isolated_swift_shards(self) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
 
-        self.assertIn("- FingerprintEvidenceEnvelopeTests", workflow)
-        self.assertIn("FingerprintEvidenceEnvelopeTests|\\", runner)
         self.assertIn(
-            "- SecureEnclaveFingerprintEvidenceSignerTests",
+            'run: ./scripts/verify-native-swift-shard.sh "${{ matrix.shard }}"',
             workflow,
         )
-        self.assertIn(
-            "SecureEnclaveFingerprintEvidenceSignerTests|\\",
+        for shard in ["foundation", "fingerprint", "profiles-a", "profiles-b"]:
+            self.assertIn(f"- {shard}", workflow)
+
+    def test_ci_shards_cover_every_non_live_suite_exactly_once(self) -> None:
+        runner = SHARD_SCRIPT.read_text(encoding="utf-8")
+        shard_suites = re.findall(
+            r"^\s+([A-Za-z][A-Za-z0-9]+Tests)$",
             runner,
-        )
-
-    def test_ci_matrix_suites_are_allowed_by_runner(self) -> None:
-        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-        matrix_suites = re.findall(
-            r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
-            workflow,
             flags=re.MULTILINE,
-        )
-
-        self.assertGreater(len(matrix_suites), 0)
-        for suite in matrix_suites:
-            self.assertIn(suite, runner)
-
-    def test_ci_runs_every_non_live_swift_suite_and_excludes_live_suites(
-        self,
-    ) -> None:
-        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-        matrix_suites = set(
-            re.findall(
-                r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
-                workflow,
-                flags=re.MULTILINE,
-            )
         )
         discovered_suites = {
             path.stem
             for path in SWIFT_TESTS.glob("*Tests.swift")
         }
-        live_suites = {
-            suite for suite in discovered_suites if suite.startswith("Live")
+        non_live_suites = {
+            suite
+            for suite in discovered_suites
+            if not suite.startswith("Live")
         }
-        non_live_suites = discovered_suites - live_suites
 
-        self.assertEqual(matrix_suites, non_live_suites)
-        self.assertTrue(live_suites.isdisjoint(matrix_suites))
-        for suite in non_live_suites:
-            self.assertIn(suite, runner)
+        self.assertEqual(len(shard_suites), len(set(shard_suites)))
+        self.assertEqual(set(shard_suites), non_live_suites)
+        self.assertIn('--filter "$SUITE"', runner)
+
+    def test_ci_shard_runner_rejects_unknown_shard_before_building(self) -> None:
+        result = subprocess.run(
+            [str(SHARD_SCRIPT), "unknown"],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 64)
+        self.assertIn("Unknown Swift test shard", result.stderr)
 
     def test_suite_runner_requires_a_positive_test_count(self) -> None:
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")

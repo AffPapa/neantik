@@ -40,6 +40,9 @@ if ! /bin/launchctl print "gui/$EUID" >/dev/null 2>&1; then
 fi
 
 /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+  --profile "$APP_PATH/Contents/embedded.provisionprofile" \
+  --app "$APP_PATH"
 SIGNATURE_DETAILS="$(/usr/bin/codesign -dvvv "$APP_PATH" 2>&1)"
 if ! /usr/bin/grep -Fq "Authority=Developer ID Application:" \
     <<<"$SIGNATURE_DETAILS"; then

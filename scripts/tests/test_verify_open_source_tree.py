@@ -17,6 +17,10 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_provisioning_profiles_are_forbidden_from_public_source(self) -> None:
+        self.assertIn(".provisionprofile", MODULE.FORBIDDEN_SUFFIXES)
+        self.assertIn(".mobileprovision", MODULE.FORBIDDEN_SUFFIXES)
+
     def test_personal_absolute_user_path_is_rejected(self) -> None:
         leaked = "/" + "Users/" + "release-operator/private/report.json"
         self.assertEqual(

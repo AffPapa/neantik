@@ -11,82 +11,21 @@ permissions:
 
 jobs:
   swift-tests:
-    name: Swift / ${{ matrix.suite }}
+    name: Swift / ${{ matrix.shard }} shard
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - ApplicationEnvironmentTests
-          - AppPathsTests
-          - AccessibilityPresentationTests
-          - BrowserLaunchActionPresentationTests
-          - BrowserLaunchBuilderTests
-          - BrowserLaunchPreparationPolicyTests
-          - BrowserLaunchStagedPreflightTests
-          - BrowserLaunchPolicyTests
-          - BrowserProcessInventoryTests
-          - BrowserProcessLifecyclePresentationTests
-          - BrowserProcessManagerTests
-          - BrowserRuntimeInspectorTests
-          - BrowserRuntimePreflightTests
-          - BulkProxyActionProjectionTests
-          - BulkProxyImportTests
-          - BulkProxyRunProgressTests
-          - DisplayDateFormattingTests
-          - EnvironmentDiagnosticAssessmentTests
-          - FingerprintAuditLoopbackSTUNServerTests
-          - FingerprintAuditAutomationPolicyTests
-          - FingerprintAuditObservationTests
-          - FingerprintAuditTests
-          - FingerprintEvidenceEnrollmentTests
-          - FingerprintEvidenceEnvelopeTests
-          - FingerprintEvidenceReleaseContextTests
-          - FirstProfileBootstrapTests
-          - SecureEnclaveFingerprintEvidenceSignerTests
-          - KeychainStoreTests
-          - LaunchIntentTests
-          - ManagerSessionEvidenceTests
-          - ManagerStartupProbeTests
-          - NativeMenuLocalizationTests
-          - NeAntikErrorPresentationTests
-          - ProfileCommandPresentationTests
-          - ProfileBatchActionsTests
-          - ProfileEditorProcessPolicyTests
-          - ProfileEditorPasswordTests
-          - ProfileEditorPresentationTests
-          - ProfileEditorValidationTests
-          - ProfileEnvironmentAccessibilityTests
-          - ProfileEnvironmentInspectorTests
-          - ProfileEnvironmentPresentationTests
-          - ProfileListProjectionTests
-          - ProfileOperationalProjectionTests
-          - ProfileListOrderingTests
-          - ProfileOrganizationTests
-          - ProfileOrganizationPersistenceTests
-          - ProfilePostSaveRevealPolicyTests
-          - ProfileRevisionAndTransactionTests
-          - ProfileTagAppearanceTests
-          - ProfileTagEditorTests
-          - ProfileStoreTests
-          - ProfileStorageMeasurementTests
-          - ProxyHealthTests
-          - ProxyImportParserTests
-          - ProxyTestOperationRegistryTests
-          - ProxyTesterTests
-          - ResponsiveLayoutRenderTests
-          - WorkspaceDomainTests
-          - WorkspaceLayoutTests
-          - WorkspaceQueryStateTests
-          - WorkspaceReadinessTests
-          - RuntimePreferenceStoreTests
-          - TelemetryTests
-          - UpdateManifestTests
+        shard:
+          - foundation
+          - fingerprint
+          - profiles-a
+          - profiles-b
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - name: Run Swift suite
-        run: ./scripts/verify-native-swift-suite.sh "${{ matrix.suite }}"
+      - name: Run isolated Swift test shard
+        run: ./scripts/verify-native-swift-shard.sh "${{ matrix.shard }}"
 
   release-contracts:
     name: Release and privacy contracts

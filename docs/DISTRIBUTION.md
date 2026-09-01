@@ -42,12 +42,14 @@ A public release must:
 4. preserve all third-party notices;
 5. pass the Swift, privacy, localization, runtime, and A → B → A gates;
 6. sign every nested Mach-O with Developer ID Application;
-7. use Hardened Runtime and a trusted timestamp;
-8. be accepted by Apple notarization;
-9. staple the ticket to `NeAntik.app`;
-10. pass `codesign`, `stapler`, and Gatekeeper after a fresh extraction;
-11. publish a SHA-256 sidecar and release metadata;
-12. be downloaded again from GitHub and independently reverified before the
+7. embed an Apple-signed Developer ID distribution provisioning profile that
+   authorizes the exact `app.neantik.desktop` Keychain access group;
+8. use Hardened Runtime and a trusted timestamp;
+9. be accepted by Apple notarization;
+10. staple the ticket to `NeAntik.app`;
+11. pass `codesign`, `stapler`, and Gatekeeper after a fresh extraction;
+12. publish a SHA-256 sidecar and release metadata;
+13. be downloaded again from GitHub and independently reverified before the
     release is marked public.
 
 The release is deliberately two-phase. First,
@@ -188,6 +190,13 @@ compatibility flag; that flag is forbidden for new releases.
 Developer ID certificates, private keys, Apple credentials, and notary
 profiles remain in the release owner's Keychain. They are not committed,
 printed, uploaded as GitHub Actions secrets, or requested in issues.
+The Developer ID distribution provisioning profile is also external release
+input and must be supplied through `NEANTIK_PROVISIONING_PROFILE`. Source gates
+reject both `.provisionprofile` and `.mobileprovision` files in the public
+repository. The profile must be Apple-signed, unexpired, distribution-wide,
+and authorize the exact NeAntik Team ID, application identifier, and Keychain
+access group; development, ad hoc, debug and App Store sandbox profiles fail
+closed.
 
 The initial GitHub workflow builds and tests unsigned source only. Signed
 release artifacts are produced on the trusted local Apple Silicon builder and

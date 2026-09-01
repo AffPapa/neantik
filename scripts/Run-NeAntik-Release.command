@@ -19,6 +19,12 @@ EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_
 export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-62831D7DD86D5EDE0C44130F980325C4BFBC1B43}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"
+if [[ -z "${NEANTIK_PROVISIONING_PROFILE:-}" ]]; then
+  echo "Не задан внешний Developer ID provisioning profile." >&2
+  echo "Запустите с NEANTIK_PROVISIONING_PROFILE=/absolute/path/to/profile.provisionprofile." >&2
+  echo "Профиль должен разрешать Keychain Sharing для app.neantik.desktop." >&2
+  exit 64
+fi
 pause_on_error() {
   local exit_code=$?
   trap - ERR

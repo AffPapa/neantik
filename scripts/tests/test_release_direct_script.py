@@ -12,6 +12,8 @@ NOTARY_TRANSACTION = SCRIPTS / "notarize_direct_transaction.py"
 ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
 RELEASE_VERIFIER = SCRIPTS / "verify-release.sh"
+PROFILE_VERIFIER = SCRIPTS / "verify-direct-provisioning-profile.py"
+RELEASE_ENTITLEMENTS = SCRIPTS.parent / "Resources" / "NeAntik.entitlements"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
@@ -29,6 +31,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         ):
             self.assertIn(key, text)
         self.assertIn('--info-plist "$INFO_PLIST"', text)
+        self.assertIn("verify-direct-provisioning-profile.py", text)
+        self.assertIn("embedded.provisionprofile", text)
+        self.assertIn("NEANTIK_LOCAL_ADHOC", text)
+        self.assertIn("must not embed a distribution profile", text)
         sandbox_branch = text.split(
             "grep -q 'com.apple.security.app-sandbox'; then",
             1,
@@ -100,6 +106,13 @@ class ReleaseDirectScriptTests(unittest.TestCase):
 
         self.assertLess(final_signing, enrollment)
         self.assertLess(enrollment, manifest)
+        self.assertIn("NEANTIK_PROVISIONING_PROFILE", text)
+        self.assertIn("verify-direct-provisioning-profile.py", text)
+        self.assertIn('--entitlements "$RELEASE_ENTITLEMENTS"', text)
+        self.assertLess(
+            text.index('python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py"', final_signing),
+            enrollment,
+        )
         self.assertIn("--fingerprint-enrollment", text)
         self.assertIn("/usr/bin/mktemp -d", text)
         self.assertIn("fingerprint-enrollment.XXXXXX", text)
@@ -161,12 +174,41 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn('launchctl print "gui/$EUID"', text)
         self.assertIn("Authority=Developer ID Application:", text)
         self.assertIn("Timestamp=", text)
+        self.assertIn("verify-direct-provisioning-profile.py", text)
+        self.assertIn("embedded.provisionprofile", text)
         self.assertIn("run-exact-command-with-timeout.py", text)
         self.assertIn("--timeout 60", text)
         self.assertIn("--neantik-enroll-fingerprint-evidence", text)
         self.assertIn("--output \"$OUTPUT_PATH\"", text)
         self.assertNotIn("cat \"$LOG_PATH\"", text)
         self.assertNotIn("open -", text)
+
+    def test_release_entitlements_and_profile_gate_are_exact(self) -> None:
+        entitlements = RELEASE_ENTITLEMENTS.read_text(encoding="utf-8")
+        verifier = PROFILE_VERIFIER.read_text(encoding="utf-8")
+
+        self.assertIn("H6VGU2M6JD.app.neantik.desktop", entitlements)
+        self.assertIn("keychain-access-groups", entitlements)
+        self.assertNotIn("get-task-allow", entitlements)
+        self.assertNotIn("com.apple.security.app-sandbox", entitlements)
+        for marker in (
+            "ProvisionsAllDevices",
+            "ProvisionedDevices",
+            "ExpirationDate",
+            "TeamIdentifier",
+            "com.apple.application-identifier",
+            "com.apple.developer.team-identifier",
+            "keychain-access-groups",
+            "Authority=Developer ID Application:",
+            "Timestamp=",
+        ):
+            self.assertIn(marker, verifier)
+
+        for script in (PREPARE, PREPARE_MANAGER):
+            text = script.read_text(encoding="utf-8")
+            self.assertIn("NEANTIK_PROVISIONING_PROFILE", text)
+            self.assertIn("verify-direct-provisioning-profile.py", text)
+            self.assertIn('--entitlements "$RELEASE_ENTITLEMENTS"', text)
 
     def test_release_only_verifies_and_notarizes_prepared_candidate(self) -> None:
         text = RELEASE.read_text(encoding="utf-8")

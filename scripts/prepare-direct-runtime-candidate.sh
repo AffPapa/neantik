@@ -7,6 +7,8 @@ ENGINEERING_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 SECURITY_BASELINE_ARGS=()
+RELEASE_ENTITLEMENTS="$PROJECT_DIR/Resources/NeAntik.entitlements"
+EMBEDDED_PROFILE="$APP_PATH/Contents/embedded.provisionprofile"
 
 if [[ $# -ne 4 ]]; then
   echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn /absolute/path/to/chromium/src /absolute/path/to/runtime-candidate-lock.json" >&2
@@ -60,6 +62,10 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     ;;
 esac
 : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
+: "${NEANTIK_PROVISIONING_PROFILE:?Set NEANTIK_PROVISIONING_PROFILE to the absolute Developer ID distribution provisioning profile path}"
+python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+  --profile "$NEANTIK_PROVISIONING_PROFILE" \
+  --entitlements "$RELEASE_ENTITLEMENTS"
 
 METAL_TRUE_COUNT="$(
   grep -Ec \
@@ -128,13 +134,23 @@ python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
 
 rm -rf "$APP_PATH"
 ditto "$ENGINEERING_APP" "$APP_PATH"
+rm -f "$EMBEDDED_PROFILE"
+python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+  --profile "$NEANTIK_PROVISIONING_PROFILE" \
+  --entitlements "$RELEASE_ENTITLEMENTS" \
+  --copy-to "$EMBEDDED_PROFILE"
 codesign \
   --force \
   --options runtime \
   --timestamp \
+  --entitlements "$RELEASE_ENTITLEMENTS" \
   --sign "$NEANTIK_SIGNING_IDENTITY" \
   "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+  --profile "$EMBEDDED_PROFILE" \
+  --entitlements "$RELEASE_ENTITLEMENTS" \
+  --app "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
 
 PRIVATE_RELEASE_BASE="$PROJECT_DIR/dist/private"

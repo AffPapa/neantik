@@ -333,6 +333,13 @@ Developer ID, Apple notarization и создание ZIP/DMG.
 Полная Direct-сборка дополнительно требует подготовленный Chromium runtime.
 Сертификат Developer ID и данные notarization остаются только в Связке ключей
 владельца релиза и не хранятся в репозитории или GitHub Actions.
+Для защищённого Keychain/Secure Enclave enrollment также нужен внешний
+Developer ID distribution provisioning profile, который разрешает Keychain
+Sharing для точного App ID `app.neantik.desktop`. Файл профиля тоже не
+коммитится: перед запуском задайте его абсолютный путь, например
+`NEANTIK_PROVISIONING_PROFILE=/absolute/path/to/NeAntik.provisionprofile`.
+Release gate проверяет CMS-подпись Apple, срок действия, Team ID, App ID,
+distribution-тип, embedded profile и итоговые entitlements подписанного app.
 
 Выпуск идёт в два этапа: сначала создаётся и подписывается один точный
 `NeAntik.app` с неизменяемым manifest всего bundle, затем свежая GUI-проверка

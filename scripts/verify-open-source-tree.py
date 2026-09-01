@@ -29,6 +29,7 @@ FORBIDDEN_SUFFIXES = {
     ".pem",
     ".key",
     ".mobileprovision",
+    ".provisionprofile",
     ".pyc",
 }
 FORBIDDEN_NAMES = {
@@ -78,6 +79,7 @@ REQUIRED_PUBLIC_PATHS = {
     "Develop-NeAntik.command",
     "LICENSE",
     "Release-NeAntik.command",
+    "Resources/NeAntik.entitlements",
     "SECURITY.md",
     "Sources/NeAntik/BrowserProcessInventory.swift",
     "Sources/NeAntik/ApplicationEnvironment.swift",
@@ -160,11 +162,13 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/verify-fingerprint-evidence-envelope.py",
     "scripts/verify-public-artifact-privacy.py",
     "scripts/verify-direct-update-policy.py",
+    "scripts/verify-direct-provisioning-profile.py",
     "scripts/verify-secure-enclave-release-authority.py",
     "scripts/verify-public-fingerprint-corpus.py",
     "scripts/verify-public-workflow-references.py",
     "scripts/tests/test_release_launcher.py",
     "scripts/tests/test_verify_secure_enclave_release_authority.py",
+    "scripts/tests/test_verify_direct_provisioning_profile.py",
     "scripts/tests/test_release_transaction.py",
     "scripts/tests/test_release_source_receipt.py",
     "scripts/tests/test_notary_transaction_state.py",
@@ -337,12 +341,22 @@ def verify_required_contracts() -> None:
     ci_text = (
         PROJECT_ROOT / ".github/workflows/ci.yml"
     ).read_text(encoding="utf-8")
+    if "run: ./scripts/verify-native-swift-shard.sh" not in ci_text:
+        fail("GitHub Actions does not enforce isolated Swift test shards")
+    swift_test_runner = (
+        PROJECT_ROOT / "scripts/verify-native-swift-shard.sh"
+    ).read_text(encoding="utf-8")
     for marker in [
-        "UpdateManifestTests",
         "BrowserProcessInventoryTests",
         "FingerprintEvidenceEnrollmentTests",
         "ProfileOrganizationTests",
         "SecureEnclaveFingerprintEvidenceSignerTests",
+        "UpdateManifestTests",
+        '--filter "$SUITE"',
+    ]:
+        if marker not in swift_test_runner:
+            fail(f"the Swift shard runner does not enforce {marker}")
+    for marker in [
         "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",
         "verify-open-source-tree.py",
