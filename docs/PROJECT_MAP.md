@@ -1,6 +1,6 @@
 # NeAntik project map
 
-Current source map: 2026-09-01. This document is the current routing source for
+Current source map: 2026-09-02. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
 ## Release truth and boundary
@@ -42,7 +42,7 @@ and updates remain immutable manual GitHub releases.
 | --- | --- | --- |
 | App shell and orchestration | `ContentView.swift`, `ContentViewState.swift`, `NeAntikApp.swift` | Compose state and commands; keep request/cache state out of the view body and do not invent domain policy there |
 | Keyboard and local UI preferences | `ProfileCommands.swift`, `NeAntikShortcutCatalog.swift`, `WorkspacePreferenceStore.swift`, `NeAntikSettingsView.swift` | Fixed menu-backed shortcuts, modal-safe focused commands and density-only local persistence; no global hooks or hidden destructive shortcuts |
-| Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions |
+| Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions and directly visible note editing |
 | Query and organization | `ProfileListProjection.swift`, `WorkspaceQueryState.swift`, `ProfileTagEditor.swift` | Linear deterministic projection; no network or secret search |
 | Profiles and persistence | `Models.swift`, `ProfileStore.swift`, `AppPaths.swift` | Bounded validated metadata, atomic writes, safe local filesystem handling |
 | Profile editing | `ProfileEditorView.swift`, `ProfileNoteEditorView.swift`, `ProfileEditorProcessPolicy.swift` | Simple fields first; notes use a dedicated editor; browser/proxy edits respect running-state rules |
@@ -51,7 +51,7 @@ and updates remain immutable manual GitHub releases.
 | Proxy | `ProxyTester.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing, bounded concurrency, fresh preparation before proxied launch |
 | Fingerprint evidence | `FingerprintAudit*.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics |
 | Readiness and notices | `WorkspaceReadiness*.swift`, `UserNotice.swift` | Redacted, actionable, semantically honest local diagnostics |
-| Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/verify-direct-provisioning-profile.py`, `scripts/neantik-affpapa-release` | Exact candidate only; profile must authorize the selected signing certificate; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
+| Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/verify-direct-provisioning-profile.py`, `scripts/verify-active-gui-session-unlocked.py`, `scripts/notarize_direct_transaction.py`, `scripts/neantik-affpapa-release` | Exact candidate only; auto-select one profile-authorized certificate or fail; require an unlocked GUI session for Secure Enclave enrollment; optional explicit notary Keychain must be owner-only; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
 | CI and repository security | `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/dependabot.yml`, `scripts/audit-git-history-secrets.py` | SHA-pinned Actions, least privilege, Swift/Python CodeQL, dependency updates and separate current-tree/history/GitHub secret gates |
 
 ## Current capability state
@@ -101,6 +101,18 @@ and updates remain immutable manual GitHub releases.
   3,800 lines and 145,000 bytes;
 - adds a redacted audit of every reachable Git blob and historical filename to
   the existing current-tree and GitHub secret-scanning gates.
+
+### Prepared in source for 0.3.24
+
+- removes the rotating hard-coded signing-certificate SHA-1 from the release
+  launcher and selects exactly one installed Developer ID Application identity
+  authorized by the external provisioning profile;
+- accepts an optional owner-only `NEANTIK_NOTARY_KEYCHAIN` path in both ZIP and
+  DMG notarization paths, without changing the normal login-Keychain default;
+- rejects a locked or indeterminate active macOS session before costly release
+  work and rechecks immediately before Secure Enclave enrollment;
+- makes add/edit note a visible row action in the wide profile table while
+  preserving the dedicated editor, keyboard command and compact action menu.
 
 ### Deferred with an explicit boundary
 

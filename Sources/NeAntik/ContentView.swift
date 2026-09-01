@@ -1756,6 +1756,9 @@ struct ContentView: View {
                                             )
                                         }
                                     },
+                                    onEditNote: {
+                                        beginEditingNote(profile)
+                                    },
                                     onToggleRunning: {
                                         if launchPreparingProfileIDs.contains(
                                             profile.id
@@ -1820,7 +1823,7 @@ struct ContentView: View {
                             maxWidth: .infinity,
                             alignment: .leading
                         )
-                    Text("Заметка / запуск")
+                    Text("Заметка / активность")
                         .frame(
                             minWidth: ProfileRowLayout.minimumContextWidth,
                             maxWidth: .infinity,

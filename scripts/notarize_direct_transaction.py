@@ -40,6 +40,37 @@ class DirectNotaryTransactionError(RuntimeError):
     pass
 
 
+def notarytool_auth_arguments(
+    notary_profile: str,
+    notary_keychain: Path | None,
+) -> tuple[str, ...]:
+    arguments = ("--keychain-profile", notary_profile)
+    if notary_keychain is None:
+        return arguments
+    raw_path = os.fspath(notary_keychain)
+    if not notary_keychain.is_absolute() or "\x00" in raw_path:
+        raise DirectNotaryTransactionError(
+            "explicit notary Keychain path must be absolute"
+        )
+    try:
+        status = notary_keychain.lstat()
+    except OSError as error:
+        raise DirectNotaryTransactionError(
+            "explicit notary Keychain is unavailable"
+        ) from error
+    if (
+        not stat.S_ISREG(status.st_mode)
+        or stat.S_ISLNK(status.st_mode)
+        or status.st_uid != os.geteuid()
+        or status.st_nlink != 1
+        or status.st_mode & 0o077
+    ):
+        raise DirectNotaryTransactionError(
+            "explicit notary Keychain must be one private owner-only regular file"
+        )
+    return (*arguments, "--keychain", raw_path)
+
+
 @dataclass(frozen=True)
 class CommandResult:
     returncode: int
@@ -218,6 +249,7 @@ def preflight_notary_profile(
     *,
     project_root: Path,
     notary_profile: str,
+    notary_keychain: Path | None,
     runner: CommandRunner,
 ) -> None:
     """Prove the configured Keychain profile works before durable state.
@@ -227,13 +259,16 @@ def preflight_notary_profile(
     missing, invalid, or unreachable profile fails before a notarization
     transaction directory or submit-intent receipt can exist.
     """
+    auth_arguments = notarytool_auth_arguments(
+        notary_profile,
+        notary_keychain,
+    )
     result = runner(
         [
             "xcrun",
             "notarytool",
             "history",
-            "--keychain-profile",
-            notary_profile,
+            *auth_arguments,
             "--output-format",
             "json",
         ],
@@ -1468,7 +1503,7 @@ def reconcile_mismatched_submit_intent(
     active: tuple[Path, tuple[STATE.StateReceipt, ...]],
     *,
     project_root: Path,
-    notary_profile: str,
+    notary_auth_arguments: tuple[str, ...],
     runner: CommandRunner,
 ) -> bool:
     """Prove a stale submit intent had no Apple effect, then retain it.
@@ -1500,8 +1535,7 @@ def reconcile_mismatched_submit_intent(
             "xcrun",
             "notarytool",
             "history",
-            "--keychain-profile",
-            notary_profile,
+            *notary_auth_arguments,
             "--output-format",
             "json",
         ],
@@ -1628,6 +1662,7 @@ def resume_known_transaction(
     runtime_build_evidence: dict[str, object],
     release_channel: str,
     notary_profile: str,
+    notary_auth_arguments: tuple[str, ...],
     runner: CommandRunner,
     hook: PhaseHook,
     source_assertion: SourceAssertion,
@@ -1691,8 +1726,7 @@ def resume_known_transaction(
                 "xcrun",
                 "notarytool",
                 "history",
-                "--keychain-profile",
-                notary_profile,
+                *notary_auth_arguments,
                 "--output-format",
                 "json",
             ],
@@ -1728,6 +1762,7 @@ def resume_known_transaction(
             runtime_build_evidence=runtime_build_evidence,
             release_channel=release_channel,
             notary_profile=notary_profile,
+            notary_auth_arguments=notary_auth_arguments,
             runner=runner,
             hook=hook,
             source_assertion=source_assertion,
@@ -1748,8 +1783,7 @@ def resume_known_transaction(
                     "notarytool",
                     "wait",
                     submission_identifier,
-                    "--keychain-profile",
-                    notary_profile,
+                    *notary_auth_arguments,
                     "--timeout",
                     "30m",
                     "--output-format",
@@ -1771,8 +1805,7 @@ def resume_known_transaction(
                 "notarytool",
                 "info",
                 submission_identifier,
-                "--keychain-profile",
-                notary_profile,
+                *notary_auth_arguments,
                 "--output-format",
                 "json",
             ],
@@ -1808,8 +1841,7 @@ def resume_known_transaction(
                 "notarytool",
                 "info",
                 submission_identifier,
-                "--keychain-profile",
-                notary_profile,
+                *notary_auth_arguments,
                 "--output-format",
                 "json",
             ],
@@ -2220,6 +2252,7 @@ def run_transaction(
     attestation: Path,
     release_channel: str,
     notary_profile: str,
+    notary_keychain: Path | None = None,
     source_binding: Path | None = None,
     runner: CommandRunner = default_runner,
     phase_hook: PhaseHook | None = None,
@@ -2261,9 +2294,14 @@ def run_transaction(
         raise DirectNotaryTransactionError(
             "prepared NeAntik.app is missing or unsafe"
         )
+    notary_auth = notarytool_auth_arguments(
+        notary_profile,
+        notary_keychain,
+    )
     preflight_notary_profile(
         project_root=project_root,
         notary_profile=notary_profile,
+        notary_keychain=notary_keychain,
         runner=runner,
     )
     (
@@ -2369,7 +2407,7 @@ def run_transaction(
                 and reconcile_mismatched_submit_intent(
                     active,
                     project_root=project_root,
-                    notary_profile=notary_profile,
+                    notary_auth_arguments=notary_auth,
                     runner=runner,
                 )
             ):
@@ -2385,6 +2423,7 @@ def run_transaction(
                 runtime_build_evidence=bound_runtime_build_evidence,
                 release_channel=release_channel,
                 notary_profile=notary_profile,
+                notary_auth_arguments=notary_auth,
                 runner=runner,
                 hook=hook,
                 source_assertion=source_assertion,
@@ -2577,8 +2616,7 @@ def run_transaction(
                     "notarytool",
                     "submit",
                     str(submitted),
-                    "--keychain-profile",
-                    notary_profile,
+                    *notary_auth,
                     "--no-wait",
                     "--output-format",
                     "json",
@@ -2613,8 +2651,7 @@ def run_transaction(
                     "notarytool",
                     "wait",
                     submission_identifier,
-                    "--keychain-profile",
-                    notary_profile,
+                    *notary_auth,
                     "--timeout",
                     "30m",
                     "--output-format",
@@ -2636,8 +2673,7 @@ def run_transaction(
                 "notarytool",
                 "info",
                 submission_identifier,
-                "--keychain-profile",
-                notary_profile,
+                *notary_auth,
                 "--output-format",
                 "json",
             ],
@@ -3068,6 +3104,8 @@ def main() -> int:
     )
     args = parser.parse_args()
     notary_profile = os.environ.get("NEANTIK_NOTARY_PROFILE", "")
+    notary_keychain_value = os.environ.get("NEANTIK_NOTARY_KEYCHAIN", "").strip()
+    notary_keychain = Path(notary_keychain_value) if notary_keychain_value else None
     try:
         result = run_transaction(
             project_root=args.project_root,
@@ -3078,6 +3116,7 @@ def main() -> int:
             attestation=args.attestation,
             release_channel=args.release_channel,
             notary_profile=notary_profile,
+            notary_keychain=notary_keychain,
         )
     except DirectNotaryTransactionError as error:
         print(f"Direct notarization failed: {error}", file=sys.stderr)

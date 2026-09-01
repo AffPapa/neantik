@@ -40,6 +40,9 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
             text.index("notarytool submit"),
         )
         self.assertIn("Applications shortcut", text)
+        self.assertIn("NEANTIK_NOTARY_KEYCHAIN", text)
+        self.assertIn('"${NOTARY_KEYCHAIN_ARGUMENTS[@]}"', text)
+        self.assertIn("explicit notary Keychain must be owner-only", text)
 
     def test_release_script_requires_accepted_and_all_outer_gates(self) -> None:
         text = (ROOT / "scripts" / "release-direct-dmg.sh").read_text()

@@ -30,15 +30,6 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
   echo "Ad-hoc builds cannot enroll a public Direct release authority." >&2
   exit 65
 fi
-if [[ "$(/usr/bin/stat -f '%u' /dev/console)" != "$EUID" ]]; then
-  echo "Run fingerprint enrollment from the signed-in user's Terminal session." >&2
-  exit 69
-fi
-if ! /bin/launchctl print "gui/$EUID" >/dev/null 2>&1; then
-  echo "The signed-in macOS user session is unavailable." >&2
-  exit 69
-fi
-
 /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
   --profile "$APP_PATH/Contents/embedded.provisionprofile" \
@@ -60,6 +51,7 @@ if [[ -e "$LOG_PATH" || -L "$LOG_PATH" ]]; then
 fi
 
 enrollment_status=0
+python3 "$PROJECT_DIR/scripts/verify-active-gui-session-unlocked.py"
 /usr/bin/env \
   -u DYLD_INSERT_LIBRARIES \
   -u DYLD_LIBRARY_PATH \

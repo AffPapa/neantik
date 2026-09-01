@@ -108,6 +108,53 @@ class DirectProvisioningProfileTests(unittest.TestCase):
             ):
                 MODULE.validate_declared_signing_identity(profile, unauthorized)
 
+    def test_selects_the_only_installed_profile_authorized_developer_id(self) -> None:
+        profile = valid_profile()
+        fingerprint = hashlib.sha1(
+            PROFILE_CERTIFICATE, usedforsecurity=False
+        ).hexdigest().upper()
+        installed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=(
+                f'  1) {fingerprint} "Developer ID Application: NeAntik"\n'
+                f'  2) {"A" * 40} "Apple Development: Local"\n'
+            ).encode(),
+            stderr=b"",
+        )
+        with mock.patch.object(MODULE.subprocess, "run", return_value=installed):
+            self.assertEqual(
+                MODULE.select_profile_authorized_signing_identity(profile),
+                fingerprint,
+            )
+
+    def test_auto_selection_fails_closed_when_ambiguous(self) -> None:
+        second_certificate = b"another Developer ID certificate"
+        profile = valid_profile()
+        profile["DeveloperCertificates"] = [
+            PROFILE_CERTIFICATE,
+            second_certificate,
+        ]
+        fingerprints = [
+            hashlib.sha1(certificate, usedforsecurity=False).hexdigest().upper()
+            for certificate in profile["DeveloperCertificates"]
+        ]
+        installed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="".join(
+                f'  {index}) {fingerprint} "Developer ID Application: {index}"\n'
+                for index, fingerprint in enumerate(fingerprints, start=1)
+            ).encode(),
+            stderr=b"",
+        )
+        with mock.patch.object(MODULE.subprocess, "run", return_value=installed):
+            with self.assertRaisesRegex(
+                MODULE.ProvisioningProfileError,
+                "multiple installed Developer ID identities",
+            ):
+                MODULE.select_profile_authorized_signing_identity(profile)
+
     def test_signed_app_certificate_must_match_profile(self) -> None:
         profile = valid_profile()
         rejected = subprocess.CompletedProcess(

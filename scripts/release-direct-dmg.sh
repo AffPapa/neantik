@@ -7,11 +7,26 @@ PREPARED_APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 PREPARED_INFO_PLIST="$PREPARED_APP_PATH/Contents/Info.plist"
 NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 NOTARY_LOG_DIR="$PROJECT_DIR/dist/notary"
+NOTARY_KEYCHAIN_ARGUMENTS=()
 
 fail() {
   echo "DMG release blocked: $*" >&2
   exit 65
 }
+
+if [[ -n "${NEANTIK_NOTARY_KEYCHAIN:-}" ]]; then
+  NOTARY_KEYCHAIN="$NEANTIK_NOTARY_KEYCHAIN"
+  [[ "$NOTARY_KEYCHAIN" == /* && -f "$NOTARY_KEYCHAIN" && ! -L "$NOTARY_KEYCHAIN" ]] ||
+    fail "explicit notary Keychain must be one absolute regular file"
+  [[ "$(stat -f '%u' "$NOTARY_KEYCHAIN")" == "$EUID" ]] ||
+    fail "explicit notary Keychain must be owned by the current user"
+  [[ "$(stat -f '%l' "$NOTARY_KEYCHAIN")" == "1" ]] ||
+    fail "explicit notary Keychain must have one hard link"
+  NOTARY_KEYCHAIN_MODE="$(stat -f '%Lp' "$NOTARY_KEYCHAIN")"
+  (( (8#$NOTARY_KEYCHAIN_MODE & 077) == 0 )) ||
+    fail "explicit notary Keychain must be owner-only"
+  NOTARY_KEYCHAIN_ARGUMENTS=(--keychain "$NOTARY_KEYCHAIN")
+fi
 
 [[ -d "$PREPARED_APP_PATH" ]] ||
   fail "missing signed app: $PREPARED_APP_PATH"
@@ -187,6 +202,7 @@ rm -f "$NOTARY_RECEIPT"
 xcrun notarytool submit \
   "$TEMP_DMG" \
   --keychain-profile "$NOTARY_PROFILE" \
+  "${NOTARY_KEYCHAIN_ARGUMENTS[@]}" \
   --wait \
   --output-format json |
   tee "$SUBMIT_LOG"
@@ -212,6 +228,7 @@ PY
 xcrun notarytool log \
   "$SUBMISSION_ID" \
   --keychain-profile "$NOTARY_PROFILE" \
+  "${NOTARY_KEYCHAIN_ARGUMENTS[@]}" \
   "$NOTARY_RECEIPT"
 python3 -m json.tool "$NOTARY_RECEIPT" >/dev/null
 

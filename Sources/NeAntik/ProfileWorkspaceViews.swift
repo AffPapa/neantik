@@ -24,6 +24,7 @@ struct ProfileRow<Actions: View>: View {
     let density: ProfileRowDensity
     let isBatchSelected: Bool
     let onToggleBatchSelection: () -> Void
+    let onEditNote: () -> Void
     let onToggleRunning: () -> Void
     let actions: Actions
 
@@ -38,6 +39,7 @@ struct ProfileRow<Actions: View>: View {
         density: ProfileRowDensity = .comfortable,
         isBatchSelected: Bool = false,
         onToggleBatchSelection: @escaping () -> Void = {},
+        onEditNote: @escaping () -> Void = {},
         onToggleRunning: @escaping () -> Void,
         @ViewBuilder actions: () -> Actions
     ) {
@@ -51,6 +53,7 @@ struct ProfileRow<Actions: View>: View {
         self.density = density
         self.isBatchSelected = isBatchSelected
         self.onToggleBatchSelection = onToggleBatchSelection
+        self.onEditNote = onEditNote
         self.onToggleRunning = onToggleRunning
         self.actions = actions()
     }
@@ -141,7 +144,7 @@ struct ProfileRow<Actions: View>: View {
                 .lineLimit(1)
 
                 if !presentation.noteSummary.isEmpty {
-                    noteLabel(presentation.noteSummary)
+                    noteButton(presentation.noteSummary)
                 } else if folderName != nil || !profile.tags.isEmpty {
                     organizationMetadata
                         .font(.caption)
@@ -306,7 +309,9 @@ struct ProfileRow<Actions: View>: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             if !presentation.noteSummary.isEmpty {
-                noteLabel(presentation.noteSummary)
+                noteButton(presentation.noteSummary)
+            } else {
+                noteButton("")
             }
             lastLaunchLabel
         }
@@ -324,14 +329,26 @@ struct ProfileRow<Actions: View>: View {
         .lineLimit(1)
     }
 
-    private func noteLabel(_ summary: String) -> some View {
-        Label(summary, systemImage: "note.text")
+    private func noteButton(_ summary: String) -> some View {
+        Button(action: onEditNote) {
+            Label(
+                summary.isEmpty ? "Добавить заметку" : summary,
+                systemImage: summary.isEmpty ? "square.and.pencil" : "note.text"
+            )
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.tail)
             .privacySensitive()
-            .accessibilityLabel("Заметка: \(summary)")
+        }
+        .buttonStyle(.plain)
+        .help(summary.isEmpty ? "Добавить заметку" : "Изменить заметку")
+        .accessibilityLabel(
+            summary.isEmpty
+                ? "Добавить заметку к профилю \(profile.name)"
+                : "Изменить заметку профиля \(profile.name)"
+        )
+        .accessibilityValue(summary.isEmpty ? "Заметки нет" : "Заметка добавлена")
     }
 
     private func launchButton(

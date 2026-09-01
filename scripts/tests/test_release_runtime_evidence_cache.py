@@ -11,6 +11,18 @@ RELEASE_COMMAND = ROOT / "scripts" / "Run-NeAntik-Release.command"
 
 
 class ReleaseRuntimeEvidenceCacheTests(unittest.TestCase):
+    def test_release_selects_profile_authorized_identity_and_checks_session_early(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+
+        self.assertNotIn("62831D7DD86D5EDE0C44130F980325C4BFBC1B43", text)
+        self.assertIn("--print-signing-identity", text)
+        self.assertIn("--signing-identity \"$NEANTIK_SIGNING_IDENTITY\"", text)
+        session_check = text.index("verify-active-gui-session-unlocked.py")
+        identity_selection = text.index("--print-signing-identity")
+        attempt_directory = text.index('mkdir -p "$ATTEMPT_STATE_ROOT"')
+        self.assertLess(session_check, identity_selection)
+        self.assertLess(session_check, attempt_directory)
+
     def evaluate_gui_attempt(
         self,
         *,

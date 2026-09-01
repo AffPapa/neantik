@@ -1,6 +1,6 @@
 # NeAntik 0.3.24 zero-base audit plan
 
-Research cut: 2026-09-01. This is an evidence checklist, not a claim that any
+Research cut: 2026-09-02. This is an evidence checklist, not a claim that any
 application can be made impossible to compromise. Each track follows:
 
 > evidence -> risk -> smallest justified change -> test -> release gate
@@ -197,6 +197,10 @@ marketplace or arbitrary browser flags.
 
 - Compact, visibly labelled list controls at normal width.
 - Clearer search and table-header language.
+- A directly visible add/edit-note action in the profile row.
+- Profile-authorized Developer ID selection without a rotating hard-coded SHA-1.
+- An optional private explicit notary Keychain for unattended Direct tooling.
+- An early and immediate pre-enrollment unlocked-session gate.
 - CodeQL and GitHub Actions dependency maintenance.
 - Stronger repository settings and required checks after the workflow exists.
 - A safety explanation beside the validated CoreFoundation bridge.
@@ -208,3 +212,58 @@ and a running-profile strip—remain. Cloud accounts, teams, RPA, rich-text
 secret notes, arbitrary flags, column builders and marketplaces remain out of
 scope because they add attack surface and binary/product weight without making
 the frequent local workflow clearer.
+
+## Second-pass competitive evidence
+
+Twenty-four current official product or documentation surfaces were reviewed:
+[Vision](https://docs.browser.vision/profiles/overview),
+[Dolphin Anty](https://docs.dolphin-anty.com/en/interface-dolphin-anty/application-interface-dolphin-anty),
+[GoLogin](https://gologin.com/docs/browser-profiles/profile-management/notes-and-tags),
+[Octo Browser](https://docs.octobrowser.net/en/profiles/browser-profile-settings/),
+[Multilogin](https://www.multilogin.org/help/en_US/start/navigating-multilogin-x),
+[AdsPower](https://help.adspower.com/docs/opening_closing_browser_profiles),
+[MoreLogin](https://support.morelogin.com/en/articles/10183527-how-to-use-morelogin),
+[Kameleo](https://developer.kameleo.io/concepts/profiles/),
+[Undetectable](https://docs.undetectable.io/working-with-profiles/create-and-run/),
+[Incogniton](https://incogniton.com/getting-started/),
+[BitBrowser](https://doc.bitbrowser.net/help1/browser-profiles/features-and-functions),
+[Hidemyacc](https://docs.hidemyacc.com/hidemyacc-2.0-instructions/create-hidemyacc-profile),
+[NSTBrowser](https://docs.nstbrowser.io/guide/getting-started/quick-start.html),
+[SessionBox](https://sessionbox.io/features),
+[Ghost Browser](https://support.ghostbrowser.com/article/387-the-default-identity),
+[VMLogin](https://www.vmlogin.us/Instruction.pdf),
+[GenLogin](https://docs.genlogin.com/group-profiles/create-profile/overview),
+[MuLogin](https://www.mulogin.com/doc/en/?cat=13),
+[Lalicat](https://www.lalicat.com/),
+[MarketerBrowser](https://marketerbrowser.com/help.html),
+[DICloak](https://help.dicloak.com/browser-profiles/),
+[XLogin](https://www.xlogin.us/help/docs/getting-started/xlogin-function-introduction/),
+[ClonBrowser](https://www.clonbrowser.com/help/) and
+[ixBrowser](https://www.ixbrowser.com/guide).
+
+The repeated low-cost interaction model is stable across those products:
+profile list first; visible per-row Start/Stop; search and filters; folders or
+groups; tags/status/notes; quick and configured creation; proxy state close to
+the route; contextual bulk actions; and advanced settings outside the frequent
+path. NeAntik already implements that compact core. This cycle therefore makes
+notes directly editable from the list and hardens release recovery, while
+rejecting cloud/team/billing, RPA, browser marketplaces, arbitrary flags,
+credential-rich notes and configurable table builders as unjustified scope.
+
+## Confirmed second-pass findings
+
+- Current tree and reachable-history secret scans found no credential file,
+  provider token, provisioning profile, private key or seed/recovery phrase.
+- GitHub reported zero open secret-scanning and Dependabot alerts at the audit
+  timestamp; push protection and required checks remain enabled.
+- SwiftPM declares no third-party package dependency.
+- The release launcher did contain a stale hard-coded Developer ID SHA-1. It is
+  replaced by fail-closed selection from the exact external provisioning
+  profile.
+- The prior release failure was reproducibly caused by a locked GUI session,
+  which makes a `WhenUnlockedThisDeviceOnly` Secure Enclave operation return
+  interaction-not-allowed. The release now detects this before a costly build
+  and checks again immediately before enrollment.
+- The notary transaction now supports an explicit owner-only regular Keychain
+  path through `NEANTIK_NOTARY_KEYCHAIN`; the default login-Keychain profile
+  path remains unchanged for normal interactive releases.

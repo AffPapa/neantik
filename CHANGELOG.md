@@ -4,6 +4,17 @@
 
 ## Direct 0.3.24 (27) — September 1, 2026
 
+- Notes in the wide profile list are now direct edit actions, and an empty
+  note has an explicit `Add note` action. The control remains available while
+  a profile runs because note metadata does not change Chromium launch state;
+  its accessibility value reports presence without repeating plaintext note
+  content.
+- The Direct release launcher no longer pins a stale certificate SHA-1. It
+  rejects a locked GUI session early and selects the one installed Developer
+  ID Application identity authorized by the external provisioning profile.
+- Notarization can use an explicitly selected owner-only Keychain file without
+  changing the default login-Keychain path. Both ZIP and DMG transactions pass
+  the same validated Keychain to every notarytool call.
 - The normal-width profile toolbar keeps readable `Actions`, `Filters` and
   `Create profile` labels instead of stretching icon-only fallbacks into empty
   pills. Search now visibly mentions profiles and notes, while wide-table
