@@ -231,8 +231,9 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                     (public / "release.json").write_text(
                         # Synthetic unit-test values are intentionally stored
                         # only in the private TemporaryDirectory fixture.
-                        # lgtm[py/clear-text-storage-sensitive-data]
-                        json.dumps({"proxy": {"password": password}}),
+                        json.dumps(  # lgtm[py/clear-text-storage-sensitive-data]
+                            {"proxy": {"password": password}}
+                        ),
                         encoding="utf-8",
                     )
 

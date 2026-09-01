@@ -107,7 +107,11 @@ class OpenSourceTreePrivacyTests(unittest.TestCase):
             stderr = io.StringIO()
             with redirect_stderr(stderr), self.assertRaises(SystemExit):
                 MODULE.verify_files([VERIFIER])
-        self.assertIn("scripts/verify-open-source-tree.py", stderr.getvalue())
+        self.assertEqual(
+            stderr.getvalue(),
+            "FAIL: open-source publication boundary verification failed\n",
+        )
+        self.assertNotIn("synthetic self-test violation", stderr.getvalue())
 
     def test_real_operational_markers_are_not_stored_in_verifier(self) -> None:
         text = VERIFIER.read_text(encoding="utf-8")
