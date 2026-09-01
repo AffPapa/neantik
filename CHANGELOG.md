@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## Direct 0.3.23 (26) — September 1, 2026
+
 - Removed the dormant telemetry network client, signed-manifest prototype and
   historical external Chrome/Cloak preference path. Direct now contains no
   telemetry/update configuration keys, launches only the declared embedded
@@ -28,9 +30,6 @@
   repeats that certificate-to-profile check on the signed app before Secure
   Enclave enrollment. A wrong certificate selection now fails before the
   expensive build instead of being killed later by macOS `taskgated`.
-
-## Direct 0.3.23 (26) — September 1, 2026
-
 - GitHub README and project documentation now identify the actual immutable
   `0.3.22 (25)` release instead of continuing to label it a source candidate.
   A current code-owner map and a dated comparison of twenty profile browsers
@@ -49,6 +48,14 @@
   latest immutable GitHub assets without requiring a website deploy key.
   The restricted AffPapa access check is an explicit `site-doctor` used only
   for a separately authorized website transaction.
+- ContentView request, presentation and list-cache state now has a separate
+  source owner. The main view is 182 lines smaller and its fail-closed budget
+  was lowered from 4,400/170,000 to 3,800/145,000 lines/bytes without changing
+  profile, runtime, filesystem, network or Keychain behavior.
+- CI now scans every reachable Git blob and historical filename for private
+  keys, provisioning profiles, `.env` files, known service-token formats and
+  assigned recovery phrases without printing a matched value. Current-tree
+  publication checks and GitHub secret scanning remain separate gates.
 
 ## Direct 0.3.22 (25) — August 31, 2026
 

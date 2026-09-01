@@ -11,7 +11,7 @@ from pathlib import Path
 DEFAULT_MAX_LINES = 1500
 DEFAULT_MAX_BYTES = 60_000
 FILE_BUDGETS = {
-    "ContentView.swift": (4400, 170_000),
+    "ContentView.swift": (3800, 145_000),
     "BrowserProcessManager.swift": (2800, 110_000),
     "FingerprintAudit.swift": (2800, 110_000),
     "ProfileStore.swift": (1600, 62_000),
