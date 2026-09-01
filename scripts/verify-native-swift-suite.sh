@@ -41,6 +41,7 @@ case "$SUITE" in
   ManagerSessionEvidenceTests|\
   ManagerStartupProbeTests|\
   NativeMenuLocalizationTests|\
+  NeAntikShortcutCatalogTests|\
   NeAntikErrorPresentationTests|\
   ProfileCommandPresentationTests|\
   ProfileBatchActionsTests|\
@@ -69,6 +70,7 @@ case "$SUITE" in
   ResponsiveLayoutRenderTests|\
   WorkspaceDomainTests|\
   WorkspaceLayoutTests|\
+  WorkspacePreferenceStoreTests|\
   WorkspaceQueryStateTests|\
   WorkspaceReadinessTests|\
   RuntimePreferenceStoreTests|\

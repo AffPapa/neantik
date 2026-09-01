@@ -65,8 +65,7 @@ struct WorkspaceReadinessView: View {
                 )
             }
             .disabled(isRefreshing)
-            .keyboardShortcut("r", modifiers: [.command])
-            .help("Повторить безопасные локальные проверки (⌘R)")
+            .help("Повторить безопасные локальные проверки")
         }
         .padding(20)
         .accessibilityElement(children: .contain)

@@ -125,6 +125,7 @@ struct ProfileCommandSet {
     let hasMoreFolderOptions: Bool
     let toggleRunning: () -> Void
     let edit: () -> Void
+    let editNote: () -> Void
     let togglePinned: () -> Void
     let duplicate: () -> Void
     let moveToFolder: (UUID?) -> Void
@@ -139,6 +140,7 @@ struct ProfileCommandSet {
         hasMoreFolderOptions: false,
         toggleRunning: {},
         edit: {},
+        editNote: {},
         togglePinned: {},
         duplicate: {},
         moveToFolder: { _ in },
@@ -157,18 +159,26 @@ struct ProfileCommandSet {
 struct WorkspaceCommandSet {
     let isEnabled: Bool
     let selectedFolderName: String?
+    let canToggleInspector: Bool
+    let showsInspector: Bool
     let createProfile: () -> Void
     let createFolder: () -> Void
     let focusProfileSearch: () -> Void
+    let showShortcutReference: () -> Void
+    let toggleInspector: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
 
     static let unavailable = WorkspaceCommandSet(
         isEnabled: false,
         selectedFolderName: nil,
+        canToggleInspector: false,
+        showsInspector: false,
         createProfile: {},
         createFolder: {},
         focusProfileSearch: {},
+        showShortcutReference: {},
+        toggleInspector: {},
         renameSelectedFolder: {},
         deleteSelectedFolder: {}
     )
@@ -205,18 +215,57 @@ struct WorkspaceCommandMenu: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             Button("Новый профиль…", action: resolved.createProfile)
-                .keyboardShortcut("n")
+                .keyboardShortcut(
+                    NeAntikShortcut.newProfile.keyEquivalent,
+                    modifiers: NeAntikShortcut.newProfile.modifiers
+                )
                 .disabled(!resolved.isEnabled)
 
             Button("Новая папка…", action: resolved.createFolder)
-                .keyboardShortcut("n", modifiers: [.command, .shift])
+                .keyboardShortcut(
+                    NeAntikShortcut.newFolder.keyEquivalent,
+                    modifiers: NeAntikShortcut.newFolder.modifiers
+                )
                 .disabled(!resolved.isEnabled)
         }
 
         CommandGroup(after: .textEditing) {
             Button("Найти профиль", action: resolved.focusProfileSearch)
-                .keyboardShortcut("f")
+                .keyboardShortcut(
+                    NeAntikShortcut.findProfiles.keyEquivalent,
+                    modifiers: NeAntikShortcut.findProfiles.modifiers
+                )
                 .disabled(!resolved.isEnabled)
+        }
+
+        CommandMenu("Рабочее пространство") {
+            Button(
+                resolved.showsInspector
+                    ? "Скрыть сведения"
+                    : "Показать сведения",
+                systemImage: "sidebar.right",
+                action: resolved.toggleInspector
+            )
+            .keyboardShortcut(
+                NeAntikShortcut.toggleInspector.keyEquivalent,
+                modifiers: NeAntikShortcut.toggleInspector.modifiers
+            )
+            .disabled(
+                !resolved.isEnabled || !resolved.canToggleInspector
+            )
+
+            Divider()
+
+            Button(
+                "Сочетания клавиш…",
+                systemImage: "keyboard",
+                action: resolved.showShortcutReference
+            )
+            .keyboardShortcut(
+                NeAntikShortcut.shortcutReference.keyEquivalent,
+                modifiers: NeAntikShortcut.shortcutReference.modifiers
+            )
+            .disabled(!resolved.isEnabled)
         }
 
         CommandMenu("Папка") {
@@ -259,6 +308,10 @@ struct ProfileCommandMenu: Commands {
                 systemImage: resolved.presentation.launchSystemImage,
                 action: resolved.toggleRunning
             )
+            .keyboardShortcut(
+                NeAntikShortcut.toggleSelectedProfile.keyEquivalent,
+                modifiers: NeAntikShortcut.toggleSelectedProfile.modifiers
+            )
             .disabled(!resolved.presentation.launchIsEnabled)
 
             Button(
@@ -266,7 +319,22 @@ struct ProfileCommandMenu: Commands {
                 systemImage: "pencil",
                 action: resolved.edit
             )
+            .keyboardShortcut(
+                NeAntikShortcut.editSelectedProfile.keyEquivalent,
+                modifiers: NeAntikShortcut.editSelectedProfile.modifiers
+            )
             .disabled(!resolved.presentation.editIsEnabled)
+
+            Button(
+                "Изменить заметку…",
+                systemImage: "note.text",
+                action: resolved.editNote
+            )
+            .keyboardShortcut(
+                NeAntikShortcut.editSelectedNote.keyEquivalent,
+                modifiers: NeAntikShortcut.editSelectedNote.modifiers
+            )
+            .disabled(!resolved.hasProfile)
 
             Divider()
 
@@ -282,7 +350,10 @@ struct ProfileCommandMenu: Commands {
                 systemImage: "plus.square.on.square",
                 action: resolved.duplicate
             )
-            .keyboardShortcut("d")
+            .keyboardShortcut(
+                NeAntikShortcut.duplicateProfile.keyEquivalent,
+                modifiers: NeAntikShortcut.duplicateProfile.modifiers
+            )
             .disabled(!resolved.hasProfile)
 
             Menu("Переместить в папку", systemImage: "folder") {

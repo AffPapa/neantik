@@ -32,6 +32,10 @@ PROFILE_ENVIRONMENT = (
 )
 APP = ROOT / "Sources" / "NeAntik" / "NeAntikApp.swift"
 PROFILE_COMMANDS = ROOT / "Sources" / "NeAntik" / "ProfileCommands.swift"
+SHORTCUT_CATALOG = (
+    ROOT / "Sources" / "NeAntik" / "NeAntikShortcutCatalog.swift"
+)
+SETTINGS_VIEW = ROOT / "Sources" / "NeAntik" / "NeAntikSettingsView.swift"
 FOLDER_PICKER = (
     ROOT / "Sources" / "NeAntik" / "ProfileFolderPickerSheet.swift"
 )
@@ -127,11 +131,22 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("ToolbarItem(placement: .primaryAction)", toolbar)
         self.assertIn('Label("Готовность", systemImage: "checkmark.shield")', toolbar)
         self.assertIn("presentWorkspaceReadiness", toolbar)
-        self.assertIn("showsProfileInspector.toggle()", toolbar)
+        self.assertIn("Button(action: toggleProfileInspector)", toolbar)
         self.assertIn('systemImage: "sidebar.right"', toolbar)
-        self.assertIn('.keyboardShortcut("i", modifiers: [.command])', toolbar)
+        self.assertNotIn(".keyboardShortcut", toolbar)
         self.assertIn(".disabled(selectedProfile == nil)", toolbar)
         self.assertNotIn("profileCommandSet(", toolbar)
+
+        commands = PROFILE_COMMANDS.read_text(encoding="utf-8")
+        shortcuts = SHORTCUT_CATALOG.read_text(encoding="utf-8")
+        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
+        self.assertIn("NeAntikShortcut.toggleInspector.keyEquivalent", commands)
+        self.assertIn("NeAntikShortcut.toggleSelectedProfile.keyEquivalent", commands)
+        self.assertIn('CommandMenu("Рабочее пространство")', commands)
+        self.assertIn('case toggleSelectedProfile', shortcuts)
+        self.assertIn('case editSelectedNote', shortcuts)
+        self.assertIn('Section("Сочетания клавиш")', settings)
+        self.assertIn("$preferences.rowDensity", settings)
 
         header_start = text.index("private func profileListHeader(")
         search_start = text.index(
@@ -237,10 +252,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             "initialOperationalFilter: ProfileOperationalFilter = .all",
             content,
         )
-        self.assertIn(
-            "initialRowDensity: ProfileRowDensity = .comfortable",
-            content,
-        )
+        self.assertIn("workspacePreferences.rowDensity", content)
         self.assertIn('"Прямое подключение"', editor)
         self.assertIn(
             '"Сайты увидят обычный публичный адрес этого Mac или "',
@@ -313,6 +325,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
         self.assertIn("private var isWorkspaceModalPresented", content)
         self.assertIn("guard !isWorkspaceModalPresented", content)
+        self.assertIn("forceStopRequest != nil", content)
         self.assertIn("workspaceCommandSet", content)
         self.assertIn("static let unavailable = WorkspaceCommandSet", commands)
         self.assertNotIn("neAntikCreateProfile", content)
@@ -321,6 +334,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("appliesOnNextLaunch", content)
         self.assertIn("ProfileFolderCommandProjection.resolve", content)
         self.assertIn("static let defaultLimit = 8", commands)
+        batch_actions = (
+            ROOT / "Sources" / "NeAntik" / "ProfileBatchActions.swift"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn(
+            '.keyboardShortcut("z", modifiers: [.command])',
+            batch_actions,
+        )
         projection_start = commands.index(
             "struct ProfileFolderCommandProjection"
         )

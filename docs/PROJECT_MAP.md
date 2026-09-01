@@ -38,6 +38,7 @@ network API, arbitrary low-level fingerprint sliders or secret export.
 | Surface | Owner files | Contract |
 | --- | --- | --- |
 | App shell and orchestration | `ContentView.swift`, `NeAntikApp.swift` | Compose state and commands; do not invent domain policy in view bodies |
+| Keyboard and local UI preferences | `ProfileCommands.swift`, `NeAntikShortcutCatalog.swift`, `WorkspacePreferenceStore.swift`, `NeAntikSettingsView.swift` | Fixed menu-backed shortcuts, modal-safe focused commands and density-only local persistence; no global hooks or hidden destructive shortcuts |
 | Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions |
 | Query and organization | `ProfileListProjection.swift`, `WorkspaceQueryState.swift`, `ProfileTagEditor.swift` | Linear deterministic projection; no network or secret search |
 | Profiles and persistence | `Models.swift`, `ProfileStore.swift`, `AppPaths.swift` | Bounded validated metadata, atomic writes, safe local filesystem handling |
@@ -77,10 +78,17 @@ network API, arbitrary low-level fingerprint sliders or secret export.
   configuration;
 - makes Force Stop a visible destructive text action while retaining the
   separate confirmation.
+- disables focused workspace/profile commands under every modal, removes the
+  batch Undo shortcut that conflicted with text editing, and centralizes fixed
+  Start/Stop, inspector, edit and note shortcuts in the native menu;
+- adds the native Settings window for one justified persistent preference —
+  row density — plus the shared shortcut reference. Shortcuts are deliberately
+  fixed and local to the active app.
 
 ### Deferred with an explicit boundary
 
 - P1: real human keyboard/VoiceOver acceptance pass on a signed candidate;
+- P1: safe Quick Create only after its own naming/direct-route UX is proven;
 - P1: separate Chromium cold/warm launch timing and exact-current installed
   component measurement;
 - P1: continue splitting large owners by pure policy/presentation slices; do

@@ -50,6 +50,34 @@ fingerprint quality.
    creation date.
 12. The UI must not claim that a browser alone explains a platform block.
 
+## Settings and keyboard follow-up
+
+The same twenty products were rechecked on 2026-09-01 for app settings and
+profile-manager shortcuts. The evidence is much narrower than vendors'
+automation marketing:
+
+- [Multilogin](https://multilogin.com/help/ru_RU/account-settings-navigation/how-to-use-keyboard-shortcuts)
+  documents a `Command-/` reference and explicitly fixed, non-remappable
+  combinations.
+- [Octo](https://docs.octobrowser.net/en/profiles/hot-keys/) and
+  [Linken Sphere](https://ls.app/docs/sessions/hotkeys) document broad fixed
+  manager hotkey maps; neither source confirms user reassignment.
+- [Ghost Browser](https://support.ghostbrowser.com/article/335-keyboard-shortcuts)
+  documents configurable local/global shortcuts, but the page is older and
+  Ghost's one-window identity model is materially different from NeAntik.
+- For most other products, officially documented custom combinations belong
+  to RPA, a synchronizer, simulated input or the embedded browser — not the
+  profile manager itself.
+- [Vision Settings](https://docs.browser.vision/settings) supports the useful
+  principle that settings should expose a small number of local operational
+  choices and measurements, not turn the workspace into a dashboard.
+
+Decision: NeAntik keeps a small fixed menu-backed map and one reference view.
+It does not add global event taps, a key recorder or shortcuts for delete,
+Force Stop, archive, proxy credentials or release actions. The only persisted
+interface preference is list density; search, filters and selection stay
+contextual.
+
 ## Review signals and caveats
 
 Users commonly praise a clean profile list, fast switching, search and
@@ -76,6 +104,11 @@ contextual bulk actions, proxy preflight, safe defaults and explicit lifecycle.
 The 2026-09-01 slice therefore improves clarity rather than adding another
 system: dedicated note editing, compact readiness help, semantic notices,
 stable Start/Stop placement, named secondary actions and visible Force Stop.
+
+The keyboard/settings follow-up applies the same rule: fixed discoverable
+commands, modal safety, native Settings and density persistence replace a
+larger remapping subsystem. This reduces daily clicks without creating hidden
+global behavior.
 
 Do not import cloud teams, RPA, marketplaces, mobile farms, a configurable
 dashboard, dozens of fingerprint toggles or an anonymity score. They add code,

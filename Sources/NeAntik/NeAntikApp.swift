@@ -12,6 +12,8 @@ struct NeAntikApp: App {
         FingerprintObservationStore
     @StateObject private var proxyHealthCoordinator:
         ProxyHealthCoordinator
+    @StateObject private var workspacePreferences:
+        WorkspacePreferenceStore
 
     private let keychain: KeychainStore
     private let credentialCleanup: DeletedProfileCredentialCleanup
@@ -135,6 +137,9 @@ struct NeAntikApp: App {
                 fileURL: paths.proxyHealthFile
             )
         )
+        _workspacePreferences = StateObject(
+            wrappedValue: WorkspacePreferenceStore()
+        )
     }
 
     var body: some Scene {
@@ -145,6 +150,7 @@ struct NeAntikApp: App {
                 telemetry: telemetry,
                 fingerprintObservationStore: fingerprintObservationStore,
                 proxyHealthCoordinator: proxyHealthCoordinator,
+                workspacePreferences: workspacePreferences,
                 keychain: keychain,
                 credentialCleanup: credentialCleanup,
                 runtimeLocator: runtimeLocator,
@@ -179,6 +185,11 @@ struct NeAntikApp: App {
         .commands {
             WorkspaceCommandMenu()
             ProfileCommandMenu()
+        }
+
+        Settings {
+            NeAntikSettingsView(preferences: workspacePreferences)
+                .preferredColorScheme(uiSmokeColorScheme)
         }
     }
 

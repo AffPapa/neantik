@@ -125,6 +125,17 @@ struct ResponsiveLayoutRenderTests {
             )
 
             try render(
+                NeAntikSettingsView(
+                    preferences: WorkspacePreferenceStore(
+                        initialRowDensity: .comfortable
+                    )
+                ),
+                name: "settings-\(appearanceName)",
+                size: CGSize(width: 560, height: 520),
+                colorScheme: colorScheme
+            )
+
+            try render(
                 ProfileEditorView(
                     original: nil,
                     keychain: KeychainStore(
@@ -632,6 +643,9 @@ struct ResponsiveLayoutRenderTests {
         defer {
             defaults.removePersistentDomain(forName: defaultsName)
         }
+        let workspacePreferences = WorkspacePreferenceStore(
+            defaults: defaults
+        )
         let telemetry = TelemetryController(
             edition: .direct,
             configuration: TelemetryConfiguration(
@@ -675,6 +689,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealthCoordinator: ProxyHealthCoordinator(
                         fileURL: paths.proxyHealthFile
                     ),
+                    workspacePreferences: workspacePreferences,
                     keychain: keychain,
                     credentialCleanup:
                         DeletedProfileCredentialCleanup(
@@ -768,6 +783,7 @@ struct ResponsiveLayoutRenderTests {
                         proxyHealthCoordinator: ProxyHealthCoordinator(
                             fileURL: paths.proxyHealthFile
                         ),
+                        workspacePreferences: workspacePreferences,
                         keychain: keychain,
                         credentialCleanup:
                             DeletedProfileCredentialCleanup(
@@ -809,6 +825,7 @@ struct ResponsiveLayoutRenderTests {
                 ProfileRowDensity.compact
             ),
         ] {
+            workspacePreferences.rowDensity = density
             try render(
                 ContentView(
                     store: store,
@@ -819,6 +836,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealthCoordinator: ProxyHealthCoordinator(
                         fileURL: paths.proxyHealthFile
                     ),
+                    workspacePreferences: workspacePreferences,
                     keychain: keychain,
                     credentialCleanup:
                         DeletedProfileCredentialCleanup(
@@ -829,8 +847,7 @@ struct ResponsiveLayoutRenderTests {
                     launchIntent: intent,
                     fingerprintEvidenceReleaseContext: nil,
                     initialRuntime: initialRuntime,
-                    initialOperationalFilter: filter,
-                    initialRowDensity: density
+                    initialOperationalFilter: filter
                 ),
                 name: name,
                 size: CGSize(

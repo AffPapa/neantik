@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Keyboard commands now stay disabled under every sheet and alert, including
+  Force Stop. Start/Stop, inspector, profile edit and note edit use one fixed
+  menu-backed shortcut catalog; the batch bar no longer steals `Command-Z`
+  from text editing, the hidden readiness `Command-R` is gone, and Escape
+  clears then leaves profile search.
+- A native Settings window remembers only the local row density and shows the
+  complete shortcut reference. It adds no remappable/global hotkeys,
+  dependency, background service, profile field or runtime byte.
 - Direct release preflight now verifies that the external provisioning
   profile actually authorizes the exact pinned Developer ID certificate, then
   repeats that certificate-to-profile check on the signed app before Secure
