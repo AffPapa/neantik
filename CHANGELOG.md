@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## Direct 0.3.24 (27) — September 1, 2026
+
+- The normal-width profile toolbar keeps readable `Actions`, `Filters` and
+  `Create profile` labels instead of stretching icon-only fallbacks into empty
+  pills. Search now visibly mentions profiles and notes, while wide-table
+  headers identify selection/start and note/last-launch content directly.
+- The actual root view was re-rendered at the 820x560 minimum, ordinary and
+  wide sizes in light and dark appearances. The change adds no dependency,
+  asset, profile field, background work or runtime byte.
+- GitHub CI now performs SHA-pinned CodeQL analysis for Swift and Python,
+  cancels superseded runs and receives weekly pinned-action update proposals.
+  A local release contract rejects mutable Action tags, broad root permissions
+  and missing CodeQL/Dependabot coverage.
+- A new zero-base audit records fifteen independent professional review
+  prompts and one hundred security, correctness, usability, accessibility and
+  Direct-release checks. The current tree and every reachable Git blob remain
+  separate secret-leak gates.
+- The only forced CoreFoundation bridge in Secure Enclave lookup now documents
+  its preceding runtime type proof. No entitlement, Keychain scope,
+  fingerprint policy, launch argument or Chromium runtime changed.
+
 ## Direct 0.3.23 (26) — September 1, 2026
 
 - Removed the dormant telemetry network client, signed-manifest prototype and

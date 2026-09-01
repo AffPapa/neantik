@@ -154,6 +154,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         header = text[header_start:search_start]
         self.assertIn('Label("Создать профиль", systemImage: "plus")', header)
+        self.assertNotIn("ViewThatFits", header)
+        self.assertIn(
+            ".fixedSize(horizontal: true, vertical: false)",
+            header,
+        )
         self.assertIn(".buttonStyle(.borderedProminent)", header)
         self.assertIn(".tint(.green)", header)
         self.assertIn(
@@ -188,8 +193,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("private func profileTableHeader", text)
         self.assertIn("ProfileRowLayout.minimumWideWidth", text)
         self.assertIn("GeometryReader", text)
-        self.assertIn('Text("Выбор / действие")', text)
+        self.assertIn('Text("Выбор / запуск")', text)
         self.assertIn('Text("Подключение")', text)
+        self.assertIn('Text("Заметка / запуск")', text)
         self.assertIn("wideRow(presentation)", workspace_views)
         self.assertIn("compactRow(presentation)", workspace_views)
         self.assertIn("ProfileRowLayout.minimumIdentityWidth", workspace_views)
@@ -201,6 +207,16 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn(
             'accessibilityLabel("Фильтры и сортировка профилей")', text
         )
+        list_menu_start = text.index("private var profileListViewMenu")
+        list_menu_end = text.index(
+            "private var profileRouteFilterBinding", list_menu_start
+        )
+        list_menu = text[list_menu_start:list_menu_end]
+        self.assertIn(
+            'Label("Фильтры", systemImage: "line.3.horizontal.decrease")',
+            list_menu,
+        )
+        self.assertNotIn("ViewThatFits", list_menu)
         self.assertIn("profileRouteFilter = .all", text)
         self.assertIn("profileRouteFilter != .all", text)
         self.assertIn("profileRouteFilter = decision.routeFilter", text)
@@ -624,7 +640,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             search_start,
         )
         search = workspace_content[search_start:search_end]
-        self.assertIn('"Поиск профилей"', search)
+        self.assertIn('"Профиль или заметка"', search)
         self.assertIn(
             '"Поиск профилей, маршрутов, заметок, тегов и папок"',
             search,
