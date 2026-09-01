@@ -184,6 +184,8 @@ struct ClipboardLeaseState: Equatable {
 }
 
 struct ContentView: View {
+    @Environment(\.openSettings) private var openSettings
+
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
     @ObservedObject var telemetry: TelemetryController
@@ -191,6 +193,8 @@ struct ContentView: View {
         FingerprintObservationStore
     @ObservedObject var proxyHealthCoordinator:
         ProxyHealthCoordinator
+    @ObservedObject var workspacePreferences:
+        WorkspacePreferenceStore
 
     let keychain: KeychainStore
     let credentialCleanup: DeletedProfileCredentialCleanup
@@ -231,7 +235,6 @@ struct ContentView: View {
         .pinnedThenName
     @State private var profileOperationalFilter: ProfileOperationalFilter =
         .all
-    @State private var profileRowDensity: ProfileRowDensity = .comfortable
     @State private var folderNameRequest: FolderNameRequest?
     @State private var profileFolderPickerRequest:
         ProfileFolderPickerRequest?
@@ -273,20 +276,21 @@ struct ContentView: View {
         telemetry: TelemetryController,
         fingerprintObservationStore: FingerprintObservationStore,
         proxyHealthCoordinator: ProxyHealthCoordinator,
+        workspacePreferences: WorkspacePreferenceStore,
         keychain: KeychainStore,
         credentialCleanup: DeletedProfileCredentialCleanup,
         runtimeLocator: BrowserRuntimeLocator,
         launchIntent: NeAntikLaunchIntent,
         fingerprintEvidenceReleaseContext: FingerprintEvidenceReleaseContext?,
         initialRuntime: BrowserRuntime? = nil,
-        initialOperationalFilter: ProfileOperationalFilter = .all,
-        initialRowDensity: ProfileRowDensity = .comfortable
+        initialOperationalFilter: ProfileOperationalFilter = .all
     ) {
         self.store = store
         self.processes = processes
         self.telemetry = telemetry
         self.fingerprintObservationStore = fingerprintObservationStore
         self.proxyHealthCoordinator = proxyHealthCoordinator
+        self.workspacePreferences = workspacePreferences
         self.keychain = keychain
         self.credentialCleanup = credentialCleanup
         self.runtimeLocator = runtimeLocator
@@ -298,7 +302,6 @@ struct ContentView: View {
         _profileOperationalFilter = State(
             initialValue: initialOperationalFilter
         )
-        _profileRowDensity = State(initialValue: initialRowDensity)
         _readinessSystemInspection = State(
             initialValue: WorkspaceReadinessSystemInspection.checking(
                 application: WorkspaceApplicationIdentity.current()
@@ -326,6 +329,7 @@ struct ContentView: View {
             profileFolderPickerRequest != nil ||
             profileBatchTagRequest != nil ||
             bulkProxyImportRequest != nil ||
+            forceStopRequest != nil ||
             showingReleaseFingerprintAudit ||
             fingerprintAuditRequest != nil ||
             showingWorkspaceReadiness ||
@@ -340,9 +344,13 @@ struct ContentView: View {
         return WorkspaceCommandSet(
             isEnabled: true,
             selectedFolderName: selectedFolder?.name,
+            canToggleInspector: selectedProfile != nil,
+            showsInspector: showsProfileInspector,
             createProfile: beginCreatingProfile,
             createFolder: beginCreatingFolder,
             focusProfileSearch: { profileSearchIsFocused = true },
+            showShortcutReference: { openSettings() },
+            toggleInspector: toggleProfileInspector,
             renameSelectedFolder: {
                 guard let selectedFolder else { return }
                 folderNameRequest = FolderNameRequest(
@@ -1138,20 +1146,17 @@ struct ContentView: View {
             .accessibilityLabel("Открыть центр готовности NeAntik")
         }
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                showsProfileInspector.toggle()
-            } label: {
+            Button(action: toggleProfileInspector) {
                 Label(
                     showsProfileInspector ? "Скрыть сведения" : "Сведения",
                     systemImage: "sidebar.right"
                 )
             }
-            .keyboardShortcut("i", modifiers: [.command])
             .disabled(selectedProfile == nil)
             .help(
                 showsProfileInspector
-                    ? "Скрыть сведения о профиле (⌘I)"
-                    : "Показать сведения о профиле (⌘I)"
+                    ? "Скрыть сведения о профиле"
+                    : "Показать сведения о профиле"
             )
             .accessibilityLabel(
                 showsProfileInspector
@@ -1308,8 +1313,13 @@ struct ContentView: View {
 
     private func resetProfileView() {
         profileListOrdering = .pinnedThenName
-        profileRowDensity = .comfortable
+        workspacePreferences.resetInterface()
         resetProfileFilters()
+    }
+
+    private func toggleProfileInspector() {
+        guard selectedProfile != nil else { return }
+        showsProfileInspector.toggle()
     }
 
     private func applyWorkspaceQuery(
@@ -1972,7 +1982,7 @@ struct ContentView: View {
                                     folderName: store.folderID(forProfileID: profile.id)
                                         .flatMap { listState.index.folderNameByID[$0] },
                                     usesWideLayout: usesWideLayout,
-                                    density: profileRowDensity,
+                                    density: workspacePreferences.rowDensity,
                                     isBatchSelected:
                                         batchSelectedProfileIDs.contains(
                                             profile.id
@@ -2327,6 +2337,24 @@ struct ContentView: View {
         .help(
             "Примеры: тег:tiktok, папка:\"Paid Social\", прокси:есть, статус:закреплен"
         )
+        .onExitCommand(perform: exitProfileSearch)
+    }
+
+    private func exitProfileSearch() {
+        if !profileSearchText.isEmpty {
+            profileSearchText = ""
+            NSAccessibility.post(
+                element: NSApp as Any,
+                notification: .announcementRequested,
+                userInfo: [
+                    .announcement: "Поиск профилей очищен",
+                    .priority:
+                        NSAccessibilityPriorityLevel.medium.rawValue,
+                ]
+            )
+        } else {
+            profileSearchIsFocused = false
+        }
     }
 
     private var profileListViewMenu: some View {
@@ -2343,7 +2371,10 @@ struct ContentView: View {
                 }
             }
             Divider()
-            Picker("Плотность", selection: $profileRowDensity) {
+            Picker(
+                "Плотность",
+                selection: $workspacePreferences.rowDensity
+            ) {
                 ForEach(ProfileRowDensity.allCases) { density in
                     Label(density.title, systemImage: density.systemImage)
                         .tag(density)
@@ -2365,7 +2396,7 @@ struct ContentView: View {
         .accessibilityLabel("Фильтры и сортировка профилей")
         .accessibilityValue(
             "\(profileListOrdering.title), \(profileRouteFilter.title), " +
-                profileRowDensity.title
+                workspacePreferences.rowDensity.title
         )
     }
 
@@ -2839,6 +2870,7 @@ struct ContentView: View {
                 }
             },
             edit: { beginEditing(profile) },
+            editNote: { beginEditingNote(profile) },
             togglePinned: { togglePinned(profile) },
             duplicate: { duplicate(profile) },
             moveToFolder: { moveProfile(profile, toFolderID: $0) },

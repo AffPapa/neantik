@@ -48,6 +48,7 @@ case "$SHARD" in
       ManagerSessionEvidenceTests
       ManagerStartupProbeTests
       NativeMenuLocalizationTests
+      NeAntikShortcutCatalogTests
       NeAntikErrorPresentationTests
     )
     ;;
@@ -84,6 +85,7 @@ case "$SHARD" in
       ResponsiveLayoutRenderTests
       WorkspaceDomainTests
       WorkspaceLayoutTests
+      WorkspacePreferenceStoreTests
       WorkspaceQueryStateTests
       WorkspaceReadinessTests
       RuntimePreferenceStoreTests

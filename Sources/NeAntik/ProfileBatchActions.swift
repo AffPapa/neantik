@@ -127,7 +127,6 @@ struct ProfileBatchActionBar: View {
                     Button("Отменить", systemImage: "arrow.uturn.backward") {
                         onUndo()
                     }
-                    .keyboardShortcut("z", modifiers: [.command])
                 }
             }
             .controlSize(.small)
