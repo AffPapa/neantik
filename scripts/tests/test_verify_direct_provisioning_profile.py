@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import importlib.util
+import subprocess
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +21,7 @@ SPEC.loader.exec_module(MODULE)
 TEAM_ID = "H6VGU2M6JD"
 BUNDLE_ID = "app.neantik.desktop"
 APPLICATION_ID = f"{TEAM_ID}.{BUNDLE_ID}"
+PROFILE_CERTIFICATE = b"synthetic Developer ID certificate"
 
 
 def valid_profile() -> dict[str, object]:
@@ -28,6 +32,7 @@ def valid_profile() -> dict[str, object]:
         "TeamIdentifier": [TEAM_ID],
         "Platform": ["OSX"],
         "ProvisionsAllDevices": True,
+        "DeveloperCertificates": [PROFILE_CERTIFICATE],
         "Entitlements": {
             "com.apple.application-identifier": APPLICATION_ID,
             "com.apple.developer.team-identifier": TEAM_ID,
@@ -70,6 +75,67 @@ class DirectProvisioningProfileTests(unittest.TestCase):
             MODULE.ProvisioningProfileError, "Developer ID distribution"
         ):
             self.validate(profile)
+
+    def test_rejects_profile_without_authorized_signing_certificate(self) -> None:
+        profile = valid_profile()
+        profile["DeveloperCertificates"] = []
+        with self.assertRaisesRegex(
+            MODULE.ProvisioningProfileError,
+            "no authorized Developer ID signing certificate",
+        ):
+            self.validate(profile)
+
+    def test_declared_signer_must_be_authorized_by_profile(self) -> None:
+        profile = valid_profile()
+        fingerprint = hashlib.sha1(
+            PROFILE_CERTIFICATE, usedforsecurity=False
+        ).hexdigest().upper()
+        unauthorized = "A" * 40
+        installed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=(
+                f'  1) {fingerprint} "Developer ID Application: NeAntik"\n'
+                f'  2) {unauthorized} "Developer ID Application: Other"\n'
+            ).encode(),
+            stderr=b"",
+        )
+        with mock.patch.object(MODULE.subprocess, "run", return_value=installed):
+            MODULE.validate_declared_signing_identity(profile, fingerprint)
+            with self.assertRaisesRegex(
+                MODULE.ProvisioningProfileError,
+                "does not authorize",
+            ):
+                MODULE.validate_declared_signing_identity(profile, unauthorized)
+
+    def test_signed_app_certificate_must_match_profile(self) -> None:
+        profile = valid_profile()
+        rejected = subprocess.CompletedProcess(
+            args=[], returncode=1, stdout=b"", stderr=b""
+        )
+        accepted = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=b"", stderr=b""
+        )
+        with mock.patch.object(
+            MODULE.subprocess,
+            "run",
+            side_effect=[rejected],
+        ):
+            with self.assertRaisesRegex(
+                MODULE.ProvisioningProfileError,
+                "signed app certificate",
+            ):
+                MODULE.validate_signed_app_certificate(
+                    Path("/tmp/NeAntik.app"), profile
+                )
+        with mock.patch.object(
+            MODULE.subprocess,
+            "run",
+            side_effect=[accepted],
+        ):
+            MODULE.validate_signed_app_certificate(
+                Path("/tmp/NeAntik.app"), profile
+            )
 
     def test_rejects_wrong_keychain_group(self) -> None:
         profile = valid_profile()

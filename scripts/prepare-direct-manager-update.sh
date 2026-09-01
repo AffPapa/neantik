@@ -159,7 +159,8 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   : "${NEANTIK_PROVISIONING_PROFILE:?Set NEANTIK_PROVISIONING_PROFILE to the absolute Developer ID distribution provisioning profile path}"
   python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
     --profile "$NEANTIK_PROVISIONING_PROFILE" \
-    --entitlements "$RELEASE_ENTITLEMENTS"
+    --entitlements "$RELEASE_ENTITLEMENTS" \
+    --signing-identity "$NEANTIK_SIGNING_IDENTITY"
 fi
 
 "$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" \
@@ -228,6 +229,7 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
     --profile "$NEANTIK_PROVISIONING_PROFILE" \
     --entitlements "$RELEASE_ENTITLEMENTS" \
+    --signing-identity "$NEANTIK_SIGNING_IDENTITY" \
     --copy-to "$EMBEDDED_PROFILE"
 fi
 verify_reviewed_runtime_evidence
@@ -255,6 +257,7 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
     --profile "$EMBEDDED_PROFILE" \
     --entitlements "$RELEASE_ENTITLEMENTS" \
+    --signing-identity "$NEANTIK_SIGNING_IDENTITY" \
     --app "$CANDIDATE_APP"
 fi
 

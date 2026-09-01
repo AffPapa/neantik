@@ -196,6 +196,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             "ProvisionedDevices",
             "ExpirationDate",
             "TeamIdentifier",
+            "DeveloperCertificates",
             "com.apple.application-identifier",
             "com.apple.developer.team-identifier",
             "keychain-access-groups",
@@ -209,6 +210,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             self.assertIn("NEANTIK_PROVISIONING_PROFILE", text)
             self.assertIn("verify-direct-provisioning-profile.py", text)
             self.assertIn('--entitlements "$RELEASE_ENTITLEMENTS"', text)
+            self.assertIn(
+                '--signing-identity "$NEANTIK_SIGNING_IDENTITY"',
+                text,
+            )
 
     def test_release_only_verifies_and_notarizes_prepared_candidate(self) -> None:
         text = RELEASE.read_text(encoding="utf-8")

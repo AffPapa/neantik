@@ -297,6 +297,106 @@ def validate_source_entitlements(
         raise ProvisioningProfileError("release application identifier is invalid")
 
 
+def profile_developer_certificate_sha1s(
+    profile: dict[str, Any],
+) -> frozenset[str]:
+    certificates = profile.get("DeveloperCertificates")
+    if not isinstance(certificates, list) or not certificates:
+        raise ProvisioningProfileError(
+            "profile has no authorized Developer ID signing certificate"
+        )
+    fingerprints: set[str] = set()
+    for certificate in certificates:
+        if not isinstance(certificate, bytes) or not certificate:
+            raise ProvisioningProfileError(
+                "profile DeveloperCertificates entry is invalid"
+            )
+        # Apple code-signing requirements identify leaf certificates by SHA-1.
+        # This is an equality key, not a content-integrity decision.
+        fingerprints.add(
+            hashlib.sha1(certificate, usedforsecurity=False).hexdigest().upper()
+        )
+    return frozenset(fingerprints)
+
+
+def resolve_signing_identity_sha1(identity: str) -> str:
+    identity = identity.strip()
+    if not identity:
+        raise ProvisioningProfileError("signing identity is empty")
+    completed = subprocess.run(
+        ["/usr/bin/security", "find-identity", "-v", "-p", "codesigning"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+        timeout=30,
+    )
+    if completed.returncode != 0:
+        raise ProvisioningProfileError(
+            "installed code-signing identities could not be inspected"
+        )
+    text = (completed.stdout + b"\n" + completed.stderr).decode(
+        "utf-8", errors="replace"
+    )
+    available: list[tuple[str, str]] = []
+    for line in text.splitlines():
+        match = re.match(
+            r'^\s*\d+\)\s+([0-9A-Fa-f]{40})\s+"([^"]+)"',
+            line,
+        )
+        if match:
+            available.append((match.group(1).upper(), match.group(2)))
+    requested_sha1 = (
+        identity.upper()
+        if re.fullmatch(r"[0-9A-Fa-f]{40}", identity)
+        else None
+    )
+    matches = {
+        fingerprint
+        for fingerprint, common_name in available
+        if fingerprint == requested_sha1 or common_name == identity
+    }
+    if not matches:
+        raise ProvisioningProfileError(
+            "declared Developer ID signing identity is not installed"
+        )
+    if len(matches) != 1:
+        raise ProvisioningProfileError(
+            "declared Developer ID signing identity is ambiguous; use its SHA-1"
+        )
+    return next(iter(matches))
+
+
+def validate_declared_signing_identity(
+    profile: dict[str, Any],
+    identity: str,
+) -> None:
+    signing_sha1 = resolve_signing_identity_sha1(identity)
+    if signing_sha1 not in profile_developer_certificate_sha1s(profile):
+        raise ProvisioningProfileError(
+            "profile does not authorize the declared Developer ID signing certificate"
+        )
+
+
+def validate_signed_app_certificate(
+    app_path: Path,
+    profile: dict[str, Any],
+) -> None:
+    for fingerprint in profile_developer_certificate_sha1s(profile):
+        requirement = f'certificate leaf = H"{fingerprint}"'
+        checked = subprocess.run(
+            ["/usr/bin/codesign", "-v", f"-R={requirement}", str(app_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            timeout=30,
+        )
+        if checked.returncode == 0:
+            return
+    raise ProvisioningProfileError(
+        "signed app certificate is not authorized by its provisioning profile"
+    )
+
+
 def _normalized_utc(value: dt.datetime) -> dt.datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=dt.timezone.utc)
@@ -337,6 +437,7 @@ def validate_profile_payload(
         raise ProvisioningProfileError(
             "device-limited development or ad hoc profile is forbidden"
         )
+    profile_developer_certificate_sha1s(profile)
 
     entitlements = profile.get("Entitlements")
     if not isinstance(entitlements, dict):
@@ -387,6 +488,7 @@ def validate_signed_app(
     app_path: Path,
     *,
     profile_bytes: bytes,
+    profile: dict[str, Any],
     source_entitlements: dict[str, Any],
     bundle_id: str,
     team_id: str,
@@ -413,6 +515,7 @@ def validate_signed_app(
     )
     if verified.returncode != 0:
         raise ProvisioningProfileError("signed app failed codesign verification")
+    validate_signed_app_certificate(app_path, profile)
     displayed = subprocess.run(
         ["/usr/bin/codesign", "-d", "--entitlements", ":-", str(app_path)],
         stdout=subprocess.PIPE,
@@ -496,6 +599,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile", required=True, type=Path)
     parser.add_argument("--info-plist", type=Path, default=DEFAULT_INFO_PLIST)
     parser.add_argument("--entitlements", type=Path, default=DEFAULT_ENTITLEMENTS)
+    parser.add_argument("--signing-identity")
     parser.add_argument("--copy-to", type=Path)
     parser.add_argument("--app", type=Path)
     return parser.parse_args()
@@ -521,12 +625,15 @@ def main() -> None:
             team_id=team_id,
             application_id=application_id,
         )
+        if args.signing_identity is not None:
+            validate_declared_signing_identity(profile, args.signing_identity)
         if args.copy_to is not None:
             _copy_profile(profile_bytes, args.copy_to)
         if args.app is not None:
             validate_signed_app(
                 args.app,
                 profile_bytes=profile_bytes,
+                profile=profile,
                 source_entitlements=entitlements,
                 bundle_id=bundle_id,
                 team_id=team_id,

@@ -195,8 +195,11 @@ input and must be supplied through `NEANTIK_PROVISIONING_PROFILE`. Source gates
 reject both `.provisionprofile` and `.mobileprovision` files in the public
 repository. The profile must be Apple-signed, unexpired, distribution-wide,
 and authorize the exact NeAntik Team ID, application identifier, and Keychain
-access group; development, ad hoc, debug and App Store sandbox profiles fail
-closed.
+access group. Its `DeveloperCertificates` must also contain the exact
+Developer ID certificate selected by `NEANTIK_SIGNING_IDENTITY`; the release
+gate checks this before the expensive build and checks the final app
+certificate again before Secure Enclave enrollment. Development, ad hoc,
+debug and App Store sandbox profiles fail closed.
 
 The initial GitHub workflow builds and tests unsigned source only. Signed
 release artifacts are produced on the trusted local Apple Silicon builder and
