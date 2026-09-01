@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import hashlib
 import importlib.util
 import subprocess
 import unittest
@@ -87,9 +86,9 @@ class DirectProvisioningProfileTests(unittest.TestCase):
 
     def test_declared_signer_must_be_authorized_by_profile(self) -> None:
         profile = valid_profile()
-        fingerprint = hashlib.sha1(
-            PROFILE_CERTIFICATE, usedforsecurity=False
-        ).hexdigest().upper()
+        fingerprint = next(
+            iter(MODULE.profile_developer_certificate_sha1s(profile))
+        )
         unauthorized = "A" * 40
         installed = subprocess.CompletedProcess(
             args=[],
@@ -110,9 +109,9 @@ class DirectProvisioningProfileTests(unittest.TestCase):
 
     def test_selects_the_only_installed_profile_authorized_developer_id(self) -> None:
         profile = valid_profile()
-        fingerprint = hashlib.sha1(
-            PROFILE_CERTIFICATE, usedforsecurity=False
-        ).hexdigest().upper()
+        fingerprint = next(
+            iter(MODULE.profile_developer_certificate_sha1s(profile))
+        )
         installed = subprocess.CompletedProcess(
             args=[],
             returncode=0,
@@ -135,10 +134,9 @@ class DirectProvisioningProfileTests(unittest.TestCase):
             PROFILE_CERTIFICATE,
             second_certificate,
         ]
-        fingerprints = [
-            hashlib.sha1(certificate, usedforsecurity=False).hexdigest().upper()
-            for certificate in profile["DeveloperCertificates"]
-        ]
+        fingerprints = sorted(
+            MODULE.profile_developer_certificate_sha1s(profile)
+        )
         installed = subprocess.CompletedProcess(
             args=[],
             returncode=0,
