@@ -84,11 +84,17 @@ network API, arbitrary low-level fingerprint sliders or secret export.
 - adds the native Settings window for one justified persistent preference —
   row density — plus the shared shortcut reference. Shortcuts are deliberately
   fixed and local to the active app.
+- keeps the primary Create button on the full editor while its disclosure menu
+  can create and open a permanent Direct profile with a readable unique name,
+  fresh session and fresh identity;
+- exposes the existing process-safe window focus operation from the selected
+  profile menu and `Shift-Command-Return`, without changing Stop or Force Stop.
 
 ### Deferred with an explicit boundary
 
 - P1: real human keyboard/VoiceOver acceptance pass on a signed candidate;
-- P1: safe Quick Create only after its own naming/direct-route UX is proven;
+- P1: human acceptance of Quick Create naming and the running-window focus
+  command on a signed candidate;
 - P1: separate Chromium cold/warm launch timing and exact-current installed
   component measurement;
 - P1: continue splitting large owners by pure policy/presentation slices; do

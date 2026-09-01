@@ -6,6 +6,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     let launchSystemImage: String
     let launchHelp: String
     let launchIsEnabled: Bool
+    let focusIsEnabled: Bool
     let editIsEnabled: Bool
     let pinTitle: String
     let pinSystemImage: String
@@ -20,6 +21,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
         launchSystemImage: "play.fill",
         launchHelp: "Сначала выбери профиль",
         launchIsEnabled: false,
+        focusIsEnabled: false,
         editIsEnabled: false,
         pinTitle: "Закрепить",
         pinSystemImage: "pin",
@@ -40,6 +42,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
             launchSystemImage: launchAction.systemImage,
             launchHelp: launchAction.help,
             launchIsEnabled: launchAction.isEnabled,
+            focusIsEnabled: processState.isConfirmedRunning,
             editIsEnabled:
                 processState == .stopped || processState.isConfirmedRunning,
             pinTitle: profile.isPinned ? "Открепить" : "Закрепить",
@@ -124,6 +127,7 @@ struct ProfileCommandSet {
     let folderOptions: [ProfileFolderCommandOption]
     let hasMoreFolderOptions: Bool
     let toggleRunning: () -> Void
+    let focusRunning: () -> Void
     let edit: () -> Void
     let editNote: () -> Void
     let togglePinned: () -> Void
@@ -139,6 +143,7 @@ struct ProfileCommandSet {
         folderOptions: [],
         hasMoreFolderOptions: false,
         toggleRunning: {},
+        focusRunning: {},
         edit: {},
         editNote: {},
         togglePinned: {},
@@ -303,6 +308,17 @@ struct ProfileCommandMenu: Commands {
 
     var body: some Commands {
         CommandMenu("Профиль") {
+            Button(
+                "Показать окно браузера",
+                systemImage: "macwindow.on.rectangle",
+                action: resolved.focusRunning
+            )
+            .keyboardShortcut(
+                NeAntikShortcut.focusSelectedProfile.keyEquivalent,
+                modifiers: NeAntikShortcut.focusSelectedProfile.modifiers
+            )
+            .disabled(!resolved.presentation.focusIsEnabled)
+
             Button(
                 resolved.presentation.launchTitle,
                 systemImage: resolved.presentation.launchSystemImage,

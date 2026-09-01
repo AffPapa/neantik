@@ -397,7 +397,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
         self.assertIn("FirstProfileOnboardingView(", empty_state)
         self.assertIn(
-            "onCreateAndOpen: createAndOpenFirstProfile", empty_state
+            "onCreateAndOpen: createAndOpenProfileQuickly", empty_state
         )
         self.assertIn("onConfigure: beginCreatingProfile", empty_state)
 

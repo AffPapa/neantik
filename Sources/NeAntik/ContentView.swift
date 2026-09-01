@@ -265,7 +265,7 @@ struct ContentView: View {
     @State private var tagsSourceExpanded = true
     @State private var showsAllFolders = false
     @State private var showsAllTags = false
-    @State private var isCreatingFirstProfile = false
+    @State private var isCreatingProfileQuickly = false
     @State private var profileListResolver = ProfileListStateResolver()
     @State private var workspaceAnnouncementGate =
         AccessibilityAnnouncementGate<String>()
@@ -1348,23 +1348,25 @@ struct ContentView: View {
         folderNameRequest = FolderNameRequest(folder: nil)
     }
 
-    private func createAndOpenFirstProfile() {
+    private func createAndOpenProfileQuickly() {
         guard runtimeAvailability == .ready else {
             if !isResolvingRuntime {
                 Task { await resolveRuntime() }
             }
             return
         }
-        guard !isCreatingFirstProfile,
-              let profile = FirstProfileBootstrap.makeProfile(
-                  existingProfiles: store.profiles
-              )
-        else {
-            return
-        }
+        guard !isCreatingProfileQuickly,
+              !isWorkspaceModalPresented
+        else { return }
 
-        isCreatingFirstProfile = true
-        defer { isCreatingFirstProfile = false }
+        let profile = FirstProfileBootstrap.makeProfile(
+            existingProfiles: store.profiles
+        ) ?? QuickProfileBootstrap.makeProfile(
+            existingProfiles: store.profiles
+        )
+
+        isCreatingProfileQuickly = true
+        defer { isCreatingProfileQuickly = false }
 
         do {
             let saved = try store.upsert(
@@ -1863,8 +1865,8 @@ struct ContentView: View {
                 if store.profiles.isEmpty {
                     FirstProfileOnboardingView(
                         runtimeAvailability: runtimeAvailability,
-                        isCreatingProfile: isCreatingFirstProfile,
-                        onCreateAndOpen: createAndOpenFirstProfile,
+                        isCreatingProfile: isCreatingProfileQuickly,
+                        onCreateAndOpen: createAndOpenProfileQuickly,
                         onRetryRuntimeCheck: {
                             Task { await resolveRuntime() }
                         },
@@ -2164,8 +2166,30 @@ struct ContentView: View {
 
             profileListViewMenu
 
-            Button {
-                beginCreatingProfile()
+            Menu {
+                Button {
+                    createAndOpenProfileQuickly()
+                } label: {
+                    Label(
+                        "Быстро: создать и открыть без прокси",
+                        systemImage: "bolt.fill"
+                    )
+                }
+                .disabled(
+                    runtimeAvailability != .ready ||
+                        isCreatingProfileQuickly
+                )
+
+                Divider()
+
+                Button {
+                    beginCreatingProfile()
+                } label: {
+                    Label(
+                        "Настроить профиль…",
+                        systemImage: "slider.horizontal.3"
+                    )
+                }
             } label: {
                 ViewThatFits(in: .horizontal) {
                     Label("Создать профиль", systemImage: "plus")
@@ -2173,11 +2197,17 @@ struct ContentView: View {
                         .accessibilityHidden(true)
                 }
                 .frame(minHeight: 28)
+            } primaryAction: {
+                beginCreatingProfile()
             }
             .buttonStyle(.borderedProminent)
             .tint(.green)
-            .help("Создать профиль (⌘N)")
-            .accessibilityLabel("Создать профиль")
+            .help(
+                "Создать профиль (⌘N); стрелка открывает быстрый Direct-вариант"
+            )
+            .accessibilityLabel(
+                "Создать профиль; доступны дополнительные варианты"
+            )
         }
         return VStack(alignment: .leading, spacing: 10) {
             if !store.profiles.isEmpty {
@@ -2733,6 +2763,12 @@ struct ContentView: View {
             Label("Открыть сведения", systemImage: "sidebar.right")
         }
         Button(
+            "Показать окно браузера",
+            systemImage: "macwindow.on.rectangle",
+            action: commands.focusRunning
+        )
+        .disabled(!commands.presentation.focusIsEnabled)
+        Button(
             "Изменить…",
             systemImage: "pencil",
             action: commands.edit
@@ -2869,6 +2905,9 @@ struct ContentView: View {
                     launch(profile)
                 }
             },
+            focusRunning: {
+                _ = processes.focus(profileID: profile.id)
+            },
             edit: { beginEditing(profile) },
             editNote: { beginEditingNote(profile) },
             togglePinned: { togglePinned(profile) },
@@ -2968,8 +3007,8 @@ struct ContentView: View {
             if store.profiles.isEmpty {
                 FirstProfileOnboardingView(
                     runtimeAvailability: runtimeAvailability,
-                    isCreatingProfile: isCreatingFirstProfile,
-                    onCreateAndOpen: createAndOpenFirstProfile,
+                    isCreatingProfile: isCreatingProfileQuickly,
+                    onCreateAndOpen: createAndOpenProfileQuickly,
                     onRetryRuntimeCheck: {
                         Task { await resolveRuntime() }
                     },

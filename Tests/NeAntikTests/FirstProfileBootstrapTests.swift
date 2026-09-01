@@ -50,6 +50,46 @@ struct FirstProfileBootstrapTests {
     }
 
     @Test
+    func quickProfileUsesReadableSequenceAndPermanentDirectDefaults() {
+        let profile = QuickProfileBootstrap.makeProfile(
+            existingProfiles: [BrowserProfile(name: "Основной профиль")]
+        )
+
+        #expect(profile.name == "Профиль 2")
+        #expect(profile.proxy == nil)
+        #expect(profile.startURL == BrowserProfile.defaultStartURL)
+        #expect(profile.lastLaunchedAt == nil)
+        #expect(BrowserProfile.isValidName(profile.name))
+    }
+
+    @Test
+    func quickProfileSkipsCaseInsensitiveNameCollision() {
+        let profile = QuickProfileBootstrap.makeProfile(
+            existingProfiles: [
+                BrowserProfile(name: "Основной профиль"),
+                BrowserProfile(name: "пРоФиЛь 3   "),
+            ]
+        )
+
+        #expect(profile.name == "Профиль 4")
+    }
+
+    @Test
+    func quickProfilesAlwaysReceiveFreshIdentityAndSession() {
+        let existing = [BrowserProfile(name: "Основной профиль")]
+        let first = QuickProfileBootstrap.makeProfile(
+            existingProfiles: existing
+        )
+        let second = QuickProfileBootstrap.makeProfile(
+            existingProfiles: existing
+        )
+
+        #expect(first.id != second.id)
+        #expect(first.identity.seed != second.identity.seed)
+        #expect(first.note.isEmpty)
+    }
+
+    @Test
     func readyRuntimeOffersTheTruthfulCreateAndOpenAction() {
         let presentation = FirstProfileOnboardingPresentation.resolve(
             runtimeAvailability: .ready,

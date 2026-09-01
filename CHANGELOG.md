@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- The primary Create button keeps opening the full editor, while its menu now
+  offers a safe quick path that creates and opens a permanent Direct profile
+  with a collision-free local name, fresh session and fresh identity. It does
+  not copy a proxy, note, account secret or previous BrowserData.
+- A selected running profile can bring its Chromium window forward from the
+  row menu or the fixed local `Shift-Command-Return` command. The existing
+  visible Stop action and Force Stop confirmation remain separate.
 - Keyboard commands now stay disabled under every sheet and alert, including
   Force Stop. Start/Stop, inspector, profile edit and note edit use one fixed
   menu-backed shortcut catalog; the batch bar no longer steals `Command-Z`

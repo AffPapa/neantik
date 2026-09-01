@@ -14,6 +14,9 @@ struct NeAntikShortcutCatalogTests {
         #expect(
             NeAntikShortcut.toggleSelectedProfile.displayChord == "⌘↩"
         )
+        #expect(
+            NeAntikShortcut.focusSelectedProfile.displayChord == "⇧⌘↩"
+        )
         #expect(NeAntikShortcut.toggleInspector.displayChord == "⌘I")
         #expect(NeAntikShortcut.editSelectedNote.displayChord == "⌥⌘N")
         #expect(NeAntikShortcut.shortcutReference.displayChord == "⌘/")
