@@ -61,7 +61,7 @@ def verify(project_root: Path = PROJECT_ROOT) -> tuple[int, int]:
         "languages: python",
         "build-mode: none",
         "security-events: write",
-        "./scripts/verify-native-swift-release.sh",
+        "swift build --disable-sandbox --arch arm64",
     ):
         if marker not in codeql:
             raise GitHubSecurityContractError(

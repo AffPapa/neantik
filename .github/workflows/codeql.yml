@@ -30,8 +30,8 @@ jobs:
         with:
           languages: swift
           build-mode: manual
-      - name: Build optimized Apple Silicon manager
-        run: ./scripts/verify-native-swift-release.sh
+      - name: Build full Apple Silicon source graph for analysis
+        run: swift build --disable-sandbox --arch arm64
       - name: Analyze Swift
         uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
 

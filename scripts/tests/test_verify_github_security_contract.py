@@ -39,7 +39,7 @@ class GitHubSecurityContractTests(unittest.TestCase):
             f"      - uses: github/codeql-action/analyze@{revision}\n"
             "        with:\n          languages: python\n"
             "          build-mode: none\n"
-            "      - run: ./scripts/verify-native-swift-release.sh\n",
+            "      - run: swift build --disable-sandbox --arch arm64\n",
             encoding="utf-8",
         )
         (root / ".github" / "dependabot.yml").write_text(
