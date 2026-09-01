@@ -20,6 +20,45 @@ class OpenSourceTreePrivacyTests(unittest.TestCase):
     def test_provisioning_profiles_are_forbidden_from_public_source(self) -> None:
         self.assertIn(".provisionprofile", MODULE.FORBIDDEN_SUFFIXES)
         self.assertIn(".mobileprovision", MODULE.FORBIDDEN_SUFFIXES)
+        self.assertIn(".p8", MODULE.FORBIDDEN_SUFFIXES)
+        self.assertIn(".secrets", MODULE.FORBIDDEN_PARTS)
+        self.assertIn(".credentials", MODULE.FORBIDDEN_PARTS)
+        self.assertIn(
+            'path.name.startswith(".env.")',
+            VERIFIER.read_text(encoding="utf-8"),
+        )
+
+    def test_service_tokens_and_wallet_phrases_are_scanned(self) -> None:
+        for description in (
+            "GitHub token",
+            "OpenAI API key",
+            "Slack token",
+            "Stripe live secret",
+            "Google API key",
+            "GitLab token",
+            "wallet recovery phrase",
+        ):
+            self.assertIn(description, MODULE.SECRET_PATTERNS)
+
+    def test_removed_dormant_surfaces_are_forbidden_from_public_source(
+        self,
+    ) -> None:
+        for path in (
+            "Sources/NeAntik/RuntimePreferenceStore.swift",
+            "Sources/NeAntik/Telemetry.swift",
+            "Sources/NeAntik/UpdateManifest.swift",
+        ):
+            self.assertIn(path, MODULE.FORBIDDEN_PUBLIC_PATHS)
+
+    def test_runtime_locator_is_constrained_to_embedded_runtime(self) -> None:
+        self.assertIn(
+            "BrowserRuntimePreference",
+            MODULE.FORBIDDEN_RUNTIME_LOCATOR_MARKERS,
+        )
+        self.assertIn(
+            "app.neantik.runtime",
+            MODULE.REQUIRED_RUNTIME_LOCATOR_MARKERS,
+        )
 
     def test_personal_absolute_user_path_is_rejected(self) -> None:
         leaked = "/" + "Users/" + "release-operator/private/report.json"

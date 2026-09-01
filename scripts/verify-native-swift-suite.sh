@@ -72,10 +72,7 @@ case "$SUITE" in
   WorkspaceLayoutTests|\
   WorkspacePreferenceStoreTests|\
   WorkspaceQueryStateTests|\
-  WorkspaceReadinessTests|\
-  RuntimePreferenceStoreTests|\
-  TelemetryTests|\
-  UpdateManifestTests)
+  WorkspaceReadinessTests)
     ;;
   *)
     echo "Unknown Swift test suite: $SUITE" >&2

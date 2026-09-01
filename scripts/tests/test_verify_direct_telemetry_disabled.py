@@ -26,31 +26,45 @@ class DirectTelemetryDisabledTests(unittest.TestCase):
             root = make_project(Path(temporary))
             MODULE.verify(root)
 
-    def test_rejects_endpoint_or_stable_identifier(self) -> None:
+    def test_rejects_any_telemetry_configuration_key(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = make_project(Path(temporary), endpoint="https://example.test")
+            root = make_project(Path(temporary))
+            info_path = root / "Resources/Info.plist"
+            with info_path.open("wb") as file:
+                plistlib.dump({"NeAntikTelemetryEndpoint": ""}, file)
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
-                "endpoint",
+                "configuration keys",
             ):
                 MODULE.verify(root)
 
+    def test_rejects_dormant_telemetry_source(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = make_project(Path(temporary))
             source = root / "Sources/NeAntik/Telemetry.swift"
-            source.write_text("let installationHash = \"x\"", encoding="utf-8")
+            source.write_text("struct TelemetryController {}", encoding="utf-8")
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
-                "installationHash",
+                "telemetry implementation",
+            ):
+                MODULE.verify(root)
+
+    def test_rejects_missing_source_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = make_project(Path(temporary))
+            (root / "Sources/NeAntik").rmdir()
+            with self.assertRaisesRegex(
+                MODULE.DirectTelemetryError,
+                "source directory is missing",
             ):
                 MODULE.verify(root)
 
 
-def make_project(root: Path, endpoint: str = "") -> Path:
+def make_project(root: Path) -> Path:
     resources = root / "Resources"
     resources.mkdir(parents=True)
     with (resources / "Info.plist").open("wb") as file:
-        plistlib.dump({"NeAntikTelemetryEndpoint": endpoint}, file)
+        plistlib.dump({}, file)
     with (resources / "PrivacyInfo.xcprivacy").open("wb") as file:
         plistlib.dump(
             {
@@ -59,9 +73,7 @@ def make_project(root: Path, endpoint: str = "") -> Path:
             },
             file,
         )
-    source = root / "Sources/NeAntik/Telemetry.swift"
-    source.parent.mkdir(parents=True)
-    source.write_text("struct Payload { let eventID: String }", encoding="utf-8")
+    (root / "Sources/NeAntik").mkdir(parents=True)
     return root
 
 

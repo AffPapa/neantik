@@ -7,7 +7,6 @@ import SwiftUI
 struct NeAntikApp: App {
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
-    @StateObject private var telemetry: TelemetryController
     @StateObject private var fingerprintObservationStore:
         FingerprintObservationStore
     @StateObject private var proxyHealthCoordinator:
@@ -126,9 +125,6 @@ struct NeAntikApp: App {
         )
         _store = StateObject(wrappedValue: ProfileStore(paths: paths))
         _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths))
-        _telemetry = StateObject(
-            wrappedValue: TelemetryController(edition: .direct)
-        )
         _fingerprintObservationStore = StateObject(
             wrappedValue: FingerprintObservationStore()
         )
@@ -147,7 +143,6 @@ struct NeAntikApp: App {
             ContentView(
                 store: store,
                 processes: processes,
-                telemetry: telemetry,
                 fingerprintObservationStore: fingerprintObservationStore,
                 proxyHealthCoordinator: proxyHealthCoordinator,
                 workspacePreferences: workspacePreferences,

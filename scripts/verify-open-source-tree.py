@@ -15,6 +15,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_PARTS = {
     ".build",
     ".build-support",
+    ".credentials",
+    ".secrets",
     ".swiftpm",
     "DerivedData",
     "StoreEdition",
@@ -22,10 +24,13 @@ FORBIDDEN_PARTS = {
     "TelemetryDashboard",
     "dist",
     "node_modules",
+    "private-keys",
+    "private_keys",
     "__pycache__",
 }
 FORBIDDEN_SUFFIXES = {
     ".p12",
+    ".p8",
     ".pem",
     ".key",
     ".mobileprovision",
@@ -35,6 +40,28 @@ FORBIDDEN_SUFFIXES = {
 FORBIDDEN_NAMES = {
     ".DS_Store",
     ".env",
+}
+FORBIDDEN_PUBLIC_PATHS = {
+    "Sources/NeAntik/RuntimePreferenceStore.swift",
+    "Sources/NeAntik/Telemetry.swift",
+    "Sources/NeAntik/UpdateManifest.swift",
+    "Tests/NeAntikTests/RuntimePreferenceStoreTests.swift",
+    "Tests/NeAntikTests/TelemetryTests.swift",
+    "Tests/NeAntikTests/UpdateManifestTests.swift",
+    "docs/" + "TELEMETRY_AND_PUBLIC_STATS.md",
+}
+FORBIDDEN_RUNTIME_LOCATOR_MARKERS = {
+    "allowsExternalRuntimes",
+    "BrowserRuntimePreference",
+    "/Applications/Google Chrome.app",
+    "/Applications/Chromium.app",
+    ".cloakbrowser",
+}
+REQUIRED_RUNTIME_LOCATOR_MARKERS = {
+    "NeAntik Browser.app",
+    "app.neantik.runtime",
+    "NeAntikRuntimeFlavor",
+    "fingerprint-chromium",
 }
 PERSONAL_USER_PATH_RE = re.compile(
     re.escape("/") + r"Users/(?P<username>[A-Za-z0-9._-]+)(?:/|$)"
@@ -51,8 +78,20 @@ PRIVATE_SECRET_STORE_PATH_RE = re.compile(
 SYNTHETIC_TEST_USERNAMES = frozenset({"alice", "example", "test"})
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
-    "GitHub token": re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
+    "GitHub token": re.compile(
+        r"\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"
+    ),
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    "OpenAI API key": re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b"),
+    "Slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
+    "Stripe live secret": re.compile(r"\bsk_live_[A-Za-z0-9]{16,}\b"),
+    "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{30,}\b"),
+    "GitLab token": re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"),
+    "wallet recovery phrase": re.compile(
+        r"\b(?:mnemonic|seed[ _-]?phrase)\s*[:=]\s*"
+        r"(?:[a-z]{3,16}\s+){11,23}[a-z]{3,16}\b",
+        re.IGNORECASE,
+    ),
 }
 TEXT_SUFFIXES = {
     "",
@@ -92,7 +131,6 @@ REQUIRED_PUBLIC_PATHS = {
     "Sources/NeAntik/ProfileListOrdering.swift",
     "Sources/NeAntik/ProxyImportParser.swift",
     "Sources/NeAntik/SecureEnclaveFingerprintEvidenceSigner.swift",
-    "Sources/NeAntik/UpdateManifest.swift",
     "Sources/NeAntik/WorkspaceLayout.swift",
     "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json",
     "Tests/Fixtures/fingerprint-conformance/manifest.json",
@@ -107,7 +145,6 @@ REQUIRED_PUBLIC_PATHS = {
     "Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift",
     "Tests/NeAntikTests/WorkspaceLayoutTests.swift",
     "Tests/NeAntikTests/SecureEnclaveFingerprintEvidenceSignerTests.swift",
-    "Tests/NeAntikTests/UpdateManifestTests.swift",
     "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
     "docs/UNIFIED_MINIMAL_UX.md",
     "docs/RUNTIME_INTEGRATION_NOTICES.md",
@@ -262,7 +299,13 @@ def text_violation(relative: Path, text: str) -> str | None:
 def verify_files(files: list[Path]) -> None:
     for path in files:
         relative = path.relative_to(PROJECT_ROOT)
-        if path.name in FORBIDDEN_NAMES or path.suffix.lower() in FORBIDDEN_SUFFIXES:
+        if relative.as_posix() in FORBIDDEN_PUBLIC_PATHS:
+            fail(f"dormant Direct feature is present: {relative}")
+        if (
+            path.name in FORBIDDEN_NAMES
+            or path.name.startswith(".env.")
+            or path.suffix.lower() in FORBIDDEN_SUFFIXES
+        ):
             fail(f"forbidden file is present: {relative}")
         if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -338,6 +381,30 @@ def verify_required_contracts() -> None:
     if missing:
         fail("required public source files are missing: " + ", ".join(missing))
 
+    runtime_locator = (
+        PROJECT_ROOT / "Sources/NeAntik/BrowserRuntimeLocator.swift"
+    ).read_text(encoding="utf-8")
+    forbidden_runtime_markers = sorted(
+        marker
+        for marker in FORBIDDEN_RUNTIME_LOCATOR_MARKERS
+        if marker in runtime_locator
+    )
+    if forbidden_runtime_markers:
+        fail(
+            "Direct runtime locator retains external runtime paths: "
+            + ", ".join(forbidden_runtime_markers)
+        )
+    missing_runtime_markers = sorted(
+        marker
+        for marker in REQUIRED_RUNTIME_LOCATOR_MARKERS
+        if marker not in runtime_locator
+    )
+    if missing_runtime_markers:
+        fail(
+            "Direct runtime locator is missing embedded-runtime contracts: "
+            + ", ".join(missing_runtime_markers)
+        )
+
     ci_text = (
         PROJECT_ROOT / ".github/workflows/ci.yml"
     ).read_text(encoding="utf-8")
@@ -351,7 +418,6 @@ def verify_required_contracts() -> None:
         "FingerprintEvidenceEnrollmentTests",
         "ProfileOrganizationTests",
         "SecureEnclaveFingerprintEvidenceSignerTests",
-        "UpdateManifestTests",
         '--filter "$SUITE"',
     ]:
         if marker not in swift_test_runner:
@@ -359,6 +425,7 @@ def verify_required_contracts() -> None:
     for marker in [
         "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",
+        "verify-direct-update-policy.py",
         "verify-open-source-tree.py",
         "verify-public-workflow-references.py",
         "test_direct_candidate_manifest",

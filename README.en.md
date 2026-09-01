@@ -25,7 +25,9 @@ Current published GitHub public-alpha release:
 
 The current `0.3.23 (26)` source candidate adds a dedicated note editor,
 semantically honest notices, clearer list actions, safe quick Direct profile
-creation, and a command to reveal an already running browser window. It
+creation, and a command to reveal an already running browser window. It also
+removes the unused telemetry, updater-manifest, and external Chrome/Cloak
+selection prototypes: Direct launches only its exact embedded runtime. It
 becomes a downloadable release only after a separate Developer ID,
 notarization, stapling, Gatekeeper, and immutable GitHub gate. Until then,
 download the published `0.3.22 (25)` release above.
@@ -69,7 +71,7 @@ The capabilities below are included in the published, signed, and notarized
   profiles are never rotated automatically;
 - includes a protected release-only A → B → A audit for stability and
   separation without exposing it in the normal user flow;
-- keeps Direct telemetry disabled.
+- contains no product telemetry client or telemetry configuration.
 
 ## New in published 0.3.22 (25)
 

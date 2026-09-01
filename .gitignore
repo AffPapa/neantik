@@ -7,9 +7,11 @@ node_modules/
 __pycache__/
 *.pyc
 *.p12
+*.p8
 *.pem
 *.key
 *.mobileprovision
+*.provisionprofile
 .env
 .env.*
 .DS_Store

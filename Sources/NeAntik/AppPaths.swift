@@ -108,10 +108,6 @@ struct AppPaths: Sendable {
         rootDirectory.appendingPathComponent("Recovery", isDirectory: true)
     }
 
-    var runtimePreferenceFile: URL {
-        rootDirectory.appendingPathComponent("runtime.json")
-    }
-
     var proxyHealthFile: URL {
         rootDirectory.appendingPathComponent("proxy-health.json")
     }

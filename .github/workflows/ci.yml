@@ -39,6 +39,8 @@ jobs:
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract
         run: python3 scripts/verify-direct-telemetry-disabled.py
+      - name: Direct manual-update contract
+        run: python3 scripts/verify-direct-update-policy.py
       - name: Secure Enclave release authority
         run: python3 scripts/verify-secure-enclave-release-authority.py
       - name: Russian UI contract

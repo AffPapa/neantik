@@ -44,21 +44,7 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 NeAntik. All rights reserved.</string>
-	<key>NeAntikPublicStatsURL</key>
-	<string></string>
 	<key>NeAntikDeveloperTeamIdentifier</key>
 	<string>H6VGU2M6JD</string>
-	<key>NeAntikTelemetryEndpoint</key>
-	<string></string>
-	<key>NeAntikUpdateChannelEnabled</key>
-	<false/>
-	<key>NeAntikUpdateAutoDownload</key>
-	<false/>
-	<key>NeAntikUpdateManifestURL</key>
-	<string></string>
-	<key>NeAntikUpdatePublicKeyBase64</key>
-	<string></string>
-	<key>NeAntikUpdatePublicKeyID</key>
-	<string></string>
 </dict>
 </plist>

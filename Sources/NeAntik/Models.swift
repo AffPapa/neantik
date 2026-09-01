@@ -959,12 +959,6 @@ enum BrowserRuntimeFlavor: String, Codable, CaseIterable, Identifiable, Sendable
     }
 }
 
-struct BrowserRuntimePreference: Codable, Equatable, Sendable {
-    var path: String
-    var flavor: BrowserRuntimeFlavor
-    var updatedAt: Date
-}
-
 struct BrowserRuntime: Identifiable, Hashable, Sendable {
     var id: String { executableURL.path }
     let name: String

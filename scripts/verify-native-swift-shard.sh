@@ -88,9 +88,6 @@ case "$SHARD" in
       WorkspacePreferenceStoreTests
       WorkspaceQueryStateTests
       WorkspaceReadinessTests
-      RuntimePreferenceStoreTests
-      TelemetryTests
-      UpdateManifestTests
     )
     ;;
   *)

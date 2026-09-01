@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Removed the dormant telemetry network client, signed-manifest prototype and
+  historical external Chrome/Cloak preference path. Direct now contains no
+  telemetry/update configuration keys, launches only the declared embedded
+  runtime and enforces those absences in source, privacy and release gates.
+- Creating a new Direct profile without proxy authentication no longer makes
+  a redundant Keychain deletion request.
 - The primary Create button keeps opening the full editor, while its menu now
   offers a safe quick path that creates and opens a permanent Direct profile
   with a collision-free local name, fresh session and fresh identity. It does
