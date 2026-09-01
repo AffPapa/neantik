@@ -107,6 +107,9 @@ and updates remain immutable manual GitHub releases.
 - removes the rotating hard-coded signing-certificate SHA-1 from the release
   launcher and selects exactly one installed Developer ID Application identity
   authorized by the external provisioning profile;
+- compares profile, installed-identity and signed-app leaf certificates by
+  SHA-256; the SHA-1 text emitted by macOS remains only an opaque identity
+  selector and is never computed by NeAntik;
 - accepts an optional owner-only `NEANTIK_NOTARY_KEYCHAIN` path in both ZIP and
   DMG notarization paths, without changing the normal login-Keychain default;
 - rejects a locked or indeterminate active macOS session before costly release

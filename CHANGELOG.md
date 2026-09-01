@@ -4,6 +4,16 @@
 
 ## Direct 0.3.24 (27) — September 1, 2026
 
+- Provisioning-profile authorization now compares SHA-256 certificate
+  fingerprints. The 40-character value reported by macOS remains only an
+  opaque selector for the installed codesigning identity; NeAntik no longer
+  hashes certificate data with SHA-1. Signed-app verification extracts the
+  leaf certificate and binds that exact certificate to the profile by
+  SHA-256.
+- Publication gates no longer relay a child verifier's captured output through
+  a generic failure printer. Intentional plaintext privacy-test fixtures are
+  explicitly scoped to private temporary directories, keeping CodeQL findings
+  actionable without weakening the leak detector.
 - Notes in the wide profile list are now direct edit actions, and an empty
   note has an explicit `Add note` action. The control remains available while
   a profile runs because note metadata does not change Chromium launch state;

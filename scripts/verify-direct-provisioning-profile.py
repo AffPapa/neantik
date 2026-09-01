@@ -297,7 +297,7 @@ def validate_source_entitlements(
         raise ProvisioningProfileError("release application identifier is invalid")
 
 
-def profile_developer_certificate_sha1s(
+def profile_developer_certificate_sha256s(
     profile: dict[str, Any],
 ) -> frozenset[str]:
     certificates = profile.get("DeveloperCertificates")
@@ -311,10 +311,8 @@ def profile_developer_certificate_sha1s(
             raise ProvisioningProfileError(
                 "profile DeveloperCertificates entry is invalid"
             )
-        # Apple code-signing requirements identify leaf certificates by SHA-1.
-        # This is an equality key, not a content-integrity decision.
         fingerprints.add(
-            hashlib.sha1(certificate, usedforsecurity=False).hexdigest().upper()
+            hashlib.sha256(certificate).hexdigest().upper()
         )
     return frozenset(fingerprints)
 
@@ -343,6 +341,47 @@ def installed_signing_identities() -> tuple[tuple[str, str], ...]:
         if match:
             available.append((match.group(1).upper(), match.group(2)))
     return tuple(available)
+
+
+def installed_certificate_sha256s_by_sha1() -> dict[str, frozenset[str]]:
+    completed = subprocess.run(
+        ["/usr/bin/security", "find-certificate", "-a", "-Z"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+        timeout=30,
+    )
+    if completed.returncode != 0:
+        raise ProvisioningProfileError(
+            "installed signing certificates could not be inspected"
+        )
+    text = (completed.stdout + b"\n" + completed.stderr).decode(
+        "utf-8", errors="replace"
+    )
+    pairs = re.findall(
+        r"SHA-256 hash:\s*([0-9A-Fa-f]{64})\s*"
+        r"SHA-1 hash:\s*([0-9A-Fa-f]{40})",
+        text,
+    )
+    fingerprints: dict[str, set[str]] = {}
+    for sha256, sha1 in pairs:
+        fingerprints.setdefault(sha1.upper(), set()).add(sha256.upper())
+    return {
+        sha1: frozenset(sha256s)
+        for sha1, sha256s in fingerprints.items()
+    }
+
+
+def installed_identity_certificate_sha256(
+    identity_sha1: str,
+    certificate_map: dict[str, frozenset[str]],
+) -> str:
+    matches = certificate_map.get(identity_sha1, frozenset())
+    if len(matches) != 1:
+        raise ProvisioningProfileError(
+            "installed Developer ID identity could not be bound to one certificate"
+        )
+    return next(iter(matches))
 
 
 def resolve_signing_identity_sha1(identity: str) -> str:
@@ -374,13 +413,18 @@ def resolve_signing_identity_sha1(identity: str) -> str:
 def select_profile_authorized_signing_identity(
     profile: dict[str, Any],
 ) -> str:
-    authorized = profile_developer_certificate_sha1s(profile)
-    matches = {
-        fingerprint
-        for fingerprint, common_name in installed_signing_identities()
-        if fingerprint in authorized
-        and common_name.startswith("Developer ID Application:")
-    }
+    authorized = profile_developer_certificate_sha256s(profile)
+    certificate_map = installed_certificate_sha256s_by_sha1()
+    matches: set[str] = set()
+    for fingerprint, common_name in installed_signing_identities():
+        if not common_name.startswith("Developer ID Application:"):
+            continue
+        certificate_sha256 = installed_identity_certificate_sha256(
+            fingerprint,
+            certificate_map,
+        )
+        if certificate_sha256 in authorized:
+            matches.add(fingerprint)
     if not matches:
         raise ProvisioningProfileError(
             "no installed Developer ID Application identity is authorized by profile"
@@ -397,7 +441,11 @@ def validate_declared_signing_identity(
     identity: str,
 ) -> None:
     signing_sha1 = resolve_signing_identity_sha1(identity)
-    if signing_sha1 not in profile_developer_certificate_sha1s(profile):
+    certificate_sha256 = installed_identity_certificate_sha256(
+        signing_sha1,
+        installed_certificate_sha256s_by_sha1(),
+    )
+    if certificate_sha256 not in profile_developer_certificate_sha256s(profile):
         raise ProvisioningProfileError(
             "profile does not authorize the declared Developer ID signing certificate"
         )
@@ -407,20 +455,49 @@ def validate_signed_app_certificate(
     app_path: Path,
     profile: dict[str, Any],
 ) -> None:
-    for fingerprint in profile_developer_certificate_sha1s(profile):
-        requirement = f'certificate leaf = H"{fingerprint}"'
-        checked = subprocess.run(
-            ["/usr/bin/codesign", "-v", f"-R={requirement}", str(app_path)],
+    authorized = profile_developer_certificate_sha256s(profile)
+    with tempfile.TemporaryDirectory(prefix="neantik-signed-certificate-") as directory:
+        certificate_prefix = Path(directory) / "certificate"
+        extracted = subprocess.run(
+            [
+                "/usr/bin/codesign",
+                "--display",
+                "--extract-certificates",
+                str(certificate_prefix),
+                str(app_path),
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
             timeout=30,
         )
-        if checked.returncode == 0:
-            return
-    raise ProvisioningProfileError(
-        "signed app certificate is not authorized by its provisioning profile"
-    )
+        leaf_path = Path(f"{certificate_prefix}0")
+        if extracted.returncode != 0:
+            raise ProvisioningProfileError(
+                "signed app certificate could not be extracted"
+            )
+        try:
+            status = leaf_path.lstat()
+            certificate = leaf_path.read_bytes()
+        except OSError as error:
+            raise ProvisioningProfileError(
+                "signed app leaf certificate is unavailable"
+            ) from error
+        if (
+            not stat.S_ISREG(status.st_mode)
+            or status.st_uid != os.geteuid()
+            or status.st_nlink != 1
+            or not certificate
+            or len(certificate) > 1024 * 1024
+        ):
+            raise ProvisioningProfileError(
+                "signed app leaf certificate is unsafe"
+            )
+        fingerprint = hashlib.sha256(certificate).hexdigest().upper()
+        if fingerprint not in authorized:
+            raise ProvisioningProfileError(
+                "signed app certificate is not authorized by its provisioning profile"
+            )
 
 
 def _normalized_utc(value: dt.datetime) -> dt.datetime:
@@ -463,7 +540,7 @@ def validate_profile_payload(
         raise ProvisioningProfileError(
             "device-limited development or ad hoc profile is forbidden"
         )
-    profile_developer_certificate_sha1s(profile)
+    profile_developer_certificate_sha256s(profile)
 
     entitlements = profile.get("Entitlements")
     if not isinstance(entitlements, dict):
