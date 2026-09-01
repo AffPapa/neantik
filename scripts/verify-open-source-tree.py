@@ -451,8 +451,7 @@ def verify_required_contracts() -> None:
         check=False,
     )
     if result.returncode != 0:
-        detail = (result.stderr or result.stdout).strip()
-        fail(f"public fingerprint corpus failed: {detail}")
+        fail("public fingerprint corpus gate failed")
 
     workflow_result = subprocess.run(
         [
@@ -468,8 +467,7 @@ def verify_required_contracts() -> None:
         check=False,
     )
     if workflow_result.returncode != 0:
-        detail = (workflow_result.stderr or workflow_result.stdout).strip()
-        fail(f"public workflow reference gate failed: {detail}")
+        fail("public workflow reference gate failed")
 
 
 def main() -> None:

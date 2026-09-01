@@ -86,20 +86,31 @@ class DirectProvisioningProfileTests(unittest.TestCase):
 
     def test_declared_signer_must_be_authorized_by_profile(self) -> None:
         profile = valid_profile()
-        fingerprint = next(
-            iter(MODULE.profile_developer_certificate_sha1s(profile))
-        )
+        fingerprint = "B" * 40
         unauthorized = "A" * 40
-        installed = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=(
-                f'  1) {fingerprint} "Developer ID Application: NeAntik"\n'
-                f'  2) {unauthorized} "Developer ID Application: Other"\n'
-            ).encode(),
-            stderr=b"",
+        profile_sha256 = next(
+            iter(MODULE.profile_developer_certificate_sha256s(profile))
         )
-        with mock.patch.object(MODULE.subprocess, "run", return_value=installed):
+        installed = (
+            (fingerprint, "Developer ID Application: NeAntik"),
+            (unauthorized, "Developer ID Application: Other"),
+        )
+        certificates = {
+            fingerprint: frozenset({profile_sha256}),
+            unauthorized: frozenset({"C" * 64}),
+        }
+        with (
+            mock.patch.object(
+                MODULE,
+                "installed_signing_identities",
+                return_value=installed,
+            ),
+            mock.patch.object(
+                MODULE,
+                "installed_certificate_sha256s_by_sha1",
+                return_value=certificates,
+            ),
+        ):
             MODULE.validate_declared_signing_identity(profile, fingerprint)
             with self.assertRaisesRegex(
                 MODULE.ProvisioningProfileError,
@@ -109,19 +120,25 @@ class DirectProvisioningProfileTests(unittest.TestCase):
 
     def test_selects_the_only_installed_profile_authorized_developer_id(self) -> None:
         profile = valid_profile()
-        fingerprint = next(
-            iter(MODULE.profile_developer_certificate_sha1s(profile))
+        fingerprint = "B" * 40
+        profile_sha256 = next(
+            iter(MODULE.profile_developer_certificate_sha256s(profile))
         )
-        installed = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout=(
-                f'  1) {fingerprint} "Developer ID Application: NeAntik"\n'
-                f'  2) {"A" * 40} "Apple Development: Local"\n'
-            ).encode(),
-            stderr=b"",
-        )
-        with mock.patch.object(MODULE.subprocess, "run", return_value=installed):
+        with (
+            mock.patch.object(
+                MODULE,
+                "installed_signing_identities",
+                return_value=(
+                    (fingerprint, "Developer ID Application: NeAntik"),
+                    ("A" * 40, "Apple Development: Local"),
+                ),
+            ),
+            mock.patch.object(
+                MODULE,
+                "installed_certificate_sha256s_by_sha1",
+                return_value={fingerprint: frozenset({profile_sha256})},
+            ),
+        ):
             self.assertEqual(
                 MODULE.select_profile_authorized_signing_identity(profile),
                 fingerprint,
@@ -134,37 +151,81 @@ class DirectProvisioningProfileTests(unittest.TestCase):
             PROFILE_CERTIFICATE,
             second_certificate,
         ]
-        fingerprints = sorted(
-            MODULE.profile_developer_certificate_sha1s(profile)
+        certificate_sha256s = sorted(
+            MODULE.profile_developer_certificate_sha256s(profile)
         )
-        installed = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="".join(
-                f'  {index}) {fingerprint} "Developer ID Application: {index}"\n'
-                for index, fingerprint in enumerate(fingerprints, start=1)
-            ).encode(),
-            stderr=b"",
-        )
-        with mock.patch.object(MODULE.subprocess, "run", return_value=installed):
+        identities = ("A" * 40, "B" * 40)
+        with (
+            mock.patch.object(
+                MODULE,
+                "installed_signing_identities",
+                return_value=tuple(
+                    (identity, f"Developer ID Application: {index}")
+                    for index, identity in enumerate(identities, start=1)
+                ),
+            ),
+            mock.patch.object(
+                MODULE,
+                "installed_certificate_sha256s_by_sha1",
+                return_value={
+                    identity: frozenset({certificate_sha256})
+                    for identity, certificate_sha256 in zip(
+                        identities,
+                        certificate_sha256s,
+                        strict=True,
+                    )
+                },
+            ),
+        ):
             with self.assertRaisesRegex(
                 MODULE.ProvisioningProfileError,
                 "multiple installed Developer ID identities",
             ):
                 MODULE.select_profile_authorized_signing_identity(profile)
 
-    def test_signed_app_certificate_must_match_profile(self) -> None:
-        profile = valid_profile()
-        rejected = subprocess.CompletedProcess(
-            args=[], returncode=1, stdout=b"", stderr=b""
-        )
-        accepted = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=b"", stderr=b""
+    def test_installed_certificate_map_uses_security_reported_hashes(self) -> None:
+        identity = "A" * 40
+        certificate = "B" * 64
+        completed = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=(
+                f"SHA-256 hash: {certificate}\n"
+                f"SHA-1 hash: {identity}\n"
+            ).encode(),
+            stderr=b"",
         )
         with mock.patch.object(
             MODULE.subprocess,
             "run",
-            side_effect=[rejected],
+            return_value=completed,
+        ):
+            self.assertEqual(
+                MODULE.installed_certificate_sha256s_by_sha1(),
+                {identity: frozenset({certificate})},
+            )
+
+    def test_signed_app_certificate_must_match_profile(self) -> None:
+        profile = valid_profile()
+
+        def extractor(certificate: bytes):
+            def run(command, **_kwargs):
+                prefix_index = command.index("--extract-certificates") + 1
+                prefix = Path(command[prefix_index])
+                Path(f"{prefix}0").write_bytes(certificate)
+                return subprocess.CompletedProcess(
+                    args=command,
+                    returncode=0,
+                    stdout=b"",
+                    stderr=b"",
+                )
+
+            return run
+
+        with mock.patch.object(
+            MODULE.subprocess,
+            "run",
+            side_effect=extractor(b"unauthorized certificate"),
         ):
             with self.assertRaisesRegex(
                 MODULE.ProvisioningProfileError,
@@ -176,7 +237,7 @@ class DirectProvisioningProfileTests(unittest.TestCase):
         with mock.patch.object(
             MODULE.subprocess,
             "run",
-            side_effect=[accepted],
+            side_effect=extractor(PROFILE_CERTIFICATE),
         ):
             MODULE.validate_signed_app_certificate(
                 Path("/tmp/NeAntik.app"), profile
