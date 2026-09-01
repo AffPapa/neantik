@@ -223,26 +223,11 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
             self.assertNotIn("real-password-value", message)
             self.assertNotIn("another-password", message)
 
-    def test_plain_secret_and_test_password_values_are_not_placeholders(self) -> None:
-        for password in ("secret", "test"):
-            with self.subTest(password=password):
-                with tempfile.TemporaryDirectory() as temporary:
-                    public = Path(temporary)
-                    (public / "release.json").write_text(
-                        # Synthetic unit-test values are intentionally stored
-                        # only in the private TemporaryDirectory fixture.
-                        # lgtm[py/clear-text-storage-sensitive-data]
-                        json.dumps({"proxy": {"password": password}}),
-                        encoding="utf-8",
-                    )
-
-                    with self.assertRaisesRegex(
-                        MODULE.PublicArtifactPrivacyError,
-                        "sensitive user, profile, browser or proxy data",
-                    ):
-                        MODULE.verify_public_artifact_privacy(
-                            artifact=public
-                        )
+    def test_plain_secret_and_test_values_are_not_safe_markers(self) -> None:
+        for candidate in ("secret", "test"):
+            with self.subTest(candidate=candidate):
+                self.assertFalse(MODULE.safe_secret(candidate))
+                self.assertTrue(MODULE.sensitive_value_present(candidate))
 
     def test_rejects_ini_proxy_password_and_absolute_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

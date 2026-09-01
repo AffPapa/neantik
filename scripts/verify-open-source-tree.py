@@ -218,8 +218,14 @@ REQUIRED_PUBLIC_PATHS = {
 }
 
 
-def fail(message: str) -> None:
-    print(f"FAIL: {message}", file=sys.stderr)
+def fail(_message: str) -> None:
+    # Caller-supplied detail can originate in files being checked. Keep the
+    # terminal failure constant so a publication gate can never echo matched
+    # source, filenames or a child verifier's captured output.
+    print(
+        "FAIL: open-source publication boundary verification failed",
+        file=sys.stderr,
+    )
     raise SystemExit(1)
 
 
