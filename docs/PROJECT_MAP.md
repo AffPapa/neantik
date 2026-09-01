@@ -6,6 +6,8 @@ product and code work. The older v4 documents remain dated design records.
 ## Release truth and boundary
 
 - Latest immutable GitHub release: `v0.3.22`, version/build `0.3.22 (25)`.
+- Current source candidate: `0.3.23 (26)`; it is not public until the full
+  Direct Distribution gate completes.
 - Exact released source commit:
   `160c4e71cb1aee76d940bc2d07ad64ed014bf54f`.
 - Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
