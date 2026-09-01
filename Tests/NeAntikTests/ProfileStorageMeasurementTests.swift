@@ -4,6 +4,27 @@ import Testing
 
 struct ProfileStorageMeasurementTests {
     @Test
+    func cancelledAsyncMeasurementCancelsDetachedWorker() async {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let task = Task {
+            await Task.yield()
+            return try await ProfileStorageMeasurer.measure(at: root)
+        }
+        task.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
+    }
+
+    @Test
     func measuresNestedRegularFilesAndSkipsSymbolicLinks() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

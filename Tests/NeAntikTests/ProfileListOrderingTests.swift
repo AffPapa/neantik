@@ -98,6 +98,33 @@ struct ProfileListOrderingTests {
     }
 
     @Test
+    func recentlyModifiedUsesUpdateDateWithoutOverridingPins() {
+        let base = Date(timeIntervalSinceReferenceDate: 25_000)
+        let pinnedOld = BrowserProfile(
+            name: "Pinned old",
+            isPinned: true,
+            createdAt: base,
+            updatedAt: base
+        )
+        let olderEdit = BrowserProfile(
+            name: "Older edit",
+            createdAt: base.addingTimeInterval(2),
+            updatedAt: base.addingTimeInterval(10)
+        )
+        let latestEdit = BrowserProfile(
+            name: "Latest edit",
+            createdAt: base.addingTimeInterval(1),
+            updatedAt: base.addingTimeInterval(20)
+        )
+
+        let ordered = [olderEdit, latestEdit, pinnedOld].sorted(
+            by: ProfileListOrdering.recentlyModified.areInIncreasingOrder
+        )
+
+        #expect(ordered.map(\.id) == [pinnedOld.id, latestEdit.id, olderEdit.id])
+    }
+
+    @Test
     func routeFilterAndOrderingComposeInCachedAndFallbackProjections() {
         let base = Date(timeIntervalSinceReferenceDate: 30_000)
         let direct = BrowserProfile(

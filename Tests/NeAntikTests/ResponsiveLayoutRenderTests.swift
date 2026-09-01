@@ -6,6 +6,52 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
+    @Test func profileDuplicationSheetRendersInLightAndDark() throws {
+        let folderID = layoutFixtureID(90)
+        let source = BrowserProfile(
+            id: layoutFixtureID(91),
+            name: "TikTok · FR · UGC 02",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 8_080,
+                username: "operator"
+            )
+        )
+        let safeOptions = ProfileDuplicationOptions(
+            name: "TikTok · FR · UGC 02 — копия",
+            destinationFolderID: folderID
+        )
+        var proxyOptions = safeOptions
+        proxyOptions.setCopiesProxy(true)
+        proxyOptions.setCopiesProxyPassword(true)
+
+        for (appearanceName, colorScheme) in [
+            ("light", ColorScheme.light),
+            ("dark", ColorScheme.dark),
+        ] {
+            try render(
+                ProfileDuplicationSheet(
+                    source: source,
+                    folders: [
+                        ProfileFolder(
+                            id: folderID,
+                            name: "Paid Social · France"
+                        ),
+                        ProfileFolder(name: "Очень длинная резервная папка")
+                    ],
+                    initialOptions:
+                        appearanceName == "light"
+                            ? safeOptions
+                            : proxyOptions
+                ) { _ in },
+                name: "profile-duplication-\(appearanceName)",
+                size: CGSize(width: 520, height: 560),
+                colorScheme: colorScheme
+            )
+        }
+    }
+
     @Test func primaryScreensRenderAtTheirMinimumSizes() throws {
         let profileA = BrowserProfile(
             id: layoutFixtureID(1),
@@ -37,6 +83,10 @@ struct ResponsiveLayoutRenderTests {
                     profile: profileA,
                     runtime: nil,
                     proxyHealth: nil
+                ),
+                proxyReuseAssessment: ProxyReuseAssessment(
+                    status: .shared,
+                    otherProfileCount: 2
                 ),
                 clipboardNotice: nil,
                 onCopyProxyUsername: {},
@@ -71,6 +121,12 @@ struct ResponsiveLayoutRenderTests {
                 folders: [],
                 initialFolderID: nil,
                 suggestedTags: profileA.tags,
+                proxyReuseInputs: [
+                    ProxyReuseInput(
+                        profileID: layoutFixtureID(92),
+                        proxy: profileA.proxy
+                    )
+                ],
                 initialFocus: .proxyPassword
             ) { _, _, _ in },
             name: "profile-editor-proxy-password",
@@ -101,6 +157,30 @@ struct ResponsiveLayoutRenderTests {
                     colorScheme: colorScheme
                 )
             }
+            let secondManaged = BrowserProcessLifecycleItem(
+                id: layoutFixtureID(24),
+                profileName: "Facebook · DE",
+                stateTitle: "Запущен",
+                detail: "Восстановлен · 8 мин",
+                systemImage: "circle.fill",
+                origin: .recoveredManager,
+                canFocus: true,
+                canStop: true,
+                canForceStop: false
+            )
+            try render(
+                RunningProfilesStrip(
+                    items: [lifecycleRenderItems()[0], secondManaged],
+                    onSelect: { _ in },
+                    onFocus: { _ in },
+                    onStop: { _ in },
+                    onForceStop: { _ in },
+                    onRequestStopAll: { _ in }
+                ),
+                name: "running-strip-stop-all-\(appearanceName)",
+                size: CGSize(width: 820, height: 200),
+                colorScheme: colorScheme
+            )
 
             var proxyProgress = BulkProxyRunProgress(total: 5)
             proxyProgress.record(profileID: layoutFixtureID(30), outcome: .succeeded)
@@ -639,6 +719,42 @@ struct ResponsiveLayoutRenderTests {
                 colorScheme: colorScheme
             )
         }
+    }
+
+    @Test func sharedProxyWarningAndProfileMetadataRender() throws {
+        let createdAt = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        let profile = BrowserProfile(
+            id: layoutFixtureID(32),
+            name: "Shared route review",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 8443,
+                username: "operator"
+            ),
+            createdAt: createdAt,
+            updatedAt: createdAt.addingTimeInterval(3_600),
+            lastLaunchedAt: createdAt.addingTimeInterval(7_200)
+        )
+
+        try render(
+            ProfileDetailView(
+                profile: profile,
+                processState: .stopped,
+                browserDataPath:
+                    "/Users/example/Library/Application Support/NeAntik Development/Profiles/SHARED/BrowserData",
+                proxyReuseAssessment: ProxyReuseAssessment(
+                    status: .shared,
+                    otherProfileCount: 2
+                ),
+                clipboardNotice: nil,
+                onCopyProxyUsername: {},
+                onCopyProxyPassword: {}
+            ),
+            name: "profile-detail-shared-proxy-warning",
+            size: CGSize(width: 620, height: 860),
+            colorScheme: .light
+        )
     }
 
     @Test func actualContentViewRendersAtMinimumAndWideSizes() throws {

@@ -59,10 +59,12 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 class ResponsiveUIContractTests(unittest.TestCase):
     def test_proxy_password_has_explicit_temporary_reveal_control(self) -> None:
         source = EDITOR.read_text(encoding="utf-8")
-        self.assertIn('@State private var showsProxyPassword = false', source)
+        self.assertIn("SensitiveRevealLeaseState()", source)
+        self.assertIn("SensitiveRevealLeaseState.defaultLifetime", source)
+        self.assertIn("NSApplication.willResignActiveNotification", source)
         self.assertIn('"Показать пароль прокси"', source)
         self.assertIn('"Скрыть пароль прокси"', source)
-        self.assertIn('systemName: showsProxyPassword ? "eye.slash" : "eye"', source)
+        self.assertIn("proxyPasswordRevealLease.isRevealed", source)
 
     def test_workspace_uses_native_list_first_navigation_and_optional_inspector(
         self,

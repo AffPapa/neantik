@@ -46,6 +46,11 @@ struct BrowserProcessLifecyclePresentationTests {
             now: Date(timeIntervalSince1970: 0)
         )
         #expect(items.isEmpty)
+        #expect(
+            !BrowserProcessLifecycleProjection.requiresPeriodicRefresh(
+                for: items
+            )
+        )
     }
 
     @Test
@@ -91,5 +96,50 @@ struct BrowserProcessLifecyclePresentationTests {
         #expect(BrowserProcessLifecycleProjection.elapsedTitle(
             from: start, to: Date(timeIntervalSince1970: 3_900)
         ) == "1 ч 5 мин")
+    }
+
+    @Test func stopAllIncludesOnlyOrdinaryStopCandidates() {
+        let profiles = ["Managed", "Recovered", "Manual", "Closing"].map {
+            BrowserProfile(name: $0)
+        }
+        let states: [UUID: BrowserProfileProcessState] = [
+            profiles[0].id: .managed,
+            profiles[1].id: .externalVerified,
+            profiles[2].id: .externalManualOnly,
+            profiles[3].id: .closing,
+        ]
+        let phases: [UUID: BrowserStopPhase] = [
+            profiles[3].id: .closing(
+                requestedAt: Date(timeIntervalSince1970: 1)
+            )
+        ]
+        let items = BrowserProcessLifecycleProjection.resolve(
+            profiles: profiles,
+            processState: { states[$0] ?? .stopped },
+            stopPhase: { phases[$0] ?? .idle },
+            startedAt: { _ in nil },
+            now: Date(timeIntervalSince1970: 2)
+        )
+        let presentation = BrowserProcessStopAllPresentation.resolve(
+            items: items
+        )
+
+        #expect(presentation.eligibleProfileIDs == [
+            profiles[0].id, profiles[1].id,
+        ])
+        #expect(presentation.excludedCount == 2)
+        #expect(presentation.shouldOfferAction)
+        #expect(
+            BrowserProcessLifecycleProjection.requiresPeriodicRefresh(
+                for: items
+            )
+        )
+        #expect(presentation.confirmationMessage.contains("2 профилям"))
+        #expect(presentation.confirmationMessage.contains("Ещё 2"))
+        #expect(
+            presentation.confirmationMessage.contains(
+                "завершились, завершаются"
+            )
+        )
     }
 }

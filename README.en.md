@@ -48,10 +48,16 @@ Development preview `0.3.24 (27)` is going through the release gates. At a
 normal window width, note and bulk-proxy drafts are protected from accidental
 dismissal, create/edit mode is explicit, search syntax is visible, bulk
 actions fit the minimum width, and proxy passwords have a temporary reveal
-control. Runtime, DevTools, proxy preflight and the Direct release toolchain
-also have additional fail-closed checks. CI includes SHA-pinned CodeQL for
-Swift and Python. Until a new ZIP and DMG are published and re-downloaded
-successfully, `0.3.23 (26)` remains the public download.
+control that now expires after 15 seconds and when the app resigns active.
+The source candidate also adds explicit safe duplication, a local shared-proxy
+endpoint warning, profile dates, recently-modified ordering, and confirmed
+ordinary-only Stop All. Profile-size scans and secret stdin writes are
+cancellable, no idle session timer is created, and the embedded runtime is
+re-inspected immediately before launch. Runtime, DevTools, proxy preflight and
+the Direct release toolchain also have additional fail-closed checks. CI
+includes SHA-pinned CodeQL for Swift and Python. Until a new ZIP and DMG are
+published and re-downloaded successfully, `0.3.23 (26)` remains the public
+download.
 
 The capabilities below are included in the published, signed, and notarized
 `0.3.23 (26)` release.

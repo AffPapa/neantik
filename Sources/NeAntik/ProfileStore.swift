@@ -699,7 +699,6 @@ final class ProfileStore: ObservableObject {
                 }
                 let previousProfiles = profiles
                 profiles[index].lastLaunchedAt = Date()
-                profiles[index].updatedAt = Date()
                 profiles[index].revision = try Self.nextRevision(
                     after: profiles[index].revision
                 )

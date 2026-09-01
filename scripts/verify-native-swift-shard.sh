@@ -23,6 +23,7 @@ case "$SHARD" in
       BrowserProcessLifecyclePresentationTests
       BrowserProcessManagerTests
       BrowserRuntimeInspectorTests
+      BrowserRuntimeLaunchTrustTests
       BrowserRuntimePreflightTests
       BulkProxyActionProjectionTests
       BulkProxyImportTests
@@ -43,6 +44,7 @@ case "$SHARD" in
       FingerprintEvidenceReleaseContextTests
       FirstProfileBootstrapTests
       SecureEnclaveFingerprintEvidenceSignerTests
+      SensitiveRevealLeaseTests
       KeychainStoreTests
       LaunchIntentTests
       ManagerSessionEvidenceTests
@@ -60,6 +62,7 @@ case "$SHARD" in
       ProfileEditorPasswordTests
       ProfileEditorPresentationTests
       ProfileEditorValidationTests
+      ProfileDuplicationTests
       ProfileEnvironmentInspectorTests
       ProfileEnvironmentPresentationTests
       ProfileEnvironmentAccessibilityTests
@@ -81,6 +84,7 @@ case "$SHARD" in
       ProfileStorageMeasurementTests
       ProxyHealthTests
       ProxyImportParserTests
+      ProxyReuseAssessmentTests
       ProxyTestOperationRegistryTests
       ProxyTesterTests
       ResponsiveLayoutRenderTests

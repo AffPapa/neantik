@@ -82,13 +82,16 @@ struct ProxyTesterTests {
     }
 
     @Test
-    func cancellationTerminatesProxyTestProcessPromptly() async {
+    func cancellationTerminatesBackpressuredInputWriterPromptly() async {
         let startedAt = Date()
         let task = Task {
             try await ProxyTester.runCancellableProcess(
                 executableURL: URL(fileURLWithPath: "/bin/sleep"),
                 arguments: ["10"],
-                standardInput: Data()
+                standardInput: Data(
+                    repeating: UInt8(ascii: "s"),
+                    count: 512 * 1_024
+                )
             )
         }
 
@@ -106,6 +109,65 @@ struct ProxyTesterTests {
             )
         }
         #expect(Date().timeIntervalSince(startedAt) < 2)
+    }
+
+    @Test
+    func inputLargerThanPipeCapacityIsDeliveredWithoutDeadlock() async throws {
+        let input = Data(
+            repeating: UInt8(ascii: "x"),
+            count: 512 * 1_024
+        )
+        let result = try await ProxyTester.runCancellableProcess(
+            executableURL: URL(fileURLWithPath: "/usr/bin/wc"),
+            arguments: ["-c"],
+            standardInput: input
+        )
+        let output = String(decoding: result.output, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        #expect(result.status == 0)
+        #expect(!result.outputExceeded)
+        #expect(output == "\(input.count)")
+    }
+
+    @Test
+    func earlyChildExitClosesLargeInputWithoutDeadlock() async throws {
+        let startedAt = Date()
+        let result = try await ProxyTester.runCancellableProcess(
+            executableURL: URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "exit 23"],
+            standardInput: Data(
+                repeating: UInt8(ascii: "s"),
+                count: 512 * 1_024
+            )
+        )
+
+        #expect(result.status == 23)
+        #expect(result.output.isEmpty)
+        #expect(!result.outputExceeded)
+        #expect(Date().timeIntervalSince(startedAt) < 2)
+    }
+
+    @Test
+    func standardInputIsAbsentFromChildArgumentsAndEnvironment() async throws {
+        let secret = "ND2_PRIVATE_STDIN_7F1A9D"
+        let result = try await ProxyTester.runCancellableProcess(
+            executableURL: URL(fileURLWithPath: "/bin/sh"),
+            arguments: [
+                "-c",
+                "printf '%s\\n' \"$0\" \"$@\"; /usr/bin/env; " +
+                    "/bin/cat >/dev/null",
+                "probe"
+            ],
+            standardInput: Data(secret.utf8)
+        )
+        let observableChildMetadata = String(
+            decoding: result.output,
+            as: UTF8.self
+        )
+
+        #expect(result.status == 0)
+        #expect(!observableChildMetadata.contains(secret))
     }
 
     @Test

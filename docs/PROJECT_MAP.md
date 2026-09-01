@@ -44,11 +44,11 @@ and updates remain immutable manual GitHub releases.
 | Keyboard and local UI preferences | `ProfileCommands.swift`, `NeAntikShortcutCatalog.swift`, `WorkspacePreferenceStore.swift`, `NeAntikSettingsView.swift` | Fixed menu-backed shortcuts, modal-safe focused commands and density-only local persistence; no global hooks or hidden destructive shortcuts |
 | Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions and directly visible note editing |
 | Query and organization | `ProfileListProjection.swift`, `WorkspaceQueryState.swift`, `ProfileTagEditor.swift` | Linear deterministic projection; no network or secret search |
-| Profiles and persistence | `Models.swift`, `ProfileStore.swift`, `AppPaths.swift` | Bounded validated metadata, atomic writes, safe local filesystem handling |
-| Profile editing | `ProfileEditorView.swift`, `ProfileNoteEditorView.swift`, `ProfileEditorProcessPolicy.swift` | Simple fields first; notes use a dedicated editor; browser/proxy edits respect running-state rules |
-| Process lifecycle | `BrowserProcessManager.swift`, `BrowserProcessInventory.swift`, `BrowserProcessLifecyclePresentation.swift`, `RunningProfilesStrip.swift` | Exact ownership, fail-closed reconciliation, explicit Closing and confirmed Force Stop |
-| Runtime and launch | `BrowserLaunchBuilder.swift`, `BrowserLaunchStagedPreflight.swift`, `BrowserRuntime*.swift` | Embedded signed ARM64 runtime, staged fail-closed launch, no credential CLI arguments |
-| Proxy | `ProxyTester.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing, bounded concurrency, fresh preparation before proxied launch |
+| Profiles and persistence | `Models.swift`, `ProfileStore.swift`, `ProfileDuplication*.swift`, `ProfileStorageMeasurement.swift`, `AppPaths.swift` | Bounded validated metadata, atomic writes, cancellable measurement and explicit duplication with fresh session/identity |
+| Profile editing | `ProfileEditorView.swift`, `ProfileNoteEditorView.swift`, `ProfileEditorProcessPolicy.swift`, `SensitiveRevealLease.swift` | Simple fields first; notes use a dedicated editor; browser/proxy edits respect running-state rules; secret reveal is temporary |
+| Process lifecycle | `BrowserProcessManager.swift`, `BrowserProcessManager+StopAll.swift`, `BrowserProcessInventory.swift`, `BrowserProcessLifecyclePresentation.swift`, `RunningProfilesStrip.swift` | Exact ownership, fail-closed reconciliation, ordinary-only group stop, explicit Closing and confirmed Force Stop |
+| Runtime and launch | `BrowserLaunchBuilder.swift`, `BrowserLaunchStagedPreflight.swift`, `BrowserRuntime*.swift` | Embedded signed ARM64 runtime, fresh pre-launch trust comparison, staged fail-closed launch, no credential CLI arguments |
+| Proxy | `ProxyTester.swift`, `ProxyReuseAssessment.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing and endpoint-reuse awareness, bounded concurrency, cancellable stdin and fresh preparation before proxied launch |
 | Fingerprint evidence | `FingerprintAudit*.swift`, `DevToolsSecurity.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics; DevTools files/endpoints are bounded and loopback-only |
 | Readiness and notices | `WorkspaceReadiness*.swift`, `UserNotice.swift` | Redacted, actionable, semantically honest local diagnostics |
 | Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/verify-direct-provisioning-profile.py`, `scripts/verify-active-gui-session-unlocked.py`, `scripts/notarize_direct_transaction.py`, `scripts/neantik-affpapa-release` | Exact candidate only; auto-select one profile-authorized certificate or fail; require an unlocked GUI session for Secure Enclave enrollment; optional explicit notary Keychain must be owner-only; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
@@ -70,6 +70,26 @@ and updates remain immutable manual GitHub releases.
 - on-demand profile storage measurement, readiness center and redacted copy;
 - cold/warm manager measurements, source/installed-size budgets and responsive
   light/dark render gates.
+
+### Delivered in the current development cycle
+
+- makes temporary password reveal expire automatically and hides it when the
+  app loses focus; clears clipboard data only while NeAntik still owns the
+  exact pasteboard lease;
+- prevents large proxy credentials from blocking before the child process
+  starts, supports cancellation/backpressure and keeps secrets out of argv and
+  environment;
+- cancels stale profile-storage scans, removes the idle one-second UI timer
+  and shows creation/change/last-launch dates with recent-change ordering;
+- replaces implicit cloning with a reviewed sheet: Direct by default,
+  separate proxy/password consent, visible destination folder and always-new
+  UUID, BrowserData and browser identity;
+- warns locally when the same normalized proxy endpoint is reused, without
+  DNS queries, credentials or persisted observed IPs;
+- adds confirmed ordinary-only Stop All and revalidates each process before
+  stopping; force stop remains a separate per-profile action;
+- re-inspects the embedded runtime immediately before launch and fails closed
+  on version, architecture, signature or executable-identity drift.
 
 ### Delivered in 0.3.23
 
@@ -164,8 +184,8 @@ and updates remain immutable manual GitHub releases.
   [0.3.24 audit plan](NEANTIK_0324_ZERO_BASE_AUDIT_PLAN.md).
 - Current 20-product comparison:
   [Competitor UX research](COMPETITOR_UX_RESEARCH_2026-09-01.md).
-- Current 28-product/100-candidate implementation matrix:
-  [Antidetect recommendation matrix](../artifacts/neantik/looper-goals/20260902-antidetect-100/recommendation-matrix.md).
+- Current 29-product/100-candidate implementation matrix with 25 selected
+  changes: [Antidetect recommendation matrix](ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-02.md).
 - Historical 75-candidate design record:
   [NeAntik v4 workspace](NEANTIK_V4_WORKSPACE.md).
 - Historical 100-point release/readiness plan:

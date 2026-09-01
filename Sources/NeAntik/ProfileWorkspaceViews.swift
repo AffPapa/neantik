@@ -447,13 +447,15 @@ struct ProfileDetailView: View {
     @State private var noteExpanded = false
     @State private var storageMeasurement:
         ProfileStorageMeasurementState = .idle
-    @State private var storageMeasurementProfileID: UUID?
+    @State private var storageMeasurementRequestID: UUID?
+    @State private var storageMeasurementTask: Task<Void, Never>?
 
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let browserDataPath: String
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
+    var proxyReuseAssessment: ProxyReuseAssessment? = nil
     var isTestingProxy: Bool = false
     var canCancelProxyTest: Bool = false
     var canRunFingerprintAudit: Bool = false
@@ -488,9 +490,10 @@ struct ProfileDetailView: View {
             }
         }
         .onChange(of: profile.id) { _, _ in
+            cancelStorageMeasurement()
             storageMeasurement = .idle
-            storageMeasurementProfileID = nil
         }
+        .onDisappear(perform: cancelStorageMeasurement)
     }
 
     private var pinnedHeader: some View {
@@ -514,10 +517,26 @@ struct ProfileDetailView: View {
             }
 
             GroupBox("Профиль") {
-                Label(
-                    "Cookies, настройки и данные сайтов хранятся отдельно",
-                    systemImage: "person.crop.rectangle.stack"
-                )
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(
+                        "Cookies, настройки и данные сайтов хранятся отдельно",
+                        systemImage: "person.crop.rectangle.stack"
+                    )
+                    Divider()
+                    LabeledContent(
+                        "Создан",
+                        value: profile.createdAt.neAntikDisplayDateTime
+                    )
+                    LabeledContent(
+                        "Изменён",
+                        value: profile.updatedAt.neAntikDisplayDateTime
+                    )
+                    LabeledContent(
+                        "Последний запуск",
+                        value: profile.lastLaunchedAt?
+                            .neAntikDisplayDateTime ?? "Ещё не запускался"
+                    )
+                }
                 .padding(.vertical, 4)
             }
 
@@ -629,14 +648,6 @@ struct ProfileDetailView: View {
                 }
                 .padding(.top, 10)
             }
-
-            if let lastLaunchedAt = profile.lastLaunchedAt {
-                Text(
-                    "Последний запуск: \(lastLaunchedAt.neAntikDisplayDateTime)"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -688,31 +699,44 @@ struct ProfileDetailView: View {
     }
 
     private func measureProfileStorage() {
-        let requestedProfileID = profile.id
+        cancelStorageMeasurement()
+        let requestID = UUID()
         let directory = URL(fileURLWithPath: browserDataPath)
-        storageMeasurementProfileID = requestedProfileID
+        storageMeasurementRequestID = requestID
         storageMeasurement = .measuring
-        Task { @MainActor in
+        storageMeasurementTask = Task { @MainActor in
+            defer {
+                if storageMeasurementRequestID == requestID {
+                    storageMeasurementTask = nil
+                }
+            }
             do {
                 let usage = try await ProfileStorageMeasurer.measure(
                     at: directory
                 )
-                guard storageMeasurementProfileID == requestedProfileID else {
+                guard !Task.isCancelled,
+                      storageMeasurementRequestID == requestID
+                else {
                     return
                 }
                 storageMeasurement = .ready(usage)
             } catch is CancellationError {
-                guard storageMeasurementProfileID == requestedProfileID else {
-                    return
+                if storageMeasurementRequestID == requestID {
+                    storageMeasurement = .idle
                 }
-                storageMeasurement = .idle
             } catch {
-                guard storageMeasurementProfileID == requestedProfileID else {
+                guard storageMeasurementRequestID == requestID else {
                     return
                 }
                 storageMeasurement = .failed(error.localizedDescription)
             }
         }
+    }
+
+    private func cancelStorageMeasurement() {
+        storageMeasurementTask?.cancel()
+        storageMeasurementTask = nil
+        storageMeasurementRequestID = nil
     }
 
     @ViewBuilder
@@ -775,6 +799,20 @@ struct ProfileDetailView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityLabel(clipboardNotice)
+                }
+                if let warning = proxyReuseAssessment?.warningText {
+                    Label(
+                        title: { Text(warning).foregroundStyle(.primary) },
+                        icon: {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
+                        }
+                    )
+                    .font(.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityHint(
+                        "Предупреждение не блокирует запуск профиля"
+                    )
                 }
             } else {
                 LabeledContent("Подключение", value: "Без прокси")
