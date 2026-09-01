@@ -40,7 +40,7 @@ and updates remain immutable manual GitHub releases.
 
 | Surface | Owner files | Contract |
 | --- | --- | --- |
-| App shell and orchestration | `ContentView.swift`, `NeAntikApp.swift` | Compose state and commands; do not invent domain policy in view bodies |
+| App shell and orchestration | `ContentView.swift`, `ContentViewState.swift`, `NeAntikApp.swift` | Compose state and commands; keep request/cache state out of the view body and do not invent domain policy there |
 | Keyboard and local UI preferences | `ProfileCommands.swift`, `NeAntikShortcutCatalog.swift`, `WorkspacePreferenceStore.swift`, `NeAntikSettingsView.swift` | Fixed menu-backed shortcuts, modal-safe focused commands and density-only local persistence; no global hooks or hidden destructive shortcuts |
 | Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions |
 | Query and organization | `ProfileListProjection.swift`, `WorkspaceQueryState.swift`, `ProfileTagEditor.swift` | Linear deterministic projection; no network or secret search |
@@ -95,6 +95,11 @@ and updates remain immutable manual GitHub releases.
 - removes the dormant telemetry client, offline update-manifest prototype and
   historical external Chrome/Cloak selector; absence-based privacy and release
   gates now reject their source files and configuration keys.
+- moves ContentView-only request, presentation and list-cache state into a
+  separate side-effect-free owner, then lowers the main view budget to
+  3,800 lines and 145,000 bytes;
+- adds a redacted audit of every reachable Git blob and historical filename to
+  the existing current-tree and GitHub secret-scanning gates.
 
 ### Deferred with an explicit boundary
 
@@ -103,8 +108,9 @@ and updates remain immutable manual GitHub releases.
   command on a signed candidate;
 - P1: separate Chromium cold/warm launch timing and exact-current installed
   component measurement;
-- P1: continue splitting large owners by pure policy/presentation slices; do
-  not raise source budgets;
+- P1: continue splitting `BrowserProcessManager` and `FingerprintAudit` only
+  when a pure policy/presentation slice is independently testable; do not
+  raise source budgets;
 - P2: local safe templates, config-only import/export, bounded activity history
   or differential runtime updates only after their own privacy/threat model;
 - rejected: cloud/team/billing, automation marketplace, proxy marketplace,
