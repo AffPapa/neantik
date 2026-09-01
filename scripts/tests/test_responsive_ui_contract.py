@@ -8,6 +8,9 @@ PROFILE_WORKSPACE_VIEWS = (
     ROOT / "Sources" / "NeAntik" / "ProfileWorkspaceViews.swift"
 )
 EDITOR = ROOT / "Sources" / "NeAntik" / "ProfileEditorView.swift"
+PROFILE_NOTE_EDITOR = (
+    ROOT / "Sources" / "NeAntik" / "ProfileNoteEditorView.swift"
+)
 AUDIT = ROOT / "Sources" / "NeAntik" / "FingerprintAuditView.swift"
 BULK_IMPORT = ROOT / "Sources" / "NeAntik" / "BulkProxyImport.swift"
 MODELS = ROOT / "Sources" / "NeAntik" / "Models.swift"
@@ -138,7 +141,14 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('Label("Создать профиль", systemImage: "plus")', header)
         self.assertIn(".buttonStyle(.borderedProminent)", header)
         self.assertIn(".tint(.green)", header)
-        self.assertIn('Label("Ещё", systemImage: "ellipsis.circle")', header)
+        self.assertIn(
+            'Label("Действия", systemImage: "ellipsis.circle")',
+            header,
+        )
+        self.assertIn(
+            '"Дополнительные действия со списком профилей"',
+            header,
+        )
         self.assertIn("profileListViewMenu", header)
         self.assertIn("operationalFilterBar(summary)", header)
         self.assertIn("ProfileOperationalFilter.allCases", header)
@@ -154,7 +164,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("if bulkProxyTestTask == nil,", header)
         self.assertIn("if bulkProxyTestTask != nil", header)
         self.assertLess(
-            header.index('Label("Ещё", systemImage: "ellipsis.circle")'),
+            header.index(
+                'Label("Действия", systemImage: "ellipsis.circle")'
+            ),
             header.index('Label("Создать профиль", systemImage: "plus")'),
         )
 
@@ -592,15 +604,25 @@ class ResponsiveUIContractTests(unittest.TestCase):
             search_start,
         )
         search = workspace_content[search_start:search_end]
-        self.assertIn(
-            '"Поиск или тег:, папка:, прокси:, статус:"',
-            search,
-        )
+        self.assertIn('"Поиск профилей"', search)
         self.assertIn(
             '"Поиск профилей, маршрутов, заметок, тегов и папок"',
             search,
         )
+        self.assertIn(
+            '"Можно уточнить запрос: тег, папка, прокси или статус.',
+            search,
+        )
         self.assertGreaterEqual(projection.count("profile.note"), 2)
+
+        note_editor = PROFILE_NOTE_EDITOR.read_text(encoding="utf-8")
+        self.assertIn("struct ProfileNoteEditorView: View", note_editor)
+        self.assertIn('TextEditor(text: $note)', note_editor)
+        self.assertIn(
+            '"Заметка хранится локально открытым текстом. Не сохраняй здесь пароли, API-ключи или seed-фразы."',
+            note_editor,
+        )
+        self.assertIn("BrowserProfile.normalizedNote", note_editor)
 
     def test_profile_note_clone_and_public_dto_boundaries_are_explicit(
         self,

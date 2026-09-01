@@ -16,25 +16,22 @@ archive contains source code, not `NeAntik.app`.
 
 Current published GitHub public-alpha release:
 
-- NeAntik `0.3.21` build `24`;
+- NeAntik `0.3.22` build `25`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `152.0.7977.64`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.21-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.21-arm64-notarized.dmg`;
+- ZIP: `NeAntik-0.3.22-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.22-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-Source candidate `0.3.22 (25)` is not a public binary release until its own
-signed and notarized DMG/ZIP assets appear in GitHub Releases.
-
-The source preview also includes a local Readiness Center. It identifies the
+Published `0.3.22 (25)` includes a local Readiness Center. It identifies the
 exact `NeAntik.app` users should select in macOS permissions, rechecks the
 runtime and shared data root without restarting, and copies only bounded,
-redacted diagnostics. Public `0.3.21 (24)` remains unchanged.
+redacted diagnostics.
 
 Product website: <https://affpapa.org/neantik>.
 
 The capabilities below are included in the published, signed, and notarized
-`0.3.21 (24)` release.
+`0.3.22 (25)` release.
 
 ## Quick start
 
@@ -67,6 +64,21 @@ The capabilities below are included in the published, signed, and notarized
   separation without exposing it in the normal user flow;
 - keeps Direct telemetry disabled.
 
+## New in published 0.3.22 (25)
+
+- The profile list is the primary workspace, with adaptive rows, an optional
+  inspector, explicit multi-selection and conflict-safe batch undo.
+- Search supports `tag:`, `folder:`, `proxy:`, and `status:` tokens. Bulk
+  import accepts bounded local TXT/CSV files without following symlinks.
+- Launch preflight has explicit runtime, storage, proxy, consistency, and
+  process stages. Running, closing, unresponsive, and completed profiles have
+  distinct presentation and Force Stop remains separately confirmed.
+- The Readiness Center, on-demand profile storage measurement and deterministic
+  source/startup/resource/installed-size budgets keep the app auditable.
+
+See the current [project map](docs/PROJECT_MAP.md) and the dated
+[20-product UX research](docs/COMPETITOR_UX_RESEARCH_2026-09-01.md).
+
 ## New in published 0.3.21 (24)
 
 - The optional profile note is expanded during creation, and an empty profile
@@ -77,54 +89,8 @@ The capabilities below are included in the published, signed, and notarized
   the compatible Xcode Apple `strip` before Developer ID signing. Locales,
   licenses, notices, SwiftShader, crashpad, and security evidence remain.
 
-## Source candidate 0.3.22 (25)
-
-- A compact list menu adds pinned/name, recent-launch, and newest sorting.
-- Profiles can be filtered to all routes, configured proxies, or direct
-  connections.
-- Search includes the visible proxy type and endpoint, but never proxy
-  usernames, passwords, Keychain content, or other credentials.
-- The profile list is now the primary workspace. A wide adaptive row keeps
-  launch, identity, status, route, note, and last-launch context together,
-  while the minimum window falls back to a compact row.
-- One command header combines search, list controls, secondary actions, and
-  profile creation. Local smart views show **All**, **Running**,
-  **Attention**, and **Never launched** counts without changing profile
-  storage or performing network requests.
-- Comfortable and compact row densities are session-only. Contextual empty
-  states offer a direct way back to all profiles, and each row can open its
-  note directly from the action menu.
-- The editor explicitly warns that a direct connection exposes the Mac's
-  ordinary public address or its system VPN address to websites.
-- Launch preflight is split into runtime, storage, proxy, consistency, and
-  process stages, with an actionable failure and a 1 GiB free-space floor.
-- A compact global strip keeps running, closing, unresponsive, and recently
-  completed profiles visible even when search or smart views hide their rows;
-  Force Stop remains a separate destructive confirmation.
-- Running profiles can be edited with an explicit next-launch boundary for
-  Chromium and proxy settings. **Create similar** produces fresh session and
-  identity data, and bulk proxy checks can retry only failed profiles.
-- The Dev-only cold/warm startup and manager CPU/RSS measurements use a
-  private temporary data root and a fail-closed non-system Keychain backend.
-- Full profile detail is available in an optional native inspector, and every
-  row exposes a visible action menu. See the
-  [NeAntik v4 workspace](docs/NEANTIK_V4_WORKSPACE.md) research and its 75
-  bounded decisions, plus the earlier
-  [Vision Lean Workspace](docs/VISION_LEAN_WORKSPACE.md) foundation.
-- Explicit multi-selection supports atomic pin, folder, tag, and archive
-  actions with conflict-safe undo of the latest batch.
-- Local search understands `tag:`, `folder:`, `proxy:`, and `status:` tokens.
-  Bulk import accepts pasted text or a bounded TXT/CSV file without following
-  symlinks or starting automatic network requests.
-- BrowserData size is measured only on demand in profile detail. Private
-  metadata uses descriptor-first bounded reads that reject symlinks, hardlinks,
-  oversized files, and file-identity changes.
-- A local Readiness Center and deterministic source, startup, CPU/RSS, and
-  installed-size budgets keep the release compact and auditable without new
-  dependencies or a Chromium runtime change.
-
-The public download remains the signed and notarized `0.3.21 (24)` release
-until this exact candidate completes the full Direct Distribution gate.
+This exact candidate completed the Direct Distribution gate and is published
+as immutable GitHub Release `v0.3.22`.
 
 For authenticated HTTP/HTTPS proxies, separate buttons copy the username and
 password into Chromium's native prompt. The password remains in macOS
@@ -138,7 +104,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.21` is published for public-alpha profile isolation. Strict
+Version `0.3.22` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 

@@ -184,7 +184,7 @@ and [Vision on Trustpilot](https://www.trustpilot.com/review/browser.vision).
 
 ## Release boundary
 
-This is source candidate `0.3.22 (25)`. It does not change the public
-`0.3.21 (24)` binaries, website version or download links. Binary publication
-still requires an exact merged commit, Developer ID signing,
-notarization, stapling, Gatekeeper verification and immutable ZIP/DMG assets.
+This dated design was delivered in the immutable GitHub release
+`0.3.22 (25)`. Any later binary still requires a new version/build, exact
+merged commit, Developer ID signing, notarization, stapling, Gatekeeper and
+immutable ZIP/DMG assets.

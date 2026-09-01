@@ -117,6 +117,7 @@ struct ProfileRow<Actions: View>: View {
     ) -> some View {
         HStack(spacing: 10) {
             batchSelectionButton
+            launchButton(presentation)
             profileAvatar
             VStack(alignment: .leading, spacing: 4) {
                 profileName
@@ -152,7 +153,6 @@ struct ProfileRow<Actions: View>: View {
             .layoutPriority(1)
 
             Spacer(minLength: 4)
-            launchButton(presentation)
             actionsMenu
         }
     }

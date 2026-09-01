@@ -56,9 +56,14 @@ struct RunningProfilesStrip: View {
                                 Button(role: .destructive) {
                                     onForceStop(item.id)
                                 } label: {
-                                    Image(systemName: "bolt.trianglebadge.exclamationmark.fill")
+                                    Label(
+                                        "Завершить принудительно…",
+                                        systemImage: "bolt.trianglebadge.exclamationmark.fill"
+                                    )
                                 }
-                                .buttonStyle(.borderless)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .tint(.red)
                                 .help("Принудительно остановить с риском потери сессии")
                                 .accessibilityLabel(
                                     "Принудительно остановить профиль \(item.profileName)"

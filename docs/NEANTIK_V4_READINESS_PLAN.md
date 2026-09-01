@@ -1,10 +1,11 @@
 # NeAntik v4 readiness and optimization plan
 
 Research cut: 2026-08-31. This plan continues the source-only v4 workspace
-iteration. It does not create a public binary release. GitHub Releases and
-`affpapa.org/neantik` remain on `0.3.21 (24)` until one exact merged commit
-passes Developer ID signing, Apple notarization, stapling, Gatekeeper and the
-full Direct Distribution transaction.
+iteration. The resulting exact source commit passed Developer ID signing,
+Apple notarization, stapling and Gatekeeper and was published as immutable
+GitHub release `0.3.22 (25)` on 2026-09-01. This file remains the dated
+100-point plan; current status and ownership live in
+[Project map](PROJECT_MAP.md).
 
 ## Product thesis
 
@@ -39,8 +40,9 @@ Current official documentation converges on five useful patterns:
   16 MiB is the development manager binary. UI code is not the weight driver.
 - The final open-source tree contains 435 files and no recognized secret
   material.
-- The release doctor is blocked only by the absent out-of-repository deploy
-  key; this source cycle must not work around that boundary.
+- The GitHub-only release doctor does not require a server credential. The
+  separate site doctor remains fail-closed without its out-of-repository
+  deploy key; source work must not work around that boundary.
 
 ## One hundred improvements and checks
 
@@ -205,4 +207,5 @@ This source slice is complete only when:
 6. targeted and full Swift/Python/AffPapa/ARM64/source gates pass;
 7. minimum, ordinary, wide, light and dark UI states are visually reviewed;
 8. the exact PR commit passes every GitHub check before an ordinary merge;
-9. public `0.3.21 (24)` and its versioned ZIP/DMG links remain unchanged.
+9. no public version or download link changes before every candidate-bound
+   Direct Distribution gate passes.

@@ -4,12 +4,14 @@ struct WorkspaceReadinessView: View {
     let snapshot: WorkspaceReadinessSnapshot
     let applicationPath: String
     let isRefreshing: Bool
-    let notice: String?
+    let notice: UserNotice?
     let onRecheck: () -> Void
     let onCopyDiagnostics: () -> Void
     let onCopyApplicationPath: () -> Void
     let onRevealApplication: () -> Void
     let onOpenSystemSettings: () -> Void
+
+    @State private var showsPermissionGuidance = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -71,14 +73,8 @@ struct WorkspaceReadinessView: View {
     }
 
     private var permissionGuidance: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "macwindow.badge.plus")
-                .font(.title3)
-                .foregroundStyle(.blue)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Какое приложение добавлять в разрешения macOS")
-                    .font(.headline)
+        DisclosureGroup(isExpanded: $showsPermissionGuidance) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(
                     "Выбирай установленный файл NeAntik.app. Не добавляй вложенный NeAntik Browser.app и его Helper-процессы."
                 )
@@ -108,12 +104,17 @@ struct WorkspaceReadinessView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 if let notice {
-                    Label(notice, systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
+                    UserNoticeLabel(notice: notice)
                         .transition(.opacity)
                 }
             }
+            .padding(.top, 10)
+        } label: {
+            Label(
+                "Разрешения macOS",
+                systemImage: "macwindow.badge.plus"
+            )
+            .font(.headline)
         }
         .padding(14)
         .background(.blue.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))

@@ -1,9 +1,11 @@
 # NeAntik v4 workspace: research and bounded roadmap
 
 Research cut: 2026-08-30. “v4” is the product-design name of this source
-iteration, not a public binary version. Public downloads remain `0.3.21 (24)`
-until an exact merged commit passes the complete Direct Distribution release
-workflow.
+iteration, not a public binary version. The resulting workspace shipped in the
+immutable GitHub release `0.3.22 (25)`. Current routing and delivered/deferred
+status now live in [Project map](PROJECT_MAP.md); the fresh twenty-product
+comparison lives in
+[Competitor UX research](COMPETITOR_UX_RESEARCH_2026-09-01.md).
 
 ## Product position
 

@@ -71,6 +71,6 @@ visible row menu becomes the discoverable path.
 
 ## Release boundary
 
-This is a source iteration on top of `0.3.22 (25)`. The public version and
-download links remain `0.3.21 (24)` until a later exact merged commit passes
-the complete Direct Distribution workflow.
+This dated source iteration was delivered in immutable GitHub release
+`0.3.22 (25)`. A later release must use a new version/build and pass the full
+Direct Distribution workflow from one exact merged commit.

@@ -13,7 +13,7 @@ class ReleaseClientTests(unittest.TestCase):
         text = CLIENT.read_text(encoding="utf-8")
         publish = text[
             text.index("publish_staged_release()"):
-            text.index("doctor()")
+            text.index("direct_doctor()")
         ]
 
         self.assertLess(
@@ -95,6 +95,24 @@ class ReleaseClientTests(unittest.TestCase):
         self.assertIn("remote.get(\"files\") == expected", client)
         self.assertIn("Ops manifest:", status)
         self.assertIn("/etc/neantik-release-ops.json", installer)
+
+    def test_default_doctor_is_github_only_and_site_is_explicit(self) -> None:
+        client = CLIENT.read_text(encoding="utf-8")
+        direct = client[
+            client.index("direct_doctor()"):
+            client.index("site_doctor()")
+        ]
+        dispatch = client[client.index("main() {"):]
+
+        self.assertIn("gh auth status", direct)
+        self.assertIn("gh release view", direct)
+        self.assertIn("GitHub-only doctor", direct)
+        self.assertNotIn("preflight_access", direct)
+        self.assertIn(
+            "site-doctor|status|check|dry-run|abort|prepare|publish",
+            dispatch,
+        )
+        self.assertIn("preflight_access", dispatch)
 
 
 if __name__ == "__main__":
