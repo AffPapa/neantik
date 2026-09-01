@@ -7,13 +7,15 @@ verify the exact merged commit, and publish only immutable signed artifacts.
 
 ## Execution outcome
 
-Items 1–95 and 100 are complete. GitHub Release `v0.3.23` is immutable and
+Items 1–95 and 97–100 are complete. GitHub Release `v0.3.23` is immutable and
 points to exact merged commit
 `fdc520391c58a76622936519ca38b382f629fc47`; its four assets were re-downloaded
-and verified. Items 96–99 are safely blocked before publication because the
-dedicated AffPapa deploy key is absent. The exact six-file site directory is
-ready locally, and the public website remains on `0.3.22 (25)` until the
-restricted wrapper transaction can run.
+and verified. The public website synchronized `0.3.23 (26)` from those GitHub
+assets without storing a second binary copy; desktop, narrow, version, build,
+commit, links and both displayed hashes were verified live. Item 96's legacy
+restricted publish transaction was not run because its dedicated key is
+absent; the wrapper failed closed and no other key or manual server access was
+used.
 
 ## A. Baseline and boundaries
 

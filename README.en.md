@@ -40,9 +40,9 @@ exact `NeAntik.app` users should select in macOS permissions, rechecks the
 runtime and shared data root without restarting, and copies only bounded,
 redacted diagnostics.
 
-Product website: <https://affpapa.org/neantik>. Its downloads are changed by a
-separate restricted transaction and may temporarily remain on `0.3.22 (25)`;
-use GitHub Release `v0.3.23` above until that transaction completes.
+Product website: <https://affpapa.org/neantik>. Its version, build, hashes, and
+download links are synchronized with GitHub Release `v0.3.23`; GitHub serves
+the files and AffPapa keeps no second binary copy.
 
 The capabilities below are included in the published, signed, and notarized
 `0.3.23 (26)` release.

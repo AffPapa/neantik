@@ -14,9 +14,11 @@ product and code work. The older v4 documents remain dated design records.
 - A later source commit is not a release. A new binary needs a new
   version/build, exact merged commit, Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and re-downloaded SHA-256 evidence.
-- Website deployment is a separate restricted transaction and is not changed
-  by an ordinary source PR. Until its dedicated deploy key is available, the
-  website correctly remains on `0.3.22 (25)` while GitHub serves `v0.3.23`.
+- The public website is synchronized read-only from GitHub release metadata.
+  Its page and `release.json` show `0.3.23 (26)` and link directly to the exact
+  GitHub assets; AffPapa keeps no second binary copy. The legacy restricted
+  wrapper remains fail-closed without its dedicated deploy key and was not
+  bypassed with another key or manual server access.
 
 ## Product contract
 
