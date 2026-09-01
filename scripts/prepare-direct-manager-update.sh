@@ -13,6 +13,8 @@ SOURCE_RUNTIME="$SOURCE_APP/Contents/Resources/NeAntik Browser.app"
 CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
 SECURITY_BASELINE_ARGS=()
+RELEASE_ENTITLEMENTS="$PROJECT_DIR/Resources/NeAntik.entitlements"
+EMBEDDED_PROFILE="$CANDIDATE_APP/Contents/embedded.provisionprofile"
 
 resolve_source_provenance() {
   local configured="${NEANTIK_SOURCE_PROVENANCE:-}"
@@ -154,6 +156,10 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
 esac
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
+  : "${NEANTIK_PROVISIONING_PROFILE:?Set NEANTIK_PROVISIONING_PROFILE to the absolute Developer ID distribution provisioning profile path}"
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+    --profile "$NEANTIK_PROVISIONING_PROFILE" \
+    --entitlements "$RELEASE_ENTITLEMENTS"
 fi
 
 "$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" \
@@ -217,6 +223,13 @@ cp \
   "$CANDIDATE_APP/Contents/Resources/ru.lproj/"
 printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"
+rm -f "$EMBEDDED_PROFILE"
+if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+    --profile "$NEANTIK_PROVISIONING_PROFILE" \
+    --entitlements "$RELEASE_ENTITLEMENTS" \
+    --copy-to "$EMBEDDED_PROFILE"
+fi
 verify_reviewed_runtime_evidence
 
 verify_runtime_unchanged
@@ -233,10 +246,17 @@ else
     --force \
     --options runtime \
     --timestamp \
+    --entitlements "$RELEASE_ENTITLEMENTS" \
     --sign "$NEANTIK_SIGNING_IDENTITY" \
     "$CANDIDATE_APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$CANDIDATE_APP"
+if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
+    --profile "$EMBEDDED_PROFILE" \
+    --entitlements "$RELEASE_ENTITLEMENTS" \
+    --app "$CANDIDATE_APP"
+fi
 
 verify_runtime_unchanged
 

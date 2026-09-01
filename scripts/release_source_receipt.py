@@ -45,6 +45,7 @@ class ReleaseSourceSnapshot:
 
 
 RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
+    ("Resources/NeAntik.entitlements", "release-entitlements"),
     ("runtime/apple-device-tuples.json", "reviewed-policy"),
     ("runtime/browser-identity-issuance.json", "reviewed-policy"),
     ("runtime/chromium-152-source-contract.json", "reviewed-policy"),
@@ -52,11 +53,14 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("runtime/nevision-patches/series.json", "reviewed-policy"),
     ("runtime/security-baseline.json", "reviewed-policy"),
     ("scripts/direct-candidate-manifest.py", "candidate-manifest"),
+    ("scripts/enroll-direct-fingerprint-authority.sh", "hardware-enrollment"),
     ("scripts/fingerprint_evidence_schema8.py", "evidence-schema"),
     ("scripts/notarize-direct-candidate.sh", "release-entrypoint"),
     ("scripts/notarize_direct_transaction.py", "orchestrator"),
     ("scripts/notary_transaction_inspector.py", "transaction-diagnostics"),
     ("scripts/notary_transaction_state.py", "transaction-state"),
+    ("scripts/prepare-direct-manager-update.sh", "candidate-builder"),
+    ("scripts/prepare-direct-runtime-candidate.sh", "runtime-candidate-builder"),
     ("scripts/release-direct.sh", "release-entrypoint"),
     ("scripts/release_input_snapshot.py", "input-snapshot"),
     ("scripts/release_source_receipt.py", "source-provenance"),
@@ -64,6 +68,7 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/run-isolated-release-python.py", "execution-bootstrap"),
     ("scripts/verify-browser-identity-issuance.py", "fingerprint-gate"),
     ("scripts/verify-direct-notarized-archive.py", "release-gate"),
+    ("scripts/verify-direct-provisioning-profile.py", "entitlements-gate"),
     ("scripts/verify-direct-telemetry-disabled.py", "privacy-gate"),
     ("scripts/verify-direct-update-policy.py", "release-gate"),
     ("scripts/verify-direct-version-bump.py", "release-gate"),
