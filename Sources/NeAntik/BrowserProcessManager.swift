@@ -1766,9 +1766,7 @@ final class BrowserProcessManager: ObservableObject {
             "--disable-background-networking",
             "--disable-component-update",
             "--disable-sync",
-            "--window-size=1200,800",
-            "--single-process",
-            "--no-sandbox"
+            "--window-size=1200,800"
         ]
         return arguments.count == Set(arguments).count &&
             arguments.allSatisfy(allowed.contains)

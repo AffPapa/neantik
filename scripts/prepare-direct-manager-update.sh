@@ -1,6 +1,8 @@
 #!/bin/zsh
 
 set -euo pipefail
+umask 077
+export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export DEVELOPER_DIR="$(

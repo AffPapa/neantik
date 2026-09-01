@@ -1,13 +1,23 @@
 import SwiftUI
 
+struct ProfileNoteDraftSnapshot: Equatable, Sendable {
+    let note: String
+
+    func hasUnsavedChanges(currentNote: String) -> Bool {
+        currentNote != note
+    }
+}
+
 struct ProfileNoteEditorView: View {
     let profileName: String
     let onSave: (String) throws -> Void
+    private let initialDraft: ProfileNoteDraftSnapshot
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var noteIsFocused: Bool
     @State private var note: String
     @State private var errorMessage: String?
+    @State private var showingDiscardConfirmation = false
 
     init(
         profileName: String,
@@ -16,11 +26,16 @@ struct ProfileNoteEditorView: View {
     ) {
         self.profileName = profileName
         self.onSave = onSave
+        initialDraft = ProfileNoteDraftSnapshot(note: initialNote)
         _note = State(initialValue: initialNote)
     }
 
     private var presentation: ProfileNotePresentation {
         ProfileNotePresentation.resolve(note)
+    }
+
+    private var hasUnsavedChanges: Bool {
+        initialDraft.hasUnsavedChanges(currentNote: note)
     }
 
     var body: some View {
@@ -107,7 +122,7 @@ struct ProfileNoteEditorView: View {
             HStack {
                 Spacer()
                 Button("Отмена", role: .cancel) {
-                    dismiss()
+                    requestDismiss()
                 }
                 .keyboardShortcut(.cancelAction)
                 Button("Сохранить") {
@@ -120,7 +135,27 @@ struct ProfileNoteEditorView: View {
         }
         .padding(20)
         .frame(minWidth: 440, idealWidth: 520, minHeight: 360)
+        .interactiveDismissDisabled(hasUnsavedChanges)
+        .alert(
+            "Отменить изменения заметки?",
+            isPresented: $showingDiscardConfirmation
+        ) {
+            Button("Продолжить редактирование", role: .cancel) {}
+            Button("Отменить изменения", role: .destructive) {
+                dismiss()
+            }
+        } message: {
+            Text("Несохранённый текст заметки будет потерян.")
+        }
         .onAppear { noteIsFocused = true }
+    }
+
+    private func requestDismiss() {
+        if hasUnsavedChanges {
+            showingDiscardConfirmation = true
+        } else {
+            dismiss()
+        }
     }
 
     private func save() {

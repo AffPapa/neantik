@@ -1,6 +1,15 @@
 import AppKit
 import SwiftUI
 
+enum ProfileSearchSyntaxHelp {
+    static let examples = [
+        "тег:tiktok",
+        "папка:\"Paid Social\"",
+        "прокси:есть",
+        "статус:закреплен",
+    ]
+}
+
 struct ContentView: View {
     @Environment(\.openSettings) private var openSettings
 
@@ -43,6 +52,7 @@ struct ContentView: View {
     @State private var releaseAuditTerminationScheduled = false
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
+    @State private var showsProfileSearchHelp = false
     @State private var selectedProfileTag: ProfileTagID?
     @State private var profileListScope: ProfileListScope = .active
     @State private var selectedFolderFilter: ProfileFolderFilter = .all
@@ -705,14 +715,33 @@ struct ContentView: View {
             )
         }
         .alert(item: workspaceAlertBinding) { presentation in
-            Alert(
+            workspaceAlert(for: presentation)
+        }
+    }
+
+    private func workspaceAlert(
+        for presentation: WorkspaceAlertPresentation
+    ) -> Alert {
+        if presentation.offersReadinessRecovery {
+            return Alert(
                 title: Text(presentation.title),
                 message: Text(presentation.message),
-                dismissButton: .default(Text("OK")) {
+                primaryButton: .default(Text("Открыть готовность")) {
+                    clearWorkspaceAlert(presentation.source)
+                    presentWorkspaceReadiness()
+                },
+                secondaryButton: .cancel(Text("Закрыть")) {
                     clearWorkspaceAlert(presentation.source)
                 }
             )
         }
+        return Alert(
+            title: Text(presentation.title),
+            message: Text(presentation.message),
+            dismissButton: .default(Text("Закрыть")) {
+                clearWorkspaceAlert(presentation.source)
+            }
+        )
     }
 
     private var workspaceStateObservers: some View {
@@ -2118,6 +2147,40 @@ struct ContentView: View {
                 .help("Очистить поиск")
                 .accessibilityLabel("Очистить поиск профилей")
             }
+            Button {
+                showsProfileSearchHelp.toggle()
+            } label: {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Синтаксис поиска")
+            .accessibilityLabel("Показать синтаксис поиска")
+            .popover(isPresented: $showsProfileSearchHelp) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Поиск по полям")
+                        .font(.headline)
+                        .accessibilityHeading(.h2)
+                    Text(
+                        "Обычный текст ищет по профилю и заметке. " +
+                            "Для точного поиска используй:"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    ForEach(ProfileSearchSyntaxHelp.examples, id: \.self) {
+                        Text($0)
+                            .font(.body.monospaced())
+                            .textSelection(.enabled)
+                    }
+                    Text("Название с пробелами заключи в кавычки.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(14)
+                .frame(width: 320, alignment: .leading)
+            }
         }
         .padding(.horizontal, 8)
         .frame(minWidth: 180, minHeight: 28)
@@ -2540,7 +2603,7 @@ struct ContentView: View {
                 systemImage: "note.text"
             )
         }
-        .disabled(!commands.presentation.editIsEnabled)
+        .disabled(!commands.presentation.noteIsEnabled)
         Button(
             commands.presentation.launchTitle,
             systemImage: commands.presentation.launchSystemImage,

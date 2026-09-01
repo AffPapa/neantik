@@ -168,6 +168,26 @@ struct ProxyTesterTests {
     }
 
     @Test
+    func childProcessEnvironmentCannotInheritProxyTLSOrLoaderOverrides() {
+        let environment = ProxyTester.sanitizedProcessEnvironment(
+            inherited: [
+                "HTTPS_PROXY": "http://attacker.invalid:8080",
+                "ALL_PROXY": "socks5://attacker.invalid:1080",
+                "SSL_CERT_FILE": "/tmp/attacker.pem",
+                "CURL_CA_BUNDLE": "/tmp/attacker.pem",
+                "SSLKEYLOGFILE": "/tmp/tls.keys",
+                "DYLD_INSERT_LIBRARIES": "/tmp/attacker.dylib"
+            ]
+        )
+
+        #expect(environment == [
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+            "LANG": "C",
+            "LC_ALL": "C"
+        ])
+    }
+
+    @Test
     func parsesProxyLocationIdentity() throws {
         let data = Data(
             """

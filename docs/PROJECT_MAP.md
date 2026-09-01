@@ -49,7 +49,7 @@ and updates remain immutable manual GitHub releases.
 | Process lifecycle | `BrowserProcessManager.swift`, `BrowserProcessInventory.swift`, `BrowserProcessLifecyclePresentation.swift`, `RunningProfilesStrip.swift` | Exact ownership, fail-closed reconciliation, explicit Closing and confirmed Force Stop |
 | Runtime and launch | `BrowserLaunchBuilder.swift`, `BrowserLaunchStagedPreflight.swift`, `BrowserRuntime*.swift` | Embedded signed ARM64 runtime, staged fail-closed launch, no credential CLI arguments |
 | Proxy | `ProxyTester.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing, bounded concurrency, fresh preparation before proxied launch |
-| Fingerprint evidence | `FingerprintAudit*.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics |
+| Fingerprint evidence | `FingerprintAudit*.swift`, `DevToolsSecurity.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics; DevTools files/endpoints are bounded and loopback-only |
 | Readiness and notices | `WorkspaceReadiness*.swift`, `UserNotice.swift` | Redacted, actionable, semantically honest local diagnostics |
 | Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/verify-direct-provisioning-profile.py`, `scripts/verify-active-gui-session-unlocked.py`, `scripts/notarize_direct_transaction.py`, `scripts/neantik-affpapa-release` | Exact candidate only; auto-select one profile-authorized certificate or fail; require an unlocked GUI session for Secure Enclave enrollment; optional explicit notary Keychain must be owner-only; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
 | CI and repository security | `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/dependabot.yml`, `scripts/audit-git-history-secrets.py` | SHA-pinned Actions, least privilege, Swift/Python CodeQL, dependency updates and separate current-tree/history/GitHub secret gates |
@@ -116,6 +116,24 @@ and updates remain immutable manual GitHub releases.
   work and rechecks immediately before Secure Enclave enrollment;
 - makes add/edit note a visible row action in the wide profile table while
   preserving the dedicated editor, keyboard command and compact action menu.
+- protects note and bulk-proxy drafts from Cancel, Escape and interactive
+  dismissal; the profile editor now states create/edit mode explicitly and
+  exposes a temporary, user-controlled proxy-password reveal.
+- keeps bulk selection usable at 820 px without horizontal action scrolling,
+  exposes structured-search examples, includes the start page in the advanced
+  summary and speaks shortcut chords as words for VoiceOver.
+- routes process/storage errors to the readiness center and keeps note commands
+  available during safe transient process states.
+- fails closed when a fingerprint runtime signature is unknown, rejects
+  ambiguous framework binaries, removes the dormant unsandboxed diagnostic
+  launch and validates `DevToolsActivePort` plus loopback WebSocket endpoints
+  before use.
+- gives proxy probes a minimal fixed child environment without inherited
+  proxy/TLS/loader overrides.
+- gives every Direct-release entrypoint a private umask and reviewed PATH;
+  critical DMG security tools use absolute Apple paths, while the isolated
+  Python runner requires `-I -B`, system Git and stdlib-before-repository
+  imports.
 
 ### Deferred with an explicit boundary
 
@@ -146,6 +164,8 @@ and updates remain immutable manual GitHub releases.
   [0.3.24 audit plan](NEANTIK_0324_ZERO_BASE_AUDIT_PLAN.md).
 - Current 20-product comparison:
   [Competitor UX research](COMPETITOR_UX_RESEARCH_2026-09-01.md).
+- Current 28-product/100-candidate implementation matrix:
+  [Antidetect recommendation matrix](../artifacts/neantik/looper-goals/20260902-antidetect-100/recommendation-matrix.md).
 - Historical 75-candidate design record:
   [NeAntik v4 workspace](NEANTIK_V4_WORKSPACE.md).
 - Historical 100-point release/readiness plan:

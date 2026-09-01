@@ -57,6 +57,16 @@ struct ProxyTester: Sendable {
         "https://ipapi.co/json/"
     ]
 
+    static func sanitizedProcessEnvironment(
+        inherited _: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String: String] {
+        [
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+            "LANG": "C",
+            "LC_ALL": "C"
+        ]
+    }
+
     func test(
         configuration: ProxyConfiguration,
         password: String
@@ -206,7 +216,8 @@ struct ProxyTester: Sendable {
     ) async throws -> ProxyProcessResult {
         let runner = CancellableProcessRunner(
             executableURL: executableURL,
-            arguments: arguments
+            arguments: arguments,
+            environment: Self.sanitizedProcessEnvironment()
         )
         let boundedOutput = BoundedProcessOutput(
             maximumBytes: maximumOutputBytes
@@ -497,9 +508,14 @@ private final class CancellableProcessRunner: @unchecked Sendable {
     private let lock = NSLock()
     private var cancelled = false
 
-    init(executableURL: URL, arguments: [String]) {
+    init(
+        executableURL: URL,
+        arguments: [String],
+        environment: [String: String]
+    ) {
         process.executableURL = executableURL
         process.arguments = arguments
+        process.environment = environment
     }
 
     var wasCancelled: Bool {

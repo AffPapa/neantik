@@ -29,4 +29,19 @@ struct NeAntikShortcutCatalogTests {
         #expect(!titles.localizedCaseInsensitiveContains("принуд"))
         #expect(!titles.localizedCaseInsensitiveContains("архив"))
     }
+
+    @Test func accessibilityChordsUseSpokenKeyNames() {
+        #expect(
+            NeAntikShortcut.toggleSelectedProfile.accessibilityChord ==
+                "Command, Return"
+        )
+        #expect(
+            NeAntikShortcut.focusSelectedProfile.accessibilityChord ==
+                "Shift, Command, Return"
+        )
+        #expect(
+            NeAntikShortcut.editSelectedNote.accessibilityChord ==
+                "Option, Command, N"
+        )
+    }
 }

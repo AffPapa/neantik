@@ -108,6 +108,29 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
   }
 }
 
+struct ProfileEditorHeadingPresentation: Equatable, Sendable {
+  let title: String
+  let subtitle: String?
+
+  static func resolve(
+    original: BrowserProfile?,
+    currentName: String
+  ) -> Self {
+    guard original != nil else {
+      return Self(title: "Создание профиля", subtitle: nil)
+    }
+    let name = currentName.trimmingCharacters(in: .whitespacesAndNewlines)
+    return Self(
+      title: "Редактирование профиля",
+      subtitle: name.isEmpty ? nil : name
+    )
+  }
+}
+
+enum ProfileEditorAdvancedPresentation {
+  static let summary = "Стартовая страница, папка, теги и оформление"
+}
+
 struct ProfileEditorView: View {
   let original: BrowserProfile?
   let keychain: KeychainStore
@@ -139,6 +162,7 @@ struct ProfileEditorView: View {
   @State private var proxyPort: String
   @State private var proxyUsername: String
   @State private var proxyPassword: String
+  @State private var showsProxyPassword = false
   @State private var proxyImportText = ""
   @State private var proxyImportOrder: ProxyImportOrder = .automatic
   @State private var proxyImportNotice: UserNotice?
@@ -269,6 +293,29 @@ struct ProfileEditorView: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      let heading = ProfileEditorHeadingPresentation.resolve(
+        original: original,
+        currentName: name
+      )
+      HStack {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(heading.title)
+            .font(.headline)
+            .accessibilityHeading(.h1)
+          if let subtitle = heading.subtitle {
+            Text(subtitle)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
+        }
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 12)
+
+      Divider()
+
       ScrollViewReader { scrollProxy in
         Form {
         if appliesOnNextLaunch {
@@ -376,12 +423,39 @@ struct ProfileEditorView: View {
                 "Логин (необязательно)",
                 text: $proxyUsername
               )
-              SecureField(
-                "Пароль (хранится в Связке ключей)",
-                text: $proxyPassword
-              )
-              .focused($focusedField, equals: .proxyPassword)
-              .id(ProfileEditorField.proxyPassword)
+              HStack(spacing: 8) {
+                Group {
+                  if showsProxyPassword {
+                    TextField(
+                      "Пароль (хранится в Связке ключей)",
+                      text: $proxyPassword
+                    )
+                  } else {
+                    SecureField(
+                      "Пароль (хранится в Связке ключей)",
+                      text: $proxyPassword
+                    )
+                  }
+                }
+                .focused($focusedField, equals: .proxyPassword)
+                .id(ProfileEditorField.proxyPassword)
+
+                Button {
+                  showsProxyPassword.toggle()
+                } label: {
+                  Image(
+                    systemName: showsProxyPassword ? "eye.slash" : "eye"
+                  )
+                }
+                .buttonStyle(.borderless)
+                .help(
+                  showsProxyPassword ? "Скрыть пароль" : "Показать пароль"
+                )
+                .accessibilityLabel(
+                  showsProxyPassword ? "Скрыть пароль прокси" :
+                    "Показать пароль прокси"
+                )
+              }
               validationLabel(for: .proxyPassword)
             }
 
@@ -662,9 +736,11 @@ struct ProfileEditorView: View {
           Text("Дополнительно")
             .fontWeight(.semibold)
           Spacer()
-          Text("Папка, теги и оформление")
+          Text(ProfileEditorAdvancedPresentation.summary)
             .font(.caption)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
         }
         .frame(
           maxWidth: .infinity,

@@ -12,6 +12,7 @@ struct ProfileCommandPresentationTests {
         #expect(!presentation.launchIsEnabled)
         #expect(!presentation.focusIsEnabled)
         #expect(!presentation.editIsEnabled)
+        #expect(!presentation.noteIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
     }
@@ -39,6 +40,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.launchIsEnabled)
         #expect(!presentation.focusIsEnabled)
         #expect(presentation.editIsEnabled)
+        #expect(presentation.noteIsEnabled)
         #expect(presentation.pinTitle == "Открепить")
         #expect(presentation.pinSystemImage == "pin.slash")
         #expect(presentation.archiveTitle == "В архив")
@@ -65,6 +67,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.launchIsEnabled)
         #expect(presentation.focusIsEnabled)
         #expect(presentation.editIsEnabled)
+        #expect(presentation.noteIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
     }
@@ -93,6 +96,25 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.archiveSystemImage == "arrow.uturn.backward")
         #expect(presentation.archiveIsEnabled)
         #expect(presentation.editIsEnabled)
+        #expect(presentation.noteIsEnabled)
+    }
+
+    @Test
+    func noteRemainsAvailableDuringTransientProcessStates() {
+        let profile = BrowserProfile(name: "Проверяется")
+        let launch = BrowserLaunchActionPresentation.resolve(
+            processState: .checking,
+            isArchived: false,
+            runtimeAvailability: .ready
+        )
+        let presentation = ProfileCommandPresentation.resolve(
+            profile: profile,
+            processState: .checking,
+            launchAction: launch
+        )
+
+        #expect(!presentation.editIsEnabled)
+        #expect(presentation.noteIsEnabled)
     }
 
     @Test

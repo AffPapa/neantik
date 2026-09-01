@@ -14,9 +14,54 @@ INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
 RELEASE_VERIFIER = SCRIPTS / "verify-release.sh"
 PROFILE_VERIFIER = SCRIPTS / "verify-direct-provisioning-profile.py"
 RELEASE_ENTITLEMENTS = SCRIPTS.parent / "Resources" / "NeAntik.entitlements"
+RELEASE_ENTRYPOINTS = (
+    SCRIPTS.parent / "Release-NeAntik.command",
+    SCRIPTS / "Run-NeAntik-Release.command",
+    SCRIPTS / "prepare-direct-runtime-candidate.sh",
+    SCRIPTS / "prepare-direct-manager-update.sh",
+    SCRIPTS / "release-direct.sh",
+    SCRIPTS / "notarize-direct-candidate.sh",
+    SCRIPTS / "release-direct-dmg.sh",
+    SCRIPTS / "enroll-direct-fingerprint-authority.sh",
+)
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_release_entrypoints_use_private_umask_and_reviewed_path(self) -> None:
+        expected_path = (
+            'export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"'
+        )
+        for script in RELEASE_ENTRYPOINTS:
+            with self.subTest(script=script.name):
+                text = script.read_text(encoding="utf-8")
+                self.assertIn("umask 077", text)
+                self.assertIn(expected_path, text)
+                self.assertLess(text.index("umask 077"), text.index("PROJECT_DIR="))
+
+    def test_dmg_release_uses_absolute_apple_security_tools(self) -> None:
+        text = (SCRIPTS / "release-direct-dmg.sh").read_text(
+            encoding="utf-8"
+        )
+        for tool in (
+            "/usr/bin/codesign",
+            "/usr/bin/xcrun",
+            "/usr/sbin/spctl",
+            "/usr/bin/hdiutil",
+            "/usr/bin/ditto",
+            "/usr/bin/shasum",
+            "/usr/bin/security",
+        ):
+            self.assertIn(tool, text)
+        for bare in (
+            "\ncodesign ",
+            "\nxcrun ",
+            "\nspctl ",
+            "\nhdiutil ",
+            "\nditto ",
+            "\nsecurity ",
+        ):
+            self.assertNotIn(bare, text)
+
     def test_release_verifier_rejects_sandbox_and_dormant_network_surfaces(
         self,
     ) -> None:

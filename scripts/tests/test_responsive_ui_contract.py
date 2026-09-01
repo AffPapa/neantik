@@ -57,6 +57,13 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_proxy_password_has_explicit_temporary_reveal_control(self) -> None:
+        source = EDITOR.read_text(encoding="utf-8")
+        self.assertIn('@State private var showsProxyPassword = false', source)
+        self.assertIn('"Показать пароль прокси"', source)
+        self.assertIn('"Скрыть пароль прокси"', source)
+        self.assertIn('systemName: showsProxyPassword ? "eye.slash" : "eye"', source)
+
     def test_workspace_uses_native_list_first_navigation_and_optional_inspector(
         self,
     ) -> None:
@@ -147,6 +154,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('case editSelectedNote', shortcuts)
         self.assertIn('Section("Сочетания клавиш")', settings)
         self.assertIn("$preferences.rowDensity", settings)
+        self.assertIn("var accessibilityChord: String", shortcuts)
+        self.assertIn("shortcut.accessibilityChord", settings)
 
         header_start = text.index("private func profileListHeader(")
         search_start = text.index(
@@ -222,6 +231,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("profileRouteFilter = decision.routeFilter", text)
         self.assertIn('Text("Измени поиск или фильтры.")', text)
         self.assertIn('.accessibilityLabel("Убрать фильтр \\(title)")', text)
+        self.assertIn('Image(systemName: "info.circle")', text)
+        self.assertIn('Text("Поиск по полям")', text)
+        self.assertIn("ProfileSearchSyntaxHelp.examples", text)
 
         active_filters_start = text.index(
             "private var activeFiltersBar", search_start
@@ -348,11 +360,23 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertNotIn("neAntikCreateProfile", APP.read_text(encoding="utf-8"))
         self.assertIn("state == .stopped || state.isConfirmedRunning", content)
         self.assertIn("appliesOnNextLaunch", content)
+        self.assertIn("noteIsEnabled", commands)
+        self.assertIn(
+            ".disabled(!resolved.presentation.noteIsEnabled)", commands
+        )
         self.assertIn("ProfileFolderCommandProjection.resolve", content)
         self.assertIn("static let defaultLimit = 8", commands)
         batch_actions = (
             ROOT / "Sources" / "NeAntik" / "ProfileBatchActions.swift"
         ).read_text(encoding="utf-8")
+        self.assertIn("ViewThatFits(in: .horizontal)", batch_actions)
+        self.assertIn("compactActionBar", batch_actions)
+        self.assertIn(
+            'Label("Действия", systemImage: "ellipsis.circle")',
+            batch_actions,
+        )
+        self.assertIn('Button("Снять выделение"', batch_actions)
+        self.assertNotIn("ScrollView(.horizontal", batch_actions)
         self.assertNotIn(
             '.keyboardShortcut("z", modifiers: [.command])',
             batch_actions,
@@ -498,6 +522,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
+        self.assertIn('title: "Создание профиля"', text)
+        self.assertIn('title: "Редактирование профиля"', text)
+        self.assertIn(".accessibilityHeading(.h1)", text)
+        self.assertIn(
+            'static let summary = "Стартовая страница, папка, теги и оформление"',
+            text,
+        )
         advanced_start = text.index("showsAdvancedOptions.toggle()")
         advanced_end = text.index("if showsAdvancedOptions {", advanced_start)
         advanced = text[advanced_start:advanced_end]
@@ -663,6 +694,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
             note_editor,
         )
         self.assertIn("BrowserProfile.normalizedNote", note_editor)
+        self.assertIn("ProfileNoteDraftSnapshot", note_editor)
+        self.assertIn(".interactiveDismissDisabled(hasUnsavedChanges)", note_editor)
+        self.assertIn('"Отменить изменения заметки?"', note_editor)
+        self.assertIn("requestDismiss()", note_editor)
 
     def test_profile_note_clone_and_public_dto_boundaries_are_explicit(
         self,
@@ -708,6 +743,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
             text,
         )
         self.assertIn(".focused($proxyInputIsFocused)", text)
+        self.assertIn("BulkProxyImportDraftSnapshot", text)
+        self.assertIn(
+            ".interactiveDismissDisabled(isCreating || hasUnsavedChanges)",
+            text,
+        )
+        self.assertIn('"Отменить импорт?"', text)
+        self.assertIn("requestDismiss()", text)
         self.assertIn("будет автоматически проверяться", normalized)
         self.assertIn("перед каждым запуском профиля", normalized)
         self.assertIn("Эта проверка не", normalized)

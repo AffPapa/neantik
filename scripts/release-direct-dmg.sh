@@ -1,6 +1,8 @@
 #!/bin/zsh
 
 set -euo pipefail
+umask 077
+export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PREPARED_APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
@@ -68,14 +70,14 @@ MOUNTED=0
 
 cleanup() {
   if (( MOUNTED == 1 )); then
-    hdiutil detach "$MOUNT_POINT" >/dev/null 2>&1 || true
+    /usr/bin/hdiutil detach "$MOUNT_POINT" >/dev/null 2>&1 || true
   fi
   rm -rf "$TEMP_ROOT"
 }
 trap cleanup EXIT
 
 mkdir -p "$ARCHIVE_ROOT"
-ditto -x -k "$ZIP_PATH" "$ARCHIVE_ROOT"
+/usr/bin/ditto -x -k "$ZIP_PATH" "$ARCHIVE_ROOT"
 APP_PATH="$ARCHIVE_ROOT/NeAntik.app"
 INFO_PLIST="$APP_PATH/Contents/Info.plist"
 RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"
@@ -103,11 +105,11 @@ APP_SIZE_KB="$(du -sk "$APP_PATH" | awk '{print $1}')"
 (( APP_SIZE_KB >= 100000 )) ||
   fail "app is unexpectedly small (${APP_SIZE_KB} KB); refusing to create an empty DMG"
 
-codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-xcrun stapler validate "$APP_PATH"
-spctl --assess --type execute --verbose=4 "$APP_PATH"
+/usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+/usr/bin/xcrun stapler validate "$APP_PATH"
+/usr/sbin/spctl --assess --type execute --verbose=4 "$APP_PATH"
 
-APP_SIGNATURE="$(codesign --display --verbose=4 "$APP_PATH" 2>&1)"
+APP_SIGNATURE="$(/usr/bin/codesign --display --verbose=4 "$APP_PATH" 2>&1)"
 if ! print -r -- "$APP_SIGNATURE" |
   grep -q '^Authority=Developer ID Application:'; then
   fail "app is not signed by Developer ID Application"
@@ -117,7 +119,7 @@ if ! print -r -- "$APP_SIGNATURE" | grep -q '^Timestamp='; then
 fi
 
 CERTIFICATE_PREFIX="$TEMP_ROOT/signing-certificate"
-codesign \
+/usr/bin/codesign \
   --display \
   --extract-certificates="$CERTIFICATE_PREFIX" \
   "$APP_PATH" >/dev/null 2>&1
@@ -125,14 +127,14 @@ LEAF_CERTIFICATE="${CERTIFICATE_PREFIX}0"
 [[ -f "$LEAF_CERTIFICATE" ]] ||
   fail "could not extract the Developer ID signing certificate from NeAntik.app"
 SIGNING_IDENTITY="$(
-  shasum -a 1 "$LEAF_CERTIFICATE" |
+  /usr/bin/shasum -a 1 "$LEAF_CERTIFICATE" |
     awk '{print toupper($1)}'
 )"
 print -r -- "$SIGNING_IDENTITY" |
   grep -Eq '^[0-9A-F]{40}$' ||
   fail "the extracted Developer ID signing certificate hash is invalid"
 
-INSTALLED_IDENTITIES="$(security find-identity -v -p codesigning 2>&1)"
+INSTALLED_IDENTITIES="$(/usr/bin/security find-identity -v -p codesigning 2>&1)"
 if ! print -r -- "$INSTALLED_IDENTITIES" |
   awk -v hash="$SIGNING_IDENTITY" '
     $2 == hash && /Developer ID Application:/ { found = 1 }
@@ -142,7 +144,7 @@ if ! print -r -- "$INSTALLED_IDENTITIES" |
 fi
 
 mkdir -p "$STAGING_DIR" "$MOUNT_POINT" "$NOTARY_LOG_DIR"
-ditto --norsrc "$APP_PATH" "$STAGING_DIR/NeAntik.app"
+/usr/bin/ditto --norsrc "$APP_PATH" "$STAGING_DIR/NeAntik.app"
 ln -s /Applications "$STAGING_DIR/Applications"
 
 [[ -d "$STAGING_DIR/NeAntik.app" ]] ||
@@ -153,7 +155,7 @@ ln -s /Applications "$STAGING_DIR/Applications"
 
 echo "Creating NeAntik $VERSION ($BUILD) DMG from:"
 echo "  $APP_PATH"
-hdiutil create \
+/usr/bin/hdiutil create \
   -volname "NeAntik" \
   -srcfolder "$STAGING_DIR" \
   -format UDZO \
@@ -163,15 +165,15 @@ hdiutil create \
 DMG_SIZE="$(stat -f '%z' "$TEMP_DMG")"
 (( DMG_SIZE >= 50000000 )) ||
   fail "DMG is unexpectedly small (${DMG_SIZE} bytes); refusing notarization"
-hdiutil verify "$TEMP_DMG"
+/usr/bin/hdiutil verify "$TEMP_DMG"
 
-codesign \
+/usr/bin/codesign \
   --force \
   --timestamp \
   --sign "$SIGNING_IDENTITY" \
   "$TEMP_DMG"
-codesign --verify --verbose=2 "$TEMP_DMG"
-DMG_SIGNATURE="$(codesign --display --verbose=4 "$TEMP_DMG" 2>&1)"
+/usr/bin/codesign --verify --verbose=2 "$TEMP_DMG"
+DMG_SIGNATURE="$(/usr/bin/codesign --display --verbose=4 "$TEMP_DMG" 2>&1)"
 if ! print -r -- "$DMG_SIGNATURE" |
   grep -q '^Authority=Developer ID Application:'; then
   fail "DMG has no usable Developer ID Application signature"
@@ -180,7 +182,7 @@ if ! print -r -- "$DMG_SIGNATURE" | grep -q '^Timestamp='; then
   fail "DMG signature has no trusted timestamp"
 fi
 
-hdiutil attach \
+/usr/bin/hdiutil attach \
   -readonly \
   -nobrowse \
   -mountpoint "$MOUNT_POINT" \
@@ -191,15 +193,15 @@ MOUNTED=1
 [[ -L "$MOUNT_POINT/Applications" &&
   "$(readlink "$MOUNT_POINT/Applications")" == "/Applications" ]] ||
   fail "mounted DMG does not contain the Applications shortcut"
-codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/NeAntik.app"
-hdiutil detach "$MOUNT_POINT" >/dev/null
+/usr/bin/codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/NeAntik.app"
+/usr/bin/hdiutil detach "$MOUNT_POINT" >/dev/null
 MOUNTED=0
 
 SUBMIT_LOG="$NOTARY_LOG_DIR/$(basename "$DMG_PATH").notary-submit.log"
 NOTARY_RECEIPT="$NOTARY_LOG_DIR/$(basename "$DMG_PATH").notary-receipt.json"
 rm -f "$SUBMIT_LOG"
 rm -f "$NOTARY_RECEIPT"
-xcrun notarytool submit \
+/usr/bin/xcrun notarytool submit \
   "$TEMP_DMG" \
   --keychain-profile "$NOTARY_PROFILE" \
   "${NOTARY_KEYCHAIN_ARGUMENTS[@]}" \
@@ -225,45 +227,45 @@ PY
 )"
 [[ "$NOTARY_STATUS" == "Accepted" ]] ||
   fail "Apple notarization status is ${NOTARY_STATUS:-unknown}; see $SUBMIT_LOG"
-xcrun notarytool log \
+/usr/bin/xcrun notarytool log \
   "$SUBMISSION_ID" \
   --keychain-profile "$NOTARY_PROFILE" \
   "${NOTARY_KEYCHAIN_ARGUMENTS[@]}" \
   "$NOTARY_RECEIPT"
 python3 -m json.tool "$NOTARY_RECEIPT" >/dev/null
 
-xcrun stapler staple "$TEMP_DMG"
-xcrun stapler validate "$TEMP_DMG"
-codesign --verify --verbose=2 "$TEMP_DMG"
-DMG_SIGNATURE="$(codesign --display --verbose=4 "$TEMP_DMG" 2>&1)"
+/usr/bin/xcrun stapler staple "$TEMP_DMG"
+/usr/bin/xcrun stapler validate "$TEMP_DMG"
+/usr/bin/codesign --verify --verbose=2 "$TEMP_DMG"
+DMG_SIGNATURE="$(/usr/bin/codesign --display --verbose=4 "$TEMP_DMG" 2>&1)"
 print -r -- "$DMG_SIGNATURE" |
   grep -q '^Authority=Developer ID Application:' ||
   fail "stapled DMG lost its Developer ID Application signature"
 print -r -- "$DMG_SIGNATURE" | grep -q '^Timestamp=' ||
   fail "stapled DMG signature has no trusted timestamp"
-spctl \
+/usr/sbin/spctl \
   --assess \
   --type open \
   --context context:primary-signature \
   --verbose=4 \
   "$TEMP_DMG"
-hdiutil verify "$TEMP_DMG"
+/usr/bin/hdiutil verify "$TEMP_DMG"
 
-hdiutil attach \
+/usr/bin/hdiutil attach \
   -readonly \
   -nobrowse \
   -mountpoint "$MOUNT_POINT" \
   "$TEMP_DMG" >/dev/null
 MOUNTED=1
-codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/NeAntik.app"
-xcrun stapler validate "$MOUNT_POINT/NeAntik.app"
-spctl --assess --type execute --verbose=4 "$MOUNT_POINT/NeAntik.app"
-hdiutil detach "$MOUNT_POINT" >/dev/null
+/usr/bin/codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/NeAntik.app"
+/usr/bin/xcrun stapler validate "$MOUNT_POINT/NeAntik.app"
+/usr/sbin/spctl --assess --type execute --verbose=4 "$MOUNT_POINT/NeAntik.app"
+/usr/bin/hdiutil detach "$MOUNT_POINT" >/dev/null
 MOUNTED=0
 
 (
   cd "$(dirname "$TEMP_DMG")"
-  shasum -a 256 "$(basename "$TEMP_DMG")"
+  /usr/bin/shasum -a 256 "$(basename "$TEMP_DMG")"
 ) >"$TEMP_DMG.sha256"
 "$PROJECT_DIR/scripts/verify-direct-notarized-dmg.sh" "$TEMP_DMG"
 

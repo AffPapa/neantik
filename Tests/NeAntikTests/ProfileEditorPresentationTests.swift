@@ -4,6 +4,25 @@ import Testing
 
 struct ProfileEditorPresentationTests {
     @Test
+    func editorHeadingMakesCreateAndEditModesExplicit() {
+        let create = ProfileEditorHeadingPresentation.resolve(
+            original: nil,
+            currentName: "Новый"
+        )
+        #expect(create.title == "Создание профиля")
+        #expect(create.subtitle == nil)
+
+        let profile = BrowserProfile(name: "TikTok · US · 01")
+        let edit = ProfileEditorHeadingPresentation.resolve(
+            original: profile,
+            currentName: profile.name
+        )
+        #expect(edit.title == "Редактирование профиля")
+        #expect(edit.subtitle == profile.name)
+        #expect(ProfileEditorAdvancedPresentation.summary.contains("Стартовая"))
+    }
+
+    @Test
     func compactFolderControlCoversZeroAndOneFolder() {
         let empty = ProfileEditorFolderPresentation.resolve(
             folders: [],

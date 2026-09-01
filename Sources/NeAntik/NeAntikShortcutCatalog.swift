@@ -121,4 +121,19 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
         .compactMap { $0 }
         .joined(separator: "+")
     }
+
+    var accessibilityChord: String {
+        var parts: [String] = []
+        if modifiers.contains(.control) { parts.append("Control") }
+        if modifiers.contains(.option) { parts.append("Option") }
+        if modifiers.contains(.shift) { parts.append("Shift") }
+        if modifiers.contains(.command) { parts.append("Command") }
+        switch self {
+        case .toggleSelectedProfile, .focusSelectedProfile:
+            parts.append("Return")
+        default:
+            parts.append(String(keyEquivalent.character).uppercased())
+        }
+        return parts.joined(separator: ", ")
+    }
 }

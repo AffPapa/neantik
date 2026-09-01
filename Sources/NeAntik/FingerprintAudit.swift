@@ -60,6 +60,8 @@ enum FingerprintAuditVerdict: String, Codable, Sendable {
 
 enum FingerprintAuditExecutionMode: String, Codable, Sendable {
     case browser
+    // Kept only so already-saved diagnostic reports remain decodable. New
+    // audits reject this legacy value before a browser process is launched.
     case headlessSingleProcessDiagnostic = "headless-single-process-diagnostic"
 
     var isReleaseEvidence: Bool {
@@ -67,15 +69,7 @@ enum FingerprintAuditExecutionMode: String, Codable, Sendable {
     }
 
     var additionalLaunchArguments: [String] {
-        switch self {
-        case .browser:
-            []
-        case .headlessSingleProcessDiagnostic:
-            [
-                "--single-process",
-                "--no-sandbox"
-            ]
-        }
+        []
     }
 
     var diagnosticTitle: String {
@@ -1521,6 +1515,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
         ) as? String
     ) {
         guard !isRunning else { return }
+        guard executionMode == .browser else {
+            errorMessage =
+                "Устаревший небезопасный диагностический режим отключён."
+            return
+        }
         guard first.id != second.id else {
             errorMessage = "Выбери два разных профиля."
             return
@@ -1816,7 +1815,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     with: data
                   ) as? [String: Any],
                   let value = object["webSocketDebuggerUrl"] as? String,
-                  let webSocketURL = URL(string: value)
+                  let webSocketURL = DevToolsSecurity.validatedWebSocketURL(
+                    value,
+                    expectedPort: port,
+                    expectedPathPrefix: "/devtools/browser/"
+                  )
             else {
                 return
             }
@@ -1852,16 +1855,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
     private func waitForDevToolsPort(at url: URL) async throws -> Int {
         for _ in 0..<80 {
             try Task.checkCancellation()
-            if let contents = try? String(
-                contentsOf: url,
-                encoding: .utf8
-            ),
-               let firstLine = contents
-                .split(whereSeparator: \.isNewline)
-                .first,
-               let port = Int(firstLine),
-               (1...65_535).contains(port)
-            {
+            if let port = try DevToolsSecurity.readPort(at: url) {
                 return port
             }
             try await Task.sleep(nanoseconds: 250_000_000)
@@ -1891,6 +1885,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                    http.statusCode == 200,
                    let url = try Self.pageTargetWebSocketURL(
                     from: data,
+                    expectedPort: port,
                     expectedPageURL: expectedPageURL
                    )
                 {
@@ -2054,6 +2049,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
 
     nonisolated static func pageTargetWebSocketURL(
         from data: Data,
+        expectedPort: Int,
         expectedPageURL: URL? = nil
     ) throws -> URL? {
         let targets = try JSONDecoder().decode(
@@ -2067,7 +2063,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }) else {
             return nil
         }
-        return URL(string: target.webSocketDebuggerURL)
+        return DevToolsSecurity.validatedWebSocketURL(
+            target.webSocketDebuggerURL,
+            expectedPort: expectedPort,
+            expectedPathPrefix: "/devtools/page/"
+        )
     }
 
     private struct DevToolsTarget: Decodable {
