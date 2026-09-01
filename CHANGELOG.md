@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Direct release preflight now verifies that the external provisioning
+  profile actually authorizes the exact pinned Developer ID certificate, then
+  repeats that certificate-to-profile check on the signed app before Secure
+  Enclave enrollment. A wrong certificate selection now fails before the
+  expensive build instead of being killed later by macOS `taskgated`.
+
 ## Direct 0.3.23 (26) — September 1, 2026
 
 - GitHub README and project documentation now identify the actual immutable

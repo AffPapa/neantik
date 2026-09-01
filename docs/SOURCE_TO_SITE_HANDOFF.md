@@ -16,6 +16,9 @@ Status: reconciled 2026-09-01.
 
 ## Next release handoff
 
+0. Generate the external Developer ID provisioning profile with the exact
+   certificate selected by `NEANTIK_SIGNING_IDENTITY`; the local gate must
+   confirm that `DeveloperCertificates` binding before any expensive build.
 1. Assign a version and build newer than `0.3.22 (25)`.
 2. Move `CHANGELOG.md` from Unreleased to `Direct VERSION (BUILD)` and update
    both READMEs before building.

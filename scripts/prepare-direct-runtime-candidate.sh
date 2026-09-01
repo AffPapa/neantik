@@ -65,7 +65,8 @@ esac
 : "${NEANTIK_PROVISIONING_PROFILE:?Set NEANTIK_PROVISIONING_PROFILE to the absolute Developer ID distribution provisioning profile path}"
 python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
   --profile "$NEANTIK_PROVISIONING_PROFILE" \
-  --entitlements "$RELEASE_ENTITLEMENTS"
+  --entitlements "$RELEASE_ENTITLEMENTS" \
+  --signing-identity "$NEANTIK_SIGNING_IDENTITY"
 
 METAL_TRUE_COUNT="$(
   grep -Ec \
@@ -138,6 +139,7 @@ rm -f "$EMBEDDED_PROFILE"
 python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
   --profile "$NEANTIK_PROVISIONING_PROFILE" \
   --entitlements "$RELEASE_ENTITLEMENTS" \
+  --signing-identity "$NEANTIK_SIGNING_IDENTITY" \
   --copy-to "$EMBEDDED_PROFILE"
 codesign \
   --force \
@@ -150,6 +152,7 @@ codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
   --profile "$EMBEDDED_PROFILE" \
   --entitlements "$RELEASE_ENTITLEMENTS" \
+  --signing-identity "$NEANTIK_SIGNING_IDENTITY" \
   --app "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
 

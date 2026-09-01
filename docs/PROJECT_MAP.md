@@ -8,6 +8,10 @@ product and code work. The older v4 documents remain dated design records.
 - Latest immutable GitHub release: `v0.3.22`, version/build `0.3.22 (25)`.
 - Current source candidate: `0.3.23 (26)`; it is not public until the full
   Direct Distribution gate completes.
+- The first `0.3.23 (26)` release attempt on exact merge commit
+  `888e73a9c897303ba179da473f226572a89ee6fd` stopped before Secure Enclave
+  enrollment because the external provisioning profile authorized a different
+  Developer ID certificate. No `v0.3.23` release or public asset exists.
 - Exact released source commit:
   `160c4e71cb1aee76d940bc2d07ad64ed014bf54f`.
 - Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
@@ -43,7 +47,7 @@ network API, arbitrary low-level fingerprint sliders or secret export.
 | Proxy | `ProxyTester.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing, bounded concurrency, fresh preparation before proxied launch |
 | Fingerprint evidence | `FingerprintAudit*.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics |
 | Readiness and notices | `WorkspaceReadiness*.swift`, `UserNotice.swift` | Redacted, actionable, semantically honest local diagnostics |
-| Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/neantik-affpapa-release` | Exact candidate only; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
+| Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/verify-direct-provisioning-profile.py`, `scripts/neantik-affpapa-release` | Exact candidate only; profile must authorize the selected signing certificate; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
 
 ## Current capability state
 

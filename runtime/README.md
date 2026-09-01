@@ -140,7 +140,7 @@ bundle, verifies it, promotes the exact candidate lock and regenerates notices:
 
 ```sh
 NEANTIK_RELEASE_CHANNEL=public-alpha \
-NEANTIK_SIGNING_IDENTITY="Developer ID Application: …" \
+NEANTIK_SIGNING_IDENTITY="40-HEX-SHA1-OF-DEVELOPER-ID-CERTIFICATE" \
 scripts/prepare-direct-runtime-candidate.sh \
   "/absolute/path/to/NeAntik Browser.app" \
   /absolute/path/to/out/Default/args.gn \

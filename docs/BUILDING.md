@@ -134,7 +134,7 @@ the repository or GitHub Actions secrets for the initial public workflow.
 The local release path is:
 
 ```bash
-export NEANTIK_SIGNING_IDENTITY="Developer ID Application: …"
+export NEANTIK_SIGNING_IDENTITY="40-HEX-SHA1-OF-DEVELOPER-ID-CERTIFICATE"
 export NEANTIK_NOTARY_PROFILE="your-keychain-profile"
 export NEANTIK_RELEASE_CHANNEL="public-alpha" # or production
 export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm64-notarized.zip"
@@ -150,6 +150,11 @@ export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm
 # Then collect that explicit schema-8 file against the same manifest/channel.
 ./scripts/release-direct.sh
 ```
+
+The external Developer ID provisioning profile must list that same certificate
+under `DeveloperCertificates`. A display name is accepted only when it resolves
+to one installed identity; use the certificate SHA-1 whenever two identities
+have the same name.
 
 The first phase signs and freshly verifies the built runtime, promotes the
 candidate source lock only after the Metal binary report matches, regenerates
