@@ -5,6 +5,16 @@ plan for `0.3.23 (26)`. It replaces feature-count thinking with a bounded
 sequence: prove current truth, improve the daily path, simplify ownership,
 verify the exact merged commit, and publish only immutable signed artifacts.
 
+## Execution outcome
+
+Items 1–95 and 100 are complete. GitHub Release `v0.3.23` is immutable and
+points to exact merged commit
+`fdc520391c58a76622936519ca38b382f629fc47`; its four assets were re-downloaded
+and verified. Items 96–99 are safely blocked before publication because the
+dedicated AffPapa deploy key is absent. The exact six-file site directory is
+ready locally, and the public website remains on `0.3.22 (25)` until the
+restricted wrapper transaction can run.
+
 ## A. Baseline and boundaries
 
 1. Pin the exact `origin/main` commit before edits.
