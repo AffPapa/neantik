@@ -28,7 +28,8 @@ usage() {
 NeAntik AffPapa Direct release client
 
 Команды:
-  doctor                   одной командой проверить доступ и live-релиз
+  doctor                   проверить локальный Direct/GitHub release gate
+  site-doctor              проверить отдельный restricted AffPapa channel
   status                   показать live/staging/backups
   check                    проверить уже загруженный staging без публикации
   dry-run                  полный no-change preflight staging
@@ -492,7 +493,67 @@ publish_staged_release() {
     fi
 }
 
-doctor() {
+direct_doctor() {
+    echo "NeAntik Direct/GitHub release doctor"
+    local tool
+    for tool in git gh xcrun codesign spctl hdiutil shasum; do
+        command -v "$tool" >/dev/null || fail "не найден обязательный tool: $tool"
+    done
+    echo "PASS: локальные Direct Distribution tools доступны."
+
+    gh auth status --hostname github.com >/dev/null ||
+        fail "GitHub CLI не авторизован для github.com"
+    local repository
+    repository=$(gh repo view AffPapa/neantik --json nameWithOwner --jq .nameWithOwner)
+    [[ "$repository" == "AffPapa/neantik" ]] ||
+        fail "GitHub repository недоступен"
+
+    local release_json
+    release_json=$(mktemp /tmp/neantik-github-doctor.XXXXXX)
+    if ! gh release view \
+        --repo AffPapa/neantik \
+        --json tagName,isDraft,assets,url \
+        >"$release_json"; then
+        rm -f "$release_json"
+        return 1
+    fi
+    if ! python3 - "$release_json" <<'PY'
+import json
+import re
+import sys
+
+release = json.load(open(sys.argv[1], encoding="utf-8"))
+tag = release["tagName"]
+match = re.fullmatch(r"v(\d+\.\d+\.\d+)", tag)
+assert match and release["isDraft"] is False, release
+version = match.group(1)
+expected = {
+    f"NeAntik-{version}-arm64-notarized.dmg",
+    f"NeAntik-{version}-arm64-notarized.dmg.sha256",
+    f"NeAntik-{version}-arm64-notarized.zip",
+    f"NeAntik-{version}-arm64-notarized.zip.sha256",
+}
+assets = {item["name"]: item["size"] for item in release["assets"]}
+assert expected <= assets.keys(), {
+    "expected": sorted(expected),
+    "assets": sorted(assets),
+}
+assert all(assets[name] > 0 for name in expected), assets
+print(
+    f"PASS: latest immutable GitHub release {tag} has ZIP/DMG "
+    "and SHA-256 sidecars."
+)
+print(f"Release: {release['url']}")
+PY
+    then
+        rm -f "$release_json"
+        fail "latest GitHub Release не прошёл базовый immutable asset gate"
+    fi
+    rm -f "$release_json"
+    echo "PASS: GitHub-only doctor не требует server key и не меняет сайт."
+}
+
+site_doctor() {
     echo "NeAntik AffPapa deploy doctor"
     echo "PASS: локальный ключ и host key закреплены по fingerprint."
     local status_text
@@ -508,12 +569,20 @@ doctor() {
 }
 
 main() {
-    preflight_access
     local command="${1:-}"
+    case "$command" in
+        site-doctor|status|check|dry-run|abort|prepare|publish|resume-publish|upload|rollback-check|rollback|verify-live)
+            preflight_access
+            ;;
+    esac
     case "$command" in
         doctor)
             [[ $# -eq 1 ]] || fail "doctor не принимает аргументы"
-            doctor
+            direct_doctor
+            ;;
+        site-doctor)
+            [[ $# -eq 1 ]] || fail "site-doctor не принимает аргументы"
+            site_doctor
             ;;
         status)
             [[ $# -eq 1 ]] || fail "status не принимает аргументы"

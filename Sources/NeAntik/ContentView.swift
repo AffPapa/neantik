@@ -5,20 +5,23 @@ private struct EditorRequest: Identifiable {
     let id = UUID()
     let profile: BrowserProfile?
     let targetFolderID: UUID?
-    let initialFocus: ProfileEditorField?
     let openedProcessState: BrowserProfileProcessState?
 
     init(
         profile: BrowserProfile?,
         targetFolderID: UUID? = nil,
-        initialFocus: ProfileEditorField? = nil,
         openedProcessState: BrowserProfileProcessState? = nil
     ) {
         self.profile = profile
         self.targetFolderID = targetFolderID
-        self.initialFocus = initialFocus
         self.openedProcessState = openedProcessState
     }
+}
+
+private struct ProfileNoteRequest: Identifiable {
+    let profile: BrowserProfile
+
+    var id: UUID { profile.id }
 }
 
 private struct FolderNameRequest: Identifiable {
@@ -202,6 +205,7 @@ struct ContentView: View {
     @State private var workspaceBatchUndo: WorkspaceBatchUndo?
     @State private var profileBatchTagRequest: ProfileBatchTagRequest?
     @State private var editorRequest: EditorRequest?
+    @State private var profileNoteRequest: ProfileNoteRequest?
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
     @State private var fingerprintAuditRequest: FingerprintAuditRequest?
@@ -248,7 +252,7 @@ struct ContentView: View {
     @State private var showsProfileInspector = false
     @State private var showingWorkspaceReadiness = false
     @State private var isRefreshingWorkspaceReadiness = false
-    @State private var workspaceReadinessNotice: String?
+    @State private var workspaceReadinessNotice: UserNotice?
     @State private var readinessSystemInspection:
         WorkspaceReadinessSystemInspection
     @State private var preferredProfileSelection: UUID?
@@ -317,6 +321,7 @@ struct ContentView: View {
 
     private var isWorkspaceModalPresented: Bool {
         editorRequest != nil ||
+            profileNoteRequest != nil ||
             folderNameRequest != nil ||
             profileFolderPickerRequest != nil ||
             profileBatchTagRequest != nil ||
@@ -624,6 +629,17 @@ struct ContentView: View {
         workspaceBase
         .sheet(item: $editorRequest) { request in
             profileEditorSheet(for: request)
+        }
+        .sheet(item: $profileNoteRequest) { request in
+            ProfileNoteEditorView(
+                profileName: request.profile.name,
+                initialNote: request.profile.note
+            ) { note in
+                try saveProfileNote(
+                    note,
+                    profileID: request.profile.id
+                )
+            }
         }
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
@@ -1037,8 +1053,7 @@ struct ContentView: View {
             initialFolderID: initialFolderID,
             suggestedTags: suggestedTags,
             appliesOnNextLaunch:
-                request.openedProcessState?.isConfirmedRunning == true,
-            initialFocus: request.initialFocus
+                request.openedProcessState?.isConfirmedRunning == true
         ) { profile, passwordUpdate, folderID in
             try saveProfileEditorDraft(
                 profile,
@@ -1237,10 +1252,7 @@ struct ContentView: View {
         )
     }
 
-    private func beginEditing(
-        _ profile: BrowserProfile,
-        initialFocus: ProfileEditorField? = nil
-    ) {
+    private func beginEditing(_ profile: BrowserProfile) {
         let state = presentedProcessState(for: profile)
         guard state == .stopped || state.isConfirmedRunning else {
             localError = "Состояние профиля пока не подтверждено. Повтори после проверки процесса."
@@ -1248,9 +1260,26 @@ struct ContentView: View {
         }
         editorRequest = EditorRequest(
             profile: profile,
-            initialFocus: initialFocus,
             openedProcessState: state
         )
+    }
+
+    private func beginEditingNote(_ profile: BrowserProfile) {
+        guard store.profile(withID: profile.id) != nil else {
+            localError = "Профиль больше не существует."
+            return
+        }
+        profileNoteRequest = ProfileNoteRequest(profile: profile)
+    }
+
+    private func saveProfileNote(
+        _ note: String,
+        profileID: UUID
+    ) throws {
+        let saved = try store.mutateProfile(withID: profileID) {
+            $0.note = note
+        }
+        revealSavedProfile(saved)
     }
 
     private func revealProfile(_ profile: BrowserProfile) {
@@ -2112,9 +2141,9 @@ struct ContentView: View {
                     }
                 }
             } label: {
-                Label("Ещё", systemImage: "ellipsis.circle")
-                    .labelStyle(.iconOnly)
-                    .frame(width: 28, height: 28)
+                Label("Действия", systemImage: "ellipsis.circle")
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minHeight: 28)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -2267,7 +2296,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             TextField(
-                "Поиск или тег:, папка:, прокси:, статус:",
+                "Поиск профилей",
                 text: $profileSearchText
             )
             .textFieldStyle(.plain)
@@ -2679,7 +2708,7 @@ struct ContentView: View {
         )
         .disabled(!commands.presentation.editIsEnabled)
         Button {
-            beginEditing(profile, initialFocus: .note)
+            beginEditingNote(profile)
         } label: {
             Label(
                 profile.note.isEmpty
@@ -2890,7 +2919,7 @@ struct ContentView: View {
                     beginEditing(profile)
                 },
                 onChangeNote: {
-                    beginEditing(profile, initialFocus: .note)
+                    beginEditingNote(profile)
                 },
                 onRunFingerprintAudit: {
                     beginFingerprintAudit()
@@ -3277,10 +3306,15 @@ struct ContentView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         guard pasteboard.setString(value, forType: .string) else {
-            workspaceReadinessNotice = "Не удалось скопировать"
+            presentWorkspaceReadinessNotice(UserNotice(
+                "Не удалось скопировать",
+                level: .failure
+            ))
             return
         }
-        workspaceReadinessNotice = notice
+        presentWorkspaceReadinessNotice(
+            UserNotice(notice, level: .success)
+        )
     }
 
     private func revealWorkspaceApplication() {
@@ -3296,12 +3330,24 @@ struct ContentView: View {
         guard let settingsURL = NSWorkspace.shared.urlForApplication(
             withBundleIdentifier: "com.apple.systempreferences"
         ) else {
-            workspaceReadinessNotice = "Системные настройки не найдены"
+            presentWorkspaceReadinessNotice(UserNotice(
+                "Системные настройки не найдены",
+                level: .failure
+            ))
             return
         }
         NSWorkspace.shared.open(settingsURL)
-        workspaceReadinessNotice =
-            "NeAntik не читает статус разрешений macOS. Проверь нужный переключатель вручную."
+        presentWorkspaceReadinessNotice(
+            UserNotice(
+                "NeAntik не читает статус разрешений macOS. Проверь нужный переключатель вручную.",
+                level: .information
+            )
+        )
+    }
+
+    private func presentWorkspaceReadinessNotice(_ notice: UserNotice) {
+        workspaceReadinessNotice = notice
+        announceWorkspaceStatus(notice.accessibilitySummary)
     }
 
     private func announceRuntimeAvailability(

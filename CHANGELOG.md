@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- GitHub README and project documentation now identify the actual immutable
+  `0.3.22 (25)` release instead of continuing to label it a source candidate.
+  A current code-owner map and a dated comparison of twenty profile browsers
+  record what is delivered, deferred and deliberately excluded.
+- Readiness and proxy feedback use explicit information, success, warning and
+  failure semantics. Permission help is collapsed so the real readiness rows
+  stay visible, and the compact workspace keeps Start/Stop on the same side as
+  the wide layout.
+- Notes open in a small dedicated editor with existing plaintext and size
+  warnings; users no longer need to open unrelated proxy/fingerprint fields.
+  Secondary list actions have a visible name, search has a shorter prompt and
+  Force Stop is a visible destructive action with the existing confirmation.
+- No dependency, profile schema, runtime byte, fingerprint policy, launch
+  argument or public release artifact changes in this source iteration.
+- The default release `doctor` now verifies Direct/GitHub tooling and the
+  latest immutable GitHub assets without requiring a website deploy key.
+  The restricted AffPapa access check is an explicit `site-doctor` used only
+  for a separately authorized website transaction.
+
 ## Direct 0.3.22 (25) — August 31, 2026
 
 - Direct-кандидат теперь подписывается только с проверенным внешним Developer

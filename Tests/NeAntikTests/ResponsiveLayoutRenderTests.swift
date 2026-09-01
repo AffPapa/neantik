@@ -114,6 +114,17 @@ struct ResponsiveLayoutRenderTests {
             )
 
             try render(
+                ProfileNoteEditorView(
+                    profileName: "TikTok · FR · UGC 02",
+                    initialNote:
+                        "Прогрев: день 3. Следующий вход после 18:00."
+                ) { _ in },
+                name: "profile-note-editor-\(appearanceName)",
+                size: CGSize(width: 520, height: 390),
+                colorScheme: colorScheme
+            )
+
+            try render(
                 ProfileEditorView(
                     original: nil,
                     keychain: KeychainStore(
@@ -313,7 +324,14 @@ struct ResponsiveLayoutRenderTests {
                     applicationPath:
                         "~/Applications/NeAntik Dev.app",
                     isRefreshing: false,
-                    notice: nil,
+                    notice: UserNotice(
+                        appearanceName == "light"
+                            ? "Путь к NeAntik.app скопирован"
+                            : "Системные настройки не найдены",
+                        level: appearanceName == "light"
+                            ? .success
+                            : .failure
+                    ),
                     onRecheck: {},
                     onCopyDiagnostics: {},
                     onCopyApplicationPath: {},

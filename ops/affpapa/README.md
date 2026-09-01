@@ -9,10 +9,10 @@ Both local Claude and Codex use the same wrapper:
 
 ```bash
 cd /path/to/neantik-open-source
-./scripts/neantik-affpapa-release doctor
+./scripts/neantik-affpapa-release site-doctor
 ```
 
-`doctor` is the single access check: it verifies the local key permissions and
+`site-doctor` is the explicit site access check: it verifies the local key permissions and
 both pinned fingerprints, connects through the restricted SSH identity,
 confirms that arbitrary commands remain denied, and checks the live landing,
 JSON manifests, DMG and ZIP.
@@ -141,6 +141,6 @@ Root-owned command updates are intentionally outside the restricted identity.
 When these reviewed scripts change, a server administrator installs one
 transactional batch with `install-server-batch.sh`; the installer backs up the
 old commands, preserves live `release.json`, validates syntax/sudoers/view
-cache, and records a root-owned SHA-256 manifest. Subsequent `doctor` and
-`publish` calls fail closed if the server manifest differs from the reviewed
-local scripts.
+cache, and records a root-owned SHA-256 manifest. Subsequent `site-doctor`
+and `publish` calls fail closed if the server manifest differs from the
+reviewed local scripts.

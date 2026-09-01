@@ -1,0 +1,106 @@
+# NeAntik project map
+
+Current source map: 2026-09-01. This document is the current routing source for
+product and code work. The older v4 documents remain dated design records.
+
+## Release truth and boundary
+
+- Latest immutable GitHub release: `v0.3.22`, version/build `0.3.22 (25)`.
+- Exact released source commit:
+  `160c4e71cb1aee76d940bc2d07ad64ed014bf54f`.
+- Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
+- GitHub assets: notarized ZIP and DMG with SHA-256 sidecars.
+- A later source commit is not a release. A new binary needs a new
+  version/build, exact merged commit, Developer ID, notarization, stapling,
+  Gatekeeper, immutable assets and re-downloaded SHA-256 evidence.
+- Website deployment is a separate transaction and is not changed by an
+  ordinary source PR.
+
+## Product contract
+
+The frequent path is deliberately short:
+
+> find or create a profile -> confirm route and state -> launch or stop
+
+NeAntik is a native, local, Apple-Silicon-only manager. Profiles, organization
+and browser data remain local. Proxy passwords remain in Keychain. The product
+does not add cloud accounts, teams, RPA, proxy sales, telemetry, a writable
+network API, arbitrary low-level fingerprint sliders or secret export.
+
+## Source ownership
+
+| Surface | Owner files | Contract |
+| --- | --- | --- |
+| App shell and orchestration | `ContentView.swift`, `NeAntikApp.swift` | Compose state and commands; do not invent domain policy in view bodies |
+| Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions |
+| Query and organization | `ProfileListProjection.swift`, `WorkspaceQueryState.swift`, `ProfileTagEditor.swift` | Linear deterministic projection; no network or secret search |
+| Profiles and persistence | `Models.swift`, `ProfileStore.swift`, `AppPaths.swift` | Bounded validated metadata, atomic writes, safe local filesystem handling |
+| Profile editing | `ProfileEditorView.swift`, `ProfileNoteEditorView.swift`, `ProfileEditorProcessPolicy.swift` | Simple fields first; notes use a dedicated editor; browser/proxy edits respect running-state rules |
+| Process lifecycle | `BrowserProcessManager.swift`, `BrowserProcessInventory.swift`, `BrowserProcessLifecyclePresentation.swift`, `RunningProfilesStrip.swift` | Exact ownership, fail-closed reconciliation, explicit Closing and confirmed Force Stop |
+| Runtime and launch | `BrowserLaunchBuilder.swift`, `BrowserLaunchStagedPreflight.swift`, `BrowserRuntime*.swift` | Embedded signed ARM64 runtime, staged fail-closed launch, no credential CLI arguments |
+| Proxy | `ProxyTester.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing, bounded concurrency, fresh preparation before proxied launch |
+| Fingerprint evidence | `FingerprintAudit*.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics |
+| Readiness and notices | `WorkspaceReadiness*.swift`, `UserNotice.swift` | Redacted, actionable, semantically honest local diagnostics |
+| Release operations | `Release-NeAntik.command`, `scripts/prepare-direct-*.sh`, `scripts/neantik-affpapa-release` | Exact candidate only; GitHub doctor is server-free, site publish is explicit; never App Store Connect |
+
+## Current capability state
+
+### Delivered
+
+- one list-first workspace with adaptive compact/wide rows and optional inspector;
+- folders, color tags, notes, pin/archive and deterministic structured search;
+- Running, Attention and Never launched computed views with counts;
+- contextual multi-selection, atomic folder/tag/pin/archive changes and Undo;
+- Direct/HTTP/HTTPS/SOCKS5-without-credentials routes, Keychain passwords,
+  bulk import and bounded bulk checks;
+- fresh proxy preparation before launch and route/environment diagnostics;
+- staged launch preflight, one-profile ownership, crash reconciliation,
+  bounded concurrent launches, Closing/Force Stop/completed states;
+- on-demand profile storage measurement, readiness center and redacted copy;
+- cold/warm manager measurements, source/installed-size budgets and responsive
+  light/dark render gates.
+
+### This post-0.3.22 source slice
+
+- gives readiness and proxy results distinct success/info/warning/failure
+  semantics instead of styling every message as success;
+- collapses permission help so actual readiness rows remain above the fold;
+- keeps Start/Stop on the left in compact and wide rows;
+- simplifies the visible search prompt and names secondary list actions;
+- edits notes in a dedicated small sheet without opening fingerprint/proxy
+  configuration;
+- makes Force Stop a visible destructive text action while retaining the
+  separate confirmation.
+
+### Deferred with an explicit boundary
+
+- P1: real human keyboard/VoiceOver acceptance pass on a signed candidate;
+- P1: separate Chromium cold/warm launch timing and exact-current installed
+  component measurement;
+- P1: continue splitting large owners by pure policy/presentation slices; do
+  not raise source budgets;
+- P2: local safe templates, config-only import/export, bounded activity history
+  or differential runtime updates only after their own privacy/threat model;
+- rejected: cloud/team/billing, automation marketplace, proxy marketplace,
+  mobile farms, dashboard/column builders and numerical anonymity scores.
+
+## Verification map
+
+| Change | Minimum gate |
+| --- | --- |
+| Pure presentation/copy | affected Swift suite, responsive render suite, source/privacy contracts |
+| Profile/store/query | targeted suite, all Swift shards, Python contracts, ARM64 release build |
+| Process/proxy/runtime | targeted race/integration tests, all shards, live manager/browser gate |
+| Fingerprint/release | exact signed candidate, fresh A->B->A, notarization, stapling, Gatekeeper |
+| Public release/site | immutable upload, six-file publish transaction when authorized, re-download and SHA-256/live verification |
+
+## Research routing
+
+- Current 20-product comparison:
+  [Competitor UX research](COMPETITOR_UX_RESEARCH_2026-09-01.md).
+- Historical 75-candidate design record:
+  [NeAntik v4 workspace](NEANTIK_V4_WORKSPACE.md).
+- Historical 100-point release/readiness plan:
+  [NeAntik v4 readiness plan](NEANTIK_V4_READINESS_PLAN.md).
+- Product and non-goals: [Product](PRODUCT.md) and [Roadmap](ROADMAP.md).
+- Release boundary: [Distribution](DISTRIBUTION.md).

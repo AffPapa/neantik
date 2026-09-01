@@ -28,6 +28,7 @@ case "$SHARD" in
       BulkProxyImportTests
       BulkProxyRunProgressTests
       DisplayDateFormattingTests
+      UserNoticeTests
     )
     ;;
   fingerprint)

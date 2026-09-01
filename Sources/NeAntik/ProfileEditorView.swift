@@ -130,7 +130,7 @@ struct ProfileEditorView: View {
   @State private var proxyPassword: String
   @State private var proxyImportText = ""
   @State private var proxyImportOrder: ProxyImportOrder = .automatic
-  @State private var proxyImportMessage: String?
+  @State private var proxyImportNotice: UserNotice?
   @State private var isApplyingProxyImport = false
   @State private var detectedProxy: ProxyConfiguration?
   @State private var detectedTimezone: String?
@@ -139,8 +139,7 @@ struct ProfileEditorView: View {
   @State private var detectedProxyContextEvidence: ProxyContextEvidence?
   @State private var errorMessage: String?
   @State private var validationIssue: ProfileEditorValidationIssue?
-  @State private var testMessage: String?
-  @State private var proxyTestSucceeded = false
+  @State private var testNotice: UserNotice?
   @State private var isTesting = false
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
@@ -330,11 +329,8 @@ struct ProfileEditorView: View {
                 importProxyButton
               }
             }
-            if let proxyImportMessage {
-              Text(proxyImportMessage)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(proxyImportMessage)
+            if let proxyImportNotice {
+              UserNoticeLabel(notice: proxyImportNotice)
             }
 
             ViewThatFits(in: .horizontal) {
@@ -396,13 +392,8 @@ struct ProfileEditorView: View {
                   Label("Проверить прокси", systemImage: "network")
                 }
               }
-              if let testMessage {
-                Text(testMessage)
-                  .font(.caption)
-                  .foregroundStyle(
-                    proxyTestSucceeded ? Color.green : Color.secondary
-                  )
-                  .accessibilityLabel(testMessage)
+              if let testNotice {
+                UserNoticeLabel(notice: testNotice)
               }
             }
 
@@ -598,7 +589,7 @@ struct ProfileEditorView: View {
     }
     .onChange(of: proxyImportOrder) { _, _ in
       hasUnsavedChanges = true
-      proxyImportMessage = nil
+      proxyImportNotice = nil
     }
     .onChange(of: tags) { _, _ in
       hasUnsavedChanges = true
@@ -1143,8 +1134,10 @@ struct ProfileEditorView: View {
     proxyTestTask?.cancel()
     proxyTestTask = nil
     isTesting = false
-    proxyTestSucceeded = false
-    testMessage = "Проверка отменена"
+    testNotice = UserNotice(
+      "Проверка отменена",
+      level: .information
+    )
     announce("Проверка прокси отменена.")
   }
 
@@ -1164,10 +1157,12 @@ struct ProfileEditorView: View {
       proxyPort = String(draft.configuration.port)
       proxyUsername = draft.configuration.username
       proxyPassword = draft.password
-      proxyImportMessage =
+      proxyImportNotice = UserNotice(
         "Прокси распознан: \(draft.redactedSummary). " +
-        "Соединение ещё не проверено."
-      announce(proxyImportMessage ?? "Прокси распознан.")
+          "Соединение ещё не проверено.",
+        level: .information
+      )
+      announce(proxyImportNotice?.message ?? "Прокси распознан.")
       errorMessage = nil
 
       Task { @MainActor in
@@ -1177,7 +1172,10 @@ struct ProfileEditorView: View {
       }
     } catch {
       isApplyingProxyImport = false
-      proxyImportMessage = error.localizedDescription
+      proxyImportNotice = UserNotice(
+        error.localizedDescription,
+        level: .failure
+      )
       announce(error.localizedDescription)
     }
   }
@@ -1188,8 +1186,7 @@ struct ProfileEditorView: View {
   ) {
     proxyTestTask?.cancel()
     isTesting = true
-    testMessage = nil
-    proxyTestSucceeded = false
+    testNotice = nil
     proxyTestTask = Task {
         do {
           let result = try await ProxyTester().test(
@@ -1199,26 +1196,27 @@ struct ProfileEditorView: View {
           try Task.checkCancellation()
           await MainActor.run {
             let location = result.locationSummary
-            testMessage =
-              location.isEmpty
+            let message = location.isEmpty
               ? "Прокси отвечает · \(result.ipAddress)"
               : "Прокси отвечает · \(result.ipAddress) · \(location)"
+            testNotice = UserNotice(message, level: .success)
             detectedProxy = proxy
             detectedTimezone = result.timezoneIdentifier
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
             detectedProxyContextEvidence = .ipAPI()
             isTesting = false
-            proxyTestSucceeded = true
             proxyTestTask = nil
-            announce(testMessage ?? "Прокси подключён.")
+            announce(testNotice?.message ?? "Прокси подключён.")
           }
         } catch {
           guard !Task.isCancelled else { return }
           await MainActor.run {
-            testMessage = error.localizedDescription
+            testNotice = UserNotice(
+              error.localizedDescription,
+              level: .failure
+            )
             isTesting = false
-            proxyTestSucceeded = false
             proxyTestTask = nil
             announce(error.localizedDescription)
           }
@@ -1230,8 +1228,7 @@ struct ProfileEditorView: View {
     proxyTestTask?.cancel()
     proxyTestTask = nil
     isTesting = false
-    testMessage = nil
-    proxyTestSucceeded = false
+    testNotice = nil
     detectedProxy = nil
     detectedTimezone = nil
     detectedLocale = nil
@@ -1241,7 +1238,7 @@ struct ProfileEditorView: View {
 
   private func proxyInputDidChange() {
     guard !isApplyingProxyImport else { return }
-    proxyImportMessage = nil
+    proxyImportNotice = nil
     invalidateProxyEvidence()
   }
 
