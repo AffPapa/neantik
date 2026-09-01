@@ -8,6 +8,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     let launchIsEnabled: Bool
     let focusIsEnabled: Bool
     let editIsEnabled: Bool
+    let noteIsEnabled: Bool
     let pinTitle: String
     let pinSystemImage: String
     let archiveTitle: String
@@ -23,6 +24,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
         launchIsEnabled: false,
         focusIsEnabled: false,
         editIsEnabled: false,
+        noteIsEnabled: false,
         pinTitle: "Закрепить",
         pinSystemImage: "pin",
         archiveTitle: "В архив",
@@ -45,6 +47,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
             focusIsEnabled: processState.isConfirmedRunning,
             editIsEnabled:
                 processState == .stopped || processState.isConfirmedRunning,
+            noteIsEnabled: true,
             pinTitle: profile.isPinned ? "Открепить" : "Закрепить",
             pinSystemImage: profile.isPinned ? "pin.slash" : "pin",
             archiveTitle:
@@ -350,7 +353,7 @@ struct ProfileCommandMenu: Commands {
                 NeAntikShortcut.editSelectedNote.keyEquivalent,
                 modifiers: NeAntikShortcut.editSelectedNote.modifiers
             )
-            .disabled(!resolved.hasProfile)
+            .disabled(!resolved.presentation.noteIsEnabled)
 
             Divider()
 

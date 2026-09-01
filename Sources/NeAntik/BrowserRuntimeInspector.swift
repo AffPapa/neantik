@@ -121,24 +121,67 @@ enum BrowserRuntimeInspector {
             "Contents/Frameworks",
             isDirectory: true
         )
-        guard let enumerator = FileManager.default.enumerator(
+        let expectedFrameworkName =
+            executableURL.lastPathComponent + " Framework"
+        let expectedBundleName = expectedFrameworkName + ".framework"
+        guard let children = try? FileManager.default.contentsOfDirectory(
             at: root,
-            includingPropertiesForKeys: [.isRegularFileKey],
+            includingPropertiesForKeys: [
+                .isDirectoryKey,
+                .isSymbolicLinkKey,
+            ],
             options: [.skipsHiddenFiles]
         ) else {
             return nil
         }
-        for case let candidate as URL in enumerator {
-            guard candidate.lastPathComponent.hasSuffix(" Framework"),
-                  (try? candidate.resourceValues(
-                    forKeys: [.isRegularFileKey]
-                  ).isRegularFile) == true
-            else {
-                continue
-            }
-            return candidate
+        let frameworkBundles = children.filter { candidate in
+            guard candidate.lastPathComponent == expectedBundleName,
+                  let values = try? candidate.resourceValues(
+                    forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+                  )
+            else { return false }
+            return values.isDirectory == true &&
+                values.isSymbolicLink != true
         }
-        return nil
+        guard frameworkBundles.count == 1,
+              let framework = frameworkBundles.first
+        else { return nil }
+
+        let versions = framework.appendingPathComponent(
+            "Versions",
+            isDirectory: true
+        )
+        guard let versionDirectories = try? FileManager.default
+            .contentsOfDirectory(
+                at: versions,
+                includingPropertiesForKeys: [
+                    .isDirectoryKey,
+                    .isSymbolicLinkKey,
+                ],
+                options: [.skipsHiddenFiles]
+            )
+        else { return nil }
+        let binaries = versionDirectories.compactMap { version -> URL? in
+            guard version.lastPathComponent != "Current",
+                  let values = try? version.resourceValues(
+                    forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+                  ),
+                  values.isDirectory == true,
+                  values.isSymbolicLink != true
+            else { return nil }
+            let binary = version.appendingPathComponent(
+                expectedFrameworkName
+            )
+            guard let binaryValues = try? binary.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey]
+            ),
+            binaryValues.isRegularFile == true,
+            binaryValues.isSymbolicLink != true
+            else { return nil }
+            return binary
+        }
+        guard binaries.count == 1 else { return nil }
+        return binaries[0]
     }
 
     private static func sha256(of url: URL) -> String? {

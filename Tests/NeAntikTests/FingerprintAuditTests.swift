@@ -336,12 +336,78 @@ struct FingerprintAuditTests {
         )
 
         let url = try FingerprintAuditCoordinator
-            .pageTargetWebSocketURL(from: data)
+            .pageTargetWebSocketURL(from: data, expectedPort: 9_222)
 
         #expect(
             url?.absoluteString ==
                 "ws://127.0.0.1:9222/devtools/page/NEANTIK"
         )
+    }
+
+    @Test
+    func rejectsUntrustedDevToolsWebSocketEndpoints() {
+        let valid = DevToolsSecurity.validatedWebSocketURL(
+            "ws://127.0.0.1:9222/devtools/browser/NEANTIK-1",
+            expectedPort: 9_222,
+            expectedPathPrefix: "/devtools/browser/"
+        )
+        #expect(valid != nil)
+
+        for value in [
+            "wss://127.0.0.1:9222/devtools/browser/NEANTIK",
+            "ws://localhost:9222/devtools/browser/NEANTIK",
+            "ws://127.0.0.1:9223/devtools/browser/NEANTIK",
+            "ws://user@127.0.0.1:9222/devtools/browser/NEANTIK",
+            "ws://127.0.0.1:9222/devtools/page/NEANTIK",
+            "ws://127.0.0.1:9222/devtools/browser/NEANTIK/child",
+            "ws://127.0.0.1:9222/devtools/browser/NEANTIK?x=1",
+            "ws://127.0.0.1:9222/devtools/browser/%4eEANTIK"
+        ] {
+            #expect(
+                DevToolsSecurity.validatedWebSocketURL(
+                    value,
+                    expectedPort: 9_222,
+                    expectedPathPrefix: "/devtools/browser/"
+                ) == nil
+            )
+        }
+    }
+
+    @Test
+    func readsOnlyBoundedRegularDevToolsPortFileWithoutFollowingSymlinks()
+        throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let valid = root.appendingPathComponent("DevToolsActivePort")
+        try Data("9222\n/devtools/browser/NEANTIK\n".utf8).write(
+            to: valid
+        )
+
+        #expect(
+            try DevToolsSecurity.readPort(at: valid) ==
+                9_222
+        )
+
+        let oversized = root.appendingPathComponent("oversized")
+        try Data(repeating: 65, count: 4_097).write(to: oversized)
+        #expect(throws: Error.self) {
+            try DevToolsSecurity.readPort(at: oversized)
+        }
+
+        let symlink = root.appendingPathComponent("symlink")
+        try FileManager.default.createSymbolicLink(
+            at: symlink,
+            withDestinationURL: valid
+        )
+        #expect(throws: Error.self) {
+            try DevToolsSecurity.readPort(at: symlink)
+        }
     }
 
     @Test
@@ -567,10 +633,7 @@ struct FingerprintAuditTests {
                 .headlessSingleProcessDiagnostic
         )
         #expect(!decoded.effectiveExecutionMode.isReleaseEvidence)
-        #expect(
-            decoded.effectiveExecutionMode.additionalLaunchArguments ==
-                ["--single-process", "--no-sandbox"]
-        )
+        #expect(decoded.effectiveExecutionMode.additionalLaunchArguments.isEmpty)
         #expect(
             FingerprintAuditExecutionMode.browser
                 .additionalLaunchArguments.isEmpty

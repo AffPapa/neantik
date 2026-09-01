@@ -4,6 +4,20 @@
 
 ## Direct 0.3.24 (27) — September 1, 2026
 
+- Note and bulk-proxy drafts now confirm destructive Cancel/Escape/interactive
+  dismissal. Profile create/edit mode is explicit, compact bulk actions no
+  longer hide horizontally, structured-search examples are visible, shortcut
+  chords are spoken as words, and proxy passwords have a temporary explicit
+  reveal control.
+- Fingerprint runtime preflight now fails closed on an unknown signature,
+  rejects ambiguous versioned framework binaries, removes the dormant
+  unsandboxed diagnostic launch, reads `DevToolsActivePort` through a bounded
+  no-follow descriptor and accepts only exact loopback DevTools WebSockets.
+  Proxy probes run in a fixed environment without inherited proxy, TLS or
+  dynamic-loader overrides.
+- Direct release entrypoints now use a private umask and reviewed PATH. The DMG
+  path invokes critical Apple security tools by absolute path, while isolated
+  Python requires `-I -B`, system Git and standard-library-first imports.
 - Provisioning-profile authorization now compares SHA-256 certificate
   fingerprints. The 40-character value reported by macOS remains only an
   opaque selector for the installed codesigning identity; NeAntik no longer

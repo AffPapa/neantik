@@ -162,6 +162,46 @@ struct BrowserRuntimeInspectorTests {
     }
 
     @Test
+    func rejectsAmbiguousVersionedFrameworkBinary() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let contents = root.appendingPathComponent(
+            "Chromium.app/Contents",
+            isDirectory: true
+        )
+        let macOS = contents.appendingPathComponent("MacOS", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: macOS,
+            withIntermediateDirectories: true
+        )
+        let executable = macOS.appendingPathComponent("Chromium")
+        try Data([
+            0xCF, 0xFA, 0xED, 0xFE,
+            0x0C, 0x00, 0x00, 0x01,
+        ]).write(to: executable)
+        for version in ["1", "2"] {
+            let directory = contents.appendingPathComponent(
+                "Frameworks/Chromium Framework.framework/Versions/\(version)",
+                isDirectory: true
+            )
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+            try Data("framework-\(version)".utf8).write(
+                to: directory.appendingPathComponent("Chromium Framework")
+            )
+        }
+
+        let inspection = BrowserRuntimeInspector.inspect(
+            executableURL: executable
+        )
+
+        #expect(inspection.frameworkSHA256 == nil)
+    }
+
+    @Test
     func rejectsIntelOnlyMachO() throws {
         let executable = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

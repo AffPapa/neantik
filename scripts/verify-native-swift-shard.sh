@@ -71,6 +71,7 @@ case "$SHARD" in
       ProfilePostSaveRevealPolicyTests
       ProfileRevisionAndTransactionTests
       ProfileTagAppearanceTests
+      UXDraftProtectionTests
     )
     ;;
   profiles-b)
@@ -88,6 +89,7 @@ case "$SHARD" in
       WorkspacePreferenceStoreTests
       WorkspaceQueryStateTests
       WorkspaceReadinessTests
+      WorkspaceAlertPresentationTests
     )
     ;;
   *)

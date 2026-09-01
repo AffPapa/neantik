@@ -35,7 +35,13 @@ enum BrowserRuntimePreflightValidator {
         case .some(false):
             errors.append("Подпись браузера некорректна.")
         case .none:
-            warnings.append("Подпись браузера не удалось проверить.")
+            if runtime.supportsFingerprintIdentity {
+                errors.append(
+                    "Подпись браузера с разделением отпечатков не удалось проверить."
+                )
+            } else {
+                warnings.append("Подпись браузера не удалось проверить.")
+            }
         case .some(true):
             break
         }

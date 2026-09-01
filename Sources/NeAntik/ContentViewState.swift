@@ -69,6 +69,15 @@ struct WorkspaceAlertPresentation: Identifiable {
     let message: String
 
     var id: Source { source }
+
+    var offersReadinessRecovery: Bool {
+        switch source {
+        case .process, .storage:
+            true
+        case .local:
+            false
+        }
+    }
 }
 
 struct ClipboardNotice: Equatable {

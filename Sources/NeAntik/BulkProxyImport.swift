@@ -42,6 +42,25 @@ enum BulkProxyImportAccessibilityAnnouncement: Equatable {
     }
 }
 
+struct BulkProxyImportDraftSnapshot: Equatable, Sendable {
+    let text: String
+    let baseName: String
+    let kind: ProxyKind
+    let order: ProxyImportOrder
+
+    func hasUnsavedChanges(
+        text: String,
+        baseName: String,
+        kind: ProxyKind,
+        order: ProxyImportOrder
+    ) -> Bool {
+        self.text != text ||
+            self.baseName != baseName ||
+            self.kind != kind ||
+            self.order != order
+    }
+}
+
 enum BulkProxyImportRowIssue: Equatable, Sendable {
     case invalid
     case ambiguous
@@ -536,6 +555,7 @@ struct BulkProxyImportView: View {
 
     let targetFolderName: String?
     let onCreate: ([ProxyImportDraft], String) async throws -> Void
+    private let initialDraft: BulkProxyImportDraftSnapshot
 
     @State private var text = ""
     @State private var baseName = "Прокси"
@@ -548,6 +568,7 @@ struct BulkProxyImportView: View {
     @State private var showsOptions = false
     @State private var showingFileImporter = false
     @State private var importedFileName: String?
+    @State private var showingDiscardConfirmation = false
     @FocusState private var proxyInputIsFocused: Bool
     @State private var announcementGate =
         AccessibilityAnnouncementGate<
@@ -569,7 +590,22 @@ struct BulkProxyImportView: View {
         _kind = State(initialValue: initialKind)
         _order = State(initialValue: initialOrder)
         _showsOptions = State(initialValue: showsOptionsInitially)
+        initialDraft = BulkProxyImportDraftSnapshot(
+            text: initialText,
+            baseName: initialBaseName,
+            kind: initialKind,
+            order: initialOrder
+        )
         self.onCreate = onCreate
+    }
+
+    private var hasUnsavedChanges: Bool {
+        initialDraft.hasUnsavedChanges(
+            text: text,
+            baseName: baseName,
+            kind: kind,
+            order: order
+        )
     }
 
     var body: some View {
@@ -742,7 +778,7 @@ struct BulkProxyImportView: View {
             HStack {
                 Spacer()
                 Button("Отмена", role: .cancel) {
-                    dismiss()
+                    requestDismiss()
                 }
                 .disabled(isCreating)
                 .keyboardShortcut(.cancelAction)
@@ -758,6 +794,18 @@ struct BulkProxyImportView: View {
             .padding()
         }
         .frame(minWidth: 500, idealWidth: 620, minHeight: 500)
+        .interactiveDismissDisabled(isCreating || hasUnsavedChanges)
+        .alert(
+            "Отменить импорт?",
+            isPresented: $showingDiscardConfirmation
+        ) {
+            Button("Продолжить редактирование", role: .cancel) {}
+            Button("Отменить импорт", role: .destructive) {
+                dismiss()
+            }
+        } message: {
+            Text("Вставленный список и параметры импорта будут потеряны.")
+        }
         .onAppear {
             refreshPreview()
             Task { @MainActor in
@@ -778,6 +826,14 @@ struct BulkProxyImportView: View {
         .onDisappear {
             text = ""
             preview = .empty
+        }
+    }
+
+    private func requestDismiss() {
+        if hasUnsavedChanges {
+            showingDiscardConfirmation = true
+        } else {
+            dismiss()
         }
     }
 

@@ -12,6 +12,9 @@ import platform
 from pathlib import Path
 
 
+SYSTEM_GIT = "/usr/bin/git"
+
+
 def fail(message: str) -> int:
     print(f"Isolated release Python failed: {message}", file=sys.stderr)
     return 65
@@ -23,7 +26,7 @@ def belongs_to_git_worktree(project_root: Path) -> bool:
     try:
         inside = subprocess.run(
             [
-                "git",
+                SYSTEM_GIT,
                 "-C",
                 str(project_root),
                 "rev-parse",
@@ -39,7 +42,7 @@ def belongs_to_git_worktree(project_root: Path) -> bool:
             return False
         root = subprocess.run(
             [
-                "git",
+                SYSTEM_GIT,
                 "-C",
                 str(project_root),
                 "rev-parse",
@@ -65,6 +68,8 @@ def main() -> int:
         return fail("Python 3.11 or newer is required")
     if platform.machine() != "arm64":
         return fail("an ARM64 Python interpreter is required")
+    if not sys.flags.isolated or not sys.dont_write_bytecode:
+        return fail("the release runner requires Python -I -B")
     if len(sys.argv) < 2:
         return fail("a release script path is required")
     raw_target = Path(sys.argv[1])
@@ -116,7 +121,18 @@ def main() -> int:
     os.environ["PYTHONNOUSERSITE"] = "1"
     os.environ["PYTHONPYCACHEPREFIX"] = str(cache_root)
     sys.pycache_prefix = str(cache_root)
-    sys.path[:] = [str(scripts_root), *sys.path]
+    # Keep only the interpreter-owned standard library.  In particular, do
+    # not let Homebrew/user site-packages or the caller's working directory
+    # shadow stdlib modules during a release.  The reviewed repository
+    # scripts remain importable, but only after the stdlib entries.
+    standard_library = [
+        entry
+        for entry in sys.path
+        if entry
+        and "site-packages" not in Path(entry).parts
+        and "dist-packages" not in Path(entry).parts
+    ]
+    sys.path[:] = [*standard_library, str(scripts_root)]
     arguments = sys.argv[2:]
     sys.argv = [str(target), *arguments]
     try:

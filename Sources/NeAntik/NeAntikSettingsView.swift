@@ -69,7 +69,7 @@ struct NeAntikSettingsView: View {
                         .font(.body.monospaced())
                         .foregroundStyle(.secondary)
                         .accessibilityLabel(
-                            "Сочетание: \(shortcut.displayChord)"
+                            "Сочетание: \(shortcut.accessibilityChord)"
                         )
                 }
                 .accessibilityElement(children: .combine)

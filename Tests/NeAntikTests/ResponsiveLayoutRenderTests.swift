@@ -60,6 +60,25 @@ struct ResponsiveLayoutRenderTests {
             size: CGSize(width: 460, height: 380)
         )
 
+        try render(
+            ProfileEditorView(
+                original: profileA,
+                keychain: KeychainStore(
+                    backend: LayoutRenderKeychainBackend(),
+                    service: "layout.render.proxy-password",
+                    legacyService: nil
+                ),
+                folders: [],
+                initialFolderID: nil,
+                suggestedTags: profileA.tags,
+                initialFocus: .proxyPassword
+            ) { _, _, _ in },
+            name: "profile-editor-proxy-password",
+            size: CGSize(width: 540, height: 900),
+            colorScheme: .light,
+            settleTime: 0.2
+        )
+
         for (appearanceName, colorScheme) in [
             ("light", ColorScheme.light),
             ("dark", ColorScheme.dark),
@@ -499,6 +518,35 @@ struct ResponsiveLayoutRenderTests {
                 canForceStop: false
             ),
         ]
+    }
+
+    @Test func compactBatchActionsRenderWithoutHorizontalScrolling() throws {
+        let profiles = [
+            BrowserProfile(id: layoutFixtureID(31), name: "TikTok · US"),
+            BrowserProfile(id: layoutFixtureID(32), name: "Facebook · DE"),
+        ]
+        let presentation = ProfileBatchSelectionPresentation.resolve(
+            visibleProfiles: profiles,
+            selectedProfileIDs: Set(profiles.map(\.id)),
+            runningProfileIDs: []
+        )
+
+        try render(
+            ProfileBatchActionBar(
+                presentation: presentation,
+                canUndo: true,
+                onToggleAllVisible: {},
+                onClear: {},
+                onTogglePinned: {},
+                onChooseFolder: {},
+                onEditTag: {},
+                onToggleArchived: {},
+                onUndo: {}
+            ),
+            name: "profile-batch-actions-compact",
+            size: CGSize(width: 500, height: 52),
+            colorScheme: .light
+        )
     }
 
     @Test func profileDetailRendersAtOrdinaryAndWideSizes() throws {
