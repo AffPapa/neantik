@@ -19,84 +19,63 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DirectUpdatePolicyTests(unittest.TestCase):
-    def test_current_direct_policy_is_disabled_and_fail_closed(self) -> None:
+    def test_current_direct_policy_is_manual_and_has_no_updater(self) -> None:
         message = MODULE.verify()
 
-        self.assertIn("disabled-manual", message)
-        self.assertIn("automatic download disabled", message)
+        self.assertIn("manual immutable releases only", message)
 
-    def test_rejects_disabled_policy_with_partial_key_material(self) -> None:
-        info = self.base_info()
-        info["NeAntikUpdatePublicKeyID"] = "release-2026"
-
+    def test_rejects_any_dormant_update_configuration_key(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            plist_path = Path(temporary) / "Info.plist"
+            root = Path(temporary)
+            plist_path = root / "Info.plist"
             with plist_path.open("wb") as handle:
-                plistlib.dump(info, handle)
-            with self.assertRaises(MODULE.UpdatePolicyError):
-                MODULE.verify(info_plist=plist_path)
+                plistlib.dump({"NeAntikUpdateChannelEnabled": False}, handle)
+            source_root = root / "Sources/NeAntik"
+            source_root.mkdir(parents=True)
+            with self.assertRaisesRegex(
+                MODULE.UpdatePolicyError,
+                "configuration keys",
+            ):
+                MODULE.verify(
+                    info_plist=plist_path,
+                    source_root=source_root,
+                )
 
-    def test_rejects_automatic_download(self) -> None:
-        info = self.base_info()
-        info["NeAntikUpdateAutoDownload"] = True
-
+    def test_rejects_dormant_update_source(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            plist_path = Path(temporary) / "Info.plist"
+            root = Path(temporary)
+            plist_path = root / "Info.plist"
             with plist_path.open("wb") as handle:
-                plistlib.dump(info, handle)
-            with self.assertRaises(MODULE.UpdatePolicyError):
-                MODULE.verify(info_plist=plist_path)
+                plistlib.dump({}, handle)
+            source_root = root / "Sources/NeAntik"
+            source_root.mkdir(parents=True)
+            (source_root / "UpdateManifest.swift").write_text(
+                "struct UpdateManifest {}",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                MODULE.UpdatePolicyError,
+                "update implementation",
+            ):
+                MODULE.verify(
+                    info_plist=plist_path,
+                    source_root=source_root,
+                )
 
-    def test_accepts_complete_future_public_key_configuration(self) -> None:
-        info = self.base_info()
-        info.update(
-            {
-                "NeAntikUpdateChannelEnabled": True,
-                "NeAntikUpdateManifestURL":
-                    "https://affpapa.org/neantik/update.json",
-                "NeAntikUpdatePublicKeyID": "release-2026",
-                "NeAntikUpdatePublicKeyBase64":
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-            }
-        )
-
+    def test_rejects_missing_source_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            plist_path = Path(temporary) / "Info.plist"
+            root = Path(temporary)
+            plist_path = root / "Info.plist"
             with plist_path.open("wb") as handle:
-                plistlib.dump(info, handle)
-            message = MODULE.verify(info_plist=plist_path)
-
-        self.assertIn("configured", message)
-
-    def test_rejects_credentialed_manifest_url(self) -> None:
-        info = self.base_info()
-        info.update(
-            {
-                "NeAntikUpdateChannelEnabled": True,
-                "NeAntikUpdateManifestURL":
-                    "https://user:secret@example.com/update.json",
-                "NeAntikUpdatePublicKeyID": "release-2026",
-                "NeAntikUpdatePublicKeyBase64":
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-            }
-        )
-
-        with tempfile.TemporaryDirectory() as temporary:
-            plist_path = Path(temporary) / "Info.plist"
-            with plist_path.open("wb") as handle:
-                plistlib.dump(info, handle)
-            with self.assertRaises(MODULE.UpdatePolicyError):
-                MODULE.verify(info_plist=plist_path)
-
-    @staticmethod
-    def base_info() -> dict[str, object]:
-        return {
-            "NeAntikUpdateChannelEnabled": False,
-            "NeAntikUpdateAutoDownload": False,
-            "NeAntikUpdateManifestURL": "",
-            "NeAntikUpdatePublicKeyID": "",
-            "NeAntikUpdatePublicKeyBase64": "",
-        }
+                plistlib.dump({}, handle)
+            with self.assertRaisesRegex(
+                MODULE.UpdatePolicyError,
+                "source directory is missing",
+            ):
+                MODULE.verify(
+                    info_plist=plist_path,
+                    source_root=root / "missing",
+                )
 
 
 if __name__ == "__main__":

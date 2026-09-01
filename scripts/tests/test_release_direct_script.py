@@ -17,7 +17,7 @@ RELEASE_ENTITLEMENTS = SCRIPTS.parent / "Resources" / "NeAntik.entitlements"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
-    def test_release_verifier_rejects_sandbox_and_checks_packaged_update_policy(
+    def test_release_verifier_rejects_sandbox_and_dormant_network_surfaces(
         self,
     ) -> None:
         text = RELEASE_VERIFIER.read_text(encoding="utf-8")
@@ -29,7 +29,9 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             "NeAntikUpdatePublicKeyID",
             "NeAntikUpdatePublicKeyBase64",
         ):
-            self.assertIn(key, text)
+            self.assertNotIn(key, text)
+        self.assertIn("verify-direct-telemetry-disabled.py", text)
+        self.assertIn("verify-direct-update-policy.py", text)
         self.assertIn('--info-plist "$INFO_PLIST"', text)
         self.assertIn("verify-direct-provisioning-profile.py", text)
         self.assertIn("embedded.provisionprofile", text)

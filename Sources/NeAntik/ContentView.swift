@@ -188,7 +188,6 @@ struct ContentView: View {
 
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
-    @ObservedObject var telemetry: TelemetryController
     @ObservedObject var fingerprintObservationStore:
         FingerprintObservationStore
     @ObservedObject var proxyHealthCoordinator:
@@ -202,7 +201,6 @@ struct ContentView: View {
     let launchIntent: NeAntikLaunchIntent
     let fingerprintEvidenceReleaseContext:
         FingerprintEvidenceReleaseContext?
-    private let updateChannel = UpdateChannelConfiguration.fromBundle()
 
     @State private var selection: UUID?
     @State private var batchSelectedProfileIDs = Set<UUID>()
@@ -273,7 +271,6 @@ struct ContentView: View {
     init(
         store: ProfileStore,
         processes: BrowserProcessManager,
-        telemetry: TelemetryController,
         fingerprintObservationStore: FingerprintObservationStore,
         proxyHealthCoordinator: ProxyHealthCoordinator,
         workspacePreferences: WorkspacePreferenceStore,
@@ -287,7 +284,6 @@ struct ContentView: View {
     ) {
         self.store = store
         self.processes = processes
-        self.telemetry = telemetry
         self.fingerprintObservationStore = fingerprintObservationStore
         self.proxyHealthCoordinator = proxyHealthCoordinator
         self.workspacePreferences = workspacePreferences
@@ -487,15 +483,6 @@ struct ContentView: View {
                 fingerprintObservationStore.observation(
                     for: selectedProfile.id
                 )
-        )
-    }
-
-    private var telemetrySnapshot: TelemetrySnapshot {
-        TelemetrySnapshot(
-            profileCount: store.profiles.count,
-            proxyProfileCount: store.profiles.filter {
-                $0.proxy != nil
-            }.count
         )
     }
 
@@ -921,7 +908,6 @@ struct ContentView: View {
                 )
             }
             processes.reconcile(profiles: store.profiles)
-            telemetry.record(.snapshot, snapshot: telemetrySnapshot)
             presentReleaseFingerprintAuditIfNeeded()
         }
         .onChange(of: profileSearchText) { _, _ in
@@ -980,9 +966,6 @@ struct ContentView: View {
         .onChange(of: runtimeAvailability) { _, availability in
             presentReleaseFingerprintAuditIfNeeded()
             announceRuntimeAvailability(availability)
-        }
-        .onChange(of: telemetrySnapshot) { _, value in
-            telemetry.record(.snapshot, snapshot: value)
         }
     }
 
@@ -1098,6 +1081,12 @@ struct ContentView: View {
             profile,
             toFolderID: folderID
         ) { saved in
+            guard passwordUpdate.requiresCredentialMutation(
+                originalHadUsername:
+                    original?.proxy?.username.isEmpty == false
+            ) else {
+                return
+            }
             switch passwordUpdate {
             case .delete:
                 try keychain.updateProxyPasswordForProfileEdit(
@@ -1119,20 +1108,10 @@ struct ContentView: View {
             fingerprintObservationStore.remove(profileID: saved.id)
         }
         revealSavedProfile(saved)
-        if original == nil {
-            telemetry.record(.profileCreated, snapshot: telemetrySnapshot)
-        }
-        let hadProxy = original?.proxy != nil
-        let hasProxy = saved.proxy != nil
         if original?.proxy != saved.proxy ||
             passwordUpdate != .keepExisting
         {
             clearProxyHealth(for: saved.id)
-        }
-        if hasProxy && !hadProxy {
-            telemetry.record(.proxyEnabled, snapshot: telemetrySnapshot)
-        } else if hadProxy && !hasProxy {
-            telemetry.record(.proxyDisabled, snapshot: telemetrySnapshot)
         }
     }
 
@@ -1191,16 +1170,6 @@ struct ContentView: View {
             profileOperationalFilter = .all
         }
         normalizeSelection()
-        telemetry.record(
-            .profileDeleted,
-            snapshot: telemetrySnapshot
-        )
-        if profile.proxy != nil {
-            telemetry.record(
-                .proxyDisabled,
-                snapshot: telemetrySnapshot
-            )
-        }
         fingerprintObservationStore.remove(profileID: profile.id)
         clearProxyHealth(for: profile.id)
     }
@@ -1374,10 +1343,6 @@ struct ContentView: View {
                 toFolderID: selectedFolderID
             )
             revealSavedProfile(saved)
-            telemetry.record(
-                .profileCreated,
-                snapshot: telemetrySnapshot
-            )
             launch(saved)
         } catch {
             localError = error.localizedDescription
@@ -1541,16 +1506,6 @@ struct ContentView: View {
             if let bulkProxyStatusMessage {
                 announceWorkspaceStatus(bulkProxyStatusMessage)
             }
-            telemetry.record(
-                .profileCreated,
-                snapshot: telemetrySnapshot
-            )
-            if saved.proxy != nil {
-                telemetry.record(
-                    .proxyEnabled,
-                    snapshot: telemetrySnapshot
-                )
-            }
         } catch {
             localError = error.localizedDescription
         }
@@ -1571,18 +1526,6 @@ struct ContentView: View {
 
         if let last = created.last {
             revealSavedProfile(last)
-        }
-        for profile in created {
-            telemetry.record(
-                .profileCreated,
-                snapshot: telemetrySnapshot
-            )
-            if profile.proxy != nil {
-                telemetry.record(
-                    .proxyEnabled,
-                    snapshot: telemetrySnapshot
-                )
-            }
         }
     }
 
@@ -1829,9 +1772,6 @@ struct ContentView: View {
             return .handled
         }
         .navigationTitle("NeAntik")
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            sidebarStatus
-        }
     }
 
     private func profileListPane(
@@ -3031,42 +2971,6 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    @ViewBuilder
-    private var sidebarStatus: some View {
-        if updateChannel.isEnabled || telemetry.isConfigured
-        {
-            VStack(alignment: .leading, spacing: 7) {
-                if updateChannel.isEnabled {
-                    Label(
-                        "Подписанные обновления",
-                        systemImage: "arrow.triangle.2.circlepath"
-                    )
-                    .foregroundStyle(.secondary)
-                }
-
-                if telemetry.isConfigured {
-                    Toggle(
-                        "Обезличенная статистика",
-                        isOn: Binding(
-                            get: { telemetry.isEnabled },
-                            set: {
-                                telemetry.setEnabled(
-                                    $0,
-                                    snapshot: telemetrySnapshot
-                                )
-                            }
-                        )
-                    )
-                    .toggleStyle(.switch)
-                    .controlSize(.mini)
-                }
-            }
-            .font(.caption)
-            .padding(12)
-            .accessibilityElement(children: .contain)
-        }
-    }
-
     private var runtimeStatusIcon: String {
         guard let runtime else { return "exclamationmark.triangle.fill" }
         return runtime.supportsFingerprintIdentity
@@ -3170,10 +3074,6 @@ struct ContentView: View {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
-        telemetry.record(
-            .browserLaunched,
-            snapshot: telemetrySnapshot
-        )
     }
 
     private func validateLaunchPreflight(

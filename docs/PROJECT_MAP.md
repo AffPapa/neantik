@@ -32,6 +32,9 @@ NeAntik is a native, local, Apple-Silicon-only manager. Profiles, organization
 and browser data remain local. Proxy passwords remain in Keychain. The product
 does not add cloud accounts, teams, RPA, proxy sales, telemetry, a writable
 network API, arbitrary low-level fingerprint sliders or secret export.
+The Direct manager contains no telemetry client, update-manifest prototype or
+external runtime preference: it launches only its declared embedded runtime,
+and updates remain immutable manual GitHub releases.
 
 ## Source ownership
 
@@ -89,6 +92,9 @@ network API, arbitrary low-level fingerprint sliders or secret export.
   fresh session and fresh identity;
 - exposes the existing process-safe window focus operation from the selected
   profile menu and `Shift-Command-Return`, without changing Stop or Force Stop.
+- removes the dormant telemetry client, offline update-manifest prototype and
+  historical external Chrome/Cloak selector; absence-based privacy and release
+  gates now reject their source files and configuration keys.
 
 ### Deferred with an explicit boundary
 

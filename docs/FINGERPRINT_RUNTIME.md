@@ -95,21 +95,15 @@ runtime.
 
 ## Selection
 
-1. Install the runtime independently from its official source.
-2. Use the folder button in the NeAntik sidebar to choose the `.app` bundle or
-   its Chromium executable.
-3. Enable **Fingerprint-compatible runtime** only if the runtime documents the
-   command-line protocol above.
-4. The sidebar must show **Fingerprint protocol configured** before launch.
-5. Run **Fingerprint Check** before treating the selected binary as verified.
+NeAntik Direct uses only the `NeAntik Browser.app` embedded in the signed
+application resources. The runtime must declare bundle identifier
+`app.neantik.runtime` and flavor `fingerprint-chromium`; otherwise startup
+fails closed. There is no external-runtime picker, persisted custom path or
+fallback to an installed Chrome, Chromium or Cloak build.
 
-NeAntik also detects externally installed Cloak Chromium builds under:
-
-```text
-~/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium
-```
-
-NeAntik does not bundle or redistribute Cloak binaries.
+Run **Fingerprint Check** before treating the embedded binary as verified.
+Release evidence remains bound to the exact signed candidate rather than a
+mutable path or a separately installed browser.
 
 ## Privacy boundary
 

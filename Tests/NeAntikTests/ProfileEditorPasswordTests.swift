@@ -4,6 +4,25 @@ import Testing
 @Suite("ProfileEditorPasswordTests")
 struct ProfileEditorPasswordTests {
     @Test
+    func deleteOnlyTouchesKeychainWhenOriginalUsedAuthentication() {
+        #expect(
+            !ProxyPasswordUpdate.delete.requiresCredentialMutation(
+                originalHadUsername: false
+            )
+        )
+        #expect(
+            ProxyPasswordUpdate.delete.requiresCredentialMutation(
+                originalHadUsername: true
+            )
+        )
+        #expect(
+            ProxyPasswordUpdate.replace("secret").requiresCredentialMutation(
+                originalHadUsername: false
+            )
+        )
+    }
+
+    @Test
     func keepsExistingPasswordAfterKeychainReadFailure() {
         #expect(
             ProxyPasswordUpdate.resolve(

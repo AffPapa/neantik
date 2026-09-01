@@ -6,6 +6,17 @@ enum ProxyPasswordUpdate: Equatable {
   case replace(String)
   case delete
 
+  func requiresCredentialMutation(originalHadUsername: Bool) -> Bool {
+    switch self {
+    case .keepExisting:
+      false
+    case .replace:
+      true
+    case .delete:
+      originalHadUsername
+    }
+  }
+
   static func resolve(
     currentHasUsername: Bool,
     originalHadUsername: Bool,

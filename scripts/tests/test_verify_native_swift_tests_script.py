@@ -62,10 +62,12 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("/private/tmp/nevision-swift-cache-*", text)
         self.assertIn("rm -rf \"$SWIFT_TEST_ROOT\"", text)
 
-    def test_ci_suite_runner_includes_signed_update_tests(self) -> None:
+    def test_ci_suite_runner_excludes_removed_dormant_suites(self) -> None:
         text = SUITE_SCRIPT.read_text(encoding="utf-8")
 
-        self.assertIn("UpdateManifestTests)", text)
+        self.assertNotIn("UpdateManifestTests", text)
+        self.assertNotIn("TelemetryTests", text)
+        self.assertNotIn("RuntimePreferenceStoreTests", text)
         self.assertIn('--filter "$SUITE"', text)
 
     def test_ci_runs_four_isolated_swift_shards(self) -> None:

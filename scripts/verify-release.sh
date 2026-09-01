@@ -30,13 +30,6 @@ for key in \
   CFBundleShortVersionString \
   CFBundleVersion \
   NeAntikDeveloperTeamIdentifier \
-  NeAntikTelemetryEndpoint \
-  NeAntikPublicStatsURL \
-  NeAntikUpdateChannelEnabled \
-  NeAntikUpdateAutoDownload \
-  NeAntikUpdateManifestURL \
-  NeAntikUpdatePublicKeyID \
-  NeAntikUpdatePublicKeyBase64 \
   LSMinimumSystemVersion \
   LSRequiresNativeExecution; do
   EXPECTED="$(plutil -extract "$key" raw -o - "$EXPECTED_INFO_PLIST")"
@@ -72,7 +65,8 @@ else
     --profile "$APP_PATH/Contents/embedded.provisionprofile" \
     --app "$APP_PATH"
 fi
-"$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
+"$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py" \
+  --info-plist "$INFO_PLIST"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py" \
   --info-plist "$INFO_PLIST"
 "$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"

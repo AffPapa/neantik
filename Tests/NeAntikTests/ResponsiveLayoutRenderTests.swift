@@ -646,14 +646,6 @@ struct ResponsiveLayoutRenderTests {
         let workspacePreferences = WorkspacePreferenceStore(
             defaults: defaults
         )
-        let telemetry = TelemetryController(
-            edition: .direct,
-            configuration: TelemetryConfiguration(
-                endpoint: nil,
-                publicStatsURL: nil
-            ),
-            defaults: defaults
-        )
         let processes = BrowserProcessManager(
             paths: paths,
             processIdentityValidator: { _ in false },
@@ -683,7 +675,6 @@ struct ResponsiveLayoutRenderTests {
                 ContentView(
                     store: store,
                     processes: processes,
-                    telemetry: telemetry,
                     fingerprintObservationStore:
                         FingerprintObservationStore(),
                     proxyHealthCoordinator: ProxyHealthCoordinator(
@@ -777,7 +768,6 @@ struct ResponsiveLayoutRenderTests {
                     ContentView(
                         store: store,
                         processes: processes,
-                        telemetry: telemetry,
                         fingerprintObservationStore:
                             FingerprintObservationStore(),
                         proxyHealthCoordinator: ProxyHealthCoordinator(
@@ -830,7 +820,6 @@ struct ResponsiveLayoutRenderTests {
                 ContentView(
                     store: store,
                     processes: processes,
-                    telemetry: telemetry,
                     fingerprintObservationStore:
                         FingerprintObservationStore(),
                     proxyHealthCoordinator: ProxyHealthCoordinator(
