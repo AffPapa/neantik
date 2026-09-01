@@ -49,6 +49,13 @@ class DirectProvisioningProfileTests(unittest.TestCase):
     def test_accepts_exact_developer_id_distribution_profile(self) -> None:
         self.validate(valid_profile())
 
+    def test_accepts_apple_team_wildcard_keychain_authorization(self) -> None:
+        profile = valid_profile()
+        entitlements = dict(profile["Entitlements"])
+        entitlements["keychain-access-groups"] = [f"{TEAM_ID}.*"]
+        profile["Entitlements"] = entitlements
+        self.validate(profile)
+
     def test_rejects_expired_profile(self) -> None:
         profile = valid_profile()
         profile["ExpirationDate"] = dt.datetime(2020, 1, 1)
@@ -71,6 +78,16 @@ class DirectProvisioningProfileTests(unittest.TestCase):
             "com.apple.developer.team-identifier": TEAM_ID,
             "keychain-access-groups": [f"{TEAM_ID}.wrong.bundle"],
         }
+        with self.assertRaisesRegex(
+            MODULE.ProvisioningProfileError, "Keychain access group"
+        ):
+            self.validate(profile)
+
+    def test_rejects_foreign_team_wildcard_keychain_group(self) -> None:
+        profile = valid_profile()
+        entitlements = dict(profile["Entitlements"])
+        entitlements["keychain-access-groups"] = ["WRONGTEAM.*"]
+        profile["Entitlements"] = entitlements
         with self.assertRaisesRegex(
             MODULE.ProvisioningProfileError, "Keychain access group"
         ):

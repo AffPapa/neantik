@@ -350,7 +350,10 @@ def validate_profile_payload(
             "profile does not authorize the NeAntik developer team"
         )
     groups = entitlements.get("keychain-access-groups")
-    if not isinstance(groups, list) or application_id not in groups:
+    authorized_groups = {application_id, f"{team_id}.*"}
+    if not isinstance(groups, list) or not any(
+        isinstance(group, str) and group in authorized_groups for group in groups
+    ):
         raise ProvisioningProfileError(
             "profile does not authorize the NeAntik Keychain access group"
         )
