@@ -35,6 +35,7 @@
 - Live manager and live fingerprint-browser integration: passed against the rebuilt local development application.
 - Rendered minimum-size review: passed. The compact batch bar keeps selection and its action menu visible; the profile editor keeps the note, proxy controls, temporary password reveal, advanced summary and save controls readable without horizontal scrolling.
 - `./scripts/neantik-affpapa-release doctor`: passed for local tools and current immutable public release `v0.3.23`.
+- First PR run exposed that the new workspace-alert suite used XCTest while the isolated shard contract requires a positive Swift Testing count. The suite was converted to Swift Testing, then the exact local `profiles-b` shard passed with **14 suites**, including the new 2-test suite.
 
 ## Remaining gates
 

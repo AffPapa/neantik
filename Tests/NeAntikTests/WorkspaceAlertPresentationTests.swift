@@ -1,8 +1,9 @@
-import XCTest
+import Testing
 @testable import NeAntik
 
-final class WorkspaceAlertPresentationTests: XCTestCase {
-    func testProcessAndStorageErrorsOfferReadinessRecovery() {
+struct WorkspaceAlertPresentationTests {
+    @Test
+    func processAndStorageErrorsOfferReadinessRecovery() {
         for source in [
             WorkspaceAlertPresentation.Source.process,
             .storage,
@@ -12,16 +13,17 @@ final class WorkspaceAlertPresentationTests: XCTestCase {
                 title: "Ошибка",
                 message: "Подробности"
             )
-            XCTAssertTrue(presentation.offersReadinessRecovery)
+            #expect(presentation.offersReadinessRecovery)
         }
     }
 
-    func testLocalErrorsDoNotOfferUnrelatedRecovery() {
+    @Test
+    func localErrorsDoNotOfferUnrelatedRecovery() {
         let presentation = WorkspaceAlertPresentation(
             source: .local,
             title: "Ошибка",
             message: "Подробности"
         )
-        XCTAssertFalse(presentation.offersReadinessRecovery)
+        #expect(!presentation.offersReadinessRecovery)
     }
 }
