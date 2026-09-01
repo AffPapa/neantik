@@ -341,13 +341,21 @@ def verify_required_contracts() -> None:
     ci_text = (
         PROJECT_ROOT / ".github/workflows/ci.yml"
     ).read_text(encoding="utf-8")
-    if "run: ./scripts/verify-native-swift-tests.sh" not in ci_text:
-        fail("GitHub Actions does not enforce the complete Swift test suite")
+    if "run: ./scripts/verify-native-swift-shard.sh" not in ci_text:
+        fail("GitHub Actions does not enforce isolated Swift test shards")
     swift_test_runner = (
-        PROJECT_ROOT / "scripts/verify-native-swift-tests.sh"
+        PROJECT_ROOT / "scripts/verify-native-swift-shard.sh"
     ).read_text(encoding="utf-8")
-    if "swift test" not in swift_test_runner or "--filter" in swift_test_runner:
-        fail("the complete Swift test runner must execute without a suite filter")
+    for marker in [
+        "BrowserProcessInventoryTests",
+        "FingerprintEvidenceEnrollmentTests",
+        "ProfileOrganizationTests",
+        "SecureEnclaveFingerprintEvidenceSignerTests",
+        "UpdateManifestTests",
+        '--filter "$SUITE"',
+    ]:
+        if marker not in swift_test_runner:
+            fail(f"the Swift shard runner does not enforce {marker}")
     for marker in [
         "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",
