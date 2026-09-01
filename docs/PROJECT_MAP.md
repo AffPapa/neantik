@@ -5,22 +5,18 @@ product and code work. The older v4 documents remain dated design records.
 
 ## Release truth and boundary
 
-- Latest immutable GitHub release: `v0.3.22`, version/build `0.3.22 (25)`.
-- Current source candidate: `0.3.23 (26)`; it is not public until the full
-  Direct Distribution gate completes.
-- The first `0.3.23 (26)` release attempt on exact merge commit
-  `888e73a9c897303ba179da473f226572a89ee6fd` stopped before Secure Enclave
-  enrollment because the external provisioning profile authorized a different
-  Developer ID certificate. No `v0.3.23` release or public asset exists.
+- Latest immutable GitHub release: `v0.3.23`, version/build `0.3.23 (26)`.
 - Exact released source commit:
-  `160c4e71cb1aee76d940bc2d07ad64ed014bf54f`.
+  `fdc520391c58a76622936519ca38b382f629fc47`.
 - Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
-- GitHub assets: notarized ZIP and DMG with SHA-256 sidecars.
+- GitHub assets: notarized ZIP and DMG with SHA-256 sidecars; all four assets
+  were re-downloaded and their hashes were verified before publication.
 - A later source commit is not a release. A new binary needs a new
   version/build, exact merged commit, Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and re-downloaded SHA-256 evidence.
-- Website deployment is a separate transaction and is not changed by an
-  ordinary source PR.
+- Website deployment is a separate restricted transaction and is not changed
+  by an ordinary source PR. Until its dedicated deploy key is available, the
+  website correctly remains on `0.3.22 (25)` while GitHub serves `v0.3.23`.
 
 ## Product contract
 
@@ -70,7 +66,7 @@ and updates remain immutable manual GitHub releases.
 - cold/warm manager measurements, source/installed-size budgets and responsive
   light/dark render gates.
 
-### This post-0.3.22 source slice
+### Delivered in 0.3.23
 
 - gives readiness and proxy results distinct success/info/warning/failure
   semantics instead of styling every message as success;
@@ -106,8 +102,6 @@ and updates remain immutable manual GitHub releases.
 - P1: real human keyboard/VoiceOver acceptance pass on a signed candidate;
 - P1: human acceptance of Quick Create naming and the running-window focus
   command on a signed candidate;
-- P1: separate Chromium cold/warm launch timing and exact-current installed
-  component measurement;
 - P1: continue splitting `BrowserProcessManager` and `FingerprintAudit` only
   when a pure policy/presentation slice is independently testable; do not
   raise source budgets;

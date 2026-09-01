@@ -16,33 +16,36 @@ archive contains source code, not `NeAntik.app`.
 
 Current published GitHub public-alpha release:
 
-- NeAntik `0.3.22` build `25`;
+- NeAntik `0.3.23` build `26`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `152.0.7977.64`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.22-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.22-arm64-notarized.dmg`;
+- ZIP: `NeAntik-0.3.23-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.23-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-The current `0.3.23 (26)` source candidate adds a dedicated note editor,
+The published `0.3.23 (26)` release adds a dedicated note editor,
 semantically honest notices, clearer list actions, safe quick Direct profile
 creation, and a command to reveal an already running browser window. It also
 removes the unused telemetry, updater-manifest, and external Chrome/Cloak
 selection prototypes: Direct launches only its exact embedded runtime. The
 large `ContentView` is also split without changing behavior, and CI now scans
 both the current tree and every reachable Git blob for recognized secret
-formats. It becomes a downloadable release only after a separate Developer ID,
-notarization, stapling, Gatekeeper, and immutable GitHub gate. Until then,
-download the published `0.3.22 (25)` release above.
+formats. Exact merged commit
+`fdc520391c58a76622936519ca38b382f629fc47` passed Developer ID signing,
+notarization, stapling, Gatekeeper, re-download verification, and the immutable
+GitHub gate.
 
-Published `0.3.22 (25)` includes a local Readiness Center. It identifies the
+Published `0.3.23 (26)` includes a local Readiness Center. It identifies the
 exact `NeAntik.app` users should select in macOS permissions, rechecks the
 runtime and shared data root without restarting, and copies only bounded,
 redacted diagnostics.
 
-Product website: <https://affpapa.org/neantik>.
+Product website: <https://affpapa.org/neantik>. Its downloads are changed by a
+separate restricted transaction and may temporarily remain on `0.3.22 (25)`;
+use GitHub Release `v0.3.23` above until that transaction completes.
 
 The capabilities below are included in the published, signed, and notarized
-`0.3.22 (25)` release.
+`0.3.23 (26)` release.
 
 ## Quick start
 
@@ -75,6 +78,19 @@ The capabilities below are included in the published, signed, and notarized
   separation without exposing it in the normal user flow;
 - contains no product telemetry client or telemetry configuration.
 
+## New in published 0.3.23 (26)
+
+- The exact signed and notarized release adds a dedicated note editor, honest
+  notice states, clearer secondary list actions, safe Quick Create, a command
+  to reveal an already running window, local row density, and one fixed native
+  shortcut reference.
+- Direct no longer contains the dormant telemetry, update-manifest, or
+  external Chrome/Cloak selection prototypes; it launches only the declared
+  embedded runtime.
+- `ContentView` request and cache state now has a narrower owner, while CI
+  separately scans the current tree and every reachable Git object for known
+  secret formats without printing matched values.
+
 ## New in published 0.3.22 (25)
 
 - The profile list is the primary workspace, with adaptive rows, an optional
@@ -100,9 +116,6 @@ See the current [project map](docs/PROJECT_MAP.md) and the dated
   the compatible Xcode Apple `strip` before Developer ID signing. Locales,
   licenses, notices, SwiftShader, crashpad, and security evidence remain.
 
-This exact candidate completed the Direct Distribution gate and is published
-as immutable GitHub Release `v0.3.22`.
-
 For authenticated HTTP/HTTPS proxies, separate buttons copy the username and
 password into Chromium's native prompt. The password remains in macOS
 Keychain and never enters the browser command line. Copied values carry the
@@ -115,7 +128,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.22` is published for public-alpha profile isolation. Strict
+Version `0.3.23` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
