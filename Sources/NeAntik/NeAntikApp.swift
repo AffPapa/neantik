@@ -5,6 +5,8 @@ import SwiftUI
 
 @main
 struct NeAntikApp: App {
+    @NSApplicationDelegateAdaptor(NeAntikApplicationDelegate.self)
+    private var applicationDelegate
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
     @StateObject private var fingerprintObservationStore:
@@ -123,8 +125,9 @@ struct NeAntikApp: App {
             paths: paths,
             keychain: keychain
         )
+        let processManager = BrowserProcessManager(paths: paths)
         _store = StateObject(wrappedValue: ProfileStore(paths: paths))
-        _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths))
+        _processes = StateObject(wrappedValue: processManager)
         _fingerprintObservationStore = StateObject(
             wrappedValue: FingerprintObservationStore()
         )
@@ -136,6 +139,7 @@ struct NeAntikApp: App {
         _workspacePreferences = StateObject(
             wrappedValue: WorkspacePreferenceStore()
         )
+        applicationDelegate.configure(processes: processManager)
     }
 
     var body: some Scene {

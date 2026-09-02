@@ -6,6 +6,100 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func recordsStartupFailureWithoutOperationalDetails() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Sensitive profile name")
+        let runtime = BrowserRuntime(
+            name: "Missing",
+            executableURL: root.appendingPathComponent("missing-browser"),
+            source: "Test"
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        let event = try #require(manager.lastBrowserExit)
+        #expect(event.classification == .startupFailure)
+        #expect(!event.presentation.detail.contains(profile.name))
+        #expect(!event.presentation.detail.contains(root.path))
+    }
+
+    @Test
+    func ordinaryTerminationRequestWaitsBoundedlyWithoutForcing() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data(
+                "#!/bin/sh\ntrap '' TERM\nwhile :; do :; done\n".utf8
+            )
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+        var signals: [Int32] = []
+        let manager = BrowserProcessManager(
+            paths: AppPaths(
+                rootDirectory: root.appendingPathComponent("data")
+            ),
+            processIdentityValidator: { _ in false },
+            processSignaler: { pid, signal in
+                signals.append(signal)
+                return Darwin.kill(pid, signal)
+            },
+            managedProcessTerminator: { _ in },
+            managedStopGracePeriodNanoseconds: 10_000_000,
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Quit policy")
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "Test"
+        )
+
+        try manager.launch(profile: profile, runtime: runtime)
+        let initial = manager.managerTerminationSnapshot()
+        #expect(initial.managedProfileIDs == [profile.id])
+        #expect(initial.ordinaryStopProfileIDs == [profile.id])
+
+        manager.requestOrdinaryStopsForManagerTermination()
+        let completed = await manager.waitForManagedBrowsersToExit(
+            timeoutNanoseconds: 30_000_000,
+            pollIntervalNanoseconds: 5_000_000
+        )
+        #expect(!completed)
+        #expect(signals.isEmpty)
+
+        for _ in 0..<100 {
+            if manager.processState(for: profile.id) == .forceStopAvailable {
+                break
+            }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        #expect(manager.forceStop(profileID: profile.id))
+        for _ in 0..<100 where manager.runningProfileIDs.contains(profile.id) {
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        #expect(signals == [SIGKILL])
+        #expect(manager.lastBrowserExit?.classification == .crashOrSignal)
+    }
+
+    @Test
     func recoveryAndUnverifiedLocksDoNotConsumeManagedLaunchCapacity() {
         #expect(
             BrowserProcessManager.confirmedConcurrentProfileCount(
@@ -1205,6 +1299,36 @@ struct BrowserProcessManagerTests {
             atPath: paths.lockFile(for: profile.id).path
         )
         #expect(destination == outside.path)
+    }
+
+    @Test
+    func oversizedProcessLockFailsClosedWithoutReadingOrRemovingIt() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Oversized lock")
+        try paths.prepareProfileDirectories(for: profile.id)
+        let lockURL = paths.lockFile(for: profile.id)
+        try paths.createPrivateFileExclusively(Data(), at: lockURL)
+        let handle = try FileHandle(forWritingTo: lockURL)
+        try handle.truncate(atOffset: 64 * 1_024 + 1)
+        try handle.close()
+        let manager = BrowserProcessManager(
+            paths: paths,
+            processIdentityInspector: { _ in .unrelated },
+            processLivenessValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        manager.reconcile(profiles: [profile])
+
+        #expect(manager.runningProfileIDs.contains(profile.id))
+        #expect(manager.processState(for: profile.id) == .recoveryRequired)
+        let size = try FileManager.default.attributesOfItem(
+            atPath: lockURL.path
+        )[.size] as? NSNumber
+        #expect(size?.intValue == 64 * 1_024 + 1)
     }
 
     @Test

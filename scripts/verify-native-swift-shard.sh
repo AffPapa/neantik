@@ -22,6 +22,7 @@ case "$SHARD" in
       BrowserProcessInventoryTests
       BrowserProcessLifecyclePresentationTests
       BrowserProcessManagerTests
+      BrowserTerminationPresentationTests
       BrowserRuntimeInspectorTests
       BrowserRuntimeLaunchTrustTests
       BrowserRuntimePreflightTests
@@ -75,6 +76,7 @@ case "$SHARD" in
       ProfileRevisionAndTransactionTests
       ProfileTagAppearanceTests
       UXDraftProtectionTests
+      WorkspaceUXPresentationTests
     )
     ;;
   profiles-b)

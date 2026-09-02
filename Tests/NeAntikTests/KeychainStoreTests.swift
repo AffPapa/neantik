@@ -4,6 +4,87 @@ import Testing
 
 struct KeychainStoreTests {
     @Test
+    func keychainBoundaryRejectsOversizedAndControlPasswordsBeforeWrite() {
+        let backend = MemoryKeychainBackend()
+        let store = KeychainStore(backend: backend)
+        let profileID = UUID()
+        let oversized = String(
+            repeating: "a",
+            count: ProxyImportParser.maximumPasswordLength + 1
+        )
+
+        #expect(throws: KeychainCredentialValidationError.tooLarge) {
+            try store.saveProxyPassword(oversized, profileID: profileID)
+        }
+        #expect(throws: KeychainCredentialValidationError.unsafeCharacters) {
+            try store.updateProxyPasswordForProfileEdit(
+                "line\nfeed",
+                profileID: profileID
+            )
+        }
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test
+    func keychainBoundaryPreservesOrdinaryZWJPassword() throws {
+        let backend = MemoryKeychainBackend()
+        let store = KeychainStore(backend: backend)
+        let profileID = UUID()
+        let password = String(repeating: "👨‍👩‍👧‍👦", count: 512)
+
+        try store.saveProxyPassword(password, profileID: profileID)
+
+        #expect(try store.proxyPassword(profileID: profileID) == password)
+    }
+
+    @Test
+    func keychainReadBoundaryRejectsOversizedAndControlData() {
+        let oversizedBackend = MemoryKeychainBackend()
+        let oversizedID = UUID()
+        oversizedBackend.set(
+            Data(
+                repeating: 0x61,
+                count: ProxyImportParser.maximumPasswordBytes + 1
+            ),
+            service: KeychainStore.currentService,
+            profileID: oversizedID
+        )
+        let oversizedStore = KeychainStore(backend: oversizedBackend)
+
+        #expect(throws: KeychainCredentialValidationError.tooLarge) {
+            try oversizedStore.proxyPassword(profileID: oversizedID)
+        }
+
+        let invalidUTF8Backend = MemoryKeychainBackend()
+        let invalidUTF8ID = UUID()
+        invalidUTF8Backend.set(
+            Data([0xC3, 0x28]),
+            service: KeychainStore.currentService,
+            profileID: invalidUTF8ID
+        )
+        let invalidUTF8Store = KeychainStore(backend: invalidUTF8Backend)
+
+        #expect(throws: KeychainCredentialValidationError.invalidEncoding) {
+            try invalidUTF8Store.proxyPassword(profileID: invalidUTF8ID)
+        }
+
+        let controlBackend = MemoryKeychainBackend()
+        let controlID = UUID()
+        controlBackend.set(
+            "secret\u{0}tail",
+            service: KeychainStore.currentService,
+            profileID: controlID
+        )
+        let controlStore = KeychainStore(backend: controlBackend)
+
+        #expect(throws: KeychainCredentialValidationError.unsafeCharacters) {
+            try controlStore.proxyPassword(profileID: controlID)
+        }
+        #expect(controlBackend.deleteCallCount == 0)
+    }
+
+    @Test
     func legacyReadMigratesSecretAndRemovesFallback() throws {
         let backend = MemoryKeychainBackend()
         let profileID = UUID()

@@ -1,9 +1,41 @@
 import Foundation
 import SwiftUI
 
+enum ProfileFolderPickerRowID: Hashable, Sendable {
+    case unfiled
+    case folder(UUID)
+}
+
+enum ProfileFolderPickerKeyboardCommitPolicy {
+    static func permitsCommit(
+        searchText: String,
+        didMoveHighlight: Bool
+    ) -> Bool {
+        didMoveHighlight ||
+            !searchText.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).isEmpty
+    }
+}
+
 struct ProfileFolderPickerPresentation: Equatable, Sendable {
     let filteredFolders: [ProfileFolder]
     let returnFolderID: UUID?
+
+    var rowIDs: [ProfileFolderPickerRowID] {
+        [.unfiled] + filteredFolders.map { .folder($0.id) }
+    }
+
+    func movedHighlight(
+        from current: ProfileFolderPickerRowID?,
+        offset: Int
+    ) -> ProfileFolderPickerRowID? {
+        guard !rowIDs.isEmpty else { return nil }
+        guard let current,
+              let index = rowIDs.firstIndex(of: current)
+        else { return offset < 0 ? rowIDs.last : rowIDs.first }
+        return rowIDs[min(max(index + offset, 0), rowIDs.count - 1)]
+    }
 
     static func resolve(
         folders: [ProfileFolder],
@@ -34,6 +66,8 @@ struct ProfileFolderPickerSheet: View {
     let onSelect: (UUID?) -> Void
 
     @State private var searchText = ""
+    @State private var highlightedRowID: ProfileFolderPickerRowID?
+    @State private var didMoveKeyboardHighlight = false
     @FocusState private var searchIsFocused: Bool
 
     private var presentation: ProfileFolderPickerPresentation {
@@ -98,16 +132,25 @@ struct ProfileFolderPickerSheet: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($searchIsFocused)
                     .onSubmit(selectFirstSearchResult)
+                    .onKeyPress(.upArrow) {
+                        moveHighlight(offset: -1)
+                        return .handled
+                    }
+                    .onKeyPress(.downArrow) {
+                        moveHighlight(offset: 1)
+                        return .handled
+                    }
                     .accessibilityHint(
                         "Фильтрует список папок по названию. " +
-                            "Return выбирает первый найденный результат."
+                            "Return выбирает найденную или выделенную стрелками папку."
                     )
 
                 List {
                     folderButton(
                         title: "Без папки",
                         systemImage: "tray",
-                        folderID: nil
+                        folderID: nil,
+                        rowID: .unfiled
                     )
 
                     if visibleFolders.isEmpty, !searchText.isEmpty {
@@ -118,7 +161,8 @@ struct ProfileFolderPickerSheet: View {
                             folderButton(
                                 title: folder.name,
                                 systemImage: "folder",
-                                folderID: folder.id
+                                folderID: folder.id,
+                                rowID: .folder(folder.id)
                             )
                         }
                     }
@@ -144,25 +188,64 @@ struct ProfileFolderPickerSheet: View {
         }
         .frame(width: 460, height: 500)
         .onAppear {
+            didMoveKeyboardHighlight = false
+            highlightedRowID = selectedFolderID.map {
+                .folder($0)
+            } ?? .unfiled
             Task { @MainActor in
                 await Task.yield()
                 searchIsFocused = true
             }
         }
+        .onChange(of: searchText) { _, _ in
+            didMoveKeyboardHighlight = false
+            if searchText.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).isEmpty {
+                highlightedRowID = selectedFolderID.map {
+                    .folder($0)
+                } ?? .unfiled
+            } else {
+                highlightedRowID = presentation.filteredFolders.first.map {
+                    .folder($0.id)
+                }
+            }
+        }
     }
 
     private func selectFirstSearchResult() {
-        guard let folderID = presentation.returnFolderID else { return }
-        onSelect(folderID)
+        guard ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
+            searchText: searchText,
+            didMoveHighlight: didMoveKeyboardHighlight
+        ) else { return }
+        switch highlightedRowID {
+        case .unfiled:
+            onSelect(nil)
+        case let .folder(folderID):
+            onSelect(folderID)
+        case nil:
+            guard let folderID = presentation.returnFolderID else { return }
+            onSelect(folderID)
+        }
         dismiss()
+    }
+
+    private func moveHighlight(offset: Int) {
+        didMoveKeyboardHighlight = true
+        highlightedRowID = presentation.movedHighlight(
+            from: highlightedRowID,
+            offset: offset
+        )
     }
 
     private func folderButton(
         title: String,
         systemImage: String,
-        folderID: UUID?
+        folderID: UUID?,
+        rowID: ProfileFolderPickerRowID
     ) -> some View {
         let isSelected = !hasMixedSelection && selectedFolderID == folderID
+        let isHighlighted = highlightedRowID == rowID
         return Button {
             onSelect(folderID)
             dismiss()
@@ -177,11 +260,20 @@ struct ProfileFolderPickerSheet: View {
                         .accessibilityHidden(true)
                 }
             }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 5)
+            .background(
+                isHighlighted ? Color.accentColor.opacity(0.16) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 6)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
             isSelected ? "\(title), выбрано" : title
+        )
+        .accessibilityValue(
+            isHighlighted ? "Выделено клавиатурой" : ""
         )
         .accessibilityHint("Выбрать эту папку")
     }

@@ -6,10 +6,13 @@ protocol ProfileCredentialCleanupRecoveryProviding: Error {
     var profileIDsRequiringCredentialCleanup: [UUID] { get }
 }
 
-
 @MainActor
 final class ProfileStore: ObservableObject {
-    private static let maximumProfilesMetadataBytes = 512 * 1_024 * 1_024
+    /// 128 MiB keeps a wide safety margin for the supported 10,000 ordinary
+    /// bounded profiles while preventing a corrupt metadata file from forcing
+    /// a half-gigabyte allocation on the main actor during startup.
+    static let maximumProfilesMetadataBytes =
+        ProfilesMetadataStorage.maximumBytes
     private static let maximumOrganizationMetadataBytes = 64 * 1_024 * 1_024
 
     @Published private(set) var profiles: [BrowserProfile] = [] {
@@ -54,9 +57,12 @@ final class ProfileStore: ObservableObject {
         self.beforeOrganizationPersist = beforeOrganizationPersist
         do {
             try paths.prepareBaseDirectories()
+            try? ProfileRecoveryRetention.prune(
+                directory: paths.profilesRecoveryDirectory
+            )
             try paths.withProfilesMetadataGuard {
                 try paths.validatePrivateFile(paths.profilesFile)
-                let load = try Self.readProfilesWithRecovery(
+                let load = try ProfilesMetadataStorage.readWithRecovery(
                     paths: paths
                 )
                 let normalized = try Self.normalizedForIsolation(
@@ -71,7 +77,7 @@ final class ProfileStore: ObservableObject {
                         ofItemAtPath: paths.profilesFile.path
                     )
                 }
-                if normalized.changed {
+                if normalized.changed || load.requiresMigration {
                     sortProfiles()
                     try persist()
                 } else {
@@ -990,11 +996,11 @@ final class ProfileStore: ObservableObject {
     }
 
     private func reloadLatestProfilesForMutation() throws {
-        let load = try Self.readProfilesWithRecovery(paths: paths)
+        let load = try ProfilesMetadataStorage.readWithRecovery(paths: paths)
         let normalized = try Self.normalizedForIsolation(load.profiles)
         profiles = normalized.profiles
         sortProfiles()
-        if normalized.changed {
+        if normalized.changed || load.requiresMigration {
             try persist()
         }
         if let warning = load.warning {
@@ -1091,63 +1097,16 @@ final class ProfileStore: ObservableObject {
         synchronizeRecoverySnapshot: Bool = false
     ) throws {
         try requireStorage()
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(profiles)
-        if synchronizeRecoverySnapshot {
-            try paths.writePrivateFile(
-                data,
-                to: paths.profilesBackupFile
-            )
-            try paths.writePrivateFile(data, to: paths.profilesFile)
-            return
-        }
-        if FileManager.default.fileExists(atPath: paths.profilesFile.path) {
-            try paths.validatePrivateFile(paths.profilesFile)
-            let previousData = try paths.readPrivateFile(
-                paths.profilesFile,
-                maximumBytes: Self.maximumProfilesMetadataBytes
-            )
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            _ = try decoder.decode(
-                [BrowserProfile].self,
-                from: previousData
-            )
-            try paths.writePrivateFile(
-                previousData,
-                to: paths.profilesBackupFile
-            )
-        } else {
-            try paths.writePrivateFile(
-                data,
-                to: paths.profilesBackupFile
-            )
-        }
-        try paths.writePrivateFile(data, to: paths.profilesFile)
+        try ProfilesMetadataStorage.persist(
+            profiles,
+            paths: paths,
+            synchronizeRecoverySnapshot: synchronizeRecoverySnapshot
+        )
     }
 
     private func ensureRecoverySnapshotIfNeeded() throws {
-        guard FileManager.default.fileExists(
-            atPath: paths.profilesFile.path
-        ) else {
-            return
-        }
-        if FileManager.default.fileExists(
-            atPath: paths.profilesBackupFile.path
-        ) {
-            try paths.validatePrivateFile(paths.profilesBackupFile)
-            return
-        }
-        try paths.validatePrivateFile(paths.profilesFile)
-        let data = try paths.readPrivateFile(
-            paths.profilesFile,
-            maximumBytes: Self.maximumProfilesMetadataBytes
-        )
-        try paths.writePrivateFile(
-            data,
-            to: paths.profilesBackupFile
+        try ProfilesMetadataStorage.ensureRecoverySnapshotIfNeeded(
+            paths: paths
         )
     }
 
@@ -1245,64 +1204,6 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func readProfiles(paths: AppPaths) throws -> [BrowserProfile] {
-        guard FileManager.default.fileExists(
-            atPath: paths.profilesFile.path
-        ) else { return [] }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(
-            [BrowserProfile].self,
-            from: paths.readPrivateFile(
-                paths.profilesFile,
-                maximumBytes: Self.maximumProfilesMetadataBytes
-            )
-        )
-    }
-
-    private static func readProfilesWithRecovery(
-        paths: AppPaths
-    ) throws -> (profiles: [BrowserProfile], warning: String?) {
-        // Every caller, including mutation reloads, must fail before reading if
-        // another process replaced metadata with a symlink or non-regular
-        // entry. The metadata guard coordinates NeAntik instances; this check
-        // also protects against unrelated local path replacement.
-        try paths.validatePrivateFile(paths.profilesFile)
-        do {
-            return (
-                try readProfiles(paths: paths),
-                nil
-            )
-        } catch is DecodingError {
-            try paths.validatePrivateFile(paths.profilesFile)
-            try paths.validatePrivateFile(paths.profilesBackupFile)
-            let backupData = try paths.readPrivateFile(
-                paths.profilesBackupFile,
-                maximumBytes: Self.maximumProfilesMetadataBytes
-            )
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let recovered = try decoder.decode(
-                [BrowserProfile].self,
-                from: backupData
-            )
-            let rejectedData = try paths.readPrivateFile(
-                paths.profilesFile,
-                maximumBytes: Self.maximumProfilesMetadataBytes
-            )
-            let rejectedURL = paths.profilesRecoveryDirectory
-                .appendingPathComponent(
-                    "profiles-rejected-\(UUID().uuidString).json"
-                )
-            try paths.writePrivateFile(rejectedData, to: rejectedURL)
-            try paths.writePrivateFile(backupData, to: paths.profilesFile)
-            return (
-                recovered,
-                "Повреждённый файл профилей сохранён в папке Recovery. NeAntik восстановил предыдущую локальную версию; данные браузеров не изменялись."
-            )
-        }
-    }
-
     private static func readOrganizationWithRecovery(
         paths: AppPaths,
         knownProfileIDs: Set<UUID>
@@ -1356,20 +1257,33 @@ final class ProfileStore: ObservableObject {
                 backupData,
                 knownProfileIDs: knownProfileIDs
             )
-            let rejectedURL = paths.profilesRecoveryDirectory
-                .appendingPathComponent(
-                    "profile-organization-rejected-\(UUID().uuidString).json"
-                )
-            try paths.writePrivateFile(currentData, to: rejectedURL)
+            let rejectedURL: URL?
+            if ProfileRecoveryRetention.shouldPreserveRejectedFile(
+                byteCount: currentData.count
+            ) {
+                let candidate = paths.profilesRecoveryDirectory
+                    .appendingPathComponent(
+                        "profile-organization-rejected-\(UUID().uuidString).json"
+                    )
+                try paths.writePrivateFile(currentData, to: candidate)
+                rejectedURL = candidate
+            } else {
+                rejectedURL = nil
+            }
             try paths.writePrivateFile(
                 backupData,
                 to: paths.profileOrganizationFile
             )
+            try? ProfileRecoveryRetention.prune(
+                directory: paths.profilesRecoveryDirectory,
+                preserving: rejectedURL
+            )
             return ProfileOrganizationLoad(
                 state: recovered.state,
                 changed: recovered.changed,
-                warning:
-                    "Повреждённый файл папок сохранён в Recovery. NeAntik восстановил предыдущую организацию; профили и данные браузеров не изменялись."
+                warning: rejectedURL == nil
+                    ? "NeAntik восстановил предыдущую организацию папок. Повреждённый файл превышал безопасный лимит Recovery и не сохранялся; профили и данные браузеров не изменялись."
+                    : "Повреждённый файл папок сохранён в Recovery. NeAntik восстановил предыдущую организацию; профили и данные браузеров не изменялись."
             )
         }
     }

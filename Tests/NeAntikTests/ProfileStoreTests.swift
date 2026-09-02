@@ -62,6 +62,206 @@ struct ProfileStoreTests {
             (directoryAttributes[.posixPermissions] as? NSNumber)?.intValue ==
                     0o700
         )
+        let document = try #require(
+            try JSONSerialization.jsonObject(
+                with: Data(contentsOf: paths.profilesFile)
+            ) as? [String: Any]
+        )
+        #expect(document["schemaVersion"] as? Int == 1)
+        #expect((document["profiles"] as? [[String: Any]])?.count == 1)
+    }
+
+    @Test
+    func legacyProfileArrayMigratesToVersionedDocument() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let profile = BrowserProfile(name: "Legacy document")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let legacyData = try encoder.encode([profile])
+        try paths.writePrivateFile(
+            legacyData,
+            to: paths.profilesFile
+        )
+
+        let store = ProfileStore(paths: paths)
+
+        #expect(store.hasTrustedMetadata)
+        #expect(store.profiles.map(\.id) == [profile.id])
+        let migrated = try #require(
+            try JSONSerialization.jsonObject(
+                with: Data(contentsOf: paths.profilesFile)
+            ) as? [String: Any]
+        )
+        #expect(migrated["schemaVersion"] as? Int == 1)
+        #expect((migrated["profiles"] as? [[String: Any]])?.count == 1)
+        let downgradeRecovery = try paths.readPrivateFile(
+            paths.profilesBackupFile,
+            maximumBytes: ProfileStore.maximumProfilesMetadataBytes
+        )
+        #expect(downgradeRecovery == legacyData)
+        let legacyDecoder = JSONDecoder()
+        legacyDecoder.dateDecodingStrategy = .iso8601
+        let legacyProfiles = try legacyDecoder.decode(
+            [BrowserProfile].self,
+            from: downgradeRecovery
+        )
+        #expect(legacyProfiles.map(\.id) == [profile.id])
+    }
+
+    @Test
+    func unknownProfileDocumentSchemaFailsClosedWithoutRewrite() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let unsupported = try JSONSerialization.data(
+            withJSONObject: [
+                "schemaVersion": 999,
+                "profiles": "must-not-be-decoded",
+            ]
+        )
+        try paths.writePrivateFile(unsupported, to: paths.profilesFile)
+
+        let store = ProfileStore(paths: paths)
+
+        #expect(!store.hasTrustedMetadata)
+        #expect(store.profiles.isEmpty)
+        #expect(try Data(contentsOf: paths.profilesFile) == unsupported)
+        #expect(store.lastError?.contains("не поддерживается") == true)
+    }
+
+    @Test
+    func oversizedProfileDocumentFailsBeforeDecode() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        try paths.createPrivateFileExclusively(
+            Data(),
+            at: paths.profilesFile
+        )
+        let handle = try FileHandle(forWritingTo: paths.profilesFile)
+        try handle.truncate(
+            atOffset: UInt64(ProfileStore.maximumProfilesMetadataBytes + 1)
+        )
+        try handle.close()
+
+        let store = ProfileStore(paths: paths)
+
+        #expect(ProfileStore.maximumProfilesMetadataBytes == 128 * 1_024 * 1_024)
+        #expect(!store.hasTrustedMetadata)
+        #expect(store.profiles.isEmpty)
+    }
+
+    @Test
+    func profileDocumentAndRecoveryUseExplicitSymmetricByteBoundaries() {
+        #expect(
+            ProfilesMetadataStorage.encodedByteCountIsAllowed(
+                ProfilesMetadataStorage.maximumBytes
+            )
+        )
+        #expect(
+            !ProfilesMetadataStorage.encodedByteCountIsAllowed(
+                ProfilesMetadataStorage.maximumBytes + 1
+            )
+        )
+        #expect(
+            ProfileRecoveryRetention.shouldPreserveRejectedFile(
+                byteCount: Int(ProfileRecoveryRetention.maximumTotalBytes)
+            )
+        )
+        #expect(
+            !ProfileRecoveryRetention.shouldPreserveRejectedFile(
+                byteCount:
+                    Int(ProfileRecoveryRetention.maximumTotalBytes) + 1
+            )
+        )
+    }
+
+    @Test
+    func recoveryRetentionDeletesOnlyManagedRegularFiles() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let now = Date(timeIntervalSince1970: 2_000_000)
+        var recentFiles: [URL] = []
+        for index in 0..<(ProfileRecoveryRetention.maximumFileCount + 2) {
+            let file = paths.profilesRecoveryDirectory.appendingPathComponent(
+                "profiles-rejected-\(UUID().uuidString).json"
+            )
+            try Data("recovery-\(index)".utf8).write(to: file)
+            try FileManager.default.setAttributes(
+                [.modificationDate: now.addingTimeInterval(-Double(index))],
+                ofItemAtPath: file.path
+            )
+            recentFiles.append(file)
+        }
+        let expired = paths.profilesRecoveryDirectory.appendingPathComponent(
+            "profile-organization-rejected-\(UUID().uuidString).json"
+        )
+        try Data("expired".utf8).write(to: expired)
+        try FileManager.default.setAttributes(
+            [
+                .modificationDate:
+                    now.addingTimeInterval(
+                        -ProfileRecoveryRetention.maximumAge - 1
+                    )
+            ],
+            ofItemAtPath: expired.path
+        )
+        let oversized = paths.profilesRecoveryDirectory.appendingPathComponent(
+            "profiles-rejected-\(UUID().uuidString).json"
+        )
+        try Data().write(to: oversized)
+        let oversizedHandle = try FileHandle(forWritingTo: oversized)
+        try oversizedHandle.truncate(
+            atOffset: UInt64(ProfileRecoveryRetention.maximumTotalBytes + 1)
+        )
+        try oversizedHandle.close()
+        try FileManager.default.setAttributes(
+            [.modificationDate: now.addingTimeInterval(60)],
+            ofItemAtPath: oversized.path
+        )
+        let unrelated = paths.profilesRecoveryDirectory
+            .appendingPathComponent("user-notes.json")
+        try Data("keep".utf8).write(to: unrelated)
+        let outside = root.appendingPathComponent("outside.json")
+        try Data("outside".utf8).write(to: outside)
+        let symlink = paths.profilesRecoveryDirectory.appendingPathComponent(
+            "profiles-rejected-\(UUID().uuidString).json"
+        )
+        try FileManager.default.createSymbolicLink(
+            at: symlink,
+            withDestinationURL: outside
+        )
+
+        try ProfileRecoveryRetention.prune(
+            directory: paths.profilesRecoveryDirectory,
+            preserving: oversized,
+            now: now
+        )
+
+        let retainedRecent = recentFiles.count {
+            FileManager.default.fileExists(atPath: $0.path)
+        }
+        #expect(retainedRecent == ProfileRecoveryRetention.maximumFileCount)
+        #expect(!FileManager.default.fileExists(atPath: expired.path))
+        #expect(!FileManager.default.fileExists(atPath: oversized.path))
+        #expect(FileManager.default.fileExists(atPath: unrelated.path))
+        #expect(
+            try FileManager.default.destinationOfSymbolicLink(
+                atPath: symlink.path
+            ) == outside.path
+        )
+        #expect(try Data(contentsOf: outside) == Data("outside".utf8))
     }
 
     @Test

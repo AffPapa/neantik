@@ -43,6 +43,7 @@ struct BrowserRuntimeInspection: Equatable, Hashable, Sendable {
 enum BrowserRuntimeInspector {
     private static let cpuTypeX86_64: UInt32 = 0x0100_0007
     private static let cpuTypeARM64: UInt32 = 0x0100_000C
+    private static let maximumInfoPlistBytes = 1 * 1_024 * 1_024
 
     static func inspect(executableURL: URL) -> BrowserRuntimeInspection {
         let frameworkURL = frameworkBinary(for: executableURL)
@@ -102,7 +103,10 @@ enum BrowserRuntimeInspector {
         let plistURL = bundleURL.appendingPathComponent(
             "Contents/Info.plist"
         )
-        guard let data = try? Data(contentsOf: plistURL),
+        guard let data = try? AppPaths.readStableRegularFile(
+                plistURL,
+                maximumBytes: maximumInfoPlistBytes
+              ),
               let object = try? PropertyListSerialization.propertyList(
                   from: data,
                   format: nil

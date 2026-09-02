@@ -4,6 +4,30 @@ import Testing
 
 struct BulkProxyImportTests {
     @Test
+    func fileReplacementRequiresConfirmationOnlyForExistingInput() {
+        #expect(
+            !BulkProxyFileReplacementPolicy.requiresConfirmation(
+                existingText: " \n "
+            )
+        )
+        #expect(
+            BulkProxyFileReplacementPolicy.requiresConfirmation(
+                existingText: "proxy.example:8080"
+            )
+        )
+    }
+
+    @Test
+    func invalidPreviewCanSelectItsExactEditorLine() throws {
+        let text = "one.example:8080\nbroken\nthree.example:8080"
+        let range = try #require(
+            BulkProxyInputSelection.range(lineNumber: 2, in: text)
+        )
+        #expect((text as NSString).substring(with: range) == "broken\n")
+        #expect(BulkProxyInputSelection.range(lineNumber: 4, in: text) == nil)
+    }
+
+    @Test
     func safeFileReaderAcceptsUTF8AndRemovesByteOrderMark() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

@@ -111,6 +111,26 @@ struct BrowserLaunchStagedPreflightTests {
         }
     }
 
+    @Test
+    func deepStorageFailureBlocksLaunchBeforeProxyAndProcessStages() {
+        do {
+            try BrowserLaunchStagedPreflight.validate(
+                input(
+                    profile: BrowserProfile(name: "Deep storage"),
+                    storageIntegrity: .failed,
+                    processState: .recoveryRequired
+                )
+            )
+            Issue.record("Expected deep storage failure")
+        } catch let failure as BrowserLaunchStagedFailure {
+            #expect(failure.stage == .storage)
+            #expect(failure.message.contains("временные данные"))
+            #expect(!failure.errorDescription!.contains("/"))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     private func input(
         profile: BrowserProfile,
         runtime: BrowserRuntimePreflight = BrowserRuntimePreflight(
@@ -120,13 +140,15 @@ struct BrowserLaunchStagedPreflightTests {
         storage: WorkspaceStorageState = .ready(
             availableCapacity: 8 * 1_024 * 1_024 * 1_024
         ),
+        storageIntegrity: WorkspaceStorageIntegrityState = .passed,
         processState: BrowserProfileProcessState = .stopped
     ) -> BrowserLaunchPreflightInput {
         BrowserLaunchPreflightInput(
             profile: profile,
             processState: processState,
             runtimePreflight: runtime,
-            storage: storage
+            storage: storage,
+            storageIntegrity: storageIntegrity
         )
     }
 }

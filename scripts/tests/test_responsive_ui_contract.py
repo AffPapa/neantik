@@ -4,6 +4,12 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "Sources" / "NeAntik" / "ContentView.swift"
+PROFILE_LIST_HEADER = (
+    ROOT / "Sources" / "NeAntik" / "ProfileListHeaderView.swift"
+)
+WORKSPACE_TOOLBAR = (
+    ROOT / "Sources" / "NeAntik" / "WorkspaceToolbarContent.swift"
+)
 PROFILE_WORKSPACE_VIEWS = (
     ROOT / "Sources" / "NeAntik" / "ProfileWorkspaceViews.swift"
 )
@@ -94,7 +100,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("WorkspaceLayout.idealInspectorWidth", text)
         self.assertIn("WorkspaceLayout.maximumInspectorWidth", text)
         self.assertIn(".navigationSplitViewStyle(.balanced)", text)
-        self.assertIn(".toolbar { workspaceToolbar }", text)
+        self.assertIn(".toolbar {", text)
+        self.assertIn("WorkspaceToolbarContent(", text)
 
     def test_workspace_sources_expose_profiles_folders_tags_and_keyboard_navigation(
         self,
@@ -128,22 +135,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
         workspace_views = PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
-        toolbar_start = text.index(
-            "private var workspaceToolbar: some ToolbarContent"
-        )
-        toolbar_end = text.index(
-            "private func recoverDeletedProfileCredentials()",
-            toolbar_start,
-        )
-        toolbar = text[toolbar_start:toolbar_end]
+        toolbar = WORKSPACE_TOOLBAR.read_text(encoding="utf-8")
 
         self.assertIn("ToolbarItem(placement: .primaryAction)", toolbar)
         self.assertIn('Label("Готовность", systemImage: "checkmark.shield")', toolbar)
-        self.assertIn("presentWorkspaceReadiness", toolbar)
-        self.assertIn("Button(action: toggleProfileInspector)", toolbar)
+        self.assertIn("onPresentReadiness", toolbar)
+        self.assertIn("Button(action: onToggleInspector)", toolbar)
         self.assertIn('systemImage: "sidebar.right"', toolbar)
         self.assertNotIn(".keyboardShortcut", toolbar)
-        self.assertIn(".disabled(selectedProfile == nil)", toolbar)
+        self.assertIn(".disabled(!hasSelectedProfile)", toolbar)
         self.assertNotIn("profileCommandSet(", toolbar)
 
         commands = PROFILE_COMMANDS.read_text(encoding="utf-8")
@@ -159,13 +159,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("var accessibilityChord: String", shortcuts)
         self.assertIn("shortcut.accessibilityChord", settings)
 
-        header_start = text.index("private func profileListHeader(")
-        search_start = text.index(
-            "private var profileSearchField", header_start
-        )
-        header = text[header_start:search_start]
+        header = PROFILE_LIST_HEADER.read_text(encoding="utf-8")
         self.assertIn('Label("Создать профиль", systemImage: "plus")', header)
-        self.assertNotIn("ViewThatFits", header)
+        self.assertIn("ViewThatFits(in: .horizontal)", header)
+        self.assertIn("commandRow.labelStyle(.iconOnly)", header)
         self.assertIn(
             ".fixedSize(horizontal: true, vertical: false)",
             header,
@@ -180,8 +177,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
             '"Дополнительные действия со списком профилей"',
             header,
         )
-        self.assertIn("profileListViewMenu", header)
-        self.assertIn("operationalFilterBar(summary)", header)
+        self.assertIn("filtersMenu", header)
+        self.assertIn("operationalFilterBar", header)
         self.assertIn("ProfileOperationalFilter.allCases", header)
         self.assertIn("summary.count(for: filter)", header)
         self.assertIn(
@@ -192,8 +189,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertNotIn("processes.runningProfileIDs.contains($0.id)", header)
         self.assertIn('"Создать из списка прокси…"', header)
         self.assertIn('"Проверить прокси (\\(bulkProxyAction.count))"', header)
-        self.assertIn("if bulkProxyTestTask == nil,", header)
-        self.assertIn("if bulkProxyTestTask != nil", header)
+        self.assertIn("if !bulkProxyTestIsRunning", header)
+        self.assertIn("if bulkProxyTestIsRunning", header)
         self.assertLess(
             header.index(
                 'Label("Действия", systemImage: "ellipsis.circle")'
@@ -231,14 +228,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("profileRouteFilter = .all", text)
         self.assertIn("profileRouteFilter != .all", text)
         self.assertIn("profileRouteFilter = decision.routeFilter", text)
-        self.assertIn('Text("Измени поиск или фильтры.")', text)
+        self.assertIn("ProfileListEmptyStatePresentation.resolve", text)
+        self.assertIn("Text(empty.message)", text)
         self.assertIn('.accessibilityLabel("Убрать фильтр \\(title)")', text)
-        self.assertIn('Image(systemName: "info.circle")', text)
-        self.assertIn('Text("Поиск по полям")', text)
-        self.assertIn("ProfileSearchSyntaxHelp.examples", text)
+        self.assertIn('Image(systemName: "info.circle")', header)
+        self.assertIn('Text("Поиск по полям")', header)
+        self.assertIn("ProfileSearchSyntaxHelp.examples", header)
 
         active_filters_start = text.index(
-            "private var activeFiltersBar", search_start
+            "private var activeFiltersBar"
         )
         active_filters_end = text.index(
             "private func filterChip", active_filters_start
@@ -671,12 +669,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('"Изменить заметку…"', detail_view)
         self.assertIn('"Добавить заметку…"', detail_view)
 
-        search_start = workspace_content.index("private var profileSearchField")
-        search_end = workspace_content.index(
-            "private var runtimeReadinessBanner",
-            search_start,
-        )
-        search = workspace_content[search_start:search_end]
+        search = PROFILE_LIST_HEADER.read_text(encoding="utf-8")
         self.assertIn('"Профиль или заметка"', search)
         self.assertIn(
             '"Поиск профилей, маршрутов, заметок, тегов и папок"',

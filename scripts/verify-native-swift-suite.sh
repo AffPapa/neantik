@@ -20,6 +20,7 @@ case "$SUITE" in
   BrowserProcessInventoryTests|\
   BrowserProcessLifecyclePresentationTests|\
   BrowserProcessManagerTests|\
+  BrowserTerminationPresentationTests|\
   BrowserRuntimeInspectorTests|\
   BrowserRuntimeLaunchTrustTests|\
   BrowserRuntimePreflightTests|\
@@ -76,7 +77,8 @@ case "$SUITE" in
   WorkspaceLayoutTests|\
   WorkspacePreferenceStoreTests|\
   WorkspaceQueryStateTests|\
-  WorkspaceReadinessTests)
+  WorkspaceReadinessTests|\
+  WorkspaceUXPresentationTests)
     ;;
   *)
     echo "Unknown Swift test suite: $SUITE" >&2

@@ -40,13 +40,13 @@ and updates remain immutable manual GitHub releases.
 
 | Surface | Owner files | Contract |
 | --- | --- | --- |
-| App shell and orchestration | `ContentView.swift`, `ContentViewState.swift`, `NeAntikApp.swift` | Compose state and commands; keep request/cache state out of the view body and do not invent domain policy there |
+| App shell and orchestration | `ContentView.swift`, `ContentViewState.swift`, `WorkspaceUXPresentation.swift`, `NeAntikApp.swift`, `NeAntikApplicationDelegate.swift` | Compose state and commands; keep request/cache state out of the view body and do not invent domain policy there; app termination remains an explicit bounded policy |
 | Keyboard and local UI preferences | `ProfileCommands.swift`, `NeAntikShortcutCatalog.swift`, `WorkspacePreferenceStore.swift`, `NeAntikSettingsView.swift` | Fixed menu-backed shortcuts, modal-safe focused commands and density-only local persistence; no global hooks or hidden destructive shortcuts |
 | Workspace rows and inspector | `ProfileWorkspaceViews.swift`, `ProfileRowPresentation.swift`, `ProfileBatchActions.swift` | List-first, 820x560 minimum, text plus symbol, contextual actions and directly visible note editing |
 | Query and organization | `ProfileListProjection.swift`, `WorkspaceQueryState.swift`, `ProfileTagEditor.swift` | Linear deterministic projection; no network or secret search |
-| Profiles and persistence | `Models.swift`, `ProfileStore.swift`, `ProfileDuplication*.swift`, `ProfileStorageMeasurement.swift`, `AppPaths.swift` | Bounded validated metadata, atomic writes, cancellable measurement and explicit duplication with fresh session/identity |
+| Profiles and persistence | `Models.swift`, `ProfileStore*.swift`, `ProfileDuplication*.swift`, `ProfileStorageMeasurement.swift`, `AppPaths.swift` | Versioned and bounded validated metadata, atomic writes, bounded Recovery, cancellable measurement and explicit duplication with fresh session/identity |
 | Profile editing | `ProfileEditorView.swift`, `ProfileNoteEditorView.swift`, `ProfileEditorProcessPolicy.swift`, `SensitiveRevealLease.swift` | Simple fields first; notes use a dedicated editor; browser/proxy edits respect running-state rules; secret reveal is temporary |
-| Process lifecycle | `BrowserProcessManager.swift`, `BrowserProcessManager+StopAll.swift`, `BrowserProcessInventory.swift`, `BrowserProcessLifecyclePresentation.swift`, `RunningProfilesStrip.swift` | Exact ownership, fail-closed reconciliation, ordinary-only group stop, explicit Closing and confirmed Force Stop |
+| Process lifecycle | `BrowserProcessManager*.swift`, `BrowserTerminationPresentation.swift`, `BrowserProcessInventory.swift`, `BrowserProcessLifecyclePresentation.swift`, `RunningProfilesStrip.swift` | Exact ownership, fail-closed reconciliation, ordinary-only group stop and Safe Quit, privacy-safe exit classification, explicit Closing and confirmed Force Stop |
 | Runtime and launch | `BrowserLaunchBuilder.swift`, `BrowserLaunchStagedPreflight.swift`, `BrowserRuntime*.swift` | Embedded signed ARM64 runtime, fresh pre-launch trust comparison, staged fail-closed launch, no credential CLI arguments |
 | Proxy | `ProxyTester.swift`, `ProxyReuseAssessment.swift`, `ProxyHealth*.swift`, `BulkProxyImport.swift`, `ProxyImportParser.swift` | Local parsing and endpoint-reuse awareness, bounded concurrency, cancellable stdin and fresh preparation before proxied launch |
 | Fingerprint evidence | `FingerprintAudit*.swift`, `DevToolsSecurity.swift`, `FingerprintEvidence*.swift`, `SecureEnclaveFingerprintEvidenceSigner.swift` | Release-only strict evidence is separate from ordinary diagnostics; DevTools files/endpoints are bounded and loopback-only |
@@ -72,6 +72,20 @@ and updates remain immutable manual GitHub releases.
   light/dark render gates.
 
 ### Delivered in the current development cycle
+
+- converts three independent reviews of thirty current products into exactly
+  one hundred ranked recommendations and implements the twenty-five selected
+  local, dependency-free changes while explicitly deferring cloud, RPA,
+  remote-control, secret-export and marketplace scope;
+- versions the profile metadata envelope with legacy decoding, bounds Recovery
+  by count/age/bytes, validates Keychain credentials at the boundary and uses
+  stable bounded descriptor reads for process, proxy-health and runtime files;
+- adds a non-destructive deep storage readiness check, explicit Safe Quit,
+  privacy-safe exit classification and deterministic top-path/size-delta
+  evidence without changing Chromium or the public release;
+- adds cause-specific empty states, visible keyboard folder selection, exact
+  bulk-import error navigation, responsive consistent profile actions,
+  semantic notices, visible result/proxy progress and VoiceOver actions;
 
 - makes temporary password reveal expire automatically and hides it when the
   app loses focus; clears clipboard data only while NeAntik still owns the
@@ -186,6 +200,8 @@ and updates remain immutable manual GitHub releases.
   [Competitor UX research](COMPETITOR_UX_RESEARCH_2026-09-01.md).
 - Current 29-product/100-candidate implementation matrix with 25 selected
   changes: [Antidetect recommendation matrix](ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-02.md).
+- Current independent 30-product/100-recommendation validation with 25 selected
+  lean changes: [Antidetect recommendation matrix v3](ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-02_V3.md).
 - Historical 75-candidate design record:
   [NeAntik v4 workspace](NEANTIK_V4_WORKSPACE.md).
 - Historical 100-point release/readiness plan:

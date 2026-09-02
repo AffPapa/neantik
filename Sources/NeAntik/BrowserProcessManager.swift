@@ -3,129 +3,6 @@ import Combine
 import Darwin
 import Foundation
 
-enum BrowserProcessLockPhase: String, Codable, Equatable, Sendable {
-    case starting
-    case running
-}
-
-struct BrowserProcessLock: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 2
-
-    let schemaVersion: Int
-    let ownerToken: UUID?
-    let managerPID: pid_t?
-    let phase: BrowserProcessLockPhase
-    let pid: pid_t
-    let executablePath: String
-    let browserDataPath: String
-    let createdAt: Date
-
-    init(
-        pid: pid_t,
-        executablePath: String,
-        browserDataPath: String,
-        createdAt: Date,
-        schemaVersion: Int = 1,
-        ownerToken: UUID? = nil,
-        managerPID: pid_t? = nil,
-        phase: BrowserProcessLockPhase = .running
-    ) {
-        self.schemaVersion = schemaVersion
-        self.ownerToken = ownerToken
-        self.managerPID = managerPID
-        self.phase = phase
-        self.pid = pid
-        self.executablePath = executablePath
-        self.browserDataPath = browserDataPath
-        self.createdAt = createdAt
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case schemaVersion
-        case ownerToken
-        case managerPID
-        case phase
-        case pid
-        case executablePath
-        case browserDataPath
-        case createdAt
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        schemaVersion =
-            try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
-        ownerToken = try container.decodeIfPresent(
-            UUID.self,
-            forKey: .ownerToken
-        )
-        managerPID = try container.decodeIfPresent(
-            pid_t.self,
-            forKey: .managerPID
-        )
-        phase =
-            try container.decodeIfPresent(
-                BrowserProcessLockPhase.self,
-                forKey: .phase
-            ) ?? .running
-        pid = try container.decode(pid_t.self, forKey: .pid)
-        executablePath = try container.decode(
-            String.self,
-            forKey: .executablePath
-        )
-        browserDataPath = try container.decode(
-            String.self,
-            forKey: .browserDataPath
-        )
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
-    }
-}
-
-enum BrowserProcessIdentityInspection: Equatable, Sendable {
-    case expected
-    case unrelated
-    case unknown
-}
-
-enum BrowserDataProcessInspection: Equatable, Sendable {
-    case found
-    case absent
-    case unknown
-}
-
-enum BrowserProfileDeletionBlockReason: Equatable, Sendable {
-    case managedProcess
-    case leasePresent
-    case unsafeLease
-    case browserDataInUse
-    case inspectionUnavailable
-}
-
-struct BrowserProfileDeletionBlockedError: LocalizedError, Equatable {
-    let reason: BrowserProfileDeletionBlockReason
-
-    var errorDescription: String? {
-        switch reason {
-        case .managedProcess:
-            "Нельзя удалить профиль, пока его браузер запущен."
-        case .leasePresent:
-            "Профиль используется другим экземпляром NeAntik. Закрой браузер и повтори удаление."
-        case .unsafeLease:
-            "Файл состояния запуска не прошёл проверку безопасности. Данные профиля не изменены."
-        case .browserDataInUse:
-            "Данные профиля сейчас используются браузером. Закрой его окно и повтори удаление."
-        case .inspectionUnavailable:
-            "NeAntik не смог доказать, что данные профиля свободны. Удаление безопасно отменено."
-        }
-    }
-}
-
-struct BrowserProfileDeletedError: LocalizedError, Equatable {
-    var errorDescription: String? {
-        "Этот профиль уже удалён другим экземпляром NeAntik. Обнови список профилей."
-    }
-}
-
 private struct BrowserProfileLeaseUnavailableError: LocalizedError {
     let inspection: BrowserDataProcessInspection
 
@@ -139,100 +16,6 @@ private struct BrowserProfileLeaseUnavailableError: LocalizedError {
             nil
         }
     }
-}
-
-enum BrowserProfileProcessState: Equatable, Sendable {
-    case stopped
-    case checking
-    case managed
-    case closing
-    case forceStopAvailable
-    case externalVerified
-    case externalManualOnly
-    case externalUnverified
-    case recoveryRequired
-
-    var isRunning: Bool {
-        self != .stopped
-    }
-
-    /// True only when NeAntik has positive evidence of a live browser.
-    /// Transitional and recovery states remain blocked for safety, but must
-    /// not be presented to the user as running processes.
-    var isConfirmedRunning: Bool {
-        switch self {
-        case .managed, .closing, .forceStopAvailable,
-             .externalVerified, .externalManualOnly:
-            true
-        case .stopped, .checking, .externalUnverified, .recoveryRequired:
-            false
-        }
-    }
-
-    var canRequestStop: Bool {
-        self != .checking &&
-            self != .closing &&
-            self != .forceStopAvailable &&
-            self != .externalManualOnly &&
-            self != .externalUnverified &&
-            self != .recoveryRequired
-    }
-
-    var title: String {
-        switch self {
-        case .stopped:
-            "Остановлен"
-        case .checking:
-            "Подготовка…"
-        case .managed:
-            "Запущен"
-        case .closing:
-            "Закрывается…"
-        case .forceStopAvailable:
-            "Не отвечает"
-        case .externalVerified:
-            "Запущен другим NeAntik"
-        case .externalManualOnly:
-            "Запущен вручную"
-        case .externalUnverified:
-            "Требуется закрыть вручную"
-        case .recoveryRequired:
-            "Профиль заблокирован для защиты данных"
-        }
-    }
-
-    var guidance: String? {
-        switch self {
-        case .stopped, .managed:
-            nil
-        case .closing:
-            "Chromium завершает работу. Профиль остаётся заблокированным до выхода процесса."
-        case .forceStopAvailable:
-            "Chromium не завершился вовремя. Принудительная остановка доступна отдельно и может повредить незаписанную сессию."
-        case .checking:
-            "NeAntik подготавливает данные профиля. Это займёт несколько секунд."
-        case .externalVerified:
-            "Профиль запущен другим экземпляром NeAntik. Его можно безопасно остановить здесь."
-        case .externalManualOnly:
-            "Профиль запущен другим экземпляром NeAntik. Закрой окно браузера вручную; профиль разблокируется автоматически."
-        case .externalUnverified:
-            "NeAntik видит работающий процесс, но не может безопасно подтвердить его. Закрой окно браузера вручную; профиль разблокируется автоматически."
-        case .recoveryRequired:
-            "Файл состояния запуска повреждён или недоступен. Закрой окно браузера вручную; NeAntik разблокирует профиль только после безопасной проверки."
-        }
-    }
-}
-
-enum BrowserStopPhase: Equatable, Sendable {
-    case idle
-    case closing(requestedAt: Date)
-    case forceStopAvailable(requestedAt: Date)
-    case completed(completedAt: Date, wasForced: Bool)
-}
-
-enum BrowserLaunchPurpose: Equatable, Sendable {
-    case normal
-    case fingerprintAudit(httpLoopbackPort: UInt16)
 }
 
 /// Opaque, single-use reservation for the diagnostic browser path. It binds
@@ -536,6 +319,7 @@ private struct QueuedBrowserReconcile {
 @MainActor
 final class BrowserProcessManager: ObservableObject {
     static let maximumConcurrentProfiles = 12
+    nonisolated private static let maximumProcessLockBytes = 64 * 1_024
 
     @Published private(set) var runningProfileIDs = Set<UUID>()
     /// Monotonic UI invalidation token for process states that can change
@@ -545,6 +329,7 @@ final class BrowserProcessManager: ObservableObject {
     @Published var lastError: String?
     @Published private(set) var stopPhases: [UUID: BrowserStopPhase] = [:]
     @Published private(set) var recoveredInterruptedManagerSession = false
+    @Published private(set) var lastBrowserExit: BrowserExitEvent?
 
     private let paths: AppPaths
     private let processIdentityInspector:
@@ -567,6 +352,7 @@ final class BrowserProcessManager: ObservableObject {
     private var managedStopTasks: [UUID: Task<Void, Never>] = [:]
     private var stopCompletionTasks: [UUID: Task<Void, Never>] = [:]
     private var forcedStopProfileIDs = Set<UUID>()
+    private var startupFailureProfileIDs = Set<UUID>()
     private var managedStartedAt: [UUID: Date] = [:]
     private var managedLeaseOwners: [UUID: UUID] = [:]
     private var managedBrowserDataDirectories: [UUID: URL] = [:]
@@ -788,6 +574,57 @@ final class BrowserProcessManager: ObservableObject {
             lastError =
                 "Не удалось сохранить отметку штатного завершения менеджера. Данные профилей не изменены."
         }
+    }
+
+    func managerTerminationSnapshot() ->
+        BrowserManagerTerminationSnapshot
+    {
+        let managedProfileIDs = processes.compactMap { profileID, process in
+            process.isRunning ? profileID : nil
+        }.sorted { $0.uuidString < $1.uuidString }
+        let ordinaryStopProfileIDs = managedProfileIDs.filter {
+            stopPhase(for: $0) == .idle
+        }
+        return BrowserManagerTerminationSnapshot(
+            managedProfileIDs: managedProfileIDs,
+            ordinaryStopProfileIDs: ordinaryStopProfileIDs
+        )
+    }
+
+    @discardableResult
+    func requestOrdinaryStopsForManagerTermination() ->
+        BrowserManagerTerminationSnapshot
+    {
+        let snapshot = managerTerminationSnapshot()
+        for profileID in snapshot.ordinaryStopProfileIDs {
+            stop(profileID: profileID)
+        }
+        return managerTerminationSnapshot()
+    }
+
+    func waitForManagedBrowsersToExit(
+        timeoutNanoseconds: UInt64,
+        pollIntervalNanoseconds: UInt64 = 100_000_000
+    ) async -> Bool {
+        guard managerTerminationSnapshot().requiresDecision else {
+            return true
+        }
+        let interval = max(1, pollIntervalNanoseconds)
+        var waited: UInt64 = 0
+        while waited < timeoutNanoseconds {
+            let remaining = timeoutNanoseconds - waited
+            let sleepDuration = min(interval, remaining)
+            do {
+                try await Task.sleep(nanoseconds: sleepDuration)
+            } catch {
+                return false
+            }
+            if !managerTerminationSnapshot().requiresDecision {
+                return true
+            }
+            waited += sleepDuration
+        }
+        return !managerTerminationSnapshot().requiresDecision
     }
 
     func reserveFingerprintAuditLaunch(
@@ -1071,7 +908,10 @@ final class BrowserProcessManager: ObservableObject {
                     identity.map { .present($0) } ?? .missing
                 guard identity != nil,
                       try paths.privateFileEntryKind(lockURL) == .regular,
-                      let data = try? Data(contentsOf: lockURL),
+                      let data = try? paths.readPrivateFile(
+                        lockURL,
+                        maximumBytes: maximumProcessLockBytes
+                      ),
                       let lock = try? decodeLock(data),
                       lock.phase == .starting,
                       let managerPID = lock.managerPID,
@@ -1626,10 +1466,6 @@ final class BrowserProcessManager: ObservableObject {
         process.standardError = FileHandle.nullDevice
         process.terminationHandler = { [weak self] process in
             Task { @MainActor in
-                try? self?.appendDiagnostic(
-                    "browser_exit reason=\(process.terminationReason.rawValue) status=\(process.terminationStatus)",
-                    to: logURL
-                )
                 self?.handleTermination(profileID: profile.id, process: process)
             }
         }
@@ -1718,10 +1554,8 @@ final class BrowserProcessManager: ObservableObject {
                 at: lockURL
             )
         } catch {
-            let diagnosticDetail = error.localizedDescription
-                .replacingOccurrences(of: "\n", with: " ")
-                .prefix(512)
             if process.isRunning {
+                startupFailureProfileIDs.insert(profile.id)
                 managedProcessTerminator(process)
             }
             if process.isRunning {
@@ -1741,8 +1575,11 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken
             )
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
+            startupFailureProfileIDs.remove(profile.id)
+            recordBrowserExit(.startupFailure, at: now())
             try? appendDiagnostic(
-                "browser_launch_failed reason=\(diagnosticDetail)",
+                "browser_exit classification=" +
+                    BrowserExitClassification.startupFailure.rawValue,
                 to: logURL
             )
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
@@ -1928,6 +1765,21 @@ final class BrowserProcessManager: ObservableObject {
         }
         let priorStopPhase = stopPhase(for: profileID)
         let wasForced = forcedStopProfileIDs.remove(profileID) != nil
+        let startupFailed = startupFailureProfileIDs.remove(profileID) != nil
+        if let process {
+            let classification = BrowserExitClassifier.classify(
+                startupFailed: startupFailed,
+                ordinaryStopRequested: priorStopPhase != .idle,
+                wasForceStopped: wasForced,
+                terminationReason: process.terminationReason,
+                terminationStatus: process.terminationStatus
+            )
+            recordBrowserExit(classification, at: now())
+            try? appendDiagnostic(
+                "browser_exit classification=\(classification.rawValue)",
+                to: paths.logFile(for: profileID)
+            )
+        }
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
         )
@@ -2003,6 +1855,16 @@ final class BrowserProcessManager: ObservableObject {
         }
     }
 
+    private func recordBrowserExit(
+        _ classification: BrowserExitClassification,
+        at date: Date
+    ) {
+        lastBrowserExit = BrowserExitEvent(
+            classification: classification,
+            occurredAt: date
+        )
+    }
+
     private func setStopPhase(
         _ phase: BrowserStopPhase,
         profileID: UUID
@@ -2042,7 +1904,10 @@ final class BrowserProcessManager: ObservableObject {
         let lockURL = paths.lockFile(for: profileID)
         return try? paths.withProcessLockGuard(for: profileID) {
             guard try paths.privateFileEntryKind(lockURL) == .regular,
-                  let data = try? Data(contentsOf: lockURL),
+                  let data = try? paths.readPrivateFile(
+                    lockURL,
+                    maximumBytes: Self.maximumProcessLockBytes
+                  ),
                   let current = try? Self.decodeLock(data)
             else {
                 return nil
@@ -2530,7 +2395,10 @@ final class BrowserProcessManager: ObservableObject {
         at lockURL: URL
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
-            let currentData = try Data(contentsOf: lockURL)
+            let currentData = try paths.readPrivateFile(
+                lockURL,
+                maximumBytes: Self.maximumProcessLockBytes
+            )
             let current = try Self.decodeLock(currentData)
             guard current.ownerToken == ownerToken else {
                 throw POSIXError(.EBUSY)
@@ -2546,7 +2414,10 @@ final class BrowserProcessManager: ObservableObject {
         let lockURL = paths.lockFile(for: profileID)
         do {
             try paths.withProcessLockGuard(for: profileID) {
-                guard let data = try? Data(contentsOf: lockURL),
+                guard let data = try? paths.readPrivateFile(
+                    lockURL,
+                    maximumBytes: Self.maximumProcessLockBytes
+                ),
                       let lock = try? Self.decodeLock(data),
                       lock.ownerToken == ownerToken
                 else {
@@ -2569,7 +2440,10 @@ final class BrowserProcessManager: ObservableObject {
     ) {
         do {
             try paths.withProcessLockGuard(for: profileID) {
-                guard let data = try? Data(contentsOf: lockURL),
+                guard let data = try? paths.readPrivateFile(
+                    lockURL,
+                    maximumBytes: Self.maximumProcessLockBytes
+                ),
                       let current = try? Self.decodeLock(data),
                       current == expected
                 else {
@@ -2614,7 +2488,10 @@ final class BrowserProcessManager: ObservableObject {
         snapshot: Data
     ) -> Bool {
         guard (try? paths.privateFileEntryKind(lockURL)) == .regular,
-              let current = try? Data(contentsOf: lockURL),
+              let current = try? paths.readPrivateFile(
+                lockURL,
+                maximumBytes: Self.maximumProcessLockBytes
+              ),
               current == snapshot
         else {
             return false
@@ -2651,7 +2528,12 @@ final class BrowserProcessManager: ObservableObject {
             return .unsafe
         case .regular:
             do {
-                return .data(try Data(contentsOf: lockURL))
+                return .data(
+                    try paths.readPrivateFile(
+                        lockURL,
+                        maximumBytes: Self.maximumProcessLockBytes
+                    )
+                )
             } catch {
                 return .unreadable
             }

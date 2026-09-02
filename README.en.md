@@ -59,6 +59,19 @@ includes SHA-pinned CodeQL for Swift and Python. Until a new ZIP and DMG are
 published and re-downloaded successfully, `0.3.23 (26)` remains the public
 download.
 
+The latest source-only `0.3.24 (27)` pass also turns research across thirty
+profile browsers into an [exact 100-item recommendation matrix](docs/ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-02_V3.md)
+and implements the twenty-five highest-value bounded changes without new
+dependencies. Profile metadata is schema-versioned, Recovery is bounded, and
+private metadata reads use stricter descriptor-first limits. Safe Quit can
+stop ordinarily, leave browsers running, or cancel without automatic force
+stop. Cause-specific empty states, exact bulk-import error navigation, visible
+folder keyboard selection, result counts, proxy-test progress, consistent
+row/inspector actions, VoiceOver actions, and narrow responsive controls make
+the operator path clearer. This remains a source preview: the public ZIP, DMG,
+website, and download links stay on `0.3.23 (26)` until a separate complete
+Direct Distribution cycle.
+
 The capabilities below are included in the published, signed, and notarized
 `0.3.23 (26)` release.
 

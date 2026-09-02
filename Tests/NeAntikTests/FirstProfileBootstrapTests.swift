@@ -3,6 +3,20 @@ import Testing
 
 struct FirstProfileBootstrapTests {
     @Test
+    func delayedRuntimeCheckOffersExplicitRetry() {
+        let presentation = FirstProfileOnboardingPresentation.resolve(
+            runtimeAvailability: .resolving,
+            isCreatingProfile: false,
+            resolutionIsDelayed: true
+        )
+
+        #expect(presentation.primaryAction == .retryRuntimeCheck)
+        #expect(presentation.primaryIsEnabled)
+        #expect(presentation.statusMessage?.contains("больше обычного") == true)
+        #expect(presentation.terminalAccessibilityAnnouncement != nil)
+    }
+
+    @Test
     func emptyWorkspaceCreatesPermanentDirectProfileDefaults() throws {
         let profile = try #require(
             FirstProfileBootstrap.makeProfile(existingProfiles: [])
