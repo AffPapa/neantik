@@ -162,6 +162,48 @@ struct BrowserRuntimeInspectorTests {
     }
 
     @Test
+    func symlinkedRuntimeInfoPlistIsNotRead() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let contents = root.appendingPathComponent(
+            "Chromium.app/Contents",
+            isDirectory: true
+        )
+        let macOS = contents.appendingPathComponent("MacOS", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: macOS,
+            withIntermediateDirectories: true
+        )
+        let executable = macOS.appendingPathComponent("Chromium")
+        try Data([
+            0xCF, 0xFA, 0xED, 0xFE,
+            0x0C, 0x00, 0x00, 0x01,
+        ]).write(to: executable)
+        let outside = root.appendingPathComponent("outside.plist")
+        let plistData = try PropertyListSerialization.data(
+            fromPropertyList: [
+                "CFBundleShortVersionString": "must-not-be-read"
+            ],
+            format: .xml,
+            options: 0
+        )
+        try plistData.write(to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: contents.appendingPathComponent("Info.plist"),
+            withDestinationURL: outside
+        )
+
+        let inspection = BrowserRuntimeInspector.inspectForStartup(
+            executableURL: executable
+        )
+
+        #expect(inspection.version == nil)
+        #expect(inspection.architectures == ["arm64"])
+        #expect(try Data(contentsOf: outside) == plistData)
+    }
+
+    @Test
     func rejectsAmbiguousVersionedFrameworkBinary() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

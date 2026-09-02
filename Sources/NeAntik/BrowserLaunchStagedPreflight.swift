@@ -33,6 +33,21 @@ struct BrowserLaunchPreflightInput: Equatable, Sendable {
     let processState: BrowserProfileProcessState
     let runtimePreflight: BrowserRuntimePreflight
     let storage: WorkspaceStorageState
+    let storageIntegrity: WorkspaceStorageIntegrityState
+
+    init(
+        profile: BrowserProfile,
+        processState: BrowserProfileProcessState,
+        runtimePreflight: BrowserRuntimePreflight,
+        storage: WorkspaceStorageState,
+        storageIntegrity: WorkspaceStorageIntegrityState = .passed
+    ) {
+        self.profile = profile
+        self.processState = processState
+        self.runtimePreflight = runtimePreflight
+        self.storage = storage
+        self.storageIntegrity = storageIntegrity
+    }
 }
 
 /// Pure, ordered preflight for an ordinary user launch.
@@ -81,6 +96,23 @@ enum BrowserLaunchStagedPreflight {
                     recovery: "Освободи место и повтори запуск."
                 )
             }
+        }
+
+        switch input.storageIntegrity {
+        case .checking:
+            throw BrowserLaunchStagedFailure(
+                stage: .storage,
+                message: "глубокая проверка записи ещё выполняется.",
+                recovery: "Дождись завершения и повтори запуск."
+            )
+        case .failed:
+            throw BrowserLaunchStagedFailure(
+                stage: .storage,
+                message: "не удалось безопасно записать и проверить временные данные.",
+                recovery: "Проверь диск и разрешения папки данных, затем повтори запуск."
+            )
+        case .passed:
+            break
         }
 
         if input.profile.proxy?.isValid == false {

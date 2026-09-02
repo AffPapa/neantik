@@ -659,7 +659,14 @@ struct ResponsiveLayoutRenderTests {
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
                     clipboardNotice: nil,
                     onCopyProxyUsername: {},
-                    onCopyProxyPassword: {}
+                    onCopyProxyPassword: {},
+                    launchAction: BrowserLaunchActionPresentation.resolve(
+                        processState: .stopped,
+                        isArchived: false,
+                        runtimeAvailability: .ready,
+                        isProxyTesting: false,
+                        isLaunchPreparation: false
+                    )
                 ),
                 name: name,
                 size: size
@@ -697,7 +704,14 @@ struct ResponsiveLayoutRenderTests {
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
                     clipboardNotice: nil,
                     onCopyProxyUsername: {},
-                    onCopyProxyPassword: {}
+                    onCopyProxyPassword: {},
+                    launchAction: BrowserLaunchActionPresentation.resolve(
+                        processState: .stopped,
+                        isArchived: false,
+                        runtimeAvailability: .ready,
+                        isProxyTesting: false,
+                        isLaunchPreparation: false
+                    )
                 ),
                 name: "profile-detail-note-compact-\(appearanceName)",
                 size: CGSize(width: 360, height: 560),

@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct ProfileOrganizationPersistenceTests {
     @Test
-    func missingSidecarKeepsLegacyProfilesByteCompatible() throws {
+    func missingSidecarKeepsVersionedProfilesByteCompatible() throws {
         let fixture = try OrganizationFixture()
         let profile = BrowserProfile(name: "Legacy")
         try fixture.store.upsert(profile)
@@ -33,8 +33,12 @@ struct ProfileOrganizationPersistenceTests {
                 fixture.paths.profileOrganizationFile
             ) == .missing
         )
-        let json = try JSONSerialization.jsonObject(with: profilesData)
-        #expect(json is [[String: Any]])
+        let json = try #require(
+            JSONSerialization.jsonObject(with: profilesData)
+                as? [String: Any]
+        )
+        #expect(json["schemaVersion"] as? Int == 1)
+        #expect((json["profiles"] as? [[String: Any]])?.count == 1)
     }
 
     @Test

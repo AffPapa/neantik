@@ -16,7 +16,7 @@ struct WorkspaceReadinessTests {
 
         #expect(snapshot.level == .ready)
         #expect(snapshot.title == "NeAntik готов")
-        #expect(snapshot.items.count == 5)
+        #expect(snapshot.items.count == 6)
         #expect(snapshot.items.allSatisfy { $0.level == .ready })
     }
 
@@ -133,6 +133,52 @@ struct WorkspaceReadinessTests {
             Issue.record("Expected writable temporary root")
             return
         }
+        #expect(inspection.storageIntegrity == .passed)
+        let residue = try FileManager.default.contentsOfDirectory(
+            atPath: root.path
+        ).filter { $0.hasPrefix(".neantik-storage-check-") }
+        #expect(residue.isEmpty)
+    }
+
+    @Test func failedDeepStorageCheckIsAnExplicitBlockingFinding() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "neantik-readiness-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let system = WorkspaceReadinessSystemInspector.inspect(
+            application: application(),
+            dataRootURL: root,
+            deepStorageCheck: { _ in false }
+        )
+        let snapshot = WorkspaceReadinessSnapshot.resolve(
+            WorkspaceReadinessInput(
+                system: system,
+                runtimeAvailability: .ready,
+                runtimeVersion: "152.0.7977.64",
+                runtimeArchitectures: ["arm64"],
+                profileCount: 0,
+                runningCount: 0,
+                processAttentionCount: 0,
+                directRouteCount: 0,
+                proxiedRouteCount: 0,
+                proxyAttentionCount: 0
+            )
+        )
+
+        #expect(system.storageIntegrity == .failed)
+        #expect(snapshot.level == .blocked)
+        #expect(
+            snapshot.items.first { $0.id == .storageIntegrity }?.level ==
+                .blocked
+        )
+        #expect(snapshot.diagnosticText.contains("storageIntegrity=failed"))
     }
 
     @Test func accessibilitySummaryIncludesTextualState() {

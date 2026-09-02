@@ -174,6 +174,28 @@ struct ProxyHealthTests {
     }
 
     @Test
+    func storeRejectsHardLinkedFileWithoutReadingSharedInode() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "neantik-proxy-health-hardlink-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let target = root.appendingPathComponent("target.json")
+        try Data("{}".utf8).write(to: target)
+        let linked = root.appendingPathComponent("proxy-health.json")
+        try FileManager.default.linkItem(at: target, to: linked)
+
+        #expect(throws: ProxyHealthStoreError.unsafePath) {
+            _ = try ProxyHealthStore(fileURL: linked)
+        }
+        #expect(try Data(contentsOf: target) == Data("{}".utf8))
+    }
+
+    @Test
     func encodedCapacityFailurePreservesPreviousReadableFile() async throws {
         let root = Self.temporaryRoot("encoded-capacity")
         defer { try? FileManager.default.removeItem(at: root) }

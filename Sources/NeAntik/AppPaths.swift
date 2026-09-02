@@ -333,6 +333,21 @@ struct AppPaths: Sendable {
         _ url: URL,
         maximumBytes: Int
     ) throws -> Data {
+        try Self.readStableRegularFile(
+            url,
+            maximumBytes: maximumBytes
+        )
+    }
+
+    /// Reads one bounded regular file through the descriptor that was opened.
+    ///
+    /// This static form is also used for private sidecars that are constructed
+    /// from an explicit URL instead of an `AppPaths` root (for example proxy
+    /// health and bundled runtime metadata).
+    static func readStableRegularFile(
+        _ url: URL,
+        maximumBytes: Int
+    ) throws -> Data {
         guard maximumBytes >= 0 else {
             throw POSIXError(.EINVAL)
         }

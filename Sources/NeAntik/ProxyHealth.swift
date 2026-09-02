@@ -453,7 +453,15 @@ actor ProxyHealthStore {
         else {
             throw ProxyHealthStoreError.unsafePath
         }
-        let data = try Data(contentsOf: fileURL, options: .mappedIfSafe)
+        let data: Data
+        do {
+            data = try AppPaths.readStableRegularFile(
+                fileURL,
+                maximumBytes: Self.maximumFileBytes
+            )
+        } catch {
+            throw ProxyHealthStoreError.unsafePath
+        }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let header = try decoder.decode(

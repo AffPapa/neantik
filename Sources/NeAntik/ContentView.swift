@@ -1,15 +1,6 @@
 import AppKit
 import SwiftUI
 
-enum ProfileSearchSyntaxHelp {
-    static let examples = [
-        "тег:tiktok",
-        "папка:\"Paid Social\"",
-        "прокси:есть",
-        "статус:закреплен",
-    ]
-}
-
 struct ContentView: View {
     @Environment(\.openSettings) private var openSettings
 
@@ -97,6 +88,9 @@ struct ContentView: View {
     @State private var profileListResolver = ProfileListStateResolver()
     @State private var workspaceAnnouncementGate =
         AccessibilityAnnouncementGate<String>()
+    @State private var filteredCountAnnouncementTask: Task<Void, Never>?
+    @State private var listFeedbackNotice: UserNotice?
+    @State private var listFeedbackTask: Task<Void, Never>?
 
     init(
         store: ProfileStore,
@@ -440,7 +434,15 @@ struct ContentView: View {
             minWidth: WorkspaceLayout.minimumWindowWidth,
             minHeight: WorkspaceLayout.minimumWindowHeight
         )
-        .toolbar { workspaceToolbar }
+        .toolbar {
+            WorkspaceToolbarContent(
+                columnVisibility: $columnVisibility,
+                showsProfileInspector: showsProfileInspector,
+                hasSelectedProfile: selectedProfile != nil,
+                onPresentReadiness: presentWorkspaceReadiness,
+                onToggleInspector: toggleProfileInspector
+            )
+        }
         .focusedSceneValue(
             \.neAntikProfileCommands,
             selectedProfileCommandSet
@@ -774,7 +776,7 @@ struct ContentView: View {
             presentReleaseFingerprintAuditIfNeeded()
         }
         .onChange(of: profileSearchText) { _, _ in
-            batchSelectedProfileIDs.removeAll()
+            clearBatchSelectionForFilterChange()
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: selection) { _, selectedProfileID in
@@ -783,15 +785,15 @@ struct ContentView: View {
             }
         }
         .onChange(of: selectedProfileTag) { _, _ in
-            batchSelectedProfileIDs.removeAll()
+            clearBatchSelectionForFilterChange()
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: profileListScope) { _, _ in
-            batchSelectedProfileIDs.removeAll()
+            clearBatchSelectionForFilterChange()
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: profileOperationalFilter) { _, _ in
-            batchSelectedProfileIDs.removeAll()
+            clearBatchSelectionForFilterChange()
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: processes.runningProfileIDs) { _, _ in
@@ -804,7 +806,7 @@ struct ContentView: View {
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: selectedFolderFilter) { _, _ in
-            batchSelectedProfileIDs.removeAll()
+            clearBatchSelectionForFilterChange()
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: store.profileListRevision) { _, _ in
@@ -984,36 +986,6 @@ struct ContentView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var workspaceToolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Button(action: presentWorkspaceReadiness) {
-                Label("Готовность", systemImage: "checkmark.shield")
-            }
-            .help("Проверить приложение, движок, данные и процессы")
-            .accessibilityLabel("Открыть центр готовности NeAntik")
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Button(action: toggleProfileInspector) {
-                Label(
-                    showsProfileInspector ? "Скрыть сведения" : "Сведения",
-                    systemImage: "sidebar.right"
-                )
-            }
-            .disabled(selectedProfile == nil)
-            .help(
-                showsProfileInspector
-                    ? "Скрыть сведения о профиле"
-                    : "Показать сведения о профиле"
-            )
-            .accessibilityLabel(
-                showsProfileInspector
-                    ? "Скрыть сведения о выбранном профиле"
-                    : "Показать сведения о выбранном профиле"
-            )
-        }
-    }
-
     private func recoverDeletedProfileCredentials() async {
         let summary = await credentialCleanup.runOnce(
             metadataIsTrusted: store.hasTrustedMetadata,
@@ -1141,7 +1113,7 @@ struct ContentView: View {
     }
 
     private func resetProfileFilters() {
-        batchSelectedProfileIDs.removeAll()
+        clearBatchSelectionForFilterChange()
         profileSearchText = ""
         profileRouteFilter = .all
         profileOperationalFilter = .all
@@ -1164,7 +1136,7 @@ struct ContentView: View {
         _ query: WorkspaceQueryState,
         normalize: Bool = true
     ) {
-        batchSelectedProfileIDs.removeAll()
+        clearBatchSelectionForFilterChange()
         profileListScope = query.scope
         selectedFolderFilter = query.folderFilter
         selectedProfileTag = query.tag
@@ -1683,16 +1655,23 @@ struct ContentView: View {
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if listState.visibleProfiles.isEmpty {
+                    let empty = ProfileListEmptyStatePresentation.resolve(
+                        searchText: profileSearchText,
+                        routeFilter: profileRouteFilter,
+                        scope: profileListScope,
+                        folderFilter: selectedFolderFilter,
+                        hasTagFilter: selectedProfileTag != nil
+                    )
                     ContentUnavailableView {
                         Label(
-                            "Ничего не найдено",
-                            systemImage: "magnifyingglass"
+                            empty.title,
+                            systemImage: empty.systemImage
                         )
                     } description: {
-                        Text("Измени поиск или фильтры.")
+                        Text(empty.message)
                     } actions: {
-                        Button("Сбросить все фильтры") {
-                            resetProfileFilters()
+                        Button(empty.primaryTitle) {
+                            performEmptyStateAction(empty.primaryAction)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1822,6 +1801,28 @@ struct ContentView: View {
                                         } else {
                                             launch(profile)
                                         }
+                                    },
+                                    onFocusRunning: {
+                                        _ = processes.focus(
+                                            profileID: profile.id
+                                        )
+                                    },
+                                    onOpenDetails: {
+                                        selection = profile.id
+                                        preferredProfileSelection = profile.id
+                                        showsProfileInspector = true
+                                    },
+                                    onEditProfile: {
+                                        beginEditing(profile)
+                                    },
+                                    onTestProxy: {
+                                        if isProxyTestInFlight(
+                                            profileID: profile.id
+                                        ) {
+                                            cancelProxyTest(profileID: profile.id)
+                                        } else {
+                                            startProxyTest(profile)
+                                        }
                                     }
                                 ) {
                                     profileContextMenu(
@@ -1846,6 +1847,25 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .controlBackgroundColor))
         .navigationTitle(workspaceHeaderTitle)
+    }
+
+    private func performEmptyStateAction(
+        _ action: ProfileListEmptyAction
+    ) {
+        switch action {
+        case .clearSearch:
+            profileSearchText = ""
+        case .clearRouteFilter:
+            profileRouteFilterBinding.wrappedValue = .all
+        case .showAllProfiles:
+            applyWorkspaceQuery(.default, normalize: false)
+            profileOperationalFilter = .all
+            normalizeSelection(preferred: preferredProfileSelection)
+        case .createInCurrentFolder:
+            beginCreatingProfile()
+        case .resetAll:
+            resetProfileFilters()
+        }
     }
 
     @ViewBuilder
@@ -1930,130 +1950,38 @@ struct ContentView: View {
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
         let summary = operationalProjection.summary
-        let commandRow = HStack(spacing: 8) {
-            profileSearchField
-
-            Menu {
-                Button {
-                    bulkProxyImportRequest = BulkProxyImportRequest(
-                        targetFolderID: selectedFolderID
-                    )
-                } label: {
-                    Label(
-                        "Создать из списка прокси…",
-                        systemImage: "list.bullet.clipboard"
-                    )
-                }
-                if bulkProxyTestTask == nil,
-                   bulkProxyAction.isVisible
-                {
-                    Divider()
-                    Button {
-                        toggleBulkProxyTests()
-                    } label: {
-                        Label(
-                            "Проверить прокси (\(bulkProxyAction.count))",
-                            systemImage: "checkmark.shield"
-                        )
-                    }
-                }
-            } label: {
-                Label("Действия", systemImage: "ellipsis.circle")
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(minHeight: 28)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .help("Дополнительные действия со списком профилей")
-            .accessibilityLabel(
-                "Дополнительные действия со списком профилей"
-            )
-
-            profileListViewMenu
-
-            Menu {
-                Button {
-                    createAndOpenProfileQuickly()
-                } label: {
-                    Label(
-                        "Быстро: создать и открыть без прокси",
-                        systemImage: "bolt.fill"
-                    )
-                }
-                .disabled(
-                    runtimeAvailability != .ready ||
-                        isCreatingProfileQuickly
+        let filteredCount = ProfileFilteredCountPresentation(
+            visibleCount: summary.count(for: profileOperationalFilter),
+            totalCount: store.profiles.count
+        )
+        return ProfileListHeaderView(
+            searchText: $profileSearchText,
+            searchIsFocused: $profileSearchIsFocused,
+            showsSearchHelp: $showsProfileSearchHelp,
+            operationalFilter: $profileOperationalFilter,
+            filtersMenu: profileListViewMenu,
+            profilesAreEmpty: store.profiles.isEmpty,
+            summary: summary,
+            filteredCount: filteredCount,
+            bulkProxyAction: bulkProxyAction,
+            runtimeIsReady: runtimeAvailability == .ready,
+            isCreatingProfileQuickly: isCreatingProfileQuickly,
+            bulkProxyTestIsRunning: bulkProxyTestTask != nil,
+            bulkProxyProgress: bulkProxyProgress,
+            bulkProxyStatusMessage: bulkProxyStatusMessage,
+            hasFailedProxyTests: !bulkProxyFailedProfileIDs.isEmpty,
+            feedbackNotice: listFeedbackNotice,
+            onBulkProxyImport: {
+                bulkProxyImportRequest = BulkProxyImportRequest(
+                    targetFolderID: selectedFolderID
                 )
-
-                Divider()
-
-                Button {
-                    beginCreatingProfile()
-                } label: {
-                    Label(
-                        "Настроить профиль…",
-                        systemImage: "slider.horizontal.3"
-                    )
-                }
-            } label: {
-                Label("Создать профиль", systemImage: "plus")
-                    .fixedSize(horizontal: true, vertical: false)
-                .frame(minHeight: 28)
-            } primaryAction: {
-                beginCreatingProfile()
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
-            .help(
-                "Создать профиль (⌘N); стрелка открывает быстрый Direct-вариант"
-            )
-            .accessibilityLabel(
-                "Создать профиль; доступны дополнительные варианты"
-            )
-        }
-        return VStack(alignment: .leading, spacing: 10) {
-            if !store.profiles.isEmpty {
-                commandRow
-                operationalFilterBar(summary)
-            }
-
-            if bulkProxyTestTask != nil {
-                Button {
-                    toggleBulkProxyTests()
-                } label: {
-                    Label(
-                        "Остановить проверку",
-                        systemImage: "stop.circle"
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 28)
-                }
-                .buttonStyle(.bordered)
-                .help("Остановить массовую проверку прокси")
-                .accessibilityLabel("Остановить массовую проверку прокси")
-                if let bulkProxyProgress {
-                    BulkProxyProgressView(progress: bulkProxyProgress)
-                }
-            } else if let bulkProxyStatusMessage {
-                HStack(spacing: 8) {
-                    Label(bulkProxyStatusMessage, systemImage: "info.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                    Spacer(minLength: 8)
-                    if !bulkProxyFailedProfileIDs.isEmpty {
-                        Button("Повторить ошибки") {
-                            retryFailedBulkProxyTests()
-                        }
-                        .controlSize(.small)
-                        .help("Повторить только неуспешные проверки")
-                    }
-                }
-                .accessibilityElement(children: .contain)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
-        .padding(.top, WorkspaceLayout.titlebarContentInset)
+            },
+            onToggleBulkProxyTests: toggleBulkProxyTests,
+            onRetryFailedProxyTests: retryFailedBulkProxyTests,
+            onCreateQuickProfile: createAndOpenProfileQuickly,
+            onCreateConfiguredProfile: beginCreatingProfile,
+            onFilteredCountChange: scheduleFilteredCountAnnouncement
+        )
     }
 
     private var workspaceHeaderTitle: String {
@@ -2064,163 +1992,6 @@ struct ContentView: View {
             return "Без папки"
         }
         return profileListScope.title
-    }
-
-    private func operationalFilterBar(
-        _ summary: ProfileOperationalSummary
-    ) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(ProfileOperationalFilter.allCases) { filter in
-                    let isSelected = profileOperationalFilter == filter
-                    Button {
-                        profileOperationalFilter = filter
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: filter.systemImage)
-                                .accessibilityHidden(true)
-                            Text(filter.title)
-                            Text("\(summary.count(for: filter))")
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(
-                                    isSelected ? Color.primary : .secondary
-                                )
-                        }
-                        .font(.caption.weight(isSelected ? .semibold : .regular))
-                        .padding(.horizontal, 9)
-                        .frame(minHeight: 28)
-                        .background(
-                            operationalFilterTint(filter).opacity(
-                                isSelected ? 0.18 : 0.07
-                            ),
-                            in: Capsule()
-                        )
-                        .overlay {
-                            Capsule()
-                                .stroke(
-                                    isSelected
-                                        ? operationalFilterTint(filter).opacity(0.55)
-                                        : Color.clear,
-                                    lineWidth: 1
-                                )
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        "\(filter.title): \(summary.count(for: filter))"
-                    )
-                    .accessibilityValue(
-                        isSelected ? "Выбрано" : "Не выбрано"
-                    )
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                }
-            }
-        }
-        .accessibilityLabel("Быстрые представления профилей")
-    }
-
-    private func operationalFilterTint(
-        _ filter: ProfileOperationalFilter
-    ) -> Color {
-        switch filter {
-        case .running:
-            .green
-        case .attention:
-            .orange
-        case .all, .neverLaunched:
-            .accentColor
-        }
-    }
-
-    private var profileSearchField: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField(
-                "Профиль или заметка",
-                text: $profileSearchText
-            )
-            .textFieldStyle(.plain)
-            .focused($profileSearchIsFocused)
-            .accessibilityLabel(
-                "Поиск профилей, маршрутов, заметок, тегов и папок"
-            )
-            .accessibilityHint(
-                "Можно уточнить запрос: тег, папка, прокси или статус. Название с пробелами заключи в кавычки."
-            )
-            if !profileSearchText.isEmpty {
-                Button {
-                    profileSearchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Очистить поиск")
-                .accessibilityLabel("Очистить поиск профилей")
-            }
-            Button {
-                showsProfileSearchHelp.toggle()
-            } label: {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("Синтаксис поиска")
-            .accessibilityLabel("Показать синтаксис поиска")
-            .popover(isPresented: $showsProfileSearchHelp) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Поиск по полям")
-                        .font(.headline)
-                        .accessibilityHeading(.h2)
-                    Text(
-                        "Обычный текст ищет по профилю и заметке. " +
-                            "Для точного поиска используй:"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    ForEach(ProfileSearchSyntaxHelp.examples, id: \.self) {
-                        Text($0)
-                            .font(.body.monospaced())
-                            .textSelection(.enabled)
-                    }
-                    Text("Название с пробелами заключи в кавычки.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(14)
-                .frame(width: 320, alignment: .leading)
-            }
-        }
-        .padding(.horizontal, 8)
-        .frame(minWidth: 180, minHeight: 28)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
-        .help(
-            "Примеры: тег:tiktok, папка:\"Paid Social\", прокси:есть, статус:закреплен"
-        )
-        .onExitCommand(perform: exitProfileSearch)
-    }
-
-    private func exitProfileSearch() {
-        if !profileSearchText.isEmpty {
-            profileSearchText = ""
-            NSAccessibility.post(
-                element: NSApp as Any,
-                notification: .announcementRequested,
-                userInfo: [
-                    .announcement: "Поиск профилей очищен",
-                    .priority:
-                        NSAccessibilityPriorityLevel.medium.rawValue,
-                ]
-            )
-        } else {
-            profileSearchIsFocused = false
-        }
     }
 
     private var profileListViewMenu: some View {
@@ -2268,6 +2039,7 @@ struct ContentView: View {
         Binding(
             get: { profileRouteFilter },
             set: { filter in
+                clearBatchSelectionForFilterChange()
                 profileRouteFilter = filter
                 normalizeSelection(preferred: preferredProfileSelection)
             }
@@ -2619,6 +2391,37 @@ struct ContentView: View {
             )
         }
         .disabled(!commands.presentation.noteIsEnabled)
+        if profile.proxy != nil {
+            Button {
+                if isProxyTestInFlight(profileID: profile.id) {
+                    cancelProxyTest(profileID: profile.id)
+                } else {
+                    startProxyTest(profile)
+                }
+            } label: {
+                Label(
+                    isProxyTestInFlight(profileID: profile.id)
+                        ? "Отменить проверку прокси"
+                        : "Проверить прокси",
+                    systemImage: isProxyTestInFlight(profileID: profile.id)
+                        ? "stop.circle"
+                        : "checkmark.shield"
+                )
+            }
+            .disabled(
+                !isProxyTestInFlight(profileID: profile.id) &&
+                    processState != .stopped
+            )
+            Button("Изменить прокси…", systemImage: "network.badge.shield.half.filled") {
+                beginEditing(profile)
+            }
+            .disabled(!commands.presentation.editIsEnabled)
+        }
+        Button(
+            "Показать данные в Finder",
+            systemImage: "folder",
+            action: commands.revealInFinder
+        )
         Button(
             commands.presentation.launchTitle,
             systemImage: commands.presentation.launchSystemImage,
@@ -2761,9 +2564,18 @@ struct ContentView: View {
     @ViewBuilder
     private var detail: some View {
         if let profile = selectedProfile {
+            let processState = presentedProcessState(for: profile)
+            let launchAction = BrowserLaunchActionPresentation.resolve(
+                processState: processState,
+                isArchived: profile.isArchived,
+                runtimeAvailability: runtimeAvailability,
+                isProxyTesting: isProxyTestInFlight(profileID: profile.id),
+                isLaunchPreparation:
+                    launchPreparingProfileIDs.contains(profile.id)
+            )
             ProfileDetailView(
                 profile: profile,
-                processState: presentedProcessState(for: profile),
+                processState: processState,
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
@@ -2832,6 +2644,22 @@ struct ContentView: View {
                 },
                 onRunFingerprintAudit: {
                     beginFingerprintAudit()
+                },
+                launchAction: launchAction,
+                onToggleRunning: {
+                    if launchPreparingProfileIDs.contains(profile.id) {
+                        cancelLaunchPreparation(profileID: profile.id)
+                    } else if processState.isRunning {
+                        processes.stop(profileID: profile.id)
+                    } else {
+                        launch(profile)
+                    }
+                },
+                onFocusRunning: {
+                    _ = processes.focus(profileID: profile.id)
+                },
+                onEditProfile: {
+                    beginEditing(profile)
                 }
             )
             .id(profile.id)
@@ -2990,7 +2818,8 @@ struct ContentView: View {
                 runtimePreflight: BrowserRuntimePreflightValidator.validate(
                     runtime
                 ),
-                storage: inspection.storage
+                storage: inspection.storage,
+                storageIntegrity: inspection.storageIntegrity
             )
         )
     }
@@ -3246,6 +3075,34 @@ struct ContentView: View {
                 .priority: NSAccessibilityPriorityLevel.medium.rawValue
             ]
         )
+    }
+
+    private func scheduleFilteredCountAnnouncement(
+        _ presentation: ProfileFilteredCountPresentation
+    ) {
+        filteredCountAnnouncementTask?.cancel()
+        filteredCountAnnouncementTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
+            announceWorkspaceStatus(presentation.announcement)
+        }
+    }
+
+    private func clearBatchSelectionForFilterChange() {
+        let count = batchSelectedProfileIDs.count
+        guard count > 0 else { return }
+        batchSelectedProfileIDs.removeAll()
+        let message = count == 1
+            ? "Выбор профиля снят после изменения списка."
+            : "Выбор \(count) профилей снят после изменения списка."
+        listFeedbackNotice = UserNotice(message, level: .information)
+        announceWorkspaceStatus(message)
+        listFeedbackTask?.cancel()
+        listFeedbackTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            listFeedbackNotice = nil
+        }
     }
 
     private func beginFingerprintAudit() {

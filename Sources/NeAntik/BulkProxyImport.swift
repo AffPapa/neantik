@@ -550,6 +550,40 @@ enum BulkProfileImporter {
     }
 }
 
+struct PendingProxyFileReplacement: Identifiable, Equatable, Sendable {
+    let id = UUID()
+    let fileName: String
+    let text: String
+}
+
+enum BulkProxyFileReplacementPolicy {
+    static func requiresConfirmation(existingText: String) -> Bool {
+        !existingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+enum BulkProxyInputSelection {
+    static func range(lineNumber: Int, in text: String) -> NSRange? {
+        guard lineNumber > 0 else { return nil }
+        let source = text as NSString
+        var currentLine = 1
+        var location = 0
+        while currentLine < lineNumber, location < source.length {
+            let lineRange = source.lineRange(
+                for: NSRange(location: location, length: 0)
+            )
+            location = NSMaxRange(lineRange)
+            currentLine += 1
+        }
+        guard currentLine == lineNumber, location < source.length else {
+            return nil
+        }
+        return source.lineRange(
+            for: NSRange(location: location, length: 0)
+        )
+    }
+}
+
 struct BulkProxyImportView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -569,6 +603,7 @@ struct BulkProxyImportView: View {
     @State private var showingFileImporter = false
     @State private var importedFileName: String?
     @State private var showingDiscardConfirmation = false
+    @State private var pendingFileReplacement: PendingProxyFileReplacement?
     @FocusState private var proxyInputIsFocused: Bool
     @State private var announcementGate =
         AccessibilityAnnouncementGate<
@@ -806,6 +841,18 @@ struct BulkProxyImportView: View {
         } message: {
             Text("Вставленный список и параметры импорта будут потеряны.")
         }
+        .alert(item: $pendingFileReplacement) { replacement in
+            Alert(
+                title: Text("Заменить вставленный список?"),
+                message: Text(
+                    "Файл «\(replacement.fileName)» заменит весь текущий список прокси."
+                ),
+                primaryButton: .destructive(Text("Заменить")) {
+                    applyFileReplacement(replacement)
+                },
+                secondaryButton: .cancel(Text("Оставить текущий"))
+            )
+        }
         .onAppear {
             refreshPreview()
             Task { @MainActor in
@@ -845,12 +892,17 @@ struct BulkProxyImportView: View {
             defer {
                 if didAccess { url.stopAccessingSecurityScopedResource() }
             }
-            text = try ProxyImportFileReader.readText(from: url)
-            importedFileName = url.lastPathComponent
-            inputMessage = nil
-            creationError = nil
-            refreshPreview()
-            proxyInputIsFocused = true
+            let replacement = PendingProxyFileReplacement(
+                fileName: url.lastPathComponent,
+                text: try ProxyImportFileReader.readText(from: url)
+            )
+            if BulkProxyFileReplacementPolicy.requiresConfirmation(
+                existingText: text
+            ) {
+                pendingFileReplacement = replacement
+            } else {
+                applyFileReplacement(replacement)
+            }
         } catch let error as CocoaError where error.code == .userCancelled {
             return
         } catch {
@@ -860,6 +912,17 @@ struct BulkProxyImportView: View {
             creationError = nil
             announce(.validationFailed)
         }
+    }
+
+    private func applyFileReplacement(
+        _ replacement: PendingProxyFileReplacement
+    ) {
+        text = replacement.text
+        importedFileName = replacement.fileName
+        inputMessage = nil
+        creationError = nil
+        refreshPreview()
+        proxyInputIsFocused = true
     }
 
     private var baseNameIsValid: Bool {
@@ -959,7 +1022,25 @@ struct BulkProxyImportView: View {
         preview.rows.filter { $0.issue != nil }
     }
 
+    @ViewBuilder
     private func previewRow(_ row: BulkProxyImportPreviewRow) -> some View {
+        if row.issue != nil {
+            Button {
+                focusInput(lineNumber: row.lineNumber)
+            } label: {
+                previewRowContent(row)
+            }
+            .buttonStyle(.plain)
+            .help("Перейти к строке \(row.lineNumber) в редакторе")
+            .accessibilityHint("Переводит фокус в проблемную строку")
+        } else {
+            previewRowContent(row)
+        }
+    }
+
+    private func previewRowContent(
+        _ row: BulkProxyImportPreviewRow
+    ) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text("\(row.lineNumber)")
                 .font(.caption.monospacedDigit())
@@ -975,6 +1056,9 @@ struct BulkProxyImportView: View {
                     systemImage: "exclamationmark.circle.fill"
                 )
                 .foregroundStyle(.orange)
+                Image(systemName: "arrow.right.circle")
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
             }
         }
         .font(.caption)
@@ -986,6 +1070,31 @@ struct BulkProxyImportView: View {
                 "Строка \(row.lineNumber), требует исправления, " +
                 (row.issue?.message ?? "Проверь строку.")
         )
+    }
+
+    private func focusInput(lineNumber: Int) {
+        guard let range = BulkProxyInputSelection.range(
+            lineNumber: lineNumber,
+            in: text
+        ) else { return }
+        proxyInputIsFocused = true
+        Task { @MainActor in
+            for attempt in 0..<4 {
+                await Task.yield()
+                if let textView = NSApp.keyWindow?.firstResponder
+                    as? NSTextView
+                {
+                    textView.setSelectedRange(range)
+                    textView.scrollRangeToVisible(range)
+                    return
+                }
+                guard attempt < 3 else { break }
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+            inputMessage =
+                "Не удалось выделить строку (lineNumber). " +
+                "Щёлкни в поле и перейди к ней вручную."
+        }
     }
 
     private func refreshPreview() {

@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+- A new three-track review of thirty current profile browsers deduplicates 124
+  raw ideas into an evidence-linked matrix of exactly one hundred
+  recommendations. Twenty-five bounded local improvements were selected;
+  cloud accounts, remote control, automation, secret export, proxy sales and
+  arbitrary extensions remain explicitly outside the product.
+- Profile metadata now has a versioned document envelope with a legacy-array
+  decoder, a realistic bounded read limit and age/count/byte-bounded Recovery
+  retention. Process locks, proxy health and embedded-runtime metadata use
+  stable descriptor-first bounded reads, while the readiness center performs
+  a non-destructive write/read/rename/lock/unlink storage check.
+- Proxy passwords are validated at every Keychain read and write boundary.
+  Unsupported profile schemas fail closed without rewriting user data, and
+  privacy-safe browser-exit state stores only a bounded classification and
+  timestamp, never profile IDs, process IDs, paths, arguments, URLs or proxy
+  details.
+- Quitting with managed browsers open now offers three explicit outcomes:
+  ordinary stop and bounded wait, leave browsers running, or cancel. A timeout
+  cancels manager exit without silently escalating to Force Stop. The app-size
+  audit reports deterministic largest paths and optional component deltas.
+- Empty-list causes now have specific recovery actions; the folder picker has
+  visible keyboard selection; bulk-import errors jump to the exact source
+  line and replacing pasted input from a file requires confirmation. Profile
+  rows, menus and the inspector expose consistent safe actions with proxy-test
+  progress and VoiceOver custom actions.
+- The workspace adds a visible filtered count, batch-selection reset feedback,
+  native sidebar visibility control, responsive command/detail-header actions,
+  delayed-runtime retry guidance and one semantic high-contrast notice style.
+  No dependency, bundled asset, Chromium byte or public release changed.
+
 ## Direct 0.3.24 (27) — September 1, 2026
 
 - A 29-product research pass records exactly one hundred bounded candidates

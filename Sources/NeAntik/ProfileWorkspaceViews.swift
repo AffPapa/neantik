@@ -26,6 +26,10 @@ struct ProfileRow<Actions: View>: View {
     let onToggleBatchSelection: () -> Void
     let onEditNote: () -> Void
     let onToggleRunning: () -> Void
+    let onFocusRunning: () -> Void
+    let onOpenDetails: () -> Void
+    let onEditProfile: () -> Void
+    let onTestProxy: () -> Void
     let actions: Actions
 
     init(
@@ -41,6 +45,10 @@ struct ProfileRow<Actions: View>: View {
         onToggleBatchSelection: @escaping () -> Void = {},
         onEditNote: @escaping () -> Void = {},
         onToggleRunning: @escaping () -> Void,
+        onFocusRunning: @escaping () -> Void = {},
+        onOpenDetails: @escaping () -> Void = {},
+        onEditProfile: @escaping () -> Void = {},
+        onTestProxy: @escaping () -> Void = {},
         @ViewBuilder actions: () -> Actions
     ) {
         self.profile = profile
@@ -55,6 +63,10 @@ struct ProfileRow<Actions: View>: View {
         self.onToggleBatchSelection = onToggleBatchSelection
         self.onEditNote = onEditNote
         self.onToggleRunning = onToggleRunning
+        self.onFocusRunning = onFocusRunning
+        self.onOpenDetails = onOpenDetails
+        self.onEditProfile = onEditProfile
+        self.onTestProxy = onTestProxy
         self.actions = actions()
     }
 
@@ -62,6 +74,11 @@ struct ProfileRow<Actions: View>: View {
         let presentation = ProfileRowPresentation.resolve(
             profile: profile,
             processState: processState
+        )
+        let commands = ProfileCommandPresentation.resolve(
+            profile: profile,
+            processState: processState,
+            launchAction: launchAction
         )
 
         Group {
@@ -75,6 +92,26 @@ struct ProfileRow<Actions: View>: View {
         .padding(.vertical, density == .compact ? 3 : 7)
         .frame(minHeight: density == .compact ? 50 : 62)
         .accessibilityElement(children: .contain)
+        .accessibilityActions {
+            Button("Открыть сведения", action: onOpenDetails)
+            Button("Изменить профиль", action: onEditProfile)
+                .disabled(!commands.editIsEnabled)
+            Button("Показать окно браузера", action: onFocusRunning)
+                .disabled(!commands.focusIsEnabled)
+            Button(launchAction.title, action: onToggleRunning)
+                .disabled(!launchAction.isEnabled)
+            if profile.proxy != nil {
+                Button(
+                    isTestingProxy ? "Отменить проверку прокси" : "Проверить прокси",
+                    action: onTestProxy
+                )
+                .disabled(!isTestingProxy && processState != .stopped)
+            }
+            Button(
+                profile.note.isEmpty ? "Добавить заметку" : "Изменить заметку",
+                action: onEditNote
+            )
+        }
     }
 
     private func wideRow(
@@ -282,7 +319,18 @@ struct ProfileRow<Actions: View>: View {
 
     @ViewBuilder
     private var routeHealthIndicator: some View {
-        if !isTestingProxy,
+        if isTestingProxy {
+            HStack(spacing: 3) {
+                ProgressView()
+                    .controlSize(.mini)
+                    .accessibilityHidden(true)
+                Text("Проверяем")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Проверяем прокси")
+        } else if
            let attempt = proxyHealth?.latestAttempt
         {
             let routeContextIsComplete =
@@ -467,9 +515,17 @@ struct ProfileDetailView: View {
     var onEditProxy: () -> Void = {}
     var onChangeNote: () -> Void = {}
     var onRunFingerprintAudit: () -> Void = {}
+    var launchAction: BrowserLaunchActionPresentation? = nil
+    var onToggleRunning: () -> Void = {}
+    var onFocusRunning: () -> Void = {}
+    var onEditProfile: () -> Void = {}
 
     private var isRunning: Bool {
         processState.isRunning
+    }
+
+    private var canEditProfile: Bool {
+        processState == .stopped || processState.isConfirmedRunning
     }
 
     private var notePresentation: ProfileNotePresentation {
@@ -502,10 +558,46 @@ struct ProfileDetailView: View {
             profileTitle
 
             Spacer(minLength: 0)
+            detailHeaderActions
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(.bar)
+    }
+
+    @ViewBuilder
+    private var detailHeaderActions: some View {
+        if let launchAction {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 7) {
+                    Button(action: onToggleRunning) {
+                        Label(
+                            launchAction.title,
+                            systemImage: launchAction.systemImage
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!launchAction.isEnabled)
+                    Button("Окно", systemImage: "macwindow", action: onFocusRunning)
+                        .disabled(!processState.isConfirmedRunning)
+                    Button("Изменить", systemImage: "pencil", action: onEditProfile)
+                        .disabled(!canEditProfile)
+                }
+                Menu("Действия", systemImage: "ellipsis.circle") {
+                    Button(
+                        launchAction.title,
+                        systemImage: launchAction.systemImage,
+                        action: onToggleRunning
+                    )
+                    .disabled(!launchAction.isEnabled)
+                    Button("Показать окно", systemImage: "macwindow", action: onFocusRunning)
+                        .disabled(!processState.isConfirmedRunning)
+                    Button("Изменить…", systemImage: "pencil", action: onEditProfile)
+                        .disabled(!canEditProfile)
+                }
+                .accessibilityLabel("Действия профиля")
+            }
+        }
     }
 
     private var detailContent: some View {
@@ -801,15 +893,9 @@ struct ProfileDetailView: View {
                     .accessibilityLabel(clipboardNotice)
                 }
                 if let warning = proxyReuseAssessment?.warningText {
-                    Label(
-                        title: { Text(warning).foregroundStyle(.primary) },
-                        icon: {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundStyle(.orange)
-                        }
+                    UserNoticeLabel(
+                        notice: UserNotice(warning, level: .warning)
                     )
-                    .font(.caption)
-                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHint(
                         "Предупреждение не блокирует запуск профиля"
                     )

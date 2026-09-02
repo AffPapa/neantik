@@ -72,7 +72,8 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
 
     static func resolve(
         runtimeAvailability: BrowserRuntimeAvailability,
-        isCreatingProfile: Bool
+        isCreatingProfile: Bool,
+        resolutionIsDelayed: Bool = false
     ) -> Self {
         if isCreatingProfile {
             return Self(
@@ -91,6 +92,21 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
 
         switch runtimeAvailability {
         case .resolving:
+            if resolutionIsDelayed {
+                return Self(
+                    primaryAction: .retryRuntimeCheck,
+                    primaryTitle: "Повторить проверку",
+                    primarySystemImage: "arrow.clockwise",
+                    primaryIsEnabled: true,
+                    primaryAccessibilityHint:
+                        "Запускает новую проверку встроенного браузерного движка",
+                    statusMessage:
+                        "Проверка занимает больше обычного. Можно повторить её, не закрывая окно.",
+                    statusSystemImage: "clock.badge.exclamationmark",
+                    terminalAccessibilityAnnouncement:
+                        "Проверка браузерного движка задержалась. Повторная проверка доступна."
+                )
+            }
             return Self(
                 primaryAction: .unavailable,
                 primaryTitle: "Проверяем браузер…",
@@ -166,6 +182,8 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
 }
 
 struct FirstProfileOnboardingView: View {
+    @State private var runtimeResolutionIsDelayed = false
+
     let runtimeAvailability: BrowserRuntimeAvailability
     let isCreatingProfile: Bool
     let onCreateAndOpen: () -> Void
@@ -175,7 +193,8 @@ struct FirstProfileOnboardingView: View {
     private var presentation: FirstProfileOnboardingPresentation {
         FirstProfileOnboardingPresentation.resolve(
             runtimeAvailability: runtimeAvailability,
-            isCreatingProfile: isCreatingProfile
+            isCreatingProfile: isCreatingProfile,
+            resolutionIsDelayed: runtimeResolutionIsDelayed
         )
     }
 
@@ -200,15 +219,20 @@ struct FirstProfileOnboardingView: View {
                 if let statusMessage = presentation.statusMessage,
                    let statusSystemImage = presentation.statusSystemImage
                 {
-                    Label(statusMessage, systemImage: statusSystemImage)
-                        .font(.caption)
-                        .foregroundStyle(
-                            runtimeAvailability == .missing
-                                ? Color.red
-                                : Color.secondary
+                    UserNoticeLabel(
+                        notice: UserNotice(
+                            statusMessage,
+                            level: runtimeAvailability == .resolving &&
+                                !runtimeResolutionIsDelayed
+                                ? .information
+                                : .warning
                         )
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(statusMessage)
+                    )
+                    .accessibilityHint(
+                        statusSystemImage == "hourglass"
+                            ? "Проверка выполняется"
+                            : "Можно повторить проверку"
+                    )
                 }
             }
             .frame(maxWidth: 440)
@@ -226,6 +250,25 @@ struct FirstProfileOnboardingView: View {
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: runtimeAvailability) {
+            runtimeResolutionIsDelayed = false
+            guard runtimeAvailability == .resolving else { return }
+            try? await Task.sleep(for: .seconds(8))
+            guard !Task.isCancelled,
+                  runtimeAvailability == .resolving
+            else { return }
+            runtimeResolutionIsDelayed = true
+            if let message = presentation.terminalAccessibilityAnnouncement {
+                NSAccessibility.post(
+                    element: NSApp as Any,
+                    notification: .announcementRequested,
+                    userInfo: [
+                        .announcement: message,
+                        .priority: NSAccessibilityPriorityLevel.medium.rawValue
+                    ]
+                )
+            }
+        }
         .onChange(of: runtimeAvailability) { previous, current in
             guard previous == .resolving,
                   let message = FirstProfileOnboardingPresentation.resolve(

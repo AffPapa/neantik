@@ -43,17 +43,29 @@ struct UserNoticeLabel: View {
     let notice: UserNotice
 
     var body: some View {
-        Label(notice.message, systemImage: notice.level.systemImage)
-            .font(.caption)
-            .foregroundStyle(tint)
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(notice.accessibilitySummary)
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Image(systemName: notice.level.systemImage)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+            Text(notice.message)
+                .foregroundStyle(.primary)
+        }
+        .font(.caption)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
+        .overlay {
+            RoundedRectangle(cornerRadius: 7)
+                .stroke(tint.opacity(0.28), lineWidth: 1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(notice.accessibilitySummary)
     }
 
     private var tint: Color {
         switch notice.level {
-        case .information: .secondary
+        case .information: .accentColor
         case .success: .green
         case .warning: .orange
         case .failure: .red

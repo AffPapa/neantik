@@ -108,14 +108,35 @@ enum WorkspaceStorageState: Equatable, Sendable {
     case unavailable
 }
 
+enum WorkspaceStorageIntegrityState: Equatable, Sendable {
+    case checking
+    case passed
+    case failed
+}
+
 struct WorkspaceReadinessSystemInspection: Equatable, Sendable {
     let application: WorkspaceApplicationIdentity
     let storage: WorkspaceStorageState
+    let storageIntegrity: WorkspaceStorageIntegrityState
+
+    init(
+        application: WorkspaceApplicationIdentity,
+        storage: WorkspaceStorageState,
+        storageIntegrity: WorkspaceStorageIntegrityState = .passed
+    ) {
+        self.application = application
+        self.storage = storage
+        self.storageIntegrity = storageIntegrity
+    }
 
     static func checking(
         application: WorkspaceApplicationIdentity
     ) -> Self {
-        Self(application: application, storage: .checking)
+        Self(
+            application: application,
+            storage: .checking,
+            storageIntegrity: .checking
+        )
     }
 }
 
@@ -123,7 +144,8 @@ enum WorkspaceReadinessSystemInspector {
     static func inspect(
         application: WorkspaceApplicationIdentity,
         dataRootURL: URL,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        deepStorageCheck: (URL) -> Bool = performDeepStorageCheck
     ) -> WorkspaceReadinessSystemInspection {
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(
@@ -134,13 +156,15 @@ enum WorkspaceReadinessSystemInspector {
         else {
             return WorkspaceReadinessSystemInspection(
                 application: application,
-                storage: .unavailable
+                storage: .unavailable,
+                storageIntegrity: .failed
             )
         }
         guard fileManager.isWritableFile(atPath: dataRootURL.path) else {
             return WorkspaceReadinessSystemInspection(
                 application: application,
-                storage: .readOnly
+                storage: .readOnly,
+                storageIntegrity: .failed
             )
         }
         let capacity = try? dataRootURL.resourceValues(
@@ -148,8 +172,54 @@ enum WorkspaceReadinessSystemInspector {
         ).volumeAvailableCapacityForImportantUsage
         return WorkspaceReadinessSystemInspection(
             application: application,
-            storage: .ready(availableCapacity: capacity ?? nil)
+            storage: .ready(availableCapacity: capacity ?? nil),
+            storageIntegrity: deepStorageCheck(dataRootURL)
+                ? .passed
+                : .failed
         )
+    }
+
+    private static func performDeepStorageCheck(_ dataRootURL: URL) -> Bool {
+        let probeRoot = dataRootURL.appendingPathComponent(
+            ".neantik-storage-check-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        do {
+            try FileManager.default.createDirectory(
+                at: probeRoot,
+                withIntermediateDirectories: false,
+                attributes: [.posixPermissions: 0o700]
+            )
+        } catch {
+            return false
+        }
+        defer { try? FileManager.default.removeItem(at: probeRoot) }
+
+        let probePaths = AppPaths(rootDirectory: probeRoot)
+        let initial = probeRoot.appendingPathComponent("probe-a")
+        let renamed = probeRoot.appendingPathComponent("probe-b")
+        let marker = Data("neantik-storage-check-v1".utf8)
+        do {
+            try probePaths.writePrivateFile(marker, to: initial)
+            guard try probePaths.readPrivateFile(
+                initial,
+                maximumBytes: 1_024
+            ) == marker else {
+                return false
+            }
+            try FileManager.default.moveItem(at: initial, to: renamed)
+            guard try probePaths.readPrivateFile(
+                renamed,
+                maximumBytes: 1_024
+            ) == marker else {
+                return false
+            }
+            try probePaths.withManagerSessionsGuard {}
+            try FileManager.default.removeItem(at: renamed)
+            return !FileManager.default.fileExists(atPath: renamed.path)
+        } catch {
+            return false
+        }
     }
 }
 
@@ -158,6 +228,7 @@ struct WorkspaceReadinessItem: Identifiable, Equatable, Sendable {
         case application
         case runtime
         case storage
+        case storageIntegrity
         case processes
         case routes
     }
@@ -231,6 +302,7 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
                 architectures: input.runtimeArchitectures
             ),
             storageItem(input.system.storage),
+            storageIntegrityItem(input.system.storageIntegrity),
             processItem(
                 profileCount: input.profileCount,
                 runningCount: input.runningCount,
@@ -436,6 +508,37 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
         )
     }
 
+    private static func storageIntegrityItem(
+        _ integrity: WorkspaceStorageIntegrityState
+    ) -> WorkspaceReadinessItem {
+        switch integrity {
+        case .checking:
+            WorkspaceReadinessItem(
+                id: .storageIntegrity,
+                title: "Безопасная запись",
+                value: "Проверяем…",
+                detail: "Проверяем чтение, переименование, блокировку и удаление временного приватного файла.",
+                level: .checking
+            )
+        case .passed:
+            WorkspaceReadinessItem(
+                id: .storageIntegrity,
+                title: "Безопасная запись",
+                value: "Проверена",
+                detail: "Временная проверка завершилась без изменения профилей.",
+                level: .ready
+            )
+        case .failed:
+            WorkspaceReadinessItem(
+                id: .storageIntegrity,
+                title: "Безопасная запись",
+                value: "Не подтверждена",
+                detail: "NeAntik не менял профили. Проверь свободное место, разрешения и файловую систему.",
+                level: .blocked
+            )
+        }
+    }
+
     private static func routeItem(
         profileCount: Int,
         directCount: Int,
@@ -484,6 +587,12 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
         case .readOnly: storage = "read-only"
         case .unavailable: storage = "unavailable"
         }
+        let storageIntegrity: String
+        switch input.system.storageIntegrity {
+        case .checking: storageIntegrity = "checking"
+        case .passed: storageIntegrity = "passed"
+        case .failed: storageIntegrity = "failed"
+        }
         let runtime: String
         switch input.runtimeAvailability {
         case .resolving: runtime = "checking"
@@ -504,6 +613,7 @@ struct WorkspaceReadinessSnapshot: Equatable, Sendable {
             "runtimeVersion=\(input.runtimeVersion ?? "unknown")",
             "runtimeArch=\(architecture)",
             "storage=\(storage)",
+            "storageIntegrity=\(storageIntegrity)",
             "profiles=\(input.profileCount)",
             "running=\(input.runningCount)",
             "processAttention=\(input.processAttentionCount)",

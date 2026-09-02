@@ -94,6 +94,7 @@ struct KeychainStore: Sendable {
     }
 
     func saveProxyPassword(_ password: String, profileID: UUID) throws {
+        let credentialData = try validatedCredentialData(password)
         let previousCurrent = try backend.data(
             service: service,
             profileID: profileID
@@ -103,7 +104,7 @@ struct KeychainStore: Sendable {
         }
         do {
             try backend.upsert(
-                Data(password.utf8),
+                credentialData,
                 service: service,
                 profileID: profileID
             )
@@ -148,6 +149,7 @@ struct KeychainStore: Sendable {
         _ password: String?,
         profileID: UUID
     ) throws {
+        let credentialData = try password.map(validatedCredentialData)
         let previousCurrent = try backend.data(
             service: service,
             profileID: profileID
@@ -156,9 +158,9 @@ struct KeychainStore: Sendable {
             try backend.data(service: $0, profileID: profileID)
         }
         do {
-            if let password {
+            if let credentialData {
                 try backend.upsert(
-                    Data(password.utf8),
+                    credentialData,
                     service: service,
                     profileID: profileID
                 )
@@ -255,10 +257,24 @@ struct KeychainStore: Sendable {
     }
 
     private func decode(_ data: Data) throws -> String {
-        guard let value = String(data: data, encoding: .utf8) else {
-            throw KeychainDataError()
+        guard data.count <= ProxyImportParser.maximumPasswordBytes else {
+            throw KeychainCredentialValidationError.tooLarge
         }
+        guard let value = String(data: data, encoding: .utf8) else {
+            throw KeychainCredentialValidationError.invalidEncoding
+        }
+        _ = try validatedCredentialData(value)
         return value
+    }
+
+    private func validatedCredentialData(_ value: String) throws -> Data {
+        guard ProxyImportParser.passwordIsWithinLimits(value) else {
+            throw KeychainCredentialValidationError.tooLarge
+        }
+        guard PersistedInlineText.isSafe(value) else {
+            throw KeychainCredentialValidationError.unsafeCharacters
+        }
+        return Data(value.utf8)
     }
 
     private func restoreStrictly(
@@ -371,8 +387,19 @@ struct KeychainError: LocalizedError {
     }
 }
 
-private struct KeychainDataError: LocalizedError {
+enum KeychainCredentialValidationError: LocalizedError, Equatable {
+    case tooLarge
+    case unsafeCharacters
+    case invalidEncoding
+
     var errorDescription: String? {
-        "Сохранённый пароль прокси повреждён и не может быть прочитан."
+        switch self {
+        case .tooLarge:
+            "Пароль прокси превышает безопасный лимит Связки ключей."
+        case .unsafeCharacters:
+            "Пароль прокси содержит недопустимые управляющие символы."
+        case .invalidEncoding:
+            "Сохранённый пароль прокси повреждён и не может быть прочитан."
+        }
     }
 }

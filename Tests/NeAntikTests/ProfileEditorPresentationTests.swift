@@ -96,6 +96,47 @@ struct ProfileEditorPresentationTests {
     }
 
     @Test
+    func folderPickerMovesAVisibleKeyboardHighlight() {
+        let first = ProfileFolder(name: "Alpha")
+        let second = ProfileFolder(name: "Beta")
+        let presentation = ProfileFolderPickerPresentation.resolve(
+            folders: [first, second],
+            searchText: ""
+        )
+
+        #expect(
+            presentation.movedHighlight(from: .unfiled, offset: 1) ==
+                .folder(first.id)
+        )
+        #expect(
+            presentation.movedHighlight(from: .folder(first.id), offset: 1) ==
+                .folder(second.id)
+        )
+        #expect(
+            presentation.movedHighlight(from: .folder(second.id), offset: 1) ==
+                .folder(second.id)
+        )
+        #expect(
+            !ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
+                searchText: "  ",
+                didMoveHighlight: false
+            )
+        )
+        #expect(
+            ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
+                searchText: "",
+                didMoveHighlight: true
+            )
+        )
+        #expect(
+            ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
+                searchText: "Alpha",
+                didMoveHighlight: false
+            )
+        )
+    }
+
+    @Test
     func proxyContextUsesTextAndIconForFreshness() {
         let now = Date(timeIntervalSinceReferenceDate: 10_000_000)
         let fresh = ProfileEditorProxyContextPresentation.resolve(

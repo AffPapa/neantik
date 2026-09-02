@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "matrix": "docs/ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-02_V3.md",
+  "selected": [
+    {"id":"ND3-001","implementation":["Sources/NeAntik/KeychainStore.swift"],"tests":["Tests/NeAntikTests/KeychainStoreTests.swift"]},
+    {"id":"ND3-002","implementation":["Sources/NeAntik/BrowserProcessManager.swift"],"tests":["Tests/NeAntikTests/BrowserProcessManagerTests.swift"]},
+    {"id":"ND3-003","implementation":["Sources/NeAntik/ProxyHealth.swift"],"tests":["Tests/NeAntikTests/ProxyHealthTests.swift"]},
+    {"id":"ND3-004","implementation":["Sources/NeAntik/ProfilesMetadataStorage.swift"],"tests":["Tests/NeAntikTests/ProfileStoreTests.swift"]},
+    {"id":"ND3-005","implementation":["Sources/NeAntik/ProfilesMetadataStorage.swift"],"tests":["Tests/NeAntikTests/ProfileStoreTests.swift"]},
+    {"id":"ND3-006","implementation":["Sources/NeAntik/ProfilesMetadataStorage.swift"],"tests":["Tests/NeAntikTests/ProfileStoreTests.swift"]},
+    {"id":"ND3-007","implementation":["Sources/NeAntik/WorkspaceReadiness.swift","Sources/NeAntik/BrowserLaunchStagedPreflight.swift"],"tests":["Tests/NeAntikTests/WorkspaceReadinessTests.swift","Tests/NeAntikTests/BrowserLaunchStagedPreflightTests.swift"]},
+    {"id":"ND3-008","implementation":["Sources/NeAntik/BrowserRuntimeInspector.swift"],"tests":["Tests/NeAntikTests/BrowserRuntimeInspectorTests.swift"]},
+    {"id":"ND3-009","implementation":["Sources/NeAntik/NeAntikApplicationDelegate.swift","Sources/NeAntik/BrowserTerminationPresentation.swift"],"tests":["Tests/NeAntikTests/BrowserTerminationPresentationTests.swift"]},
+    {"id":"ND3-010","implementation":["Sources/NeAntik/BrowserTerminationPresentation.swift","Sources/NeAntik/BrowserProcessManager.swift"],"tests":["Tests/NeAntikTests/BrowserTerminationPresentationTests.swift"]},
+    {"id":"ND3-011","implementation":["scripts/audit-app-size.py"],"tests":["scripts/tests/test_audit_app_size.py"]},
+    {"id":"ND3-012","implementation":["Sources/NeAntik/WorkspaceUXPresentation.swift","Sources/NeAntik/ContentView.swift"],"tests":["Tests/NeAntikTests/WorkspaceUXPresentationTests.swift"]},
+    {"id":"ND3-013","implementation":["Sources/NeAntik/ProfileFolderPickerSheet.swift"],"tests":["Tests/NeAntikTests/ProfileEditorPresentationTests.swift"]},
+    {"id":"ND3-014","implementation":["Sources/NeAntik/BulkProxyImport.swift"],"tests":["Tests/NeAntikTests/BulkProxyImportTests.swift"]},
+    {"id":"ND3-015","implementation":["Sources/NeAntik/ProfileWorkspaceViews.swift","Sources/NeAntik/ContentView.swift"],"tests":["Tests/NeAntikTests/ProfileCommandPresentationTests.swift"]},
+    {"id":"ND3-016","implementation":["Sources/NeAntik/ProfileWorkspaceViews.swift"],"tests":["Tests/NeAntikTests/ProfileCommandPresentationTests.swift","Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift"]},
+    {"id":"ND3-017","implementation":["Sources/NeAntik/UserNotice.swift"],"tests":["Tests/NeAntikTests/UserNoticeTests.swift"]},
+    {"id":"ND3-018","implementation":["Sources/NeAntik/ContentView.swift"],"tests":["Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift"]},
+    {"id":"ND3-019","implementation":["Sources/NeAntik/WorkspaceToolbarContent.swift","Sources/NeAntik/ContentView.swift"],"tests":["Tests/NeAntikTests/WorkspaceLayoutTests.swift","Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift"]},
+    {"id":"ND3-020","implementation":["Sources/NeAntik/ProfileListHeaderView.swift","Sources/NeAntik/WorkspaceUXPresentation.swift"],"tests":["Tests/NeAntikTests/WorkspaceUXPresentationTests.swift"]},
+    {"id":"ND3-021","implementation":["Sources/NeAntik/WorkspaceUXPresentation.swift","Sources/NeAntik/ContentView.swift"],"tests":["Tests/NeAntikTests/WorkspaceUXPresentationTests.swift"]},
+    {"id":"ND3-022","implementation":["Sources/NeAntik/ProfileWorkspaceViews.swift","Sources/NeAntik/ContentView.swift"],"tests":["Tests/NeAntikTests/ProxyTestOperationRegistryTests.swift"]},
+    {"id":"ND3-023","implementation":["Sources/NeAntik/BulkProxyImport.swift"],"tests":["Tests/NeAntikTests/BulkProxyImportTests.swift"]},
+    {"id":"ND3-024","implementation":["Sources/NeAntik/ProfileWorkspaceViews.swift"],"tests":["Tests/NeAntikTests/AccessibilityPresentationTests.swift","Tests/NeAntikTests/ProfileCommandPresentationTests.swift"]},
+    {"id":"ND3-025","implementation":["Sources/NeAntik/ProfileWorkspaceViews.swift"],"tests":["Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift"]}
+  ]
+}
