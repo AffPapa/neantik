@@ -38,6 +38,16 @@ and updates remain immutable manual GitHub releases.
 
 ## Source ownership
 
+The September 5 Goal quality cycle is tracked in
+`GOAL_IMPROVEMENT_PLAN_2026-09-05.md` and
+`GOAL_DELIVERY_2026-09-05.md`: twelve local corrections, a separate verification
+matrix, and explicitly deferred architecture/release work. `ProfileStore+Note.swift`
+owns field-level note conflict checks under the metadata transaction lock;
+`ProfileFolderPickerCommitState` owns retryable sheet errors;
+`ProfileBatchUndoFailurePolicy` distinguishes stale receipts from storage failure.
+The profile editor owns unfinished tag input; `ProfileTagEditorModel.resolvingDraft`
+validates its final token before Save. No persisted schema changes are involved.
+
 | Surface | Owner files | Contract |
 | --- | --- | --- |
 | App shell and orchestration | `ContentView.swift`, `ContentViewState.swift`, `WorkspaceUXPresentation.swift`, `NeAntikApp.swift`, `NeAntikApplicationDelegate.swift` | Compose state and commands; keep request/cache state out of the view body and do not invent domain policy there; app termination remains an explicit bounded policy |

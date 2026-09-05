@@ -477,7 +477,8 @@ struct ContentView: View {
             ) { note in
                 try saveProfileNote(
                     note,
-                    profileID: request.profile.id
+                    profileID: request.profile.id,
+                    expectedNote: request.profile.note
                 )
             }
         }
@@ -524,9 +525,9 @@ struct ContentView: View {
                     hasMixedSelection: !sharesFolder
                 ) { folderID in
                     if profiles.count == 1 {
-                        moveProfile(profiles[0], toFolderID: folderID)
+                        try performMoveProfile(profiles[0], toFolderID: folderID)
                     } else {
-                        moveProfiles(
+                        try moveProfiles(
                             request.profileIDs,
                             toFolderID: folderID
                         )
@@ -1088,11 +1089,12 @@ struct ContentView: View {
 
     private func saveProfileNote(
         _ note: String,
-        profileID: UUID
+        profileID: UUID,
+        expectedNote: String
     ) throws {
-        let saved = try store.mutateProfile(withID: profileID) {
-            $0.note = note
-        }
+        let saved = try store.updateNote(
+            note, for: profileID, expectedNote: expectedNote
+        )
         revealSavedProfile(saved)
     }
 
@@ -1194,32 +1196,35 @@ struct ContentView: View {
         toFolderID folderID: UUID?
     ) {
         do {
-            try store.assignProfile(profile.id, toFolderID: folderID)
-            normalizeSelection(preferred: profile.id)
+            try performMoveProfile(profile, toFolderID: folderID)
         } catch {
             localError = error.localizedDescription
         }
     }
 
+    private func performMoveProfile(
+        _ profile: BrowserProfile,
+        toFolderID folderID: UUID?
+    ) throws {
+        try store.assignProfile(profile.id, toFolderID: folderID)
+        normalizeSelection(preferred: profile.id)
+    }
+
     private func moveProfiles(
         _ profileIDs: Set<UUID>,
         toFolderID folderID: UUID?
-    ) {
-        do {
-            let receipt = try store.assignProfilesRecordingUndo(
-                profileIDs,
-                toFolderID: folderID
+    ) throws {
+        let receipt = try store.assignProfilesRecordingUndo(
+            profileIDs,
+            toFolderID: folderID
+        )
+        if receipt.canUndo {
+            workspaceBatchUndo = .folder(receipt)
+            announceWorkspaceStatus(
+                "Перемещено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
             )
-            if receipt.canUndo {
-                workspaceBatchUndo = .folder(receipt)
-                announceWorkspaceStatus(
-                    "Перемещено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
-                )
-            }
-            normalizeSelection(preferred: selection)
-        } catch {
-            localError = error.localizedDescription
         }
+        normalizeSelection(preferred: selection)
     }
 
     private func applyBatchMetadata(
@@ -1266,7 +1271,9 @@ struct ContentView: View {
             )
             normalizeSelection(preferred: selection)
         } catch {
-            self.workspaceBatchUndo = nil
+            if ProfileBatchUndoFailurePolicy.invalidatesReceipt(error) {
+                self.workspaceBatchUndo = nil
+            }
             localError = error.localizedDescription
         }
     }

@@ -30,15 +30,6 @@ struct ProfileBatchTagSheet: View {
         tag.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var visibleSuggestions: [String] {
-        let query = cleanTag
-        return ProfileBatchTagPreview.suggestions(
-            profiles: profiles, library: suggestedTags, adding: mode == .add
-        ).filter {
-            query.isEmpty || $0.localizedCaseInsensitiveContains(query)
-        }.prefix(8).map { $0 }
-    }
-
     private var canApply: Bool {
         preview.canApply
     }
@@ -48,6 +39,11 @@ struct ProfileBatchTagSheet: View {
     }
 
     var body: some View {
+        let preview = self.preview
+        let visibleSuggestions = ProfileBatchTagPreview.visibleSuggestions(
+            profiles: profiles, library: suggestedTags,
+            adding: mode == .add, query: cleanTag
+        )
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Изменить тег")
@@ -130,12 +126,14 @@ struct ProfileBatchTagSheet: View {
                 Button(mode.title) { apply() }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!canApply)
+                    .disabled(!preview.canApply)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
         }
         .frame(width: 460, height: 440)
+        .onChange(of: tag) { _, _ in errorMessage = nil }
+        .onChange(of: mode) { _, _ in errorMessage = nil }
         .onAppear {
             Task { @MainActor in
                 await Task.yield()

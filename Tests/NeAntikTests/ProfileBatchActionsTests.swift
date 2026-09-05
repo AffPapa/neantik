@@ -4,6 +4,31 @@ import Testing
 
 struct ProfileBatchActionsTests {
     @Test
+    func visibleTagSuggestionsShareAccentInsensitiveIdentityAndTrimQuery() {
+        let profiles = [BrowserProfile(name: "A", tags: ["Café", "Other"])]
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: profiles, library: ["Unrelated"], adding: false, query: " CAFE "
+        ) == ["Café"])
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: profiles, library: ["Café"], adding: true, query: "cafe"
+        ) == ["Café"])
+    }
+
+    @Test
+    func visibleTagSuggestionsFilterBeforeLimitAndRespectSelection() {
+        let library = (0..<12).map { "A\($0)" } + ["Zulu"]
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: [], library: library, adding: true, query: ""
+        ).count == 8)
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: [], library: library, adding: true, query: "zulu"
+        ) == ["Zulu"])
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: [], library: library, adding: false, query: ""
+        ).isEmpty)
+    }
+
+    @Test
     func tagPreviewCountsActualChangesAndCaseInsensitiveCoverage() {
         let profiles = [BrowserProfile(name: "A", tags: ["CAFÉ"]), BrowserProfile(name: "B")]
         let add = ProfileBatchTagPreview.resolve(profiles: profiles, tag: "cafe", adding: true)

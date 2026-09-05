@@ -43,4 +43,13 @@ struct ProfileBatchTagPreview: Equatable {
             adding ? library : profiles.flatMap(\.tags), excluding: []
         )
     }
+
+    static func visibleSuggestions(
+        profiles: [BrowserProfile], library: [String], adding: Bool, query: String
+    ) -> [String] {
+        Array(ProfileTagEditorModel.filteredSuggestions(
+            suggestions(profiles: profiles, library: library, adding: adding),
+            matching: query
+        ).prefix(8))
+    }
 }

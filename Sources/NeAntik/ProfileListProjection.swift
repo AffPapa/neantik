@@ -182,6 +182,7 @@ struct ProfileListIndex: Equatable, Sendable {
                     profileDisplayNameByTagID[tagID] = tag
                 }
             }
+            let routeValues = ProfileRouteSearchDocument.values(for: profile)
             indexedProfiles.append(
                 IndexedProfile(
                     profile: profile,
@@ -189,15 +190,14 @@ struct ProfileListIndex: Equatable, Sendable {
                     profileSearchText: ProfileSearchText.document(
                         profileValues: [profile.name] + profile.tags + [
                             profile.note
-                        ] + ProfileRouteSearchDocument.values(for: profile)
+                        ] + routeValues
                     ),
                     folderSearchText: folderFilter.folderID.flatMap {
                         resolvedFolderNameByID[$0]
                     }.map(ProfileSearchText.fold),
                     proxySearchText: profile.proxy.map { _ in
                         ProfileSearchText.document(
-                            profileValues:
-                                ProfileRouteSearchDocument.values(for: profile)
+                            profileValues: routeValues
                         )
                     }
                 )

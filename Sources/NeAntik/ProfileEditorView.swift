@@ -154,6 +154,7 @@ struct ProfileEditorView: View {
   @State private var colorHex: String
   @State private var symbolName: String
   @State private var tags: [String]
+  @State private var pendingTagInput = ""
   @State private var note: String
   @State private var showsNoteEditor: Bool
   @State private var selectedFolderID: UUID?
@@ -623,7 +624,7 @@ struct ProfileEditorView: View {
       ProfileEditorSaveSummary(
         presentation: savePresentation,
         errorMessage: errorMessage,
-        issue: editorDraft.firstIssue,
+        issue: currentValidationIssue,
         onShowIssue: presentValidation
       )
 
@@ -853,7 +854,9 @@ struct ProfileEditorView: View {
         folderControl
         ProfileTagEditor(
           tags: $tags,
-          suggestions: suggestedTags
+          input: $pendingTagInput,
+          suggestions: suggestedTags,
+          focusRequest: validationIssue?.field == .tags ? validationNavigationRequest : 0
         )
         .id(ProfileEditorField.tags)
         validationLabel(for: .tags)
@@ -1189,7 +1192,7 @@ struct ProfileEditorView: View {
   }
 
   private func save() {
-    if let issue = editorDraft.firstIssue {
+    if let issue = currentValidationIssue {
       presentValidation(issue)
       return
     }
@@ -1210,7 +1213,7 @@ struct ProfileEditorView: View {
       profile.name = cleanName
       profile.colorHex = colorHex
       profile.symbolName = symbolName
-      guard let normalizedTags = BrowserProfile.normalizedTags(tags) else {
+      guard let normalizedTags = BrowserProfile.normalizedTags(resolvedTagDraft.tags) else {
         throw ProfileTagsValidationError()
       }
       guard let normalizedNote = BrowserProfile.normalizedNote(note) else {
@@ -1443,8 +1446,8 @@ struct ProfileEditorView: View {
   private var savePresentation: ProfileEditorSavePresentation {
     .resolve(
       isNew: original == nil,
-      hasChanges: editorDraft != initialDraft || refreshedProxyEvidence,
-      issue: editorDraft.firstIssue, usesProxy: usesProxy,
+      hasChanges: editorDraft != initialDraft || refreshedProxyEvidence || !pendingTagInput.isEmpty,
+      issue: currentValidationIssue, usesProxy: usesProxy,
       kind: proxyKind,
       hasUsername: !proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
       isTesting: isTesting, refreshedEvidence: refreshedProxyEvidence,
@@ -1454,7 +1457,17 @@ struct ProfileEditorView: View {
   }
 
   private var hasUnsavedChanges: Bool {
-    editorDraft != initialDraft || refreshedProxyEvidence || !proxyImportText.isEmpty
+    editorDraft != initialDraft || refreshedProxyEvidence || !proxyImportText.isEmpty || !pendingTagInput.isEmpty
+  }
+
+  private var resolvedTagDraft: ProfileTagEditorInputResult {
+    ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: tags)
+  }
+
+  private var currentValidationIssue: ProfileEditorValidationIssue? {
+    editorDraft.firstIssue ?? resolvedTagDraft.error.map {
+      ProfileEditorValidationIssue(field: .tags, message: $0.localizedDescription)
+    }
   }
 
   @MainActor

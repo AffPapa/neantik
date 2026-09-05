@@ -1,5 +1,13 @@
 import SwiftUI
 
+enum ProfileBatchUndoFailurePolicy {
+    static func invalidatesReceipt(_ error: Error) -> Bool {
+        // Store Undo validates the complete receipt before mutation. Storage
+        // errors leave it usable; only a confirmed conflict makes it stale.
+        (error as? ProfileBatchMutationError) == .undoConflict
+    }
+}
+
 struct ProfileBatchSelectionPresentation: Equatable, Sendable {
     let selectedProfileIDs: Set<UUID>
     let visibleProfileIDs: Set<UUID>

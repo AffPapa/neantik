@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Goal quality pass protects notes against concurrent overwrite, keeps the
+  folder picker open on save failure and preserves batch Undo after retryable
+  storage errors. Pending tags survive collapsed settings and participate in
+  Save/dirty-state validation; empty suggestion search no longer selects an
+  arbitrary tag. Folder keyboard selection scrolls into view. Batch-tag
+  previews/suggestions and route indexing avoid duplicate work; tag suggestion
+  search handles diacritics consistently. No runtime or dependency change.
+
 - Batch tag editing previews coverage and changed/unchanged counts, disables
   no-op submissions, warns about tag-limit blockers before an atomic save and
   offers only selected-profile tags for removal. Shortcut search gains an
