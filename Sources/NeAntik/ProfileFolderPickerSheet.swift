@@ -59,12 +59,12 @@ struct ProfileFolderPickerPresentation: Equatable, Sendable {
         folders: [ProfileFolder],
         searchText: String
     ) -> Self {
-        let query = searchText.trimmingCharacters(
+        let query = ProfileFolder.comparisonKey(searchText.trimmingCharacters(
             in: .whitespacesAndNewlines
-        )
+        ))
         let filteredFolders = folders.filter {
             query.isEmpty ||
-                $0.name.localizedCaseInsensitiveContains(query)
+                ProfileFolder.comparisonKey($0.name).contains(query)
         }
         return Self(
             filteredFolders: filteredFolders,

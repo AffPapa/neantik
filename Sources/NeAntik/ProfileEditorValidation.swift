@@ -7,6 +7,7 @@ enum ProfileEditorField: String, Hashable, Sendable {
     case startURL
     case proxyHost
     case proxyPort
+    case proxyUsername
     case proxyPassword
 }
 
@@ -142,10 +143,22 @@ enum ProfileEditorValidation {
                     in: .whitespacesAndNewlines
                 )
         )
-        guard proxy.isValid else {
+        var endpointOnly = proxy
+        endpointOnly.username = ""
+        guard endpointOnly.isValid else {
             return ProfileEditorValidationIssue(
                 field: .proxyHost,
                 message: "Проверь адрес прокси."
+            )
+        }
+        guard proxy.isValid else {
+            let exceedsLimit = proxy.username.count > ProxyConfiguration.maximumUsernameLength ||
+                proxy.username.utf8.count > ProxyConfiguration.maximumUsernameUTF8Bytes
+            return ProfileEditorValidationIssue(
+                field: .proxyUsername,
+                message: exceedsLimit
+                    ? "Сократи логин прокси до \(ProxyConfiguration.maximumUsernameLength) символов и \(ProxyConfiguration.maximumUsernameUTF8Bytes) байт UTF-8."
+                    : "Удали из логина прокси двоеточие и недопустимые управляющие символы."
             )
         }
 

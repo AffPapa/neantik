@@ -140,6 +140,9 @@ struct ProfileListIndex: Equatable, Sendable {
             }
         )
         folderNameByID = resolvedFolderNameByID
+        let foldedFolderNameByID = resolvedFolderNameByID.mapValues(
+            ProfileSearchText.fold
+        )
 
         for profile in profiles {
             let assignedFolderID = organization.folderID(
@@ -183,22 +186,21 @@ struct ProfileListIndex: Equatable, Sendable {
                 }
             }
             let routeValues = ProfileRouteSearchDocument.values(for: profile)
+            let foldedRouteValues = routeValues.map(ProfileSearchText.fold)
+            let foldedProfileValues = ([profile.name] + profile.tags + [
+                profile.note
+            ]).map(ProfileSearchText.fold)
             indexedProfiles.append(
                 IndexedProfile(
                     profile: profile,
                     folderID: folderFilter.folderID,
-                    profileSearchText: ProfileSearchText.document(
-                        profileValues: [profile.name] + profile.tags + [
-                            profile.note
-                        ] + routeValues
-                    ),
+                    profileSearchText: (foldedProfileValues + foldedRouteValues)
+                        .joined(separator: "\u{0}"),
                     folderSearchText: folderFilter.folderID.flatMap {
-                        resolvedFolderNameByID[$0]
-                    }.map(ProfileSearchText.fold),
+                        foldedFolderNameByID[$0]
+                    },
                     proxySearchText: profile.proxy.map { _ in
-                        ProfileSearchText.document(
-                            profileValues: routeValues
-                        )
+                        foldedRouteValues.joined(separator: "\u{0}")
                     }
                 )
             )

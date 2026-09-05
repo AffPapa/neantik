@@ -83,6 +83,14 @@ validates its final token before Save. No persisted schema changes are involved.
 
 ### Delivered in the current development cycle
 
+- `UX_SIMPLICITY_REVIEW_2026-09-05.md` compares eight vendors' documented
+  interaction patterns and selects ten bounded corrections. Folder validation
+  now explains rejection without truncating draft text; picker matching uses
+  folder identity folding. `ProfileEditorField.proxyUsername` is an ephemeral
+  validation/focus target, not a persisted schema field. Tag suggestions retain
+  the independent pending draft. Settings support local Find/Escape; indexing
+  reuses folded folder/routes and the header reuses its render-time subset.
+
 - `ProfileBatchTagPreview.swift` provides metadata-only coverage, impact,
   no-op and tag-limit previews using the store's tag identity rules. The batch
   sheet offers selection-scoped removal suggestions; the store remains the

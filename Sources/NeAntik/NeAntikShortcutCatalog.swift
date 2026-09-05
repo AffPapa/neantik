@@ -41,8 +41,15 @@ extension NeAntikShortcut {
         let searchable = [title, category.title, displayChord,
                           accessibilityChord, chordIdentifier, availability]
             .joined(separator: " ")
+        let namedChord = accessibilityChord.replacingOccurrences(of: ", ", with: "+")
         return terms.allSatisfy {
-            searchable.localizedStandardContains(String($0))
+            // A complete typed chord must include exactly these modifiers;
+            // substring matching would also find Shift+Command+Return for Command+Return.
+            if $0.contains("+") {
+                return namedChord.localizedCaseInsensitiveCompare(String($0)) == .orderedSame ||
+                    chordIdentifier.localizedCaseInsensitiveCompare(String($0)) == .orderedSame
+            }
+            return searchable.localizedStandardContains(String($0))
         }
     }
 }

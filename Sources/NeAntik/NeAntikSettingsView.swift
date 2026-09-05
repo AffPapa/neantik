@@ -40,9 +40,26 @@ struct NeAntikSettingsView: View {
 
             Section("Сочетания клавиш") {
                 HStack {
+                    Button {
+                        shortcutSearchIsFocused = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut("f", modifiers: .command)
+                    .accessibilityLabel("Найти сочетание клавиш")
+                    .help("Найти сочетание клавиш (⌘F)")
+
                     TextField("Найти команду, клавиши или раздел", text: $shortcutQuery)
                         .accessibilityLabel("Поиск сочетаний клавиш")
                         .focused($shortcutSearchIsFocused)
+                        .onExitCommand {
+                            if shortcutQuery.isEmpty {
+                                shortcutSearchIsFocused = false
+                            } else {
+                                shortcutQuery = ""
+                            }
+                        }
                     if !shortcutQuery.isEmpty {
                         Button {
                             shortcutQuery = ""

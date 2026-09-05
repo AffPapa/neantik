@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Usability follow-up preserves unfinished text when picking existing tags,
+  directs proxy-login validation to the login field, explains invalid folder
+  names without silently truncating them, and matches accented folder names
+  consistently. Settings gain two-stage Escape, local Find focus and searchable
+  named Return chords. Note placeholders use a clearer semantic color. Search
+  indexing reuses folded values, and list headers reuse the current operational
+  subset without caching action-time eligibility.
+
 - Goal quality pass protects notes against concurrent overwrite, keeps the
   folder picker open on save failure and preserves batch Undo after retryable
   storage errors. Pending tags survive collapsed settings and participate in

@@ -407,7 +407,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         self.assertIn('"Выбрать другую папку…"', commands)
         self.assertIn('TextField("Поиск папок"', picker)
-        self.assertIn("localizedCaseInsensitiveContains", picker)
+        self.assertIn("ProfileFolder.comparisonKey(searchText.trimmingCharacters", picker)
+        self.assertIn("ProfileFolder.comparisonKey($0.name).contains(query)", picker)
         self.assertIn(
             "let visibleFolders = presentation.filteredFolders",
             picker,

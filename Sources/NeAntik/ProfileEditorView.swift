@@ -455,6 +455,10 @@ struct ProfileEditorView: View {
                 "Логин (необязательно)",
                 text: $proxyUsername
               )
+              .focused($focusedField, equals: .proxyUsername)
+              .id(ProfileEditorField.proxyUsername)
+              .accessibilityLabel("Логин прокси")
+              validationLabel(for: .proxyUsername)
               HStack(spacing: 8) {
                 Group {
                   if proxyPasswordRevealLease.isRevealed {
@@ -719,6 +723,7 @@ struct ProfileEditorView: View {
       proxyInputDidChange()
     }
     .onChange(of: proxyUsername) { _, _ in
+      clearValidation(for: .proxyUsername)
       proxyInputDidChange()
     }
     .onChange(of: proxyPassword) { _, _ in
@@ -1088,7 +1093,7 @@ struct ProfileEditorView: View {
           )
         if note.isEmpty {
           Text("Короткий контекст для этого профиля")
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 6)
             .padding(.vertical, 8)
             .accessibilityHidden(true)
@@ -1274,7 +1279,7 @@ struct ProfileEditorView: View {
     switch issue.field {
     case .startURL, .tags:
       showsAdvancedOptions = true
-    case .name, .note, .proxyHost, .proxyPort, .proxyPassword:
+    case .name, .note, .proxyHost, .proxyPort, .proxyUsername, .proxyPassword:
       break
     }
     if issue.field == .note {
@@ -1285,7 +1290,7 @@ struct ProfileEditorView: View {
       await Task.yield()
       switch issue.field {
       case .name, .note, .startURL, .proxyHost, .proxyPort,
-        .proxyPassword:
+        .proxyUsername, .proxyPassword:
         focusedField = issue.field
       case .tags:
         focusedField = nil

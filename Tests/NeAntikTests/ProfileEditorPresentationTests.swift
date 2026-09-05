@@ -4,6 +4,33 @@ import Testing
 
 struct ProfileEditorPresentationTests {
     @Test
+    func folderNameValidationExplainsRejectedInputWithoutTruncatingIt() {
+        #expect(ProfileFolderNameValidation.message(for: "  Café  ") == nil)
+        #expect(ProfileFolderNameValidation.message(for: " \n ") == "Введи название папки.")
+        #expect(ProfileFolderNameValidation.message(for: String(repeating: "a", count: 65))?.contains("64") == true)
+        #expect(ProfileFolderNameValidation.message(for: "Client\u{202E}A")?.contains("управляющие") == true)
+        #expect(ProfileFolderNameValidation.message(for: "Client\nA") != nil)
+        let oversizedGrapheme = "a" + String(repeating: "\u{0301}", count: 1_100)
+        #expect(oversizedGrapheme.count == 1)
+        #expect(ProfileFolderNameValidation.message(for: oversizedGrapheme)?.contains("места") == true)
+        // Duplicate detection remains separate from structural validation.
+        #expect(ProfileFolderNameValidation.message(for: "Cafe") == nil)
+        #expect(ProfileFolder.comparisonKey("Cafe") == ProfileFolder.comparisonKey("Café"))
+    }
+
+    @Test
+    func folderPickerSearchUsesFolderIdentityFolding() {
+        let cafe = ProfileFolder(name: "Café"), other = ProfileFolder(name: "Other")
+        let found = ProfileFolderPickerPresentation.resolve(folders: [cafe, other], searchText: "  CAFE \n")
+        #expect(found.filteredFolders == [cafe])
+        #expect(found.returnFolderID == cafe.id)
+        let empty = ProfileFolderPickerPresentation.resolve(folders: [cafe, other], searchText: " \n")
+        #expect(empty.filteredFolders == [cafe, other])
+        #expect(empty.returnFolderID == nil)
+        #expect(ProfileFolderPickerPresentation.resolve(folders: [cafe], searchText: "missing").returnFolderID == nil)
+    }
+
+    @Test
     func editorHeadingMakesCreateAndEditModesExplicit() {
         let create = ProfileEditorHeadingPresentation.resolve(
             original: nil,

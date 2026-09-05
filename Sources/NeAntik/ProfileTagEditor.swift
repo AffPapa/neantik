@@ -76,6 +76,13 @@ enum ProfileTagEditorModel {
     !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
+  static func addingSuggestion(
+    _ suggestion: String, to tags: [String], preservingInput input: String
+  ) -> ProfileTagEditorInputResult {
+    let result = adding(suggestion, to: tags)
+    return .init(tags: result.tags, remainingInput: input, error: result.error)
+  }
+
   static func adding(
     _ candidate: String,
     to tags: [String]
@@ -488,7 +495,7 @@ struct ProfileTagEditor: View {
   }
 
   private func addSuggestion(_ suggestion: String) {
-    apply(ProfileTagEditorModel.adding(suggestion, to: tags))
+    apply(ProfileTagEditorModel.addingSuggestion(suggestion, to: tags, preservingInput: input))
   }
 
   private func addFirstFilteredSuggestion() {

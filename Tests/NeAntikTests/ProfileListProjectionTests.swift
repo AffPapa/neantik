@@ -69,6 +69,56 @@ extension ProfileListProjectionTests {
         }
     }
 
+    @Test func reusedFolderAndRouteTextPreservesSearchSemantics() {
+        let folder = ProfileFolder(name: "Café partagé")
+        let direct = BrowserProfile(name: "Direct", note: "Résumé")
+        let proxied = BrowserProfile(
+            name: "Proxied",
+            note: "Résumé",
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "route.example",
+                port: 8080,
+                username: "private-operator"
+            )
+        )
+        let profiles = [proxied, direct]
+        let organization = ProfileOrganizationState(
+            folders: [folder],
+            assignmentsByProfileID: [direct.id: folder.id, proxied.id: folder.id]
+        )
+        let index = ProfileListIndex(profiles: profiles, organization: organization)
+        let cases: [(String, Set<UUID>)] = [
+            ("cafe partage", [direct.id, proxied.id]),
+            ("folder:\"CAFE PARTAGE\"", [direct.id, proxied.id]),
+            ("note:resume", [direct.id, proxied.id]),
+            ("route.example", [proxied.id]),
+            ("proxy:route.example", [proxied.id]),
+            ("proxy:HTTP", [proxied.id]),
+            ("resume HTTP", []),
+            ("HTTP route.example", []),
+            ("private-operator", []),
+            ("proxy:private-operator", []),
+        ]
+        for (query, expectedIDs) in cases {
+            for folderFilter in [ProfileFolderFilter.all, .folder(folder.id)] {
+                let indexed = index.filtered(
+                    searchText: query, tag: nil, scope: .active,
+                    folderFilter: folderFilter
+                )
+                let standalone = ProfileListProjection.filtered(
+                    profiles, searchText: query, tag: nil,
+                    folderFilter: folderFilter, organization: organization
+                )
+                #expect(indexed.map(\.id) == standalone.map(\.id))
+                // General folder-name search applies only in the all-folder view.
+                let expected = query == "cafe partage" && folderFilter != .all
+                    ? Set<UUID>() : expectedIDs
+                #expect(Set(indexed.map(\.id)) == expected)
+            }
+        }
+    }
+
     @Test func visibleExamplesAreValidQueries() {
         for example in ProfileSearchSyntaxHelp.examples {
             #expect(ProfileSearchQuery(rawValue: example).validationMessage == nil)

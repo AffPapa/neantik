@@ -1647,7 +1647,8 @@ struct ContentView: View {
                 proxy.size.width >= ProfileRowLayout.minimumWideWidth
             VStack(spacing: 0) {
                 profileListHeader(
-                    operationalProjection: operationalProjection
+                    operationalProjection: operationalProjection,
+                    operationalProfiles: operationalProfiles
                 )
                 Divider()
                 runtimeReadinessBanner
@@ -1950,12 +1951,11 @@ struct ContentView: View {
     }
 
     private func profileListHeader(
-        operationalProjection: ProfileOperationalProjection
+        operationalProjection: ProfileOperationalProjection,
+        operationalProfiles: [BrowserProfile]
     ) -> some View {
         let bulkProxyAction = BulkProxyActionProjection.resolve(
-            visibleProfiles: operationalProjection.profiles(
-                for: profileOperationalFilter
-            ),
+            visibleProfiles: operationalProfiles,
             processState: { processes.processState(for: $0) },
             isPreparing: { launchPreparingProfileIDs.contains($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }

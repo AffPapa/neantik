@@ -6,6 +6,24 @@ import Testing
 @Suite("ProfileTagEditorTests")
 struct ProfileTagEditorTests {
   @Test
+  func suggestionsPreserveUnfinishedDraftOnSuccessAndFailure() {
+    let draft = "Незавершённый тег"
+    let added = ProfileTagEditorModel.addingSuggestion("QA", to: [], preservingInput: draft)
+    #expect(added.tags == ["QA"])
+    #expect(added.remainingInput == draft)
+    #expect(added.error == nil)
+    let full = (1...BrowserProfile.maximumTagCount).map { "Tag \($0)" }
+    let failed = ProfileTagEditorModel.addingSuggestion("QA", to: full, preservingInput: draft)
+    #expect(failed.tags == full)
+    #expect(failed.remainingInput == draft)
+    #expect(failed.error == .tooMany)
+    let duplicate = ProfileTagEditorModel.addingSuggestion("qa", to: ["QA"], preservingInput: draft)
+    #expect(duplicate.tags == ["QA"])
+    #expect(duplicate.remainingInput == draft)
+    #expect(duplicate.error == nil)
+  }
+
+  @Test
   func savingResolvesFinalTagAndCommaDraft() {
     let result = ProfileTagEditorModel.resolvingDraft("Работа, Клиент", tags: ["QA"])
     #expect(result.tags == ["QA", "Работа", "Клиент"])

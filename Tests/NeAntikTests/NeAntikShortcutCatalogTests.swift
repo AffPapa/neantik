@@ -18,6 +18,19 @@ struct NeAntikShortcutCatalogTests {
         #expect(NeAntikShortcut.editSelectedProfile.availability.contains("перехода"))
         #expect(NeAntikShortcut.newProfile.availability.contains("диалог"))
     }
+
+    @Test func plusSeparatedReturnChordsRequireExactModifiers() {
+        #expect(NeAntikShortcut.toggleSelectedProfile.matchesSearch("Command+Return"))
+        #expect(NeAntikShortcut.focusSelectedProfile.matchesSearch("shift+command+return"))
+        #expect(!NeAntikShortcut.focusSelectedProfile.matchesSearch("Command+Return"))
+        #expect(!NeAntikShortcut.toggleSelectedProfile.matchesSearch("Shift+Command+Return"))
+        #expect(!NeAntikShortcut.toggleSelectedProfile.matchesSearch("Option+Command+Return"))
+        #expect(!NeAntikShortcut.newProfile.matchesSearch("Command+Return"))
+        #expect(NeAntikShortcut.newProfile.matchesSearch("Command+N"))
+        #expect(!NeAntikShortcut.newFolder.matchesSearch("Command+N"))
+        #expect(NeAntikShortcut.focusSelectedProfile.matchesSearch("браузера Shift+Command+Return"))
+        #expect(!NeAntikShortcut.focusSelectedProfile.matchesSearch("заметку Shift+Command+Return"))
+    }
     @Test func everyShortcutHasOneUniqueChord() {
         let identifiers = NeAntikShortcut.allCases.map(\.chordIdentifier)
 

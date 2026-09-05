@@ -69,7 +69,7 @@ struct ProfileNoteEditorView: View {
                     )
                 if note.isEmpty {
                     Text("Контекст, статус или следующий шаг")
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 8)
                         .allowsHitTesting(false)
