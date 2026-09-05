@@ -9,6 +9,7 @@ enum ProfileEditorField: String, Hashable, Sendable {
     case proxyPort
     case proxyUsername
     case proxyPassword
+    case proxyImport
 }
 
 struct ProfileNotePresentation: Equatable, Sendable {
@@ -67,6 +68,29 @@ struct ProfileEditorValidationIssue: Equatable, Sendable {
 }
 
 enum ProfileEditorValidation {
+    static func nameMessage(for value: String) -> String? {
+        let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !BrowserProfile.isValidName(clean) else { return nil }
+        if clean.isEmpty { return "Введи название профиля." }
+        if clean.count > BrowserProfile.maximumNameLength {
+            return "Сократи название до \(BrowserProfile.maximumNameLength) символов."
+        }
+        if clean.utf8.count > BrowserProfile.maximumNameUTF8Bytes {
+            return "Название занимает слишком много места. Сократи его или используй более простые символы."
+        }
+        return "Убери переносы строк и скрытые управляющие символы из названия."
+    }
+
+    static func pendingProxyImportIssue(_ text: String) -> ProfileEditorValidationIssue? {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return ProfileEditorValidationIssue(
+            field: .proxyImport,
+            message: "Строка прокси ещё не применена. Нажми «Вставить прокси» или очисти поле."
+        )
+    }
+
     static func firstIssue(
         name: String,
         tags: [String],
@@ -79,13 +103,10 @@ enum ProfileEditorValidation {
         proxyUsername: String,
         proxyPassword: String = ""
     ) -> ProfileEditorValidationIssue? {
-        let cleanName = name.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
-        guard BrowserProfile.isValidName(cleanName) else {
+        if let message = nameMessage(for: name) {
             return ProfileEditorValidationIssue(
                 field: .name,
-                message: "Введи название профиля."
+                message: message
             )
         }
 

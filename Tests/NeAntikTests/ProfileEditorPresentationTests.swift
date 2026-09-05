@@ -258,6 +258,53 @@ extension ProfileEditorPresentationTests {
         #expect(draft() != draft(port: "8081"))
     }
 
+    @Test func overlongNameRemainsAnEditableDraftWithSpecificValidation() {
+        let pasted = String(repeating: "я", count: BrowserProfile.maximumNameLength + 1)
+        let invalid = draft(name: pasted)
+        #expect(invalid.name == pasted)
+        #expect(invalid.firstIssue?.field == .name)
+        #expect(invalid.firstIssue?.message.contains("120") == true)
+        #expect(!state(changes: true, issue: invalid.firstIssue).canSave)
+        let corrected = draft(name: String(pasted.dropLast()))
+        #expect(corrected.firstIssue == nil)
+        #expect(state(changes: true, issue: corrected.firstIssue).canSave)
+        let byteHeavy = "a" + String(repeating: "\u{0301}", count: BrowserProfile.maximumNameUTF8Bytes)
+        #expect(ProfileEditorValidation.nameMessage(for: byteHeavy)?.contains("места") == true)
+        #expect(ProfileEditorValidation.nameMessage(for: "Работа\nАрхив")?.contains("переносы") == true)
+        #expect(ProfileEditorValidation.nameMessage(for: "Работа\u{202E}A")?.contains("управляющие") == true)
+    }
+
+    @Test func unappliedProxyTextBlocksSavingEvenWhenExistingRouteIsValid() throws {
+        let edited = draft(name: "Другое")
+        #expect(edited.firstIssue == nil)
+        #expect(draft(name: "", port: "0").saveIssue(
+            pendingProxyText: "next.example:8080", pendingTagInput: ""
+        )?.field == .proxyImport)
+        #expect(draft(name: "", port: "0").saveIssue(
+            pendingProxyText: " \n ", pendingTagInput: ""
+        )?.field == .name)
+        for pending in ["next.example:8080", "invalid proxy", "user:secret@next.example:8080"] {
+            let issue = try #require(edited.saveIssue(pendingProxyText: pending, pendingTagInput: ""))
+            #expect(issue.field == .proxyImport)
+            #expect(!issue.message.contains(pending))
+            #expect(!state(changes: true, issue: issue, proxy: true).canSave)
+            #expect(!state(isNew: true, issue: issue).canSave)
+        }
+        // A failed parse retains the pending input and thus the Save guard.
+        let invalid = "invalid proxy"
+        #expect(throws: (any Error).self) {
+            try ProxyImportParser.parse(invalid, kind: .http, order: .automatic)
+        }
+        #expect(ProfileEditorValidation.pendingProxyImportIssue(invalid) != nil)
+        // Applying successfully or deliberately clearing the field removes this guard.
+        _ = try ProxyImportParser.parse("next.example:8080", kind: .http, order: .automatic)
+        for cleared in ["", " \n "] {
+            let issue = edited.saveIssue(pendingProxyText: cleared, pendingTagInput: "")
+            #expect(issue == nil)
+            #expect(state(changes: true, issue: issue, proxy: true).canSave)
+        }
+    }
+
     @Test func proxyTestValidationDoesNotRequireProfileName() {
         #expect(draft(name: "").firstIssue?.field == .name)
         #expect(draft(name: "").proxyIssue == nil)

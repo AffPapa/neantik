@@ -256,6 +256,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
             if !searchText.isEmpty {
                 Button {
                     searchText = ""
+                    searchIsFocused.wrappedValue = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)

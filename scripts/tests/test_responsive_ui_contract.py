@@ -63,6 +63,31 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_profile_name_and_pending_proxy_drafts_reach_save_validation(self):
+        source = EDITOR.read_text()
+        name_change = source.split('.onChange(of: name)', 1)[1].split('Text(', 1)[0]
+        self.assertNotIn('name =', name_change)
+        self.assertNotIn('prefix(', name_change)
+        self.assertIn('.focused($focusedField, equals: .proxyImport)', source)
+        self.assertIn('.id(ProfileEditorField.proxyImport)', source)
+        self.assertIn('editorDraft.saveIssue(pendingProxyText: proxyImportText', source)
+        self.assertIn('ProfilePendingProxyImportRecovery(text: $proxyImportText', source)
+        navigation = source.split('private func presentValidation(', 1)[1].split('private func', 1)[0]
+        self.assertNotIn('usesProxy = true', navigation)
+        import_action = source.split('private func importProxy()', 1)[1].split('private func', 1)[0]
+        success, failure = import_action.split('} catch {', 1)
+        self.assertIn('proxyImportText = ""', success)
+        self.assertNotIn('proxyImportText = ""', failure)
+
+    def test_bulk_invalid_base_name_has_visible_keyboard_correction_target(self):
+        source = BULK_IMPORT.read_text()
+        self.assertIn('.focused($baseNameIsFocused)', source)
+        status = source.split('private var previewStatus:', 1)[1].split('private var previewRows:', 1)[0]
+        self.assertIn('showsOptions = true', status)
+        self.assertIn('baseNameIsFocused = true', status)
+        self.assertIn('baseNameValidationMessage(baseName)', status)
+        self.assertIn('baseNameIsValid ? "\\(previewName)…" : "Исправь основу названия"', source)
+
     def test_batch_tag_save_preserves_draft_on_failure(self):
         sheet = (ROOT / 'Sources/NeAntik/ProfileBatchTagSheet.swift').read_text()
         content = CONTENT.read_text()
@@ -226,7 +251,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('Picker("Сортировка"', text)
         self.assertIn('Picker("Подключение"', text)
         self.assertIn(
-            'accessibilityLabel("Фильтры и сортировка профилей")', text
+            'accessibilityLabel("Вид списка: сортировка, подключение и плотность")', text
         )
         list_menu_start = text.index("private var profileListViewMenu")
         list_menu_end = text.index(
@@ -234,7 +259,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         list_menu = text[list_menu_start:list_menu_end]
         self.assertIn(
-            'Label("Фильтры", systemImage: "line.3.horizontal.decrease")',
+            'Label("Вид списка", systemImage: "line.3.horizontal.decrease")',
             list_menu,
         )
         self.assertNotIn("ViewThatFits", list_menu)

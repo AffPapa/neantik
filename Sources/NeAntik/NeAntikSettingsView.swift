@@ -62,8 +62,7 @@ struct NeAntikSettingsView: View {
                         }
                     if !shortcutQuery.isEmpty {
                         Button {
-                            shortcutQuery = ""
-                            shortcutSearchIsFocused = true
+                            clearShortcutSearch()
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .frame(width: 28, height: 28)
@@ -75,6 +74,14 @@ struct NeAntikSettingsView: View {
                 }
                 if shortcuts.isEmpty {
                     Text("Сочетания не найдены")
+                    Text("Попробуй название команды или клавиши.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Очистить поиск", action: clearShortcutSearch)
+                } else if !shortcutQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Найдено сочетаний: \(shortcuts.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 ForEach(NeAntikShortcutCategory.allCases) { category in
                     let group = shortcuts.filter { $0.category == category }
@@ -96,6 +103,11 @@ struct NeAntikSettingsView: View {
         .formStyle(.grouped)
         .frame(width: 560, height: 520)
         .navigationTitle("Настройки NeAntik")
+    }
+
+    private func clearShortcutSearch() {
+        shortcutQuery = ""
+        shortcutSearchIsFocused = true
     }
 
     private func shortcutGroup(
@@ -138,9 +150,10 @@ struct NeAntikSettingsView: View {
                     Spacer()
                     Text("Остановлен").foregroundStyle(.secondary)
                 }
-                .font(.caption)
-                .padding(.vertical, preferences.rowDensity == .compact ? 5 : 11)
+                .font(.body)
+                .padding(.vertical, preferences.rowDensity.verticalPadding)
                 .padding(.horizontal, 8)
+                .frame(minHeight: preferences.rowDensity.minimumRowHeight)
                 if index == 1 { Divider() }
             }
         }

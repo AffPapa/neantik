@@ -4,6 +4,16 @@ import Testing
 
 @MainActor
 struct WorkspacePreferenceStoreTests {
+    @Test func densityMetricsKeepTheCompactRowSmaller() {
+        #expect(ProfileRowDensity.compact.verticalPadding == 3)
+        #expect(ProfileRowDensity.comfortable.verticalPadding == 7)
+        #expect(ProfileRowDensity.compact.minimumRowHeight == 50)
+        #expect(ProfileRowDensity.comfortable.minimumRowHeight == 62)
+        for density in ProfileRowDensity.allCases {
+            #expect(density.minimumRowHeight - 2 * density.verticalPadding >= 44)
+        }
+    }
+
     @Test func persistsOnlyTheSelectedRowDensity() throws {
         let suite = "NeAntik.WorkspacePreferences.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))

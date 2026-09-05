@@ -83,6 +83,14 @@ validates its final token before Save. No persisted schema changes are involved.
 
 ### Delivered in the current development cycle
 
+- `UX_UNIFICATION_GOAL_2026-09-05.md` tracks the subsequent thirteen-point
+  consistency pass. `ProfileEditorDraft.saveIssue` owns pending-import Save
+  precedence; `ProfilePendingProxyImportRecovery` keeps Direct drafts reachable
+  without implicit route changes. Bulk name validation retains suffix/byte
+  feasibility. Shared `ProfileRowDensity` metrics drive rows and preview;
+  `ProfileListEmptyAction.clearScope` retains the selected folder. Tag layout
+  measures against available width and preserves its remove control.
+
 - `UX_SIMPLICITY_REVIEW_2026-09-05.md` compares eight vendors' documented
   interaction patterns and selects ten bounded corrections. Folder validation
   now explains rejection without truncating draft text; picker matching uses

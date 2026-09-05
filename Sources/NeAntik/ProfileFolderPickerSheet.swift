@@ -48,11 +48,12 @@ struct ProfileFolderPickerPresentation: Equatable, Sendable {
         from current: ProfileFolderPickerRowID?,
         offset: Int
     ) -> ProfileFolderPickerRowID? {
-        guard !rowIDs.isEmpty else { return nil }
+        let rows = rowIDs
+        guard !rows.isEmpty else { return nil }
         guard let current,
-              let index = rowIDs.firstIndex(of: current)
-        else { return offset < 0 ? rowIDs.last : rowIDs.first }
-        return rowIDs[min(max(index + offset, 0), rowIDs.count - 1)]
+              let index = rows.firstIndex(of: current)
+        else { return offset < 0 ? rows.last : rows.first }
+        return rows[min(max(index + offset, 0), rows.count - 1)]
     }
 
     static func resolve(

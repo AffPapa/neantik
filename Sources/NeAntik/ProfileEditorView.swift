@@ -358,15 +358,8 @@ struct ProfileEditorView: View {
             .onSubmit {
               focusedField = nil
             }
-            .onChange(of: name) { _, value in
+            .onChange(of: name) { _, _ in
               clearValidation(for: .name)
-              if value.count > BrowserProfile.maximumNameLength {
-                name = String(
-                  value.prefix(
-                    BrowserProfile.maximumNameLength
-                  )
-                )
-              }
             }
           Text(
             "\(name.count) из \(BrowserProfile.maximumNameLength) символов"
@@ -380,6 +373,10 @@ struct ProfileEditorView: View {
 
         Section("Сеть") {
           Toggle("Использовать прокси", isOn: $usesProxy)
+          if !usesProxy && !proxyImportText.isEmpty {
+            ProfilePendingProxyImportRecovery(text: $proxyImportText, usesProxy: $usesProxy, focus: $focusedField)
+              .id(ProfileEditorField.proxyImport)
+          }
           if usesProxy {
             Picker("Тип", selection: $proxyKind) {
               ForEach(ProxyKind.allCases) { kind in
@@ -392,6 +389,8 @@ struct ProfileEditorView: View {
               text: $proxyImportText
             )
             .accessibilityLabel("Строка прокси для импорта")
+            .focused($focusedField, equals: .proxyImport)
+            .id(ProfileEditorField.proxyImport)
             Text("Например: login:password@ip:port или ip:port@login:password")
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -738,6 +737,9 @@ struct ProfileEditorView: View {
     }
     .onChange(of: proxyImportOrder) { _, _ in
       proxyImportNotice = nil
+    }
+    .onChange(of: proxyImportText) { _, _ in
+      clearValidation(for: .proxyImport)
     }
     .onChange(of: tags) { _, _ in
       clearValidation(for: .tags)
@@ -1279,7 +1281,7 @@ struct ProfileEditorView: View {
     switch issue.field {
     case .startURL, .tags:
       showsAdvancedOptions = true
-    case .name, .note, .proxyHost, .proxyPort, .proxyUsername, .proxyPassword:
+    case .name, .note, .proxyHost, .proxyPort, .proxyUsername, .proxyPassword, .proxyImport:
       break
     }
     if issue.field == .note {
@@ -1290,7 +1292,7 @@ struct ProfileEditorView: View {
       await Task.yield()
       switch issue.field {
       case .name, .note, .startURL, .proxyHost, .proxyPort,
-        .proxyUsername, .proxyPassword:
+        .proxyUsername, .proxyPassword, .proxyImport:
         focusedField = issue.field
       case .tags:
         focusedField = nil
@@ -1470,9 +1472,7 @@ struct ProfileEditorView: View {
   }
 
   private var currentValidationIssue: ProfileEditorValidationIssue? {
-    editorDraft.firstIssue ?? resolvedTagDraft.error.map {
-      ProfileEditorValidationIssue(field: .tags, message: $0.localizedDescription)
-    }
+    editorDraft.saveIssue(pendingProxyText: proxyImportText, pendingTagInput: pendingTagInput)
   }
 
   @MainActor

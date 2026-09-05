@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- A thirteen-point unification pass retains overlong profile-name drafts and
+  blocks Save while proxy import text remains unapplied, with explicit Direct
+  recovery that does not change routes on validation navigation. Bulk import
+  names the failing line and provides actionable generated-name validation.
+  Combined folder/scope empty states preserve folder context on recovery.
+  Settings and workspace share density metrics and clear-search focus rules;
+  inspector launch hints reuse the row policy. Long tags keep removal controls
+  visible; tag suggestions and folder navigation avoid repeated render work.
+
 - Usability follow-up preserves unfinished text when picking existing tags,
   directs proxy-login validation to the login field, explains invalid folder
   names without silently truncating them, and matches accented folder names

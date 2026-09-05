@@ -34,6 +34,13 @@ struct ProfileEditorDraft: Equatable {
             proxyUsername: proxyUsername, proxyPassword: proxyPassword
         )
     }
+
+    func saveIssue(pendingProxyText: String, pendingTagInput: String) -> ProfileEditorValidationIssue? {
+        ProfileEditorValidation.pendingProxyImportIssue(pendingProxyText) ??
+        firstIssue ?? ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: tags).error.map {
+            ProfileEditorValidationIssue(field: .tags, message: $0.localizedDescription)
+        }
+    }
 }
 
 struct ProfileEditorSavePresentation: Equatable {
@@ -109,5 +116,27 @@ struct ProfileEditorSaveSummary: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.top, 8)
+    }
+}
+
+/// Keep an unapplied import reachable after switching back to Direct.
+struct ProfilePendingProxyImportRecovery: View {
+    @Binding var text: String
+    @Binding var usesProxy: Bool
+    let focus: FocusState<ProfileEditorField?>.Binding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Осталась неприменённая строка прокси. Включи прокси, чтобы применить её, или очисти поле.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            SecureField("Строка прокси для импорта", text: $text)
+                .focused(focus, equals: .proxyImport)
+                .accessibilityLabel("Строка прокси для импорта")
+            HStack {
+                Button("Включить прокси") { usesProxy = true }
+                Button("Очистить строку") { text = "" }
+            }
+        }
     }
 }

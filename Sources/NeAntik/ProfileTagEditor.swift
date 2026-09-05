@@ -325,6 +325,7 @@ struct ProfileTagEditor: View {
 
   @ViewBuilder
   private var suggestionMenu: some View {
+    let availableSuggestions = self.availableSuggestions
     if availableSuggestions.count >
       ProfileTagEditorModel.searchableSuggestionThreshold
     {
@@ -372,7 +373,8 @@ struct ProfileTagEditor: View {
   }
 
   private var searchableSuggestionPicker: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    let filteredSuggestions = self.filteredSuggestions
+    return VStack(alignment: .leading, spacing: 10) {
       Text("Существующие теги")
         .font(.headline)
         .accessibilityHeading(.h2)
@@ -466,6 +468,8 @@ struct ProfileTagEditor: View {
         .padding(.leading, 8)
       Text(tag)
         .lineLimit(1)
+        .truncationMode(.tail)
+        .help(tag)
       Button {
         remove(tag)
       } label: {
@@ -475,6 +479,7 @@ struct ProfileTagEditor: View {
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
+      .fixedSize()
       .help("Удалить тег \(tag)")
       .accessibilityLabel("Удалить тег \(tag)")
     }
@@ -555,7 +560,9 @@ private struct ProfileTagFlowLayout: Layout {
     var widestRow: CGFloat = 0
 
     for subview in subviews {
-      let size = subview.sizeThatFits(.unspecified)
+      let size = subview.sizeThatFits(
+        ProposedViewSize(width: proposal.width, height: nil)
+      )
       if currentX > 0, currentX + size.width > maximumWidth {
         widestRow = max(widestRow, currentX - spacing)
         currentX = 0
@@ -584,7 +591,9 @@ private struct ProfileTagFlowLayout: Layout {
     var rowHeight: CGFloat = 0
 
     for subview in subviews {
-      let size = subview.sizeThatFits(.unspecified)
+      let size = subview.sizeThatFits(
+        ProposedViewSize(width: bounds.width, height: nil)
+      )
       if currentX > bounds.minX,
         currentX + size.width > bounds.maxX
       {

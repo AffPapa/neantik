@@ -1869,6 +1869,8 @@ struct ContentView: View {
             profileSearchText = ""
         case .clearRouteFilter:
             profileRouteFilterBinding.wrappedValue = .all
+        case .clearScope:
+            applyWorkspaceQuery(workspaceQuery.removing(.scope))
         case .showAllProfiles:
             applyWorkspaceQuery(.default, normalize: false)
             profileOperationalFilter = .all
@@ -2033,13 +2035,13 @@ struct ContentView: View {
                 resetProfileView()
             }
         } label: {
-            Label("Фильтры", systemImage: "line.3.horizontal.decrease")
+            Label("Вид списка", systemImage: "line.3.horizontal.decrease")
                 .fixedSize(horizontal: true, vertical: false)
                 .frame(minHeight: 28)
         }
         .menuStyle(.borderlessButton)
-        .help("Сортировка и фильтр подключения")
-        .accessibilityLabel("Фильтры и сортировка профилей")
+        .help("Сортировка, подключение и плотность списка")
+        .accessibilityLabel("Вид списка: сортировка, подключение и плотность")
         .accessibilityValue(
             "\(profileListOrdering.title), \(profileRouteFilter.title), " +
                 workspacePreferences.rowDensity.title
