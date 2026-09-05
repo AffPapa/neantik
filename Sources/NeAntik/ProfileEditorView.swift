@@ -147,6 +147,7 @@ struct ProfileEditorView: View {
   private let draftProfileID: UUID
   private let initialFocus: ProfileEditorField?
   private let appliesOnNextLaunch: Bool
+  private let initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
@@ -176,11 +177,13 @@ struct ProfileEditorView: View {
   @State private var detectedProxyContextEvidence: ProxyContextEvidence?
   @State private var errorMessage: String?
   @State private var validationIssue: ProfileEditorValidationIssue?
+  @State private var validationNavigationRequest = 0
   @State private var testNotice: UserNotice?
   @State private var isTesting = false
+  @State private var refreshedProxyEvidence = false
+  @State private var invalidatedProxyEvidence = false
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
-  @State private var hasUnsavedChanges = false
   @State private var showingDiscardConfirmation = false
   @State private var showingFolderPicker = false
   @FocusState private var focusedField: ProfileEditorField?
@@ -274,6 +277,19 @@ struct ProfileEditorView: View {
     _detectedProxyContextEvidence = State(
       initialValue: profile.identity.proxyContextEvidence
     )
+    initialDraft = ProfileEditorDraft(
+      name: profile.name, colorHex: profile.colorHex,
+      symbolName: profile.displaySymbolName, tags: profile.tags,
+      note: profile.note,
+      folderID: folders.contains { $0.id == initialFolderID }
+        ? initialFolderID : nil,
+      startURL: profile.startURL, usesProxy: profile.proxy != nil,
+      proxyKind: profile.proxy?.kind ?? .http,
+      proxyHost: profile.proxy?.host ?? "",
+      proxyPort: profile.proxy.map { String($0.port) } ?? "",
+      proxyUsername: profile.proxy?.username ?? "",
+      proxyPassword: originalProxyPassword ?? ""
+    )
   }
 
   init(
@@ -342,7 +358,6 @@ struct ProfileEditorView: View {
               focusedField = nil
             }
             .onChange(of: name) { _, value in
-              hasUnsavedChanges = true
               clearValidation(for: .name)
               if value.count > BrowserProfile.maximumNameLength {
                 name = String(
@@ -497,6 +512,12 @@ struct ProfileEditorView: View {
                 } label: {
                   Label("Проверить прокси", systemImage: "network")
                 }
+                .disabled(editorDraft.proxyIssue != nil)
+                if let issue = editorDraft.proxyIssue {
+                  Text(issue.message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
               }
               if let testNotice {
                 UserNoticeLabel(notice: testNotice)
@@ -581,16 +602,10 @@ struct ProfileEditorView: View {
 
         advancedOptionsSection
 
-        if let errorMessage {
-          Section {
-            Text(errorMessage)
-              .foregroundStyle(.red)
-          }
-        }
         }
         .formStyle(.grouped)
-        .onChange(of: validationIssue?.field) { _, field in
-          guard let field else { return }
+        .onChange(of: validationNavigationRequest) { _, _ in
+          guard let field = validationIssue?.field else { return }
           if reduceMotion {
             scrollProxy.scrollTo(field, anchor: .center)
           } else {
@@ -605,6 +620,13 @@ struct ProfileEditorView: View {
 
       Divider()
 
+      ProfileEditorSaveSummary(
+        presentation: savePresentation,
+        errorMessage: errorMessage,
+        issue: editorDraft.firstIssue,
+        onShowIssue: presentValidation
+      )
+
       HStack {
         Spacer()
         Button("Отмена") {
@@ -617,6 +639,7 @@ struct ProfileEditorView: View {
         }
         .buttonStyle(.borderedProminent)
         .keyboardShortcut(.defaultAction)
+        .disabled(!savePresentation.canSave)
       }
       .padding()
       .fixedSize(horizontal: false, vertical: true)
@@ -675,35 +698,29 @@ struct ProfileEditorView: View {
       hideProxyPassword()
     }
     .onChange(of: usesProxy) { _, _ in
-      hasUnsavedChanges = true
       if !usesProxy {
         hideProxyPassword()
       }
       proxyInputDidChange()
     }
     .onChange(of: proxyKind) { _, _ in
-      hasUnsavedChanges = true
       if proxyKind == .socks5 {
         hideProxyPassword()
       }
       proxyInputDidChange()
     }
     .onChange(of: proxyHost) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .proxyHost)
       proxyInputDidChange()
     }
     .onChange(of: proxyPort) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .proxyPort)
       proxyInputDidChange()
     }
     .onChange(of: proxyUsername) { _, _ in
-      hasUnsavedChanges = true
       proxyInputDidChange()
     }
     .onChange(of: proxyPassword) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .proxyPassword)
       refreshProxyPasswordRevealLease()
       proxyInputDidChange()
@@ -714,24 +731,17 @@ struct ProfileEditorView: View {
       }
     }
     .onChange(of: proxyImportOrder) { _, _ in
-      hasUnsavedChanges = true
       proxyImportNotice = nil
     }
     .onChange(of: tags) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .tags)
     }
     .onChange(of: note) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .note)
     }
-    .onChange(of: selectedFolderID) { _, _ in hasUnsavedChanges = true }
     .onChange(of: startURL) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .startURL)
     }
-    .onChange(of: colorHex) { _, _ in hasUnsavedChanges = true }
-    .onChange(of: symbolName) { _, _ in hasUnsavedChanges = true }
   }
 
   private func requestDismiss() {
@@ -1179,21 +1189,11 @@ struct ProfileEditorView: View {
   }
 
   private func save() {
-    if let issue = ProfileEditorValidation.firstIssue(
-      name: name,
-      tags: tags,
-      note: note,
-      startURL: startURL,
-      usesProxy: usesProxy,
-      proxyKind: proxyKind,
-      proxyHost: proxyHost,
-      proxyPort: proxyPort,
-      proxyUsername: proxyUsername,
-      proxyPassword: proxyPassword
-    ) {
+    if let issue = editorDraft.firstIssue {
       presentValidation(issue)
       return
     }
+    guard savePresentation.canSave else { return }
     do {
       let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
       guard BrowserProfile.isValidName(cleanName),
@@ -1266,6 +1266,7 @@ struct ProfileEditorView: View {
 
   private func presentValidation(_ issue: ProfileEditorValidationIssue) {
     validationIssue = issue
+    validationNavigationRequest &+= 1
     errorMessage = nil
     switch issue.field {
     case .startURL, .tags:
@@ -1296,6 +1297,10 @@ struct ProfileEditorView: View {
   }
 
   private func testProxy() {
+    if let issue = editorDraft.proxyIssue {
+      presentValidation(issue)
+      return
+    }
     do {
       guard let proxy = try makeProxy() else { return }
       startProxyTest(
@@ -1382,6 +1387,8 @@ struct ProfileEditorView: View {
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
             detectedProxyContextEvidence = .ipAPI()
+            refreshedProxyEvidence = true
+            invalidatedProxyEvidence = false
             isTesting = false
             proxyTestTask = nil
             announce(testNotice?.message ?? "Прокси подключён.")
@@ -1402,6 +1409,10 @@ struct ProfileEditorView: View {
   }
 
   private func invalidateProxyEvidence() {
+    if detectedProxy != nil || refreshedProxyEvidence {
+      invalidatedProxyEvidence = true
+    }
+    refreshedProxyEvidence = false
     proxyTestTask?.cancel()
     proxyTestTask = nil
     isTesting = false
@@ -1417,6 +1428,33 @@ struct ProfileEditorView: View {
     guard !isApplyingProxyImport else { return }
     proxyImportNotice = nil
     invalidateProxyEvidence()
+  }
+
+  private var editorDraft: ProfileEditorDraft {
+    ProfileEditorDraft(
+      name: name, colorHex: colorHex, symbolName: symbolName,
+      tags: tags, note: note, folderID: selectedFolderID,
+      startURL: startURL, usesProxy: usesProxy, proxyKind: proxyKind,
+      proxyHost: proxyHost, proxyPort: proxyPort,
+      proxyUsername: proxyUsername, proxyPassword: proxyPassword
+    )
+  }
+
+  private var savePresentation: ProfileEditorSavePresentation {
+    .resolve(
+      isNew: original == nil,
+      hasChanges: editorDraft != initialDraft || refreshedProxyEvidence,
+      issue: editorDraft.firstIssue, usesProxy: usesProxy,
+      kind: proxyKind,
+      hasUsername: !proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+      isTesting: isTesting, refreshedEvidence: refreshedProxyEvidence,
+      invalidatedEvidence: invalidatedProxyEvidence,
+      latestProbeFailed: testNotice?.level == .failure
+    )
+  }
+
+  private var hasUnsavedChanges: Bool {
+    editorDraft != initialDraft || refreshedProxyEvidence || !proxyImportText.isEmpty
   }
 
   @MainActor

@@ -1,6 +1,6 @@
 # NeAntik project map
 
-Current source map: 2026-09-02. This document is the current routing source for
+Current source map: 2026-09-05. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
 ## Release truth and boundary
@@ -72,6 +72,15 @@ and updates remain immutable manual GitHub releases.
   light/dark render gates.
 
 ### Delivered in the current development cycle
+
+- ND4 adds bounded name/note/identifier and presence queries with clickable
+  examples, persistent editor save/probe summaries, actual dirty-state Save
+  guards, searchable contextual shortcuts, density preview, note draft reset
+  and never-launched/oldest-launch ordering. See
+  `ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-05_V4.md` and its traceability JSON.
+  `ProfileEditorSavePresentation.swift` owns the ephemeral editor policy;
+  it never serializes its values or credentials. ND4 is a research cycle label,
+  not a new public version or a promise of 25 additional subsystems.
 
 - converts three independent reviews of thirty current products into exactly
   one hundred ranked recommendations and implements the twenty-five selected

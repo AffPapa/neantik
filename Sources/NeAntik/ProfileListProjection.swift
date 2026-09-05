@@ -628,7 +628,11 @@ enum ProfileListProjection {
     }
 }
 
-private struct ProfileSearchQuery {
+struct ProfileSearchQuery {
+    /// Bound parsing work without silently searching a truncated query.
+    static let maximumUTF8Bytes = 4_096
+    private(set) var validationMessage: String?
+
     private enum StatusConstraint: Equatable {
         case active
         case archived
@@ -686,9 +690,19 @@ private struct ProfileSearchQuery {
     private var folderTerms: [String] = []
     private var proxyConstraints: [ProxyConstraint] = []
     private var statusConstraints: [StatusConstraint] = []
+    private var nameTerms: [String] = []
+    private var noteTerms: [String] = []
+    private var idTerms: [String] = []
+    private var notePresence: [Bool] = []
+    private var tagPresence: [Bool] = []
     private var impossible = false
 
     init(rawValue: String) {
+        guard rawValue.utf8.count <= Self.maximumUTF8Bytes else {
+            impossible = true
+            validationMessage = "Запрос слишком длинный. Сократи его до \(Self.maximumUTF8Bytes) байт."
+            return
+        }
         var generalValues: [String] = []
         for token in Self.tokens(rawValue) {
             let parts = token.split(
@@ -696,15 +710,37 @@ private struct ProfileSearchQuery {
                 maxSplits: 1,
                 omittingEmptySubsequences: false
             )
-            guard parts.count == 2,
-                  !parts[1].isEmpty
-            else {
+            guard parts.count == 2 else {
                 generalValues.append(token)
                 continue
             }
             let key = ProfileSearchText.fold(String(parts[0]))
             let value = ProfileSearchText.fold(String(parts[1]))
+            if value.isEmpty {
+                if Self.fieldNames.contains(key) {
+                    impossible = true
+                    validationMessage = "После двоеточия укажи значение поля."
+                } else {
+                    generalValues.append(token)
+                }
+                continue
+            }
             switch key {
+            case "name", "имя":
+                nameTerms.append(value)
+            case "note", "заметка":
+                noteTerms.append(value)
+            case "id", "ид":
+                idTerms.append(value)
+            case "has", "есть", "missing", "без":
+                let present = key == "has" || key == "есть"
+                switch value {
+                case "note", "заметка": notePresence.append(present)
+                case "tags", "теги": tagPresence.append(present)
+                default:
+                    impossible = true
+                    validationMessage = "Для есть: или без: используй заметка либо теги."
+                }
             case "tag", "тег":
                 tagTerms.append(value)
             case "folder", "папка":
@@ -716,6 +752,7 @@ private struct ProfileSearchQuery {
                     statusConstraints.append(constraint)
                 } else {
                     impossible = true
+                    validationMessage = "Статус: активный, архив, закреплен или новый. Для запущенных профилей используй фильтр «Запущены»."
                 }
             default:
                 generalValues.append(token)
@@ -738,6 +775,12 @@ private struct ProfileSearchQuery {
         includesFolderInGeneralSearch: Bool
     ) -> Bool {
         guard !impossible else { return false }
+        guard nameTerms.allSatisfy({ ProfileSearchText.fold(profile.name).contains($0) }),
+              noteTerms.allSatisfy({ ProfileSearchText.fold(profile.note).contains($0) }),
+              idTerms.allSatisfy({ profile.id.uuidString.lowercased().contains($0) }),
+              notePresence.allSatisfy({ $0 == !profile.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+              tagPresence.allSatisfy({ $0 == !profile.tags.isEmpty })
+        else { return false }
         let generalMatches = generalTerms.allSatisfy { term in
             profileSearchText.contains(term) ||
                 (includesFolderInGeneralSearch &&
@@ -765,6 +808,12 @@ private struct ProfileSearchQuery {
         }
         return statusConstraints.allSatisfy { $0.matches(profile) }
     }
+
+    private static let fieldNames: Set<String> = [
+        "name", "имя", "note", "заметка", "id", "ид", "has", "есть",
+        "missing", "без", "tag", "тег", "folder", "папка", "proxy",
+        "прокси", "status", "статус",
+    ]
 
     private static func tokens(_ value: String) -> [String] {
         var result: [String] = []

@@ -4,7 +4,17 @@ struct ProfileNoteDraftSnapshot: Equatable, Sendable {
     let note: String
 
     func hasUnsavedChanges(currentNote: String) -> Bool {
-        currentNote != note
+        guard let normalized = BrowserProfile.normalizedNote(currentNote) else {
+            return currentNote != note
+        }
+        return normalized != BrowserProfile.normalizedNote(note)
+    }
+
+    func canSave(currentNote: String) -> Bool {
+        guard let normalized = BrowserProfile.normalizedNote(currentNote) else {
+            return false
+        }
+        return normalized != BrowserProfile.normalizedNote(note)
     }
 }
 
@@ -18,6 +28,7 @@ struct ProfileNoteEditorView: View {
     @State private var note: String
     @State private var errorMessage: String?
     @State private var showingDiscardConfirmation = false
+    @State private var showingResetConfirmation = false
 
     init(
         profileName: String,
@@ -120,6 +131,10 @@ struct ProfileNoteEditorView: View {
             }
 
             HStack {
+                Button("Вернуть исходный текст") {
+                    showingResetConfirmation = true
+                }
+                .disabled(!hasUnsavedChanges)
                 Spacer()
                 Button("Отмена", role: .cancel) {
                     requestDismiss()
@@ -130,8 +145,13 @@ struct ProfileNoteEditorView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: [.command])
-                .disabled(presentation.validationMessage != nil)
+                .disabled(!initialDraft.canSave(currentNote: note))
             }
+            Text(hasUnsavedChanges
+                 ? "Изменения не сохранены · ⌘Return — сохранить"
+                 : "Нет изменений · Escape — закрыть")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding(20)
         .frame(minWidth: 440, idealWidth: 520, minHeight: 360)
@@ -148,6 +168,18 @@ struct ProfileNoteEditorView: View {
             Text("Несохранённый текст заметки будет потерян.")
         }
         .onAppear { noteIsFocused = true }
+        .confirmationDialog(
+            "Вернуть текст, который был при открытии?",
+            isPresented: $showingResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Вернуть исходный текст", role: .destructive) {
+                note = initialDraft.note
+                errorMessage = nil
+                noteIsFocused = true
+            }
+            Button("Продолжить редактирование", role: .cancel) {}
+        }
     }
 
     private func requestDismiss() {
@@ -159,6 +191,7 @@ struct ProfileNoteEditorView: View {
     }
 
     private func save() {
+        guard initialDraft.canSave(currentNote: note) else { return }
         guard let normalized = BrowserProfile.normalizedNote(note) else {
             errorMessage = presentation.validationMessage ??
                 NeAntikError.invalidProfile.localizedDescription

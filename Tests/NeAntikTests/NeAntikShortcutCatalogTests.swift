@@ -2,6 +2,22 @@ import Testing
 @testable import NeAntik
 
 struct NeAntikShortcutCatalogTests {
+    @Test func referenceSearchFindsTitleCategoryAndChord() {
+        #expect(NeAntikShortcut.editSelectedNote.matchesSearch("ЗАМЕТКУ"))
+        #expect(NeAntikShortcut.newFolder.matchesSearch("рабочее пространство"))
+        #expect(NeAntikShortcut.focusSelectedProfile.matchesSearch("Shift Return"))
+        #expect(NeAntikShortcut.toggleInspector.matchesSearch("⌘I"))
+        #expect(NeAntikShortcut.allCases.allSatisfy { $0.matchesSearch(" \n ") })
+        #expect(!NeAntikShortcut.newFolder.matchesSearch("несуществующая команда"))
+        #expect(!NeAntikShortcut.editSelectedNote.matchesSearch("заметку Shift"))
+    }
+
+    @Test func everyCommandExplainsContextWithoutUserData() {
+        #expect(NeAntikShortcut.allCases.allSatisfy { !$0.availability.isEmpty })
+        #expect(NeAntikShortcut.focusSelectedProfile.availability.contains("запущенного"))
+        #expect(NeAntikShortcut.editSelectedProfile.availability.contains("перехода"))
+        #expect(NeAntikShortcut.newProfile.availability.contains("диалог"))
+    }
     @Test func everyShortcutHasOneUniqueChord() {
         let identifiers = NeAntikShortcut.allCases.map(\.chordIdentifier)
 

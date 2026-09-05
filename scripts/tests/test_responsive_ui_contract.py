@@ -676,7 +676,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             search,
         )
         self.assertIn(
-            '"Можно уточнить запрос: тег, папка, прокси или статус.',
+            '"Можно уточнить запрос: имя, заметка, ид, тег, папка, прокси или статус.',
             search,
         )
         self.assertGreaterEqual(projection.count("profile.note"), 2)

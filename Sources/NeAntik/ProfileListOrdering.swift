@@ -10,6 +10,8 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
     case recentLaunch
     case recentlyModified
     case newest
+    case neverLaunchedFirst
+    case oldestLaunch
 
     var id: Self { self }
 
@@ -23,6 +25,10 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
             "Недавно изменённые"
         case .newest:
             "Сначала новые"
+        case .neverLaunchedFirst:
+            "Сначала не запускались"
+        case .oldestLaunch:
+            "Давно не запускались"
         }
     }
 
@@ -61,6 +67,24 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
                 return lhs.createdAt > rhs.createdAt
             }
             return Self.nameAndIDOrder(lhs, rhs)
+
+        case .neverLaunchedFirst:
+            if (lhs.lastLaunchedAt == nil) != (rhs.lastLaunchedAt == nil) {
+                return lhs.lastLaunchedAt == nil
+            }
+            return Self.nameCreationAndIDOrder(lhs, rhs)
+
+        case .oldestLaunch:
+            switch (lhs.lastLaunchedAt, rhs.lastLaunchedAt) {
+            case let (left?, right?) where left != right:
+                return left < right
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                return Self.nameCreationAndIDOrder(lhs, rhs)
+            }
         }
     }
 

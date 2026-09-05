@@ -7,6 +7,10 @@ enum ProfileSearchSyntaxHelp {
         "папка:\"Paid Social\"",
         "прокси:есть",
         "статус:закреплен",
+        "имя:\"TikTok\"",
+        "заметка:\"следующий шаг\"",
+        "есть:заметка",
+        "без:теги",
     ]
 }
 
@@ -48,6 +52,10 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
 
             if let feedbackNotice {
                 UserNoticeLabel(notice: feedbackNotice)
+            }
+
+            if let message = ProfileSearchQuery(rawValue: searchText).validationMessage {
+                UserNoticeLabel(notice: UserNotice(message, level: .warning))
             }
 
             bulkProxyStatus
@@ -242,7 +250,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     "Поиск профилей, маршрутов, заметок, тегов и папок"
                 )
                 .accessibilityHint(
-                    "Можно уточнить запрос: тег, папка, прокси или статус. " +
+                    "Можно уточнить запрос: имя, заметка, ид, тег, папка, прокси или статус. " +
                         "Название с пробелами заключи в кавычки."
                 )
             if !searchText.isEmpty {
@@ -293,11 +301,23 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                ForEach(ProfileSearchSyntaxHelp.examples, id: \.self) {
-                    Text($0)
-                        .font(.body.monospaced())
-                        .textSelection(.enabled)
+                ForEach(ProfileSearchSyntaxHelp.examples, id: \.self) { example in
+                    Button {
+                        searchText = example
+                        showsSearchHelp = false
+                        searchIsFocused.wrappedValue = true
+                    } label: {
+                        Text(example)
+                            .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .font(.body.monospaced())
+                    .help("Применить пример поиска")
+                    .accessibilityLabel("Применить поиск: \(example)")
                 }
+                Text("ид: ищет по идентификатору профиля. без:заметка и есть:теги проверяют заполненность полей.")
+                    .font(.caption)
                 Text("Название с пробелами заключи в кавычки.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

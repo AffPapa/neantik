@@ -162,3 +162,79 @@ struct ProfileEditorPresentationTests {
         #expect(stale.detail.contains("Перед следующим запуском"))
     }
 }
+
+extension ProfileEditorPresentationTests {
+    private func state(
+        isNew: Bool = false, changes: Bool = false,
+        issue: ProfileEditorValidationIssue? = nil,
+        proxy: Bool = false, kind: ProxyKind = .http,
+        username: Bool = false, testing: Bool = false,
+        refreshed: Bool = false, invalidated: Bool = false,
+        failed: Bool = false
+    ) -> ProfileEditorSavePresentation {
+        .resolve(
+            isNew: isNew, hasChanges: changes, issue: issue,
+            usesProxy: proxy, kind: kind, hasUsername: username,
+            isTesting: testing, refreshedEvidence: refreshed,
+            invalidatedEvidence: invalidated, latestProbeFailed: failed
+        )
+    }
+
+    @Test func unchangedEditCannotWriteButNewProfileCanSave() {
+        #expect(!state().canSave)
+        #expect(state().stateTitle == "Нет изменений")
+        #expect(state(isNew: true).canSave)
+        #expect(state(changes: true).canSave)
+        #expect(state(changes: true).stateTitle.contains("несохранённые"))
+    }
+
+    @Test func validationSummaryExplainsWhySaveIsDisabled() {
+        let issue = ProfileEditorValidationIssue(field: .name, message: "Введи название профиля.")
+        let invalid = state(isNew: true, issue: issue)
+        #expect(!invalid.canSave)
+        #expect(invalid.stateTitle == issue.message)
+    }
+
+    @Test func probeMustFinishOrBeCancelledBeforeSaving() {
+        let probing = state(isNew: true, proxy: true, testing: true)
+        #expect(!probing.canSave)
+        #expect(probing.stateTitle.contains("отмени"))
+        #expect(probing.routeSummary.contains("проверяется"))
+    }
+
+    @Test func routeSummaryNeverClaimsAnonymityOrPersistsAnEndpoint() {
+        #expect(state().routeSummary == "Напрямую · отдельного прокси нет")
+        let authenticated = state(proxy: true, username: true)
+        #expect(authenticated.routeSummary.contains("Связке ключей"))
+        #expect(authenticated.routeSummary.contains("не проверен"))
+        #expect(state(proxy: true, kind: .socks5, username: true).routeSummary.contains("без логина"))
+    }
+
+    @Test func changedAndFailedProbesOverrideEarlierSuccess() {
+        #expect(state(proxy: true, refreshed: true).routeSummary.contains("при запуске повторим"))
+        #expect(state(proxy: true, refreshed: true, invalidated: true).routeSummary.contains("проверь снова"))
+        #expect(state(proxy: true, refreshed: true, failed: true).routeSummary.contains("не удалась"))
+    }
+
+    private func draft(name: String = "Работа", port: String = "8080") -> ProfileEditorDraft {
+        ProfileEditorDraft(
+            name: name, colorHex: "#123456", symbolName: "folder",
+            tags: [], note: "", folderID: nil, startURL: "https://example.com",
+            usesProxy: true, proxyKind: .http, proxyHost: "127.0.0.1",
+            proxyPort: port, proxyUsername: "", proxyPassword: ""
+        )
+    }
+
+    @Test func actualDraftEqualityRecognizesRevertedEdits() {
+        #expect(draft() == draft())
+        #expect(draft() != draft(name: "Другое"))
+        #expect(draft() != draft(port: "8081"))
+    }
+
+    @Test func proxyTestValidationDoesNotRequireProfileName() {
+        #expect(draft(name: "").firstIssue?.field == .name)
+        #expect(draft(name: "").proxyIssue == nil)
+        #expect(draft(port: "0").proxyIssue?.field == .proxyPort)
+        #expect(draft(port: "65536").proxyIssue?.field == .proxyPort)
+    }
+}

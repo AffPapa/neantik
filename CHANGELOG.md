@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- The September 5 ND4 follow-up ranks 100 recommendations and implements 25
+  small improvements across four existing workflows: field-specific and
+  presence search with actionable syntax help; profile-save validation and
+  route/probe summaries; searchable contextual shortcuts and density preview;
+  note draft recovery and two maintenance-oriented sort orders. No new
+  dependency, profile schema, runtime or public binary is introduced.
+
 - A new three-track review of thirty current profile browsers deduplicates 124
   raw ideas into an evidence-linked matrix of exactly one hundred
   recommendations. Twenty-five bounded local improvements were selected;
