@@ -3,6 +3,7 @@ import SwiftUI
 struct NeAntikSettingsView: View {
     @ObservedObject var preferences: WorkspacePreferenceStore
     @State private var shortcutQuery = ""
+    @FocusState private var shortcutSearchIsFocused: Bool
 
     private var matchingShortcuts: [NeAntikShortcut] {
         NeAntikShortcut.allCases.filter { $0.matchesSearch(shortcutQuery) }
@@ -38,11 +39,25 @@ struct NeAntikSettingsView: View {
             }
 
             Section("Сочетания клавиш") {
-                TextField("Найти команду, клавиши или раздел", text: $shortcutQuery)
-                    .accessibilityLabel("Поиск сочетаний клавиш")
+                HStack {
+                    TextField("Найти команду, клавиши или раздел", text: $shortcutQuery)
+                        .accessibilityLabel("Поиск сочетаний клавиш")
+                        .focused($shortcutSearchIsFocused)
+                    if !shortcutQuery.isEmpty {
+                        Button {
+                            shortcutQuery = ""
+                            shortcutSearchIsFocused = true
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .frame(width: 28, height: 28)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Очистить поиск сочетаний клавиш")
+                        .help("Очистить поиск")
+                    }
+                }
                 if shortcuts.isEmpty {
                     Text("Сочетания не найдены")
-                    Button("Очистить поиск") { shortcutQuery = "" }
                 }
                 ForEach(NeAntikShortcutCategory.allCases) { category in
                     let group = shortcuts.filter { $0.category == category }

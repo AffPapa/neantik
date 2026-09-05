@@ -17,7 +17,7 @@ private enum ProfileBatchTagMode: String, CaseIterable, Identifiable {
 struct ProfileBatchTagSheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    let profileCount: Int
+    let profiles: [BrowserProfile]
     let suggestedTags: [String]
     let onApply: (ProfileMetadataBatchAction) throws -> Void
 
@@ -32,13 +32,19 @@ struct ProfileBatchTagSheet: View {
 
     private var visibleSuggestions: [String] {
         let query = cleanTag
-        return suggestedTags.filter {
+        return ProfileBatchTagPreview.suggestions(
+            profiles: profiles, library: suggestedTags, adding: mode == .add
+        ).filter {
             query.isEmpty || $0.localizedCaseInsensitiveContains(query)
         }.prefix(8).map { $0 }
     }
 
     private var canApply: Bool {
-        BrowserProfile.normalizedTags([cleanTag])?.first != nil
+        preview.canApply
+    }
+
+    private var preview: ProfileBatchTagPreview {
+        .resolve(profiles: profiles, tag: cleanTag, adding: mode == .add)
     }
 
     var body: some View {
@@ -47,7 +53,7 @@ struct ProfileBatchTagSheet: View {
                 Text("Изменить тег")
                     .font(.headline)
                     .accessibilityHeading(.h1)
-                Text("Выбрано профилей: \(profileCount)")
+                Text("Выбрано профилей: \(profiles.count)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -91,6 +97,20 @@ struct ProfileBatchTagSheet: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+                if !cleanTag.isEmpty {
+                    Text("Тег есть у \(preview.matching) из \(preview.total)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(preview.message)
+                        .font(.caption)
+                        .foregroundStyle(preview.blocked > 0 || !preview.valid ? Color.red : Color.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if mode == .remove && visibleSuggestions.isEmpty {
+                    Text("У выбранных профилей нет тегов для удаления.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(20)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -115,7 +135,7 @@ struct ProfileBatchTagSheet: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
         }
-        .frame(width: 460, height: 380)
+        .frame(width: 460, height: 440)
         .onAppear {
             Task { @MainActor in
                 await Task.yield()

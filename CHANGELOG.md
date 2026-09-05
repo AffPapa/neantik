@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Batch tag editing previews coverage and changed/unchanged counts, disables
+  no-op submissions, warns about tag-limit blockers before an atomic save and
+  offers only selected-profile tags for removal. Shortcut search gains an
+  always-available clear button for nonempty queries with retained focus.
+
 - Follow-up usability audit preserves apostrophes inside search terms, explains
   unfinished quoted queries and avoids unnecessary repeated field/tag folding.
   Settings collapse the optional density preview so shortcut search is easier

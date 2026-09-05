@@ -540,7 +540,7 @@ struct ContentView: View {
         }
         .sheet(item: $profileBatchTagRequest) { request in
             ProfileBatchTagSheet(
-                profileCount: request.profileIDs.count,
+                profiles: store.profiles.filter { request.profileIDs.contains($0.id) },
                 suggestedTags: currentProfileListIndex.tagSummaries(
                     scope: profileListScope,
                     in: selectedFolderFilter

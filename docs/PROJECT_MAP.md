@@ -73,6 +73,11 @@ and updates remain immutable manual GitHub releases.
 
 ### Delivered in the current development cycle
 
+- `ProfileBatchTagPreview.swift` provides metadata-only coverage, impact,
+  no-op and tag-limit previews using the store's tag identity rules. The batch
+  sheet offers selection-scoped removal suggestions; the store remains the
+  authority for atomic validation. Settings search clears without losing focus.
+
 - Follow-up audit: search tokenization preserves in-word apostrophes and
   reports unclosed quotes; field folding is lazy and once-per-query-field.
   Settings keep density preview optional. Batch-tag mutation errors propagate
