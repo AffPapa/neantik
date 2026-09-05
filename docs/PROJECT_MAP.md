@@ -11,6 +11,11 @@ product and code work. The older v4 documents remain dated design records.
 - Exact released source commit:
   `fdc520391c58a76622936519ca38b382f629fc47`.
 - Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
+- September 5 release preflight is blocked: the September 3 official macOS
+  Stable baseline is `152.0.7977.82/.83` (12 security fixes). The checked-in
+  baseline now rejects the older embedded runtime. Rebuild and verify the
+  runtime before preparing a new signed candidate; do not relabel the old
+  runtime lock or remove rollback artifacts to make the gate pass.
 - GitHub assets: notarized ZIP and DMG with SHA-256 sidecars; all four assets
   were re-downloaded and their hashes were verified before publication.
 - A later source commit is not a release. A new binary needs a new

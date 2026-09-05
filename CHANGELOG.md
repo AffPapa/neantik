@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## Direct 0.3.24 (27) — September 5, 2026 (candidate)
+
+- Refresh the official Chromium security baseline to the September 3 macOS
+  Stable release (`152.0.7977.82/.83`, 12 security fixes). Public candidate
+  preparation now correctly rejects the embedded `152.0.7977.64` runtime.
+  This changes the release requirement, not the installed runtime bytes.
+
 - A thirteen-point unification pass retains overlong profile-name drafts and
   blocks Save while proxy import text remains unapplied, with explicit Direct
   recovery that does not change routes on validation navigation. Bulk import
@@ -74,8 +81,6 @@
   native sidebar visibility control, responsive command/detail-header actions,
   delayed-runtime retry guidance and one semantic high-contrast notice style.
   No dependency, bundled asset, Chromium byte or public release changed.
-
-## Direct 0.3.24 (27) — September 1, 2026
 
 - A 29-product research pass records exactly one hundred bounded candidates
   and implements twenty-five dependency-free, asset-free operator safeguards.

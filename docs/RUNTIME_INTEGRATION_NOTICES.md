@@ -16,7 +16,7 @@ Do not edit generated values by hand.
 - Architecture: `arm64`
 - Runtime source lock status: `source-qualified`
 - Source contract binary binding: `pending-new-build`
-- Source contract candidate: `152.0.7977.64`
+- Source contract candidate: `152.0.7977.82`
 - Owned patchset status: `release-ready`
 - Ported patch groups: `11`
 

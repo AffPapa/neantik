@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
-  "targetChromiumVersion": "152.0.7977.64",
+  "targetChromiumVersion": "152.0.7977.82",
   "targetArchitecture": "arm64",
   "sourceMode": "owned-rebase",
   "binaryBindingStatus": "pending-new-build",
-  "rebasePlanSHA256": "485521d0f1f8a95157fd4c6d883cad68680c91a13baf287c6067d01d9faf06b0",
+  "rebasePlanSHA256": "3e86c4ca9f7ee0c6ab7d89d1c6e78f6622fcde26ec8808e380cfdbcdcb7151df",
   "officialChromiumBase": {
     "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "152.0.7977.64",
-    "commit": "506c834ecceaa943c5f41e6cfe7f68acb5c45346",
-    "tree": "ef4e82eff60855955257addf490e864f9bc820ef",
+    "tag": "152.0.7977.82",
+    "commit": "d04cdb24d67b081f6cf80200ffc5233f44b61109",
+    "tree": "a1234efb76bffd5133c982cac4bef312c411da6a",
     "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
     "liteArchive": {
-      "filename": "chromium-152.0.7977.64-lite.tar.xz",
-      "sha256": "0afede9e15101678eb11277098cc2f181a84a5f532f7f46758b981a4a7585f78",
-      "size": 1774931660,
-      "hashesFileSHA256": "28951f2031eeecaf92de42099c29f89fddfc76a110cd2222bf1abc2cdb290af6"
+      "filename": "chromium-152.0.7977.82-lite.tar.xz",
+      "sha256": "67ac37f365dfdac763c428862e5e460e5948940b3d6f856374da2ce219981417",
+      "size": 1774798136,
+      "hashesFileSHA256": "b2006d950b2ad88e73149b4b631c585ddfd990b094f327b645ab44c1629063ee"
     }
   },
   "macPackaging": {
@@ -34,26 +34,26 @@
   },
   "commonChromium": {
     "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
-    "tag": "152.0.7977.64-1",
-    "tagObject": "b7ef4610a50b69cff1e72c0a4d15b32e46deb7f0",
-    "commit": "59657a38437d11520a68618008eb825721319b9e",
-    "tree": "37f4a50135c42de552b8b60d34e0737bc8bb168e",
+    "tag": "152.0.7977.82-1",
+    "tagObject": "f4ad2510e1a3c6bc4d7326ca716dc104a9c4fcad",
+    "commit": "e71b91c6e336d0f25cfc6b9ef09298a9d2506e24",
+    "tree": "b85075b62970b4f892d2b636e7be3af901c53dd1",
     "criticalFiles": {
       "LICENSE": "78bc4abfc3e5606b5b88c3cb9409a3250a7f64cffe704bef0563e11910a29189",
       "patches/series": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
       "flags.gn": "a274a5633b3f909a1d6035192b5ff02c28f81a2f8fe60545d56bde34a0dc6c6b",
       "downloads.ini": "dc3d4a77b79570878ad691ab26306946dfff0f8c711768edebce7eb26ae2fb68",
       "pruning.list": "cd0e8a8f581b2bc7d32947ac78f02679f62171adcc5fe783f954c3c0aed6bfc7",
-      "chromium_version.txt": "76a4e41900ea2886953ffc2e1e104bb96cc1186cf7936a8230e5c8ef8cee1d8d"
+      "chromium_version.txt": "485647e6626d100ce1f10bb7d38f797d4f59c5fc2c70b7087a2d0122ff180343"
     }
   },
   "sourceVersionOverride": {
-    "from": "152.0.7977.64",
-    "to": "152.0.7977.64",
-    "modifiedCriticalFileSHA256": "76a4e41900ea2886953ffc2e1e104bb96cc1186cf7936a8230e5c8ef8cee1d8d"
+    "from": "152.0.7977.82",
+    "to": "152.0.7977.82",
+    "modifiedCriticalFileSHA256": "485647e6626d100ce1f10bb7d38f797d4f59c5fc2c70b7087a2d0122ff180343"
   },
   "ownedInputs": {
-    "runtime/nevision-patches/series.json": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+    "runtime/nevision-patches/series.json": "7c0a9bc9ca590ed5fffb7a4ecf649ca87aba772d18375e0715088302d5890c6e",
     "scripts/apply-neantik-patchset.py": "28070771e25546ececced16dcaa73b229470ffdfdd422f94cb041ce8680c01b0",
     "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
     "scripts/apply-owned-runtime-device-tuples.py": "75bb4a1d32d1dc82763200f32905783c9ca5e86033bf2314dca071dc47522ecc",
