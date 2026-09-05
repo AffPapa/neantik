@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct WorkspaceToolbarContent: ToolbarContent {
-    @Binding var columnVisibility: NavigationSplitViewVisibility
     let showsProfileInspector: Bool
     let hasSelectedProfile: Bool
     let onPresentReadiness: () -> Void
@@ -9,13 +8,6 @@ struct WorkspaceToolbarContent: ToolbarContent {
 
     @ToolbarContentBuilder
     var body: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Button(action: toggleSidebar) {
-                Label(sidebarTitle, systemImage: "sidebar.leading")
-            }
-            .help(sidebarHelp)
-            .accessibilityLabel("\(sidebarTitle) профилей")
-        }
         ToolbarItem(placement: .primaryAction) {
             Button(action: onPresentReadiness) {
                 Label("Готовность", systemImage: "checkmark.shield")
@@ -31,18 +23,6 @@ struct WorkspaceToolbarContent: ToolbarContent {
             .help(inspectorHelp)
             .accessibilityLabel(inspectorAccessibilityLabel)
         }
-    }
-
-    private var sidebarIsHidden: Bool {
-        columnVisibility == .detailOnly
-    }
-
-    private var sidebarTitle: String {
-        sidebarIsHidden ? "Показать боковую панель" : "Скрыть боковую панель"
-    }
-
-    private var sidebarHelp: String {
-        sidebarIsHidden ? "Показать папки и разделы" : "Скрыть папки и разделы"
     }
 
     private var inspectorTitle: String {
@@ -61,7 +41,4 @@ struct WorkspaceToolbarContent: ToolbarContent {
             : "Показать сведения о профиле"
     }
 
-    private func toggleSidebar() {
-        columnVisibility = sidebarIsHidden ? .all : .detailOnly
-    }
 }

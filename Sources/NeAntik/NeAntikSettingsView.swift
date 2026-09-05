@@ -9,6 +9,7 @@ struct NeAntikSettingsView: View {
     }
 
     var body: some View {
+        let shortcuts = matchingShortcuts
         Form {
             Section("Интерфейс") {
                 Picker("Плотность списка", selection: $preferences.rowDensity) {
@@ -22,14 +23,9 @@ struct NeAntikSettingsView: View {
                     "Изменение сразу применяется к списку профилей"
                 )
 
-                densityPreview
-
-                Text(
-                    "NeAntik запоминает только плотность. Поиск, фильтры и " +
-                        "выбор профиля остаются контекстными."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                DisclosureGroup("Предпросмотр плотности") {
+                    densityPreview
+                }
 
                 Button("Вернуть удобную плотность") {
                     preferences.resetInterface()
@@ -44,13 +40,14 @@ struct NeAntikSettingsView: View {
             Section("Сочетания клавиш") {
                 TextField("Найти команду, клавиши или раздел", text: $shortcutQuery)
                     .accessibilityLabel("Поиск сочетаний клавиш")
-                if matchingShortcuts.isEmpty {
+                if shortcuts.isEmpty {
                     Text("Сочетания не найдены")
                     Button("Очистить поиск") { shortcutQuery = "" }
                 }
                 ForEach(NeAntikShortcutCategory.allCases) { category in
-                    if matchingShortcuts.contains(where: { $0.category == category }) {
-                        shortcutGroup(category)
+                    let group = shortcuts.filter { $0.category == category }
+                    if !group.isEmpty {
+                        shortcutGroup(category, shortcuts: group)
                     }
                 }
 
@@ -62,9 +59,6 @@ struct NeAntikSettingsView: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                Text("Если команда недоступна, закрой диалог и вернись в главное окно. Состояние команды всегда видно в меню; ввод текста не запускает глобальные действия.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -73,18 +67,15 @@ struct NeAntikSettingsView: View {
     }
 
     private func shortcutGroup(
-        _ category: NeAntikShortcutCategory
+        _ category: NeAntikShortcutCategory,
+        shortcuts: [NeAntikShortcut]
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(category.title)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            ForEach(
-                matchingShortcuts.filter {
-                    $0.category == category
-                }
-            ) { shortcut in
+            ForEach(shortcuts) { shortcut in
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
                         Text(shortcut.title)

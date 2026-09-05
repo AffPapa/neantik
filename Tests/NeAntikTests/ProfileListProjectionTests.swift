@@ -78,6 +78,19 @@ extension ProfileListProjectionTests {
 
 struct ProfileListProjectionTests {
     @Test
+    func searchPreservesEmbeddedApostrophesAndExplainsUnclosedQuotes() {
+        let profile = BrowserProfile(name: "O'Reilly", note: "L'été café")
+        for query in ["O'Reilly", "name:O'Reilly", "name:\"O'Reilly\"", "note:L'été", "note:cafe note:ete"] {
+            #expect(ProfileSearchQuery(rawValue: query).validationMessage == nil)
+            #expect(ProfileListProjection.filtered([profile], searchText: query, tag: nil).map(\.id) == [profile.id])
+            #expect(ProfileListIndex(profiles: [profile], organization: .empty).filtered(searchText: query, tag: nil, scope: .active, folderFilter: .all).map(\.id) == [profile.id])
+        }
+        for query in ["name:\"O'Reilly", "'incomplete"] {
+            #expect(ProfileSearchQuery(rawValue: query).validationMessage != nil)
+            #expect(ProfileListProjection.filtered([profile], searchText: query, tag: nil).isEmpty)
+        }
+    }
+    @Test
     func foldedTagIdentitySurvivesDisplayRepresentativeFlip() {
         let accentedFirst = ProfileListIndex(
             profiles: [

@@ -704,7 +704,13 @@ struct ProfileSearchQuery {
             return
         }
         var generalValues: [String] = []
-        for token in Self.tokens(rawValue) {
+        let parsed = Self.tokens(rawValue)
+        if parsed.unterminatedQuote {
+            impossible = true
+            validationMessage = "Закрой кавычки в поисковом запросе."
+            return
+        }
+        for token in parsed.values {
             let parts = token.split(
                 separator: ":",
                 maxSplits: 1,
@@ -775,9 +781,9 @@ struct ProfileSearchQuery {
         includesFolderInGeneralSearch: Bool
     ) -> Bool {
         guard !impossible else { return false }
-        guard nameTerms.allSatisfy({ ProfileSearchText.fold(profile.name).contains($0) }),
-              noteTerms.allSatisfy({ ProfileSearchText.fold(profile.note).contains($0) }),
-              idTerms.allSatisfy({ profile.id.uuidString.lowercased().contains($0) }),
+        guard Self.containsAll(nameTerms, in: ProfileSearchText.fold(profile.name)),
+              Self.containsAll(noteTerms, in: ProfileSearchText.fold(profile.note)),
+              Self.containsAll(idTerms, in: profile.id.uuidString.lowercased()),
               notePresence.allSatisfy({ $0 == !profile.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
               tagPresence.allSatisfy({ $0 == !profile.tags.isEmpty })
         else { return false }
@@ -787,11 +793,11 @@ struct ProfileSearchQuery {
                     folderSearchText?.contains(term) == true)
         }
         guard generalMatches else { return false }
-        let foldedTags = profile.tags.map(ProfileSearchText.fold)
-        guard tagTerms.allSatisfy({ term in
-            foldedTags.contains(where: { $0.contains(term) })
-        }) else {
-            return false
+        if !tagTerms.isEmpty {
+            let foldedTags = profile.tags.map(ProfileSearchText.fold)
+            guard tagTerms.allSatisfy({ term in
+                foldedTags.contains(where: { $0.contains(term) })
+            }) else { return false }
         }
         guard folderTerms.allSatisfy({ term in
             folderSearchText?.contains(term) == true
@@ -815,7 +821,16 @@ struct ProfileSearchQuery {
         "прокси", "status", "статус",
     ]
 
-    private static func tokens(_ value: String) -> [String] {
+    /// Resolve a field only when queried, once even for multiple constraints.
+    private static func containsAll(
+        _ terms: [String], in document: @autoclosure () -> String
+    ) -> Bool {
+        guard !terms.isEmpty else { return true }
+        let resolved = document()
+        return terms.allSatisfy { resolved.contains($0) }
+    }
+
+    private static func tokens(_ value: String) -> (values: [String], unterminatedQuote: Bool) {
         var result: [String] = []
         var current = ""
         var quote: Character?
@@ -834,7 +849,8 @@ struct ProfileSearchQuery {
                 } else {
                     current.append(character)
                 }
-            } else if character == "\"" || character == "'" {
+            } else if (character == "\"" || character == "'"),
+                      current.isEmpty || current.last == ":" {
                 quote = character
             } else if character.isWhitespace {
                 appendCurrent()
@@ -843,7 +859,7 @@ struct ProfileSearchQuery {
             }
         }
         appendCurrent()
-        return result
+        return (result, quote != nil)
     }
 }
 

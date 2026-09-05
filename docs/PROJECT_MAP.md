@@ -73,6 +73,12 @@ and updates remain immutable manual GitHub releases.
 
 ### Delivered in the current development cycle
 
+- Follow-up audit: search tokenization preserves in-word apostrophes and
+  reports unclosed quotes; field folding is lazy and once-per-query-field.
+  Settings keep density preview optional. Batch-tag mutation errors propagate
+  to their sheet, preserving the draft; other batch actions retain the existing
+  workspace error presentation and shared atomic store operation.
+
 - ND4 adds bounded name/note/identifier and presence queries with clickable
   examples, persistent editor save/probe summaries, actual dirty-state Save
   guards, searchable contextual shortcuts, density preview, note draft reset

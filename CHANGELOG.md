@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Follow-up usability audit preserves apostrophes inside search terms, explains
+  unfinished quoted queries and avoids unnecessary repeated field/tag folding.
+  Settings collapse the optional density preview so shortcut search is easier
+  to reach. Failed batch-tag saves retain the dialog and its draft instead of
+  dismissing it; the existing atomic metadata and Undo policy is unchanged.
+  The workspace uses the native sidebar toggle only, removing its duplicate.
+
 - The September 5 ND4 follow-up ranks 100 recommendations and implements 25
   small improvements across four existing workflows: field-specific and
   presence search with actionable syntax help; profile-save validation and

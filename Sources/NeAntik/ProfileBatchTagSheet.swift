@@ -19,10 +19,11 @@ struct ProfileBatchTagSheet: View {
 
     let profileCount: Int
     let suggestedTags: [String]
-    let onApply: (ProfileMetadataBatchAction) -> Void
+    let onApply: (ProfileMetadataBatchAction) throws -> Void
 
     @State private var mode: ProfileBatchTagMode = .add
     @State private var tag = ""
+    @State private var errorMessage: String?
     @FocusState private var tagIsFocused: Bool
 
     private var cleanTag: String {
@@ -96,6 +97,12 @@ struct ProfileBatchTagSheet: View {
 
             Divider()
 
+            if let errorMessage {
+                UserNoticeLabel(notice: UserNotice(errorMessage, level: .failure))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
+
             HStack {
                 Spacer()
                 Button("Отмена", role: .cancel) { dismiss() }
@@ -119,12 +126,17 @@ struct ProfileBatchTagSheet: View {
 
     private func apply() {
         guard canApply else { return }
-        switch mode {
-        case .add:
-            onApply(.addTag(cleanTag))
-        case .remove:
-            onApply(.removeTag(cleanTag))
+        do {
+            switch mode {
+            case .add:
+                try onApply(.addTag(cleanTag))
+            case .remove:
+                try onApply(.removeTag(cleanTag))
+            }
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            tagIsFocused = true
         }
-        dismiss()
     }
 }

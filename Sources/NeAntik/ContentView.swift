@@ -436,7 +436,6 @@ struct ContentView: View {
         )
         .toolbar {
             WorkspaceToolbarContent(
-                columnVisibility: $columnVisibility,
                 showsProfileInspector: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil,
                 onPresentReadiness: presentWorkspaceReadiness,
@@ -547,7 +546,7 @@ struct ContentView: View {
                     in: selectedFolderFilter
                 ).map(\.name)
             ) { action in
-                applyBatchMetadata(action, to: request.profileIDs)
+                try performBatchMetadata(action, to: request.profileIDs)
             }
         }
         .sheet(item: $bulkProxyImportRequest) { request in
@@ -1227,24 +1226,29 @@ struct ContentView: View {
         _ action: ProfileMetadataBatchAction,
         to profileIDs: Set<UUID>? = nil
     ) {
-        let selectedIDs = profileIDs ?? batchSelectedProfileIDs
         do {
-            let receipt = try store.applyBatch(action, to: selectedIDs)
-            if receipt.canUndo {
-                workspaceBatchUndo = .metadata(receipt)
-                announceWorkspaceStatus(
-                    "Изменено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
-                )
-            }
-            if case .setArchived(true) = action {
-                batchSelectedProfileIDs.subtract(
-                    receipt.affectedProfileIDs
-                )
-            }
-            normalizeSelection(preferred: selection)
+            try performBatchMetadata(action, to: profileIDs)
         } catch {
             localError = error.localizedDescription
         }
+    }
+
+    private func performBatchMetadata(
+        _ action: ProfileMetadataBatchAction,
+        to profileIDs: Set<UUID>? = nil
+    ) throws {
+        let selectedIDs = profileIDs ?? batchSelectedProfileIDs
+        let receipt = try store.applyBatch(action, to: selectedIDs)
+        if receipt.canUndo {
+            workspaceBatchUndo = .metadata(receipt)
+            announceWorkspaceStatus(
+                "Изменено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
+            )
+        }
+        if case .setArchived(true) = action {
+            batchSelectedProfileIDs.subtract(receipt.affectedProfileIDs)
+        }
+        normalizeSelection(preferred: selection)
     }
 
     private func undoLastBatchAction() {

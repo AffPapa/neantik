@@ -63,6 +63,19 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_batch_tag_save_preserves_draft_on_failure(self):
+        sheet = (ROOT / 'Sources/NeAntik/ProfileBatchTagSheet.swift').read_text()
+        content = CONTENT.read_text()
+        self.assertIn('let onApply: (ProfileMetadataBatchAction) throws -> Void', sheet)
+        self.assertIn('try performBatchMetadata(action, to: request.profileIDs)', content)
+        operation = sheet.split('private func apply()', 1)[1]
+        success, failure = operation.split('} catch {', 1)
+        self.assertIn('try onApply', success)
+        self.assertIn('dismiss()', success)
+        self.assertNotIn('dismiss()', failure)
+        self.assertIn('errorMessage = error.localizedDescription', failure)
+        self.assertNotIn('tag = ""', failure)
+
     def test_proxy_password_has_explicit_temporary_reveal_control(self) -> None:
         source = EDITOR.read_text(encoding="utf-8")
         self.assertIn("SensitiveRevealLeaseState()", source)
