@@ -1,6 +1,6 @@
 # NeAntik project map
 
-Current source map: 2026-09-02. This document is the current routing source for
+Current source map: 2026-09-05. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
 ## Release truth and boundary
@@ -11,6 +11,11 @@ product and code work. The older v4 documents remain dated design records.
 - Exact released source commit:
   `fdc520391c58a76622936519ca38b382f629fc47`.
 - Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
+- September 5 release preflight is blocked: the September 3 official macOS
+  Stable baseline is `152.0.7977.82/.83` (12 security fixes). The checked-in
+  baseline now rejects the older embedded runtime. Rebuild and verify the
+  runtime before preparing a new signed candidate; do not relabel the old
+  runtime lock or remove rollback artifacts to make the gate pass.
 - GitHub assets: notarized ZIP and DMG with SHA-256 sidecars; all four assets
   were re-downloaded and their hashes were verified before publication.
 - A later source commit is not a release. A new binary needs a new
@@ -37,6 +42,16 @@ external runtime preference: it launches only its declared embedded runtime,
 and updates remain immutable manual GitHub releases.
 
 ## Source ownership
+
+The September 5 Goal quality cycle is tracked in
+`GOAL_IMPROVEMENT_PLAN_2026-09-05.md` and
+`GOAL_DELIVERY_2026-09-05.md`: twelve local corrections, a separate verification
+matrix, and explicitly deferred architecture/release work. `ProfileStore+Note.swift`
+owns field-level note conflict checks under the metadata transaction lock;
+`ProfileFolderPickerCommitState` owns retryable sheet errors;
+`ProfileBatchUndoFailurePolicy` distinguishes stale receipts from storage failure.
+The profile editor owns unfinished tag input; `ProfileTagEditorModel.resolvingDraft`
+validates its final token before Save. No persisted schema changes are involved.
 
 | Surface | Owner files | Contract |
 | --- | --- | --- |
@@ -72,6 +87,42 @@ and updates remain immutable manual GitHub releases.
   light/dark render gates.
 
 ### Delivered in the current development cycle
+
+- `UX_UNIFICATION_GOAL_2026-09-05.md` tracks the subsequent thirteen-point
+  consistency pass. `ProfileEditorDraft.saveIssue` owns pending-import Save
+  precedence; `ProfilePendingProxyImportRecovery` keeps Direct drafts reachable
+  without implicit route changes. Bulk name validation retains suffix/byte
+  feasibility. Shared `ProfileRowDensity` metrics drive rows and preview;
+  `ProfileListEmptyAction.clearScope` retains the selected folder. Tag layout
+  measures against available width and preserves its remove control.
+
+- `UX_SIMPLICITY_REVIEW_2026-09-05.md` compares eight vendors' documented
+  interaction patterns and selects ten bounded corrections. Folder validation
+  now explains rejection without truncating draft text; picker matching uses
+  folder identity folding. `ProfileEditorField.proxyUsername` is an ephemeral
+  validation/focus target, not a persisted schema field. Tag suggestions retain
+  the independent pending draft. Settings support local Find/Escape; indexing
+  reuses folded folder/routes and the header reuses its render-time subset.
+
+- `ProfileBatchTagPreview.swift` provides metadata-only coverage, impact,
+  no-op and tag-limit previews using the store's tag identity rules. The batch
+  sheet offers selection-scoped removal suggestions; the store remains the
+  authority for atomic validation. Settings search clears without losing focus.
+
+- Follow-up audit: search tokenization preserves in-word apostrophes and
+  reports unclosed quotes; field folding is lazy and once-per-query-field.
+  Settings keep density preview optional. Batch-tag mutation errors propagate
+  to their sheet, preserving the draft; other batch actions retain the existing
+  workspace error presentation and shared atomic store operation.
+
+- ND4 adds bounded name/note/identifier and presence queries with clickable
+  examples, persistent editor save/probe summaries, actual dirty-state Save
+  guards, searchable contextual shortcuts, density preview, note draft reset
+  and never-launched/oldest-launch ordering. See
+  `ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-05_V4.md` and its traceability JSON.
+  `ProfileEditorSavePresentation.swift` owns the ephemeral editor policy;
+  it never serializes its values or credentials. ND4 is a research cycle label,
+  not a new public version or a promise of 25 additional subsystems.
 
 - converts three independent reviews of thirty current products into exactly
   one hundred ranked recommendations and implements the twenty-five selected

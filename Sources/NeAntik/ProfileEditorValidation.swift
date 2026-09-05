@@ -7,7 +7,9 @@ enum ProfileEditorField: String, Hashable, Sendable {
     case startURL
     case proxyHost
     case proxyPort
+    case proxyUsername
     case proxyPassword
+    case proxyImport
 }
 
 struct ProfileNotePresentation: Equatable, Sendable {
@@ -66,6 +68,29 @@ struct ProfileEditorValidationIssue: Equatable, Sendable {
 }
 
 enum ProfileEditorValidation {
+    static func nameMessage(for value: String) -> String? {
+        let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !BrowserProfile.isValidName(clean) else { return nil }
+        if clean.isEmpty { return "Введи название профиля." }
+        if clean.count > BrowserProfile.maximumNameLength {
+            return "Сократи название до \(BrowserProfile.maximumNameLength) символов."
+        }
+        if clean.utf8.count > BrowserProfile.maximumNameUTF8Bytes {
+            return "Название занимает слишком много места. Сократи его или используй более простые символы."
+        }
+        return "Убери переносы строк и скрытые управляющие символы из названия."
+    }
+
+    static func pendingProxyImportIssue(_ text: String) -> ProfileEditorValidationIssue? {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return ProfileEditorValidationIssue(
+            field: .proxyImport,
+            message: "Строка прокси ещё не применена. Нажми «Вставить прокси» или очисти поле."
+        )
+    }
+
     static func firstIssue(
         name: String,
         tags: [String],
@@ -78,13 +103,10 @@ enum ProfileEditorValidation {
         proxyUsername: String,
         proxyPassword: String = ""
     ) -> ProfileEditorValidationIssue? {
-        let cleanName = name.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
-        guard BrowserProfile.isValidName(cleanName) else {
+        if let message = nameMessage(for: name) {
             return ProfileEditorValidationIssue(
                 field: .name,
-                message: "Введи название профиля."
+                message: message
             )
         }
 
@@ -142,10 +164,22 @@ enum ProfileEditorValidation {
                     in: .whitespacesAndNewlines
                 )
         )
-        guard proxy.isValid else {
+        var endpointOnly = proxy
+        endpointOnly.username = ""
+        guard endpointOnly.isValid else {
             return ProfileEditorValidationIssue(
                 field: .proxyHost,
                 message: "Проверь адрес прокси."
+            )
+        }
+        guard proxy.isValid else {
+            let exceedsLimit = proxy.username.count > ProxyConfiguration.maximumUsernameLength ||
+                proxy.username.utf8.count > ProxyConfiguration.maximumUsernameUTF8Bytes
+            return ProfileEditorValidationIssue(
+                field: .proxyUsername,
+                message: exceedsLimit
+                    ? "Сократи логин прокси до \(ProxyConfiguration.maximumUsernameLength) символов и \(ProxyConfiguration.maximumUsernameUTF8Bytes) байт UTF-8."
+                    : "Удали из логина прокси двоеточие и недопустимые управляющие символы."
             )
         }
 

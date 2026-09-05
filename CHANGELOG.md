@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+## Direct 0.3.24 (27) — September 5, 2026 (candidate)
+
+- Refresh the official Chromium security baseline to the September 3 macOS
+  Stable release (`152.0.7977.82/.83`, 12 security fixes). Public candidate
+  preparation now correctly rejects the embedded `152.0.7977.64` runtime.
+  This changes the release requirement, not the installed runtime bytes.
+
+- A thirteen-point unification pass retains overlong profile-name drafts and
+  blocks Save while proxy import text remains unapplied, with explicit Direct
+  recovery that does not change routes on validation navigation. Bulk import
+  names the failing line and provides actionable generated-name validation.
+  Combined folder/scope empty states preserve folder context on recovery.
+  Settings and workspace share density metrics and clear-search focus rules;
+  inspector launch hints reuse the row policy. Long tags keep removal controls
+  visible; tag suggestions and folder navigation avoid repeated render work.
+
+- Usability follow-up preserves unfinished text when picking existing tags,
+  directs proxy-login validation to the login field, explains invalid folder
+  names without silently truncating them, and matches accented folder names
+  consistently. Settings gain two-stage Escape, local Find focus and searchable
+  named Return chords. Note placeholders use a clearer semantic color. Search
+  indexing reuses folded values, and list headers reuse the current operational
+  subset without caching action-time eligibility.
+
+- Goal quality pass protects notes against concurrent overwrite, keeps the
+  folder picker open on save failure and preserves batch Undo after retryable
+  storage errors. Pending tags survive collapsed settings and participate in
+  Save/dirty-state validation; empty suggestion search no longer selects an
+  arbitrary tag. Folder keyboard selection scrolls into view. Batch-tag
+  previews/suggestions and route indexing avoid duplicate work; tag suggestion
+  search handles diacritics consistently. No runtime or dependency change.
+
+- Batch tag editing previews coverage and changed/unchanged counts, disables
+  no-op submissions, warns about tag-limit blockers before an atomic save and
+  offers only selected-profile tags for removal. Shortcut search gains an
+  always-available clear button for nonempty queries with retained focus.
+
+- Follow-up usability audit preserves apostrophes inside search terms, explains
+  unfinished quoted queries and avoids unnecessary repeated field/tag folding.
+  Settings collapse the optional density preview so shortcut search is easier
+  to reach. Failed batch-tag saves retain the dialog and its draft instead of
+  dismissing it; the existing atomic metadata and Undo policy is unchanged.
+  The workspace uses the native sidebar toggle only, removing its duplicate.
+
+- The September 5 ND4 follow-up ranks 100 recommendations and implements 25
+  small improvements across four existing workflows: field-specific and
+  presence search with actionable syntax help; profile-save validation and
+  route/probe summaries; searchable contextual shortcuts and density preview;
+  note draft recovery and two maintenance-oriented sort orders. No new
+  dependency, profile schema, runtime or public binary is introduced.
+
 - A new three-track review of thirty current profile browsers deduplicates 124
   raw ideas into an evidence-linked matrix of exactly one hundred
   recommendations. Twenty-five bounded local improvements were selected;
@@ -30,8 +81,6 @@
   native sidebar visibility control, responsive command/detail-header actions,
   delayed-runtime retry guidance and one semantic high-contrast notice style.
   No dependency, bundled asset, Chromium byte or public release changed.
-
-## Direct 0.3.24 (27) — September 1, 2026
 
 - A 29-product research pass records exactly one hundred bounded candidates
   and implements twenty-five dependency-free, asset-free operator safeguards.

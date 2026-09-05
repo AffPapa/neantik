@@ -436,7 +436,6 @@ struct ContentView: View {
         )
         .toolbar {
             WorkspaceToolbarContent(
-                columnVisibility: $columnVisibility,
                 showsProfileInspector: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil,
                 onPresentReadiness: presentWorkspaceReadiness,
@@ -478,7 +477,8 @@ struct ContentView: View {
             ) { note in
                 try saveProfileNote(
                     note,
-                    profileID: request.profile.id
+                    profileID: request.profile.id,
+                    expectedNote: request.profile.note
                 )
             }
         }
@@ -525,9 +525,9 @@ struct ContentView: View {
                     hasMixedSelection: !sharesFolder
                 ) { folderID in
                     if profiles.count == 1 {
-                        moveProfile(profiles[0], toFolderID: folderID)
+                        try performMoveProfile(profiles[0], toFolderID: folderID)
                     } else {
-                        moveProfiles(
+                        try moveProfiles(
                             request.profileIDs,
                             toFolderID: folderID
                         )
@@ -541,13 +541,13 @@ struct ContentView: View {
         }
         .sheet(item: $profileBatchTagRequest) { request in
             ProfileBatchTagSheet(
-                profileCount: request.profileIDs.count,
+                profiles: store.profiles.filter { request.profileIDs.contains($0.id) },
                 suggestedTags: currentProfileListIndex.tagSummaries(
                     scope: profileListScope,
                     in: selectedFolderFilter
                 ).map(\.name)
             ) { action in
-                applyBatchMetadata(action, to: request.profileIDs)
+                try performBatchMetadata(action, to: request.profileIDs)
             }
         }
         .sheet(item: $bulkProxyImportRequest) { request in
@@ -1089,11 +1089,12 @@ struct ContentView: View {
 
     private func saveProfileNote(
         _ note: String,
-        profileID: UUID
+        profileID: UUID,
+        expectedNote: String
     ) throws {
-        let saved = try store.mutateProfile(withID: profileID) {
-            $0.note = note
-        }
+        let saved = try store.updateNote(
+            note, for: profileID, expectedNote: expectedNote
+        )
         revealSavedProfile(saved)
     }
 
@@ -1195,56 +1196,64 @@ struct ContentView: View {
         toFolderID folderID: UUID?
     ) {
         do {
-            try store.assignProfile(profile.id, toFolderID: folderID)
-            normalizeSelection(preferred: profile.id)
+            try performMoveProfile(profile, toFolderID: folderID)
         } catch {
             localError = error.localizedDescription
         }
     }
 
+    private func performMoveProfile(
+        _ profile: BrowserProfile,
+        toFolderID folderID: UUID?
+    ) throws {
+        try store.assignProfile(profile.id, toFolderID: folderID)
+        normalizeSelection(preferred: profile.id)
+    }
+
     private func moveProfiles(
         _ profileIDs: Set<UUID>,
         toFolderID folderID: UUID?
-    ) {
-        do {
-            let receipt = try store.assignProfilesRecordingUndo(
-                profileIDs,
-                toFolderID: folderID
+    ) throws {
+        let receipt = try store.assignProfilesRecordingUndo(
+            profileIDs,
+            toFolderID: folderID
+        )
+        if receipt.canUndo {
+            workspaceBatchUndo = .folder(receipt)
+            announceWorkspaceStatus(
+                "Перемещено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
             )
-            if receipt.canUndo {
-                workspaceBatchUndo = .folder(receipt)
-                announceWorkspaceStatus(
-                    "Перемещено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
-                )
-            }
-            normalizeSelection(preferred: selection)
-        } catch {
-            localError = error.localizedDescription
         }
+        normalizeSelection(preferred: selection)
     }
 
     private func applyBatchMetadata(
         _ action: ProfileMetadataBatchAction,
         to profileIDs: Set<UUID>? = nil
     ) {
-        let selectedIDs = profileIDs ?? batchSelectedProfileIDs
         do {
-            let receipt = try store.applyBatch(action, to: selectedIDs)
-            if receipt.canUndo {
-                workspaceBatchUndo = .metadata(receipt)
-                announceWorkspaceStatus(
-                    "Изменено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
-                )
-            }
-            if case .setArchived(true) = action {
-                batchSelectedProfileIDs.subtract(
-                    receipt.affectedProfileIDs
-                )
-            }
-            normalizeSelection(preferred: selection)
+            try performBatchMetadata(action, to: profileIDs)
         } catch {
             localError = error.localizedDescription
         }
+    }
+
+    private func performBatchMetadata(
+        _ action: ProfileMetadataBatchAction,
+        to profileIDs: Set<UUID>? = nil
+    ) throws {
+        let selectedIDs = profileIDs ?? batchSelectedProfileIDs
+        let receipt = try store.applyBatch(action, to: selectedIDs)
+        if receipt.canUndo {
+            workspaceBatchUndo = .metadata(receipt)
+            announceWorkspaceStatus(
+                "Изменено \(receipt.affectedCount) \(profileCountWord(receipt.affectedCount))."
+            )
+        }
+        if case .setArchived(true) = action {
+            batchSelectedProfileIDs.subtract(receipt.affectedProfileIDs)
+        }
+        normalizeSelection(preferred: selection)
     }
 
     private func undoLastBatchAction() {
@@ -1262,7 +1271,9 @@ struct ContentView: View {
             )
             normalizeSelection(preferred: selection)
         } catch {
-            self.workspaceBatchUndo = nil
+            if ProfileBatchUndoFailurePolicy.invalidatesReceipt(error) {
+                self.workspaceBatchUndo = nil
+            }
             localError = error.localizedDescription
         }
     }
@@ -1636,7 +1647,8 @@ struct ContentView: View {
                 proxy.size.width >= ProfileRowLayout.minimumWideWidth
             VStack(spacing: 0) {
                 profileListHeader(
-                    operationalProjection: operationalProjection
+                    operationalProjection: operationalProjection,
+                    operationalProfiles: operationalProfiles
                 )
                 Divider()
                 runtimeReadinessBanner
@@ -1857,6 +1869,8 @@ struct ContentView: View {
             profileSearchText = ""
         case .clearRouteFilter:
             profileRouteFilterBinding.wrappedValue = .all
+        case .clearScope:
+            applyWorkspaceQuery(workspaceQuery.removing(.scope))
         case .showAllProfiles:
             applyWorkspaceQuery(.default, normalize: false)
             profileOperationalFilter = .all
@@ -1939,12 +1953,11 @@ struct ContentView: View {
     }
 
     private func profileListHeader(
-        operationalProjection: ProfileOperationalProjection
+        operationalProjection: ProfileOperationalProjection,
+        operationalProfiles: [BrowserProfile]
     ) -> some View {
         let bulkProxyAction = BulkProxyActionProjection.resolve(
-            visibleProfiles: operationalProjection.profiles(
-                for: profileOperationalFilter
-            ),
+            visibleProfiles: operationalProfiles,
             processState: { processes.processState(for: $0) },
             isPreparing: { launchPreparingProfileIDs.contains($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
@@ -2022,13 +2035,13 @@ struct ContentView: View {
                 resetProfileView()
             }
         } label: {
-            Label("Фильтры", systemImage: "line.3.horizontal.decrease")
+            Label("Вид списка", systemImage: "line.3.horizontal.decrease")
                 .fixedSize(horizontal: true, vertical: false)
                 .frame(minHeight: 28)
         }
         .menuStyle(.borderlessButton)
-        .help("Сортировка и фильтр подключения")
-        .accessibilityLabel("Фильтры и сортировка профилей")
+        .help("Сортировка, подключение и плотность списка")
+        .accessibilityLabel("Вид списка: сортировка, подключение и плотность")
         .accessibilityValue(
             "\(profileListOrdering.title), \(profileRouteFilter.title), " +
                 workspacePreferences.rowDensity.title

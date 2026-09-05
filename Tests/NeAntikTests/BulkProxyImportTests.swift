@@ -4,6 +4,35 @@ import Testing
 
 struct BulkProxyImportTests {
     @Test
+    func baseNameValidationExplainsFailuresAndAcceptsCorrections() {
+        #expect(BulkProxyImportParser.baseNameValidationMessage(" \n ") == "Введи основу названия.")
+        let overlong = String(repeating: "a", count: BrowserProfile.maximumNameLength + 1)
+        #expect(BulkProxyImportParser.baseNameValidationMessage(overlong)?.contains("120") == true)
+        #expect(BulkProxyImportParser.baseNameValidationMessage("Group\nA")?.contains("переносы") == true)
+        #expect(BulkProxyImportParser.baseNameValidationMessage("Group\u{202E}A")?.contains("управляющие") == true)
+        let byteHeavy = "a" + String(repeating: "\u{0301}", count: BrowserProfile.maximumNameUTF8Bytes)
+        #expect(BulkProxyImportParser.baseNameValidationMessage(byteHeavy)?.contains("места") == true)
+        let nearByteLimit = "a" + String(repeating: "\u{0301}", count: 2_047)
+        #expect(BrowserProfile.isValidName(nearByteLimit))
+        #expect(BulkProxyImportParser.profileName(base: nearByteLimit, index: 1) == nil)
+        #expect(BulkProxyImportParser.baseNameValidationMessage(nearByteLimit)?.contains("номера") == true)
+        let withSuffixRoom = "a" + String(repeating: "\u{0301}", count: 2_046)
+        #expect(BulkProxyImportParser.baseNameValidationMessage(withSuffixRoom) == nil)
+        #expect(BulkProxyImportParser.profileName(base: withSuffixRoom, index: 1) != nil)
+        for corrected in ["Прокси", String(overlong.dropLast()), "  Group A  "] {
+            #expect(BulkProxyImportParser.baseNameValidationMessage(corrected) == nil)
+            #expect(BulkProxyImportParser.profileName(base: corrected, index: 1) != nil)
+        }
+    }
+
+    @Test
+    func failedEditorFocusNamesTheActualLine() {
+        let message = BulkProxyImportParser.inputSelectionFailureMessage(lineNumber: 12)
+        #expect(message.contains("строку 12"))
+        #expect(!message.contains("lineNumber"))
+    }
+
+    @Test
     func fileReplacementRequiresConfirmationOnlyForExistingInput() {
         #expect(
             !BulkProxyFileReplacementPolicy.requiresConfirmation(

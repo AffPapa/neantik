@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "targetChromiumVersion": "152.0.7977.64",
+  "targetChromiumVersion": "152.0.7977.82",
   "minimumPrepareFreeGiB": 55,
   "preservedEvidenceBuildRoot": "/private/tmp/nevision-chromium-build-20260725",
   "officialChromiumBase": {
     "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "152.0.7977.64",
-    "commit": "506c834ecceaa943c5f41e6cfe7f68acb5c45346",
-    "tree": "ef4e82eff60855955257addf490e864f9bc820ef",
+    "tag": "152.0.7977.82",
+    "commit": "d04cdb24d67b081f6cf80200ffc5233f44b61109",
+    "tree": "a1234efb76bffd5133c982cac4bef312c411da6a",
     "liteArchive": {
-      "filename": "chromium-152.0.7977.64-lite.tar.xz",
-      "sha256": "0afede9e15101678eb11277098cc2f181a84a5f532f7f46758b981a4a7585f78",
-      "hashesFileSHA256": "28951f2031eeecaf92de42099c29f89fddfc76a110cd2222bf1abc2cdb290af6"
+      "filename": "chromium-152.0.7977.82-lite.tar.xz",
+      "sha256": "67ac37f365dfdac763c428862e5e460e5948940b3d6f856374da2ce219981417",
+      "hashesFileSHA256": "b2006d950b2ad88e73149b4b631c585ddfd990b094f327b645ab44c1629063ee"
     }
   },
   "macPackaging": {
@@ -22,15 +22,15 @@
   },
   "commonChromium": {
     "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
-    "tag": "152.0.7977.64-1",
-    "tagObject": "b7ef4610a50b69cff1e72c0a4d15b32e46deb7f0",
-    "commit": "59657a38437d11520a68618008eb825721319b9e",
-    "tree": "37f4a50135c42de552b8b60d34e0737bc8bb168e"
+    "tag": "152.0.7977.82-1",
+    "tagObject": "f4ad2510e1a3c6bc4d7326ca716dc104a9c4fcad",
+    "commit": "e71b91c6e336d0f25cfc6b9ef09298a9d2506e24",
+    "tree": "b85075b62970b4f892d2b636e7be3af901c53dd1"
   },
   "sourceVersionOverride": {
-    "from": "152.0.7977.64",
-    "to": "152.0.7977.64",
-    "reason": "The matching ungoogled Chromium packaging layer already selects the official macOS Stable 152.0.7977.64 source archive; the explicit no-op version boundary prevents accidental fallback to a different archive."
+    "from": "152.0.7977.82",
+    "to": "152.0.7977.82",
+    "reason": "Pinned macOS packaging .64 is paired with the verified common .82 tag; the common version file already selects the official .82 archive. No source version is relabelled."
   },
   "policy": "Do not mutate or delete the preserved Chromium evidence build root automatically. Use a separate absolute build root, verify the official archive SHA-256, apply upstream, packaging and owned NeAntik patches with zero fuzz, then regenerate source and binary evidence."
 }

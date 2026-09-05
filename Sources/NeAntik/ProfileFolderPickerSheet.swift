@@ -6,6 +6,24 @@ enum ProfileFolderPickerRowID: Hashable, Sendable {
     case folder(UUID)
 }
 
+struct ProfileFolderPickerCommitState {
+    private(set) var errorMessage: String?
+
+    mutating func commit(
+        folderID: UUID?,
+        using action: (UUID?) throws -> Void
+    ) -> Bool {
+        do {
+            try action(folderID)
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+}
+
 enum ProfileFolderPickerKeyboardCommitPolicy {
     static func permitsCommit(
         searchText: String,
@@ -30,23 +48,24 @@ struct ProfileFolderPickerPresentation: Equatable, Sendable {
         from current: ProfileFolderPickerRowID?,
         offset: Int
     ) -> ProfileFolderPickerRowID? {
-        guard !rowIDs.isEmpty else { return nil }
+        let rows = rowIDs
+        guard !rows.isEmpty else { return nil }
         guard let current,
-              let index = rowIDs.firstIndex(of: current)
-        else { return offset < 0 ? rowIDs.last : rowIDs.first }
-        return rowIDs[min(max(index + offset, 0), rowIDs.count - 1)]
+              let index = rows.firstIndex(of: current)
+        else { return offset < 0 ? rows.last : rows.first }
+        return rows[min(max(index + offset, 0), rows.count - 1)]
     }
 
     static func resolve(
         folders: [ProfileFolder],
         searchText: String
     ) -> Self {
-        let query = searchText.trimmingCharacters(
+        let query = ProfileFolder.comparisonKey(searchText.trimmingCharacters(
             in: .whitespacesAndNewlines
-        )
+        ))
         let filteredFolders = folders.filter {
             query.isEmpty ||
-                $0.name.localizedCaseInsensitiveContains(query)
+                ProfileFolder.comparisonKey($0.name).contains(query)
         }
         return Self(
             filteredFolders: filteredFolders,
@@ -63,8 +82,9 @@ struct ProfileFolderPickerSheet: View {
     let folders: [ProfileFolder]
     let selectedFolderID: UUID?
     let hasMixedSelection: Bool
-    let onSelect: (UUID?) -> Void
+    let onSelect: (UUID?) throws -> Void
 
+    @State private var commitState = ProfileFolderPickerCommitState()
     @State private var searchText = ""
     @State private var highlightedRowID: ProfileFolderPickerRowID?
     @State private var didMoveKeyboardHighlight = false
@@ -81,7 +101,7 @@ struct ProfileFolderPickerSheet: View {
         profileName: String,
         folders: [ProfileFolder],
         selectedFolderID: UUID?,
-        onSelect: @escaping (UUID?) -> Void
+        onSelect: @escaping (UUID?) throws -> Void
     ) {
         selectionDescription = "Профиль «\(profileName)»"
         self.folders = folders
@@ -95,7 +115,7 @@ struct ProfileFolderPickerSheet: View {
         folders: [ProfileFolder],
         selectedFolderID: UUID?,
         hasMixedSelection: Bool = false,
-        onSelect: @escaping (UUID?) -> Void
+        onSelect: @escaping (UUID?) throws -> Void
     ) {
         self.selectionDescription = selectionDescription
         self.folders = folders
@@ -145,29 +165,39 @@ struct ProfileFolderPickerSheet: View {
                             "Return выбирает найденную или выделенную стрелками папку."
                     )
 
-                List {
-                    folderButton(
-                        title: "Без папки",
-                        systemImage: "tray",
-                        folderID: nil,
-                        rowID: .unfiled
-                    )
+                ScrollViewReader { scrollProxy in
+                    List {
+                        folderButton(
+                            title: "Без папки",
+                            systemImage: "tray",
+                            folderID: nil,
+                            rowID: .unfiled
+                        )
 
-                    if visibleFolders.isEmpty, !searchText.isEmpty {
-                        ContentUnavailableView.search(text: searchText)
-                            .listRowSeparator(.hidden)
-                    } else {
-                        ForEach(visibleFolders) { folder in
-                            folderButton(
-                                title: folder.name,
-                                systemImage: "folder",
-                                folderID: folder.id,
-                                rowID: .folder(folder.id)
-                            )
+                        if visibleFolders.isEmpty, !searchText.isEmpty {
+                            ContentUnavailableView.search(text: searchText)
+                                .listRowSeparator(.hidden)
+                        } else {
+                            ForEach(visibleFolders) { folder in
+                                folderButton(
+                                    title: folder.name,
+                                    systemImage: "folder",
+                                    folderID: folder.id,
+                                    rowID: .folder(folder.id)
+                                )
+                            }
+                        }
+                    }
+                    .listStyle(.inset)
+                    .onChange(of: highlightedRowID) { _, rowID in
+                        if let rowID {
+                            scrollProxy.scrollTo(rowID)
                         }
                     }
                 }
-                .listStyle(.inset)
+                if let errorMessage = commitState.errorMessage {
+                    UserNoticeLabel(notice: UserNotice(errorMessage, level: .failure))
+                }
             }
             .padding(16)
 
@@ -220,14 +250,19 @@ struct ProfileFolderPickerSheet: View {
         ) else { return }
         switch highlightedRowID {
         case .unfiled:
-            onSelect(nil)
+            selectFolder(nil)
         case let .folder(folderID):
-            onSelect(folderID)
+            selectFolder(folderID)
         case nil:
             guard let folderID = presentation.returnFolderID else { return }
-            onSelect(folderID)
+            selectFolder(folderID)
         }
-        dismiss()
+    }
+
+    private func selectFolder(_ folderID: UUID?) {
+        if commitState.commit(folderID: folderID, using: onSelect) {
+            dismiss()
+        }
     }
 
     private func moveHighlight(offset: Int) {
@@ -247,8 +282,7 @@ struct ProfileFolderPickerSheet: View {
         let isSelected = !hasMixedSelection && selectedFolderID == folderID
         let isHighlighted = highlightedRowID == rowID
         return Button {
-            onSelect(folderID)
-            dismiss()
+            selectFolder(folderID)
         } label: {
             HStack(spacing: 10) {
                 Label(title, systemImage: systemImage)
@@ -268,6 +302,7 @@ struct ProfileFolderPickerSheet: View {
             )
             .contentShape(Rectangle())
         }
+        .id(rowID)
         .buttonStyle(.plain)
         .accessibilityLabel(
             isSelected ? "\(title), выбрано" : title

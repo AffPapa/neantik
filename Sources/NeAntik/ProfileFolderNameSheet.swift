@@ -1,6 +1,21 @@
 import AppKit
 import SwiftUI
 
+enum ProfileFolderNameValidation {
+    static func message(for name: String) -> String? {
+        guard ProfileFolder.normalizedName(name) == nil else { return nil }
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if clean.isEmpty { return "Введи название папки." }
+        if clean.count > ProfileFolder.maximumNameLength {
+            return "Сократи название до \(ProfileFolder.maximumNameLength) символов."
+        }
+        if clean.utf8.count > ProfileFolder.maximumNameUTF8Bytes {
+            return "Название занимает слишком много места. Сократи его или используй более простые символы."
+        }
+        return "Убери переносы строк и скрытые управляющие символы из названия."
+    }
+}
+
 enum ProfileFolderAccessibilityAnnouncement: Equatable {
     case invalidName
     case duplicateName
@@ -77,7 +92,9 @@ struct ProfileFolderNameSheet: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
-            if duplicatesExistingName {
+            if let message = ProfileFolderNameValidation.message(for: name) {
+                validationLabel(message)
+            } else if duplicatesExistingName {
                 validationLabel(
                     ProfileFolderAccessibilityAnnouncement.duplicateName.message
                 )
@@ -104,10 +121,7 @@ struct ProfileFolderNameSheet: View {
         .onAppear {
             nameIsFocused = true
         }
-        .onChange(of: name) { _, value in
-            if value.count > ProfileFolder.maximumNameLength {
-                name = String(value.prefix(ProfileFolder.maximumNameLength))
-            }
+        .onChange(of: name) { _, _ in
             errorMessage = nil
             if !duplicatesExistingName {
                 announcementGate.reset()

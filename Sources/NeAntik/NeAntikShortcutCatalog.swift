@@ -12,6 +12,46 @@ enum NeAntikShortcutCategory: String, CaseIterable, Identifiable {
         case .profile: "Выбранный профиль"
         }
     }
+
+}
+
+extension NeAntikShortcut {
+    /// Reference text, not a second authorization model: menu state remains authoritative.
+    var availability: String {
+        switch self {
+        case .newProfile, .newFolder, .findProfiles:
+            "В главном окне, когда не открыт диалог"
+        case .settings:
+            "В активном приложении NeAntik"
+        case .shortcutReference:
+            "В главном окне, когда не открыт диалог"
+        case .toggleSelectedProfile:
+            "Для выбранного профиля; доступность запуска определяется проверками"
+        case .focusSelectedProfile:
+            "Только для выбранного запущенного профиля"
+        case .editSelectedProfile:
+            "Для выбранного профиля вне перехода запуска или остановки"
+        case .editSelectedNote, .toggleInspector, .duplicateProfile:
+            "Когда выбран профиль в главном окне"
+        }
+    }
+
+    func matchesSearch(_ query: String) -> Bool {
+        let terms = query.split(whereSeparator: { $0.isWhitespace })
+        let searchable = [title, category.title, displayChord,
+                          accessibilityChord, chordIdentifier, availability]
+            .joined(separator: " ")
+        let namedChord = accessibilityChord.replacingOccurrences(of: ", ", with: "+")
+        return terms.allSatisfy {
+            // A complete typed chord must include exactly these modifiers;
+            // substring matching would also find Shift+Command+Return for Command+Return.
+            if $0.contains("+") {
+                return namedChord.localizedCaseInsensitiveCompare(String($0)) == .orderedSame ||
+                    chordIdentifier.localizedCaseInsensitiveCompare(String($0)) == .orderedSame
+            }
+            return searchable.localizedStandardContains(String($0))
+        }
+    }
 }
 
 /// One fixed, menu-backed shortcut catalog for the app and its Settings pane.

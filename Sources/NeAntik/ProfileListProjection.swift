@@ -140,6 +140,9 @@ struct ProfileListIndex: Equatable, Sendable {
             }
         )
         folderNameByID = resolvedFolderNameByID
+        let foldedFolderNameByID = resolvedFolderNameByID.mapValues(
+            ProfileSearchText.fold
+        )
 
         for profile in profiles {
             let assignedFolderID = organization.folderID(
@@ -182,23 +185,22 @@ struct ProfileListIndex: Equatable, Sendable {
                     profileDisplayNameByTagID[tagID] = tag
                 }
             }
+            let routeValues = ProfileRouteSearchDocument.values(for: profile)
+            let foldedRouteValues = routeValues.map(ProfileSearchText.fold)
+            let foldedProfileValues = ([profile.name] + profile.tags + [
+                profile.note
+            ]).map(ProfileSearchText.fold)
             indexedProfiles.append(
                 IndexedProfile(
                     profile: profile,
                     folderID: folderFilter.folderID,
-                    profileSearchText: ProfileSearchText.document(
-                        profileValues: [profile.name] + profile.tags + [
-                            profile.note
-                        ] + ProfileRouteSearchDocument.values(for: profile)
-                    ),
+                    profileSearchText: (foldedProfileValues + foldedRouteValues)
+                        .joined(separator: "\u{0}"),
                     folderSearchText: folderFilter.folderID.flatMap {
-                        resolvedFolderNameByID[$0]
-                    }.map(ProfileSearchText.fold),
+                        foldedFolderNameByID[$0]
+                    },
                     proxySearchText: profile.proxy.map { _ in
-                        ProfileSearchText.document(
-                            profileValues:
-                                ProfileRouteSearchDocument.values(for: profile)
-                        )
+                        foldedRouteValues.joined(separator: "\u{0}")
                     }
                 )
             )
@@ -628,7 +630,11 @@ enum ProfileListProjection {
     }
 }
 
-private struct ProfileSearchQuery {
+struct ProfileSearchQuery {
+    /// Bound parsing work without silently searching a truncated query.
+    static let maximumUTF8Bytes = 4_096
+    private(set) var validationMessage: String?
+
     private enum StatusConstraint: Equatable {
         case active
         case archived
@@ -686,25 +692,63 @@ private struct ProfileSearchQuery {
     private var folderTerms: [String] = []
     private var proxyConstraints: [ProxyConstraint] = []
     private var statusConstraints: [StatusConstraint] = []
+    private var nameTerms: [String] = []
+    private var noteTerms: [String] = []
+    private var idTerms: [String] = []
+    private var notePresence: [Bool] = []
+    private var tagPresence: [Bool] = []
     private var impossible = false
 
     init(rawValue: String) {
+        guard rawValue.utf8.count <= Self.maximumUTF8Bytes else {
+            impossible = true
+            validationMessage = "Запрос слишком длинный. Сократи его до \(Self.maximumUTF8Bytes) байт."
+            return
+        }
         var generalValues: [String] = []
-        for token in Self.tokens(rawValue) {
+        let parsed = Self.tokens(rawValue)
+        if parsed.unterminatedQuote {
+            impossible = true
+            validationMessage = "Закрой кавычки в поисковом запросе."
+            return
+        }
+        for token in parsed.values {
             let parts = token.split(
                 separator: ":",
                 maxSplits: 1,
                 omittingEmptySubsequences: false
             )
-            guard parts.count == 2,
-                  !parts[1].isEmpty
-            else {
+            guard parts.count == 2 else {
                 generalValues.append(token)
                 continue
             }
             let key = ProfileSearchText.fold(String(parts[0]))
             let value = ProfileSearchText.fold(String(parts[1]))
+            if value.isEmpty {
+                if Self.fieldNames.contains(key) {
+                    impossible = true
+                    validationMessage = "После двоеточия укажи значение поля."
+                } else {
+                    generalValues.append(token)
+                }
+                continue
+            }
             switch key {
+            case "name", "имя":
+                nameTerms.append(value)
+            case "note", "заметка":
+                noteTerms.append(value)
+            case "id", "ид":
+                idTerms.append(value)
+            case "has", "есть", "missing", "без":
+                let present = key == "has" || key == "есть"
+                switch value {
+                case "note", "заметка": notePresence.append(present)
+                case "tags", "теги": tagPresence.append(present)
+                default:
+                    impossible = true
+                    validationMessage = "Для есть: или без: используй заметка либо теги."
+                }
             case "tag", "тег":
                 tagTerms.append(value)
             case "folder", "папка":
@@ -716,6 +760,7 @@ private struct ProfileSearchQuery {
                     statusConstraints.append(constraint)
                 } else {
                     impossible = true
+                    validationMessage = "Статус: активный, архив, закреплен или новый. Для запущенных профилей используй фильтр «Запущены»."
                 }
             default:
                 generalValues.append(token)
@@ -738,17 +783,23 @@ private struct ProfileSearchQuery {
         includesFolderInGeneralSearch: Bool
     ) -> Bool {
         guard !impossible else { return false }
+        guard Self.containsAll(nameTerms, in: ProfileSearchText.fold(profile.name)),
+              Self.containsAll(noteTerms, in: ProfileSearchText.fold(profile.note)),
+              Self.containsAll(idTerms, in: profile.id.uuidString.lowercased()),
+              notePresence.allSatisfy({ $0 == !profile.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+              tagPresence.allSatisfy({ $0 == !profile.tags.isEmpty })
+        else { return false }
         let generalMatches = generalTerms.allSatisfy { term in
             profileSearchText.contains(term) ||
                 (includesFolderInGeneralSearch &&
                     folderSearchText?.contains(term) == true)
         }
         guard generalMatches else { return false }
-        let foldedTags = profile.tags.map(ProfileSearchText.fold)
-        guard tagTerms.allSatisfy({ term in
-            foldedTags.contains(where: { $0.contains(term) })
-        }) else {
-            return false
+        if !tagTerms.isEmpty {
+            let foldedTags = profile.tags.map(ProfileSearchText.fold)
+            guard tagTerms.allSatisfy({ term in
+                foldedTags.contains(where: { $0.contains(term) })
+            }) else { return false }
         }
         guard folderTerms.allSatisfy({ term in
             folderSearchText?.contains(term) == true
@@ -766,7 +817,22 @@ private struct ProfileSearchQuery {
         return statusConstraints.allSatisfy { $0.matches(profile) }
     }
 
-    private static func tokens(_ value: String) -> [String] {
+    private static let fieldNames: Set<String> = [
+        "name", "имя", "note", "заметка", "id", "ид", "has", "есть",
+        "missing", "без", "tag", "тег", "folder", "папка", "proxy",
+        "прокси", "status", "статус",
+    ]
+
+    /// Resolve a field only when queried, once even for multiple constraints.
+    private static func containsAll(
+        _ terms: [String], in document: @autoclosure () -> String
+    ) -> Bool {
+        guard !terms.isEmpty else { return true }
+        let resolved = document()
+        return terms.allSatisfy { resolved.contains($0) }
+    }
+
+    private static func tokens(_ value: String) -> (values: [String], unterminatedQuote: Bool) {
         var result: [String] = []
         var current = ""
         var quote: Character?
@@ -785,7 +851,8 @@ private struct ProfileSearchQuery {
                 } else {
                     current.append(character)
                 }
-            } else if character == "\"" || character == "'" {
+            } else if (character == "\"" || character == "'"),
+                      current.isEmpty || current.last == ":" {
                 quote = character
             } else if character.isWhitespace {
                 appendCurrent()
@@ -794,7 +861,7 @@ private struct ProfileSearchQuery {
             }
         }
         appendCurrent()
-        return result
+        return (result, quote != nil)
     }
 }
 

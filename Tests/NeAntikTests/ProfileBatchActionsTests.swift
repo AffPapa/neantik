@@ -4,6 +4,68 @@ import Testing
 
 struct ProfileBatchActionsTests {
     @Test
+    func visibleTagSuggestionsShareAccentInsensitiveIdentityAndTrimQuery() {
+        let profiles = [BrowserProfile(name: "A", tags: ["Café", "Other"])]
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: profiles, library: ["Unrelated"], adding: false, query: " CAFE "
+        ) == ["Café"])
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: profiles, library: ["Café"], adding: true, query: "cafe"
+        ) == ["Café"])
+    }
+
+    @Test
+    func visibleTagSuggestionsFilterBeforeLimitAndRespectSelection() {
+        let library = (0..<12).map { "A\($0)" } + ["Zulu"]
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: [], library: library, adding: true, query: ""
+        ).count == 8)
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: [], library: library, adding: true, query: "zulu"
+        ) == ["Zulu"])
+        #expect(ProfileBatchTagPreview.visibleSuggestions(
+            profiles: [], library: library, adding: false, query: ""
+        ).isEmpty)
+    }
+
+    @Test
+    func tagPreviewCountsActualChangesAndCaseInsensitiveCoverage() {
+        let profiles = [BrowserProfile(name: "A", tags: ["CAFÉ"]), BrowserProfile(name: "B")]
+        let add = ProfileBatchTagPreview.resolve(profiles: profiles, tag: "cafe", adding: true)
+        #expect(add.matching == 1 && add.affected == 1 && add.canApply)
+        let remove = ProfileBatchTagPreview.resolve(profiles: profiles, tag: "cafe", adding: false)
+        #expect(remove.matching == 1 && remove.affected == 1 && remove.canApply)
+    }
+
+    @Test
+    func tagPreviewDisablesEmptyInvalidAndNoOpActions() {
+        let profiles = [BrowserProfile(name: "A", tags: ["TikTok"])]
+        #expect(!ProfileBatchTagPreview.resolve(profiles: profiles, tag: "tiktok", adding: true).canApply)
+        #expect(!ProfileBatchTagPreview.resolve(profiles: profiles, tag: "absent", adding: false).canApply)
+        #expect(!ProfileBatchTagPreview.resolve(profiles: [], tag: "tag", adding: true).canApply)
+        #expect(!ProfileBatchTagPreview.resolve(profiles: profiles, tag: "", adding: true).valid)
+        #expect(!ProfileBatchTagPreview.resolve(profiles: profiles, tag: "bad\ntag", adding: true).valid)
+    }
+
+    @Test
+    func tagPreviewBlocksWholeBatchOnLimitButAllowsExistingTagAndRemoval() {
+        let tags = (0..<BrowserProfile.maximumTagCount).map { "tag\($0)" }
+        let profiles = [BrowserProfile(name: "Full", tags: tags), BrowserProfile(name: "Empty")]
+        let blocked = ProfileBatchTagPreview.resolve(profiles: profiles, tag: "new", adding: true)
+        #expect(blocked.blocked == 1 && !blocked.canApply)
+        #expect(ProfileBatchTagPreview.resolve(profiles: profiles, tag: "tag0", adding: true).canApply)
+        #expect(ProfileBatchTagPreview.resolve(profiles: profiles, tag: "tag0", adding: false).canApply)
+    }
+
+    @Test
+    func removalSuggestionsComeOnlyFromSelectedProfilesAndDeduplicate() {
+        let profiles = [BrowserProfile(name: "A", tags: ["TikTok"]), BrowserProfile(name: "B", tags: ["tiktok"])]
+        let remove = ProfileBatchTagPreview.suggestions(profiles: profiles, library: ["Unrelated"], adding: false)
+        #expect(remove.count == 1 && remove[0] == "TikTok")
+        #expect(ProfileBatchTagPreview.suggestions(profiles: profiles, library: ["Unrelated"], adding: true) == ["Unrelated"])
+    }
+
+    @Test
     func presentationKeepsOnlyVisibleSelectionAndResolvesBulkIntent() {
         let pinned = BrowserProfile(name: "Pinned", isPinned: true)
         let regular = BrowserProfile(name: "Regular")

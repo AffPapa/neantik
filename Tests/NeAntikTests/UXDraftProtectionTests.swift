@@ -3,6 +3,17 @@ import Testing
 
 struct UXDraftProtectionTests {
     @Test
+    func noteSaveRequiresValidMeaningfulChange() {
+        let draft = ProfileNoteDraftSnapshot(note: "Заметка")
+        #expect(!draft.canSave(currentNote: "Заметка"))
+        #expect(!draft.hasUnsavedChanges(currentNote: "  Заметка  "))
+        #expect(!draft.canSave(currentNote: "  Заметка  "))
+        #expect(draft.canSave(currentNote: "Следующий шаг"))
+        #expect(draft.canSave(currentNote: ""))
+        #expect(!draft.canSave(currentNote: String(repeating: "a", count: BrowserProfile.maximumNoteLength + 1)))
+        #expect(!ProfileNoteDraftSnapshot(note: "").canSave(currentNote: ""))
+    }
+    @Test
     func noteDraftOnlyRequiresConfirmationAfterARealChange() {
         let draft = ProfileNoteDraftSnapshot(note: "Следующий шаг")
 

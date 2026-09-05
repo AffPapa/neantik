@@ -6,6 +6,54 @@ import Testing
 @Suite("ProfileTagEditorTests")
 struct ProfileTagEditorTests {
   @Test
+  func suggestionsPreserveUnfinishedDraftOnSuccessAndFailure() {
+    let draft = "Незавершённый тег"
+    let added = ProfileTagEditorModel.addingSuggestion("QA", to: [], preservingInput: draft)
+    #expect(added.tags == ["QA"])
+    #expect(added.remainingInput == draft)
+    #expect(added.error == nil)
+    let full = (1...BrowserProfile.maximumTagCount).map { "Tag \($0)" }
+    let failed = ProfileTagEditorModel.addingSuggestion("QA", to: full, preservingInput: draft)
+    #expect(failed.tags == full)
+    #expect(failed.remainingInput == draft)
+    #expect(failed.error == .tooMany)
+    let duplicate = ProfileTagEditorModel.addingSuggestion("qa", to: ["QA"], preservingInput: draft)
+    #expect(duplicate.tags == ["QA"])
+    #expect(duplicate.remainingInput == draft)
+    #expect(duplicate.error == nil)
+  }
+
+  @Test
+  func savingResolvesFinalTagAndCommaDraft() {
+    let result = ProfileTagEditorModel.resolvingDraft("Работа, Клиент", tags: ["QA"])
+    #expect(result.tags == ["QA", "Работа", "Клиент"])
+    #expect(result.remainingInput.isEmpty)
+    #expect(result.error == nil)
+    #expect(ProfileTagEditorModel.resolvingDraft("QA", tags: ["QA"]).tags == ["QA"])
+    #expect(ProfileTagEditorModel.resolvingDraft("  ", tags: ["QA"]).tags == ["QA"])
+  }
+
+  @Test
+  func invalidFinalTagKeepsWholeDraftWithoutPartialCommit() {
+    for invalid in [String(repeating: "x", count: BrowserProfile.maximumTagLength + 1), "bad\nname"] {
+      let draft = "First," + invalid
+      let result = ProfileTagEditorModel.resolvingDraft(draft, tags: ["QA"])
+      #expect(result.tags == ["QA"])
+      #expect(result.remainingInput == draft)
+      #expect(result.error != nil)
+    }
+    let full = (1...BrowserProfile.maximumTagCount).map { "Tag \($0)" }
+    #expect(ProfileTagEditorModel.resolvingDraft("extra", tags: full).error == .tooMany)
+  }
+
+  @Test
+  func blankSuggestionSearchCannotCommitArbitraryTag() {
+    #expect(!ProfileTagEditorModel.permitsSuggestionCommit(query: ""))
+    #expect(!ProfileTagEditorModel.permitsSuggestionCommit(query: " \n"))
+    #expect(ProfileTagEditorModel.permitsSuggestionCommit(query: "QA"))
+  }
+
+  @Test
   func returnCommitTrimsAndAddsTag() {
     let result = ProfileTagEditorModel.adding(
       "  Работа  ",

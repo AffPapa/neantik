@@ -137,6 +137,24 @@ enum BulkProxyImportParser {
     static let maximumEntries = 100
     static let maximumInputBytes = 512 * 1_024
 
+    static func baseNameValidationMessage(_ value: String) -> String? {
+        if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Введи основу названия."
+        }
+        if let message = ProfileEditorValidation.nameMessage(for: value) {
+            return message
+        }
+        guard profileName(base: value, index: 1) != nil else {
+            return "Сократи основу названия: нужно место для номера профиля."
+        }
+        return nil
+    }
+
+    static func inputSelectionFailureMessage(lineNumber: Int) -> String {
+        "Не удалось выделить строку \(lineNumber). " +
+            "Щёлкни в поле и перейди к ней вручную."
+    }
+
     static func parse(
         _ input: String,
         kind: ProxyKind,
@@ -605,6 +623,7 @@ struct BulkProxyImportView: View {
     @State private var showingDiscardConfirmation = false
     @State private var pendingFileReplacement: PendingProxyFileReplacement?
     @FocusState private var proxyInputIsFocused: Bool
+    @FocusState private var baseNameIsFocused: Bool
     @State private var announcementGate =
         AccessibilityAnnouncementGate<
             BulkProxyImportAccessibilityAnnouncement
@@ -776,9 +795,15 @@ struct BulkProxyImportView: View {
 
                     if showsOptions {
                         TextField("Основа названия", text: $baseName)
+                            .focused($baseNameIsFocused)
+                        if let message = BulkProxyImportParser.baseNameValidationMessage(baseName) {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
 
                         LabeledContent("Будут названы") {
-                            Text("\(previewName)…")
+                            Text(baseNameIsValid ? "\(previewName)…" : "Исправь основу названия")
                         }
 
                         LabeledContent("Папка") {
@@ -926,12 +951,12 @@ struct BulkProxyImportView: View {
     }
 
     private var baseNameIsValid: Bool {
-        BulkProxyImportParser.profileName(base: baseName, index: 1) != nil
+        BulkProxyImportParser.baseNameValidationMessage(baseName) == nil
     }
 
     private var previewName: String {
         BulkProxyImportParser.profileName(base: baseName, index: 1)
-            ?? "Прокси 1"
+            ?? "Название не задано"
     }
 
     private var optionsSummary: String {
@@ -952,11 +977,23 @@ struct BulkProxyImportView: View {
     @ViewBuilder
     private var previewStatus: some View {
         if !baseNameIsValid {
-            statusLabel(
-                "Проверь основу названия в параметрах.",
-                systemImage: "exclamationmark.triangle.fill",
-                color: .orange
-            )
+            Button {
+                showsOptions = true
+                proxyInputIsFocused = false
+                Task { @MainActor in
+                    await Task.yield()
+                    baseNameIsFocused = true
+                }
+            } label: {
+                statusLabel(
+                    BulkProxyImportParser.baseNameValidationMessage(baseName) ?? "Проверь основу названия.",
+                    systemImage: "arrow.down.circle",
+                    color: .orange
+                )
+            }
+            .buttonStyle(.plain)
+            .help("Открыть параметры и исправить основу названия")
+            .accessibilityHint("Открывает параметры и переводит фокус в основу названия")
         } else if let inputMessage {
             statusLabel(
                 inputMessage,
@@ -1091,9 +1128,9 @@ struct BulkProxyImportView: View {
                 guard attempt < 3 else { break }
                 try? await Task.sleep(for: .milliseconds(25))
             }
-            inputMessage =
-                "Не удалось выделить строку (lineNumber). " +
-                "Щёлкни в поле и перейди к ней вручную."
+            inputMessage = BulkProxyImportParser.inputSelectionFailureMessage(
+                lineNumber: lineNumber
+            )
         }
     }
 

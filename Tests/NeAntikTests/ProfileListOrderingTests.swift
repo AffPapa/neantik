@@ -4,6 +4,21 @@ import Testing
 
 struct ProfileListOrderingTests {
     @Test
+    func maintenanceOrdersKeepPinsAndSeparateNeverFromOldLaunches() {
+        let date = Date(timeIntervalSinceReferenceDate: 1000)
+        let pinned = BrowserProfile(name: "Pinned", isPinned: true)
+        let never = BrowserProfile(name: "Never")
+        let old = BrowserProfile(name: "Old", lastLaunchedAt: date)
+        let recent = BrowserProfile(name: "Recent", lastLaunchedAt: date.addingTimeInterval(100))
+        let profiles = [recent, never, old, pinned]
+        #expect(profiles.sorted(by: ProfileListOrdering.neverLaunchedFirst.areInIncreasingOrder).map(\.id) == [pinned.id, never.id, old.id, recent.id])
+        #expect(profiles.sorted(by: ProfileListOrdering.oldestLaunch.areInIncreasingOrder).map(\.id) == [pinned.id, old.id, recent.id, never.id])
+        for order in [ProfileListOrdering.neverLaunchedFirst, .oldestLaunch] {
+            #expect(profiles.allSatisfy { !order.areInIncreasingOrder($0, $0) })
+            #expect(profiles.reversed().sorted(by: order.areInIncreasingOrder) == profiles.sorted(by: order.areInIncreasingOrder))
+        }
+    }
+    @Test
     func defaultOrderingPinsFirstAndMatchesLegacyComparator() {
         let createdAt = Date(timeIntervalSinceReferenceDate: 1_000)
         let profiles = [
