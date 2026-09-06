@@ -16,6 +16,10 @@ product and code work. The older v4 documents remain dated design records.
   baseline now rejects the older embedded runtime. Rebuild and verify the
   runtime before preparing a new signed candidate; do not relabel the old
   runtime lock or remove rollback artifacts to make the gate pass.
+- Runtime build owner: `scripts/build-runtime.sh`. Use an isolated build root
+  without ancestor `node_modules`; Chromium's TypeScript dependency checker
+  otherwise sees unrelated workspace packages. Regression owner:
+  `scripts/tests/test_build_runtime_script.py`.
 - GitHub assets: notarized ZIP and DMG with SHA-256 sidecars; all four assets
   were re-downloaded and their hashes were verified before publication.
 - A later source commit is not a release. A new binary needs a new

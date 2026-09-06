@@ -68,7 +68,8 @@ No cloud accounts, RPA, dependencies or low-level fingerprint controls were adde
 ## Verification and limitations
 
 - Full native Swift: 729 tests / 76 suites passed.
-- Python: 676 tests passed, one expected skip; AffPapa: 43 passed.
+- Python after build-resumption fixes: 680 tests, one expected skip, no failures;
+  AffPapa: 43 passed.
 - Clean ARM64 manager release build passed; isolated Dev build passed.
 - Current-tree and reachable-history recognized-secret scanners passed. This is
   bounded scanner coverage, not a guarantee against all possible vulnerabilities.
@@ -79,6 +80,12 @@ No cloud accounts, RPA, dependencies or low-level fingerprint controls were adde
   publication remain pending. A manager build is not a completed binary release.
 
 The old temporary runtime build was absent on reinspection. Its pinned source
-pair and official Metal toolchain were restored into ignored `.build` paths.
+pair and official Metal toolchain were restored. After diagnosing TypeScript
+dependency contamination, the stopped runtime tree was moved outside the parent
+workspace's `node_modules`; the exact failed target passed without modifying
+Chromium. The build script now rejects contaminated ancestors before building.
+Resuming also exposed a missing Dawn Go binary behind valid package metadata.
+The official [CIPD integrity mode](https://chromium.googlesource.com/infra/luci/luci-go/+/main/cipd/client/cipd/ensure/doc.go)
+checks installed files instead of trusting metadata alone.
 The runtime lock is not relabelled until a real new binary passes its gates.
 Public version remains 0.3.23 (26); no 0.3.24 binary was published by this review.

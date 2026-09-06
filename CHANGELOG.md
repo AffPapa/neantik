@@ -4,6 +4,12 @@
 
 ## Direct 0.3.24 (27) — September 5, 2026 (candidate)
 
+- Runtime builds fail early when an ancestor `node_modules` directory would
+  contaminate Chromium's TypeScript dependencies. Use an isolated build root;
+  bundled dependencies and the upstream dependency checker remain unchanged.
+  Resumed builds also verify installed Dawn Go package contents and restore
+  missing or modified files instead of trusting cached installation metadata.
+
 - September 6 optimization shares localized name ranks across all six list
   orders and consolidates tag ordering, locale validation and Russian count
   formatting. Existing ordering, strict metadata validation and proxy response
