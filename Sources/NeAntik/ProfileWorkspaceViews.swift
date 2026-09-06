@@ -90,7 +90,9 @@ struct ProfileRow<Actions: View>: View {
             }
         }
         .padding(.vertical, density.verticalPadding)
+        .padding(.horizontal, 10)
         .frame(minHeight: density.minimumRowHeight)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
         .accessibilityActions {
             Button("Открыть сведения", action: onOpenDetails)
@@ -118,11 +120,7 @@ struct ProfileRow<Actions: View>: View {
         _ presentation: ProfileRowPresentation
     ) -> some View {
         HStack(spacing: ProfileRowLayout.spacing) {
-            HStack(spacing: 6) {
-                batchSelectionButton
-                launchButton(presentation)
-            }
-                .frame(width: ProfileRowLayout.actionWidth)
+            batchSelectionButton
             identityBlock
                 .frame(
                     minWidth: ProfileRowLayout.minimumIdentityWidth,
@@ -148,6 +146,8 @@ struct ProfileRow<Actions: View>: View {
                 )
             actionsMenu
                 .frame(width: ProfileRowLayout.menuWidth)
+            launchButton(presentation)
+                .frame(width: ProfileRowLayout.actionWidth)
         }
         .padding(.horizontal, ProfileRowLayout.horizontalPadding)
     }
@@ -157,7 +157,6 @@ struct ProfileRow<Actions: View>: View {
     ) -> some View {
         HStack(spacing: 10) {
             batchSelectionButton
-            launchButton(presentation)
             profileAvatar
             VStack(alignment: .leading, spacing: 4) {
                 profileName
@@ -194,6 +193,7 @@ struct ProfileRow<Actions: View>: View {
 
             Spacer(minLength: 4)
             actionsMenu
+            launchButton(presentation)
         }
     }
 
@@ -423,7 +423,7 @@ struct ProfileRow<Actions: View>: View {
             }
         }
         .frame(minWidth: 28, minHeight: 28)
-        .buttonStyle(.bordered)
+        .buttonStyle(.borderedProminent)
         .controlSize(.small)
         .tint(launchTint)
         .disabled(!launchAction.isEnabled)
@@ -458,7 +458,7 @@ struct ProfileRow<Actions: View>: View {
     }
 
     private var launchTint: Color {
-        processState.statusTone == .healthy ? .red : .green
+        processState.statusTone == .healthy ? .red : .teal
     }
 
     private var organizationMetadata: some View {

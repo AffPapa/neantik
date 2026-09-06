@@ -3,6 +3,11 @@
 Current source map: 2026-09-06. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
+Proxya reference adoption: `PROXYA_ADOPTION_2026-09-06.md` records the exact
+public-source boundary, feature decisions and initial native card layout.
+Owners: `ProfileWorkspaceViews.swift`, `ProfileListHeaderView.swift` and
+`ContentView.swift`; this is development UI, not a new published release.
+
 ## Release truth and boundary
 
 - Latest verified immutable GitHub release: `v0.3.24`, version/build `0.3.24 (27)`.

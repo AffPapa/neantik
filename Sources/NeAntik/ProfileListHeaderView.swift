@@ -42,6 +42,13 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if !profilesAreEmpty {
+                HStack {
+                    Text("Профили")
+                        .font(.title2.bold())
+                        .accessibilityHeading(.h1)
+                    Spacer(minLength: 8)
+                    createProfileMenu
+                }
                 ViewThatFits(in: .horizontal) {
                     commandRow
                     commandRow.labelStyle(.iconOnly)
@@ -62,7 +69,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .padding(.top, WorkspaceLayout.titlebarContentInset)
+        .padding(.top, WorkspaceLayout.titlebarContentInset + 16)
     }
 
     private var commandRow: some View {
@@ -70,7 +77,6 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
             searchField
             actionsMenu
             filtersMenu
-            createProfileMenu
         }
     }
 
@@ -128,7 +134,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
             onCreateConfiguredProfile()
         }
         .buttonStyle(.borderedProminent)
-        .tint(.green)
+        .tint(.accentColor)
         .help("Создать профиль (⌘N). В меню можно сразу создать и открыть профиль без прокси")
         .accessibilityLabel(
             "Создать профиль; доступны дополнительные варианты"

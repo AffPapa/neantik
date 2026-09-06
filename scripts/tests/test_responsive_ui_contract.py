@@ -222,7 +222,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             header,
         )
         self.assertIn(".buttonStyle(.borderedProminent)", header)
-        self.assertIn(".tint(.green)", header)
+        self.assertIn(".tint(.accentColor)", header)
         self.assertIn(
             'Label("Действия", systemImage: "ellipsis.circle")',
             header,
@@ -255,7 +255,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("private func profileTableHeader", text)
         self.assertIn("ProfileRowLayout.minimumWideWidth", text)
         self.assertIn("GeometryReader", text)
-        self.assertIn('Text("Выбор / запуск")', text)
+        self.assertIn('Image(systemName: "checkmark.square")', text)
+        self.assertIn('Text("Запуск")', text)
+        for start, end in (("private func wideRow", "private func compactRow"),
+                           ("private func compactRow", "private var batchSelectionButton")):
+            row = workspace_views.split(start, 1)[1].split(end, 1)[0]
+            self.assertLess(row.index("actionsMenu"), row.index("launchButton(presentation)"))
+            self.assertLess(row.index("batchSelectionButton"), row.index("launchButton(presentation)"))
         self.assertIn('Text("Подключение")', text)
         self.assertIn('Text("Заметка / активность")', text)
         self.assertIn("wideRow(presentation)", workspace_views)
@@ -718,7 +724,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("presentation.statusTitle", row)
         self.assertIn("presentation.routeTitle", row)
         self.assertIn("launchAction.title", row)
-        self.assertIn(".buttonStyle(.bordered)", row)
+        self.assertIn(".buttonStyle(.borderedProminent)", row)
         self.assertIn(".privacySensitive()", row)
         self.assertNotIn(".help(presentation.noteSummary)", row)
         self.assertIn("processState.title", row_presentation)

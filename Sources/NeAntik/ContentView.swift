@@ -1830,6 +1830,7 @@ struct ContentView: View {
                                     )
                                 }
                                 .tag(profile.id)
+                                .listRowSeparator(.hidden)
                                 .contextMenu {
                                     profileContextMenu(
                                         profile,
@@ -1876,8 +1877,8 @@ struct ContentView: View {
         if usesWideLayout {
             VStack(spacing: 0) {
                 HStack(spacing: ProfileRowLayout.spacing) {
-                    Text("Выбор / запуск")
-                        .frame(width: ProfileRowLayout.actionWidth)
+                    Image(systemName: "checkmark.square")
+                        .frame(width: 24)
                     Text("Профиль")
                         .frame(
                             minWidth: ProfileRowLayout.minimumIdentityWidth,
@@ -1906,10 +1907,12 @@ struct ContentView: View {
                             width: ProfileRowLayout.menuWidth,
                             height: 1
                         )
+                    Text("Запуск")
+                        .frame(width: ProfileRowLayout.actionWidth)
                 }
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, ProfileRowLayout.horizontalPadding)
+                .padding(.horizontal, ProfileRowLayout.horizontalPadding + 10)
                 .padding(.vertical, 7)
                 Divider()
             }
