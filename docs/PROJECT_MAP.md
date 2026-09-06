@@ -68,6 +68,13 @@ schemas or public release state:
 - `ProfileOperationOwner` owns window-local generation claims and optional
   dedicated tasks. It does not replace the app-wide proxy execution limiter,
   credential/revision matching or persistence rollback coordinator.
+- `WorkspaceSheetRequest` captures one of nine ordinary destinations. Release
+  audit and confirmations remain separate. Only explicit error-to-readiness
+  recovery may bypass pending workspace errors; those errors are retained while
+  readiness is open. Ordinary commands cannot replace an existing modal.
+- Every proxy probe, including a bulk child, owns a cancellable task. Parent
+  cancellation waits for child completion, preserving persistence rollback and
+  execution-permit lifetime rather than only hiding a progress indicator.
 
 See `ARCHITECTURE_COMPACTION_PLAN_2026-09-06.md` for scope and invariant gates.
 These development changes are not part of the published 0.3.24 artifacts.

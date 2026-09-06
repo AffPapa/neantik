@@ -106,17 +106,90 @@ extension ProfileRevisionAndTransactionTests {
 @MainActor
 struct ProfileRevisionAndTransactionTests {
     @Test
+    func readinessRecoveryAllowsPendingErrorsButNeverReplacesActualModal() {
+        #expect(WorkspaceSheetRequest.canPresent(
+            .readiness, hasBlockingModal: false, hasWorkspaceAlert: true,
+            recoveringWorkspaceAlert: true
+        ))
+        #expect(!WorkspaceSheetRequest.canPresent(
+            .readiness, hasBlockingModal: true, hasWorkspaceAlert: true,
+            recoveringWorkspaceAlert: true
+        ))
+        #expect(!WorkspaceSheetRequest.canPresent(
+            .readiness, hasBlockingModal: false, hasWorkspaceAlert: true
+        ))
+        #expect(!WorkspaceSheetRequest.canPresent(
+            .note(BrowserProfile(name: "Existing")),
+            hasBlockingModal: false, hasWorkspaceAlert: true,
+            recoveringWorkspaceAlert: true
+        ))
+        #expect(WorkspaceSheetRequest.canPresent(
+            .readiness, hasBlockingModal: false, hasWorkspaceAlert: false
+        ))
+    }
+
+    @Test
     func bulkRequestRetainsFolderCapturedAtPresentation() {
         let folderID = UUID()
         var selectedFolderID: UUID? = folderID
-        let request = BulkProxyImportRequest(
-            targetFolderID: selectedFolderID
+        let request = WorkspaceSheetRequest(
+            destination: .proxyImport(targetFolderID: selectedFolderID)
         )
 
         selectedFolderID = nil
 
-        #expect(request.targetFolderID == folderID)
+        guard case let .proxyImport(capturedFolderID) = request.destination else {
+            Issue.record("Expected proxy import destination")
+            return
+        }
+        #expect(capturedFolderID == folderID)
         #expect(selectedFolderID == nil)
+    }
+
+    @Test
+    func sheetPresentationKeepsProfileNoteAndRevisionSnapshot() {
+        var profile = BrowserProfile(name: "Original")
+        profile.note = "Original note"
+        let request = WorkspaceSheetRequest(destination: .note(profile))
+        let editor = WorkspaceSheetRequest(destination: .editor(EditorRequest(
+            profile: profile,
+            openedProcessState: .stopped
+        )))
+        profile.name = "Changed"
+        profile.note = "Changed note"
+        profile.revision += 1
+
+        guard case let .note(captured) = request.destination,
+              case let .editor(capturedEditor) = editor.destination else {
+            Issue.record("Expected note and editor destinations")
+            return
+        }
+        #expect(captured.name == "Original")
+        #expect(captured.note == "Original note")
+        #expect(captured.revision + 1 == profile.revision)
+        #expect(capturedEditor.profile == captured)
+        #expect(capturedEditor.openedProcessState == .stopped)
+    }
+
+    @Test
+    func sheetPresentationKeepsBatchSelectionAndFreshIdentity() {
+        let firstID = UUID()
+        var selection: Set<UUID> = [firstID]
+        let folder = WorkspaceSheetRequest(destination: .folderPicker(selection))
+        let tags = WorkspaceSheetRequest(destination: .batchTags(selection))
+        selection.removeAll()
+        guard case let .folderPicker(folderIDs) = folder.destination,
+              case let .batchTags(tagIDs) = tags.destination else {
+            Issue.record("Expected folder and tag destinations")
+            return
+        }
+        #expect(folderIDs == [firstID])
+        #expect(tagIDs == [firstID])
+        #expect(!folder.isReadiness)
+        let readiness = WorkspaceSheetRequest(destination: .readiness)
+        #expect(readiness.isReadiness)
+        #expect(readiness.id != WorkspaceSheetRequest(destination: .readiness).id)
+        #expect(folder.id != WorkspaceSheetRequest(destination: folder.destination).id)
     }
 
     @Test

@@ -4,6 +4,101 @@ import Testing
 @testable import NeAntik
 
 struct ProxyTestOperationRegistryTests {
+    @Test(.timeLimit(.minutes(1)), arguments: [false, true], [0, 1, 2]) @MainActor
+    func ownedChildCancellationWaitsForExitAndPreventsHealthPublication(
+        cancelParent: Bool, boundary: Int
+    ) async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-owned-proxy-\(UUID())")
+        try FileManager.default.createDirectory(
+            at: root, withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fileURL = root.appendingPathComponent("health.json")
+        let profile = BrowserProfile(name: "Test", proxy: ProxyConfiguration(
+            kind: .http, host: "proxy.example", port: 8080, username: ""
+        ))
+        let barrier = OwnedProxyBoundaryBarrier()
+        let gate = ProxyTestExecutionGate()
+        let coordinator = ProxyHealthCoordinator(
+            fileURL: fileURL, executionGate: gate,
+            commitBoundaryHook: {
+                if boundary == 2 {
+                    await barrier.suspend()
+                }
+            }
+        )
+        var owner = ProfileOperationOwner()
+        let claim = owner.claim(profile.id)
+        let token = try #require(claim)
+        let siblingClaim = owner.claim(UUID())
+        let sibling = try #require(siblingClaim)
+        let child = Task { @MainActor in
+            defer { owner.finish(token) }
+            do {
+                let result = try await coordinator.run(profile: profile) { _ in
+                    if boundary != 2 {
+                        await barrier.suspend()
+                    }
+                    // A non-cooperative probe may return success or a mapped
+                    // ProxyProbeError even after cancellation was requested.
+                    do {
+                        if boundary == 1 {
+                            throw ProxyProbeError(outcome: .connectionFailed)
+                        }
+                        return ProxyHealthUpdatePolicy.success(ProxyTestObservation(
+                            observedAt: Date(), responseTimeMilliseconds: 12,
+                            result: ProxyTestResult(
+                                ipAddress: "203.0.113.1", city: nil,
+                                countryName: nil, countryCode: nil,
+                                timezoneIdentifier: "UTC", localeIdentifier: "en-US"
+                            )
+                        ))
+                    } catch let error as ProxyProbeError {
+                        return ProxyHealthUpdatePolicy.failure(
+                            error, checkedAt: Date(), previous: nil
+                        )
+                    }
+                } != nil
+                await barrier.completed(error: nil)
+                return result
+            } catch {
+                await barrier.completed(error: String(describing: error))
+                return false
+            }
+        }
+        owner.attach(child, to: token)
+        var waiterExited = false
+        let waiter = Task { @MainActor in
+            let result = await ProfileOperationOwner.value(of: child)
+            waiterExited = true
+            return result
+        }
+        do {
+            try await barrier.waitUntilReached()
+        } catch {
+            child.cancel()
+            waiter.cancel()
+            await barrier.resume()
+            throw error
+        }
+        if cancelParent { waiter.cancel() } else { owner.cancel(profile.id) }
+        let pending = await gate.snapshot()
+        #expect(pending.activeProfileIDs.contains(profile.id))
+        #expect(!waiterExited)
+        #expect(owner.isCurrent(sibling))
+        await barrier.resume()
+        #expect(await waiter.value == false)
+        #expect(child.isCancelled)
+        let finished = await gate.snapshot()
+        #expect(finished.claimedProfileIDs.isEmpty)
+        #expect(!coordinator.isTesting(profileID: profile.id))
+        #expect(coordinator.healthByProfileID[profile.id] == nil)
+        let reloaded = try ProxyHealthStore(fileURL: fileURL)
+        #expect(await reloaded.state(for: profile.id) == nil)
+    }
+
     @Test @MainActor
     func cancelledQueuedLaunchCannotClaimProxyBeforeReplacement() async throws {
         var launches = ProfileOperationOwner()
@@ -355,6 +450,46 @@ struct ProxyTestOperationRegistryTests {
         #expect(snapshot.claimedProfileIDs.isEmpty)
         #expect(snapshot.activeProfileIDs.isEmpty)
         #expect(snapshot.queuedProfileIDs.isEmpty)
+    }
+}
+
+private actor OwnedProxyBoundaryBarrier {
+    private var reached = false
+    private var released = false
+    private var finished = false
+    private var completionError: String?
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func suspend() async {
+        reached = true
+        guard !released else { return }
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func completed(error: String?) {
+        finished = true
+        completionError = error
+    }
+
+    func waitUntilReached() async throws {
+        for _ in 0..<2_000 {
+            if reached { return }
+            if finished {
+                throw BoundaryFailure(reason: completionError ?? "Operation exited before boundary")
+            }
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        throw BoundaryFailure(reason: "Timed out waiting for operation boundary")
+    }
+
+    func resume() {
+        released = true
+        continuation?.resume()
+        continuation = nil
+    }
+
+    private struct BoundaryFailure: Error {
+        let reason: String
     }
 }
 

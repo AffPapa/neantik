@@ -108,7 +108,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         sheet = (ROOT / 'Sources/NeAntik/ProfileBatchTagSheet.swift').read_text()
         content = CONTENT.read_text()
         self.assertIn('let onApply: (ProfileMetadataBatchAction) throws -> Void', sheet)
-        self.assertIn('try performBatchMetadata(action, to: request.profileIDs)', content)
+        self.assertIn('try performBatchMetadata(action, to: profileIDs)', content)
         operation = sheet.split('private func apply()', 1)[1]
         success, failure = operation.split('} catch {', 1)
         self.assertIn('try onApply', success)
@@ -531,6 +531,39 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("terminalAccessibilityAnnouncement", onboarding)
         self.assertIn("постоянный локальный профиль браузера", onboarding)
 
+    def test_ordinary_sheet_route_preserves_open_modal_and_readiness_refresh(self):
+        text = CONTENT.read_text(encoding="utf-8")
+        presentation = text.split("private func presentWorkspaceSheet(", 1)[1].split(
+            "private var workspaceAlerts:", 1
+        )[0]
+        self.assertLess(
+            presentation.index("guard WorkspaceSheetRequest.canPresent("),
+            presentation.index("workspaceSheetRequest = WorkspaceSheetRequest("),
+        )
+        self.assertEqual(text.count("workspaceSheetRequest = WorkspaceSheetRequest("), 1)
+        self.assertIn("hasBlockingModal: isWorkspaceSheetOrConfirmationPresented", presentation)
+        self.assertIn("hasWorkspaceAlert: workspaceAlert != nil", presentation)
+        self.assertEqual(text.count(".sheet(item: $workspaceSheetRequest)"), 1)
+        modal_guard = text.split("private var isWorkspaceModalPresented:", 1)[1].split(
+            "private var workspaceCommandSet:", 1
+        )[0]
+        for condition in [
+            "workspaceSheetRequest != nil", "showingReleaseFingerprintAudit",
+            "showingDeleteConfirmation", "folderPendingDelete != nil",
+            "forceStopRequest != nil", "launchPreparationFailure != nil",
+            "workspaceAlert != nil",
+        ]:
+            self.assertIn(condition, modal_guard)
+        self.assertIn("if workspaceSheetRequest?.isReadiness == true {", text)
+        self.assertIn("presentWorkspaceReadiness(recoveringWorkspaceAlert: true)", text)
+        binding = text.split("private var workspaceAlertBinding:", 1)[1].split("var body:", 1)[0]
+        self.assertIn("workspaceSheetRequest?.isReadiness == true ? nil : workspaceAlert", binding)
+        self.assertIn("guard workspaceSheetRequest?.isReadiness != true", binding)
+        self.assertNotIn("processes.lastError = nil", presentation)
+        self.assertNotIn("store.lastError = nil", presentation)
+        self.assertIn("expectedNote: profile.note", text)
+        self.assertIn("expectedSourceRevision: request.source.revision", text)
+
     def test_fingerprint_audit_separates_manual_reports_from_release_authority(
         self,
     ) -> None:
@@ -539,10 +572,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
             ".sheet(isPresented: $showingReleaseFingerprintAudit)"
         )
         manual_start = text.index(
-            ".sheet(item: $fingerprintAuditRequest)"
+            "case let .fingerprintAudit(request):"
         )
         manual_end = text.index('.alert(\n            "Удалить профиль?"')
-        release_sheet = text[release_start:manual_start]
+        release_end = text.index("private func workspaceSheet(", release_start)
+        release_sheet = text[release_start:release_end]
         manual_sheet = text[manual_start:manual_end]
 
         self.assertIn("releaseContext: fingerprintEvidenceReleaseContext", release_sheet)
@@ -552,7 +586,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("fingerprintObservationStore.record", manual_sheet)
         self.assertNotIn("releaseContext:", manual_sheet)
         self.assertIn("private func beginFingerprintAudit()", text)
-        self.assertIn("fingerprintAuditRequest = FingerprintAuditRequest(", text)
+        self.assertIn("presentWorkspaceSheet(.fingerprintAudit(FingerprintAuditRequest(", text)
         self.assertIn("onRunFingerprintAudit:", text)
         self.assertEqual(
             text.count("showingReleaseFingerprintAudit = true"),

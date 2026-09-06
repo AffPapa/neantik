@@ -23,15 +23,8 @@ struct ContentView: View {
     @State private var selection: UUID?
     @State private var batchSelectedProfileIDs = Set<UUID>()
     @State private var workspaceBatchUndo: WorkspaceBatchUndo?
-    @State private var profileBatchTagRequest: ProfileBatchTagRequest?
-    @State private var editorRequest: EditorRequest?
-    @State private var profileDuplicationRequest:
-        ProfileDuplicationRequest?
-    @State private var profileNoteRequest: ProfileNoteRequest?
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
-    @State private var fingerprintAuditRequest: FingerprintAuditRequest?
-    @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var forceStopRequest: BrowserProfile?
@@ -54,9 +47,6 @@ struct ContentView: View {
         .pinnedThenName
     @State private var profileOperationalFilter: ProfileOperationalFilter =
         .all
-    @State private var folderNameRequest: FolderNameRequest?
-    @State private var profileFolderPickerRequest:
-        ProfileFolderPickerRequest?
     @State private var folderPendingDelete: ProfileFolder?
     @State private var proxyOperations = ProfileOperationOwner()
     @State private var launchOperations = ProfileOperationOwner()
@@ -67,7 +57,7 @@ struct ContentView: View {
     @State private var bulkProxyFailedProfileIDs: [UUID] = []
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
-    @State private var showingWorkspaceReadiness = false
+    @State private var workspaceSheetRequest: WorkspaceSheetRequest?
     @State private var isRefreshingWorkspaceReadiness = false
     @State private var workspaceReadinessNotice: UserNotice?
     @State private var readinessSystemInspection:
@@ -138,21 +128,16 @@ struct ContentView: View {
     }
 
     private var isWorkspaceModalPresented: Bool {
-        editorRequest != nil ||
-            profileDuplicationRequest != nil ||
-            profileNoteRequest != nil ||
-            folderNameRequest != nil ||
-            profileFolderPickerRequest != nil ||
-            profileBatchTagRequest != nil ||
-            bulkProxyImportRequest != nil ||
+        isWorkspaceSheetOrConfirmationPresented || workspaceAlert != nil
+    }
+
+    private var isWorkspaceSheetOrConfirmationPresented: Bool {
+        workspaceSheetRequest != nil ||
             forceStopRequest != nil ||
             showingReleaseFingerprintAudit ||
-            fingerprintAuditRequest != nil ||
-            showingWorkspaceReadiness ||
             showingDeleteConfirmation ||
             folderPendingDelete != nil ||
-            launchPreparationFailure != nil ||
-            workspaceAlert != nil
+            launchPreparationFailure != nil
     }
 
     private var workspaceCommandSet: WorkspaceCommandSet {
@@ -172,9 +157,7 @@ struct ContentView: View {
             toggleInspector: toggleProfileInspector,
             renameSelectedFolder: {
                 guard let selectedFolder else { return }
-                folderNameRequest = FolderNameRequest(
-                    folder: selectedFolder
-                )
+                presentWorkspaceSheet(.folderName(selectedFolder))
             },
             deleteSelectedFolder: {
                 guard let selectedFolder else { return }
@@ -383,9 +366,12 @@ struct ContentView: View {
         Binding<WorkspaceAlertPresentation?>
     {
         Binding(
-            get: { workspaceAlert },
+            get: {
+                workspaceSheetRequest?.isReadiness == true ? nil : workspaceAlert
+            },
             set: { value in
-                guard value == nil, let source = workspaceAlert?.source else {
+                guard workspaceSheetRequest?.isReadiness != true,
+                      value == nil, let source = workspaceAlert?.source else {
                     return
                 }
                 clearWorkspaceAlert(source)
@@ -452,130 +438,8 @@ struct ContentView: View {
 
     private var workspaceSheets: some View {
         workspaceBase
-        .sheet(item: $editorRequest) { request in
-            profileEditorSheet(for: request)
-        }
-        .sheet(item: $profileDuplicationRequest) { request in
-            ProfileDuplicationSheet(
-                source: request.source,
-                folders: store.organization.folders,
-                initialOptions: request.initialOptions
-            ) { options in
-                try saveDuplicate(
-                    sourceProfileID: request.source.id,
-                    expectedSourceRevision: request.source.revision,
-                    options: options
-                )
-            }
-        }
-        .sheet(item: $profileNoteRequest) { request in
-            ProfileNoteEditorView(
-                profileName: request.profile.name,
-                initialNote: request.profile.note
-            ) { note in
-                try saveProfileNote(
-                    note,
-                    profileID: request.profile.id,
-                    expectedNote: request.profile.note
-                )
-            }
-        }
-        .sheet(item: $folderNameRequest) { request in
-            ProfileFolderNameSheet(
-                title: request.folder == nil
-                    ? "Новая папка"
-                    : "Переименовать папку",
-                initialName: request.folder?.name ?? "",
-                existingNames: store.organization.folders.map(\.name)
-            ) { name in
-                if let folder = request.folder {
-                    _ = try store.renameFolder(
-                        withID: folder.id,
-                        to: name
-                    )
-                } else {
-                    let folder = try store.createFolder(named: name)
-                    selectedFolderFilter = .folder(folder.id)
-                    selectedProfileTag = nil
-                    normalizeSelection()
-                }
-            }
-        }
-        .sheet(item: $profileFolderPickerRequest) { request in
-            let profiles = store.profiles.filter {
-                request.profileIDs.contains($0.id)
-            }
-            if profiles.count == request.profileIDs.count,
-               !profiles.isEmpty {
-                let firstFolderID = store.folderID(
-                    forProfileID: profiles[0].id
-                )
-                let sharesFolder = profiles.allSatisfy {
-                    store.folderID(forProfileID: $0.id) == firstFolderID
-                }
-                ProfileFolderPickerSheet(
-                    selectionDescription:
-                        profiles.count == 1
-                            ? "Профиль «\(profiles[0].name)»"
-                            : "Выбрано \(profiles.count) \(profileCountWord(profiles.count))",
-                    folders: store.organization.folders,
-                    selectedFolderID: sharesFolder ? firstFolderID : nil,
-                    hasMixedSelection: !sharesFolder
-                ) { folderID in
-                    if profiles.count == 1 {
-                        try performMoveProfile(profiles[0], toFolderID: folderID)
-                    } else {
-                        try moveProfiles(
-                            request.profileIDs,
-                            toFolderID: folderID
-                        )
-                    }
-                }
-            } else {
-                ProfileFolderPickerUnavailableSheet {
-                        profileFolderPickerRequest = nil
-                }
-            }
-        }
-        .sheet(item: $profileBatchTagRequest) { request in
-            ProfileBatchTagSheet(
-                profiles: store.profiles.filter { request.profileIDs.contains($0.id) },
-                suggestedTags: currentProfileListIndex.tagSummaries(
-                    scope: profileListScope,
-                    in: selectedFolderFilter
-                ).map(\.name)
-            ) { action in
-                try performBatchMetadata(action, to: request.profileIDs)
-            }
-        }
-        .sheet(item: $bulkProxyImportRequest) { request in
-            BulkProxyImportView(
-                targetFolderName: request.targetFolderID.flatMap {
-                    store.folder(withID: $0)?.name
-                }
-            ) { drafts, baseName in
-                try await createProfiles(
-                    from: drafts,
-                    baseName: baseName,
-                    targetFolderID: request.targetFolderID
-                )
-            }
-        }
-        .sheet(isPresented: $showingWorkspaceReadiness) {
-            WorkspaceReadinessView(
-                snapshot: workspaceReadinessSnapshot,
-                applicationPath:
-                    readinessSystemInspection.application.displayPath,
-                isRefreshing: isRefreshingWorkspaceReadiness,
-                notice: workspaceReadinessNotice,
-                onRecheck: {
-                    Task { await refreshWorkspaceReadiness() }
-                },
-                onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
-                onCopyApplicationPath: copyWorkspaceApplicationPath,
-                onRevealApplication: revealWorkspaceApplication,
-                onOpenSystemSettings: openWorkspaceSystemSettings
-            )
+        .sheet(item: $workspaceSheetRequest) { request in
+            workspaceSheet(for: request.destination)
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -601,7 +465,131 @@ struct ContentView: View {
                 .frame(width: 520, height: 360)
             }
         }
-        .sheet(item: $fingerprintAuditRequest) { request in
+    }
+
+    @ViewBuilder
+    private func workspaceSheet(
+        for destination: WorkspaceSheetRequest.Destination
+    ) -> some View {
+        switch destination {
+        case let .editor(request):
+            profileEditorSheet(for: request)
+        case let .duplication(request):
+            ProfileDuplicationSheet(
+                source: request.source,
+                folders: store.organization.folders,
+                initialOptions: request.initialOptions
+            ) { options in
+                try saveDuplicate(
+                    sourceProfileID: request.source.id,
+                    expectedSourceRevision: request.source.revision,
+                    options: options
+                )
+            }
+        case let .note(profile):
+            ProfileNoteEditorView(
+                profileName: profile.name,
+                initialNote: profile.note
+            ) { note in
+                try saveProfileNote(
+                    note,
+                    profileID: profile.id,
+                    expectedNote: profile.note
+                )
+            }
+        case let .folderName(folder):
+            ProfileFolderNameSheet(
+                title: folder == nil
+                    ? "Новая папка"
+                    : "Переименовать папку",
+                initialName: folder?.name ?? "",
+                existingNames: store.organization.folders.map(\.name)
+            ) { name in
+                if let folder {
+                    _ = try store.renameFolder(
+                        withID: folder.id,
+                        to: name
+                    )
+                } else {
+                    let folder = try store.createFolder(named: name)
+                    selectedFolderFilter = .folder(folder.id)
+                    selectedProfileTag = nil
+                    normalizeSelection()
+                }
+            }
+        case let .folderPicker(profileIDs):
+            let profiles = store.profiles.filter {
+                profileIDs.contains($0.id)
+            }
+            if profiles.count == profileIDs.count,
+               !profiles.isEmpty {
+                let firstFolderID = store.folderID(
+                    forProfileID: profiles[0].id
+                )
+                let sharesFolder = profiles.allSatisfy {
+                    store.folderID(forProfileID: $0.id) == firstFolderID
+                }
+                ProfileFolderPickerSheet(
+                    selectionDescription:
+                        profiles.count == 1
+                            ? "Профиль «\(profiles[0].name)»"
+                            : "Выбрано \(profiles.count) \(profileCountWord(profiles.count))",
+                    folders: store.organization.folders,
+                    selectedFolderID: sharesFolder ? firstFolderID : nil,
+                    hasMixedSelection: !sharesFolder
+                ) { folderID in
+                    if profiles.count == 1 {
+                        try performMoveProfile(profiles[0], toFolderID: folderID)
+                    } else {
+                        try moveProfiles(
+                            profileIDs,
+                            toFolderID: folderID
+                        )
+                    }
+                }
+            } else {
+                ProfileFolderPickerUnavailableSheet {
+                    workspaceSheetRequest = nil
+                }
+            }
+        case let .batchTags(profileIDs):
+            ProfileBatchTagSheet(
+                profiles: store.profiles.filter { profileIDs.contains($0.id) },
+                suggestedTags: currentProfileListIndex.tagSummaries(
+                    scope: profileListScope,
+                    in: selectedFolderFilter
+                ).map(\.name)
+            ) { action in
+                try performBatchMetadata(action, to: profileIDs)
+            }
+        case let .proxyImport(targetFolderID):
+            BulkProxyImportView(
+                targetFolderName: targetFolderID.flatMap {
+                    store.folder(withID: $0)?.name
+                }
+            ) { drafts, baseName in
+                try await createProfiles(
+                    from: drafts,
+                    baseName: baseName,
+                    targetFolderID: targetFolderID
+                )
+            }
+        case .readiness:
+            WorkspaceReadinessView(
+                snapshot: workspaceReadinessSnapshot,
+                applicationPath:
+                    readinessSystemInspection.application.displayPath,
+                isRefreshing: isRefreshingWorkspaceReadiness,
+                notice: workspaceReadinessNotice,
+                onRecheck: {
+                    Task { await refreshWorkspaceReadiness() }
+                },
+                onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
+                onCopyApplicationPath: copyWorkspaceApplicationPath,
+                onRevealApplication: revealWorkspaceApplication,
+                onOpenSystemSettings: openWorkspaceSystemSettings
+            )
+        case let .fingerprintAudit(request):
             FingerprintAuditView(
                 profiles: request.auditedProfiles,
                 initialFirstID: request.initialFirstID,
@@ -621,6 +609,21 @@ struct ContentView: View {
                 }
             )
         }
+    }
+
+    @discardableResult
+    private func presentWorkspaceSheet(
+        _ destination: WorkspaceSheetRequest.Destination,
+        recoveringWorkspaceAlert: Bool = false
+    ) -> Bool {
+        guard WorkspaceSheetRequest.canPresent(
+            destination,
+            hasBlockingModal: isWorkspaceSheetOrConfirmationPresented,
+            hasWorkspaceAlert: workspaceAlert != nil,
+            recoveringWorkspaceAlert: recoveringWorkspaceAlert
+        ) else { return false }
+        workspaceSheetRequest = WorkspaceSheetRequest(destination: destination)
+        return true
     }
 
     private var workspaceAlerts: some View {
@@ -744,7 +747,7 @@ struct ContentView: View {
                 message: Text(presentation.message),
                 primaryButton: .default(Text("Открыть готовность")) {
                     clearWorkspaceAlert(presentation.source)
-                    presentWorkspaceReadiness()
+                    presentWorkspaceReadiness(recoveringWorkspaceAlert: true)
                 },
                 secondaryButton: .cancel(Text("Закрыть")) {
                     clearWorkspaceAlert(presentation.source)
@@ -849,7 +852,7 @@ struct ContentView: View {
             )
         ) { _ in
             processes.reconcile(profiles: store.profiles)
-            if showingWorkspaceReadiness {
+            if workspaceSheetRequest?.isReadiness == true {
                 Task { await refreshWorkspaceReadiness() }
             }
         }
@@ -1071,10 +1074,10 @@ struct ContentView: View {
             localError = "Состояние профиля пока не подтверждено. Повтори после проверки процесса."
             return
         }
-        editorRequest = EditorRequest(
+        presentWorkspaceSheet(.editor(EditorRequest(
             profile: profile,
             openedProcessState: state
-        )
+        )))
     }
 
     private func beginEditingNote(_ profile: BrowserProfile) {
@@ -1082,7 +1085,7 @@ struct ContentView: View {
             localError = "Профиль больше не существует."
             return
         }
-        profileNoteRequest = ProfileNoteRequest(profile: profile)
+        presentWorkspaceSheet(.note(profile))
     }
 
     private func saveProfileNote(
@@ -1146,15 +1149,15 @@ struct ContentView: View {
 
     private func beginCreatingProfile() {
         guard !isWorkspaceModalPresented else { return }
-        editorRequest = EditorRequest(
+        presentWorkspaceSheet(.editor(EditorRequest(
             profile: nil,
             targetFolderID: selectedFolderID
-        )
+        )))
     }
 
     private func beginCreatingFolder() {
         guard !isWorkspaceModalPresented else { return }
-        folderNameRequest = FolderNameRequest(folder: nil)
+        presentWorkspaceSheet(.folderName(nil))
     }
 
     private func createAndOpenProfileQuickly() {
@@ -1326,11 +1329,11 @@ struct ContentView: View {
     }
 
     private func beginDuplicating(_ profile: BrowserProfile) {
-        profileDuplicationRequest = ProfileDuplicationRequest(
+        presentWorkspaceSheet(.duplication(ProfileDuplicationRequest(
             source: profile,
             existingNames: store.profiles.map(\.name),
             destinationFolderID: store.folderID(forProfileID: profile.id)
-        )
+        )))
     }
 
     private func saveDuplicate(
@@ -1468,9 +1471,7 @@ struct ContentView: View {
 
                     if let selectedFolder {
                         Button {
-                            folderNameRequest = FolderNameRequest(
-                                folder: selectedFolder
-                            )
+                            presentWorkspaceSheet(.folderName(selectedFolder))
                         } label: {
                             Label(
                                 "Переименовать папку",
@@ -1532,7 +1533,7 @@ struct ContentView: View {
                         }
                         .contextMenu {
                             Button("Переименовать…", systemImage: "pencil") {
-                                folderNameRequest = FolderNameRequest(folder: folder)
+                                presentWorkspaceSheet(.folderName(folder))
                             }
                             Button(
                                 "Удалить папку",
@@ -1722,18 +1723,14 @@ struct ContentView: View {
                                     )
                                 },
                                 onChooseFolder: {
-                                    profileFolderPickerRequest =
-                                        ProfileFolderPickerRequest(
-                                            profileIDs: batchPresentation
-                                                .selectedProfileIDs
-                                        )
+                                    presentWorkspaceSheet(.folderPicker(
+                                        batchPresentation.selectedProfileIDs
+                                    ))
                                 },
                                 onEditTag: {
-                                    profileBatchTagRequest =
-                                        ProfileBatchTagRequest(
-                                            profileIDs: batchPresentation
-                                                .selectedProfileIDs
-                                        )
+                                    presentWorkspaceSheet(.batchTags(
+                                        batchPresentation.selectedProfileIDs
+                                    ))
                                 },
                                 onToggleArchived: {
                                     applyBatchMetadata(
@@ -1975,9 +1972,7 @@ struct ContentView: View {
             hasFailedProxyTests: !bulkProxyFailedProfileIDs.isEmpty,
             feedbackNotice: listFeedbackNotice,
             onBulkProxyImport: {
-                bulkProxyImportRequest = BulkProxyImportRequest(
-                    targetFolderID: selectedFolderID
-                )
+                presentWorkspaceSheet(.proxyImport(targetFolderID: selectedFolderID))
             },
             onToggleBulkProxyTests: toggleBulkProxyTests,
             onRetryFailedProxyTests: retryFailedBulkProxyTests,
@@ -2497,9 +2492,7 @@ struct ContentView: View {
             duplicate: { beginDuplicating(profile) },
             moveToFolder: { moveProfile(profile, toFolderID: $0) },
             chooseFolder: {
-                profileFolderPickerRequest = ProfileFolderPickerRequest(
-                    profileIDs: [profile.id]
-                )
+                presentWorkspaceSheet(.folderPicker([profile.id]))
             },
             toggleArchived: { toggleArchived(profile) },
             revealInFinder: { revealProfile(profile) },
@@ -2887,9 +2880,15 @@ struct ContentView: View {
     }
 
     private func presentWorkspaceReadiness() {
-        guard !showingWorkspaceReadiness else { return }
+        presentWorkspaceReadiness(recoveringWorkspaceAlert: false)
+    }
+
+    private func presentWorkspaceReadiness(recoveringWorkspaceAlert: Bool) {
+        guard presentWorkspaceSheet(
+            .readiness,
+            recoveringWorkspaceAlert: recoveringWorkspaceAlert
+        ) else { return }
         workspaceReadinessNotice = nil
-        showingWorkspaceReadiness = true
         Task { await refreshWorkspaceReadiness() }
     }
 
@@ -3053,11 +3052,11 @@ struct ContentView: View {
                 "Нужны два активных профиля и готовый встроенный браузерный движок."
             return
         }
-        fingerprintAuditRequest = FingerprintAuditRequest(
+        presentWorkspaceSheet(.fingerprintAudit(FingerprintAuditRequest(
             auditedProfiles: fingerprintAuditProfiles,
             initialFirstID: selectedProfile?.id,
             runtime: runtime
-        )
+        )))
     }
 
     @MainActor
@@ -3077,13 +3076,12 @@ struct ContentView: View {
               !isProxyTestInFlight(profileID: profile.id)
         else { return }
         guard let token = beginProxyTest(for: profile) else { return }
-        let task = Task { @MainActor in
+        Task { @MainActor in
             _ = await executeProxyTest(
                 profile,
                 token: token
             )
         }
-        proxyOperations.attach(task, to: token)
     }
 
     @MainActor
@@ -3116,8 +3114,21 @@ struct ContentView: View {
         _ profile: BrowserProfile,
         token: ProxyTestOperationToken
     ) async -> ProxyHealthState? {
+        let task = Task { @MainActor in
+            await runProxyTest(profile, token: token)
+        }
+        proxyOperations.attach(task, to: token)
+        return await ProfileOperationOwner.value(of: task)
+    }
+
+    @MainActor
+    private func runProxyTest(
+        _ profile: BrowserProfile,
+        token: ProxyTestOperationToken
+    ) async -> ProxyHealthState? {
         defer { proxyOperations.finish(token) }
-        guard let proxy = profile.proxy else { return nil }
+        guard !Task.isCancelled, proxyOperations.isCurrent(token),
+              let proxy = profile.proxy else { return nil }
         do {
             return try await proxyHealthCoordinator.run(
                 profile: profile,
