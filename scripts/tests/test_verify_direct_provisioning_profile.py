@@ -205,13 +205,16 @@ class DirectProvisioningProfileTests(unittest.TestCase):
                 {identity: frozenset({certificate})},
             )
 
-    def test_signed_app_certificate_must_match_profile(self) -> None:
+    def test_certificate_extraction_uses_attached_prefix_and_matches_profile(self) -> None:
         profile = valid_profile()
 
         def extractor(certificate: bytes):
             def run(command, **_kwargs):
-                prefix_index = command.index("--extract-certificates") + 1
-                prefix = Path(command[prefix_index])
+                self.assertEqual(len(command), 4)
+                self.assertEqual(command[:2], ["/usr/bin/codesign", "--display"])
+                self.assertEqual(command[-1], "/tmp/NeAntik.app")
+                self.assertTrue(command[2].startswith("--extract-certificates="))
+                prefix = Path(command[2].split("=", 1)[1])
                 Path(f"{prefix}0").write_bytes(certificate)
                 return subprocess.CompletedProcess(
                     args=command,
@@ -242,6 +245,21 @@ class DirectProvisioningProfileTests(unittest.TestCase):
             MODULE.validate_signed_app_certificate(
                 Path("/tmp/NeAntik.app"), profile
             )
+
+    def test_certificate_extraction_fails_closed_without_leaf(self) -> None:
+        for returncode, message in (
+            (1, "could not be extracted"),
+            (0, "leaf certificate is unavailable"),
+        ):
+            with self.subTest(returncode=returncode), mock.patch.object(
+                MODULE.subprocess,
+                "run",
+                return_value=subprocess.CompletedProcess([], returncode, b"", b""),
+            ):
+                with self.assertRaisesRegex(MODULE.ProvisioningProfileError, message):
+                    MODULE.validate_signed_app_certificate(
+                        Path("/tmp/NeAntik.app"), valid_profile()
+                    )
 
     def test_rejects_wrong_keychain_group(self) -> None:
         profile = valid_profile()

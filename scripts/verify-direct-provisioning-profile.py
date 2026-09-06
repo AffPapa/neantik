@@ -462,8 +462,7 @@ def validate_signed_app_certificate(
             [
                 "/usr/bin/codesign",
                 "--display",
-                "--extract-certificates",
-                str(certificate_prefix),
+                f"--extract-certificates={certificate_prefix}",
                 str(app_path),
             ],
             stdout=subprocess.PIPE,
