@@ -20,6 +20,36 @@ SPEC.loader.exec_module(MODULE)
 
 
 class PrepareReleaseSnapshotTests(unittest.TestCase):
+    def test_curated_notes_reject_invalid_input_before_staging(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            notes = root / "notes.json"
+            output = root / "absent-parent/release"
+            for value in ({}, [], ["ok"] * 31, [""], ["   "], [False], ["x" * 501], ["<b>HTML</b>"], ["text\nline"], ["text\x7f"]):
+                with self.subTest(value=value):
+                    notes.write_text(json.dumps(value), encoding="utf-8")
+                    args = argparse.Namespace(project_root=root, output=output, release_notes_json=notes)
+                    with patch.object(MODULE, "git_commit") as git, self.assertRaises(MODULE.SnapshotError):
+                        MODULE.build_snapshot(args)
+                    git.assert_not_called()
+                    self.assertFalse(output.parent.exists())
+
+    def test_curated_notes_boundary_and_file_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            notes = root / "notes.json"
+            items = ["я" * 500] * 30
+            notes.write_text(json.dumps(items), encoding="utf-8")
+            self.assertEqual(MODULE.read_curated_release_notes(notes), items)
+            alias = root / "alias.json"
+            alias.symlink_to(notes)
+            with self.assertRaises(MODULE.SnapshotError):
+                MODULE.read_curated_release_notes(alias)
+            for raw in (b"[", b"\xff", b" " * 100_001):
+                notes.write_bytes(raw)
+                with self.assertRaises(ValueError):
+                    MODULE.read_curated_release_notes(notes)
+
     def test_reads_multiline_notes_for_exact_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             changelog = Path(temporary) / "CHANGELOG.md"
@@ -216,6 +246,12 @@ class ReleaseSourceSeparationTests(unittest.TestCase):
     """The release source, not the release tooling, defines what is published."""
 
     def test_pinned_release_source_beats_newer_tooling_commit(self) -> None:
+        self.assert_pinned_snapshot()
+
+    def test_curated_notes_override_only_current_items(self) -> None:
+        self.assert_pinned_snapshot(["Понятные настройки и заметки профилей."])
+
+    def assert_pinned_snapshot(self, curated: list[str] | None = None) -> None:
         source = release_source_tree()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "project"
@@ -234,6 +270,10 @@ class ReleaseSourceSeparationTests(unittest.TestCase):
                 release_tag=RELEASE_TAG,
                 release_commit=RELEASE_COMMIT,
             )
+            if curated is not None:
+                notes = Path(temporary) / "notes.json"
+                notes.write_text(json.dumps(curated), encoding="utf-8")
+                args.release_notes_json = notes
             with (
                 patch.object(
                     MODULE, "git_commit", return_value=TOOLING_COMMIT
@@ -260,7 +300,14 @@ class ReleaseSourceSeparationTests(unittest.TestCase):
             self.assertEqual(release["version"], "0.3.17")
             self.assertEqual(release["build"], 20)
             self.assertEqual(release["runtime"]["version"], "152.0.7977.64")
-            self.assertEqual(content["changelog"][0]["items"], [PINNED_ITEM])
+            self.assertEqual(content["changelog"][0]["items"], curated or [PINNED_ITEM])
+            original_content = json.loads(source["ops/affpapa/bootstrap/content.json"])
+            self.assertEqual(content["changelog"][1:], original_content["changelog"])
+            self.assertEqual(content["changelog"][0]["version"], "0.3.17")
+            self.assertEqual(content["changelog"][0]["build"], 20)
+            self.assertEqual(len(list(output.iterdir())), 6)
+            self.assertEqual((output / dmg.name).read_bytes(), b"dmg")
+            self.assertEqual((output / zip_file.name).read_bytes(), b"zip")
             self.assertEqual(result["releaseCommit"], RELEASE_COMMIT)
             self.assertEqual(result["toolingCommit"], TOOLING_COMMIT)
             self.assertEqual(result["releaseSourcePinned"], "yes")

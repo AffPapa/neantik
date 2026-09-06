@@ -13,7 +13,9 @@ commit the published binaries were built from. When `--release-tag` and
 (version, build, changelog, runtime) is read out of that exact commit with
 `git show`, never out of the newer worktree, and the pinned pair is confirmed
 against the GitHub tag, the immutable release flag and per-asset release
-attestations before anything is written.
+attestations before anything is written. An explicit --release-notes-json may
+replace only the current changelog's display items with a reviewed summary;
+it never overrides pinned version, build, runtime, source or artifact facts.
 """
 
 from __future__ import annotations
@@ -77,6 +79,30 @@ def regular_file(path: Path) -> Path:
     if not stat.S_ISREG(metadata.st_mode):
         raise SnapshotError(f"Required input must be a regular file: {path}")
     return path
+
+
+def read_curated_release_notes(path: Path) -> list[str]:
+    regular_file(path)
+    # Bound input before decoding; 30 JSON-escaped Unicode notes fit this cap.
+    with path.open("rb") as source:
+        raw = source.read(100_001)
+    if len(raw) > 100_000:
+        raise SnapshotError("Release notes JSON exceeds 100000 bytes")
+    items = json.loads(raw.decode("utf-8"))
+    if not isinstance(items, list) or not 1 <= len(items) <= 30:
+        raise SnapshotError("Release notes must contain 1..30 strings")
+    for index, item in enumerate(items):
+        if not isinstance(item, str) or not item.strip() or len(item) > 500:
+            raise SnapshotError(
+                f"Release note {index + 1} must be a non-empty string up to 500 characters"
+            )
+        if "<" in item or ">" in item or any(
+            ord(char) < 32 or ord(char) == 127 for char in item
+        ):
+            raise SnapshotError(
+                f"Release note {index + 1} must be plain text without HTML or control characters"
+            )
+    return items
 
 
 def file_sha256(path: Path) -> str:
@@ -288,6 +314,10 @@ def build_snapshot(args: argparse.Namespace) -> dict[str, str]:
     output = args.output.resolve()
     if output.exists() or output.is_symlink():
         raise SnapshotError(f"Output already exists: {output}")
+    notes_path = getattr(args, "release_notes_json", None)
+    curated_notes = (
+        read_curated_release_notes(notes_path) if notes_path is not None else None
+    )
     release_date = dt.date.fromisoformat(args.release_date)
     release_tag = getattr(args, "release_tag", None)
     release_commit = getattr(args, "release_commit", None)
@@ -392,7 +422,10 @@ def build_snapshot(args: argparse.Namespace) -> dict[str, str]:
                     "build": build,
                     "date": russian_display_date(release_date),
                     "label": "Public Alpha",
-                    "items": parse_release_notes(changelog, version, build),
+                    "items": (
+                        curated_notes if curated_notes is not None
+                        else parse_release_notes(changelog, version, build)
+                    ),
                 },
                 *previous,
             ],
@@ -438,6 +471,13 @@ def main() -> int:
     parser.add_argument("--zip", type=Path, required=True)
     parser.add_argument("--release-date", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--release-notes-json", type=Path,
+        help=(
+            "reviewed JSON array of 1..30 plain-text release notes, at most "
+            "500 characters each; overrides only current changelog items"
+        ),
+    )
     parser.add_argument(
         "--release-tag",
         help=(
