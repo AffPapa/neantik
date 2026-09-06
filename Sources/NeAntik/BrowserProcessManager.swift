@@ -368,9 +368,7 @@ final class BrowserProcessManager: ObservableObject {
     }
     private var recoveryRecords: [UUID: BrowserProcessRecoveryRecord] = [:]
     private var externalStopTasks: [UUID: Task<Void, Never>] = [:]
-    private var externalObservationTasks: [UUID: Task<Void, Never>] = [:]
-    private var recoveryObservationTasks: [UUID: Task<Void, Never>] = [:]
-    private var tombstoneObservationTasks: [UUID: Task<Void, Never>] = [:]
+    private let observations = BrowserProcessObservations()
     private var tombstoneRecoveryMessages: [UUID: String] = [:]
     private var passiveObservationsEnabled = true
     private var reconcileTask: Task<Void, Never>?
@@ -827,12 +825,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func cancelPassiveObservationTasks() {
-        externalObservationTasks.values.forEach { $0.cancel() }
-        externalObservationTasks.removeAll()
-        recoveryObservationTasks.values.forEach { $0.cancel() }
-        recoveryObservationTasks.removeAll()
-        tombstoneObservationTasks.values.forEach { $0.cancel() }
-        tombstoneObservationTasks.removeAll()
+        observations.cancelAll()
         passiveInventoryObservationTask?.cancel()
         passiveInventoryObservationTask = nil
     }
@@ -1073,8 +1066,7 @@ final class BrowserProcessManager: ObservableObject {
             (URL) -> BrowserDataProcessInspection,
         expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
     ) {
-        tombstoneObservationTasks[profileID]?.cancel()
-        tombstoneObservationTasks.removeValue(forKey: profileID)
+        observations.cancel(.tombstone(profileID))
         if let message = tombstoneRecoveryMessages.removeValue(
             forKey: profileID
         ), lastError == message {
@@ -1082,10 +1074,8 @@ final class BrowserProcessManager: ObservableObject {
         }
         externalStopTasks[profileID]?.cancel()
         externalStopTasks.removeValue(forKey: profileID)
-        externalObservationTasks[profileID]?.cancel()
-        externalObservationTasks.removeValue(forKey: profileID)
-        recoveryObservationTasks[profileID]?.cancel()
-        recoveryObservationTasks.removeValue(forKey: profileID)
+        observations.cancel(.external(profileID))
+        observations.cancel(.recovery(profileID))
         externalLocks.removeValue(forKey: profileID)
         externalUnverifiedProfileIDs.remove(profileID)
         recoveryProfileIDs.remove(profileID)
@@ -1799,10 +1789,8 @@ final class BrowserProcessManager: ObservableObject {
         managedStopTasks.removeValue(forKey: profileID)
         externalStopTasks[profileID]?.cancel()
         externalStopTasks.removeValue(forKey: profileID)
-        externalObservationTasks[profileID]?.cancel()
-        externalObservationTasks.removeValue(forKey: profileID)
-        recoveryObservationTasks[profileID]?.cancel()
-        recoveryObservationTasks.removeValue(forKey: profileID)
+        observations.cancel(.external(profileID))
+        observations.cancel(.recovery(profileID))
         externalLocks.removeValue(forKey: profileID)
         externalUnverifiedProfileIDs.remove(profileID)
         recoveryProfileIDs.remove(profileID)
@@ -1930,33 +1918,19 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         lock: BrowserProcessLock
     ) {
-        externalObservationTasks[profileID]?.cancel()
-        guard passiveObservationsEnabled else {
-            externalObservationTasks.removeValue(forKey: profileID)
-            return
-        }
-        externalObservationTasks[profileID] = Task {
-            [weak self] in
-            guard let self else { return }
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(
-                        nanoseconds: observationIntervalNanoseconds
-                    )
-                } catch {
-                    return
-                }
-                guard externalLocks[profileID] == lock else {
-                    return
-                }
-                if !processLivenessValidator(lock.pid) {
-                    handleTermination(
-                        profileID: profileID,
-                        process: nil
-                    )
-                    return
-                }
+        observations.replace(
+            .external(profileID),
+            enabled: passiveObservationsEnabled,
+            interval: observationIntervalNanoseconds
+        ) { [weak self] in
+            guard let self, externalLocks[profileID] == lock else {
+                return false
             }
+            guard processLivenessValidator(lock.pid) else {
+                handleTermination(profileID: profileID, process: nil)
+                return false
+            }
+            return true
         }
     }
 
@@ -2016,36 +1990,19 @@ final class BrowserProcessManager: ObservableObject {
         record: BrowserProcessRecoveryRecord
     ) {
         if processInventoryProvider != nil {
-            recoveryObservationTasks[profileID]?.cancel()
-            recoveryObservationTasks.removeValue(forKey: profileID)
+            observations.cancel(.recovery(profileID))
             ensurePassiveInventoryObservation()
             return
         }
-        recoveryObservationTasks[profileID]?.cancel()
-        guard passiveObservationsEnabled else {
-            recoveryObservationTasks.removeValue(forKey: profileID)
-            return
-        }
-        recoveryObservationTasks[profileID] = Task { [weak self] in
-            guard let self else { return }
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(
-                        nanoseconds: observationIntervalNanoseconds
-                    )
-                } catch {
-                    return
-                }
-                guard recoveryRecords[profileID] == record else {
-                    return
-                }
-                if resolveRecoveryIfSafe(
-                    profileID: profileID,
-                    record: record
-                ) {
-                    return
-                }
+        observations.replace(
+            .recovery(profileID),
+            enabled: passiveObservationsEnabled,
+            interval: observationIntervalNanoseconds
+        ) { [weak self] in
+            guard let self, recoveryRecords[profileID] == record else {
+                return false
             }
+            return !resolveRecoveryIfSafe(profileID: profileID, record: record)
         }
     }
 
@@ -2123,36 +2080,20 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func observeDeletionTombstone(profileID: UUID) {
-        tombstoneObservationTasks[profileID]?.cancel()
-        guard passiveObservationsEnabled else {
-            tombstoneObservationTasks.removeValue(forKey: profileID)
-            return
-        }
-        tombstoneObservationTasks[profileID] = Task { [weak self] in
-            guard let self else { return }
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(
-                        nanoseconds: observationIntervalNanoseconds
-                    )
-                } catch {
-                    return
-                }
-                let kind = try? self.paths.withProcessLockGuard(
-                    for: profileID
-                ) {
-                    try self.paths.privateFileEntryKind(
-                        self.paths.profileDeletionTombstone(
-                            for: profileID
-                        )
-                    )
-                }
-                guard kind == .missing else {
-                    continue
-                }
-                reconcileProfile(profileID: profileID)
-                return
+        observations.replace(
+            .tombstone(profileID),
+            enabled: passiveObservationsEnabled,
+            interval: observationIntervalNanoseconds
+        ) { [weak self] in
+            guard let self else { return false }
+            let kind = try? paths.withProcessLockGuard(for: profileID) {
+                try self.paths.privateFileEntryKind(
+                    self.paths.profileDeletionTombstone(for: profileID)
+                )
             }
+            guard kind == .missing else { return true }
+            reconcileProfile(profileID: profileID)
+            return false
         }
     }
 
@@ -2226,8 +2167,7 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         record: BrowserProcessRecoveryRecord
     ) {
-        recoveryObservationTasks[profileID]?.cancel()
-        recoveryObservationTasks.removeValue(forKey: profileID)
+        observations.cancel(.recovery(profileID))
         recoveryRecords.removeValue(forKey: profileID)
         recoveryProfileIDs.remove(profileID)
         if processes[profileID]?.isRunning != true,

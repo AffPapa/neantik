@@ -6,6 +6,58 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func passiveObservationReplacementKeepsOtherPurposesIndependent() async throws {
+        let observations = BrowserProcessObservations()
+        defer { observations.cancelAll() }
+        let id = UUID()
+        var supersededCalls = 0
+        var externalCalls = 0
+        var recoveryCalls = 0
+        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
+            supersededCalls += 1
+            return true
+        }
+        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
+            externalCalls += 1
+            return false
+        }
+        observations.replace(.recovery(id), enabled: true, interval: 1_000_000) {
+            recoveryCalls += 1
+            return false
+        }
+        for _ in 0..<200 where externalCalls == 0 || recoveryCalls == 0 {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        #expect(supersededCalls == 0)
+        #expect(externalCalls == 1)
+        #expect(recoveryCalls == 1)
+    }
+
+    @Test
+    func passiveObservationDisableAndCancelAllPreventPendingPolls() async throws {
+        let observations = BrowserProcessObservations()
+        let id = UUID()
+        var calls = 0
+        for key in [BrowserProcessObservations.Key.external(id), .recovery(id), .tombstone(id)] {
+            observations.replace(key, enabled: true, interval: 1_000_000) {
+                calls += 1
+                return true
+            }
+        }
+        observations.cancelAll()
+        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
+            calls += 1
+            return true
+        }
+        observations.replace(.external(id), enabled: false, interval: 1_000_000) {
+            calls += 1
+            return true
+        }
+        try await Task.sleep(nanoseconds: 10_000_000)
+        #expect(calls == 0)
+    }
+
+    @Test
     func recordsStartupFailureWithoutOperationalDetails() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

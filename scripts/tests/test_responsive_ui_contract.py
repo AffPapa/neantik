@@ -81,7 +81,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_profile_name_and_pending_proxy_drafts_reach_save_validation(self):
         source = EDITOR.read_text()
-        name_change = source.split('.onChange(of: name)', 1)[1].split('Text(', 1)[0]
+        name_change = source.split('.onChange(of: editorDraft.name)', 1)[1].split('Text(', 1)[0]
         self.assertNotIn('name =', name_change)
         self.assertNotIn('prefix(', name_change)
         self.assertIn('.focused($focusedField, equals: .proxyImport)', source)
@@ -398,7 +398,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             '"Показать папку данных в Finder"',
             '"Удалить профиль"',
         ):
-            self.assertIn(action, commands)
+            self.assertIn(action, commands + (ROOT / "Sources/NeAntik/ProfileActionMenu.swift").read_text())
 
     def test_commands_are_modal_aware_and_folder_move_is_bounded(self) -> None:
         content = CONTENT.read_text(encoding="utf-8")
@@ -446,7 +446,12 @@ class ResponsiveUIContractTests(unittest.TestCase):
             ".sorted",
             commands[projection_start:projection_end],
         )
-        self.assertIn('"Выбрать другую папку…"', commands)
+        actions = (ROOT / "Sources/NeAntik/ProfileActionMenu.swift").read_text()
+        self.assertIn('"Выбрать другую папку…"', actions)
+        self.assertIn('ProfileOrganizationActions(commands: commands)', content)
+        self.assertIn('ProfileOrganizationActions(commands: resolved, registersShortcuts: true)', commands)
+        self.assertIn('var registersShortcuts = false', actions)
+        self.assertIn('.disabled(!commands.presentation.archiveIsEnabled)', actions)
         self.assertIn('TextField("Поиск папок"', picker)
         self.assertIn("ProfileFolder.comparisonKey(searchText.trimmingCharacters", picker)
         self.assertIn("ProfileFolder.comparisonKey($0.name).contains(query)", picker)

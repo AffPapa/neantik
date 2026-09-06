@@ -1,12 +1,6 @@
 import Darwin
 import Foundation
 
-@_silgen_name("flock")
-private func proxyHealthFlock(
-    _ descriptor: Int32,
-    _ operation: Int32
-) -> Int32
-
 enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
     case succeeded
     case invalidConfiguration
@@ -581,51 +575,7 @@ actor ProxyHealthStore {
             attributes: [.posixPermissions: 0o700]
         )
         let lockURL = fileURL.appendingPathExtension("lock")
-        let descriptor = lockURL.path.withCString {
-            Darwin.open(
-                $0,
-                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
-                mode_t(S_IRUSR | S_IWUSR)
-            )
-        }
-        guard descriptor >= 0 else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        defer { _ = Darwin.close(descriptor) }
-
-        while proxyHealthFlock(descriptor, LOCK_EX) != 0 {
-            guard errno == EINTR else {
-                throw POSIXError(
-                    POSIXErrorCode(rawValue: errno) ?? .EIO
-                )
-            }
-        }
-        defer { _ = proxyHealthFlock(descriptor, LOCK_UN) }
-
-        var openedStatus = stat()
-        guard Darwin.fstat(descriptor, &openedStatus) == 0,
-              openedStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
-              openedStatus.st_nlink == 1
-        else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        var pathStatus = stat()
-        let pathResult = lockURL.path.withCString {
-            Darwin.lstat($0, &pathStatus)
-        }
-        guard pathResult == 0,
-              pathStatus.st_dev == openedStatus.st_dev,
-              pathStatus.st_ino == openedStatus.st_ino,
-              pathStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG)
-        else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        guard Darwin.fchmod(descriptor, mode_t(S_IRUSR | S_IWUSR)) == 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EIO
-            )
-        }
-        return try operation()
+        return try SecureFile.withExclusiveGuard(at: lockURL, policy: .proxyHealth, operation)
     }
 
     nonisolated private static func isValid(

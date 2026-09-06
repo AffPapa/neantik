@@ -3,19 +3,19 @@ import SwiftUI
 
 /// Ephemeral editor values only. Never encoded, logged or written to defaults.
 struct ProfileEditorDraft: Equatable {
-    let name: String
-    let colorHex: String
-    let symbolName: String
-    let tags: [String]
-    let note: String
-    let folderID: UUID?
-    let startURL: String
-    let usesProxy: Bool
-    let proxyKind: ProxyKind
-    let proxyHost: String
-    let proxyPort: String
-    let proxyUsername: String
-    let proxyPassword: String
+    var name: String
+    var colorHex: String
+    var symbolName: String
+    var tags: [String]
+    var note: String
+    var folderID: UUID?
+    var startURL: String
+    var usesProxy: Bool
+    var proxyKind: ProxyKind
+    var proxyHost: String
+    var proxyPort: String
+    var proxyUsername: String
+    var proxyPassword: String
 
     var firstIssue: ProfileEditorValidationIssue? {
         ProfileEditorValidation.firstIssue(

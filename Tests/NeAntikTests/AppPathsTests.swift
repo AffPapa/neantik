@@ -1,8 +1,82 @@
+import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
 
 struct AppPathsTests {
+    @Test
+    func sharedGuardPreservesCallerErrorsAndNeverFollowsSymlink() throws {
+        let root = temporaryDirectory()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let target = root.appendingPathComponent("target")
+        let alias = root.appendingPathComponent("guard")
+        try Data("unchanged".utf8).write(to: target)
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: target)
+        #expect(throws: POSIXError(.ELOOP)) {
+            try SecureFile.withExclusiveGuard(at: alias, policy: .appPaths) {
+                Issue.record("Unsafe guard must not enter operation")
+            }
+        }
+        #expect(throws: ProxyHealthStoreError.unsafePath) {
+            try SecureFile.withExclusiveGuard(at: alias, policy: .proxyHealth) {
+                Issue.record("Unsafe guard must not enter operation")
+            }
+        }
+        #expect(try Data(contentsOf: target) == Data("unchanged".utf8))
+    }
+
+    @Test
+    func sharedGuardReleasesAfterThrowAndRetainsPrivateMode() throws {
+        let root = temporaryDirectory()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let guardURL = root.appendingPathComponent("guard")
+        #expect(throws: POSIXError(.ECANCELED)) {
+            try SecureFile.withExclusiveGuard(at: guardURL, policy: .appPaths) {
+                throw POSIXError(.ECANCELED)
+            }
+        }
+        let descriptor = Darwin.open(guardURL.path, O_RDWR | O_NOFOLLOW | O_CLOEXEC)
+        #expect(descriptor >= 0)
+        guard descriptor >= 0 else { return }
+        defer { _ = Darwin.close(descriptor) }
+        #expect(neantikFlock(descriptor, LOCK_EX | LOCK_NB) == 0)
+        defer { _ = neantikFlock(descriptor, LOCK_UN) }
+        var status = stat()
+        #expect(Darwin.fstat(descriptor, &status) == 0)
+        #expect(status.st_mode & mode_t(0o777) == mode_t(0o600))
+    }
+
+    @Test
+    func anchoredDescriptorReaderRetainsEmptyAndSizePolicies() throws {
+        let root = temporaryDirectory()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("receipt")
+        let paths = AppPaths(rootDirectory: root)
+        for bytes in [Data(), Data([1, 2, 3]), Data([1, 2, 3, 4])] {
+            try paths.writePrivateFile(bytes, to: file)
+            for minimum in [0, 1] {
+                let descriptor = Darwin.open(file.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+                #expect(descriptor >= 0)
+                guard descriptor >= 0 else { continue }
+                defer { _ = Darwin.close(descriptor) }
+                let read = {
+                    try SecureFile.readPrivateDescriptor(
+                        descriptor, minimumBytes: minimum, maximumBytes: 3,
+                        unsafe: { POSIXError(.EACCES) }, failed: { POSIXError(POSIXErrorCode(rawValue: $0) ?? .EIO) }
+                    )
+                }
+                if bytes.count < minimum || bytes.count > 3 {
+                    #expect(throws: POSIXError(.EACCES)) { _ = try read() }
+                } else {
+                    #expect(try read() == bytes)
+                }
+            }
+        }
+    }
+
     @Test
     func migratesLegacyRootWhenMoveSucceeds() throws {
         let applicationSupport = temporaryDirectory()

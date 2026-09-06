@@ -357,58 +357,7 @@ struct ProfileCommandMenu: Commands {
 
             Divider()
 
-            Button(
-                resolved.presentation.pinTitle,
-                systemImage: resolved.presentation.pinSystemImage,
-                action: resolved.togglePinned
-            )
-            .disabled(!resolved.hasProfile)
-
-            Button(
-                "Создать похожий",
-                systemImage: "plus.square.on.square",
-                action: resolved.duplicate
-            )
-            .keyboardShortcut(
-                NeAntikShortcut.duplicateProfile.keyEquivalent,
-                modifiers: NeAntikShortcut.duplicateProfile.modifiers
-            )
-            .disabled(!resolved.hasProfile)
-
-            Menu("Переместить в папку", systemImage: "folder") {
-                ForEach(resolved.folderOptions) { option in
-                    Button {
-                        resolved.moveToFolder(option.folderID)
-                    } label: {
-                        Label(
-                            option.title,
-                            systemImage:
-                                option.isSelected
-                                    ? "checkmark"
-                                    : (option.folderID == nil
-                                        ? "tray"
-                                        : "folder")
-                        )
-                    }
-                }
-
-                if resolved.hasMoreFolderOptions {
-                    Divider()
-                    Button(
-                        "Выбрать другую папку…",
-                        systemImage: "magnifyingglass",
-                        action: resolved.chooseFolder
-                    )
-                }
-            }
-            .disabled(!resolved.hasProfile)
-
-            Button(
-                resolved.presentation.archiveTitle,
-                systemImage: resolved.presentation.archiveSystemImage,
-                action: resolved.toggleArchived
-            )
-            .disabled(!resolved.presentation.archiveIsEnabled)
+            ProfileOrganizationActions(commands: resolved, registersShortcuts: true)
 
             Divider()
 

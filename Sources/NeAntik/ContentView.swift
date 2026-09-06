@@ -2367,7 +2367,7 @@ struct ContentView: View {
             for: profile,
             processState: processState
         )
-        profileOrganizationActions(commands)
+        ProfileOrganizationActions(commands: commands)
         Divider()
         Button {
             selection = profile.id
@@ -2454,63 +2454,6 @@ struct ContentView: View {
             action: commands.delete
         )
         .disabled(!commands.presentation.deleteIsEnabled)
-    }
-
-    @ViewBuilder
-    private func profileOrganizationActions(
-        _ commands: ProfileCommandSet
-    ) -> some View {
-        Button(
-            commands.presentation.pinTitle,
-            systemImage: commands.presentation.pinSystemImage,
-            action: commands.togglePinned
-        )
-        Button(
-            "Создать похожий",
-            systemImage: "plus.square.on.square",
-            action: commands.duplicate
-        )
-        moveToFolderMenu(commands)
-        Button(
-            commands.presentation.archiveTitle,
-            systemImage: commands.presentation.archiveSystemImage,
-            action: commands.toggleArchived
-        )
-        .disabled(!commands.presentation.archiveIsEnabled)
-    }
-
-    @ViewBuilder
-    private func moveToFolderMenu(
-        _ commands: ProfileCommandSet
-    ) -> some View {
-        Menu {
-            ForEach(commands.folderOptions) { option in
-                Button {
-                    commands.moveToFolder(option.folderID)
-                } label: {
-                    Label(
-                        option.title,
-                        systemImage:
-                            option.isSelected
-                                ? "checkmark"
-                                : (option.folderID == nil
-                                    ? "tray"
-                                    : "folder")
-                    )
-                }
-            }
-
-            if commands.hasMoreFolderOptions {
-                Divider()
-                Button(
-                    "Выбрать другую папку…",
-                    systemImage: "magnifyingglass",
-                    action: commands.chooseFolder
-                )
-            }
-        } label: {
-            Label("Переместить в папку", systemImage: "folder")
-        }
     }
 
     private func profileCommandSet(

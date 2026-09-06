@@ -5,16 +5,15 @@ product and code work. The older v4 documents remain dated design records.
 
 ## Release truth and boundary
 
-- Latest immutable GitHub release: `v0.3.23`, version/build `0.3.23 (26)`.
-- Current source candidate: `0.3.24 (27)`; it is not a public binary release
-  until the exact merged commit passes the complete Direct gate.
+- Latest verified immutable GitHub release: `v0.3.24`, version/build `0.3.24 (27)`.
+- The architecture-compaction branch is development work; it does not replace
+  published artifacts or assign a new public version before release gates.
 - Exact released source commit:
-  `fdc520391c58a76622936519ca38b382f629fc47`.
-- Released runtime: Chromium `152.0.7977.64`, ARM64, Metal.
-- September 6 candidate runtime: source-built Chromium `152.0.7977.82`,
-  ARM64, Metal, Developer ID signed and verified before lock promotion.
+  `74141165c568e0bc2de56f976e29154ccd1d298b`.
+- Released runtime: source-built Chromium `152.0.7977.82`, ARM64, Metal,
+  Developer ID signed and verified before lock promotion.
   The September 3 official macOS Stable baseline is `152.0.7977.82/.83`
-  (12 security fixes). Final Direct notarization and live gates remain required;
+  (12 security fixes). The published candidate passed Direct notarization and live gates;
   do not relabel old runtime bytes or remove rollback artifacts to pass a gate.
 - Engineering packaging explicitly uses `verify-integrated-release.sh
   --engineering` before manager provisioning. The default/public verifier
@@ -25,12 +24,13 @@ product and code work. The older v4 documents remain dated design records.
   otherwise sees unrelated workspace packages. Regression owner:
   `scripts/tests/test_build_runtime_script.py`.
 - GitHub assets: notarized ZIP and DMG with SHA-256 sidecars; all four assets
-  were re-downloaded and their hashes were verified before publication.
+  were re-downloaded and verified both before and after publication, including
+  archive/DMG Gatekeeper, stapling, version/build and SHA-256 checks.
 - A later source commit is not a release. A new binary needs a new
   version/build, exact merged commit, Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and re-downloaded SHA-256 evidence.
 - The public website is synchronized read-only from GitHub release metadata.
-  Its page and `release.json` show `0.3.23 (26)` and link directly to the exact
+  Its page and `release.json` were verified showing `0.3.24 (27)` and link directly to the exact
   GitHub assets; AffPapa keeps no second binary copy. The legacy restricted
   wrapper remains fail-closed without its dedicated deploy key and was not
   bypassed with another key or manual server access.
@@ -204,7 +204,7 @@ validates its final token before Save. No persisted schema changes are involved.
 - adds a redacted audit of every reachable Git blob and historical filename to
   the existing current-tree and GitHub secret-scanning gates.
 
-### Prepared in source for 0.3.24
+### Delivered in 0.3.24
 
 - removes the rotating hard-coded signing-certificate SHA-1 from the release
   launcher and selects exactly one installed Developer ID Application identity
