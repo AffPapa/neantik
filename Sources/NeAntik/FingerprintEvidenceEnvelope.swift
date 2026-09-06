@@ -361,13 +361,7 @@ enum FingerprintEvidenceEnvelopeCodec {
     }
 
     private static func hasExactEnvelopeKeys(_ data: Data) -> Bool {
-        guard let object = try? JSONSerialization.jsonObject(with: data),
-              let canonical = try? JSONSerialization.data(
-                  withJSONObject: object,
-                  options: [.sortedKeys, .withoutEscapingSlashes]
-              ),
-              canonical == data,
-              let dictionary = object as? [String: Any],
+        guard let dictionary = CanonicalEvidenceJSON.object(data),
               Set(dictionary.keys) == [
                   "schemaVersion",
                   "kind",
@@ -393,13 +387,7 @@ enum FingerprintEvidenceEnvelopeCodec {
     }
 
     private static func hasExactBindingKeys(_ data: Data) -> Bool {
-        guard let object = try? JSONSerialization.jsonObject(with: data),
-              let canonical = try? JSONSerialization.data(
-                  withJSONObject: object,
-                  options: [.sortedKeys, .withoutEscapingSlashes]
-              ),
-              canonical == data,
-              let dictionary = object as? [String: Any],
+        guard let dictionary = CanonicalEvidenceJSON.object(data),
               Set(dictionary.keys) == [
                   "boundary", "bundle", "bundleInventory",
                   "criticalFiles", "fingerprintEvidence", "kind",
@@ -434,8 +422,7 @@ enum FingerprintEvidenceEnvelopeCodec {
     private static func isCurrentAuditPayload(_ data: Data) -> Bool {
         guard !data.isEmpty,
               String(data: data, encoding: .utf8) != nil,
-              let object = try? JSONSerialization.jsonObject(with: data),
-              let dictionary = object as? [String: Any],
+              let dictionary = CanonicalEvidenceJSON.object(data),
               Set(dictionary.keys) == [
                   "schemaVersion", "kind", "createdAt",
                   "releaseChannel", "managerVersion", "managerBuild",
@@ -454,12 +441,7 @@ enum FingerprintEvidenceEnvelopeCodec {
               ],
               isCanonicalUTCSecondTimestamp(
                   dictionary["createdAt"]
-              ),
-              let canonical = try? JSONSerialization.data(
-                  withJSONObject: object,
-                  options: [.sortedKeys, .withoutEscapingSlashes]
-              ),
-              canonical == data
+              )
         else {
             return false
         }

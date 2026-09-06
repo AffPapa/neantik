@@ -313,14 +313,11 @@ struct FingerprintAuditView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
 
-                    disclosureButton(
-                        "Изменить профили",
-                        isExpanded: $profileSelectionIsExpanded
-                    )
-                    if profileSelectionIsExpanded {
+                    DisclosureGroup("Изменить профили", isExpanded: $profileSelectionIsExpanded) {
                         profilePickers
                             .padding(.top, 8)
                     }
+                    .disclosureGroupStyle(NeAntikDisclosureStyle())
                 }
             }
             .padding(.vertical, 4)
@@ -472,11 +469,7 @@ struct FingerprintAuditView: View {
             }
             .accessibilityElement(children: .combine)
 
-            disclosureButton(
-                "Технические подробности",
-                isExpanded: $technicalDetailsAreExpanded
-            )
-            if technicalDetailsAreExpanded {
+            DisclosureGroup("Технические подробности", isExpanded: $technicalDetailsAreExpanded) {
                 detailedResult(report)
                     .padding(.top, 12)
                 if let reportURL = coordinator.reportURL {
@@ -490,6 +483,7 @@ struct FingerprintAuditView: View {
                     .padding(.top, 8)
                 }
             }
+            .disclosureGroupStyle(NeAntikDisclosureStyle())
         }
     }
 
@@ -578,12 +572,7 @@ struct FingerprintAuditView: View {
                         value: report.safeRuntimeSignatureSummary
                     )
 
-                    disclosureButton(
-                        "Безопасная диагностическая сводка",
-                        isExpanded: $safeDiagnosticSummaryIsExpanded,
-                        font: .caption
-                    )
-                    if safeDiagnosticSummaryIsExpanded {
+                    DisclosureGroup("Безопасная диагностическая сводка", isExpanded: $safeDiagnosticSummaryIsExpanded) {
                         Text(report.safeDiagnosticSummary)
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
@@ -593,6 +582,7 @@ struct FingerprintAuditView: View {
                                 "Безопасная диагностическая сводка проверки"
                             )
                     }
+                    .disclosureGroupStyle(NeAntikDisclosureStyle())
 
                     Text(
                         "Текст можно выделить и скопировать. В нём нет имён и идентификаторов профилей, настроек прокси или измеренных значений сайтов."
@@ -661,40 +651,6 @@ struct FingerprintAuditView: View {
                 .padding(.vertical, 4)
             }
         }
-    }
-
-    private func disclosureButton(
-        _ title: String,
-        isExpanded: Binding<Bool>,
-        font: Font = .body
-    ) -> some View {
-        Button {
-            isExpanded.wrappedValue.toggle()
-        } label: {
-            HStack(spacing: 6) {
-                Image(
-                    systemName: isExpanded.wrappedValue
-                        ? "chevron.down"
-                        : "chevron.right"
-                )
-                .font(.caption2.weight(.semibold))
-                .accessibilityHidden(true)
-                Text(title)
-                    .font(font)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, minHeight: 28)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityValue(
-            isExpanded.wrappedValue ? "Развёрнуто" : "Свёрнуто"
-        )
-        .accessibilityHint(
-            isExpanded.wrappedValue
-                ? "Скрывает раздел"
-                : "Показывает раздел"
-        )
     }
 
     private var runningProfileBlocker: some View {

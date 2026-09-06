@@ -756,44 +756,7 @@ struct BulkProxyImportView: View {
                 }
 
                 Section {
-                    Button {
-                        showsOptions.toggle()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(
-                                systemName: showsOptions
-                                    ? "chevron.down"
-                                    : "chevron.right"
-                            )
-                            .font(.caption.weight(.semibold))
-                            Text("Параметры")
-                                .fontWeight(.semibold)
-                            Spacer()
-                            Text(optionsSummary)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .frame(
-                            maxWidth: .infinity,
-                            minHeight: 32,
-                            alignment: .leading
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Параметры импорта")
-                    .accessibilityValue(
-                        showsOptions ? "Развёрнуто" : "Свёрнуто"
-                    )
-                    .accessibilityHint(
-                        showsOptions
-                            ? "Скрывает параметры импорта"
-                            : "Показывает параметры импорта"
-                    )
-
-                    if showsOptions {
+                    DisclosureGroup(isExpanded: $showsOptions) {
                         TextField("Основа названия", text: $baseName)
                             .focused($baseNameIsFocused)
                         if let message = BulkProxyImportParser.baseNameValidationMessage(baseName) {
@@ -828,7 +791,19 @@ struct BulkProxyImportView: View {
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    } label: {
+                        HStack {
+                            Text("Параметры").fontWeight(.semibold)
+                            Spacer()
+                            Text(optionsSummary)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .accessibilityLabel("Параметры импорта")
                     }
+                    .disclosureGroupStyle(NeAntikDisclosureStyle(minimumHeight: 32))
                 }
             }
             .formStyle(.grouped)

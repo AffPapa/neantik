@@ -48,46 +48,20 @@ enum ProfilesMetadataStorage {
         synchronizeRecoverySnapshot: Bool
     ) throws {
         let data = try encode(profiles)
-        if synchronizeRecoverySnapshot {
-            try paths.writePrivateFile(data, to: paths.profilesBackupFile)
-            try paths.writePrivateFile(data, to: paths.profilesFile)
-            return
-        }
-        if FileManager.default.fileExists(atPath: paths.profilesFile.path) {
-            try paths.validatePrivateFile(paths.profilesFile)
-            let previousData = try paths.readPrivateFile(
-                paths.profilesFile,
-                maximumBytes: maximumBytes
-            )
-            _ = try decode(previousData)
-            try paths.writePrivateFile(
-                previousData,
-                to: paths.profilesBackupFile
-            )
-        } else {
-            try paths.writePrivateFile(data, to: paths.profilesBackupFile)
-        }
-        try paths.writePrivateFile(data, to: paths.profilesFile)
+        try storage(paths).persist(data, synchronize: synchronizeRecoverySnapshot) { data }
     }
 
     static func ensureRecoverySnapshotIfNeeded(paths: AppPaths) throws {
-        guard FileManager.default.fileExists(
-            atPath: paths.profilesFile.path
-        ) else {
-            return
-        }
-        if FileManager.default.fileExists(
-            atPath: paths.profilesBackupFile.path
-        ) {
-            try paths.validatePrivateFile(paths.profilesBackupFile)
-            return
-        }
-        try paths.validatePrivateFile(paths.profilesFile)
-        let data = try paths.readPrivateFile(
-            paths.profilesFile,
-            maximumBytes: maximumBytes
+        try storage(paths).ensureSnapshot()
+    }
+
+    private static func storage(_ paths: AppPaths) -> RecoverableDocumentStorage<
+        (profiles: [BrowserProfile], requiresMigration: Bool)
+    > {
+        RecoverableDocumentStorage(
+            paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
+            maximumBytes: maximumBytes, policy: .profiles, decode: decode
         )
-        try paths.writePrivateFile(data, to: paths.profilesBackupFile)
     }
 
     static func readWithRecovery(paths: AppPaths) throws -> LoadResult {
@@ -115,23 +89,8 @@ enum ProfilesMetadataStorage {
                 paths.profilesFile,
                 maximumBytes: maximumBytes
             )
-            let rejectedURL: URL?
-            if ProfileRecoveryRetention.shouldPreserveRejectedFile(
-                byteCount: rejectedData.count
-            ) {
-                let candidate = paths.profilesRecoveryDirectory
-                    .appendingPathComponent(
-                        "profiles-rejected-\(UUID().uuidString).json"
-                    )
-                try paths.writePrivateFile(rejectedData, to: candidate)
-                rejectedURL = candidate
-            } else {
-                rejectedURL = nil
-            }
-            try paths.writePrivateFile(backupData, to: paths.profilesFile)
-            try? ProfileRecoveryRetention.prune(
-                directory: paths.profilesRecoveryDirectory,
-                preserving: rejectedURL
+            let rejectedURL = try storage(paths).restore(
+                backupData, preserving: rejectedData, prefix: "profiles"
             )
             return LoadResult(
                 profiles: recovered.profiles,

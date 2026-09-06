@@ -6,6 +6,46 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func managedRecordCleanupDoesNotLetOldTerminationEraseRelaunch() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let executable = root.appendingPathComponent("fake-browser")
+        try Data("#!/bin/sh\nexec /bin/sleep 30\n".utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        var terminated: Process?
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root.appendingPathComponent("data")),
+            processIdentityValidator: { _ in false },
+            managedProcessTerminator: {
+                terminated = $0
+                $0.terminate()
+            },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Managed lifetime")
+        let runtime = BrowserRuntime(name: "Test", executableURL: executable, source: "Test")
+        defer { manager.stop(profileID: profile.id) }
+        try manager.launch(profile: profile, runtime: runtime)
+        #expect(manager.startedAt(for: profile.id) != nil)
+        manager.stop(profileID: profile.id)
+        let previous = try #require(terminated)
+        for _ in 0..<200 where manager.runningProfileIDs.contains(profile.id) {
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        #expect(manager.processState(for: profile.id) == .stopped)
+        #expect(manager.startedAt(for: profile.id) == nil)
+        try manager.launch(profile: profile, runtime: runtime)
+        let relaunchedAt = try #require(manager.startedAt(for: profile.id))
+        previous.terminationHandler?(previous)
+        for _ in 0..<10 { await Task.yield() }
+        #expect(manager.processState(for: profile.id) == .managed)
+        #expect(manager.startedAt(for: profile.id) == relaunchedAt)
+        #expect(manager.managerTerminationSnapshot().managedProfileIDs == [profile.id])
+    }
+
+    @Test
     func passiveObservationReplacementKeepsOtherPurposesIndependent() async throws {
         let observations = BrowserProcessObservations()
         defer { observations.cancelAll() }

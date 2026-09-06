@@ -699,34 +699,7 @@ struct ProfileDetailView: View {
                 }
             }
 
-            Button {
-                technicalDetailsExpanded.toggle()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(
-                        systemName: technicalDetailsExpanded
-                            ? "chevron.down"
-                            : "chevron.right"
-                    )
-                    .font(.caption2.weight(.semibold))
-                    .accessibilityHidden(true)
-                    Text("Технические сведения")
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, minHeight: 28)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityValue(
-                technicalDetailsExpanded ? "Развёрнуто" : "Свёрнуто"
-            )
-            .accessibilityHint(
-                technicalDetailsExpanded
-                    ? "Скрывает локальный путь данных профиля"
-                    : "Показывает локальный путь данных профиля"
-            )
-
-            if technicalDetailsExpanded {
+            DisclosureGroup("Технические сведения", isExpanded: $technicalDetailsExpanded) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Папка данных браузера")
                         .font(.caption)
@@ -744,6 +717,7 @@ struct ProfileDetailView: View {
                 }
                 .padding(.top, 10)
             }
+            .disclosureGroupStyle(NeAntikDisclosureStyle())
         }
     }
 

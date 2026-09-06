@@ -2426,7 +2426,7 @@ struct ContentView: View {
             .disabled(!commands.presentation.editIsEnabled)
         }
         Button(
-            "Показать данные в Finder",
+            "Показать папку данных в Finder",
             systemImage: "folder",
             action: commands.revealInFinder
         )

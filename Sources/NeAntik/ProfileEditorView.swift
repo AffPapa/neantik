@@ -777,53 +777,13 @@ struct ProfileEditorView: View {
 
   private var advancedOptionsSection: some View {
     Section {
-      Button {
-        focusedField = nil
-        if reduceMotion {
-          showsAdvancedOptions.toggle()
-        } else {
-          withAnimation(.easeInOut(duration: 0.18)) {
-            showsAdvancedOptions.toggle()
-          }
+      DisclosureGroup(isExpanded: Binding(
+        get: { showsAdvancedOptions },
+        set: { expanded in
+          focusedField = nil
+          showsAdvancedOptions = expanded
         }
-      } label: {
-        HStack {
-          Image(
-            systemName:
-              showsAdvancedOptions
-                ? "chevron.down"
-                : "chevron.right"
-          )
-          .font(.caption.weight(.semibold))
-          .accessibilityHidden(true)
-          Text("Дополнительно")
-            .fontWeight(.semibold)
-          Spacer()
-          Text(ProfileEditorAdvancedPresentation.summary)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .truncationMode(.tail)
-        }
-        .frame(
-          maxWidth: .infinity,
-          minHeight: 28,
-          alignment: .leading
-        )
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Дополнительные настройки профиля")
-      .accessibilityValue(
-        showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
-      )
-      .accessibilityHint(
-        showsAdvancedOptions
-          ? "Скрывает папку, теги, стартовую страницу и оформление"
-          : "Показывает папку, теги, стартовую страницу и оформление"
-      )
-
-      if showsAdvancedOptions {
+      )) {
         Text("Организация")
           .font(.headline)
         folderControl
@@ -858,7 +818,18 @@ struct ProfileEditorView: View {
         Text("Цвет")
           .font(.headline)
         appearanceColorGrid
+      } label: {
+        HStack {
+          Text("Дополнительно").fontWeight(.semibold)
+          Spacer()
+          Text(ProfileEditorAdvancedPresentation.summary)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        .accessibilityLabel("Дополнительные настройки профиля")
       }
+      .disclosureGroupStyle(NeAntikDisclosureStyle())
     }
   }
 
@@ -989,75 +960,20 @@ struct ProfileEditorView: View {
 
   @ViewBuilder
   private var noteEditor: some View {
-    Button {
-      let willExpand = !showsNoteEditor
-      if reduceMotion {
-        showsNoteEditor = willExpand
-      } else {
-        withAnimation(.easeInOut(duration: 0.18)) {
-          showsNoteEditor = willExpand
+    DisclosureGroup(isExpanded: Binding(
+      get: { showsNoteEditor },
+      set: { expanded in
+        showsNoteEditor = expanded
+        if expanded {
+          Task { @MainActor in
+            await Task.yield()
+            focusedField = .note
+          }
+        } else if focusedField == .note {
+          focusedField = nil
         }
       }
-      if willExpand {
-        Task { @MainActor in
-          await Task.yield()
-          focusedField = .note
-        }
-      } else if focusedField == .note {
-        focusedField = nil
-      }
-    } label: {
-      HStack(spacing: 8) {
-        Image(
-          systemName: showsNoteEditor ? "chevron.down" : "chevron.right"
-        )
-        .font(.caption.weight(.semibold))
-        Image(systemName: "editorDraft.note.text")
-          .accessibilityHidden(true)
-        Text("Заметка (необязательно)")
-          .fontWeight(.semibold)
-        Spacer()
-        Text(
-          notePresentation.collapsedSummary.isEmpty
-            ? "Не добавлена"
-            : "Добавлена"
-        )
-        .font(.caption)
-        .foregroundStyle(.secondary)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .accessibilityLabel("Необязательная заметка профиля")
-    .accessibilityValue(
-      showsNoteEditor
-        ? "Развёрнуто"
-        : (
-          notePresentation.collapsedSummary.isEmpty
-            ? "Свёрнуто, не добавлена"
-            : "Свёрнуто, добавлена"
-        )
-    )
-    .accessibilityHint(
-      showsNoteEditor
-        ? "Скрывает поле заметки"
-        : "Показывает поле заметки"
-    )
-
-    if !showsNoteEditor,
-      !notePresentation.collapsedSummary.isEmpty
-    {
-      Text(notePresentation.collapsedSummary)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .truncationMode(.tail)
-        .accessibilityLabel("Краткая заметка")
-        .accessibilityValue(notePresentation.collapsedSummary)
-    }
-
-    if showsNoteEditor {
+    )) {
       ZStack(alignment: .topLeading) {
         TextEditor(text: $editorDraft.note)
           .focused($focusedField, equals: .note)
@@ -1112,7 +1028,30 @@ struct ProfileEditorView: View {
           .foregroundStyle(.red)
           .accessibilityElement(children: .combine)
       }
+    } label: {
+      HStack {
+        Label("Заметка (необязательно)", systemImage: "note.text")
+          .fontWeight(.semibold)
+        Spacer()
+        Text(notePresentation.collapsedSummary.isEmpty ? "Не добавлена" : "Добавлена")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      .accessibilityLabel("Необязательная заметка профиля")
     }
+    .disclosureGroupStyle(NeAntikDisclosureStyle())
+    if !showsNoteEditor,
+      !notePresentation.collapsedSummary.isEmpty
+    {
+      Text(notePresentation.collapsedSummary)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .accessibilityLabel("Краткая заметка")
+        .accessibilityValue(notePresentation.collapsedSummary)
+    }
+
   }
 
   private var proxyImportOrderPicker: some View {

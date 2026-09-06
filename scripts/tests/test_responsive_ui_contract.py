@@ -589,27 +589,19 @@ class ResponsiveUIContractTests(unittest.TestCase):
             'static let summary = "Стартовая страница, папка, теги и оформление"',
             text,
         )
-        advanced_start = text.index("showsAdvancedOptions.toggle()")
-        advanced_end = text.index("if showsAdvancedOptions {", advanced_start)
-        advanced = text[advanced_start:advanced_end]
-        self.assertIn("showsAdvancedOptions.toggle()", advanced)
-        self.assertIn("maxWidth: .infinity", advanced)
-        self.assertIn("minHeight: 28", advanced)
-        self.assertIn(".contentShape(Rectangle())", advanced)
-        self.assertIn(".accessibilityHidden(true)", advanced)
-        self.assertIn(
-            '.accessibilityLabel("Дополнительные настройки профиля")',
-            advanced,
-        )
-        self.assertIn(
-            'showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"',
-            advanced,
-        )
-        self.assertIn(".accessibilityHint(", advanced)
-        self.assertNotIn(
-            'DisclosureGroup(\n            "Дополнительно"',
-            text,
-        )
+        advanced = text[text.index("private var advancedOptionsSection"):text.index("private var appearanceIconGrid")]
+        style = (ROOT / "Sources/NeAntik/NeAntikDisclosureStyle.swift").read_text()
+        self.assertIn("DisclosureGroup(isExpanded: Binding(", advanced)
+        self.assertIn("showsAdvancedOptions = expanded", advanced)
+        self.assertIn("focusedField = nil", advanced)
+        self.assertIn(".disclosureGroupStyle(NeAntikDisclosureStyle())", advanced)
+        self.assertIn('.accessibilityLabel("Дополнительные настройки профиля")', advanced)
+        self.assertIn("maxWidth: .infinity", style)
+        self.assertIn("minimumHeight: CGFloat = 28", style)
+        self.assertIn(".contentShape(Rectangle())", style)
+        self.assertIn(".accessibilityHidden(true)", style)
+        self.assertIn('configuration.isExpanded ? "Развёрнуто" : "Свёрнуто"', style)
+        self.assertIn("accessibilityReduceMotion", style)
         self.assertNotIn(".onSubmit(save)", text)
 
     def test_profile_note_is_progressively_disclosed_from_a_full_row(
@@ -642,7 +634,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("folderControl", advanced)
         self.assertIn("ProfileTagEditor(", advanced)
         self.assertIn('TextField("Стартовая страница"', advanced)
-        self.assertIn('Text("Заметка (необязательно)")', note_editor)
+        self.assertIn('Label("Заметка (необязательно)", systemImage: "note.text")', note_editor)
+        self.assertNotIn('systemImage: "editorDraft.', editor)
         self.assertGreaterEqual(
             note_editor.count(
                 '.accessibilityLabel("Необязательная заметка профиля")'
@@ -655,15 +648,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         self.assertIn('"Не добавлена"', note_editor)
         self.assertIn('"Добавлена"', note_editor)
-        self.assertIn("Button", note_editor)
+        self.assertIn("DisclosureGroup(isExpanded: Binding(", note_editor)
         self.assertIn("TextEditor(text:", note_editor)
         self.assertIn(
             '"Без паролей, ключей и seed-фраз"',
             note_editor,
         )
-        self.assertIn(".frame(maxWidth: .infinity", note_editor)
-        self.assertIn(".contentShape(Rectangle())", note_editor)
-        self.assertNotIn("DisclosureGroup", note_editor)
+        self.assertIn(".disclosureGroupStyle(NeAntikDisclosureStyle())", note_editor)
+        self.assertIn("showsNoteEditor = expanded", note_editor)
+        self.assertIn("focusedField = .note", note_editor)
 
     def test_profile_note_stays_compact_but_readable_and_searchable(
         self,
@@ -787,16 +780,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("preview.issueLineNumbers", text)
         self.assertIn("issuePreviewRows", text)
         self.assertIn("Исправь \\(issueCountTitle", text)
-        self.assertNotIn("DisclosureGroup(isExpanded: $showsOptions)", text)
-        self.assertIn("showsOptions.toggle()", text)
-        self.assertIn("maxWidth: .infinity", text)
-        self.assertIn("minHeight: 32", text)
-        self.assertIn(".contentShape(Rectangle())", text)
+        self.assertIn("DisclosureGroup(isExpanded: $showsOptions)", text)
+        self.assertIn("NeAntikDisclosureStyle(minimumHeight: 32)", text)
         self.assertIn('.accessibilityLabel("Параметры импорта")', text)
-        self.assertIn(
-            'showsOptions ? "Развёрнуто" : "Свёрнуто"',
-            text,
-        )
         self.assertIn(".focused($proxyInputIsFocused)", text)
         self.assertIn("BulkProxyImportDraftSnapshot", text)
         self.assertIn(
@@ -840,29 +826,16 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")
-        details_start = text.index("if showingDetails {")
-        details_end = text.index(
-            ".padding(.top, 4)",
-            details_start,
-        )
-        details = text[details_start:details_end]
-        button_start = text.index(
-            "private func diagnosticSectionButton("
-        )
-        button_end = text.index(
-            "private var overview: some View",
-            button_start,
-        )
-        button = text[button_start:button_end]
-
-        self.assertNotIn("DisclosureGroup(", details)
-        self.assertIn("diagnosticSection(", details)
-        self.assertIn("setSectionExpanded(", button)
-        self.assertIn("maxWidth: .infinity", button)
-        self.assertIn("minHeight: 32", button)
-        self.assertIn(".contentShape(Rectangle())", button)
-        self.assertIn(".onHover", button)
-        self.assertIn('isExpanded ? "Развёрнуто" : "Свёрнуто"', button)
+        self.assertIn("DisclosureGroup(isExpanded: $showingDetails)", text)
+        self.assertIn("diagnosticSection(", text)
+        self.assertIn("setSectionExpanded(section.id, isExpanded: $0)", text)
+        self.assertIn("get: { expandedSectionIDs.contains(section.id) }", text)
+        self.assertIn("NeAntikDisclosureStyle(minimumHeight: 32)", text)
+        self.assertIn("initialExpandedSectionID(", text)
+        style = (ROOT / "Sources/NeAntik/NeAntikDisclosureStyle.swift").read_text()
+        self.assertIn("maxWidth: .infinity", style)
+        self.assertIn(".contentShape(Rectangle())", style)
+        self.assertIn('configuration.isExpanded ? "Развёрнуто" : "Свёрнуто"', style)
 
     def test_environment_overview_hides_optional_unavailable_actions(self) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")

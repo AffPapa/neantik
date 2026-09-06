@@ -346,16 +346,10 @@ final class BrowserProcessManager: ObservableObject {
     private let observationIntervalNanoseconds: UInt64
     private let startingLeaseTimeout: TimeInterval
     private let now: () -> Date
-    private var processes: [UUID: Process] = [:] {
+    private var managed: [UUID: ManagedBrowserProcess] = [:] {
         didSet { processStateRevision &+= 1 }
     }
-    private var managedStopTasks: [UUID: Task<Void, Never>] = [:]
     private var stopCompletionTasks: [UUID: Task<Void, Never>] = [:]
-    private var forcedStopProfileIDs = Set<UUID>()
-    private var startupFailureProfileIDs = Set<UUID>()
-    private var managedStartedAt: [UUID: Date] = [:]
-    private var managedLeaseOwners: [UUID: UUID] = [:]
-    private var managedBrowserDataDirectories: [UUID: URL] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
     private var externalLocks: [UUID: BrowserProcessLock] = [:] {
         didSet { processStateRevision &+= 1 }
@@ -577,8 +571,8 @@ final class BrowserProcessManager: ObservableObject {
     func managerTerminationSnapshot() ->
         BrowserManagerTerminationSnapshot
     {
-        let managedProfileIDs = processes.compactMap { profileID, process in
-            process.isRunning ? profileID : nil
+        let managedProfileIDs = managed.compactMap { profileID, process in
+            process.process?.isRunning == true ? profileID : nil
         }.sorted { $0.uuidString < $1.uuidString }
         let ordinaryStopProfileIDs = managedProfileIDs.filter {
             stopPhase(for: $0) == .idle
@@ -799,8 +793,8 @@ final class BrowserProcessManager: ObservableObject {
         recoveryRecords.removeAll()
         pendingReconciliationProfileIDs.removeAll()
         runningProfileIDs = Set(
-            processes.compactMap { key, process in
-                process.isRunning ? key : nil
+            managed.compactMap { key, process in
+                process.process?.isRunning == true ? key : nil
             }
         )
 
@@ -929,7 +923,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
-        if processes[profileID]?.isRunning == true {
+        if managed[profileID]?.process?.isRunning == true {
             switch stopPhase(for: profileID) {
             case .closing:
                 return .closing
@@ -965,12 +959,12 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func startedAt(for profileID: UUID) -> Date? {
-        managedStartedAt[profileID] ?? externalLocks[profileID]?.createdAt
+        managed[profileID]?.startedAt ?? externalLocks[profileID]?.createdAt
     }
 
     @discardableResult
     func focus(profileID: UUID) -> Bool {
-        let pid = processes[profileID]?.processIdentifier ??
+        let pid = managed[profileID]?.process?.processIdentifier ??
             externalLocks[profileID]?.pid
         guard let pid,
               let application = NSRunningApplication(
@@ -987,7 +981,7 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         _ destructiveOperation: () throws -> T
     ) throws -> T {
-        if processes[profileID]?.isRunning == true {
+        if managed[profileID]?.process?.isRunning == true {
             throw BrowserProfileDeletionBlockedError(
                 reason: .managedProcess
             )
@@ -1080,7 +1074,7 @@ final class BrowserProcessManager: ObservableObject {
         externalUnverifiedProfileIDs.remove(profileID)
         recoveryProfileIDs.remove(profileID)
         recoveryRecords.removeValue(forKey: profileID)
-        if processes[profileID]?.isRunning != true {
+        if managed[profileID]?.process?.isRunning != true {
             runningProfileIDs.remove(profileID)
         }
 
@@ -1509,8 +1503,9 @@ final class BrowserProcessManager: ObservableObject {
         } catch {
             throw NeAntikError.processLaunchFailed(error.localizedDescription)
         }
-        managedLeaseOwners[profile.id] = ownerToken
-        managedBrowserDataDirectories[profile.id] = browserDataDirectory
+        managed[profile.id] = ManagedBrowserProcess(
+            ownerToken: ownerToken, browserDataDirectory: browserDataDirectory
+        )
         if browserDataDirectoryOverride != nil &&
             !profileDirectoryExistedBeforeLaunch {
             transientEmptyProfileDirectoryIDs.insert(profile.id)
@@ -1519,8 +1514,8 @@ final class BrowserProcessManager: ObservableObject {
         do {
             try prepareDiagnosticLog(logURL)
             try process.run()
-            processes[profile.id] = process
-            managedStartedAt[profile.id] = createdAt
+            managed[profile.id]?.process = process
+            managed[profile.id]?.startedAt = createdAt
             setStopPhase(.idle, profileID: profile.id)
             runningProfileIDs.insert(profile.id)
             try? appendDiagnostic(
@@ -1545,27 +1540,23 @@ final class BrowserProcessManager: ObservableObject {
             )
         } catch {
             if process.isRunning {
-                startupFailureProfileIDs.insert(profile.id)
+                managed[profile.id]?.startupFailed = true
                 managedProcessTerminator(process)
             }
             if process.isRunning {
-                processes[profile.id] = process
+                managed[profile.id]?.process = process
                 runningProfileIDs.insert(profile.id)
                 throw NeAntikError.processLaunchFailed(
                     error.localizedDescription
                 )
             }
-            processes.removeValue(forKey: profile.id)
-            managedStartedAt.removeValue(forKey: profile.id)
+            removeManagedProcess(profileID: profile.id)
             runningProfileIDs.remove(profile.id)
-            managedLeaseOwners.removeValue(forKey: profile.id)
-            managedBrowserDataDirectories.removeValue(forKey: profile.id)
             removeLockIfOwned(
                 profileID: profile.id,
                 ownerToken: ownerToken
             )
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
-            startupFailureProfileIDs.remove(profile.id)
             recordBrowserExit(.startupFailure, at: now())
             try? appendDiagnostic(
                 "browser_exit classification=" +
@@ -1600,7 +1591,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func stop(profileID: UUID) {
-        if let process = processes[profileID] {
+        if let process = managed[profileID]?.process {
             if process.isRunning {
                 guard stopPhase(for: profileID) == .idle else {
                     return
@@ -1694,13 +1685,15 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         process: Process
     ) {
-        guard managedStopTasks[profileID] == nil else {
+        guard managed[profileID]?.stopTask == nil else {
             return
         }
-        managedStopTasks[profileID] = Task { @MainActor [weak self, weak process] in
+        managed[profileID]?.stopTask = Task { @MainActor [weak self, weak process] in
             guard let self else { return }
             defer {
-                managedStopTasks.removeValue(forKey: profileID)
+                if self.managed[profileID]?.process === process {
+                    self.managed[profileID]?.stopTask = nil
+                }
             }
             do {
                 try await Task.sleep(
@@ -1710,7 +1703,7 @@ final class BrowserProcessManager: ObservableObject {
                 return
             }
             guard let process,
-                  processes[profileID] === process,
+                  managed[profileID]?.process === process,
                   process.isRunning
             else {
                 return
@@ -1728,16 +1721,16 @@ final class BrowserProcessManager: ObservableObject {
     @discardableResult
     func forceStop(profileID: UUID) -> Bool {
         guard case .forceStopAvailable = stopPhase(for: profileID),
-              let process = processes[profileID],
+              let process = managed[profileID]?.process,
               process.isRunning
         else {
             return false
         }
-        forcedStopProfileIDs.insert(profileID)
+        managed[profileID]?.wasForced = true
         if processSignaler(process.processIdentifier, SIGKILL) != 0,
            errno != ESRCH
         {
-            forcedStopProfileIDs.remove(profileID)
+            managed[profileID]?.wasForced = false
             lastError =
                 "Не удалось принудительно остановить браузер. Закрой его окно вручную; профиль останется заблокированным."
             return false
@@ -1745,17 +1738,25 @@ final class BrowserProcessManager: ObservableObject {
         return true
     }
 
+    @discardableResult
+    private func removeManagedProcess(profileID: UUID) -> ManagedBrowserProcess? {
+        let entry = managed.removeValue(forKey: profileID)
+        entry?.stopTask?.cancel()
+        return entry
+    }
+
     private func handleTermination(profileID: UUID, process: Process?) {
         if let process {
-            guard let current = processes[profileID],
+            guard let current = managed[profileID]?.process,
                   current === process
             else {
                 return
             }
         }
         let priorStopPhase = stopPhase(for: profileID)
-        let wasForced = forcedStopProfileIDs.remove(profileID) != nil
-        let startupFailed = startupFailureProfileIDs.remove(profileID) != nil
+        let entry = removeManagedProcess(profileID: profileID)
+        let wasForced = entry?.wasForced ?? false
+        let startupFailed = entry?.startupFailed ?? false
         if let process {
             let classification = BrowserExitClassifier.classify(
                 startupFailed: startupFailed,
@@ -1770,23 +1771,17 @@ final class BrowserProcessManager: ObservableObject {
                 to: paths.logFile(for: profileID)
             )
         }
-        let managedOwner = managedLeaseOwners.removeValue(
-            forKey: profileID
-        )
+        let managedOwner = entry?.ownerToken
         let externalLock = externalLocks[profileID]
         let lockURL = paths.lockFile(for: profileID)
         let browserDataDirectory =
-            managedBrowserDataDirectories.removeValue(forKey: profileID) ??
+            entry?.browserDataDirectory ??
             paths.browserDataDirectory(for: profileID)
         let removableSnapshot = currentLeaseSnapshot(
             profileID: profileID,
             managedOwner: managedOwner,
             externalLock: externalLock
         )
-        processes.removeValue(forKey: profileID)
-        managedStartedAt.removeValue(forKey: profileID)
-        managedStopTasks[profileID]?.cancel()
-        managedStopTasks.removeValue(forKey: profileID)
         externalStopTasks[profileID]?.cancel()
         externalStopTasks.removeValue(forKey: profileID)
         observations.cancel(.external(profileID))
@@ -2170,7 +2165,7 @@ final class BrowserProcessManager: ObservableObject {
         observations.cancel(.recovery(profileID))
         recoveryRecords.removeValue(forKey: profileID)
         recoveryProfileIDs.remove(profileID)
-        if processes[profileID]?.isRunning != true,
+        if managed[profileID]?.process?.isRunning != true,
            externalLocks[profileID] == nil
         {
             runningProfileIDs.remove(profileID)
