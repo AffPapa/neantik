@@ -130,23 +130,31 @@ struct ProfileListProjectionTests {
     @Test
     func indexedOrderingMatchesDirectComparisonsAcrossUnicodeAndDateTies() {
         let names = ["Same", "same", "Café", "Cafe\u{301}", "cafe", "Тест 2", "Тест 10", "👩‍💻", "", "Ａ", "A"]
-        let profiles = (0..<132).map { offset in
-            BrowserProfile(
+        let profiles: [BrowserProfile] = (0..<132).map { offset -> BrowserProfile in
+            let lastLaunch: Date? = offset.isMultiple(of: 2)
+                ? nil : Date(timeIntervalSinceReferenceDate: Double(offset % 7))
+            return BrowserProfile(
                 id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", offset))!,
                 name: names[offset % names.count],
                 isPinned: offset.isMultiple(of: 3),
                 createdAt: Date(timeIntervalSinceReferenceDate: Double(offset % 4)),
                 updatedAt: Date(timeIntervalSinceReferenceDate: Double(offset % 5)),
-                lastLaunchedAt: offset.isMultiple(of: 2) ? nil : Date(timeIntervalSinceReferenceDate: Double(offset % 7))
+                lastLaunchedAt: lastLaunch
             )
         }
-        for input in [profiles, Array(profiles.reversed()), Array(profiles.dropFirst(33)) + profiles.prefix(33)] {
+        let rotated = Array(profiles.dropFirst(33)) + Array(profiles.prefix(33))
+        let inputs: [[BrowserProfile]] = [profiles, Array(profiles.reversed()), rotated]
+        for input in inputs {
             let index = ProfileListIndex(profiles: input, organization: .empty)
             for ordering in ProfileListOrdering.allCases {
-                #expect(index.filtered(
+                let actual = index.filtered(
                     searchText: "", tag: nil, scope: .active,
                     folderFilter: .all, ordering: ordering
-                ).map(\.id) == input.sorted(by: ordering.areInIncreasingOrder).map(\.id))
+                ).map(\.id)
+                let expected = input.sorted {
+                    ordering.areInIncreasingOrder($0, $1)
+                }.map(\.id)
+                #expect(actual == expected)
             }
         }
     }
