@@ -30,6 +30,7 @@ case "$SHARD" in
       BulkProxyImportTests
       BulkProxyRunProgressTests
       DisplayDateFormattingTests
+      RussianCountTests
       UserNoticeTests
     )
     ;;

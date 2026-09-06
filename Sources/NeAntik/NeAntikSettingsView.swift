@@ -33,9 +33,6 @@ struct NeAntikSettingsView: View {
                 }
                 .disabled(preferences.rowDensity == .comfortable)
                 .help("Меняет только плотность списка. Профили, заметки и прокси не затрагиваются.")
-                Text("Сброс меняет только плотность — данные профилей останутся прежними.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section("Сочетания клавиш") {

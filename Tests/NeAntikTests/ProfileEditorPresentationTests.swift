@@ -170,7 +170,7 @@ struct ProfileEditorPresentationTests {
             evidence: .ipAPI(observedAt: now.addingTimeInterval(-60)),
             now: now
         )
-        #expect(fresh.title.contains("свежий"))
+        #expect(fresh.title == "Данные прокси актуальны")
         #expect(fresh.systemImage == "checkmark.circle.fill")
         #expect(!fresh.requiresAttention)
         #expect(fresh.detail.contains("Перед каждым запуском"))

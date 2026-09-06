@@ -64,6 +64,17 @@ struct ProfileTagSummary: Identifiable, Equatable, Sendable {
         self.name = name
         self.count = count
     }
+
+    static func areInIncreasingOrder(_ lhs: Self, _ rhs: Self) -> Bool {
+        let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
+        if nameOrder != .orderedSame {
+            return nameOrder == .orderedAscending
+        }
+        if lhs.id != rhs.id {
+            return lhs.id.rawValue < rhs.id.rawValue
+        }
+        return lhs.name < rhs.name
+    }
 }
 
 struct ProfileListPreview<Element: Equatable & Sendable>:
@@ -235,6 +246,22 @@ struct ProfileListIndex: Equatable, Sendable {
         self.activeCountByFolderID = activeCountByFolderID
         self.indexedProfiles = indexedProfiles
         let unorderedIndices = Array(indexedProfiles.indices)
+        // Preserve localized equivalence (including case/diacritics) while
+        // sharing the expensive name comparison across all six orderings.
+        let nameOrderedIndices = unorderedIndices.sorted {
+            indexedProfiles[$0].profile.name.localizedStandardCompare(
+                indexedProfiles[$1].profile.name
+            ) == .orderedAscending
+        }
+        var nameRanks = Array(repeating: 0, count: indexedProfiles.count)
+        for offset in nameOrderedIndices.indices.dropFirst() {
+            let previous = nameOrderedIndices[offset - 1]
+            let current = nameOrderedIndices[offset]
+            let equal = indexedProfiles[previous].profile.name.localizedStandardCompare(
+                indexedProfiles[current].profile.name
+            ) == .orderedSame
+            nameRanks[current] = nameRanks[previous] + (equal ? 0 : 1)
+        }
         orderedProfileIndicesByOrdering = Dictionary(
             uniqueKeysWithValues: ProfileListOrdering.allCases.map { ordering in
                 (
@@ -242,7 +269,12 @@ struct ProfileListIndex: Equatable, Sendable {
                     unorderedIndices.sorted { lhs, rhs in
                         ordering.areInIncreasingOrder(
                             indexedProfiles[lhs].profile,
-                            indexedProfiles[rhs].profile
+                            indexedProfiles[rhs].profile,
+                            nameComparison: { _, _ in
+                                if nameRanks[lhs] == nameRanks[rhs] { return .orderedSame }
+                                return nameRanks[lhs] < nameRanks[rhs]
+                                    ? .orderedAscending : .orderedDescending
+                            }
                         )
                     }
                 )
@@ -266,7 +298,7 @@ struct ProfileListIndex: Equatable, Sendable {
         }
         tagSummariesByScope = summariesByScope.mapValues { summariesByFilter in
             summariesByFilter.mapValues { summaries in
-                summaries.sorted(by: Self.tagSummaryIsInIncreasingOrder)
+                summaries.sorted(by: ProfileTagSummary.areInIncreasingOrder)
             }
         }
     }
@@ -363,19 +395,6 @@ struct ProfileListIndex: Equatable, Sendable {
         }
     }
 
-    private static func tagSummaryIsInIncreasingOrder(
-        _ lhs: ProfileTagSummary,
-        _ rhs: ProfileTagSummary
-    ) -> Bool {
-        let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
-        if nameOrder != .orderedSame {
-            return nameOrder == .orderedAscending
-        }
-        if lhs.id != rhs.id {
-            return lhs.id.rawValue < rhs.id.rawValue
-        }
-        return lhs.name < rhs.name
-    }
 }
 
 private extension ProfileFolderFilter {
@@ -527,14 +546,14 @@ enum ProfileListProjection {
     ) -> ProfileListPreview<ProfileTagSummary> {
         let orderedTags = orderedPreviewSource(
             tags,
-            by: tagSummaryIsInIncreasingOrder
+            by: ProfileTagSummary.areInIncreasingOrder
         )
         return limitedPreview(
             orderedTags,
             selectedID: selectedID,
             limit: limit,
             id: \.id,
-            areInIncreasingOrder: tagSummaryIsInIncreasingOrder
+            areInIncreasingOrder: ProfileTagSummary.areInIncreasingOrder
         )
     }
 
@@ -590,20 +609,6 @@ enum ProfileListProjection {
             }
         }
         return items
-    }
-
-    private static func tagSummaryIsInIncreasingOrder(
-        _ lhs: ProfileTagSummary,
-        _ rhs: ProfileTagSummary
-    ) -> Bool {
-        let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
-        if nameOrder != .orderedSame {
-            return nameOrder == .orderedAscending
-        }
-        if lhs.id != rhs.id {
-            return lhs.id.rawValue < rhs.id.rawValue
-        }
-        return lhs.name < rhs.name
     }
 
     private static func tagNameIsInIncreasingOrder(

@@ -148,22 +148,36 @@ struct ProfileFolderPickerSheet: View {
             Divider()
 
             VStack(spacing: 12) {
-                TextField("Поиск папок", text: $searchText)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($searchIsFocused)
-                    .onSubmit(selectFirstSearchResult)
-                    .onKeyPress(.upArrow) {
-                        moveHighlight(offset: -1)
-                        return .handled
+                HStack(spacing: 6) {
+                    TextField("Поиск папок", text: $searchText)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($searchIsFocused)
+                        .onSubmit(selectFirstSearchResult)
+                        .onKeyPress(.upArrow) {
+                            moveHighlight(offset: -1)
+                            return .handled
+                        }
+                        .onKeyPress(.downArrow) {
+                            moveHighlight(offset: 1)
+                            return .handled
+                        }
+                        .accessibilityHint(
+                            "Фильтрует список папок по названию. " +
+                                "Return выбирает найденную или выделенную стрелками папку."
+                        )
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                            searchIsFocused = true
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .help("Сбросить поиск папок")
+                        .accessibilityLabel("Сбросить поиск папок")
                     }
-                    .onKeyPress(.downArrow) {
-                        moveHighlight(offset: 1)
-                        return .handled
-                    }
-                    .accessibilityHint(
-                        "Фильтрует список папок по названию. " +
-                            "Return выбирает найденную или выделенную стрелками папку."
-                    )
+                }
 
                 ScrollViewReader { scrollProxy in
                     List {
@@ -304,13 +318,14 @@ struct ProfileFolderPickerSheet: View {
         }
         .id(rowID)
         .buttonStyle(.plain)
+        .help(title)
         .accessibilityLabel(
             isSelected ? "\(title), выбрано" : title
         )
         .accessibilityValue(
             isHighlighted ? "Выделено клавиатурой" : ""
         )
-        .accessibilityHint("Выбрать эту папку")
+        .accessibilityHint(folderID == nil ? "Убрать из папки" : "Переместить в эту папку")
     }
 }
 

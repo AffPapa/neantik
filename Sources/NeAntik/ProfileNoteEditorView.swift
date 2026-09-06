@@ -3,6 +3,15 @@ import SwiftUI
 struct ProfileNoteDraftSnapshot: Equatable, Sendable {
     let note: String
 
+    func statusText(currentNote: String) -> String {
+        if BrowserProfile.normalizedNote(currentNote) == nil {
+            return "Исправь текст, чтобы сохранить · Escape — отмена"
+        }
+        return hasUnsavedChanges(currentNote: currentNote)
+            ? "Изменения не сохранены · ⌘Return — сохранить"
+            : "Нет изменений · Escape — закрыть"
+    }
+
     func hasUnsavedChanges(currentNote: String) -> Bool {
         guard let normalized = BrowserProfile.normalizedNote(currentNote) else {
             return currentNote != note
@@ -147,9 +156,7 @@ struct ProfileNoteEditorView: View {
                 .keyboardShortcut(.return, modifiers: [.command])
                 .disabled(!initialDraft.canSave(currentNote: note))
             }
-            Text(hasUnsavedChanges
-                 ? "Изменения не сохранены · ⌘Return — сохранить"
-                 : "Нет изменений · Escape — закрыть")
+            Text(initialDraft.statusText(currentNote: note))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -168,6 +175,7 @@ struct ProfileNoteEditorView: View {
             Text("Несохранённый текст заметки будет потерян.")
         }
         .onAppear { noteIsFocused = true }
+        .onChange(of: note) { _, _ in errorMessage = nil }
         .confirmationDialog(
             "Вернуть текст, который был при открытии?",
             isPresented: $showingResetConfirmation,

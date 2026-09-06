@@ -128,6 +128,55 @@ extension ProfileListProjectionTests {
 
 struct ProfileListProjectionTests {
     @Test
+    func indexedOrderingMatchesDirectComparisonsAcrossUnicodeAndDateTies() {
+        let names = ["Same", "same", "Café", "Cafe\u{301}", "cafe", "Тест 2", "Тест 10", "👩‍💻", "", "Ａ", "A"]
+        let profiles = (0..<132).map { offset in
+            BrowserProfile(
+                id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", offset))!,
+                name: names[offset % names.count],
+                isPinned: offset.isMultiple(of: 3),
+                createdAt: Date(timeIntervalSinceReferenceDate: Double(offset % 4)),
+                updatedAt: Date(timeIntervalSinceReferenceDate: Double(offset % 5)),
+                lastLaunchedAt: offset.isMultiple(of: 2) ? nil : Date(timeIntervalSinceReferenceDate: Double(offset % 7))
+            )
+        }
+        for input in [profiles, Array(profiles.reversed()), Array(profiles.dropFirst(33)) + profiles.prefix(33)] {
+            let index = ProfileListIndex(profiles: input, organization: .empty)
+            for ordering in ProfileListOrdering.allCases {
+                #expect(index.filtered(
+                    searchText: "", tag: nil, scope: .active,
+                    folderFilter: .all, ordering: ordering
+                ).map(\.id) == input.sorted(by: ordering.areInIncreasingOrder).map(\.id))
+            }
+        }
+    }
+
+    @Test
+    func tagSummaryOrderingPreservesUnicodeAndIdentityTieBreaks() {
+        let tags = [
+            ProfileTagSummary(name: "Тег 10", count: 1),
+            ProfileTagSummary(name: "Тег 2", count: 3),
+            ProfileTagSummary(name: "Café", count: 1),
+            ProfileTagSummary(name: "Cafe\u{301}", count: 2),
+            ProfileTagSummary(name: "cafe", count: 5),
+            ProfileTagSummary(id: .init(rawValue: "z"), name: "Same", count: 1),
+            ProfileTagSummary(id: .init(rawValue: "a"), name: "Same", count: 9),
+        ]
+        let expected = tags.sorted { lhs, rhs in
+            let comparison = lhs.name.localizedStandardCompare(rhs.name)
+            if comparison != .orderedSame { return comparison == .orderedAscending }
+            if lhs.id != rhs.id { return lhs.id.rawValue < rhs.id.rawValue }
+            return lhs.name < rhs.name
+        }
+        for input in [tags, Array(tags.reversed())] {
+            #expect(input.sorted(by: ProfileTagSummary.areInIncreasingOrder) == expected)
+            #expect(ProfileListProjection.tagPreview(
+                input, selectedID: nil, limit: input.count
+            ).visibleItems == expected)
+        }
+    }
+
+    @Test
     func searchPreservesEmbeddedApostrophesAndExplainsUnclosedQuotes() {
         let profile = BrowserProfile(name: "O'Reilly", note: "L'été café")
         for query in ["O'Reilly", "name:O'Reilly", "name:\"O'Reilly\"", "note:L'été", "note:cafe note:ete"] {
@@ -559,6 +608,13 @@ struct ProfileListProjectionTests {
         )
         let query = WorkspaceQueryState(scope: .active)
 
+        let directSortStartedAt = Date()
+        let directlyOrderedIDs = Dictionary(uniqueKeysWithValues:
+            ProfileListOrdering.allCases.map { ordering in
+                (ordering, profiles.sorted(by: ordering.areInIncreasingOrder).map(\.id))
+            }
+        )
+        let directSortElapsed = Date().timeIntervalSince(directSortStartedAt)
         let initialStartedAt = Date()
         let initial = ProfileListViewState(
             profiles: profiles,
@@ -567,6 +623,12 @@ struct ProfileListProjectionTests {
             searchText: "Account memo 99"
         )
         let initialElapsed = Date().timeIntervalSince(initialStartedAt)
+        for ordering in ProfileListOrdering.allCases {
+            #expect(initial.index.filtered(
+                searchText: "", tag: nil, scope: .active,
+                folderFilter: .all, ordering: ordering
+            ).map(\.id) == directlyOrderedIDs[ordering])
+        }
 
         let repeatedStartedAt = Date()
         var repeatedVisibleCount = 0
@@ -594,6 +656,7 @@ struct ProfileListProjectionTests {
             : 5
         print(
             "ProfileListViewState 10k benchmark: " +
+                "legacy-six-sorts=\(directSortElapsed)s, " +
                 "initial=\(initialElapsed)s, " +
                 "reused-searches=\(repeatedElapsed)s"
         )

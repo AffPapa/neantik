@@ -4,6 +4,15 @@
 
 ## Direct 0.3.24 (27) — September 5, 2026 (candidate)
 
+- September 6 optimization shares localized name ranks across all six list
+  orders and consolidates tag ordering, locale validation and Russian count
+  formatting. Existing ordering, strict metadata validation and proxy response
+  normalization remain covered by equivalence and boundary tests.
+- Folder drafts now confirm discard and reject unchanged renames; folder search
+  can be cleared without losing focus. Note editing clears stale save errors
+  and no longer advertises Save for invalid text. Retry/create/proxy-status
+  hints use plain language; screen-reader counts avoid incorrect declension.
+
 - Refresh the official Chromium security baseline to the September 3 macOS
   Stable release (`152.0.7977.82/.83`, 12 security fixes). Public candidate
   preparation now correctly rejects the embedded `152.0.7977.64` runtime.

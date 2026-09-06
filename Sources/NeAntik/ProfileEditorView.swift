@@ -90,8 +90,8 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
     let isFresh = evidence.isFresh(relativeTo: now)
     return Self(
       title: isFresh
-        ? "Контекст прокси свежий"
-        : "Контекст прокси устарел",
+        ? "Данные прокси актуальны"
+        : "Данные прокси устарели",
       detail:
         "Источник: \(evidence.source) · проверено " +
         "\(evidence.observedAt.neAntikDisplayDateTime). " +
@@ -574,7 +574,7 @@ struct ProfileEditorView: View {
               .accessibilityLabel("\(status.title). \(status.detail)")
             } else if detectedTimezone != nil {
               Label(
-                "Контекст прокси без даты проверки",
+                "Дата проверки прокси неизвестна",
                 systemImage: "exclamationmark.triangle.fill"
               )
               .font(.caption.weight(.semibold))

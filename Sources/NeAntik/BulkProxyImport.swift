@@ -1198,54 +1198,20 @@ struct BulkProxyImportView: View {
     }
 
     private func profileCountTitle(_ count: Int) -> String {
-        let modulo100 = count % 100
-        let modulo10 = count % 10
-        let noun: String
-        if (11...14).contains(modulo100) {
-            noun = "профилей"
-        } else if modulo10 == 1 {
-            noun = "профиль"
-        } else if (2...4).contains(modulo10) {
-            noun = "профиля"
-        } else {
-            noun = "профилей"
-        }
-        return "\(count) \(noun)"
+        RussianCount.title(count, one: "профиль", few: "профиля", many: "профилей")
     }
 
     private func issueCountTitle(_ count: Int) -> String {
-        let modulo100 = count % 100
-        let modulo10 = count % 10
-        let noun: String
-        if (11...14).contains(modulo100) {
-            noun = "строк"
-        } else if modulo10 == 1 {
-            noun = "строку"
-        } else if (2...4).contains(modulo10) {
-            noun = "строки"
-        } else {
-            noun = "строк"
-        }
-        return "\(count) \(noun)"
+        RussianCount.title(count, one: "строку", few: "строки", many: "строк")
     }
 
     private func issueStatusTitle(_ count: Int) -> String {
-        let modulo100 = count % 100
-        let modulo10 = count % 10
-        let isSingular = modulo10 == 1 && modulo100 != 11
-        let noun: String
-        if (11...14).contains(modulo100) {
-            noun = "строк"
-        } else if modulo10 == 1 {
-            noun = "строка"
-        } else if (2...4).contains(modulo10) {
-            noun = "строки"
-        } else {
-            noun = "строк"
-        }
-        return "\(count) \(noun) " +
-            (isSingular ? "требует" : "требуют") +
-            " исправления"
+        RussianCount.title(
+            count,
+            one: "строка требует исправления",
+            few: "строки требуют исправления",
+            many: "строк требуют исправления"
+        )
     }
 
     private func statusLabel(

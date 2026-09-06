@@ -129,7 +129,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(.green)
-        .help("Создать профиль (⌘N); стрелка открывает быстрый Direct-вариант")
+        .help("Создать профиль (⌘N). В меню можно сразу создать и открыть профиль без прокси")
         .accessibilityLabel(
             "Создать профиль; доступны дополнительные варианты"
         )
@@ -229,7 +229,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     .lineLimit(2)
                 Spacer(minLength: 8)
                 if hasFailedProxyTests {
-                    Button("Повторить ошибки", action: onRetryFailedProxyTests)
+                    Button("Повторить проверку", action: onRetryFailedProxyTests)
                         .controlSize(.small)
                         .help("Повторить только неуспешные проверки")
                 }

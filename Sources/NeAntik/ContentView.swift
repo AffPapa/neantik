@@ -1293,15 +1293,7 @@ struct ContentView: View {
     }
 
     private func profileCountWord(_ count: Int) -> String {
-        let lastTwo = count % 100
-        if (11...14).contains(lastTwo) {
-            return "профилей"
-        }
-        switch count % 10 {
-        case 1: return "профиль"
-        case 2...4: return "профиля"
-        default: return "профилей"
-        }
+        RussianCount.word(count, one: "профиль", few: "профиля", many: "профилей")
     }
 
     private func togglePinned(_ profile: BrowserProfile) {

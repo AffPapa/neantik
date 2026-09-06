@@ -1,6 +1,6 @@
 # NeAntik project map
 
-Current source map: 2026-09-05. This document is the current routing source for
+Current source map: 2026-09-06. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
 ## Release truth and boundary
@@ -42,6 +42,15 @@ external runtime preference: it launches only its declared embedded runtime,
 and updates remain immutable manual GitHub releases.
 
 ## Source ownership
+
+The September 6 compaction pass keeps the existing product scope. Shared
+`LocaleIdentifierNormalization` in `Models.swift` owns strict locale syntax;
+proxy callers still own trimming/list selection. `RussianCount.swift` owns
+Russian quantity forms. `ProfileListOrdering` retains the canonical ordering
+policy; `ProfileListIndex` reuses localized name-equivalence ranks for its six
+precomputed orders. Tests compare every order against the original comparator
+on Unicode names, ties and input permutations. See
+`CODE_COMPACTION_REVIEW_2026-09-06.md` for measurements and release boundaries.
 
 The September 5 Goal quality cycle is tracked in
 `GOAL_IMPROVEMENT_PLAN_2026-09-05.md` and

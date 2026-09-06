@@ -2,6 +2,13 @@ import AppKit
 import SwiftUI
 
 enum ProfileFolderNameValidation {
+    static func hasChanges(name: String, initialName: String) -> Bool {
+        guard let normalized = ProfileFolder.normalizedName(name) else {
+            return name != initialName
+        }
+        return normalized != ProfileFolder.normalizedName(initialName)
+    }
+
     static func message(for name: String) -> String? {
         guard ProfileFolder.normalizedName(name) == nil else { return nil }
         let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -43,6 +50,7 @@ struct ProfileFolderNameSheet: View {
 
     @State private var name: String
     @State private var errorMessage: String?
+    @State private var showingDiscardConfirmation = false
     @State private var announcementGate =
         AccessibilityAnnouncementGate<ProfileFolderAccessibilityAnnouncement>()
     @FocusState private var nameIsFocused: Bool
@@ -62,6 +70,10 @@ struct ProfileFolderNameSheet: View {
 
     private var normalizedName: String? {
         ProfileFolder.normalizedName(name)
+    }
+
+    private var hasChanges: Bool {
+        ProfileFolderNameValidation.hasChanges(name: name, initialName: initialName)
     }
 
     private var duplicatesExistingName: Bool {
@@ -105,19 +117,27 @@ struct ProfileFolderNameSheet: View {
             HStack {
                 Spacer()
                 Button("Отмена", role: .cancel) {
-                    dismiss()
+                    if hasChanges { showingDiscardConfirmation = true }
+                    else { dismiss() }
                 }
                 .keyboardShortcut(.cancelAction)
-                Button("Сохранить", action: save)
+                Button(initialName.isEmpty ? "Создать" : "Сохранить", action: save)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(
-                        normalizedName == nil || duplicatesExistingName
+                        normalizedName == nil || duplicatesExistingName || !hasChanges
                     )
             }
         }
         .padding(24)
         .frame(width: 420)
+        .interactiveDismissDisabled(hasChanges)
+        .alert("Отменить изменения названия?", isPresented: $showingDiscardConfirmation) {
+            Button("Продолжить редактирование", role: .cancel) { nameIsFocused = true }
+            Button("Отменить изменения", role: .destructive) { dismiss() }
+        } message: {
+            Text("Введённое название не будет сохранено.")
+        }
         .onAppear {
             nameIsFocused = true
         }
@@ -135,6 +155,7 @@ struct ProfileFolderNameSheet: View {
     }
 
     private func save() {
+        guard hasChanges else { return }
         guard let normalizedName else {
             nameIsFocused = true
             announce(.invalidName)

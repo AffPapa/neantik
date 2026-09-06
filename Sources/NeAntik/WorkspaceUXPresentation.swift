@@ -12,8 +12,8 @@ struct ProfileFilteredCountPresentation: Equatable, Sendable {
 
     var announcement: String {
         visibleCount == totalCount
-            ? "В списке \(totalCount) профилей"
-            : "По текущим фильтрам показано \(visibleCount) из \(totalCount) профилей"
+            ? "Профилей в списке: \(totalCount)"
+            : "Профилей по текущим фильтрам: \(visibleCount). Всего: \(totalCount)"
     }
 }
 

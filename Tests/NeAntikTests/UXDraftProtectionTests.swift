@@ -3,6 +3,37 @@ import Testing
 
 struct UXDraftProtectionTests {
     @Test
+    func profileCountAnnouncementsAvoidIncorrectRussianDeclension() {
+        for count in [0, 1, 4, 11, 21] {
+            #expect(ProfileFilteredCountPresentation(visibleCount: count, totalCount: count)
+                .announcement == "Профилей в списке: \(count)")
+        }
+        #expect(ProfileFilteredCountPresentation(visibleCount: 1, totalCount: 4)
+            .announcement == "Профилей по текущим фильтрам: 1. Всего: 4")
+    }
+
+    @Test
+    func folderDraftKeepsInvalidInputAndIgnoresNormalizedNoOp() {
+        #expect(!ProfileFolderNameValidation.hasChanges(name: "", initialName: ""))
+        #expect(!ProfileFolderNameValidation.hasChanges(name: "  Работа  ", initialName: "Работа"))
+        #expect(ProfileFolderNameValidation.hasChanges(name: "работа", initialName: "Работа"))
+        #expect(ProfileFolderNameValidation.hasChanges(name: "", initialName: "Работа"))
+        #expect(ProfileFolderNameValidation.hasChanges(name: "Новая", initialName: ""))
+        #expect(ProfileFolderNameValidation.hasChanges(name: String(repeating: "a", count: 65), initialName: ""))
+    }
+
+    @Test
+    func noteFooterDoesNotOfferUnavailableSaveShortcut() {
+        let draft = ProfileNoteDraftSnapshot(note: "Заметка")
+        #expect(draft.statusText(currentNote: " Заметка ").contains("Нет изменений"))
+        #expect(draft.statusText(currentNote: "Следующий шаг").contains("⌘Return"))
+        #expect(draft.statusText(currentNote: "").contains("⌘Return"))
+        let invalid = String(repeating: "a", count: BrowserProfile.maximumNoteLength + 1)
+        #expect(!draft.statusText(currentNote: invalid).contains("⌘Return"))
+        #expect(draft.statusText(currentNote: invalid).contains("Исправь"))
+    }
+
+    @Test
     func noteSaveRequiresValidMeaningfulChange() {
         let draft = ProfileNoteDraftSnapshot(note: "Заметка")
         #expect(!draft.canSave(currentNote: "Заметка"))

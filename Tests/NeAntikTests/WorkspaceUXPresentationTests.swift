@@ -10,7 +10,7 @@ struct WorkspaceUXPresentationTests {
             totalCount: 12
         )
         #expect(result.title == "Показано 3 из 12")
-        #expect(result.announcement.contains("3 из 12"))
+        #expect(result.announcement == "Профилей по текущим фильтрам: 3. Всего: 12")
     }
 
     @Test
