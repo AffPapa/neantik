@@ -139,12 +139,8 @@ cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
 codesign --force --sign - "$OUTPUT_APP"
 codesign --verify --deep --strict --verbose=2 "$OUTPUT_APP"
 
-# The full Direct verifier intentionally accepts only the public bundle name
-# NeAntik.app. Move the exact engineering bundle into a private public-name
-# verification path, verify it without weakening that gate, then restore the
-# engineering artifact for prepare-direct-runtime-candidate.sh.
-python3 "$PROJECT_DIR/scripts/verify-public-named-bundle.py" \
-  --engineering-app "$OUTPUT_APP" \
-  --verifier "$PROJECT_DIR/scripts/verify-integrated-release.sh"
+# The manager is still ad-hoc here; provisioning and Developer ID signing
+# belong to Direct candidate preparation, not engineering assembly.
+"$PROJECT_DIR/scripts/verify-integrated-release.sh" --engineering "$OUTPUT_APP"
 
 echo "$OUTPUT_APP"

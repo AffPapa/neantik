@@ -27,7 +27,9 @@
 - Refresh the official Chromium security baseline to the September 3 macOS
   Stable release (`152.0.7977.82/.83`, 12 security fixes). Public candidate
   preparation now correctly rejects the embedded `152.0.7977.64` runtime.
-  This changes the release requirement, not the installed runtime bytes.
+  The candidate now pins source-built `152.0.7977.82`, verified with Metal,
+  ARM64-only binaries and Developer ID signing. Existing installations remain
+  unchanged until the new Direct release is published and installed.
 
 - A thirteen-point unification pass retains overlong profile-name drafts and
   blocks Save while proxy import text remains unapplied, with explicit Direct

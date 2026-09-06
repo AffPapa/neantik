@@ -10,12 +10,16 @@ product and code work. The older v4 documents remain dated design records.
   until the exact merged commit passes the complete Direct gate.
 - Exact released source commit:
   `fdc520391c58a76622936519ca38b382f629fc47`.
-- Runtime: Chromium `152.0.7977.64`, ARM64, Metal.
-- September 5 release preflight is blocked: the September 3 official macOS
-  Stable baseline is `152.0.7977.82/.83` (12 security fixes). The checked-in
-  baseline now rejects the older embedded runtime. Rebuild and verify the
-  runtime before preparing a new signed candidate; do not relabel the old
-  runtime lock or remove rollback artifacts to make the gate pass.
+- Released runtime: Chromium `152.0.7977.64`, ARM64, Metal.
+- September 6 candidate runtime: source-built Chromium `152.0.7977.82`,
+  ARM64, Metal, Developer ID signed and verified before lock promotion.
+  The September 3 official macOS Stable baseline is `152.0.7977.82/.83`
+  (12 security fixes). Final Direct notarization and live gates remain required;
+  do not relabel old runtime bytes or remove rollback artifacts to pass a gate.
+- Engineering packaging explicitly uses `verify-integrated-release.sh
+  --engineering` before manager provisioning. The default/public verifier
+  never inherits a local ad-hoc exemption. Runtime, compliance and signature
+  integrity checks apply to both modes; engineering success is not publication.
 - Runtime build owner: `scripts/build-runtime.sh`. Use an isolated build root
   without ancestor `node_modules`; Chromium's TypeScript dependency checker
   otherwise sees unrelated workspace packages. Regression owner:

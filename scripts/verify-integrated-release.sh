@@ -3,7 +3,20 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="${1:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
+ENGINEERING=0
+if [[ "${1:-}" == "--engineering" ]]; then
+  ENGINEERING=1
+  shift
+  if [[ $# -ne 1 || "$(basename "$1")" != "NeAntik-Integrated.app" ]]; then
+    echo "Engineering verification requires an explicit NeAntik-Integrated.app path." >&2
+    exit 64
+  fi
+fi
+if [[ $# -gt 1 ]]; then
+  echo "Usage: $0 [--engineering] /absolute/path/to/app" >&2
+  exit 64
+fi
+APP_PATH="${1:-$PROJECT_DIR/dist/NeAntik.app}"
 if [[ "$APP_PATH" != /* ]]; then
   APP_PARENT="$(cd "$(dirname "$APP_PATH")" && pwd)"
   APP_PATH="$APP_PARENT/$(basename "$APP_PATH")"
@@ -54,7 +67,17 @@ for localized_resource in InfoPlist.strings Localizable.strings; do
   fi
 done
 
-"$PROJECT_DIR/scripts/verify-release.sh" "$APP_PATH"
+if (( ENGINEERING )); then
+  # Only the manager packaging gate runs under the temporary public name.
+  # Local QA explicitly forbids provisioning; runtime/compliance gates below
+  # remain identical to the public path and run after exact bundle restoration.
+  NEANTIK_LOCAL_ADHOC=1 python3 "$PROJECT_DIR/scripts/verify-public-named-bundle.py" \
+    --engineering-app "$APP_PATH" \
+    --verifier "$PROJECT_DIR/scripts/verify-release.sh"
+else
+  # Never inherit a local-QA exemption into a public release verification.
+  NEANTIK_LOCAL_ADHOC=0 "$PROJECT_DIR/scripts/verify-release.sh" "$APP_PATH"
+fi
 
 if [[ ! -d "$RUNTIME_APP" ]]; then
   echo "Integrated app is missing NeAntik Browser.app." >&2
@@ -215,7 +238,11 @@ else
   exit 65
 fi
 
-echo "Integrated NeAntik Direct release verified."
+if (( ENGINEERING )); then
+  echo "Integrated NeAntik engineering bundle verified; not a Direct release."
+else
+  echo "Integrated NeAntik Direct release verified."
+fi
 echo "Manager: NeAntik $ACTUAL_MANAGER_VERSION ($ACTUAL_MANAGER_BUILD), ARM64"
 echo "Runtime: NeAntik Browser $EXPECTED_RUNTIME_VERSION, ARM64"
 echo "Mode:    $RUNTIME_BUILD_MODE ($GPU_MODE verified by args.gn)"
