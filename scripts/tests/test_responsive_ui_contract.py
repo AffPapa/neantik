@@ -636,11 +636,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('TextField("Стартовая страница"', advanced)
         self.assertIn('Label("Заметка (необязательно)", systemImage: "note.text")', note_editor)
         self.assertNotIn('systemImage: "editorDraft.', editor)
-        self.assertGreaterEqual(
-            note_editor.count(
-                '.accessibilityLabel("Необязательная заметка профиля")'
-            ),
-            2,
+        self.assertIn(
+            '.accessibilityLabel("Необязательная заметка профиля")',
+            note_editor,
+        )
+        self.assertRegex(
+            note_editor,
+            r'\.accessibilityLabel\(\s*notePresentation\.collapsedSummary\.isEmpty'
+            r'\s*\? "Необязательная заметка профиля, не добавлена"'
+            r'\s*: "Необязательная заметка профиля, добавлена"\s*\)',
         )
         self.assertIn(
             "initialValue: original == nil || initialFocus == .note",

@@ -51,6 +51,27 @@ and updates remain immutable manual GitHub releases.
 
 ## Source ownership
 
+The architecture-compaction branch adds shared owners without changing persisted
+schemas or public release state:
+
+- `BrowserProcessObservations` owns cancellable observation tasks by purpose;
+  `ManagedBrowserProcess` keeps each managed process, lease and stop task together.
+  Identity and generation validation remains in `BrowserProcessManager`.
+- `SecureFile` shares guarded descriptor operations while retaining caller error
+  policies. `RecoverableDocumentStorage` shares backup/restore transactions but
+  keeps profile and organization recovery policies distinct.
+- `CanonicalEvidenceJSON` checks canonical bytes only; evidence callers still
+  validate exact keys, schemas and binding requirements.
+- `ProfileEditorDraft` is the single editor draft. `ProfileActionMenu` shares
+  organization actions and `NeAntikDisclosureStyle` shares full-row native
+  disclosures, accessibility state and Reduce Motion behavior.
+- `ProfileOperationOwner` owns window-local generation claims and optional
+  dedicated tasks. It does not replace the app-wide proxy execution limiter,
+  credential/revision matching or persistence rollback coordinator.
+
+See `ARCHITECTURE_COMPACTION_PLAN_2026-09-06.md` for scope and invariant gates.
+These development changes are not part of the published 0.3.24 artifacts.
+
 The September 6 compaction pass keeps the existing product scope. Shared
 `LocaleIdentifierNormalization` in `Models.swift` owns strict locale syntax;
 proxy callers still own trimming/list selection. `RussianCount.swift` owns

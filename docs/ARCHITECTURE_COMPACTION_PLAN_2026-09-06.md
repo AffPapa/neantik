@@ -28,3 +28,18 @@ privacy and evidence equivalence take precedence over the line target.
 After verified implementation, assign next version/build, update changelog/map,
 merge after checks and release one exact merged candidate through the normal
 Direct gates. Existing0.3.24 ZIP/DMG remain immutable throughout development.
+
+## Measured checkpoint
+
+Waves 1 and 2 are committed as `08ba140` and `d29f44e`. Together they remove
+493 physical own-production Swift lines, including all new helper files.
+Wave 2 passed 742 Swift tests in 76 suites, 684 Python tests (one skip), source
+budgets and isolated Dev UI checks. Both live manager and fingerprint gates
+passed on runtime 152.0.7977.82 outside the filesystem sandbox. These are local
+engineering checks, not a signed-candidate publication receipt.
+
+Wave 3 consolidates window-local operation claims and report projections and
+repairs the note disclosure's accessible status. Typed sheet routing remains a
+separate follow-up to avoid concurrent edits to ContentView. Measured savings
+are much smaller than the 30% target; generic factories that obscure distinct
+security policies and deleting tests to meet a numerical target are rejected.

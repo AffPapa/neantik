@@ -4,6 +4,68 @@ import Testing
 @testable import NeAntik
 
 struct ProxyTestOperationRegistryTests {
+    @Test @MainActor
+    func cancelledQueuedLaunchCannotClaimProxyBeforeReplacement() async throws {
+        var launches = ProfileOperationOwner()
+        var proxies = ProfileOperationOwner()
+        let id = UUID()
+        let oldClaim = launches.claim(id)
+        let old = try #require(oldClaim)
+        var oldClaimedProxy = false
+        let queued = Task { @MainActor in
+            defer { launches.finish(old) }
+            guard !Task.isCancelled, launches.isCurrent(old) else { return }
+            oldClaimedProxy = proxies.claim(id) != nil
+        }
+        launches.attach(queued, to: old)
+        // No suspension: cancellation and replacement happen before queued work runs.
+        launches.cancel(id)
+        let replacementClaim = launches.claim(id)
+        let replacement = try #require(replacementClaim)
+        await queued.value
+        #expect(!oldClaimedProxy)
+        #expect(launches.isCurrent(replacement))
+        let proxyClaim = proxies.claim(id)
+        #expect(proxyClaim != nil)
+        launches.finish(replacement)
+    }
+
+    @Test
+    func windowOwnerStaleCompletionCannotClearReplacementTask() throws {
+        var owner = ProfileOperationOwner()
+        let id = UUID()
+        let oldClaim = owner.claim(id)
+        let old = try #require(oldClaim)
+        owner.cancel(id)
+        let currentClaim = owner.claim(id)
+        let current = try #require(currentClaim)
+        let task = Task<Void, Never> { }
+        owner.attach(task, to: current)
+        owner.finish(old)
+        #expect(owner.isCurrent(current))
+        #expect(!task.isCancelled)
+        owner.cancel(id)
+        #expect(task.isCancelled)
+        #expect(owner.activeProfileIDs.isEmpty)
+    }
+
+    @Test
+    func windowOwnerRejectsStaleAttachmentAndKeepsBorrowedClaimsIndependent() throws {
+        var owner = ProfileOperationOwner()
+        let firstClaim = owner.claim(UUID())
+        let first = try #require(firstClaim)
+        let borrowedClaim = owner.claim(UUID())
+        let borrowed = try #require(borrowedClaim)
+        owner.cancel(first.profileID)
+        let staleTask = Task<Void, Never> { }
+        owner.attach(staleTask, to: first)
+        #expect(staleTask.isCancelled)
+        #expect(owner.isCurrent(borrowed))
+        owner.cancelAll()
+        owner.finish(borrowed)
+        #expect(owner.activeProfileIDs.isEmpty)
+    }
+
     @Test
     func commitSnapshotRejectsRevisionAndCredentialRaces() {
         let proxy = ProxyConfiguration(

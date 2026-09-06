@@ -1037,7 +1037,11 @@ struct ProfileEditorView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
       }
-      .accessibilityLabel("Необязательная заметка профиля")
+      .accessibilityLabel(
+        notePresentation.collapsedSummary.isEmpty
+          ? "Необязательная заметка профиля, не добавлена"
+          : "Необязательная заметка профиля, добавлена"
+      )
     }
     .disclosureGroupStyle(NeAntikDisclosureStyle())
     if !showsNoteEditor,

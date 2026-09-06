@@ -283,17 +283,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     var unavailableCriticalKeys: [String] {
-        Self.criticalKeys.filter { key in
-            !Self.isAvailable(firstInitial.values[key]) ||
-                !Self.isAvailable(second.values[key]) ||
-                !Self.isAvailable(firstRepeat.values[key])
-        }
+        unavailableKeys(in: Self.criticalKeys)
     }
 
     var unstableCriticalKeys: [String] {
-        Self.criticalKeys.filter {
-            firstInitial.values[$0] != firstRepeat.values[$0]
-        }
+        unstableKeys(in: Self.criticalKeys)
     }
 
     var verdict: FingerprintAuditVerdict {
@@ -408,17 +402,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     var productionUnavailableKeys: [String] {
-        Self.productionRequiredKeys.filter { key in
-            !Self.isAvailable(firstInitial.values[key]) ||
-                !Self.isAvailable(second.values[key]) ||
-                !Self.isAvailable(firstRepeat.values[key])
-        }
+        unavailableKeys(in: Self.productionRequiredKeys)
     }
 
     var productionUnstableKeys: [String] {
-        Self.productionRequiredKeys.filter {
-            firstInitial.values[$0] != firstRepeat.values[$0]
-        }
+        unstableKeys(in: Self.productionRequiredKeys)
     }
 
     var productionReleaseIssues: [String] {
@@ -545,11 +533,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         guard let runtimeVersion, !runtimeVersion.isEmpty else {
             return []
         }
-        let captures = [
-            ("profile A, first capture", firstInitial),
-            ("profile B", second),
-            ("profile A, repeat capture", firstRepeat)
-        ]
+        let captures = labeledCaptures
         guard captures.allSatisfy({ Self.canMapDeviceTuple($0.1) }) else {
             return [
                 "The report identity cannot be mapped to the immutable "
@@ -566,33 +550,41 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     var crossRealmConsistencyIssues: [String] {
-        [
-            ("profile A, first capture", firstInitial),
-            ("profile B", second),
-            ("profile A, repeat capture", firstRepeat)
-        ].flatMap { label, capture in
+        labeledCaptures.flatMap { label, capture in
             Self.crossRealmIssues(for: capture, label: label)
         }
     }
 
     private var strictContextConsistencyIssues: [String] {
-        [
-            ("profile A, first capture", firstInitial),
-            ("profile B", second),
-            ("profile A, repeat capture", firstRepeat)
-        ].flatMap { label, capture in
+        labeledCaptures.flatMap { label, capture in
             Self.strictContextIssues(for: capture, label: label)
         }
     }
 
     var networkPrivacyIssues: [String] {
+        labeledCaptures.flatMap { label, capture in
+            Self.networkPrivacyIssues(for: capture, label: label)
+        }
+    }
+
+    private var labeledCaptures: [(String, FingerprintCapture)] {
         [
             ("profile A, first capture", firstInitial),
             ("profile B", second),
             ("profile A, repeat capture", firstRepeat)
-        ].flatMap { label, capture in
-            Self.networkPrivacyIssues(for: capture, label: label)
+        ]
+    }
+
+    private func unavailableKeys(in keys: [String]) -> [String] {
+        keys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
         }
+    }
+
+    private func unstableKeys(in keys: [String]) -> [String] {
+        keys.filter { firstInitial.values[$0] != firstRepeat.values[$0] }
     }
 
     private var comparableCriticalKeys: [String] {
@@ -876,31 +868,19 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     ]
 
     private var publicAlphaUnavailableKeys: [String] {
-        Self.publicAlphaRequiredKeys.filter { key in
-            !Self.isAvailable(firstInitial.values[key]) ||
-                !Self.isAvailable(second.values[key]) ||
-                !Self.isAvailable(firstRepeat.values[key])
-        }
+        unavailableKeys(in: Self.publicAlphaRequiredKeys)
     }
 
     private var publicAlphaUnstableKeys: [String] {
-        Self.publicAlphaRequiredKeys.filter {
-            firstInitial.values[$0] != firstRepeat.values[$0]
-        }
+        unstableKeys(in: Self.publicAlphaRequiredKeys)
     }
 
     private var productionExtendedUnavailableKeys: [String] {
-        Self.productionExtendedContextKeys.filter { key in
-            !Self.isAvailable(firstInitial.values[key]) ||
-                !Self.isAvailable(second.values[key]) ||
-                !Self.isAvailable(firstRepeat.values[key])
-        }
+        unavailableKeys(in: Self.productionExtendedContextKeys)
     }
 
     private var productionExtendedUnstableKeys: [String] {
-        Self.productionExtendedContextKeys.filter {
-            firstInitial.values[$0] != firstRepeat.values[$0]
-        }
+        unstableKeys(in: Self.productionExtendedContextKeys)
     }
 
     private static var publicAlphaRequiredKeys: [String] {

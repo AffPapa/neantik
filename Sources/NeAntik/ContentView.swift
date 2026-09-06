@@ -58,13 +58,8 @@ struct ContentView: View {
     @State private var profileFolderPickerRequest:
         ProfileFolderPickerRequest?
     @State private var folderPendingDelete: ProfileFolder?
-    @State private var proxyTestOperations = ProxyTestOperationRegistry()
-    @State private var proxyTestingProfileIDs = Set<UUID>()
-    @State private var proxyTestTasks: [UUID: Task<Void, Never>] = [:]
-    @State private var launchPreparingProfileIDs = Set<UUID>()
-    @State private var launchPreparationTasks:
-        [UUID: Task<Void, Never>] = [:]
-    @State private var launchPreparationTokens: [UUID: UUID] = [:]
+    @State private var proxyOperations = ProfileOperationOwner()
+    @State private var launchOperations = ProfileOperationOwner()
     @State private var bulkProxyTestTask: Task<Void, Never>?
     @State private var bulkProxyTestID: UUID?
     @State private var bulkProxyProgress: BulkProxyRunProgress?
@@ -193,7 +188,7 @@ struct ContentView: View {
     ) -> BrowserProfileProcessState {
         let state = processes.processState(for: profile.id)
         guard state == .stopped,
-              launchPreparingProfileIDs.contains(profile.id)
+              launchOperations.isActive(profile.id)
         else {
             return state
         }
@@ -201,7 +196,7 @@ struct ContentView: View {
     }
 
     private func isProxyTestInFlight(profileID: UUID) -> Bool {
-        proxyTestingProfileIDs.contains(profileID) ||
+        proxyOperations.isActive(profileID) ||
             proxyHealthCoordinator.isTesting(profileID: profileID)
     }
 
@@ -266,7 +261,7 @@ struct ContentView: View {
         BulkProxyActionProjection.resolve(
             visibleProfiles: visibleProfiles,
             processState: { processes.processState(for: $0) },
-            isPreparing: { launchPreparingProfileIDs.contains($0) },
+            isPreparing: { launchOperations.isActive($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
     }
@@ -1765,7 +1760,7 @@ struct ContentView: View {
                                         profileID: profile.id
                                     ),
                                     isLaunchPreparation:
-                                        launchPreparingProfileIDs.contains(profile.id)
+                                        launchOperations.isActive(profile.id)
                                 )
                                 ProfileRow(
                                     profile: profile,
@@ -1797,7 +1792,7 @@ struct ContentView: View {
                                         beginEditingNote(profile)
                                     },
                                     onToggleRunning: {
-                                        if launchPreparingProfileIDs.contains(
+                                        if launchOperations.isActive(
                                             profile.id
                                         ) {
                                             cancelLaunchPreparation(
@@ -1954,7 +1949,7 @@ struct ContentView: View {
         let bulkProxyAction = BulkProxyActionProjection.resolve(
             visibleProfiles: operationalProfiles,
             processState: { processes.processState(for: $0) },
-            isPreparing: { launchPreparingProfileIDs.contains($0) },
+            isPreparing: { launchOperations.isActive($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
         let summary = operationalProjection.summary
@@ -2469,7 +2464,7 @@ struct ContentView: View {
             runtimeAvailability: runtimeAvailability,
             isProxyTesting: isProxyTestInFlight(profileID: profile.id),
             isLaunchPreparation:
-                launchPreparingProfileIDs.contains(profile.id)
+                launchOperations.isActive(profile.id)
         )
         let currentFolderID = store.folderID(forProfileID: profile.id)
         let folderProjection = ProfileFolderCommandProjection.resolve(
@@ -2485,7 +2480,7 @@ struct ContentView: View {
             folderOptions: folderProjection.options,
             hasMoreFolderOptions: folderProjection.hasMore,
             toggleRunning: {
-                if launchPreparingProfileIDs.contains(profile.id) {
+                if launchOperations.isActive(profile.id) {
                     cancelLaunchPreparation(profileID: profile.id)
                 } else if processState.isRunning {
                     processes.stop(profileID: profile.id)
@@ -2522,7 +2517,7 @@ struct ContentView: View {
                 runtimeAvailability: runtimeAvailability,
                 isProxyTesting: isProxyTestInFlight(profileID: profile.id),
                 isLaunchPreparation:
-                    launchPreparingProfileIDs.contains(profile.id)
+                    launchOperations.isActive(profile.id)
             )
             ProfileDetailView(
                 profile: profile,
@@ -2538,8 +2533,8 @@ struct ContentView: View {
                 ),
                 isTestingProxy: isProxyTestInFlight(profileID: profile.id),
                 canCancelProxyTest:
-                    proxyTestingProfileIDs.contains(profile.id) ||
-                    launchPreparingProfileIDs.contains(profile.id),
+                    proxyOperations.isActive(profile.id) ||
+                    launchOperations.isActive(profile.id),
                 canRunFingerprintAudit:
                     runtimePreflight?.isReady == true &&
                     runtime?.supportsFingerprintIdentity == true &&
@@ -2598,7 +2593,7 @@ struct ContentView: View {
                 },
                 launchAction: launchAction,
                 onToggleRunning: {
-                    if launchPreparingProfileIDs.contains(profile.id) {
+                    if launchOperations.isActive(profile.id) {
                         cancelLaunchPreparation(profileID: profile.id)
                     } else if processState.isRunning {
                         processes.stop(profileID: profile.id)
@@ -2780,7 +2775,7 @@ struct ContentView: View {
         _ profile: BrowserProfile,
         runtime: BrowserRuntime
     ) {
-        guard launchPreparationTasks[profile.id] == nil else { return }
+        guard !launchOperations.isActive(profile.id) else { return }
         guard !isProxyTestInFlight(profileID: profile.id) else {
             launchPreparationFailure = LaunchPreparationFailure(
                 profileID: profile.id,
@@ -2790,17 +2785,10 @@ struct ContentView: View {
             return
         }
 
-        let launchToken = UUID()
-        launchPreparationTokens[profile.id] = launchToken
-        launchPreparingProfileIDs.insert(profile.id)
-        launchPreparationTasks[profile.id] = Task { @MainActor in
-            defer {
-                if launchPreparationTokens[profile.id] == launchToken {
-                    launchPreparationTokens[profile.id] = nil
-                    launchPreparingProfileIDs.remove(profile.id)
-                    launchPreparationTasks[profile.id] = nil
-                }
-            }
+        guard let launchToken = launchOperations.claim(profile.id) else { return }
+        let task = Task { @MainActor in
+            defer { launchOperations.finish(launchToken) }
+            guard !Task.isCancelled, launchOperations.isCurrent(launchToken) else { return }
             guard let token = beginProxyTest(for: profile) else {
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: profile.id,
@@ -2811,8 +2799,7 @@ struct ContentView: View {
             }
             let state = await executeProxyTest(
                 profile,
-                token: token,
-                clearsDedicatedTask: false
+                token: token
             )
             guard !Task.isCancelled else {
                 return
@@ -2882,6 +2869,7 @@ struct ContentView: View {
                 )
             }
         }
+        launchOperations.attach(task, to: launchToken)
     }
 
     private func resolveRuntime() async {
@@ -3085,17 +3073,17 @@ struct ContentView: View {
     @MainActor
     private func startProxyTest(_ profile: BrowserProfile) {
         guard processes.processState(for: profile.id) == .stopped,
-              !launchPreparingProfileIDs.contains(profile.id),
+              !launchOperations.isActive(profile.id),
               !isProxyTestInFlight(profileID: profile.id)
         else { return }
         guard let token = beginProxyTest(for: profile) else { return }
-        proxyTestTasks[profile.id] = Task { @MainActor in
+        let task = Task { @MainActor in
             _ = await executeProxyTest(
                 profile,
-                token: token,
-                clearsDedicatedTask: true
+                token: token
             )
         }
+        proxyOperations.attach(task, to: token)
     }
 
     @MainActor
@@ -3103,14 +3091,13 @@ struct ContentView: View {
         _ profile: BrowserProfile
     ) async -> ProxyHealthOutcome? {
         guard processes.processState(for: profile.id) == .stopped,
-              !launchPreparingProfileIDs.contains(profile.id),
+              !launchOperations.isActive(profile.id),
               !isProxyTestInFlight(profileID: profile.id)
         else { return nil }
         guard let token = beginProxyTest(for: profile) else { return nil }
         return await executeProxyTest(
             profile,
-            token: token,
-            clearsDedicatedTask: false
+            token: token
         )?.latestAttempt.outcome
     }
 
@@ -3119,33 +3106,24 @@ struct ContentView: View {
         for profile: BrowserProfile
     ) -> ProxyTestOperationToken? {
         guard profile.proxy != nil,
-              let token = proxyTestOperations.claim(profileID: profile.id)
+              let token = proxyOperations.claim(profile.id)
         else { return nil }
-        proxyTestingProfileIDs.insert(profile.id)
         return token
     }
 
     @MainActor
     private func executeProxyTest(
         _ profile: BrowserProfile,
-        token: ProxyTestOperationToken,
-        clearsDedicatedTask: Bool
+        token: ProxyTestOperationToken
     ) async -> ProxyHealthState? {
-        defer {
-            if proxyTestOperations.complete(token) {
-                proxyTestingProfileIDs.remove(profile.id)
-                if clearsDedicatedTask {
-                    proxyTestTasks[profile.id] = nil
-                }
-            }
-        }
+        defer { proxyOperations.finish(token) }
         guard let proxy = profile.proxy else { return nil }
         do {
             return try await proxyHealthCoordinator.run(
                 profile: profile,
                 operationWithCurrentIdentity: { previous in
                     try Task.checkCancellation()
-                    guard proxyTestOperations.isCurrent(token) else {
+                    guard proxyOperations.isCurrent(token) else {
                         throw CancellationError()
                     }
                     return try await proxyHealthCommit(
@@ -3338,11 +3316,7 @@ struct ContentView: View {
     @MainActor
     private func clearProxyHealth(for profileID: UUID) {
         cancelLaunchPreparation(profileID: profileID)
-        proxyTestTasks[profileID]?.cancel()
-        proxyTestTasks[profileID] = nil
-        if proxyTestOperations.cancel(profileID: profileID) {
-            proxyTestingProfileIDs.remove(profileID)
-        }
+        proxyOperations.cancel(profileID)
         Task {
             do {
                 try await proxyHealthCoordinator.remove(
@@ -3359,42 +3333,23 @@ struct ContentView: View {
     @MainActor
     private func cancelProxyTest(profileID: UUID) {
         cancelLaunchPreparation(profileID: profileID)
-        proxyTestTasks[profileID]?.cancel()
-        proxyTestTasks[profileID] = nil
-        if proxyTestOperations.cancel(profileID: profileID) {
-            proxyTestingProfileIDs.remove(profileID)
-        }
+        proxyOperations.cancel(profileID)
     }
 
     @MainActor
     private func cancelProxyTests() {
-        for task in launchPreparationTasks.values {
-            task.cancel()
-        }
-        launchPreparationTasks.removeAll()
-        launchPreparationTokens.removeAll()
-        launchPreparingProfileIDs.removeAll()
+        launchOperations.cancelAll()
         bulkProxyTestTask?.cancel()
         bulkProxyTestTask = nil
         bulkProxyTestID = nil
         bulkProxyProgress = nil
-        for task in proxyTestTasks.values {
-            task.cancel()
-        }
-        proxyTestTasks.removeAll()
-        proxyTestOperations.cancelAll()
-        proxyTestingProfileIDs.removeAll()
+        proxyOperations.cancelAll()
     }
 
     @MainActor
     private func cancelLaunchPreparation(profileID: UUID) {
-        launchPreparationTasks[profileID]?.cancel()
-        launchPreparationTasks[profileID] = nil
-        launchPreparationTokens[profileID] = nil
-        launchPreparingProfileIDs.remove(profileID)
-        if proxyTestOperations.cancel(profileID: profileID) {
-            proxyTestingProfileIDs.remove(profileID)
-        }
+        launchOperations.cancel(profileID)
+        proxyOperations.cancel(profileID)
     }
 
     private func presentReleaseFingerprintAuditIfNeeded() {
