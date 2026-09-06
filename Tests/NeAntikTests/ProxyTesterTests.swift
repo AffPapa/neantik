@@ -4,6 +4,42 @@ import Testing
 
 struct ProxyTesterTests {
     @Test
+    func localeNormalizationPreservesIdentityAndProxyBoundaries() throws {
+        let cases: [(String, String?, String?)] = [
+            ("EN_us", "en-US", "en-US"),
+            ("eng", "eng", "eng"),
+            (" de_de \n", nil, "de-DE"),
+            (",de-DE,en", nil, "de-DE"),
+            ("invalid,en-US", nil, nil),
+            (" ,en-US", nil, nil),
+            ("", nil, nil),
+            ("e-US", nil, nil),
+            ("en-", nil, nil),
+            ("en--US", nil, nil),
+            ("en-US-extra", nil, nil),
+            ("en-123", nil, nil),
+            ("éé-US", nil, nil),
+            ("en-УК", nil, nil)
+        ]
+        for (input, identityLocale, proxyLocale) in cases {
+            let identity = BrowserIdentity(seed: 123, localeIdentifier: input)
+            #expect(identity.localeIdentifier == identityLocale)
+            let metadata = try JSONSerialization.data(withJSONObject: [
+                "seed": 123, "localeIdentifier": input
+            ])
+            let decoded = try JSONDecoder().decode(BrowserIdentity.self, from: metadata)
+            #expect(decoded.localeIdentifier == identityLocale)
+            let response = try JSONSerialization.data(withJSONObject: [
+                "ip": "203.0.113.12", "languages": input
+            ])
+            #expect(try ProxyTester.parseResponse(response).localeIdentifier == proxyLocale)
+        }
+        #expect(BrowserIdentity(seed: 123).localeIdentifier == nil)
+        let response = Data(#"{"ip":"203.0.113.12"}"#.utf8)
+        #expect(try ProxyTester.parseResponse(response).localeIdentifier == nil)
+    }
+
+    @Test
     func passwordCompatibilityEnvelopeIsBoundedByUTF8Bytes() {
         func singleGrapheme(atUTF8Boundary byteCount: Int) -> String {
             "a\u{1AB0}" + String(

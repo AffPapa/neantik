@@ -427,7 +427,7 @@ python3 scripts/verify-runtime-candidate-lock.py \
   /absolute/path/to/source-provenance.json
 ```
 
-Source contract для `152.0.7977.64` не подтверждает готовый бинарник сам по
+Source contract для `152.0.7977.82` не подтверждает готовый бинарник сам по
 себе. Promotion в release lock разрешён только после новой Metal-сборки и
 точного schema-3 runtime verification report.
 

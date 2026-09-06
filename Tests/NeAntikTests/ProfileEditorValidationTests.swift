@@ -35,6 +35,23 @@ struct ProfileEditorValidationTests {
     }
 
     @Test
+    func invalidProxyUsernameTargetsLoginWithoutBlamingValidHost() {
+        let longUsername = String(repeating: "x", count: ProxyConfiguration.maximumUsernameLength + 1)
+        let byteHeavyUsername = "a" + String(repeating: "\u{0301}", count: ProxyConfiguration.maximumUsernameUTF8Bytes)
+        #expect(byteHeavyUsername.count <= ProxyConfiguration.maximumUsernameLength)
+        for username in [longUsername, byteHeavyUsername, "user:name", "user\u{202E}name", "user\0name"] {
+            let issue = firstIssue(usesProxy: true, proxyUsername: username)
+            #expect(issue?.field == .proxyUsername)
+            #expect(issue?.message.contains("логин") == true)
+            #expect(issue?.message.contains(username) == false)
+        }
+        #expect(firstIssue(usesProxy: true, proxyUsername: String(repeating: "x", count: ProxyConfiguration.maximumUsernameLength)) == nil)
+        #expect(firstIssue(usesProxy: true, proxyHost: "bad host", proxyUsername: "valid")?.field == .proxyHost)
+        #expect(firstIssue(usesProxy: true, proxyHost: "bad host", proxyUsername: longUsername)?.field == .proxyHost)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: longUsername) == nil)
+    }
+
+    @Test
     func returnsFirstIssueInVisualFormOrder() {
         #expect(
             firstIssue(

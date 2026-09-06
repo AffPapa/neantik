@@ -771,21 +771,7 @@ private struct EnvironmentFieldStatus: View {
 
 enum ProfileEnvironmentPresentation {
     static func sectionCountTitle(_ count: Int) -> String {
-        let lastTwo = count % 100
-        let noun: String
-        if (11...14).contains(lastTwo) {
-            noun = "разделов"
-        } else {
-            switch count % 10 {
-            case 1:
-                noun = "раздел"
-            case 2...4:
-                noun = "раздела"
-            default:
-                noun = "разделов"
-            }
-        }
-        return "\(count) \(noun)"
+        RussianCount.title(count, one: "раздел", few: "раздела", many: "разделов")
     }
 
     static func expansionSelection(
@@ -1076,19 +1062,7 @@ enum ProfileEnvironmentPresentation {
         few: String,
         many: String
     ) -> String {
-        let remainder100 = count % 100
-        let remainder10 = count % 10
-        let word: String
-        if remainder100 >= 11 && remainder100 <= 14 {
-            word = many
-        } else if remainder10 == 1 {
-            word = one
-        } else if remainder10 >= 2 && remainder10 <= 4 {
-            word = few
-        } else {
-            word = many
-        }
-        return "\(count) \(word)"
+        RussianCount.title(count, one: one, few: few, many: many)
     }
 }
 

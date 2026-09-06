@@ -6,6 +6,24 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
+    @Test func longValidTagKeepsRemovalVisibleInNarrowEditor() throws {
+        let tag = String(repeating: "界", count: BrowserProfile.maximumTagLength)
+        #expect(BrowserProfile.normalizedTags([tag]) == [tag])
+        for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
+            try render(
+                ProfileTagEditor(
+                    tags: .constant([tag, "QA"]),
+                    input: .constant(""),
+                    suggestions: []
+                )
+                .padding(12),
+                name: "profile-tag-narrow-long-\(name)",
+                size: CGSize(width: 280, height: 200),
+                colorScheme: scheme
+            )
+        }
+    }
+
     @Test func profileDuplicationSheetRendersInLightAndDark() throws {
         let folderID = layoutFixtureID(90)
         let source = BrowserProfile(

@@ -7,6 +7,10 @@ enum ProfileSearchSyntaxHelp {
         "папка:\"Paid Social\"",
         "прокси:есть",
         "статус:закреплен",
+        "имя:\"TikTok\"",
+        "заметка:\"следующий шаг\"",
+        "есть:заметка",
+        "без:теги",
     ]
 }
 
@@ -48,6 +52,10 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
 
             if let feedbackNotice {
                 UserNoticeLabel(notice: feedbackNotice)
+            }
+
+            if let message = ProfileSearchQuery(rawValue: searchText).validationMessage {
+                UserNoticeLabel(notice: UserNotice(message, level: .warning))
             }
 
             bulkProxyStatus
@@ -121,7 +129,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(.green)
-        .help("Создать профиль (⌘N); стрелка открывает быстрый Direct-вариант")
+        .help("Создать профиль (⌘N). В меню можно сразу создать и открыть профиль без прокси")
         .accessibilityLabel(
             "Создать профиль; доступны дополнительные варианты"
         )
@@ -221,7 +229,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     .lineLimit(2)
                 Spacer(minLength: 8)
                 if hasFailedProxyTests {
-                    Button("Повторить ошибки", action: onRetryFailedProxyTests)
+                    Button("Повторить проверку", action: onRetryFailedProxyTests)
                         .controlSize(.small)
                         .help("Повторить только неуспешные проверки")
                 }
@@ -242,12 +250,13 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     "Поиск профилей, маршрутов, заметок, тегов и папок"
                 )
                 .accessibilityHint(
-                    "Можно уточнить запрос: тег, папка, прокси или статус. " +
+                    "Можно уточнить запрос: имя, заметка, ид, тег, папка, прокси или статус. " +
                         "Название с пробелами заключи в кавычки."
                 )
             if !searchText.isEmpty {
                 Button {
                     searchText = ""
+                    searchIsFocused.wrappedValue = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
@@ -293,11 +302,23 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                ForEach(ProfileSearchSyntaxHelp.examples, id: \.self) {
-                    Text($0)
-                        .font(.body.monospaced())
-                        .textSelection(.enabled)
+                ForEach(ProfileSearchSyntaxHelp.examples, id: \.self) { example in
+                    Button {
+                        searchText = example
+                        showsSearchHelp = false
+                        searchIsFocused.wrappedValue = true
+                    } label: {
+                        Text(example)
+                            .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .font(.body.monospaced())
+                    .help("Применить пример поиска")
+                    .accessibilityLabel("Применить поиск: \(example)")
                 }
+                Text("ид: ищет по идентификатору профиля. без:заметка и есть:теги проверяют заполненность полей.")
+                    .font(.caption)
                 Text("Название с пробелами заключи в кавычки.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

@@ -17,36 +17,39 @@ private enum ProfileBatchTagMode: String, CaseIterable, Identifiable {
 struct ProfileBatchTagSheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    let profileCount: Int
+    let profiles: [BrowserProfile]
     let suggestedTags: [String]
-    let onApply: (ProfileMetadataBatchAction) -> Void
+    let onApply: (ProfileMetadataBatchAction) throws -> Void
 
     @State private var mode: ProfileBatchTagMode = .add
     @State private var tag = ""
+    @State private var errorMessage: String?
     @FocusState private var tagIsFocused: Bool
 
     private var cleanTag: String {
         tag.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var visibleSuggestions: [String] {
-        let query = cleanTag
-        return suggestedTags.filter {
-            query.isEmpty || $0.localizedCaseInsensitiveContains(query)
-        }.prefix(8).map { $0 }
+    private var canApply: Bool {
+        preview.canApply
     }
 
-    private var canApply: Bool {
-        BrowserProfile.normalizedTags([cleanTag])?.first != nil
+    private var preview: ProfileBatchTagPreview {
+        .resolve(profiles: profiles, tag: cleanTag, adding: mode == .add)
     }
 
     var body: some View {
+        let preview = self.preview
+        let visibleSuggestions = ProfileBatchTagPreview.visibleSuggestions(
+            profiles: profiles, library: suggestedTags,
+            adding: mode == .add, query: cleanTag
+        )
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Изменить тег")
                     .font(.headline)
                     .accessibilityHeading(.h1)
-                Text("Выбрано профилей: \(profileCount)")
+                Text("Выбрано профилей: \(profiles.count)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -90,11 +93,31 @@ struct ProfileBatchTagSheet: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+                if !cleanTag.isEmpty {
+                    Text("Тег есть у \(preview.matching) из \(preview.total)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(preview.message)
+                        .font(.caption)
+                        .foregroundStyle(preview.blocked > 0 || !preview.valid ? Color.red : Color.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if mode == .remove && visibleSuggestions.isEmpty {
+                    Text("У выбранных профилей нет тегов для удаления.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(20)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
             Divider()
+
+            if let errorMessage {
+                UserNoticeLabel(notice: UserNotice(errorMessage, level: .failure))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
 
             HStack {
                 Spacer()
@@ -103,12 +126,14 @@ struct ProfileBatchTagSheet: View {
                 Button(mode.title) { apply() }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!canApply)
+                    .disabled(!preview.canApply)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
         }
-        .frame(width: 460, height: 380)
+        .frame(width: 460, height: 440)
+        .onChange(of: tag) { _, _ in errorMessage = nil }
+        .onChange(of: mode) { _, _ in errorMessage = nil }
         .onAppear {
             Task { @MainActor in
                 await Task.yield()
@@ -119,12 +144,17 @@ struct ProfileBatchTagSheet: View {
 
     private func apply() {
         guard canApply else { return }
-        switch mode {
-        case .add:
-            onApply(.addTag(cleanTag))
-        case .remove:
-            onApply(.removeTag(cleanTag))
+        do {
+            switch mode {
+            case .add:
+                try onApply(.addTag(cleanTag))
+            case .remove:
+                try onApply(.removeTag(cleanTag))
+            }
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            tagIsFocused = true
         }
-        dismiss()
     }
 }

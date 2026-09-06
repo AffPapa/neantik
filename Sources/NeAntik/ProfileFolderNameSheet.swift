@@ -1,6 +1,28 @@
 import AppKit
 import SwiftUI
 
+enum ProfileFolderNameValidation {
+    static func hasChanges(name: String, initialName: String) -> Bool {
+        guard let normalized = ProfileFolder.normalizedName(name) else {
+            return name != initialName
+        }
+        return normalized != ProfileFolder.normalizedName(initialName)
+    }
+
+    static func message(for name: String) -> String? {
+        guard ProfileFolder.normalizedName(name) == nil else { return nil }
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if clean.isEmpty { return "Введи название папки." }
+        if clean.count > ProfileFolder.maximumNameLength {
+            return "Сократи название до \(ProfileFolder.maximumNameLength) символов."
+        }
+        if clean.utf8.count > ProfileFolder.maximumNameUTF8Bytes {
+            return "Название занимает слишком много места. Сократи его или используй более простые символы."
+        }
+        return "Убери переносы строк и скрытые управляющие символы из названия."
+    }
+}
+
 enum ProfileFolderAccessibilityAnnouncement: Equatable {
     case invalidName
     case duplicateName
@@ -28,6 +50,7 @@ struct ProfileFolderNameSheet: View {
 
     @State private var name: String
     @State private var errorMessage: String?
+    @State private var showingDiscardConfirmation = false
     @State private var announcementGate =
         AccessibilityAnnouncementGate<ProfileFolderAccessibilityAnnouncement>()
     @FocusState private var nameIsFocused: Bool
@@ -47,6 +70,10 @@ struct ProfileFolderNameSheet: View {
 
     private var normalizedName: String? {
         ProfileFolder.normalizedName(name)
+    }
+
+    private var hasChanges: Bool {
+        ProfileFolderNameValidation.hasChanges(name: name, initialName: initialName)
     }
 
     private var duplicatesExistingName: Bool {
@@ -77,7 +104,9 @@ struct ProfileFolderNameSheet: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
-            if duplicatesExistingName {
+            if let message = ProfileFolderNameValidation.message(for: name) {
+                validationLabel(message)
+            } else if duplicatesExistingName {
                 validationLabel(
                     ProfileFolderAccessibilityAnnouncement.duplicateName.message
                 )
@@ -88,26 +117,31 @@ struct ProfileFolderNameSheet: View {
             HStack {
                 Spacer()
                 Button("Отмена", role: .cancel) {
-                    dismiss()
+                    if hasChanges { showingDiscardConfirmation = true }
+                    else { dismiss() }
                 }
                 .keyboardShortcut(.cancelAction)
-                Button("Сохранить", action: save)
+                Button(initialName.isEmpty ? "Создать" : "Сохранить", action: save)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(
-                        normalizedName == nil || duplicatesExistingName
+                        normalizedName == nil || duplicatesExistingName || !hasChanges
                     )
             }
         }
         .padding(24)
         .frame(width: 420)
+        .interactiveDismissDisabled(hasChanges)
+        .alert("Отменить изменения названия?", isPresented: $showingDiscardConfirmation) {
+            Button("Продолжить редактирование", role: .cancel) { nameIsFocused = true }
+            Button("Отменить изменения", role: .destructive) { dismiss() }
+        } message: {
+            Text("Введённое название не будет сохранено.")
+        }
         .onAppear {
             nameIsFocused = true
         }
-        .onChange(of: name) { _, value in
-            if value.count > ProfileFolder.maximumNameLength {
-                name = String(value.prefix(ProfileFolder.maximumNameLength))
-            }
+        .onChange(of: name) { _, _ in
             errorMessage = nil
             if !duplicatesExistingName {
                 announcementGate.reset()
@@ -121,6 +155,7 @@ struct ProfileFolderNameSheet: View {
     }
 
     private func save() {
+        guard hasChanges else { return }
         guard let normalizedName else {
             nameIsFocused = true
             announce(.invalidName)

@@ -63,6 +63,60 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_settings_reference_navigation_and_clear_field_identity(self):
+        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
+        self.assertNotIn('Button("Вернуть удобную плотность")', settings)
+        self.assertIn('.pickerStyle(.segmented)', settings)
+        self.assertIn('ScrollViewReader { scrollProxy in', settings)
+        self.assertIn('.id("shortcutSearch")', settings)
+        self.assertIn('.onAppear { revealShortcutReference(using: scrollProxy) }', settings)
+        self.assertIn('.onChange(of: preferences.shortcutReferenceRequest)', settings)
+        self.assertIn('consumeShortcutReferenceRequest()', settings)
+        self.assertIn('В поиске Escape сначала очищает запрос', settings)
+        editor = EDITOR.read_text(encoding="utf-8")
+        self.assertIn('Text("Стартовая страница")', editor)
+        self.assertIn('.focused($focusedField, equals: .startURL)', editor)
+        note = (ROOT / "Sources/NeAntik/ProfileNoteEditorView.swift").read_text(encoding="utf-8")
+        self.assertIn('.help(profileName)', note)
+
+    def test_profile_name_and_pending_proxy_drafts_reach_save_validation(self):
+        source = EDITOR.read_text()
+        name_change = source.split('.onChange(of: name)', 1)[1].split('Text(', 1)[0]
+        self.assertNotIn('name =', name_change)
+        self.assertNotIn('prefix(', name_change)
+        self.assertIn('.focused($focusedField, equals: .proxyImport)', source)
+        self.assertIn('.id(ProfileEditorField.proxyImport)', source)
+        self.assertIn('editorDraft.saveIssue(pendingProxyText: proxyImportText', source)
+        self.assertIn('ProfilePendingProxyImportRecovery(text: $proxyImportText', source)
+        navigation = source.split('private func presentValidation(', 1)[1].split('private func', 1)[0]
+        self.assertNotIn('usesProxy = true', navigation)
+        import_action = source.split('private func importProxy()', 1)[1].split('private func', 1)[0]
+        success, failure = import_action.split('} catch {', 1)
+        self.assertIn('proxyImportText = ""', success)
+        self.assertNotIn('proxyImportText = ""', failure)
+
+    def test_bulk_invalid_base_name_has_visible_keyboard_correction_target(self):
+        source = BULK_IMPORT.read_text()
+        self.assertIn('.focused($baseNameIsFocused)', source)
+        status = source.split('private var previewStatus:', 1)[1].split('private var previewRows:', 1)[0]
+        self.assertIn('showsOptions = true', status)
+        self.assertIn('baseNameIsFocused = true', status)
+        self.assertIn('baseNameValidationMessage(baseName)', status)
+        self.assertIn('baseNameIsValid ? "\\(previewName)…" : "Исправь основу названия"', source)
+
+    def test_batch_tag_save_preserves_draft_on_failure(self):
+        sheet = (ROOT / 'Sources/NeAntik/ProfileBatchTagSheet.swift').read_text()
+        content = CONTENT.read_text()
+        self.assertIn('let onApply: (ProfileMetadataBatchAction) throws -> Void', sheet)
+        self.assertIn('try performBatchMetadata(action, to: request.profileIDs)', content)
+        operation = sheet.split('private func apply()', 1)[1]
+        success, failure = operation.split('} catch {', 1)
+        self.assertIn('try onApply', success)
+        self.assertIn('dismiss()', success)
+        self.assertNotIn('dismiss()', failure)
+        self.assertIn('errorMessage = error.localizedDescription', failure)
+        self.assertNotIn('tag = ""', failure)
+
     def test_proxy_password_has_explicit_temporary_reveal_control(self) -> None:
         source = EDITOR.read_text(encoding="utf-8")
         self.assertIn("SensitiveRevealLeaseState()", source)
@@ -213,7 +267,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('Picker("Сортировка"', text)
         self.assertIn('Picker("Подключение"', text)
         self.assertIn(
-            'accessibilityLabel("Фильтры и сортировка профилей")', text
+            'accessibilityLabel("Вид списка: сортировка, подключение и плотность")', text
         )
         list_menu_start = text.index("private var profileListViewMenu")
         list_menu_end = text.index(
@@ -221,7 +275,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         list_menu = text[list_menu_start:list_menu_end]
         self.assertIn(
-            'Label("Фильтры", systemImage: "line.3.horizontal.decrease")',
+            'Label("Вид списка", systemImage: "line.3.horizontal.decrease")',
             list_menu,
         )
         self.assertNotIn("ViewThatFits", list_menu)
@@ -394,7 +448,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         self.assertIn('"Выбрать другую папку…"', commands)
         self.assertIn('TextField("Поиск папок"', picker)
-        self.assertIn("localizedCaseInsensitiveContains", picker)
+        self.assertIn("ProfileFolder.comparisonKey(searchText.trimmingCharacters", picker)
+        self.assertIn("ProfileFolder.comparisonKey($0.name).contains(query)", picker)
         self.assertIn(
             "let visibleFolders = presentation.filteredFolders",
             picker,
@@ -676,7 +731,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             search,
         )
         self.assertIn(
-            '"Можно уточнить запрос: тег, папка, прокси или статус.',
+            '"Можно уточнить запрос: имя, заметка, ид, тег, папка, прокси или статус.',
             search,
         )
         self.assertGreaterEqual(projection.count("profile.note"), 2)

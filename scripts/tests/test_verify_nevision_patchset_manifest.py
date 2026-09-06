@@ -27,7 +27,7 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             project_root=PROJECT_ROOT,
         )
 
-        self.assertEqual(summary["targetChromiumVersion"], "152.0.7977.64")
+        self.assertEqual(summary["targetChromiumVersion"], "152.0.7977.82")
         self.assertIn(
             summary["manifestStatus"],
             {"planned-not-ported", "partially-ported", "release-ready"},

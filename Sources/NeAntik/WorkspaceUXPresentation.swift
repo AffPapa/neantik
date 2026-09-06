@@ -12,14 +12,15 @@ struct ProfileFilteredCountPresentation: Equatable, Sendable {
 
     var announcement: String {
         visibleCount == totalCount
-            ? "В списке \(totalCount) профилей"
-            : "По текущим фильтрам показано \(visibleCount) из \(totalCount) профилей"
+            ? "Профилей в списке: \(totalCount)"
+            : "Профилей по текущим фильтрам: \(visibleCount). Всего: \(totalCount)"
     }
 }
 
 enum ProfileListEmptyAction: Equatable, Sendable {
     case clearSearch
     case clearRouteFilter
+    case clearScope
     case showAllProfiles
     case createInCurrentFolder
     case resetAll
@@ -64,6 +65,20 @@ struct ProfileListEmptyStatePresentation: Equatable, Sendable {
                 systemImage: "tag",
                 primaryAction: .showAllProfiles,
                 primaryTitle: "Показать все профили"
+            )
+        }
+        if folderFilter != .all, scope != .active {
+            let location = folderFilter == .unfiled
+                ? "В разделе «Без папки»"
+                : "В выбранной папке"
+            return Self(
+                title: scope == .archived
+                    ? "\(location) нет архивных профилей"
+                    : "\(location) нет закреплённых профилей",
+                message: "Покажи активные профили, сохранив фильтр папки.",
+                systemImage: scope == .archived ? "archivebox" : "pin",
+                primaryAction: .clearScope,
+                primaryTitle: "Показать активные здесь"
             )
         }
         switch folderFilter {

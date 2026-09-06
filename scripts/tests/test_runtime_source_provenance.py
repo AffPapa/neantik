@@ -82,7 +82,7 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         self.assertNotIn("tag", contract["macPackaging"])
         self.assertEqual(
             contract["commonChromium"]["commit"],
-            "59657a38437d11520a68618008eb825721319b9e",
+            "e71b91c6e336d0f25cfc6b9ef09298a9d2506e24",
         )
 
     def test_rejects_stale_chromium_144_mac_commit(self) -> None:

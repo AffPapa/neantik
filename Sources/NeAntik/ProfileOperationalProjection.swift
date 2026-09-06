@@ -72,6 +72,9 @@ enum ProfileRowDensity: String, CaseIterable, Identifiable, Sendable {
 
     var id: Self { self }
 
+    var verticalPadding: CGFloat { self == .compact ? 3 : 7 }
+    var minimumRowHeight: CGFloat { self == .compact ? 50 : 62 }
+
     var title: String {
         switch self {
         case .comfortable:

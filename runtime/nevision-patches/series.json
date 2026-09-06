@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "targetChromiumVersion": "152.0.7977.64",
+  "targetChromiumVersion": "152.0.7977.82",
   "status": "release-ready",
   "policy": "Owned NeAntik patchset for the Chromium 152 security rebase. This manifest is a release blocker until every releaseRequired group is ported, has a patch file, applies with zero fuzz, and records postimage hashes from the real Chromium 152 source tree.",
   "forbiddenScopes": [

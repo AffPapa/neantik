@@ -298,7 +298,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         )
         self.timezoneIdentifier =
             Self.validatedTimezone(timezoneIdentifier)
-        self.localeIdentifier = localeIdentifier.flatMap(Self.normalizedLocale)
+        self.localeIdentifier = localeIdentifier.flatMap(LocaleIdentifierNormalization.normalize)
         self.proxyContextEvidence = proxyContextEvidence.flatMap {
             $0.isValid ? $0 : nil
         }
@@ -389,7 +389,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         localeIdentifier = try container.decodeIfPresent(
             String.self,
             forKey: .localeIdentifier
-        ).flatMap(Self.normalizedLocale)
+        ).flatMap(LocaleIdentifierNormalization.normalize)
         proxyContextEvidence = try container.decodeIfPresent(
             ProxyContextEvidence.self,
             forKey: .proxyContextEvidence
@@ -453,7 +453,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         self.timezoneIdentifier =
             Self.validatedTimezone(timezoneIdentifier)
         self.localeIdentifier =
-            localeIdentifier.flatMap(Self.normalizedLocale)
+            localeIdentifier.flatMap(LocaleIdentifierNormalization.normalize)
         self.proxyContextEvidence = proxyContextEvidence.flatMap {
             $0.isValid ? $0 : nil
         }
@@ -463,35 +463,6 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         value.flatMap {
             TimeZone(identifier: $0) == nil ? nil : $0
         }
-    }
-
-    private static func normalizedLocale(_ value: String) -> String? {
-        let components = value.replacingOccurrences(
-            of: "_",
-            with: "-"
-        ).split(separator: "-", omittingEmptySubsequences: false)
-        guard (1...2).contains(components.count),
-              (2...3).contains(components[0].count),
-              Self.isASCIILetters(components[0])
-        else {
-            return nil
-        }
-        if components.count == 2 {
-            guard components[1].count == 2,
-                  Self.isASCIILetters(components[1])
-            else {
-                return nil
-            }
-            return "\(components[0].lowercased())-\(components[1].uppercased())"
-        }
-        return components[0].lowercased()
-    }
-
-    private static func isASCIILetters(_ value: Substring) -> Bool {
-        value.utf8.count == value.count &&
-            value.utf8.allSatisfy {
-                (65...90).contains($0) || (97...122).contains($0)
-            }
     }
 
     static func migrated(profileID: UUID) -> BrowserIdentity {
@@ -510,6 +481,38 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         issuanceVersion == BrowserIdentityIssuancePolicy.currentVersion
             ? "Параметры устройства подобраны автоматически"
             : "Совместимость старого профиля"
+    }
+}
+
+enum LocaleIdentifierNormalization {
+    // Callers own whitespace/list handling; identity metadata stays strict.
+    static func normalize(_ value: String) -> String? {
+        let components = value.replacingOccurrences(
+            of: "_",
+            with: "-"
+        ).split(separator: "-", omittingEmptySubsequences: false)
+        guard (1...2).contains(components.count),
+              (2...3).contains(components[0].count),
+              isASCIILetters(components[0])
+        else {
+            return nil
+        }
+        if components.count == 2 {
+            guard components[1].count == 2,
+                  isASCIILetters(components[1])
+            else {
+                return nil
+            }
+            return "\(components[0].lowercased())-\(components[1].uppercased())"
+        }
+        return components[0].lowercased()
+    }
+
+    private static func isASCIILetters(_ value: Substring) -> Bool {
+        value.utf8.count == value.count &&
+            value.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0)
+            }
     }
 }
 

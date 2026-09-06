@@ -10,6 +10,8 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
     case recentLaunch
     case recentlyModified
     case newest
+    case neverLaunchedFirst
+    case oldestLaunch
 
     var id: Self { self }
 
@@ -23,6 +25,10 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
             "Недавно изменённые"
         case .newest:
             "Сначала новые"
+        case .neverLaunchedFirst:
+            "Сначала не запускались"
+        case .oldestLaunch:
+            "Давно не запускались"
         }
     }
 
@@ -30,13 +36,23 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
         _ lhs: BrowserProfile,
         _ rhs: BrowserProfile
     ) -> Bool {
+        areInIncreasingOrder(lhs, rhs, nameComparison: {
+            $0.name.localizedStandardCompare($1.name)
+        })
+    }
+
+    func areInIncreasingOrder(
+        _ lhs: BrowserProfile,
+        _ rhs: BrowserProfile,
+        nameComparison: (BrowserProfile, BrowserProfile) -> ComparisonResult
+    ) -> Bool {
         if lhs.isPinned != rhs.isPinned {
             return lhs.isPinned
         }
 
         switch self {
         case .pinnedThenName:
-            return Self.nameCreationAndIDOrder(lhs, rhs)
+            return Self.nameCreationAndIDOrder(lhs, rhs, nameComparison: nameComparison)
 
         case .recentLaunch:
             switch (lhs.lastLaunchedAt, rhs.lastLaunchedAt) {
@@ -47,28 +63,47 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
             case (nil, _?):
                 return false
             default:
-                return Self.nameCreationAndIDOrder(lhs, rhs)
+                return Self.nameCreationAndIDOrder(lhs, rhs, nameComparison: nameComparison)
             }
 
         case .recentlyModified:
             if lhs.updatedAt != rhs.updatedAt {
                 return lhs.updatedAt > rhs.updatedAt
             }
-            return Self.nameCreationAndIDOrder(lhs, rhs)
+            return Self.nameCreationAndIDOrder(lhs, rhs, nameComparison: nameComparison)
 
         case .newest:
             if lhs.createdAt != rhs.createdAt {
                 return lhs.createdAt > rhs.createdAt
             }
-            return Self.nameAndIDOrder(lhs, rhs)
+            return Self.nameAndIDOrder(lhs, rhs, nameComparison: nameComparison)
+
+        case .neverLaunchedFirst:
+            if (lhs.lastLaunchedAt == nil) != (rhs.lastLaunchedAt == nil) {
+                return lhs.lastLaunchedAt == nil
+            }
+            return Self.nameCreationAndIDOrder(lhs, rhs, nameComparison: nameComparison)
+
+        case .oldestLaunch:
+            switch (lhs.lastLaunchedAt, rhs.lastLaunchedAt) {
+            case let (left?, right?) where left != right:
+                return left < right
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                return Self.nameCreationAndIDOrder(lhs, rhs, nameComparison: nameComparison)
+            }
         }
     }
 
     private static func nameCreationAndIDOrder(
         _ lhs: BrowserProfile,
-        _ rhs: BrowserProfile
+        _ rhs: BrowserProfile,
+        nameComparison: (BrowserProfile, BrowserProfile) -> ComparisonResult
     ) -> Bool {
-        let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
+        let nameOrder = nameComparison(lhs, rhs)
         if nameOrder != .orderedSame {
             return nameOrder == .orderedAscending
         }
@@ -80,9 +115,10 @@ enum ProfileListOrdering: String, CaseIterable, Identifiable, Sendable {
 
     private static func nameAndIDOrder(
         _ lhs: BrowserProfile,
-        _ rhs: BrowserProfile
+        _ rhs: BrowserProfile,
+        nameComparison: (BrowserProfile, BrowserProfile) -> ComparisonResult
     ) -> Bool {
-        let nameOrder = lhs.name.localizedStandardCompare(rhs.name)
+        let nameOrder = nameComparison(lhs, rhs)
         if nameOrder != .orderedSame {
             return nameOrder == .orderedAscending
         }

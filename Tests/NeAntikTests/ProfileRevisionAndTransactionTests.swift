@@ -4,6 +4,106 @@ import Testing
 @testable import NeAntik
 
 @MainActor
+extension ProfileRevisionAndTransactionTests {
+    @Test
+    func noteUpdateRejectsConcurrentNoteButPreservesOtherMetadataEdits() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstWindow = ProfileStore(paths: paths)
+        var draft = BrowserProfile(name: "Original")
+        draft.note = "Initial note"
+        let saved = try firstWindow.upsert(draft)
+        let secondWindow = ProfileStore(paths: paths)
+        try secondWindow.mutateProfile(withID: saved.id) { $0.name = "Renamed" }
+        let changed = try firstWindow.updateNote(
+            "First edit", for: saved.id, expectedNote: saved.note
+        )
+        #expect(changed.name == "Renamed")
+        #expect(changed.note == "First edit")
+
+        #expect(throws: ProfileNoteConflictError.self) {
+            try secondWindow.updateNote(
+                "Stale edit", for: saved.id, expectedNote: saved.note
+            )
+        }
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: saved.id)?.note == "First edit")
+        #expect(reloaded.profile(withID: saved.id)?.revision == changed.revision)
+    }
+
+    @Test
+    func noteUpdateValidatesAndDoesNotRecreateMissingProfile() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        #expect(throws: BrowserProfileDeletedError.self) {
+            try store.updateNote("Draft", for: UUID(), expectedNote: "")
+        }
+        let profile = try store.upsert(BrowserProfile(name: "Note validation"))
+        #expect(throws: NeAntikError.self) {
+            try store.updateNote(
+                String(repeating: "x", count: BrowserProfile.maximumNoteLength + 1),
+                for: profile.id, expectedNote: ""
+            )
+        }
+        #expect(store.profile(withID: profile.id)?.note == "")
+        let saved = try store.updateNote("  New\r\nNote  ", for: profile.id, expectedNote: "")
+        #expect(saved.note == "New\nNote")
+    }
+
+    @Test
+    func folderSelectionFailureIsRetryableAndSuccessClearsError() {
+        var state = ProfileFolderPickerCommitState()
+        let destination = UUID()
+        let didFail = state.commit(folderID: destination) { selected in
+            #expect(selected == destination)
+            throw CocoaError(.fileWriteOutOfSpace)
+        }
+        #expect(!didFail)
+        #expect(state.errorMessage != nil)
+        let didSucceed = state.commit(folderID: nil) { selected in
+            #expect(selected == nil)
+        }
+        #expect(didSucceed)
+        #expect(state.errorMessage == nil)
+    }
+
+    @Test
+    func undoKeepsReceiptForStorageFailureButNotConflict() {
+        #expect(!ProfileBatchUndoFailurePolicy.invalidatesReceipt(CocoaError(.fileWriteOutOfSpace)))
+        #expect(!ProfileBatchUndoFailurePolicy.invalidatesReceipt(CocoaError(.fileReadNoPermission)))
+        #expect(ProfileBatchUndoFailurePolicy.invalidatesReceipt(ProfileBatchMutationError.undoConflict))
+    }
+
+    @Test
+    func folderUndoStorageFailureLeavesReceiptRetryable() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var failWrite = false
+        let store = ProfileStore(
+            paths: AppPaths(rootDirectory: root),
+            beforeOrganizationPersist: {
+                if failWrite { throw CocoaError(.fileWriteOutOfSpace) }
+            }
+        )
+        let profile = try store.upsert(BrowserProfile(name: "Retry Undo"))
+        let folder = try store.createFolder(named: "Destination")
+        let receipt = try store.assignProfilesRecordingUndo([profile.id], toFolderID: folder.id)
+        failWrite = true
+        #expect(throws: CocoaError.self) { try store.undoFolderAssignments(receipt) }
+        #expect(store.folderID(forProfileID: profile.id) == folder.id)
+        failWrite = false
+        try store.undoFolderAssignments(receipt)
+        #expect(store.folderID(forProfileID: profile.id) == nil)
+    }
+}
+
+
+@MainActor
 struct ProfileRevisionAndTransactionTests {
     @Test
     func bulkRequestRetainsFolderCapturedAtPresentation() {

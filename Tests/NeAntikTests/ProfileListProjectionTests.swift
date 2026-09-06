@@ -2,7 +2,201 @@ import Foundation
 import Testing
 @testable import NeAntik
 
+extension ProfileListProjectionTests {
+    private func results(_ query: String, _ profiles: [BrowserProfile]) -> [UUID] {
+        ProfileListProjection.filtered(profiles, searchText: query, tag: nil).map(\.id)
+    }
+
+    @Test func fieldSearchDoesNotLeakAcrossFields() {
+        let profile = BrowserProfile(name: "Alpha", tags: ["Beta"], note: "Gamma")
+        for query in ["name:alpha", "имя:Alpha", "note:gamma", "заметка:Gamma"] {
+            #expect(results(query, [profile]) == [profile.id])
+        }
+        for query in ["name:gamma", "note:alpha", "name:beta"] {
+            #expect(results(query, [profile]).isEmpty)
+        }
+    }
+
+    @Test func identifierSearchUsesOnlyProfileIdentifier() {
+        let profile = BrowserProfile(name: "Alpha")
+        #expect(results("id:\(profile.id.uuidString)", [profile]) == [profile.id])
+        #expect(results("ид:\(profile.id.uuidString.prefix(8).lowercased())", [profile]) == [profile.id])
+        #expect(results("id:Alpha", [profile]).isEmpty)
+    }
+
+    @Test func presencePredicatesComposeAndSupportAliases() {
+        let full = BrowserProfile(name: "Full", tags: ["work"], note: "Review")
+        let empty = BrowserProfile(name: "Empty")
+        for query in ["has:note has:tags", "есть:заметка есть:теги"] {
+            #expect(results(query, [full, empty]) == [full.id])
+        }
+        for query in ["missing:note missing:tags", "без:заметка без:теги"] {
+            #expect(results(query, [full, empty]) == [empty.id])
+        }
+        #expect(results("has:note missing:note", [full, empty]).isEmpty)
+    }
+
+    @Test func recognizedMalformedQueriesExplainFailure() {
+        for query in ["name:", "note:", "status:running", "has:password", "missing:cookie"] {
+            #expect(ProfileSearchQuery(rawValue: query).validationMessage != nil)
+            #expect(results(query, [BrowserProfile(name: query)]).isEmpty)
+        }
+        #expect(ProfileSearchQuery(rawValue: "https://example.com").validationMessage == nil)
+        #expect(results("custom:value", [BrowserProfile(name: "custom:value")]).count == 1)
+    }
+
+    @Test func oversizedQueriesFailWithoutTruncatedMatching() {
+        let limit = ProfileSearchQuery.maximumUTF8Bytes
+        #expect(ProfileSearchQuery(rawValue: String(repeating: "a", count: limit)).validationMessage == nil)
+        let oversized = String(repeating: "я", count: limit)
+        #expect(ProfileSearchQuery(rawValue: oversized).validationMessage != nil)
+        #expect(results(oversized, [BrowserProfile(name: "я")]).isEmpty)
+    }
+
+    @Test func phrasesDiacriticsAndExistingFacetsRemainCompatible() {
+        let profile = BrowserProfile(name: "Café campaign", tags: ["TikTok"], note: "next action")
+        #expect(results("имя:\"cafe campaign\" tag:tiktok missing:tags", [profile]).isEmpty)
+        #expect(results("имя:\"cafe campaign\" tag:tiktok note:\"next action\"", [profile]) == [profile.id])
+        #expect(results("campaign cafe", [profile]).isEmpty)
+        #expect(results("cafe campaign", [profile]) == [profile.id])
+    }
+
+    @Test func indexedAndStandaloneQueriesAgree() {
+        let profile = BrowserProfile(name: "Campaign", tags: ["work"], note: "Review")
+        let index = ProfileListIndex(profiles: [profile], organization: .init())
+        for query in ["name:campaign", "has:note", "missing:tags", "note:", "note:review"] {
+            #expect(index.filtered(searchText: query, tag: nil, scope: .active, folderFilter: .all).map(\.id) == results(query, [profile]))
+        }
+    }
+
+    @Test func reusedFolderAndRouteTextPreservesSearchSemantics() {
+        let folder = ProfileFolder(name: "Café partagé")
+        let direct = BrowserProfile(name: "Direct", note: "Résumé")
+        let proxied = BrowserProfile(
+            name: "Proxied",
+            note: "Résumé",
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "route.example",
+                port: 8080,
+                username: "private-operator"
+            )
+        )
+        let profiles = [proxied, direct]
+        let organization = ProfileOrganizationState(
+            folders: [folder],
+            assignmentsByProfileID: [direct.id: folder.id, proxied.id: folder.id]
+        )
+        let index = ProfileListIndex(profiles: profiles, organization: organization)
+        let cases: [(String, Set<UUID>)] = [
+            ("cafe partage", [direct.id, proxied.id]),
+            ("folder:\"CAFE PARTAGE\"", [direct.id, proxied.id]),
+            ("note:resume", [direct.id, proxied.id]),
+            ("route.example", [proxied.id]),
+            ("proxy:route.example", [proxied.id]),
+            ("proxy:HTTP", [proxied.id]),
+            ("resume HTTP", []),
+            ("HTTP route.example", []),
+            ("private-operator", []),
+            ("proxy:private-operator", []),
+        ]
+        for (query, expectedIDs) in cases {
+            for folderFilter in [ProfileFolderFilter.all, .folder(folder.id)] {
+                let indexed = index.filtered(
+                    searchText: query, tag: nil, scope: .active,
+                    folderFilter: folderFilter
+                )
+                let standalone = ProfileListProjection.filtered(
+                    profiles, searchText: query, tag: nil,
+                    folderFilter: folderFilter, organization: organization
+                )
+                #expect(indexed.map(\.id) == standalone.map(\.id))
+                // General folder-name search applies only in the all-folder view.
+                let expected = query == "cafe partage" && folderFilter != .all
+                    ? Set<UUID>() : expectedIDs
+                #expect(Set(indexed.map(\.id)) == expected)
+            }
+        }
+    }
+
+    @Test func visibleExamplesAreValidQueries() {
+        for example in ProfileSearchSyntaxHelp.examples {
+            #expect(ProfileSearchQuery(rawValue: example).validationMessage == nil)
+        }
+    }
+}
+
 struct ProfileListProjectionTests {
+    @Test
+    func indexedOrderingMatchesDirectComparisonsAcrossUnicodeAndDateTies() {
+        let names = ["Same", "same", "Café", "Cafe\u{301}", "cafe", "Тест 2", "Тест 10", "👩‍💻", "", "Ａ", "A"]
+        let profiles: [BrowserProfile] = (0..<132).map { offset -> BrowserProfile in
+            let lastLaunch: Date? = offset.isMultiple(of: 2)
+                ? nil : Date(timeIntervalSinceReferenceDate: Double(offset % 7))
+            return BrowserProfile(
+                id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", offset))!,
+                name: names[offset % names.count],
+                isPinned: offset.isMultiple(of: 3),
+                createdAt: Date(timeIntervalSinceReferenceDate: Double(offset % 4)),
+                updatedAt: Date(timeIntervalSinceReferenceDate: Double(offset % 5)),
+                lastLaunchedAt: lastLaunch
+            )
+        }
+        let rotated = Array(profiles.dropFirst(33)) + Array(profiles.prefix(33))
+        let inputs: [[BrowserProfile]] = [profiles, Array(profiles.reversed()), rotated]
+        for input in inputs {
+            let index = ProfileListIndex(profiles: input, organization: .empty)
+            for ordering in ProfileListOrdering.allCases {
+                let actual = index.filtered(
+                    searchText: "", tag: nil, scope: .active,
+                    folderFilter: .all, ordering: ordering
+                ).map(\.id)
+                let expected = input.sorted {
+                    ordering.areInIncreasingOrder($0, $1)
+                }.map(\.id)
+                #expect(actual == expected)
+            }
+        }
+    }
+
+    @Test
+    func tagSummaryOrderingPreservesUnicodeAndIdentityTieBreaks() {
+        let tags = [
+            ProfileTagSummary(name: "Тег 10", count: 1),
+            ProfileTagSummary(name: "Тег 2", count: 3),
+            ProfileTagSummary(name: "Café", count: 1),
+            ProfileTagSummary(name: "Cafe\u{301}", count: 2),
+            ProfileTagSummary(name: "cafe", count: 5),
+            ProfileTagSummary(id: .init(rawValue: "z"), name: "Same", count: 1),
+            ProfileTagSummary(id: .init(rawValue: "a"), name: "Same", count: 9),
+        ]
+        let expected = tags.sorted { lhs, rhs in
+            let comparison = lhs.name.localizedStandardCompare(rhs.name)
+            if comparison != .orderedSame { return comparison == .orderedAscending }
+            if lhs.id != rhs.id { return lhs.id.rawValue < rhs.id.rawValue }
+            return lhs.name < rhs.name
+        }
+        for input in [tags, Array(tags.reversed())] {
+            #expect(input.sorted(by: ProfileTagSummary.areInIncreasingOrder) == expected)
+            #expect(ProfileListProjection.tagPreview(
+                input, selectedID: nil, limit: input.count
+            ).visibleItems == expected)
+        }
+    }
+
+    @Test
+    func searchPreservesEmbeddedApostrophesAndExplainsUnclosedQuotes() {
+        let profile = BrowserProfile(name: "O'Reilly", note: "L'été café")
+        for query in ["O'Reilly", "name:O'Reilly", "name:\"O'Reilly\"", "note:L'été", "note:cafe note:ete"] {
+            #expect(ProfileSearchQuery(rawValue: query).validationMessage == nil)
+            #expect(ProfileListProjection.filtered([profile], searchText: query, tag: nil).map(\.id) == [profile.id])
+            #expect(ProfileListIndex(profiles: [profile], organization: .empty).filtered(searchText: query, tag: nil, scope: .active, folderFilter: .all).map(\.id) == [profile.id])
+        }
+        for query in ["name:\"O'Reilly", "'incomplete"] {
+            #expect(ProfileSearchQuery(rawValue: query).validationMessage != nil)
+            #expect(ProfileListProjection.filtered([profile], searchText: query, tag: nil).isEmpty)
+        }
+    }
     @Test
     func foldedTagIdentitySurvivesDisplayRepresentativeFlip() {
         let accentedFirst = ProfileListIndex(
@@ -422,6 +616,13 @@ struct ProfileListProjectionTests {
         )
         let query = WorkspaceQueryState(scope: .active)
 
+        let directSortStartedAt = Date()
+        let directlyOrderedIDs = Dictionary(uniqueKeysWithValues:
+            ProfileListOrdering.allCases.map { ordering in
+                (ordering, profiles.sorted(by: ordering.areInIncreasingOrder).map(\.id))
+            }
+        )
+        let directSortElapsed = Date().timeIntervalSince(directSortStartedAt)
         let initialStartedAt = Date()
         let initial = ProfileListViewState(
             profiles: profiles,
@@ -430,6 +631,12 @@ struct ProfileListProjectionTests {
             searchText: "Account memo 99"
         )
         let initialElapsed = Date().timeIntervalSince(initialStartedAt)
+        for ordering in ProfileListOrdering.allCases {
+            #expect(initial.index.filtered(
+                searchText: "", tag: nil, scope: .active,
+                folderFilter: .all, ordering: ordering
+            ).map(\.id) == directlyOrderedIDs[ordering])
+        }
 
         let repeatedStartedAt = Date()
         var repeatedVisibleCount = 0
@@ -457,6 +664,7 @@ struct ProfileListProjectionTests {
             : 5
         print(
             "ProfileListViewState 10k benchmark: " +
+                "legacy-six-sorts=\(directSortElapsed)s, " +
                 "initial=\(initialElapsed)s, " +
                 "reused-searches=\(repeatedElapsed)s"
         )

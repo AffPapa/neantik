@@ -89,8 +89,8 @@ struct ProfileRow<Actions: View>: View {
                 compactRow(presentation)
             }
         }
-        .padding(.vertical, density == .compact ? 3 : 7)
-        .frame(minHeight: density == .compact ? 50 : 62)
+        .padding(.vertical, density.verticalPadding)
+        .frame(minHeight: density.minimumRowHeight)
         .accessibilityElement(children: .contain)
         .accessibilityActions {
             Button("Открыть сведения", action: onOpenDetails)
@@ -578,6 +578,8 @@ struct ProfileDetailView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(!launchAction.isEnabled)
+                    .help(launchAction.help)
+                    .accessibilityHint(launchAction.help)
                     Button("Окно", systemImage: "macwindow", action: onFocusRunning)
                         .disabled(!processState.isConfirmedRunning)
                     Button("Изменить", systemImage: "pencil", action: onEditProfile)
@@ -590,6 +592,8 @@ struct ProfileDetailView: View {
                         action: onToggleRunning
                     )
                     .disabled(!launchAction.isEnabled)
+                    .help(launchAction.help)
+                    .accessibilityHint(launchAction.help)
                     Button("Показать окно", systemImage: "macwindow", action: onFocusRunning)
                         .disabled(!processState.isConfirmedRunning)
                     Button("Изменить…", systemImage: "pencil", action: onEditProfile)
