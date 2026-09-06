@@ -21,6 +21,27 @@ Net reduction: 66 lines (0.17%). Raw size is not a quality score. Shared helpers
 remove duplication; explicit ordering equivalence and UX guards still need code.
 No compression/minification or test deletion is counted as an improvement.
 
+### Follow-up: Apple-style clarity and local cleanup
+
+The subsequent settings-navigation fix and persistent labels bring the current
+working tree to 37,889 physical / 35,397 nonblank production lines and 1,347,846
+bytes. Against the same baseline this is 35 fewer physical lines (0.09%), not
+30%. This follow-up prioritizes predictable navigation over a line-count target.
+The shortcut-reference command now requests its actual search section, instead
+of merely opening the settings window at the density control. A redundant
+density reset button is removed; the two-option native picker remains. Startup
+URL labeling stays visible after entry, and truncated note profile names have
+full-name tooltips. No new persisted settings or dependencies were added.
+
+Ten obsolete local app bundles were moved to Trash with recorded restore paths;
+installed app, profile data, keys, active build and current rollback were retained.
+This is recoverable cleanup, not an assertion that disk space was reclaimed.
+Targeted preference tests: 5 passed; responsive source contracts: 28 passed.
+Full rebuilt Swift suite: 730 tests in 76 suites passed. Isolated Dev build
+passed; live clicks verified repeated shortcut help, search/Escape/Find,
+startup URL label and note cancellation without changing profile data.
+Long-name tooltip and the final Direct release still need verification.
+
 ## Implemented
 
 1. Shared locale validation preserves strict persisted metadata and the proxy

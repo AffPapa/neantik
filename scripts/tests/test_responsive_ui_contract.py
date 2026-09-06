@@ -63,6 +63,22 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_settings_reference_navigation_and_clear_field_identity(self):
+        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
+        self.assertNotIn('Button("Вернуть удобную плотность")', settings)
+        self.assertIn('.pickerStyle(.segmented)', settings)
+        self.assertIn('ScrollViewReader { scrollProxy in', settings)
+        self.assertIn('.id("shortcutSearch")', settings)
+        self.assertIn('.onAppear { revealShortcutReference(using: scrollProxy) }', settings)
+        self.assertIn('.onChange(of: preferences.shortcutReferenceRequest)', settings)
+        self.assertIn('consumeShortcutReferenceRequest()', settings)
+        self.assertIn('В поиске Escape сначала очищает запрос', settings)
+        editor = EDITOR.read_text(encoding="utf-8")
+        self.assertIn('Text("Стартовая страница")', editor)
+        self.assertIn('.focused($focusedField, equals: .startURL)', editor)
+        note = (ROOT / "Sources/NeAntik/ProfileNoteEditorView.swift").read_text(encoding="utf-8")
+        self.assertIn('.help(profileName)', note)
+
     def test_profile_name_and_pending_proxy_drafts_reach_save_validation(self):
         source = EDITOR.read_text()
         name_change = source.split('.onChange(of: name)', 1)[1].split('Text(', 1)[0]

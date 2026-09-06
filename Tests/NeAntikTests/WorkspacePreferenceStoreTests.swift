@@ -4,6 +4,26 @@ import Testing
 
 @MainActor
 struct WorkspacePreferenceStoreTests {
+    @Test func shortcutNavigationIsRepeatableOneShotAndNotPersisted() throws {
+        let suite = "NeAntik.WorkspacePreferences.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = WorkspacePreferenceStore(defaults: defaults)
+        #expect(!store.consumeShortcutReferenceRequest())
+
+        store.requestShortcutReference()
+        let first = try #require(store.shortcutReferenceRequest)
+        store.requestShortcutReference()
+        #expect(store.shortcutReferenceRequest != first)
+        #expect(store.consumeShortcutReferenceRequest())
+        #expect(!store.consumeShortcutReferenceRequest())
+        store.requestShortcutReference()
+        #expect(store.consumeShortcutReferenceRequest())
+        #expect(store.rowDensity == .comfortable)
+        #expect(defaults.persistentDomain(forName: suite)?.isEmpty != false)
+        #expect(WorkspacePreferenceStore(defaults: defaults).shortcutReferenceRequest == nil)
+    }
+
     @Test func densityMetricsKeepTheCompactRowSmaller() {
         #expect(ProfileRowDensity.compact.verticalPadding == 3)
         #expect(ProfileRowDensity.comfortable.verticalPadding == 7)

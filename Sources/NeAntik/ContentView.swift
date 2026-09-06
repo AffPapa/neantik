@@ -170,7 +170,10 @@ struct ContentView: View {
             createProfile: beginCreatingProfile,
             createFolder: beginCreatingFolder,
             focusProfileSearch: { profileSearchIsFocused = true },
-            showShortcutReference: { openSettings() },
+            showShortcutReference: {
+                workspacePreferences.requestShortcutReference()
+                openSettings()
+            },
             toggleInspector: toggleProfileInspector,
             renameSelectedFolder: {
                 guard let selectedFolder else { return }

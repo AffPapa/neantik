@@ -4,6 +4,11 @@
 
 ## Direct 0.3.24 (27) — September 5, 2026 (candidate)
 
+- Shortcut help now opens directly at its search field, including repeat
+  requests. Native settings remove the redundant density reset button and use
+  shorter instructions. The startup URL keeps a visible label after entry;
+  profile-note headings expose their full name in a tooltip.
+
 - Runtime builds fail early when an ancestor `node_modules` directory would
   contaminate Chromium's TypeScript dependencies. Use an isolated build root;
   bundled dependencies and the upstream dependency checker remain unchanged.

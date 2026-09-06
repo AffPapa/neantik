@@ -870,10 +870,15 @@ struct ProfileEditorView: View {
 
         Divider()
 
-        TextField("Стартовая страница", text: $startURL)
-          .accessibilityLabel("Стартовая страница")
-          .focused($focusedField, equals: .startURL)
-          .id(ProfileEditorField.startURL)
+        VStack(alignment: .leading, spacing: 6) {
+          Text("Стартовая страница")
+            .font(.headline)
+          TextField("Стартовая страница", text: $startURL)
+            .labelsHidden()
+            .accessibilityLabel("Стартовая страница")
+            .focused($focusedField, equals: .startURL)
+        }
+        .id(ProfileEditorField.startURL)
         validationLabel(for: .startURL)
 
         Divider()

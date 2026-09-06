@@ -66,6 +66,7 @@ struct ProfileNoteEditorView: View {
                 Text(profileName)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .help(profileName)
             }
 
             ZStack(alignment: .topLeading) {

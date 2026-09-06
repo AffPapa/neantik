@@ -10,8 +10,20 @@ struct NeAntikSettingsView: View {
     }
 
     var body: some View {
+        ScrollViewReader { scrollProxy in
+            settingsForm
+                .onAppear { revealShortcutReference(using: scrollProxy) }
+                .onChange(of: preferences.shortcutReferenceRequest) { _, _ in
+                    revealShortcutReference(using: scrollProxy)
+                }
+        }
+        .frame(width: 560, height: 520)
+        .navigationTitle("Настройки NeAntik")
+    }
+
+    private var settingsForm: some View {
         let shortcuts = matchingShortcuts
-        Form {
+        return Form {
             Section("Интерфейс") {
                 Picker("Плотность списка", selection: $preferences.rowDensity) {
                     ForEach(ProfileRowDensity.allCases) { density in
@@ -27,12 +39,6 @@ struct NeAntikSettingsView: View {
                 DisclosureGroup("Предпросмотр плотности") {
                     densityPreview
                 }
-
-                Button("Вернуть удобную плотность") {
-                    preferences.resetInterface()
-                }
-                .disabled(preferences.rowDensity == .comfortable)
-                .help("Меняет только плотность списка. Профили, заметки и прокси не затрагиваются.")
             }
 
             Section("Сочетания клавиш") {
@@ -69,6 +75,7 @@ struct NeAntikSettingsView: View {
                         .help("Очистить поиск")
                     }
                 }
+                .id("shortcutSearch")
                 if shortcuts.isEmpty {
                     Text("Сочетания не найдены")
                     Text("Попробуй название команды или клавиши.")
@@ -88,18 +95,20 @@ struct NeAntikSettingsView: View {
                 }
 
                 Text(
-                    "Сочетания фиксированы, видны в меню и работают только " +
-                        "в активном NeAntik. Опасные действия не имеют " +
-                        "горячих клавиш. Escape закрывает диалоги; в поиске " +
-                        "сначала очищает запрос, затем освобождает фокус."
+                    "Сочетания работают в активном NeAntik и не переназначаются. " +
+                        "В поиске Escape сначала очищает запрос, затем снимает фокус."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 560, height: 520)
-        .navigationTitle("Настройки NeAntik")
+    }
+
+    private func revealShortcutReference(using scrollProxy: ScrollViewProxy) {
+        guard preferences.consumeShortcutReferenceRequest() else { return }
+        scrollProxy.scrollTo("shortcutSearch", anchor: .top)
+        shortcutSearchIsFocused = true
     }
 
     private func clearShortcutSearch() {
