@@ -202,6 +202,11 @@ struct ProfileRow<Actions: View>: View {
 
                 if !presentation.noteSummary.isEmpty {
                     noteButton(presentation.noteSummary)
+                    if folderName != nil || !profile.tags.isEmpty {
+                        organizationMetadata
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 } else if folderName != nil || !profile.tags.isEmpty {
                     organizationMetadata
                         .font(.caption)
