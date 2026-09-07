@@ -129,6 +129,33 @@ struct ProfileEditorHeadingPresentation: Equatable, Sendable {
 
 enum ProfileEditorAdvancedPresentation {
   static let summary = "Стартовая страница, папка, теги и оформление"
+
+  static func summary(
+    folderTitle: String,
+    tagCount: Int,
+    startURL: String
+  ) -> String {
+    var parts = [folderTitle]
+    if tagCount > 0 {
+      let remainder = tagCount % 100
+      let lastDigit = tagCount % 10
+      let noun: String
+      if (11...14).contains(remainder) {
+        noun = "тегов"
+      } else if lastDigit == 1 {
+        noun = "тег"
+      } else if (2...4).contains(lastDigit) {
+        noun = "тега"
+      } else {
+        noun = "тегов"
+      }
+      parts.append("\(tagCount) \(noun)")
+    }
+    if !startURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      parts.append("URL настроен")
+    }
+    return parts.joined(separator: " · ")
+  }
 }
 
 struct ProfileEditorView: View {
@@ -362,6 +389,16 @@ struct ProfileEditorView: View {
             Text("Например: login:password@ip:port или ip:port@login:password")
             .font(.caption)
             .foregroundStyle(.secondary)
+
+            if let preview = proxyImportPreview {
+              Label(
+                "Будет импортировано: \(preview.redactedSummary)",
+                systemImage: "checkmark.circle"
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .accessibilityElement(children: .combine)
+            }
 
             ViewThatFits(in: .horizontal) {
               HStack {
@@ -775,6 +812,14 @@ struct ProfileEditorView: View {
     )
   }
 
+  private var advancedOptionsSummary: String {
+    ProfileEditorAdvancedPresentation.summary(
+      folderTitle: folderPresentation.selectedTitle,
+      tagCount: editorDraft.tags.count,
+      startURL: editorDraft.startURL
+    )
+  }
+
   private var advancedOptionsSection: some View {
     Section {
       DisclosureGroup(isExpanded: Binding(
@@ -822,7 +867,7 @@ struct ProfileEditorView: View {
         HStack {
           Text("Дополнительно").fontWeight(.semibold)
           Spacer()
-          Text(ProfileEditorAdvancedPresentation.summary)
+          Text(advancedOptionsSummary)
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)
@@ -1066,6 +1111,16 @@ struct ProfileEditorView: View {
     }
     .pickerStyle(.menu)
     .accessibilityLabel("Расположение адреса прокси")
+  }
+
+  private var proxyImportPreview: ProxyImportDraft? {
+    let source = proxyImportText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !source.isEmpty else { return nil }
+    return try? ProxyImportParser.parse(
+      source,
+      kind: editorDraft.proxyKind,
+      order: proxyImportOrder
+    )
   }
 
   private var importProxyButton: some View {

@@ -12,6 +12,11 @@
 - Carries the unpublished native layout polish: aligned list headings and rows,
   clearer profile creation hierarchy and a secondary shortcut reference.
   No new dependency, setting, profile schema or runtime is introduced.
+- Compact profile rows keep folder and tag context visible alongside a note;
+  the editor's collapsed “Дополнительно” summary now reflects the actual
+  folder, tag count and start URL instead of a static label.
+- Proxy import now shows a redacted local preview of the parsed endpoint and
+  username before applying it; credentials remain protected.
 
 ## Direct 0.3.24 (27) — September 5, 2026 (candidate)
 

@@ -50,6 +50,24 @@ struct ProfileEditorPresentationTests {
     }
 
     @Test
+    func advancedSummaryReflectsConfiguredProfileState() {
+        #expect(
+            ProfileEditorAdvancedPresentation.summary(
+                folderTitle: "Арбитраж",
+                tagCount: 2,
+                startURL: "https://example.com"
+            ) == "Арбитраж · 2 тега · URL настроен"
+        )
+        #expect(
+            ProfileEditorAdvancedPresentation.summary(
+                folderTitle: "Без папки",
+                tagCount: 0,
+                startURL: ""
+            ) == "Без папки"
+        )
+    }
+
+    @Test
     func compactFolderControlCoversZeroAndOneFolder() {
         let empty = ProfileEditorFolderPresentation.resolve(
             folders: [],
