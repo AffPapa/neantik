@@ -306,7 +306,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     .font(.headline)
                     .accessibilityHeading(.h2)
                 Text(
-                    "Обычный текст ищет по профилю и заметке. " +
+                    "Обычный текст ищет по названию, заметке, тегам, папке и адресу прокси. " +
                         "Для точного поиска используй:"
                 )
                 .font(.caption)

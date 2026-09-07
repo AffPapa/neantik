@@ -145,7 +145,10 @@ struct ContentView: View {
         return WorkspaceCommandSet(
             isEnabled: true,
             selectedFolderName: selectedFolder?.name,
-            canToggleInspector: selectedProfile != nil,
+            canToggleInspector: ProfileInspectorPolicy.canToggle(
+                isPresented: showsProfileInspector,
+                hasSelectedProfile: selectedProfile != nil
+            ),
             showsInspector: showsProfileInspector,
             createProfile: beginCreatingProfile,
             createFolder: beginCreatingFolder,
@@ -1130,7 +1133,11 @@ struct ContentView: View {
     }
 
     private func toggleProfileInspector() {
-        guard selectedProfile != nil else { return }
+        guard !isWorkspaceModalPresented,
+              ProfileInspectorPolicy.canToggle(
+                  isPresented: showsProfileInspector,
+                  hasSelectedProfile: selectedProfile != nil
+              ) else { return }
         showsProfileInspector.toggle()
     }
 

@@ -63,6 +63,20 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_small_settings_search_has_explicit_hit_target(self):
+        settings = SETTINGS_VIEW.read_text()
+        icon = settings.split('Image(systemName: "magnifyingglass")', 1)[1].split('.buttonStyle', 1)[0]
+        self.assertIn('.frame(width: 28, height: 28)', icon)
+        self.assertIn('.contentShape(Rectangle())', icon)
+
+    def test_search_help_describes_existing_fields(self):
+        header = PROFILE_LIST_HEADER.read_text()
+        self.assertIn('по названию, заметке, тегам, папке и адресу прокси', header)
+
+    def test_batch_selection_exposes_selected_trait(self):
+        row = PROFILE_WORKSPACE_VIEWS.read_text()
+        self.assertIn('.accessibilityAddTraits(isBatchSelected ? .isSelected : [])', row)
+
     def test_profile_columns_control_native_list_margins(self):
         content = (ROOT / "Sources/NeAntik/ContentView.swift").read_text()
         self.assertIn('.contentMargins(.horizontal, 0, for: .scrollContent)', content)
@@ -224,7 +238,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("Button(action: onToggleInspector)", toolbar)
         self.assertIn('systemImage: "sidebar.right"', toolbar)
         self.assertNotIn(".keyboardShortcut", toolbar)
-        self.assertIn(".disabled(!hasSelectedProfile)", toolbar)
+        self.assertIn(".disabled(!ProfileInspectorPolicy.canToggle(", toolbar)
+        self.assertIn("isPresented: showsProfileInspector", toolbar)
+        self.assertIn("hasSelectedProfile: hasSelectedProfile", toolbar)
         self.assertNotIn("profileCommandSet(", toolbar)
 
         commands = PROFILE_COMMANDS.read_text(encoding="utf-8")
@@ -747,7 +763,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("Button(action: onEditNote)", row)
         self.assertIn('summary.isEmpty ? "Добавить заметку"', row)
         self.assertNotIn("isNoteEditingEnabled", row)
-        self.assertIn('"Заметка добавлена"', row)
+        self.assertIn('.accessibilityValue(summary.isEmpty ? "Заметки нет" : summary)', row)
         self.assertIn("presentation.statusTitle", row)
         self.assertIn("presentation.routeTitle", row)
         self.assertIn("launchAction.title", row)

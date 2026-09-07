@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## Direct 0.3.25 (28) — September 7, 2026 (candidate)
+
+- The profile inspector can be closed after a search returns no profiles;
+  opening it still requires a selection and modal actions remain protected.
+- Search help names all existing searchable fields. Shortcut search has a
+  consistent click target, selected batch controls expose their selected state,
+  and screen readers can read the same bounded note preview shown in the row.
+- Carries the unpublished native layout polish: aligned list headings and rows,
+  clearer profile creation hierarchy and a secondary shortcut reference.
+  No new dependency, setting, profile schema or runtime is introduced.
+
 ## Direct 0.3.24 (27) — September 5, 2026 (candidate)
 
 - Shortcut help now opens directly at its search field, including repeat

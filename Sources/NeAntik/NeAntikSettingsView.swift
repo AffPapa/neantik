@@ -49,6 +49,8 @@ struct NeAntikSettingsView: View {
                         shortcutSearchIsFocused = true
                     } label: {
                         Image(systemName: "magnifyingglass")
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .keyboardShortcut("f", modifiers: .command)

@@ -244,6 +244,7 @@ struct ProfileRow<Actions: View>: View {
                 : "Выбрать профиль «\(profile.name)» для массовых действий"
         )
         .accessibilityValue(isBatchSelected ? "Выбрано" : "Не выбрано")
+        .accessibilityAddTraits(isBatchSelected ? .isSelected : [])
     }
 
     private var identityBlock: some View {
@@ -418,7 +419,8 @@ struct ProfileRow<Actions: View>: View {
                 ? "Добавить заметку к профилю \(profile.name)"
                 : "Изменить заметку профиля \(profile.name)"
         )
-        .accessibilityValue(summary.isEmpty ? "Заметки нет" : "Заметка добавлена")
+        .accessibilityValue(summary.isEmpty ? "Заметки нет" : summary)
+        .privacySensitive()
     }
 
     private func launchButton(

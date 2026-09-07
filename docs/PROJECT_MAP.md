@@ -306,6 +306,11 @@ validates its final token before Save. No persisted schema changes are involved.
 
 ## Research routing
 
+- Current twelve-product lean follow-up and five bounded UX fixes:
+  [Lean UX research](LEAN_UX_RESEARCH_2026-09-07.md). Inspector availability
+  is shared by toolbar, menu and action through `ProfileInspectorPolicy` in
+  `WorkspaceToolbarContent.swift`; no new navigation or persistence layer.
+
 - Current zero-base security, UX and release matrix with fifteen role prompts:
   [0.3.24 audit plan](NEANTIK_0324_ZERO_BASE_AUDIT_PLAN.md).
 - Current 20-product comparison:
