@@ -38,8 +38,8 @@ folder and tags, and the Advanced summary reflects the configured folder, tags,
 and start URL. Proxy import also shows a safe local preview of the endpoint
 and redacted username before applying it, without revealing the password. This
 is a development preview, not a downloadable binary release: `0.3.24 (27)`
-remains the public
-download until the complete Direct Distribution cycle passes.
+remains the public download until the complete Direct Distribution cycle
+passes.
 
 The capabilities below are included in the published, signed, and notarized
 `0.3.24 (27)` release.
