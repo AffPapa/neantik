@@ -36,6 +36,7 @@ announcements. It also prepares the not-yet-shipped native profile cards,
 settings layout, and internal architecture changes; notes no longer hide the
 folder and tags, and the Advanced summary reflects the configured folder, tags,
 and start URL. This is a development
+settings layout, and internal architecture changes. This is a development
 preview, not a downloadable binary release: `0.3.24 (27)` remains the public
 download until the complete Direct Distribution cycle passes.
 
