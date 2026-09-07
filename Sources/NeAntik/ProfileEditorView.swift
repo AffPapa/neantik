@@ -390,6 +390,16 @@ struct ProfileEditorView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
+            if let preview = proxyImportPreview {
+              Label(
+                "Будет импортировано: \(preview.redactedSummary)",
+                systemImage: "checkmark.circle"
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .accessibilityElement(children: .combine)
+            }
+
             ViewThatFits(in: .horizontal) {
               HStack {
                 proxyImportOrderPicker
@@ -1101,6 +1111,16 @@ struct ProfileEditorView: View {
     }
     .pickerStyle(.menu)
     .accessibilityLabel("Расположение адреса прокси")
+  }
+
+  private var proxyImportPreview: ProxyImportDraft? {
+    let source = proxyImportText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !source.isEmpty else { return nil }
+    return try? ProxyImportParser.parse(
+      source,
+      kind: editorDraft.proxyKind,
+      order: proxyImportOrder
+    )
   }
 
   private var importProxyButton: some View {
