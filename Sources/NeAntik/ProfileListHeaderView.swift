@@ -48,6 +48,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                         .accessibilityHeading(.h1)
                     Spacer(minLength: 8)
                     createProfileMenu
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 ViewThatFits(in: .horizontal) {
                     commandRow
@@ -69,14 +70,16 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .padding(.top, WorkspaceLayout.titlebarContentInset + 16)
+        .padding(.top, WorkspaceLayout.profileHeaderTopPadding)
     }
 
     private var commandRow: some View {
         HStack(spacing: 8) {
             searchField
             actionsMenu
+                .fixedSize(horizontal: true, vertical: false)
             filtersMenu
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 

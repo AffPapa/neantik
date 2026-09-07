@@ -2,15 +2,36 @@ import Foundation
 import SwiftUI
 
 enum ProfileRowLayout {
-    static let minimumWideWidth: CGFloat = 820
     static let spacing: CGFloat = 10
     static let horizontalPadding: CGFloat = 4
+    static let outerHorizontalPadding: CGFloat = 10
+    static let listHorizontalInset: CGFloat = 10
+    static let listVerticalInset: CGFloat = 4
+    // Native plain List rows reserve this selection gutter; section headers do not.
+    static let selectionGutter: CGFloat = 8
+    static let selectionWidth: CGFloat = 24
     static let actionWidth: CGFloat = 112
     static let minimumIdentityWidth: CGFloat = 180
     static let statusWidth: CGFloat = 105
     static let minimumRouteWidth: CGFloat = 140
     static let minimumContextWidth: CGFloat = 135
     static let menuWidth: CGFloat = 28
+    // Reserve a legacy macOS scrollbar even when the current system uses overlays.
+    static let scrollbarAllowance: CGFloat = 20
+
+    static var columnHorizontalInset: CGFloat {
+        listHorizontalInset + outerHorizontalPadding + horizontalPadding
+    }
+
+    static var rowContentHorizontalInset: CGFloat {
+        outerHorizontalPadding + horizontalPadding
+    }
+
+    static var minimumWideWidth: CGFloat {
+        selectionWidth + minimumIdentityWidth + statusWidth +
+            minimumRouteWidth + minimumContextWidth + menuWidth +
+            actionWidth + 6 * spacing + 2 * (columnHorizontalInset + selectionGutter) + scrollbarAllowance
+    }
 }
 
 struct ProfileRow<Actions: View>: View {
@@ -90,7 +111,7 @@ struct ProfileRow<Actions: View>: View {
             }
         }
         .padding(.vertical, density.verticalPadding)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, ProfileRowLayout.outerHorizontalPadding)
         .frame(minHeight: density.minimumRowHeight)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
@@ -193,6 +214,7 @@ struct ProfileRow<Actions: View>: View {
 
             Spacer(minLength: 4)
             actionsMenu
+                .frame(width: ProfileRowLayout.menuWidth)
             launchButton(presentation)
         }
     }
@@ -207,7 +229,7 @@ struct ProfileRow<Actions: View>: View {
             )
             .font(.system(size: 16, weight: .medium))
             .foregroundStyle(isBatchSelected ? Color.accentColor : .secondary)
-            .frame(width: 24, height: 28)
+            .frame(width: ProfileRowLayout.selectionWidth, height: 28)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -606,34 +628,32 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 22) {
-            GroupBox("Стартовая страница") {
-                LabeledContent("URL", value: profile.startURL)
-                    .textSelection(.enabled)
-                    .padding(.vertical, 4)
+            if profile.proxy != nil {
+                GroupBox("Прокси") {
+                    networkSummary
+                        .padding(.vertical, 4)
+                }
             }
 
-            GroupBox("Профиль") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label(
-                        "Cookies, настройки и данные сайтов хранятся отдельно",
-                        systemImage: "person.crop.rectangle.stack"
-                    )
-                    Divider()
-                    LabeledContent(
-                        "Создан",
-                        value: profile.createdAt.neAntikDisplayDateTime
-                    )
-                    LabeledContent(
-                        "Изменён",
-                        value: profile.updatedAt.neAntikDisplayDateTime
-                    )
-                    LabeledContent(
-                        "Последний запуск",
-                        value: profile.lastLaunchedAt?
-                            .neAntikDisplayDateTime ?? "Ещё не запускался"
-                    )
+            if let environmentSnapshot {
+                ProfileEnvironmentView(
+                    snapshot: environmentSnapshot,
+                    hasProxy: profile.proxy != nil,
+                    isTestingProxy: isTestingProxy,
+                    canTestProxy: processState == .stopped,
+                    canCancelProxyTest: canCancelProxyTest,
+                    canRunFingerprintAudit: canRunFingerprintAudit,
+                    onTestProxy: onTestProxy,
+                    onCancelProxy: onCancelProxyTest,
+                    onEditProxy: onEditProxy,
+                    onRunFingerprintAudit: onRunFingerprintAudit
+                )
+                .id(environmentSnapshot.profileID)
+            } else if profile.proxy == nil {
+                GroupBox("Сеть") {
+                    networkSummary
+                        .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
             }
 
             GroupBox {
@@ -671,32 +691,34 @@ struct ProfileDetailView: View {
                 Label("Заметка", systemImage: "note.text")
             }
 
-            if profile.proxy != nil {
-                GroupBox("Прокси") {
-                    networkSummary
-                        .padding(.vertical, 4)
-                }
+            GroupBox("Стартовая страница") {
+                LabeledContent("URL", value: profile.startURL)
+                    .textSelection(.enabled)
+                    .padding(.vertical, 4)
             }
 
-            if let environmentSnapshot {
-                ProfileEnvironmentView(
-                    snapshot: environmentSnapshot,
-                    hasProxy: profile.proxy != nil,
-                    isTestingProxy: isTestingProxy,
-                    canTestProxy: processState == .stopped,
-                    canCancelProxyTest: canCancelProxyTest,
-                    canRunFingerprintAudit: canRunFingerprintAudit,
-                    onTestProxy: onTestProxy,
-                    onCancelProxy: onCancelProxyTest,
-                    onEditProxy: onEditProxy,
-                    onRunFingerprintAudit: onRunFingerprintAudit
-                )
-                .id(environmentSnapshot.profileID)
-            } else if profile.proxy == nil {
-                GroupBox("Сеть") {
-                    networkSummary
-                        .padding(.vertical, 4)
+            GroupBox("Профиль") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(
+                        "Cookies, настройки и данные сайтов хранятся отдельно",
+                        systemImage: "person.crop.rectangle.stack"
+                    )
+                    Divider()
+                    LabeledContent(
+                        "Создан",
+                        value: profile.createdAt.neAntikDisplayDateTime
+                    )
+                    LabeledContent(
+                        "Изменён",
+                        value: profile.updatedAt.neAntikDisplayDateTime
+                    )
+                    LabeledContent(
+                        "Последний запуск",
+                        value: profile.lastLaunchedAt?
+                            .neAntikDisplayDateTime ?? "Ещё не запускался"
+                    )
                 }
+                .padding(.vertical, 4)
             }
 
             DisclosureGroup("Технические сведения", isExpanded: $technicalDetailsExpanded) {

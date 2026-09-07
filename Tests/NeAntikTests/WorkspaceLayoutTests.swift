@@ -16,7 +16,7 @@ struct WorkspaceLayoutTests {
         #expect(WorkspaceLayout.maximumInspectorWidth == 560)
         #expect(WorkspaceLayout.minimumWindowWidth == 820)
         #expect(WorkspaceLayout.minimumWindowHeight == 560)
-        #expect(WorkspaceLayout.titlebarContentInset == 40)
+        #expect(WorkspaceLayout.profileHeaderTopPadding == 16)
     }
 
     @Test func listAndInspectorWidthRangesAreStrictlyOrdered() {
@@ -44,8 +44,8 @@ struct WorkspaceLayoutTests {
             WorkspaceLayout.idealInspectorWidth <
                 WorkspaceLayout.maximumInspectorWidth
         )
-        #expect(WorkspaceLayout.titlebarContentInset > 0)
-        #expect(WorkspaceLayout.titlebarContentInset < 64)
+        #expect(WorkspaceLayout.profileHeaderTopPadding > 0)
+        #expect(WorkspaceLayout.profileHeaderTopPadding <= 20)
     }
 
     @Test func keyboardTraversalFollowsVisibleWorkspaceHierarchy() {

@@ -63,6 +63,33 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_profile_columns_control_native_list_margins(self):
+        content = (ROOT / "Sources/NeAntik/ContentView.swift").read_text()
+        self.assertIn('.contentMargins(.horizontal, 0, for: .scrollContent)', content)
+        self.assertIn('.listRowInsets(EdgeInsets(', content)
+        self.assertIn('.padding(.horizontal, ProfileRowLayout.rowContentHorizontalInset)', content)
+        self.assertIn('} header: {\n                                profileTableHeader', content)
+        self.assertNotIn('profileRowHorizontalGeometry', content)
+
+    def test_settings_reference_is_secondary_but_search_remains_discoverable(self):
+        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
+        self.assertIn('@State private var showsShortcutReference = false', settings)
+        self.assertIn('DisclosureGroup("Справочник команд", isExpanded: $showsShortcutReference)', settings)
+        self.assertLess(settings.index('.id("shortcutSearch")'), settings.index('DisclosureGroup("Справочник команд"'))
+        reveal = settings.split('private func revealShortcutReference', 1)[1].split('private func clearShortcutSearch', 1)[0]
+        self.assertLess(reveal.index('showsShortcutReference = true'), reveal.index('scrollProxy.scrollTo'))
+        self.assertIn('.onChange(of: shortcutQuery)', settings)
+        self.assertIn('.keyboardShortcut("f", modifiers: .command)', settings)
+
+    def test_header_menus_keep_intrinsic_width_while_search_can_expand(self):
+        header = PROFILE_LIST_HEADER.read_text()
+        for menu in ("createProfileMenu", "actionsMenu", "filtersMenu"):
+            self.assertRegex(
+                header,
+                menu + r"\s+\.fixedSize\(horizontal: true, vertical: false\)",
+            )
+        self.assertNotRegex(header, r"searchField\s+\.fixedSize")
+
     def test_settings_reference_navigation_and_clear_field_identity(self):
         settings = SETTINGS_VIEW.read_text(encoding="utf-8")
         self.assertNotIn('Button("Вернуть удобную плотность")', settings)

@@ -1,12 +1,23 @@
 # NeAntik project map
 
-Current source map: 2026-09-06. This document is the current routing source for
+Current source map: 2026-09-07. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
 Proxya reference adoption: `PROXYA_ADOPTION_2026-09-06.md` records the exact
 public-source boundary, feature decisions and initial native card layout.
 Owners: `ProfileWorkspaceViews.swift`, `ProfileListHeaderView.swift` and
 `ContentView.swift`; this is development UI, not a new published release.
+
+Apple-layout refinement: `WorkspaceLayout.profileHeaderTopPadding` is spacing
+below the native titlebar, not a second titlebar reserve. `ProfileRowLayout`
+shares list/card/header insets and derives the wide breakpoint from column
+minimums, gaps and a legacy-scrollbar allowance. The column header is a native
+List Section header, sharing the scroll container and insets with rows; no
+coordinate-observation state is needed. `ProfileRowLayoutTests` owns the width
+budget and shared inset contract. In Settings, search stays visible and opens the collapsed
+command reference; an explicit shortcut-reference request opens it too.
+The inspector foregrounds network/environment and notes; startup URL, dates and
+technical storage details remain available below. No persisted schema changes.
 
 ## Release truth and boundary
 

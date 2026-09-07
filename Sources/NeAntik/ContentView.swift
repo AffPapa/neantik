@@ -1694,7 +1694,6 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     VStack(spacing: 0) {
-                        profileTableHeader(usesWideLayout: usesWideLayout)
                         if batchPresentation.hasSelection ||
                             workspaceBatchUndo != nil {
                             ProfileBatchActionBar(
@@ -1745,101 +1744,119 @@ struct ContentView: View {
                             )
                         }
                         List(selection: profileSelectionBinding) {
-                            ForEach(operationalProfiles) { profile in
-                                let processState = presentedProcessState(
-                                    for: profile
-                                )
-                                let launchAction = BrowserLaunchActionPresentation.resolve(
-                                    processState: processState,
-                                    isArchived: profile.isArchived,
-                                    runtimeAvailability: runtimeAvailability,
-                                    isProxyTesting: isProxyTestInFlight(
-                                        profileID: profile.id
-                                    ),
-                                    isLaunchPreparation:
-                                        launchOperations.isActive(profile.id)
-                                )
-                                ProfileRow(
-                                    profile: profile,
-                                    processState: processState,
-                                    launchAction: launchAction,
-                                    proxyHealth: proxyHealthCoordinator.state(
+                            Section {
+                                ForEach(operationalProfiles) { profile in
+                                    let processState = presentedProcessState(
                                         for: profile
-                                    ),
-                                    isTestingProxy:
-                                        isProxyTestInFlight(profileID: profile.id),
-                                    folderName: store.folderID(forProfileID: profile.id)
-                                        .flatMap { listState.index.folderNameByID[$0] },
-                                    usesWideLayout: usesWideLayout,
-                                    density: workspacePreferences.rowDensity,
-                                    isBatchSelected:
-                                        batchSelectedProfileIDs.contains(
-                                            profile.id
+                                    )
+                                    let launchAction = BrowserLaunchActionPresentation.resolve(
+                                        processState: processState,
+                                        isArchived: profile.isArchived,
+                                        runtimeAvailability: runtimeAvailability,
+                                        isProxyTesting: isProxyTestInFlight(
+                                            profileID: profile.id
                                         ),
-                                    onToggleBatchSelection: {
-                                        if !batchSelectedProfileIDs.insert(
-                                            profile.id
-                                        ).inserted {
-                                            batchSelectedProfileIDs.remove(
+                                        isLaunchPreparation:
+                                            launchOperations.isActive(profile.id)
+                                    )
+                                    ProfileRow(
+                                        profile: profile,
+                                        processState: processState,
+                                        launchAction: launchAction,
+                                        proxyHealth: proxyHealthCoordinator.state(
+                                            for: profile
+                                        ),
+                                        isTestingProxy:
+                                            isProxyTestInFlight(profileID: profile.id),
+                                        folderName: store.folderID(forProfileID: profile.id)
+                                            .flatMap { listState.index.folderNameByID[$0] },
+                                        usesWideLayout: usesWideLayout,
+                                        density: workspacePreferences.rowDensity,
+                                        isBatchSelected:
+                                            batchSelectedProfileIDs.contains(
                                                 profile.id
-                                            )
-                                        }
-                                    },
-                                    onEditNote: {
-                                        beginEditingNote(profile)
-                                    },
-                                    onToggleRunning: {
-                                        if launchOperations.isActive(
-                                            profile.id
-                                        ) {
-                                            cancelLaunchPreparation(
+                                            ),
+                                        onToggleBatchSelection: {
+                                            if !batchSelectedProfileIDs.insert(
+                                                profile.id
+                                            ).inserted {
+                                                batchSelectedProfileIDs.remove(
+                                                    profile.id
+                                                )
+                                            }
+                                        },
+                                        onEditNote: {
+                                            beginEditingNote(profile)
+                                        },
+                                        onToggleRunning: {
+                                            if launchOperations.isActive(
+                                                profile.id
+                                            ) {
+                                                cancelLaunchPreparation(
+                                                    profileID: profile.id
+                                                )
+                                            } else if processState.isRunning {
+                                                processes.stop(profileID: profile.id)
+                                            } else {
+                                                launch(profile)
+                                            }
+                                        },
+                                        onFocusRunning: {
+                                            _ = processes.focus(
                                                 profileID: profile.id
                                             )
-                                        } else if processState.isRunning {
-                                            processes.stop(profileID: profile.id)
-                                        } else {
-                                            launch(profile)
+                                        },
+                                        onOpenDetails: {
+                                            selection = profile.id
+                                            preferredProfileSelection = profile.id
+                                            showsProfileInspector = true
+                                        },
+                                        onEditProfile: {
+                                            beginEditing(profile)
+                                        },
+                                        onTestProxy: {
+                                            if isProxyTestInFlight(
+                                                profileID: profile.id
+                                            ) {
+                                                cancelProxyTest(profileID: profile.id)
+                                            } else {
+                                                startProxyTest(profile)
+                                            }
                                         }
-                                    },
-                                    onFocusRunning: {
-                                        _ = processes.focus(
-                                            profileID: profile.id
+                                    ) {
+                                        profileContextMenu(
+                                            profile,
+                                            processState: processState
                                         )
-                                    },
-                                    onOpenDetails: {
-                                        selection = profile.id
-                                        preferredProfileSelection = profile.id
-                                        showsProfileInspector = true
-                                    },
-                                    onEditProfile: {
-                                        beginEditing(profile)
-                                    },
-                                    onTestProxy: {
-                                        if isProxyTestInFlight(
-                                            profileID: profile.id
-                                        ) {
-                                            cancelProxyTest(profileID: profile.id)
-                                        } else {
-                                            startProxyTest(profile)
-                                        }
                                     }
-                                ) {
-                                    profileContextMenu(
-                                        profile,
-                                        processState: processState
-                                    )
+                                    .tag(profile.id)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(
+                                        top: ProfileRowLayout.listVerticalInset,
+                                        leading: ProfileRowLayout.listHorizontalInset,
+                                        bottom: ProfileRowLayout.listVerticalInset,
+                                        trailing: ProfileRowLayout.listHorizontalInset
+                                    ))
+                                    .contextMenu {
+                                        profileContextMenu(
+                                            profile,
+                                            processState: processState
+                                        )
+                                    }
                                 }
-                                .tag(profile.id)
-                                .listRowSeparator(.hidden)
-                                .contextMenu {
-                                    profileContextMenu(
-                                        profile,
-                                        processState: processState
-                                    )
-                                }
+                            } header: {
+                                profileTableHeader(usesWideLayout: usesWideLayout)
+                                    .textCase(nil)
+                                    .listRowInsets(EdgeInsets(
+                                        top: 0,
+                                        leading: ProfileRowLayout.listHorizontalInset,
+                                        bottom: 0,
+                                        trailing: ProfileRowLayout.listHorizontalInset
+                                    ))
                             }
                         }
-                        .listStyle(.inset)
+                        .listStyle(.plain)
+                        .contentMargins(.horizontal, 0, for: .scrollContent)
                     }
                 }
             }
@@ -1878,7 +1895,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 HStack(spacing: ProfileRowLayout.spacing) {
                     Image(systemName: "checkmark.square")
-                        .frame(width: 24)
+                        .frame(width: ProfileRowLayout.selectionWidth)
                     Text("Профиль")
                         .frame(
                             minWidth: ProfileRowLayout.minimumIdentityWidth,
@@ -1912,12 +1929,15 @@ struct ContentView: View {
                 }
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, ProfileRowLayout.horizontalPadding + 10)
+                .padding(.horizontal, ProfileRowLayout.rowContentHorizontalInset)
+                .padding(.horizontal, ProfileRowLayout.selectionGutter)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 7)
                 Divider()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityHidden(true)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
         }
     }
 
