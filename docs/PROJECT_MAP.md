@@ -1,20 +1,35 @@
 # NeAntik project map
 
-Current source map: 2026-09-06. This document is the current routing source for
+Current source map: 2026-09-07. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
+
+Proxya reference adoption: `PROXYA_ADOPTION_2026-09-06.md` records the exact
+public-source boundary, feature decisions and initial native card layout.
+Owners: `ProfileWorkspaceViews.swift`, `ProfileListHeaderView.swift` and
+`ContentView.swift`; this is development UI, not a new published release.
+
+Apple-layout refinement: `WorkspaceLayout.profileHeaderTopPadding` is spacing
+below the native titlebar, not a second titlebar reserve. `ProfileRowLayout`
+shares list/card/header insets and derives the wide breakpoint from column
+minimums, gaps and a legacy-scrollbar allowance. The column header is a native
+List Section header, sharing the scroll container and insets with rows; no
+coordinate-observation state is needed. `ProfileRowLayoutTests` owns the width
+budget and shared inset contract. In Settings, search stays visible and opens the collapsed
+command reference; an explicit shortcut-reference request opens it too.
+The inspector foregrounds network/environment and notes; startup URL, dates and
+technical storage details remain available below. No persisted schema changes.
 
 ## Release truth and boundary
 
-- Latest immutable GitHub release: `v0.3.23`, version/build `0.3.23 (26)`.
-- Current source candidate: `0.3.24 (27)`; it is not a public binary release
-  until the exact merged commit passes the complete Direct gate.
+- Latest verified immutable GitHub release: `v0.3.24`, version/build `0.3.24 (27)`.
+- The architecture-compaction branch is development work; it does not replace
+  published artifacts or assign a new public version before release gates.
 - Exact released source commit:
-  `fdc520391c58a76622936519ca38b382f629fc47`.
-- Released runtime: Chromium `152.0.7977.64`, ARM64, Metal.
-- September 6 candidate runtime: source-built Chromium `152.0.7977.82`,
-  ARM64, Metal, Developer ID signed and verified before lock promotion.
+  `74141165c568e0bc2de56f976e29154ccd1d298b`.
+- Released runtime: source-built Chromium `152.0.7977.82`, ARM64, Metal,
+  Developer ID signed and verified before lock promotion.
   The September 3 official macOS Stable baseline is `152.0.7977.82/.83`
-  (12 security fixes). Final Direct notarization and live gates remain required;
+  (12 security fixes). The published candidate passed Direct notarization and live gates;
   do not relabel old runtime bytes or remove rollback artifacts to pass a gate.
 - Engineering packaging explicitly uses `verify-integrated-release.sh
   --engineering` before manager provisioning. The default/public verifier
@@ -25,12 +40,13 @@ product and code work. The older v4 documents remain dated design records.
   otherwise sees unrelated workspace packages. Regression owner:
   `scripts/tests/test_build_runtime_script.py`.
 - GitHub assets: notarized ZIP and DMG with SHA-256 sidecars; all four assets
-  were re-downloaded and their hashes were verified before publication.
+  were re-downloaded and verified both before and after publication, including
+  archive/DMG Gatekeeper, stapling, version/build and SHA-256 checks.
 - A later source commit is not a release. A new binary needs a new
   version/build, exact merged commit, Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and re-downloaded SHA-256 evidence.
 - The public website is synchronized read-only from GitHub release metadata.
-  Its page and `release.json` show `0.3.23 (26)` and link directly to the exact
+  Its page and `release.json` were verified showing `0.3.24 (27)` and link directly to the exact
   GitHub assets; AffPapa keeps no second binary copy. The legacy restricted
   wrapper remains fail-closed without its dedicated deploy key and was not
   bypassed with another key or manual server access.
@@ -50,6 +66,34 @@ external runtime preference: it launches only its declared embedded runtime,
 and updates remain immutable manual GitHub releases.
 
 ## Source ownership
+
+The architecture-compaction branch adds shared owners without changing persisted
+schemas or public release state:
+
+- `BrowserProcessObservations` owns cancellable observation tasks by purpose;
+  `ManagedBrowserProcess` keeps each managed process, lease and stop task together.
+  Identity and generation validation remains in `BrowserProcessManager`.
+- `SecureFile` shares guarded descriptor operations while retaining caller error
+  policies. `RecoverableDocumentStorage` shares backup/restore transactions but
+  keeps profile and organization recovery policies distinct.
+- `CanonicalEvidenceJSON` checks canonical bytes only; evidence callers still
+  validate exact keys, schemas and binding requirements.
+- `ProfileEditorDraft` is the single editor draft. `ProfileActionMenu` shares
+  organization actions and `NeAntikDisclosureStyle` shares full-row native
+  disclosures, accessibility state and Reduce Motion behavior.
+- `ProfileOperationOwner` owns window-local generation claims and optional
+  dedicated tasks. It does not replace the app-wide proxy execution limiter,
+  credential/revision matching or persistence rollback coordinator.
+- `WorkspaceSheetRequest` captures one of nine ordinary destinations. Release
+  audit and confirmations remain separate. Only explicit error-to-readiness
+  recovery may bypass pending workspace errors; those errors are retained while
+  readiness is open. Ordinary commands cannot replace an existing modal.
+- Every proxy probe, including a bulk child, owns a cancellable task. Parent
+  cancellation waits for child completion, preserving persistence rollback and
+  execution-permit lifetime rather than only hiding a progress indicator.
+
+See `ARCHITECTURE_COMPACTION_PLAN_2026-09-06.md` for scope and invariant gates.
+These development changes are not part of the published 0.3.24 artifacts.
 
 The September 6 compaction pass keeps the existing product scope. Shared
 `LocaleIdentifierNormalization` in `Models.swift` owns strict locale syntax;
@@ -204,7 +248,7 @@ validates its final token before Save. No persisted schema changes are involved.
 - adds a redacted audit of every reachable Git blob and historical filename to
   the existing current-tree and GitHub secret-scanning gates.
 
-### Prepared in source for 0.3.24
+### Delivered in 0.3.24
 
 - removes the rotating hard-coded signing-certificate SHA-1 from the release
   launcher and selects exactly one installed Developer ID Application identity
@@ -261,6 +305,11 @@ validates its final token before Save. No persisted schema changes are involved.
 | Public release/site | immutable upload, six-file publish transaction when authorized, re-download and SHA-256/live verification |
 
 ## Research routing
+
+- Current twelve-product lean follow-up and five bounded UX fixes:
+  [Lean UX research](LEAN_UX_RESEARCH_2026-09-07.md). Inspector availability
+  is shared by toolbar, menu and action through `ProfileInspectorPolicy` in
+  `WorkspaceToolbarContent.swift`; no new navigation or persistence layer.
 
 - Current zero-base security, UX and release matrix with fifteen role prompts:
   [0.3.24 audit plan](NEANTIK_0324_ZERO_BASE_AUDIT_PLAN.md).

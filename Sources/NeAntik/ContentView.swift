@@ -23,15 +23,8 @@ struct ContentView: View {
     @State private var selection: UUID?
     @State private var batchSelectedProfileIDs = Set<UUID>()
     @State private var workspaceBatchUndo: WorkspaceBatchUndo?
-    @State private var profileBatchTagRequest: ProfileBatchTagRequest?
-    @State private var editorRequest: EditorRequest?
-    @State private var profileDuplicationRequest:
-        ProfileDuplicationRequest?
-    @State private var profileNoteRequest: ProfileNoteRequest?
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
-    @State private var fingerprintAuditRequest: FingerprintAuditRequest?
-    @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var forceStopRequest: BrowserProfile?
@@ -54,17 +47,9 @@ struct ContentView: View {
         .pinnedThenName
     @State private var profileOperationalFilter: ProfileOperationalFilter =
         .all
-    @State private var folderNameRequest: FolderNameRequest?
-    @State private var profileFolderPickerRequest:
-        ProfileFolderPickerRequest?
     @State private var folderPendingDelete: ProfileFolder?
-    @State private var proxyTestOperations = ProxyTestOperationRegistry()
-    @State private var proxyTestingProfileIDs = Set<UUID>()
-    @State private var proxyTestTasks: [UUID: Task<Void, Never>] = [:]
-    @State private var launchPreparingProfileIDs = Set<UUID>()
-    @State private var launchPreparationTasks:
-        [UUID: Task<Void, Never>] = [:]
-    @State private var launchPreparationTokens: [UUID: UUID] = [:]
+    @State private var proxyOperations = ProfileOperationOwner()
+    @State private var launchOperations = ProfileOperationOwner()
     @State private var bulkProxyTestTask: Task<Void, Never>?
     @State private var bulkProxyTestID: UUID?
     @State private var bulkProxyProgress: BulkProxyRunProgress?
@@ -72,7 +57,7 @@ struct ContentView: View {
     @State private var bulkProxyFailedProfileIDs: [UUID] = []
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
-    @State private var showingWorkspaceReadiness = false
+    @State private var workspaceSheetRequest: WorkspaceSheetRequest?
     @State private var isRefreshingWorkspaceReadiness = false
     @State private var workspaceReadinessNotice: UserNotice?
     @State private var readinessSystemInspection:
@@ -143,21 +128,16 @@ struct ContentView: View {
     }
 
     private var isWorkspaceModalPresented: Bool {
-        editorRequest != nil ||
-            profileDuplicationRequest != nil ||
-            profileNoteRequest != nil ||
-            folderNameRequest != nil ||
-            profileFolderPickerRequest != nil ||
-            profileBatchTagRequest != nil ||
-            bulkProxyImportRequest != nil ||
+        isWorkspaceSheetOrConfirmationPresented || workspaceAlert != nil
+    }
+
+    private var isWorkspaceSheetOrConfirmationPresented: Bool {
+        workspaceSheetRequest != nil ||
             forceStopRequest != nil ||
             showingReleaseFingerprintAudit ||
-            fingerprintAuditRequest != nil ||
-            showingWorkspaceReadiness ||
             showingDeleteConfirmation ||
             folderPendingDelete != nil ||
-            launchPreparationFailure != nil ||
-            workspaceAlert != nil
+            launchPreparationFailure != nil
     }
 
     private var workspaceCommandSet: WorkspaceCommandSet {
@@ -165,7 +145,10 @@ struct ContentView: View {
         return WorkspaceCommandSet(
             isEnabled: true,
             selectedFolderName: selectedFolder?.name,
-            canToggleInspector: selectedProfile != nil,
+            canToggleInspector: ProfileInspectorPolicy.canToggle(
+                isPresented: showsProfileInspector,
+                hasSelectedProfile: selectedProfile != nil
+            ),
             showsInspector: showsProfileInspector,
             createProfile: beginCreatingProfile,
             createFolder: beginCreatingFolder,
@@ -177,9 +160,7 @@ struct ContentView: View {
             toggleInspector: toggleProfileInspector,
             renameSelectedFolder: {
                 guard let selectedFolder else { return }
-                folderNameRequest = FolderNameRequest(
-                    folder: selectedFolder
-                )
+                presentWorkspaceSheet(.folderName(selectedFolder))
             },
             deleteSelectedFolder: {
                 guard let selectedFolder else { return }
@@ -193,7 +174,7 @@ struct ContentView: View {
     ) -> BrowserProfileProcessState {
         let state = processes.processState(for: profile.id)
         guard state == .stopped,
-              launchPreparingProfileIDs.contains(profile.id)
+              launchOperations.isActive(profile.id)
         else {
             return state
         }
@@ -201,7 +182,7 @@ struct ContentView: View {
     }
 
     private func isProxyTestInFlight(profileID: UUID) -> Bool {
-        proxyTestingProfileIDs.contains(profileID) ||
+        proxyOperations.isActive(profileID) ||
             proxyHealthCoordinator.isTesting(profileID: profileID)
     }
 
@@ -266,7 +247,7 @@ struct ContentView: View {
         BulkProxyActionProjection.resolve(
             visibleProfiles: visibleProfiles,
             processState: { processes.processState(for: $0) },
-            isPreparing: { launchPreparingProfileIDs.contains($0) },
+            isPreparing: { launchOperations.isActive($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
     }
@@ -388,9 +369,12 @@ struct ContentView: View {
         Binding<WorkspaceAlertPresentation?>
     {
         Binding(
-            get: { workspaceAlert },
+            get: {
+                workspaceSheetRequest?.isReadiness == true ? nil : workspaceAlert
+            },
             set: { value in
-                guard value == nil, let source = workspaceAlert?.source else {
+                guard workspaceSheetRequest?.isReadiness != true,
+                      value == nil, let source = workspaceAlert?.source else {
                     return
                 }
                 clearWorkspaceAlert(source)
@@ -457,130 +441,8 @@ struct ContentView: View {
 
     private var workspaceSheets: some View {
         workspaceBase
-        .sheet(item: $editorRequest) { request in
-            profileEditorSheet(for: request)
-        }
-        .sheet(item: $profileDuplicationRequest) { request in
-            ProfileDuplicationSheet(
-                source: request.source,
-                folders: store.organization.folders,
-                initialOptions: request.initialOptions
-            ) { options in
-                try saveDuplicate(
-                    sourceProfileID: request.source.id,
-                    expectedSourceRevision: request.source.revision,
-                    options: options
-                )
-            }
-        }
-        .sheet(item: $profileNoteRequest) { request in
-            ProfileNoteEditorView(
-                profileName: request.profile.name,
-                initialNote: request.profile.note
-            ) { note in
-                try saveProfileNote(
-                    note,
-                    profileID: request.profile.id,
-                    expectedNote: request.profile.note
-                )
-            }
-        }
-        .sheet(item: $folderNameRequest) { request in
-            ProfileFolderNameSheet(
-                title: request.folder == nil
-                    ? "Новая папка"
-                    : "Переименовать папку",
-                initialName: request.folder?.name ?? "",
-                existingNames: store.organization.folders.map(\.name)
-            ) { name in
-                if let folder = request.folder {
-                    _ = try store.renameFolder(
-                        withID: folder.id,
-                        to: name
-                    )
-                } else {
-                    let folder = try store.createFolder(named: name)
-                    selectedFolderFilter = .folder(folder.id)
-                    selectedProfileTag = nil
-                    normalizeSelection()
-                }
-            }
-        }
-        .sheet(item: $profileFolderPickerRequest) { request in
-            let profiles = store.profiles.filter {
-                request.profileIDs.contains($0.id)
-            }
-            if profiles.count == request.profileIDs.count,
-               !profiles.isEmpty {
-                let firstFolderID = store.folderID(
-                    forProfileID: profiles[0].id
-                )
-                let sharesFolder = profiles.allSatisfy {
-                    store.folderID(forProfileID: $0.id) == firstFolderID
-                }
-                ProfileFolderPickerSheet(
-                    selectionDescription:
-                        profiles.count == 1
-                            ? "Профиль «\(profiles[0].name)»"
-                            : "Выбрано \(profiles.count) \(profileCountWord(profiles.count))",
-                    folders: store.organization.folders,
-                    selectedFolderID: sharesFolder ? firstFolderID : nil,
-                    hasMixedSelection: !sharesFolder
-                ) { folderID in
-                    if profiles.count == 1 {
-                        try performMoveProfile(profiles[0], toFolderID: folderID)
-                    } else {
-                        try moveProfiles(
-                            request.profileIDs,
-                            toFolderID: folderID
-                        )
-                    }
-                }
-            } else {
-                ProfileFolderPickerUnavailableSheet {
-                        profileFolderPickerRequest = nil
-                }
-            }
-        }
-        .sheet(item: $profileBatchTagRequest) { request in
-            ProfileBatchTagSheet(
-                profiles: store.profiles.filter { request.profileIDs.contains($0.id) },
-                suggestedTags: currentProfileListIndex.tagSummaries(
-                    scope: profileListScope,
-                    in: selectedFolderFilter
-                ).map(\.name)
-            ) { action in
-                try performBatchMetadata(action, to: request.profileIDs)
-            }
-        }
-        .sheet(item: $bulkProxyImportRequest) { request in
-            BulkProxyImportView(
-                targetFolderName: request.targetFolderID.flatMap {
-                    store.folder(withID: $0)?.name
-                }
-            ) { drafts, baseName in
-                try await createProfiles(
-                    from: drafts,
-                    baseName: baseName,
-                    targetFolderID: request.targetFolderID
-                )
-            }
-        }
-        .sheet(isPresented: $showingWorkspaceReadiness) {
-            WorkspaceReadinessView(
-                snapshot: workspaceReadinessSnapshot,
-                applicationPath:
-                    readinessSystemInspection.application.displayPath,
-                isRefreshing: isRefreshingWorkspaceReadiness,
-                notice: workspaceReadinessNotice,
-                onRecheck: {
-                    Task { await refreshWorkspaceReadiness() }
-                },
-                onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
-                onCopyApplicationPath: copyWorkspaceApplicationPath,
-                onRevealApplication: revealWorkspaceApplication,
-                onOpenSystemSettings: openWorkspaceSystemSettings
-            )
+        .sheet(item: $workspaceSheetRequest) { request in
+            workspaceSheet(for: request.destination)
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -606,7 +468,131 @@ struct ContentView: View {
                 .frame(width: 520, height: 360)
             }
         }
-        .sheet(item: $fingerprintAuditRequest) { request in
+    }
+
+    @ViewBuilder
+    private func workspaceSheet(
+        for destination: WorkspaceSheetRequest.Destination
+    ) -> some View {
+        switch destination {
+        case let .editor(request):
+            profileEditorSheet(for: request)
+        case let .duplication(request):
+            ProfileDuplicationSheet(
+                source: request.source,
+                folders: store.organization.folders,
+                initialOptions: request.initialOptions
+            ) { options in
+                try saveDuplicate(
+                    sourceProfileID: request.source.id,
+                    expectedSourceRevision: request.source.revision,
+                    options: options
+                )
+            }
+        case let .note(profile):
+            ProfileNoteEditorView(
+                profileName: profile.name,
+                initialNote: profile.note
+            ) { note in
+                try saveProfileNote(
+                    note,
+                    profileID: profile.id,
+                    expectedNote: profile.note
+                )
+            }
+        case let .folderName(folder):
+            ProfileFolderNameSheet(
+                title: folder == nil
+                    ? "Новая папка"
+                    : "Переименовать папку",
+                initialName: folder?.name ?? "",
+                existingNames: store.organization.folders.map(\.name)
+            ) { name in
+                if let folder {
+                    _ = try store.renameFolder(
+                        withID: folder.id,
+                        to: name
+                    )
+                } else {
+                    let folder = try store.createFolder(named: name)
+                    selectedFolderFilter = .folder(folder.id)
+                    selectedProfileTag = nil
+                    normalizeSelection()
+                }
+            }
+        case let .folderPicker(profileIDs):
+            let profiles = store.profiles.filter {
+                profileIDs.contains($0.id)
+            }
+            if profiles.count == profileIDs.count,
+               !profiles.isEmpty {
+                let firstFolderID = store.folderID(
+                    forProfileID: profiles[0].id
+                )
+                let sharesFolder = profiles.allSatisfy {
+                    store.folderID(forProfileID: $0.id) == firstFolderID
+                }
+                ProfileFolderPickerSheet(
+                    selectionDescription:
+                        profiles.count == 1
+                            ? "Профиль «\(profiles[0].name)»"
+                            : "Выбрано \(profiles.count) \(profileCountWord(profiles.count))",
+                    folders: store.organization.folders,
+                    selectedFolderID: sharesFolder ? firstFolderID : nil,
+                    hasMixedSelection: !sharesFolder
+                ) { folderID in
+                    if profiles.count == 1 {
+                        try performMoveProfile(profiles[0], toFolderID: folderID)
+                    } else {
+                        try moveProfiles(
+                            profileIDs,
+                            toFolderID: folderID
+                        )
+                    }
+                }
+            } else {
+                ProfileFolderPickerUnavailableSheet {
+                    workspaceSheetRequest = nil
+                }
+            }
+        case let .batchTags(profileIDs):
+            ProfileBatchTagSheet(
+                profiles: store.profiles.filter { profileIDs.contains($0.id) },
+                suggestedTags: currentProfileListIndex.tagSummaries(
+                    scope: profileListScope,
+                    in: selectedFolderFilter
+                ).map(\.name)
+            ) { action in
+                try performBatchMetadata(action, to: profileIDs)
+            }
+        case let .proxyImport(targetFolderID):
+            BulkProxyImportView(
+                targetFolderName: targetFolderID.flatMap {
+                    store.folder(withID: $0)?.name
+                }
+            ) { drafts, baseName in
+                try await createProfiles(
+                    from: drafts,
+                    baseName: baseName,
+                    targetFolderID: targetFolderID
+                )
+            }
+        case .readiness:
+            WorkspaceReadinessView(
+                snapshot: workspaceReadinessSnapshot,
+                applicationPath:
+                    readinessSystemInspection.application.displayPath,
+                isRefreshing: isRefreshingWorkspaceReadiness,
+                notice: workspaceReadinessNotice,
+                onRecheck: {
+                    Task { await refreshWorkspaceReadiness() }
+                },
+                onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
+                onCopyApplicationPath: copyWorkspaceApplicationPath,
+                onRevealApplication: revealWorkspaceApplication,
+                onOpenSystemSettings: openWorkspaceSystemSettings
+            )
+        case let .fingerprintAudit(request):
             FingerprintAuditView(
                 profiles: request.auditedProfiles,
                 initialFirstID: request.initialFirstID,
@@ -626,6 +612,21 @@ struct ContentView: View {
                 }
             )
         }
+    }
+
+    @discardableResult
+    private func presentWorkspaceSheet(
+        _ destination: WorkspaceSheetRequest.Destination,
+        recoveringWorkspaceAlert: Bool = false
+    ) -> Bool {
+        guard WorkspaceSheetRequest.canPresent(
+            destination,
+            hasBlockingModal: isWorkspaceSheetOrConfirmationPresented,
+            hasWorkspaceAlert: workspaceAlert != nil,
+            recoveringWorkspaceAlert: recoveringWorkspaceAlert
+        ) else { return false }
+        workspaceSheetRequest = WorkspaceSheetRequest(destination: destination)
+        return true
     }
 
     private var workspaceAlerts: some View {
@@ -749,7 +750,7 @@ struct ContentView: View {
                 message: Text(presentation.message),
                 primaryButton: .default(Text("Открыть готовность")) {
                     clearWorkspaceAlert(presentation.source)
-                    presentWorkspaceReadiness()
+                    presentWorkspaceReadiness(recoveringWorkspaceAlert: true)
                 },
                 secondaryButton: .cancel(Text("Закрыть")) {
                     clearWorkspaceAlert(presentation.source)
@@ -854,7 +855,7 @@ struct ContentView: View {
             )
         ) { _ in
             processes.reconcile(profiles: store.profiles)
-            if showingWorkspaceReadiness {
+            if workspaceSheetRequest?.isReadiness == true {
                 Task { await refreshWorkspaceReadiness() }
             }
         }
@@ -1076,10 +1077,10 @@ struct ContentView: View {
             localError = "Состояние профиля пока не подтверждено. Повтори после проверки процесса."
             return
         }
-        editorRequest = EditorRequest(
+        presentWorkspaceSheet(.editor(EditorRequest(
             profile: profile,
             openedProcessState: state
-        )
+        )))
     }
 
     private func beginEditingNote(_ profile: BrowserProfile) {
@@ -1087,7 +1088,7 @@ struct ContentView: View {
             localError = "Профиль больше не существует."
             return
         }
-        profileNoteRequest = ProfileNoteRequest(profile: profile)
+        presentWorkspaceSheet(.note(profile))
     }
 
     private func saveProfileNote(
@@ -1132,7 +1133,11 @@ struct ContentView: View {
     }
 
     private func toggleProfileInspector() {
-        guard selectedProfile != nil else { return }
+        guard !isWorkspaceModalPresented,
+              ProfileInspectorPolicy.canToggle(
+                  isPresented: showsProfileInspector,
+                  hasSelectedProfile: selectedProfile != nil
+              ) else { return }
         showsProfileInspector.toggle()
     }
 
@@ -1151,15 +1156,15 @@ struct ContentView: View {
 
     private func beginCreatingProfile() {
         guard !isWorkspaceModalPresented else { return }
-        editorRequest = EditorRequest(
+        presentWorkspaceSheet(.editor(EditorRequest(
             profile: nil,
             targetFolderID: selectedFolderID
-        )
+        )))
     }
 
     private func beginCreatingFolder() {
         guard !isWorkspaceModalPresented else { return }
-        folderNameRequest = FolderNameRequest(folder: nil)
+        presentWorkspaceSheet(.folderName(nil))
     }
 
     private func createAndOpenProfileQuickly() {
@@ -1331,11 +1336,11 @@ struct ContentView: View {
     }
 
     private func beginDuplicating(_ profile: BrowserProfile) {
-        profileDuplicationRequest = ProfileDuplicationRequest(
+        presentWorkspaceSheet(.duplication(ProfileDuplicationRequest(
             source: profile,
             existingNames: store.profiles.map(\.name),
             destinationFolderID: store.folderID(forProfileID: profile.id)
-        )
+        )))
     }
 
     private func saveDuplicate(
@@ -1473,9 +1478,7 @@ struct ContentView: View {
 
                     if let selectedFolder {
                         Button {
-                            folderNameRequest = FolderNameRequest(
-                                folder: selectedFolder
-                            )
+                            presentWorkspaceSheet(.folderName(selectedFolder))
                         } label: {
                             Label(
                                 "Переименовать папку",
@@ -1537,7 +1540,7 @@ struct ContentView: View {
                         }
                         .contextMenu {
                             Button("Переименовать…", systemImage: "pencil") {
-                                folderNameRequest = FolderNameRequest(folder: folder)
+                                presentWorkspaceSheet(.folderName(folder))
                             }
                             Button(
                                 "Удалить папку",
@@ -1698,7 +1701,6 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     VStack(spacing: 0) {
-                        profileTableHeader(usesWideLayout: usesWideLayout)
                         if batchPresentation.hasSelection ||
                             workspaceBatchUndo != nil {
                             ProfileBatchActionBar(
@@ -1727,18 +1729,14 @@ struct ContentView: View {
                                     )
                                 },
                                 onChooseFolder: {
-                                    profileFolderPickerRequest =
-                                        ProfileFolderPickerRequest(
-                                            profileIDs: batchPresentation
-                                                .selectedProfileIDs
-                                        )
+                                    presentWorkspaceSheet(.folderPicker(
+                                        batchPresentation.selectedProfileIDs
+                                    ))
                                 },
                                 onEditTag: {
-                                    profileBatchTagRequest =
-                                        ProfileBatchTagRequest(
-                                            profileIDs: batchPresentation
-                                                .selectedProfileIDs
-                                        )
+                                    presentWorkspaceSheet(.batchTags(
+                                        batchPresentation.selectedProfileIDs
+                                    ))
                                 },
                                 onToggleArchived: {
                                     applyBatchMetadata(
@@ -1753,100 +1751,119 @@ struct ContentView: View {
                             )
                         }
                         List(selection: profileSelectionBinding) {
-                            ForEach(operationalProfiles) { profile in
-                                let processState = presentedProcessState(
-                                    for: profile
-                                )
-                                let launchAction = BrowserLaunchActionPresentation.resolve(
-                                    processState: processState,
-                                    isArchived: profile.isArchived,
-                                    runtimeAvailability: runtimeAvailability,
-                                    isProxyTesting: isProxyTestInFlight(
-                                        profileID: profile.id
-                                    ),
-                                    isLaunchPreparation:
-                                        launchPreparingProfileIDs.contains(profile.id)
-                                )
-                                ProfileRow(
-                                    profile: profile,
-                                    processState: processState,
-                                    launchAction: launchAction,
-                                    proxyHealth: proxyHealthCoordinator.state(
+                            Section {
+                                ForEach(operationalProfiles) { profile in
+                                    let processState = presentedProcessState(
                                         for: profile
-                                    ),
-                                    isTestingProxy:
-                                        isProxyTestInFlight(profileID: profile.id),
-                                    folderName: store.folderID(forProfileID: profile.id)
-                                        .flatMap { listState.index.folderNameByID[$0] },
-                                    usesWideLayout: usesWideLayout,
-                                    density: workspacePreferences.rowDensity,
-                                    isBatchSelected:
-                                        batchSelectedProfileIDs.contains(
-                                            profile.id
+                                    )
+                                    let launchAction = BrowserLaunchActionPresentation.resolve(
+                                        processState: processState,
+                                        isArchived: profile.isArchived,
+                                        runtimeAvailability: runtimeAvailability,
+                                        isProxyTesting: isProxyTestInFlight(
+                                            profileID: profile.id
                                         ),
-                                    onToggleBatchSelection: {
-                                        if !batchSelectedProfileIDs.insert(
-                                            profile.id
-                                        ).inserted {
-                                            batchSelectedProfileIDs.remove(
+                                        isLaunchPreparation:
+                                            launchOperations.isActive(profile.id)
+                                    )
+                                    ProfileRow(
+                                        profile: profile,
+                                        processState: processState,
+                                        launchAction: launchAction,
+                                        proxyHealth: proxyHealthCoordinator.state(
+                                            for: profile
+                                        ),
+                                        isTestingProxy:
+                                            isProxyTestInFlight(profileID: profile.id),
+                                        folderName: store.folderID(forProfileID: profile.id)
+                                            .flatMap { listState.index.folderNameByID[$0] },
+                                        usesWideLayout: usesWideLayout,
+                                        density: workspacePreferences.rowDensity,
+                                        isBatchSelected:
+                                            batchSelectedProfileIDs.contains(
                                                 profile.id
-                                            )
-                                        }
-                                    },
-                                    onEditNote: {
-                                        beginEditingNote(profile)
-                                    },
-                                    onToggleRunning: {
-                                        if launchPreparingProfileIDs.contains(
-                                            profile.id
-                                        ) {
-                                            cancelLaunchPreparation(
+                                            ),
+                                        onToggleBatchSelection: {
+                                            if !batchSelectedProfileIDs.insert(
+                                                profile.id
+                                            ).inserted {
+                                                batchSelectedProfileIDs.remove(
+                                                    profile.id
+                                                )
+                                            }
+                                        },
+                                        onEditNote: {
+                                            beginEditingNote(profile)
+                                        },
+                                        onToggleRunning: {
+                                            if launchOperations.isActive(
+                                                profile.id
+                                            ) {
+                                                cancelLaunchPreparation(
+                                                    profileID: profile.id
+                                                )
+                                            } else if processState.isRunning {
+                                                processes.stop(profileID: profile.id)
+                                            } else {
+                                                launch(profile)
+                                            }
+                                        },
+                                        onFocusRunning: {
+                                            _ = processes.focus(
                                                 profileID: profile.id
                                             )
-                                        } else if processState.isRunning {
-                                            processes.stop(profileID: profile.id)
-                                        } else {
-                                            launch(profile)
+                                        },
+                                        onOpenDetails: {
+                                            selection = profile.id
+                                            preferredProfileSelection = profile.id
+                                            showsProfileInspector = true
+                                        },
+                                        onEditProfile: {
+                                            beginEditing(profile)
+                                        },
+                                        onTestProxy: {
+                                            if isProxyTestInFlight(
+                                                profileID: profile.id
+                                            ) {
+                                                cancelProxyTest(profileID: profile.id)
+                                            } else {
+                                                startProxyTest(profile)
+                                            }
                                         }
-                                    },
-                                    onFocusRunning: {
-                                        _ = processes.focus(
-                                            profileID: profile.id
+                                    ) {
+                                        profileContextMenu(
+                                            profile,
+                                            processState: processState
                                         )
-                                    },
-                                    onOpenDetails: {
-                                        selection = profile.id
-                                        preferredProfileSelection = profile.id
-                                        showsProfileInspector = true
-                                    },
-                                    onEditProfile: {
-                                        beginEditing(profile)
-                                    },
-                                    onTestProxy: {
-                                        if isProxyTestInFlight(
-                                            profileID: profile.id
-                                        ) {
-                                            cancelProxyTest(profileID: profile.id)
-                                        } else {
-                                            startProxyTest(profile)
-                                        }
                                     }
-                                ) {
-                                    profileContextMenu(
-                                        profile,
-                                        processState: processState
-                                    )
+                                    .tag(profile.id)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(
+                                        top: ProfileRowLayout.listVerticalInset,
+                                        leading: ProfileRowLayout.listHorizontalInset,
+                                        bottom: ProfileRowLayout.listVerticalInset,
+                                        trailing: ProfileRowLayout.listHorizontalInset
+                                    ))
+                                    .contextMenu {
+                                        profileContextMenu(
+                                            profile,
+                                            processState: processState
+                                        )
+                                    }
                                 }
-                                .tag(profile.id)
-                                .contextMenu {
-                                    profileContextMenu(
-                                        profile,
-                                        processState: processState
-                                    )
-                                }
+                            } header: {
+                                profileTableHeader(usesWideLayout: usesWideLayout)
+                                    .textCase(nil)
+                                    .listRowInsets(EdgeInsets(
+                                        top: 0,
+                                        leading: ProfileRowLayout.listHorizontalInset,
+                                        bottom: 0,
+                                        trailing: ProfileRowLayout.listHorizontalInset
+                                    ))
                             }
                         }
-                        .listStyle(.inset)
+                        .listStyle(.plain)
+                        .contentMargins(.horizontal, 0, for: .scrollContent)
                     }
                 }
             }
@@ -1884,8 +1901,8 @@ struct ContentView: View {
         if usesWideLayout {
             VStack(spacing: 0) {
                 HStack(spacing: ProfileRowLayout.spacing) {
-                    Text("Выбор / запуск")
-                        .frame(width: ProfileRowLayout.actionWidth)
+                    Image(systemName: "checkmark.square")
+                        .frame(width: ProfileRowLayout.selectionWidth)
                     Text("Профиль")
                         .frame(
                             minWidth: ProfileRowLayout.minimumIdentityWidth,
@@ -1914,15 +1931,20 @@ struct ContentView: View {
                             width: ProfileRowLayout.menuWidth,
                             height: 1
                         )
+                    Text("Запуск")
+                        .frame(width: ProfileRowLayout.actionWidth)
                 }
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, ProfileRowLayout.horizontalPadding)
+                .padding(.horizontal, ProfileRowLayout.rowContentHorizontalInset)
+                .padding(.horizontal, ProfileRowLayout.selectionGutter)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 7)
                 Divider()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityHidden(true)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
         }
     }
 
@@ -1954,7 +1976,7 @@ struct ContentView: View {
         let bulkProxyAction = BulkProxyActionProjection.resolve(
             visibleProfiles: operationalProfiles,
             processState: { processes.processState(for: $0) },
-            isPreparing: { launchPreparingProfileIDs.contains($0) },
+            isPreparing: { launchOperations.isActive($0) },
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
         let summary = operationalProjection.summary
@@ -1980,9 +2002,7 @@ struct ContentView: View {
             hasFailedProxyTests: !bulkProxyFailedProfileIDs.isEmpty,
             feedbackNotice: listFeedbackNotice,
             onBulkProxyImport: {
-                bulkProxyImportRequest = BulkProxyImportRequest(
-                    targetFolderID: selectedFolderID
-                )
+                presentWorkspaceSheet(.proxyImport(targetFolderID: selectedFolderID))
             },
             onToggleBulkProxyTests: toggleBulkProxyTests,
             onRetryFailedProxyTests: retryFailedBulkProxyTests,
@@ -2367,7 +2387,7 @@ struct ContentView: View {
             for: profile,
             processState: processState
         )
-        profileOrganizationActions(commands)
+        ProfileOrganizationActions(commands: commands)
         Divider()
         Button {
             selection = profile.id
@@ -2426,7 +2446,7 @@ struct ContentView: View {
             .disabled(!commands.presentation.editIsEnabled)
         }
         Button(
-            "Показать данные в Finder",
+            "Показать папку данных в Finder",
             systemImage: "folder",
             action: commands.revealInFinder
         )
@@ -2456,63 +2476,6 @@ struct ContentView: View {
         .disabled(!commands.presentation.deleteIsEnabled)
     }
 
-    @ViewBuilder
-    private func profileOrganizationActions(
-        _ commands: ProfileCommandSet
-    ) -> some View {
-        Button(
-            commands.presentation.pinTitle,
-            systemImage: commands.presentation.pinSystemImage,
-            action: commands.togglePinned
-        )
-        Button(
-            "Создать похожий",
-            systemImage: "plus.square.on.square",
-            action: commands.duplicate
-        )
-        moveToFolderMenu(commands)
-        Button(
-            commands.presentation.archiveTitle,
-            systemImage: commands.presentation.archiveSystemImage,
-            action: commands.toggleArchived
-        )
-        .disabled(!commands.presentation.archiveIsEnabled)
-    }
-
-    @ViewBuilder
-    private func moveToFolderMenu(
-        _ commands: ProfileCommandSet
-    ) -> some View {
-        Menu {
-            ForEach(commands.folderOptions) { option in
-                Button {
-                    commands.moveToFolder(option.folderID)
-                } label: {
-                    Label(
-                        option.title,
-                        systemImage:
-                            option.isSelected
-                                ? "checkmark"
-                                : (option.folderID == nil
-                                    ? "tray"
-                                    : "folder")
-                    )
-                }
-            }
-
-            if commands.hasMoreFolderOptions {
-                Divider()
-                Button(
-                    "Выбрать другую папку…",
-                    systemImage: "magnifyingglass",
-                    action: commands.chooseFolder
-                )
-            }
-        } label: {
-            Label("Переместить в папку", systemImage: "folder")
-        }
-    }
-
     private func profileCommandSet(
         for profile: BrowserProfile,
         processState requestedProcessState: BrowserProfileProcessState? = nil
@@ -2526,7 +2489,7 @@ struct ContentView: View {
             runtimeAvailability: runtimeAvailability,
             isProxyTesting: isProxyTestInFlight(profileID: profile.id),
             isLaunchPreparation:
-                launchPreparingProfileIDs.contains(profile.id)
+                launchOperations.isActive(profile.id)
         )
         let currentFolderID = store.folderID(forProfileID: profile.id)
         let folderProjection = ProfileFolderCommandProjection.resolve(
@@ -2542,7 +2505,7 @@ struct ContentView: View {
             folderOptions: folderProjection.options,
             hasMoreFolderOptions: folderProjection.hasMore,
             toggleRunning: {
-                if launchPreparingProfileIDs.contains(profile.id) {
+                if launchOperations.isActive(profile.id) {
                     cancelLaunchPreparation(profileID: profile.id)
                 } else if processState.isRunning {
                     processes.stop(profileID: profile.id)
@@ -2559,9 +2522,7 @@ struct ContentView: View {
             duplicate: { beginDuplicating(profile) },
             moveToFolder: { moveProfile(profile, toFolderID: $0) },
             chooseFolder: {
-                profileFolderPickerRequest = ProfileFolderPickerRequest(
-                    profileIDs: [profile.id]
-                )
+                presentWorkspaceSheet(.folderPicker([profile.id]))
             },
             toggleArchived: { toggleArchived(profile) },
             revealInFinder: { revealProfile(profile) },
@@ -2579,7 +2540,7 @@ struct ContentView: View {
                 runtimeAvailability: runtimeAvailability,
                 isProxyTesting: isProxyTestInFlight(profileID: profile.id),
                 isLaunchPreparation:
-                    launchPreparingProfileIDs.contains(profile.id)
+                    launchOperations.isActive(profile.id)
             )
             ProfileDetailView(
                 profile: profile,
@@ -2595,8 +2556,8 @@ struct ContentView: View {
                 ),
                 isTestingProxy: isProxyTestInFlight(profileID: profile.id),
                 canCancelProxyTest:
-                    proxyTestingProfileIDs.contains(profile.id) ||
-                    launchPreparingProfileIDs.contains(profile.id),
+                    proxyOperations.isActive(profile.id) ||
+                    launchOperations.isActive(profile.id),
                 canRunFingerprintAudit:
                     runtimePreflight?.isReady == true &&
                     runtime?.supportsFingerprintIdentity == true &&
@@ -2655,7 +2616,7 @@ struct ContentView: View {
                 },
                 launchAction: launchAction,
                 onToggleRunning: {
-                    if launchPreparingProfileIDs.contains(profile.id) {
+                    if launchOperations.isActive(profile.id) {
                         cancelLaunchPreparation(profileID: profile.id)
                     } else if processState.isRunning {
                         processes.stop(profileID: profile.id)
@@ -2837,7 +2798,7 @@ struct ContentView: View {
         _ profile: BrowserProfile,
         runtime: BrowserRuntime
     ) {
-        guard launchPreparationTasks[profile.id] == nil else { return }
+        guard !launchOperations.isActive(profile.id) else { return }
         guard !isProxyTestInFlight(profileID: profile.id) else {
             launchPreparationFailure = LaunchPreparationFailure(
                 profileID: profile.id,
@@ -2847,17 +2808,10 @@ struct ContentView: View {
             return
         }
 
-        let launchToken = UUID()
-        launchPreparationTokens[profile.id] = launchToken
-        launchPreparingProfileIDs.insert(profile.id)
-        launchPreparationTasks[profile.id] = Task { @MainActor in
-            defer {
-                if launchPreparationTokens[profile.id] == launchToken {
-                    launchPreparationTokens[profile.id] = nil
-                    launchPreparingProfileIDs.remove(profile.id)
-                    launchPreparationTasks[profile.id] = nil
-                }
-            }
+        guard let launchToken = launchOperations.claim(profile.id) else { return }
+        let task = Task { @MainActor in
+            defer { launchOperations.finish(launchToken) }
+            guard !Task.isCancelled, launchOperations.isCurrent(launchToken) else { return }
             guard let token = beginProxyTest(for: profile) else {
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: profile.id,
@@ -2868,8 +2822,7 @@ struct ContentView: View {
             }
             let state = await executeProxyTest(
                 profile,
-                token: token,
-                clearsDedicatedTask: false
+                token: token
             )
             guard !Task.isCancelled else {
                 return
@@ -2939,6 +2892,7 @@ struct ContentView: View {
                 )
             }
         }
+        launchOperations.attach(task, to: launchToken)
     }
 
     private func resolveRuntime() async {
@@ -2956,9 +2910,15 @@ struct ContentView: View {
     }
 
     private func presentWorkspaceReadiness() {
-        guard !showingWorkspaceReadiness else { return }
+        presentWorkspaceReadiness(recoveringWorkspaceAlert: false)
+    }
+
+    private func presentWorkspaceReadiness(recoveringWorkspaceAlert: Bool) {
+        guard presentWorkspaceSheet(
+            .readiness,
+            recoveringWorkspaceAlert: recoveringWorkspaceAlert
+        ) else { return }
         workspaceReadinessNotice = nil
-        showingWorkspaceReadiness = true
         Task { await refreshWorkspaceReadiness() }
     }
 
@@ -3122,11 +3082,11 @@ struct ContentView: View {
                 "Нужны два активных профиля и готовый встроенный браузерный движок."
             return
         }
-        fingerprintAuditRequest = FingerprintAuditRequest(
+        presentWorkspaceSheet(.fingerprintAudit(FingerprintAuditRequest(
             auditedProfiles: fingerprintAuditProfiles,
             initialFirstID: selectedProfile?.id,
             runtime: runtime
-        )
+        )))
     }
 
     @MainActor
@@ -3142,15 +3102,14 @@ struct ContentView: View {
     @MainActor
     private func startProxyTest(_ profile: BrowserProfile) {
         guard processes.processState(for: profile.id) == .stopped,
-              !launchPreparingProfileIDs.contains(profile.id),
+              !launchOperations.isActive(profile.id),
               !isProxyTestInFlight(profileID: profile.id)
         else { return }
         guard let token = beginProxyTest(for: profile) else { return }
-        proxyTestTasks[profile.id] = Task { @MainActor in
+        Task { @MainActor in
             _ = await executeProxyTest(
                 profile,
-                token: token,
-                clearsDedicatedTask: true
+                token: token
             )
         }
     }
@@ -3160,14 +3119,13 @@ struct ContentView: View {
         _ profile: BrowserProfile
     ) async -> ProxyHealthOutcome? {
         guard processes.processState(for: profile.id) == .stopped,
-              !launchPreparingProfileIDs.contains(profile.id),
+              !launchOperations.isActive(profile.id),
               !isProxyTestInFlight(profileID: profile.id)
         else { return nil }
         guard let token = beginProxyTest(for: profile) else { return nil }
         return await executeProxyTest(
             profile,
-            token: token,
-            clearsDedicatedTask: false
+            token: token
         )?.latestAttempt.outcome
     }
 
@@ -3176,33 +3134,37 @@ struct ContentView: View {
         for profile: BrowserProfile
     ) -> ProxyTestOperationToken? {
         guard profile.proxy != nil,
-              let token = proxyTestOperations.claim(profileID: profile.id)
+              let token = proxyOperations.claim(profile.id)
         else { return nil }
-        proxyTestingProfileIDs.insert(profile.id)
         return token
     }
 
     @MainActor
     private func executeProxyTest(
         _ profile: BrowserProfile,
-        token: ProxyTestOperationToken,
-        clearsDedicatedTask: Bool
+        token: ProxyTestOperationToken
     ) async -> ProxyHealthState? {
-        defer {
-            if proxyTestOperations.complete(token) {
-                proxyTestingProfileIDs.remove(profile.id)
-                if clearsDedicatedTask {
-                    proxyTestTasks[profile.id] = nil
-                }
-            }
+        let task = Task { @MainActor in
+            await runProxyTest(profile, token: token)
         }
-        guard let proxy = profile.proxy else { return nil }
+        proxyOperations.attach(task, to: token)
+        return await ProfileOperationOwner.value(of: task)
+    }
+
+    @MainActor
+    private func runProxyTest(
+        _ profile: BrowserProfile,
+        token: ProxyTestOperationToken
+    ) async -> ProxyHealthState? {
+        defer { proxyOperations.finish(token) }
+        guard !Task.isCancelled, proxyOperations.isCurrent(token),
+              let proxy = profile.proxy else { return nil }
         do {
             return try await proxyHealthCoordinator.run(
                 profile: profile,
                 operationWithCurrentIdentity: { previous in
                     try Task.checkCancellation()
-                    guard proxyTestOperations.isCurrent(token) else {
+                    guard proxyOperations.isCurrent(token) else {
                         throw CancellationError()
                     }
                     return try await proxyHealthCommit(
@@ -3395,11 +3357,7 @@ struct ContentView: View {
     @MainActor
     private func clearProxyHealth(for profileID: UUID) {
         cancelLaunchPreparation(profileID: profileID)
-        proxyTestTasks[profileID]?.cancel()
-        proxyTestTasks[profileID] = nil
-        if proxyTestOperations.cancel(profileID: profileID) {
-            proxyTestingProfileIDs.remove(profileID)
-        }
+        proxyOperations.cancel(profileID)
         Task {
             do {
                 try await proxyHealthCoordinator.remove(
@@ -3416,42 +3374,23 @@ struct ContentView: View {
     @MainActor
     private func cancelProxyTest(profileID: UUID) {
         cancelLaunchPreparation(profileID: profileID)
-        proxyTestTasks[profileID]?.cancel()
-        proxyTestTasks[profileID] = nil
-        if proxyTestOperations.cancel(profileID: profileID) {
-            proxyTestingProfileIDs.remove(profileID)
-        }
+        proxyOperations.cancel(profileID)
     }
 
     @MainActor
     private func cancelProxyTests() {
-        for task in launchPreparationTasks.values {
-            task.cancel()
-        }
-        launchPreparationTasks.removeAll()
-        launchPreparationTokens.removeAll()
-        launchPreparingProfileIDs.removeAll()
+        launchOperations.cancelAll()
         bulkProxyTestTask?.cancel()
         bulkProxyTestTask = nil
         bulkProxyTestID = nil
         bulkProxyProgress = nil
-        for task in proxyTestTasks.values {
-            task.cancel()
-        }
-        proxyTestTasks.removeAll()
-        proxyTestOperations.cancelAll()
-        proxyTestingProfileIDs.removeAll()
+        proxyOperations.cancelAll()
     }
 
     @MainActor
     private func cancelLaunchPreparation(profileID: UUID) {
-        launchPreparationTasks[profileID]?.cancel()
-        launchPreparationTasks[profileID] = nil
-        launchPreparationTokens[profileID] = nil
-        launchPreparingProfileIDs.remove(profileID)
-        if proxyTestOperations.cancel(profileID: profileID) {
-            proxyTestingProfileIDs.remove(profileID)
-        }
+        launchOperations.cancel(profileID)
+        proxyOperations.cancel(profileID)
     }
 
     private func presentReleaseFingerprintAuditIfNeeded() {

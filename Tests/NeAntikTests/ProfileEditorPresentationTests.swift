@@ -258,6 +258,22 @@ extension ProfileEditorPresentationTests {
         #expect(draft() != draft(port: "8081"))
     }
 
+    @Test func mutableDraftKeepsSnapshotAndValidationIndependent() {
+        let initial = draft()
+        var edited = initial
+        edited.name = "Другое"
+        edited.note = "Контекст"
+        edited.tags = ["Работа"]
+        edited.proxyPort = "0"
+        #expect(initial == draft())
+        #expect(edited != initial)
+        #expect(edited.proxyIssue?.field == .proxyPort)
+        edited = initial
+        #expect(edited == initial)
+        #expect(edited.firstIssue == nil)
+        #expect(edited.saveIssue(pendingProxyText: "proxy.example:80", pendingTagInput: "")?.field == .proxyImport)
+    }
+
     @Test func overlongNameRemainsAnEditableDraftWithSpecificValidation() {
         let pasted = String(repeating: "я", count: BrowserProfile.maximumNameLength + 1)
         let invalid = draft(name: pasted)

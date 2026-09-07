@@ -3,7 +3,6 @@ import SwiftUI
 struct ProfileEnvironmentView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var expandedSectionIDs: Set<String> = []
-    @State private var hoveredSectionID: String?
     @State private var showingLimitations = false
     @State private var showingDetails = false
 
@@ -26,57 +25,7 @@ struct ProfileEnvironmentView: View {
                 Divider()
                     .padding(.vertical, 8)
 
-                Button {
-                    showingDetails.toggle()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(
-                            systemName: showingDetails
-                                ? "chevron.down"
-                                : "chevron.right"
-                        )
-                        .font(.caption2.weight(.semibold))
-                        Text(
-                            showingDetails
-                                ? "Скрыть подробности"
-                                : "Показать подробности"
-                        )
-                        Spacer()
-                        Text(
-                            ProfileEnvironmentPresentation.sectionCountTitle(
-                                snapshot.sections.count
-                            )
-                        )
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .accessibilityLabel(
-                                "Диагностических разделов: \(snapshot.sections.count)"
-                            )
-                    }
-                    .frame(minHeight: 28)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                    (showingDetails
-                        ? "Скрыть подробности"
-                        : "Показать подробности") +
-                        ", " +
-                        ProfileEnvironmentPresentation.sectionCountTitle(
-                            snapshot.sections.count
-                        )
-                )
-                .accessibilityValue(
-                    showingDetails ? "Развёрнуто" : "Свёрнуто"
-                )
-                .accessibilityHint(
-                    showingDetails
-                        ? "Скрывает диагностические разделы"
-                        : "Показывает диагностические разделы"
-                )
-
-                if showingDetails {
+                DisclosureGroup(isExpanded: $showingDetails) {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(snapshot.sections) { section in
                             diagnosticSection(
@@ -93,7 +42,16 @@ struct ProfileEnvironmentView: View {
                         }
                     }
                     .padding(.top, 4)
+                } label: {
+                    HStack {
+                        Text("Подробности")
+                        Spacer()
+                        Text(ProfileEnvironmentPresentation.sectionCountTitle(snapshot.sections.count))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .disclosureGroupStyle(NeAntikDisclosureStyle())
             }
             .padding(.vertical, 4)
         } label: {
@@ -129,82 +87,27 @@ struct ProfileEnvironmentView: View {
         _ section: EnvironmentDiagnosticSection,
         isLast: Bool
     ) -> some View {
-        let isExpanded = expandedSectionIDs.contains(section.id)
-
-        diagnosticSectionButton(section, isExpanded: isExpanded)
-
-        if isExpanded {
+        DisclosureGroup(isExpanded: Binding(
+            get: { expandedSectionIDs.contains(section.id) },
+            set: { setSectionExpanded(section.id, isExpanded: $0) }
+        )) {
             EnvironmentSectionFields(section: section)
                 .padding(.leading, 24)
                 .padding(.bottom, 4)
+        } label: {
+            EnvironmentSectionHeader(section: section)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(
+                    ProfileEnvironmentPresentation.displayTitle(for: section) + ". " +
+                        ProfileEnvironmentPresentation.sectionSummary(for: section)
+                )
         }
+        .disclosureGroupStyle(NeAntikDisclosureStyle(minimumHeight: 32))
 
         if !isLast {
             Divider()
                 .padding(.leading, 18)
         }
-    }
-
-    private func diagnosticSectionButton(
-        _ section: EnvironmentDiagnosticSection,
-        isExpanded: Bool
-    ) -> some View {
-        Button {
-            setSectionExpanded(section.id, isExpanded: !isExpanded)
-        } label: {
-            HStack(spacing: 6) {
-                Image(
-                    systemName: isExpanded
-                        ? "chevron.down"
-                        : "chevron.right"
-                )
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-                EnvironmentSectionHeader(section: section)
-            }
-            .frame(
-                maxWidth: .infinity,
-                minHeight: 32,
-                alignment: .leading
-            )
-            .padding(.horizontal, 4)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    hoveredSectionID == section.id
-                        ? Color.primary.opacity(0.055)
-                        : Color.clear
-                )
-        }
-        .onHover { isHovering in
-            if isHovering {
-                hoveredSectionID = section.id
-            } else if hoveredSectionID == section.id {
-                hoveredSectionID = nil
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            ProfileEnvironmentPresentation.displayTitle(for: section) +
-                ". " +
-                ProfileEnvironmentPresentation.sectionSummary(for: section)
-        )
-        .accessibilityValue(isExpanded ? "Развёрнуто" : "Свёрнуто")
-        .accessibilityHint(
-            isExpanded
-                ? "Сворачивает диагностические значения"
-                : "Раскрывает диагностические значения"
-        )
-        .help(
-            isExpanded
-                ? "Скрыть значения раздела"
-                : "Показать значения раздела"
-        )
     }
 
     private var overview: some View {
@@ -451,7 +354,6 @@ struct ProfileEnvironmentView: View {
         } else {
             expandedSectionIDs = []
         }
-        hoveredSectionID = nil
         showingLimitations = false
         showingDetails = false
     }

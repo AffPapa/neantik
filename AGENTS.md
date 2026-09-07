@@ -7,6 +7,10 @@
   for one exact final candidate after local tests are green.
 - Public release truth is GitHub `AffPapa/neantik` plus
   `https://affpapa.org/neantik`.
+- Local build retention: follow `docs/LOCAL_BUILD_RETENTION.md` after each
+  verified release. Reuse one active Dev checkout; retain current plus one
+  explicit rollback. Inventory first; never blindly purge release attempts,
+  profiles, runtime sources or Trash on build success.
 - Before release or site work run:
 
   ```bash

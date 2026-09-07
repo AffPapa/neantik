@@ -63,6 +63,47 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_small_settings_search_has_explicit_hit_target(self):
+        settings = SETTINGS_VIEW.read_text()
+        icon = settings.split('Image(systemName: "magnifyingglass")', 1)[1].split('.buttonStyle', 1)[0]
+        self.assertIn('.frame(width: 28, height: 28)', icon)
+        self.assertIn('.contentShape(Rectangle())', icon)
+
+    def test_search_help_describes_existing_fields(self):
+        header = PROFILE_LIST_HEADER.read_text()
+        self.assertIn('по названию, заметке, тегам, папке и адресу прокси', header)
+
+    def test_batch_selection_exposes_selected_trait(self):
+        row = PROFILE_WORKSPACE_VIEWS.read_text()
+        self.assertIn('.accessibilityAddTraits(isBatchSelected ? .isSelected : [])', row)
+
+    def test_profile_columns_control_native_list_margins(self):
+        content = (ROOT / "Sources/NeAntik/ContentView.swift").read_text()
+        self.assertIn('.contentMargins(.horizontal, 0, for: .scrollContent)', content)
+        self.assertIn('.listRowInsets(EdgeInsets(', content)
+        self.assertIn('.padding(.horizontal, ProfileRowLayout.rowContentHorizontalInset)', content)
+        self.assertIn('} header: {\n                                profileTableHeader', content)
+        self.assertNotIn('profileRowHorizontalGeometry', content)
+
+    def test_settings_reference_is_secondary_but_search_remains_discoverable(self):
+        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
+        self.assertIn('@State private var showsShortcutReference = false', settings)
+        self.assertIn('DisclosureGroup("Справочник команд", isExpanded: $showsShortcutReference)', settings)
+        self.assertLess(settings.index('.id("shortcutSearch")'), settings.index('DisclosureGroup("Справочник команд"'))
+        reveal = settings.split('private func revealShortcutReference', 1)[1].split('private func clearShortcutSearch', 1)[0]
+        self.assertLess(reveal.index('showsShortcutReference = true'), reveal.index('scrollProxy.scrollTo'))
+        self.assertIn('.onChange(of: shortcutQuery)', settings)
+        self.assertIn('.keyboardShortcut("f", modifiers: .command)', settings)
+
+    def test_header_menus_keep_intrinsic_width_while_search_can_expand(self):
+        header = PROFILE_LIST_HEADER.read_text()
+        for menu in ("createProfileMenu", "actionsMenu", "filtersMenu"):
+            self.assertRegex(
+                header,
+                menu + r"\s+\.fixedSize\(horizontal: true, vertical: false\)",
+            )
+        self.assertNotRegex(header, r"searchField\s+\.fixedSize")
+
     def test_settings_reference_navigation_and_clear_field_identity(self):
         settings = SETTINGS_VIEW.read_text(encoding="utf-8")
         self.assertNotIn('Button("Вернуть удобную плотность")', settings)
@@ -81,7 +122,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_profile_name_and_pending_proxy_drafts_reach_save_validation(self):
         source = EDITOR.read_text()
-        name_change = source.split('.onChange(of: name)', 1)[1].split('Text(', 1)[0]
+        name_change = source.split('.onChange(of: editorDraft.name)', 1)[1].split('Text(', 1)[0]
         self.assertNotIn('name =', name_change)
         self.assertNotIn('prefix(', name_change)
         self.assertIn('.focused($focusedField, equals: .proxyImport)', source)
@@ -108,7 +149,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         sheet = (ROOT / 'Sources/NeAntik/ProfileBatchTagSheet.swift').read_text()
         content = CONTENT.read_text()
         self.assertIn('let onApply: (ProfileMetadataBatchAction) throws -> Void', sheet)
-        self.assertIn('try performBatchMetadata(action, to: request.profileIDs)', content)
+        self.assertIn('try performBatchMetadata(action, to: profileIDs)', content)
         operation = sheet.split('private func apply()', 1)[1]
         success, failure = operation.split('} catch {', 1)
         self.assertIn('try onApply', success)
@@ -197,7 +238,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("Button(action: onToggleInspector)", toolbar)
         self.assertIn('systemImage: "sidebar.right"', toolbar)
         self.assertNotIn(".keyboardShortcut", toolbar)
-        self.assertIn(".disabled(!hasSelectedProfile)", toolbar)
+        self.assertIn(".disabled(!ProfileInspectorPolicy.canToggle(", toolbar)
+        self.assertIn("isPresented: showsProfileInspector", toolbar)
+        self.assertIn("hasSelectedProfile: hasSelectedProfile", toolbar)
         self.assertNotIn("profileCommandSet(", toolbar)
 
         commands = PROFILE_COMMANDS.read_text(encoding="utf-8")
@@ -222,7 +265,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             header,
         )
         self.assertIn(".buttonStyle(.borderedProminent)", header)
-        self.assertIn(".tint(.green)", header)
+        self.assertIn(".tint(.accentColor)", header)
         self.assertIn(
             'Label("Действия", systemImage: "ellipsis.circle")',
             header,
@@ -255,7 +298,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("private func profileTableHeader", text)
         self.assertIn("ProfileRowLayout.minimumWideWidth", text)
         self.assertIn("GeometryReader", text)
-        self.assertIn('Text("Выбор / запуск")', text)
+        self.assertIn('Image(systemName: "checkmark.square")', text)
+        self.assertIn('Text("Запуск")', text)
+        for start, end in (("private func wideRow", "private func compactRow"),
+                           ("private func compactRow", "private var batchSelectionButton")):
+            row = workspace_views.split(start, 1)[1].split(end, 1)[0]
+            self.assertLess(row.index("actionsMenu"), row.index("launchButton(presentation)"))
+            self.assertLess(row.index("batchSelectionButton"), row.index("launchButton(presentation)"))
         self.assertIn('Text("Подключение")', text)
         self.assertIn('Text("Заметка / активность")', text)
         self.assertIn("wideRow(presentation)", workspace_views)
@@ -398,7 +447,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             '"Показать папку данных в Finder"',
             '"Удалить профиль"',
         ):
-            self.assertIn(action, commands)
+            self.assertIn(action, commands + (ROOT / "Sources/NeAntik/ProfileActionMenu.swift").read_text())
 
     def test_commands_are_modal_aware_and_folder_move_is_bounded(self) -> None:
         content = CONTENT.read_text(encoding="utf-8")
@@ -446,7 +495,12 @@ class ResponsiveUIContractTests(unittest.TestCase):
             ".sorted",
             commands[projection_start:projection_end],
         )
-        self.assertIn('"Выбрать другую папку…"', commands)
+        actions = (ROOT / "Sources/NeAntik/ProfileActionMenu.swift").read_text()
+        self.assertIn('"Выбрать другую папку…"', actions)
+        self.assertIn('ProfileOrganizationActions(commands: commands)', content)
+        self.assertIn('ProfileOrganizationActions(commands: resolved, registersShortcuts: true)', commands)
+        self.assertIn('var registersShortcuts = false', actions)
+        self.assertIn('.disabled(!commands.presentation.archiveIsEnabled)', actions)
         self.assertIn('TextField("Поиск папок"', picker)
         self.assertIn("ProfileFolder.comparisonKey(searchText.trimmingCharacters", picker)
         self.assertIn("ProfileFolder.comparisonKey($0.name).contains(query)", picker)
@@ -526,6 +580,39 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("terminalAccessibilityAnnouncement", onboarding)
         self.assertIn("постоянный локальный профиль браузера", onboarding)
 
+    def test_ordinary_sheet_route_preserves_open_modal_and_readiness_refresh(self):
+        text = CONTENT.read_text(encoding="utf-8")
+        presentation = text.split("private func presentWorkspaceSheet(", 1)[1].split(
+            "private var workspaceAlerts:", 1
+        )[0]
+        self.assertLess(
+            presentation.index("guard WorkspaceSheetRequest.canPresent("),
+            presentation.index("workspaceSheetRequest = WorkspaceSheetRequest("),
+        )
+        self.assertEqual(text.count("workspaceSheetRequest = WorkspaceSheetRequest("), 1)
+        self.assertIn("hasBlockingModal: isWorkspaceSheetOrConfirmationPresented", presentation)
+        self.assertIn("hasWorkspaceAlert: workspaceAlert != nil", presentation)
+        self.assertEqual(text.count(".sheet(item: $workspaceSheetRequest)"), 1)
+        modal_guard = text.split("private var isWorkspaceModalPresented:", 1)[1].split(
+            "private var workspaceCommandSet:", 1
+        )[0]
+        for condition in [
+            "workspaceSheetRequest != nil", "showingReleaseFingerprintAudit",
+            "showingDeleteConfirmation", "folderPendingDelete != nil",
+            "forceStopRequest != nil", "launchPreparationFailure != nil",
+            "workspaceAlert != nil",
+        ]:
+            self.assertIn(condition, modal_guard)
+        self.assertIn("if workspaceSheetRequest?.isReadiness == true {", text)
+        self.assertIn("presentWorkspaceReadiness(recoveringWorkspaceAlert: true)", text)
+        binding = text.split("private var workspaceAlertBinding:", 1)[1].split("var body:", 1)[0]
+        self.assertIn("workspaceSheetRequest?.isReadiness == true ? nil : workspaceAlert", binding)
+        self.assertIn("guard workspaceSheetRequest?.isReadiness != true", binding)
+        self.assertNotIn("processes.lastError = nil", presentation)
+        self.assertNotIn("store.lastError = nil", presentation)
+        self.assertIn("expectedNote: profile.note", text)
+        self.assertIn("expectedSourceRevision: request.source.revision", text)
+
     def test_fingerprint_audit_separates_manual_reports_from_release_authority(
         self,
     ) -> None:
@@ -534,10 +621,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
             ".sheet(isPresented: $showingReleaseFingerprintAudit)"
         )
         manual_start = text.index(
-            ".sheet(item: $fingerprintAuditRequest)"
+            "case let .fingerprintAudit(request):"
         )
         manual_end = text.index('.alert(\n            "Удалить профиль?"')
-        release_sheet = text[release_start:manual_start]
+        release_end = text.index("private func workspaceSheet(", release_start)
+        release_sheet = text[release_start:release_end]
         manual_sheet = text[manual_start:manual_end]
 
         self.assertIn("releaseContext: fingerprintEvidenceReleaseContext", release_sheet)
@@ -547,7 +635,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("fingerprintObservationStore.record", manual_sheet)
         self.assertNotIn("releaseContext:", manual_sheet)
         self.assertIn("private func beginFingerprintAudit()", text)
-        self.assertIn("fingerprintAuditRequest = FingerprintAuditRequest(", text)
+        self.assertIn("presentWorkspaceSheet(.fingerprintAudit(FingerprintAuditRequest(", text)
         self.assertIn("onRunFingerprintAudit:", text)
         self.assertEqual(
             text.count("showingReleaseFingerprintAudit = true"),
@@ -584,27 +672,19 @@ class ResponsiveUIContractTests(unittest.TestCase):
             'static let summary = "Стартовая страница, папка, теги и оформление"',
             text,
         )
-        advanced_start = text.index("showsAdvancedOptions.toggle()")
-        advanced_end = text.index("if showsAdvancedOptions {", advanced_start)
-        advanced = text[advanced_start:advanced_end]
-        self.assertIn("showsAdvancedOptions.toggle()", advanced)
-        self.assertIn("maxWidth: .infinity", advanced)
-        self.assertIn("minHeight: 28", advanced)
-        self.assertIn(".contentShape(Rectangle())", advanced)
-        self.assertIn(".accessibilityHidden(true)", advanced)
-        self.assertIn(
-            '.accessibilityLabel("Дополнительные настройки профиля")',
-            advanced,
-        )
-        self.assertIn(
-            'showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"',
-            advanced,
-        )
-        self.assertIn(".accessibilityHint(", advanced)
-        self.assertNotIn(
-            'DisclosureGroup(\n            "Дополнительно"',
-            text,
-        )
+        advanced = text[text.index("private var advancedOptionsSection"):text.index("private var appearanceIconGrid")]
+        style = (ROOT / "Sources/NeAntik/NeAntikDisclosureStyle.swift").read_text()
+        self.assertIn("DisclosureGroup(isExpanded: Binding(", advanced)
+        self.assertIn("showsAdvancedOptions = expanded", advanced)
+        self.assertIn("focusedField = nil", advanced)
+        self.assertIn(".disclosureGroupStyle(NeAntikDisclosureStyle())", advanced)
+        self.assertIn('.accessibilityLabel("Дополнительные настройки профиля")', advanced)
+        self.assertIn("maxWidth: .infinity", style)
+        self.assertIn("minimumHeight: CGFloat = 28", style)
+        self.assertIn(".contentShape(Rectangle())", style)
+        self.assertIn(".accessibilityHidden(true)", style)
+        self.assertIn('configuration.isExpanded ? "Развёрнуто" : "Свёрнуто"', style)
+        self.assertIn("accessibilityReduceMotion", style)
         self.assertNotIn(".onSubmit(save)", text)
 
     def test_profile_note_is_progressively_disclosed_from_a_full_row(
@@ -637,12 +717,17 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("folderControl", advanced)
         self.assertIn("ProfileTagEditor(", advanced)
         self.assertIn('TextField("Стартовая страница"', advanced)
-        self.assertIn('Text("Заметка (необязательно)")', note_editor)
-        self.assertGreaterEqual(
-            note_editor.count(
-                '.accessibilityLabel("Необязательная заметка профиля")'
-            ),
-            2,
+        self.assertIn('Label("Заметка (необязательно)", systemImage: "note.text")', note_editor)
+        self.assertNotIn('systemImage: "editorDraft.', editor)
+        self.assertIn(
+            '.accessibilityLabel("Необязательная заметка профиля")',
+            note_editor,
+        )
+        self.assertRegex(
+            note_editor,
+            r'\.accessibilityLabel\(\s*notePresentation\.collapsedSummary\.isEmpty'
+            r'\s*\? "Необязательная заметка профиля, не добавлена"'
+            r'\s*: "Необязательная заметка профиля, добавлена"\s*\)',
         )
         self.assertIn(
             "initialValue: original == nil || initialFocus == .note",
@@ -650,15 +735,15 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         self.assertIn('"Не добавлена"', note_editor)
         self.assertIn('"Добавлена"', note_editor)
-        self.assertIn("Button", note_editor)
+        self.assertIn("DisclosureGroup(isExpanded: Binding(", note_editor)
         self.assertIn("TextEditor(text:", note_editor)
         self.assertIn(
             '"Без паролей, ключей и seed-фраз"',
             note_editor,
         )
-        self.assertIn(".frame(maxWidth: .infinity", note_editor)
-        self.assertIn(".contentShape(Rectangle())", note_editor)
-        self.assertNotIn("DisclosureGroup", note_editor)
+        self.assertIn(".disclosureGroupStyle(NeAntikDisclosureStyle())", note_editor)
+        self.assertIn("showsNoteEditor = expanded", note_editor)
+        self.assertIn("focusedField = .note", note_editor)
 
     def test_profile_note_stays_compact_but_readable_and_searchable(
         self,
@@ -678,11 +763,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("Button(action: onEditNote)", row)
         self.assertIn('summary.isEmpty ? "Добавить заметку"', row)
         self.assertNotIn("isNoteEditingEnabled", row)
-        self.assertIn('"Заметка добавлена"', row)
+        self.assertIn('.accessibilityValue(summary.isEmpty ? "Заметки нет" : summary)', row)
         self.assertIn("presentation.statusTitle", row)
         self.assertIn("presentation.routeTitle", row)
         self.assertIn("launchAction.title", row)
-        self.assertIn(".buttonStyle(.bordered)", row)
+        self.assertIn(".buttonStyle(.borderedProminent)", row)
         self.assertIn(".privacySensitive()", row)
         self.assertNotIn(".help(presentation.noteSummary)", row)
         self.assertIn("processState.title", row_presentation)
@@ -782,16 +867,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("preview.issueLineNumbers", text)
         self.assertIn("issuePreviewRows", text)
         self.assertIn("Исправь \\(issueCountTitle", text)
-        self.assertNotIn("DisclosureGroup(isExpanded: $showsOptions)", text)
-        self.assertIn("showsOptions.toggle()", text)
-        self.assertIn("maxWidth: .infinity", text)
-        self.assertIn("minHeight: 32", text)
-        self.assertIn(".contentShape(Rectangle())", text)
+        self.assertIn("DisclosureGroup(isExpanded: $showsOptions)", text)
+        self.assertIn("NeAntikDisclosureStyle(minimumHeight: 32)", text)
         self.assertIn('.accessibilityLabel("Параметры импорта")', text)
-        self.assertIn(
-            'showsOptions ? "Развёрнуто" : "Свёрнуто"',
-            text,
-        )
         self.assertIn(".focused($proxyInputIsFocused)", text)
         self.assertIn("BulkProxyImportDraftSnapshot", text)
         self.assertIn(
@@ -835,29 +913,16 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")
-        details_start = text.index("if showingDetails {")
-        details_end = text.index(
-            ".padding(.top, 4)",
-            details_start,
-        )
-        details = text[details_start:details_end]
-        button_start = text.index(
-            "private func diagnosticSectionButton("
-        )
-        button_end = text.index(
-            "private var overview: some View",
-            button_start,
-        )
-        button = text[button_start:button_end]
-
-        self.assertNotIn("DisclosureGroup(", details)
-        self.assertIn("diagnosticSection(", details)
-        self.assertIn("setSectionExpanded(", button)
-        self.assertIn("maxWidth: .infinity", button)
-        self.assertIn("minHeight: 32", button)
-        self.assertIn(".contentShape(Rectangle())", button)
-        self.assertIn(".onHover", button)
-        self.assertIn('isExpanded ? "Развёрнуто" : "Свёрнуто"', button)
+        self.assertIn("DisclosureGroup(isExpanded: $showingDetails)", text)
+        self.assertIn("diagnosticSection(", text)
+        self.assertIn("setSectionExpanded(section.id, isExpanded: $0)", text)
+        self.assertIn("get: { expandedSectionIDs.contains(section.id) }", text)
+        self.assertIn("NeAntikDisclosureStyle(minimumHeight: 32)", text)
+        self.assertIn("initialExpandedSectionID(", text)
+        style = (ROOT / "Sources/NeAntik/NeAntikDisclosureStyle.swift").read_text()
+        self.assertIn("maxWidth: .infinity", style)
+        self.assertIn(".contentShape(Rectangle())", style)
+        self.assertIn('configuration.isExpanded ? "Развёрнуто" : "Свёрнуто"', style)
 
     def test_environment_overview_hides_optional_unavailable_actions(self) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")

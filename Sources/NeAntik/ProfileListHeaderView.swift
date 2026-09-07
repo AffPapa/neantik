@@ -42,6 +42,14 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if !profilesAreEmpty {
+                HStack {
+                    Text("Профили")
+                        .font(.title2.bold())
+                        .accessibilityHeading(.h1)
+                    Spacer(minLength: 8)
+                    createProfileMenu
+                        .fixedSize(horizontal: true, vertical: false)
+                }
                 ViewThatFits(in: .horizontal) {
                     commandRow
                     commandRow.labelStyle(.iconOnly)
@@ -62,15 +70,16 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .padding(.top, WorkspaceLayout.titlebarContentInset)
+        .padding(.top, WorkspaceLayout.profileHeaderTopPadding)
     }
 
     private var commandRow: some View {
         HStack(spacing: 8) {
             searchField
             actionsMenu
+                .fixedSize(horizontal: true, vertical: false)
             filtersMenu
-            createProfileMenu
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 
@@ -128,7 +137,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
             onCreateConfiguredProfile()
         }
         .buttonStyle(.borderedProminent)
-        .tint(.green)
+        .tint(.accentColor)
         .help("Создать профиль (⌘N). В меню можно сразу создать и открыть профиль без прокси")
         .accessibilityLabel(
             "Создать профиль; доступны дополнительные варианты"
@@ -297,7 +306,7 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     .font(.headline)
                     .accessibilityHeading(.h2)
                 Text(
-                    "Обычный текст ищет по профилю и заметке. " +
+                    "Обычный текст ищет по названию, заметке, тегам, папке и адресу прокси. " +
                         "Для точного поиска используй:"
                 )
                 .font(.caption)

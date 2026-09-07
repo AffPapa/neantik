@@ -91,6 +91,8 @@ case "$SHARD" in
       ProxyTestOperationRegistryTests
       ProxyTesterTests
       ResponsiveLayoutRenderTests
+      ProfileInspectorPolicyTests
+      ProfileRowLayoutTests
       WorkspaceDomainTests
       WorkspaceLayoutTests
       WorkspacePreferenceStoreTests

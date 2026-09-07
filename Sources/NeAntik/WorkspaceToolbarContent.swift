@@ -1,5 +1,11 @@
 import SwiftUI
 
+enum ProfileInspectorPolicy {
+    static func canToggle(isPresented: Bool, hasSelectedProfile: Bool) -> Bool {
+        isPresented || hasSelectedProfile
+    }
+}
+
 struct WorkspaceToolbarContent: ToolbarContent {
     let showsProfileInspector: Bool
     let hasSelectedProfile: Bool
@@ -19,7 +25,10 @@ struct WorkspaceToolbarContent: ToolbarContent {
             Button(action: onToggleInspector) {
                 Label(inspectorTitle, systemImage: "sidebar.right")
             }
-            .disabled(!hasSelectedProfile)
+            .disabled(!ProfileInspectorPolicy.canToggle(
+                isPresented: showsProfileInspector,
+                hasSelectedProfile: hasSelectedProfile
+            ))
             .help(inspectorHelp)
             .accessibilityLabel(inspectorAccessibilityLabel)
         }

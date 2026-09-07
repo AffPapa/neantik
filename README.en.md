@@ -10,70 +10,35 @@ separately installed Chrome, or telemetry.
 ## Download
 
 Download the signed and notarized application from
-[GitHub Releases](https://github.com/AffPapa/neantik/releases).
+[GitHub Release v0.3.24](https://github.com/AffPapa/neantik/releases/tag/v0.3.24).
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
 Current published GitHub public-alpha release:
 
-- NeAntik `0.3.23` build `26`;
+- NeAntik `0.3.24` build `27`;
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `152.0.7977.64`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.23-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.23-arm64-notarized.dmg`;
+- Chromium `152.0.7977.82`, ARM64, Metal;
+- ZIP: `NeAntik-0.3.24-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.24-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-The published `0.3.23 (26)` release adds a dedicated note editor,
-semantically honest notices, clearer list actions, safe quick Direct profile
-creation, and a command to reveal an already running browser window. It also
-removes the unused telemetry, updater-manifest, and external Chrome/Cloak
-selection prototypes: Direct launches only its exact embedded runtime. The
-large `ContentView` is also split without changing behavior, and CI now scans
-both the current tree and every reachable Git blob for recognized secret
-formats. Exact merged commit
-`fdc520391c58a76622936519ca38b382f629fc47` passed Developer ID signing,
-notarization, stapling, Gatekeeper, re-download verification, and the immutable
-GitHub gate.
-
-Published `0.3.23 (26)` includes a local Readiness Center. It identifies the
-exact `NeAntik.app` users should select in macOS permissions, rechecks the
-runtime and shared data root without restarting, and copies only bounded,
-redacted diagnostics.
-
 Product website: <https://affpapa.org/neantik>. Its version, build, hashes, and
-download links are synchronized with GitHub Release `v0.3.23`; GitHub serves
+download links are synchronized with GitHub Release `v0.3.24`; GitHub serves
 the files and AffPapa keeps no second binary copy.
 
-Development preview `0.3.24 (27)` is going through the release gates. At a
-normal window width, note and bulk-proxy drafts are protected from accidental
-dismissal, create/edit mode is explicit, search syntax is visible, bulk
-actions fit the minimum width, and proxy passwords have a temporary reveal
-control that now expires after 15 seconds and when the app resigns active.
-The source candidate also adds explicit safe duplication, a local shared-proxy
-endpoint warning, profile dates, recently-modified ordering, and confirmed
-ordinary-only Stop All. Profile-size scans and secret stdin writes are
-cancellable, no idle session timer is created, and the embedded runtime is
-re-inspected immediately before launch. Runtime, DevTools, proxy preflight and
-the Direct release toolchain also have additional fail-closed checks. CI
-includes SHA-pinned CodeQL for Swift and Python. Until a new ZIP and DMG are
-published and re-downloaded successfully, `0.3.23 (26)` remains the public
-download.
+## In development: 0.3.25 (28)
 
-The latest source-only `0.3.24 (27)` pass also turns research across thirty
-profile browsers into an [exact 100-item recommendation matrix](docs/ANTIDETECT_RECOMMENDATION_MATRIX_2026-09-02_V3.md)
-and implements the twenty-five highest-value bounded changes without new
-dependencies. Profile metadata is schema-versioned, Recovery is bounded, and
-private metadata reads use stricter descriptor-first limits. Safe Quit can
-stop ordinarily, leave browsers running, or cancel without automatic force
-stop. Cause-specific empty states, exact bulk-import error navigation, visible
-folder keyboard selection, result counts, proxy-test progress, consistent
-row/inspector actions, VoiceOver actions, and narrow responsive controls make
-the operator path clearer. This remains a source preview: the public ZIP, DMG,
-website, and download links stay on `0.3.23 (26)` until a separate complete
-Direct Distribution cycle.
+The next release simplifies existing controls without adding sections:
+explicit inspector dismissal, compact search help, an easier settings click
+target, clearer note labels for VoiceOver, and correct batch-selection
+announcements. It also prepares the not-yet-shipped native profile cards,
+settings layout, and internal architecture changes. This is a development
+preview, not a downloadable binary release: `0.3.24 (27)` remains the public
+download until the complete Direct Distribution cycle passes.
 
 The capabilities below are included in the published, signed, and notarized
-`0.3.23 (26)` release.
+`0.3.24 (27)` release.
 
 ## Quick start
 
@@ -156,7 +121,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.23` is published for public-alpha profile isolation. Strict
+Version `0.3.24` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 

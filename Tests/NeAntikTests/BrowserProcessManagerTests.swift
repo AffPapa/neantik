@@ -6,6 +6,98 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func managedRecordCleanupDoesNotLetOldTerminationEraseRelaunch() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let executable = root.appendingPathComponent("fake-browser")
+        try Data("#!/bin/sh\nexec /bin/sleep 30\n".utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        var terminated: Process?
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root.appendingPathComponent("data")),
+            processIdentityValidator: { _ in false },
+            managedProcessTerminator: {
+                terminated = $0
+                $0.terminate()
+            },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Managed lifetime")
+        let runtime = BrowserRuntime(name: "Test", executableURL: executable, source: "Test")
+        defer { manager.stop(profileID: profile.id) }
+        try manager.launch(profile: profile, runtime: runtime)
+        #expect(manager.startedAt(for: profile.id) != nil)
+        manager.stop(profileID: profile.id)
+        let previous = try #require(terminated)
+        for _ in 0..<200 where manager.runningProfileIDs.contains(profile.id) {
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        #expect(manager.processState(for: profile.id) == .stopped)
+        #expect(manager.startedAt(for: profile.id) == nil)
+        try manager.launch(profile: profile, runtime: runtime)
+        let relaunchedAt = try #require(manager.startedAt(for: profile.id))
+        previous.terminationHandler?(previous)
+        for _ in 0..<10 { await Task.yield() }
+        #expect(manager.processState(for: profile.id) == .managed)
+        #expect(manager.startedAt(for: profile.id) == relaunchedAt)
+        #expect(manager.managerTerminationSnapshot().managedProfileIDs == [profile.id])
+    }
+
+    @Test
+    func passiveObservationReplacementKeepsOtherPurposesIndependent() async throws {
+        let observations = BrowserProcessObservations()
+        defer { observations.cancelAll() }
+        let id = UUID()
+        var supersededCalls = 0
+        var externalCalls = 0
+        var recoveryCalls = 0
+        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
+            supersededCalls += 1
+            return true
+        }
+        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
+            externalCalls += 1
+            return false
+        }
+        observations.replace(.recovery(id), enabled: true, interval: 1_000_000) {
+            recoveryCalls += 1
+            return false
+        }
+        for _ in 0..<200 where externalCalls == 0 || recoveryCalls == 0 {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        #expect(supersededCalls == 0)
+        #expect(externalCalls == 1)
+        #expect(recoveryCalls == 1)
+    }
+
+    @Test
+    func passiveObservationDisableAndCancelAllPreventPendingPolls() async throws {
+        let observations = BrowserProcessObservations()
+        let id = UUID()
+        var calls = 0
+        for key in [BrowserProcessObservations.Key.external(id), .recovery(id), .tombstone(id)] {
+            observations.replace(key, enabled: true, interval: 1_000_000) {
+                calls += 1
+                return true
+            }
+        }
+        observations.cancelAll()
+        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
+            calls += 1
+            return true
+        }
+        observations.replace(.external(id), enabled: false, interval: 1_000_000) {
+            calls += 1
+            return true
+        }
+        try await Task.sleep(nanoseconds: 10_000_000)
+        #expect(calls == 0)
+    }
+
+    @Test
     func recordsStartupFailureWithoutOperationalDetails() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

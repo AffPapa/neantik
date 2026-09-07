@@ -17,25 +17,42 @@ struct EditorRequest: Identifiable {
     }
 }
 
-struct ProfileNoteRequest: Identifiable {
-    let profile: BrowserProfile
+/// One immutable presentation snapshot; selecting another row cannot retarget it.
+struct WorkspaceSheetRequest: Identifiable {
+    enum Destination {
+        case editor(EditorRequest)
+        case duplication(ProfileDuplicationRequest)
+        case note(BrowserProfile)
+        case folderName(ProfileFolder?)
+        case folderPicker(Set<UUID>)
+        case batchTags(Set<UUID>)
+        case proxyImport(targetFolderID: UUID?)
+        case readiness
+        case fingerprintAudit(FingerprintAuditRequest)
+    }
 
-    var id: UUID { profile.id }
-}
-
-struct FolderNameRequest: Identifiable {
     let id = UUID()
-    let folder: ProfileFolder?
-}
+    let destination: Destination
 
-struct ProfileFolderPickerRequest: Identifiable {
-    let id = UUID()
-    let profileIDs: Set<UUID>
-}
+    var isReadiness: Bool {
+        Self.isReadiness(destination)
+    }
 
-struct ProfileBatchTagRequest: Identifiable {
-    let id = UUID()
-    let profileIDs: Set<UUID>
+    private static func isReadiness(_ destination: Destination) -> Bool {
+        if case .readiness = destination { return true }
+        return false
+    }
+
+    static func canPresent(
+        _ destination: Destination,
+        hasBlockingModal: Bool,
+        hasWorkspaceAlert: Bool,
+        recoveringWorkspaceAlert: Bool = false
+    ) -> Bool {
+        !hasBlockingModal && (
+            !hasWorkspaceAlert || (recoveringWorkspaceAlert && isReadiness(destination))
+        )
+    }
 }
 
 enum WorkspaceBatchUndo: Equatable {
@@ -48,11 +65,6 @@ enum WorkspaceBatchUndo: Equatable {
         case let .folder(receipt): receipt.affectedCount
         }
     }
-}
-
-struct BulkProxyImportRequest: Identifiable {
-    let id = UUID()
-    let targetFolderID: UUID?
 }
 
 typealias WorkspaceSourceFocus = WorkspaceQueryFocus

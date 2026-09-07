@@ -274,6 +274,64 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func requiredSurfaceProjectionPreservesEveryCaptureAndExactSentinels() {
+        let keys = FingerprintAuditReport.criticalKeys +
+            FingerprintAuditReport.publicAlphaStableContextKeys +
+            FingerprintAuditReport.publicAlphaCoherenceContextKeys +
+            FingerprintAuditReport.productionExtendedContextKeys
+        let complete = Dictionary(uniqueKeysWithValues: keys.map { ($0, "present") })
+        let sentinels: [String?] = [nil, "", "unavailable", " unavailable ", "UNAVAILABLE"]
+        for key in keys {
+            for position in 0..<3 {
+                for value in sentinels {
+                    var values = [complete, complete, complete]
+                    values[position][key] = value
+                    let first = capture(name: "A", values: values[0])
+                    let result = report(
+                        first: first,
+                        second: capture(name: "B", values: values[1]),
+                        repeatCapture: capture(id: first.profileID, name: "A", values: values[2])
+                    )
+                    let unavailable = value == nil || value == "" || value == "unavailable"
+                    #expect(result.productionUnavailableKeys == (unavailable ? [key] : []))
+                    #expect(result.unavailableCriticalKeys ==
+                        (unavailable && FingerprintAuditReport.criticalKeys.contains(key) ? [key] : []))
+                    #expect(result.productionUnstableKeys == (position == 1 ? [] : [key]))
+                }
+            }
+        }
+    }
+
+    @Test
+    func reportProjectionsPreserveCatalogAndCaptureOrder() {
+        let keys = FingerprintAuditReport.criticalKeys +
+            FingerprintAuditReport.publicAlphaStableContextKeys +
+            FingerprintAuditReport.publicAlphaCoherenceContextKeys +
+            FingerprintAuditReport.productionExtendedContextKeys
+        let first = capture(name: "A", values: [:])
+        let missing = report(
+            first: first,
+            second: capture(name: "B", values: [:]),
+            repeatCapture: capture(id: first.profileID, name: "A", values: [:])
+        )
+        #expect(missing.productionUnavailableKeys == keys)
+        #expect(missing.unavailableCriticalKeys == FingerprintAuditReport.criticalKeys)
+        #expect(missing.productionUnstableKeys.isEmpty)
+
+        let mismatch = ["canvas": "top", "worker_canvas": "worker"]
+        let inconsistent = report(
+            first: capture(name: "A", values: mismatch),
+            second: capture(name: "B", values: mismatch),
+            repeatCapture: capture(name: "A", values: mismatch)
+        )
+        #expect(inconsistent.crossRealmConsistencyIssues == [
+            "The profile A, first capture canvas value disagrees with worker_canvas.",
+            "The profile B canvas value disagrees with worker_canvas.",
+            "The profile A, repeat capture canvas value disagrees with worker_canvas."
+        ])
+    }
+
+    @Test
     func probeCoversCriticalAndContextSurfaces() {
         let expression = FingerprintAuditCoordinator.probeExpression
 

@@ -435,14 +435,7 @@ final class FingerprintEvidenceReleaseContext {
         metadata: FingerprintEvidenceCandidateMetadata,
         managerExecutableSHA256: String
     ) {
-        guard let object =
-                try? JSONSerialization.jsonObject(with: data),
-              let canonical = try? JSONSerialization.data(
-                  withJSONObject: object,
-                  options: [.sortedKeys, .withoutEscapingSlashes]
-              ),
-              canonical == data,
-              let root = object as? [String: Any],
+        guard let root = CanonicalEvidenceJSON.object(data),
               Set(root.keys) == [
                   "boundary", "bundle", "bundleInventory",
                   "criticalFiles", "fingerprintEvidence", "kind",

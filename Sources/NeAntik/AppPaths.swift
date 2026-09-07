@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 
 @_silgen_name("flock")
-private func neantikFlock(_ descriptor: Int32, _ operation: Int32) -> Int32
+func neantikFlock(_ descriptor: Int32, _ operation: Int32) -> Int32
 
 enum PrivateFileEntryKind: Equatable, Sendable {
     case missing
@@ -537,57 +537,7 @@ struct AppPaths: Sendable {
         _ operation: () throws -> T
     ) throws -> T {
         try createPrivateDirectory(guardURL.deletingLastPathComponent())
-        let descriptor = guardURL.path.withCString {
-            Darwin.open(
-                $0,
-                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
-                mode_t(S_IRUSR | S_IWUSR)
-            )
-        }
-        guard descriptor >= 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EIO
-            )
-        }
-        defer { _ = Darwin.close(descriptor) }
-
-        while neantikFlock(descriptor, LOCK_EX) != 0 {
-            guard errno == EINTR else {
-                throw POSIXError(
-                    POSIXErrorCode(rawValue: errno) ?? .EIO
-                )
-            }
-        }
-        defer { _ = neantikFlock(descriptor, LOCK_UN) }
-
-        var openedStatus = stat()
-        guard Darwin.fstat(descriptor, &openedStatus) == 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EIO
-            )
-        }
-        var pathStatus = stat()
-        let pathResult = guardURL.path.withCString {
-            Darwin.lstat($0, &pathStatus)
-        }
-        guard pathResult == 0,
-              (openedStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
-              (pathStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
-              openedStatus.st_dev == pathStatus.st_dev,
-              openedStatus.st_ino == pathStatus.st_ino,
-              openedStatus.st_nlink == 1
-        else {
-            throw POSIXError(.ELOOP)
-        }
-        guard Darwin.fchmod(
-            descriptor,
-            mode_t(S_IRUSR | S_IWUSR)
-        ) == 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EACCES
-            )
-        }
-        return try operation()
+        return try SecureFile.withExclusiveGuard(at: guardURL, policy: .appPaths, operation)
     }
 
     func privateFileEntryKind(_ url: URL) throws -> PrivateFileEntryKind {

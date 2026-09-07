@@ -150,21 +150,9 @@ struct ProfileEditorView: View {
   private let initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
-  @State private var name: String
-  @State private var colorHex: String
-  @State private var symbolName: String
-  @State private var tags: [String]
+  @State private var editorDraft: ProfileEditorDraft
   @State private var pendingTagInput = ""
-  @State private var note: String
   @State private var showsNoteEditor: Bool
-  @State private var selectedFolderID: UUID?
-  @State private var startURL: String
-  @State private var usesProxy: Bool
-  @State private var proxyKind: ProxyKind
-  @State private var proxyHost: String
-  @State private var proxyPort: String
-  @State private var proxyUsername: String
-  @State private var proxyPassword: String
   @State private var proxyPasswordRevealLease = SensitiveRevealLeaseState()
   @State private var proxyPasswordRevealTask: Task<Void, Never>?
   @State private var proxyImportText = ""
@@ -220,29 +208,12 @@ struct ProfileEditorView: View {
 
     let profile = original ?? BrowserProfile(name: "")
     draftProfileID = profile.id
-    _name = State(initialValue: profile.name)
-    _colorHex = State(initialValue: profile.colorHex)
-    _symbolName = State(initialValue: profile.displaySymbolName)
-    _tags = State(initialValue: profile.tags)
-    _note = State(initialValue: profile.note)
     _showsNoteEditor = State(
       initialValue: original == nil || initialFocus == .note
     )
-    _selectedFolderID = State(
-      initialValue: folders.contains { $0.id == initialFolderID }
-        ? initialFolderID
-        : nil
-    )
-    _startURL = State(initialValue: profile.startURL)
-    _usesProxy = State(initialValue: profile.proxy != nil)
-    _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
-    _proxyHost = State(initialValue: profile.proxy?.host ?? "")
-    _proxyPort = State(initialValue: profile.proxy.map { String($0.port) } ?? "")
-    _proxyUsername = State(initialValue: profile.proxy?.username ?? "")
     if original == nil {
       originalProxyPassword = nil
       proxyPasswordReadFailed = false
-      _proxyPassword = State(initialValue: "")
     } else {
       do {
         let password = try keychain.proxyPassword(
@@ -250,13 +221,9 @@ struct ProfileEditorView: View {
         )
         originalProxyPassword = password
         proxyPasswordReadFailed = false
-        _proxyPassword = State(
-          initialValue: password ?? ""
-        )
       } catch {
         originalProxyPassword = nil
         proxyPasswordReadFailed = true
-        _proxyPassword = State(initialValue: "")
         _errorMessage = State(
           initialValue:
             "Не удалось прочитать пароль прокси: \(error.localizedDescription)"
@@ -291,6 +258,7 @@ struct ProfileEditorView: View {
       proxyUsername: profile.proxy?.username ?? "",
       proxyPassword: originalProxyPassword ?? ""
     )
+    _editorDraft = State(initialValue: initialDraft)
   }
 
   init(
@@ -316,7 +284,7 @@ struct ProfileEditorView: View {
     VStack(spacing: 0) {
       let heading = ProfileEditorHeadingPresentation.resolve(
         original: original,
-        currentName: name
+        currentName: editorDraft.name
       )
       HStack {
         VStack(alignment: .leading, spacing: 2) {
@@ -351,18 +319,18 @@ struct ProfileEditorView: View {
           }
         }
         Section("Профиль") {
-          TextField("Название", text: $name)
+          TextField("Название", text: $editorDraft.name)
             .accessibilityLabel("Название профиля")
             .focused($focusedField, equals: .name)
             .id(ProfileEditorField.name)
             .onSubmit {
               focusedField = nil
             }
-            .onChange(of: name) { _, _ in
+            .onChange(of: editorDraft.name) { _, _ in
               clearValidation(for: .name)
             }
           Text(
-            "\(name.count) из \(BrowserProfile.maximumNameLength) символов"
+            "\(editorDraft.name.count) из \(BrowserProfile.maximumNameLength) символов"
           )
           .font(.caption)
           .foregroundStyle(.secondary)
@@ -372,13 +340,13 @@ struct ProfileEditorView: View {
         }
 
         Section("Сеть") {
-          Toggle("Использовать прокси", isOn: $usesProxy)
-          if !usesProxy && !proxyImportText.isEmpty {
-            ProfilePendingProxyImportRecovery(text: $proxyImportText, usesProxy: $usesProxy, focus: $focusedField)
+          Toggle("Использовать прокси", isOn: $editorDraft.usesProxy)
+          if !editorDraft.usesProxy && !proxyImportText.isEmpty {
+            ProfilePendingProxyImportRecovery(text: $proxyImportText, usesProxy: $editorDraft.usesProxy, focus: $focusedField)
               .id(ProfileEditorField.proxyImport)
           }
-          if usesProxy {
-            Picker("Тип", selection: $proxyKind) {
+          if editorDraft.usesProxy {
+            Picker("Тип", selection: $editorDraft.proxyKind) {
               ForEach(ProxyKind.allCases) { kind in
                 Text(kind.title).tag(kind)
               }
@@ -412,19 +380,19 @@ struct ProfileEditorView: View {
 
             ViewThatFits(in: .horizontal) {
               HStack {
-                TextField("Хост", text: $proxyHost)
+                TextField("Хост", text: $editorDraft.proxyHost)
                   .focused($focusedField, equals: .proxyHost)
                   .id(ProfileEditorField.proxyHost)
-                TextField("Порт", text: $proxyPort)
+                TextField("Порт", text: $editorDraft.proxyPort)
                   .frame(width: 90)
                   .focused($focusedField, equals: .proxyPort)
                   .id(ProfileEditorField.proxyPort)
               }
               VStack(alignment: .leading, spacing: 8) {
-                TextField("Хост", text: $proxyHost)
+                TextField("Хост", text: $editorDraft.proxyHost)
                   .focused($focusedField, equals: .proxyHost)
                   .id(ProfileEditorField.proxyHost)
-                TextField("Порт", text: $proxyPort)
+                TextField("Порт", text: $editorDraft.proxyPort)
                   .focused($focusedField, equals: .proxyPort)
                   .id(ProfileEditorField.proxyPort)
               }
@@ -443,7 +411,7 @@ struct ProfileEditorView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityHint("Предупреждение не блокирует сохранение")
             }
-            if proxyKind == .socks5 {
+            if editorDraft.proxyKind == .socks5 {
               Text(
                 "Chromium поддерживает SOCKS5 только без логина и пароля. DNS для сайтов будет идти через прокси."
               )
@@ -452,7 +420,7 @@ struct ProfileEditorView: View {
             } else {
               TextField(
                 "Логин (необязательно)",
-                text: $proxyUsername
+                text: $editorDraft.proxyUsername
               )
               .focused($focusedField, equals: .proxyUsername)
               .id(ProfileEditorField.proxyUsername)
@@ -463,12 +431,12 @@ struct ProfileEditorView: View {
                   if proxyPasswordRevealLease.isRevealed {
                     TextField(
                       "Пароль (хранится в Связке ключей)",
-                      text: $proxyPassword
+                      text: $editorDraft.proxyPassword
                     )
                   } else {
                     SecureField(
                       "Пароль (хранится в Связке ключей)",
-                      text: $proxyPassword
+                      text: $editorDraft.proxyPassword
                     )
                   }
                 }
@@ -534,7 +502,7 @@ struct ProfileEditorView: View {
               )
               .font(.caption)
               .foregroundStyle(.secondary)
-              if !proxyUsername.isEmpty {
+              if !editorDraft.proxyUsername.isEmpty {
                 Text(
                   "Chromium может запросить логин и пароль при первом запуске. NeAntik не вводит их автоматически; пароль хранится только в Связке ключей."
                 )
@@ -653,18 +621,18 @@ struct ProfileEditorView: View {
       minWidth: 460,
       idealWidth: 540,
       minHeight: 380,
-      idealHeight: usesProxy ? 620 : 500
+      idealHeight: editorDraft.usesProxy ? 620 : 500
     )
     .sheet(isPresented: $showingFolderPicker) {
       ProfileFolderPickerSheet(
         profileName:
-          name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+          editorDraft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? "Новый профиль"
-            : name,
+            : editorDraft.name,
         folders: folders,
-        selectedFolderID: selectedFolderID
+        selectedFolderID: editorDraft.folderID
       ) { folderID in
-        selectedFolderID = folderID
+        editorDraft.folderID = folderID
       }
     }
     .interactiveDismissDisabled(hasUnsavedChanges)
@@ -701,31 +669,31 @@ struct ProfileEditorView: View {
     ) { _ in
       hideProxyPassword()
     }
-    .onChange(of: usesProxy) { _, _ in
-      if !usesProxy {
+    .onChange(of: editorDraft.usesProxy) { _, _ in
+      if !editorDraft.usesProxy {
         hideProxyPassword()
       }
       proxyInputDidChange()
     }
-    .onChange(of: proxyKind) { _, _ in
-      if proxyKind == .socks5 {
+    .onChange(of: editorDraft.proxyKind) { _, _ in
+      if editorDraft.proxyKind == .socks5 {
         hideProxyPassword()
       }
       proxyInputDidChange()
     }
-    .onChange(of: proxyHost) { _, _ in
+    .onChange(of: editorDraft.proxyHost) { _, _ in
       clearValidation(for: .proxyHost)
       proxyInputDidChange()
     }
-    .onChange(of: proxyPort) { _, _ in
+    .onChange(of: editorDraft.proxyPort) { _, _ in
       clearValidation(for: .proxyPort)
       proxyInputDidChange()
     }
-    .onChange(of: proxyUsername) { _, _ in
+    .onChange(of: editorDraft.proxyUsername) { _, _ in
       clearValidation(for: .proxyUsername)
       proxyInputDidChange()
     }
-    .onChange(of: proxyPassword) { _, _ in
+    .onChange(of: editorDraft.proxyPassword) { _, _ in
       clearValidation(for: .proxyPassword)
       refreshProxyPasswordRevealLease()
       proxyInputDidChange()
@@ -741,13 +709,13 @@ struct ProfileEditorView: View {
     .onChange(of: proxyImportText) { _, _ in
       clearValidation(for: .proxyImport)
     }
-    .onChange(of: tags) { _, _ in
+    .onChange(of: editorDraft.tags) { _, _ in
       clearValidation(for: .tags)
     }
-    .onChange(of: note) { _, _ in
+    .onChange(of: editorDraft.note) { _, _ in
       clearValidation(for: .note)
     }
-    .onChange(of: startURL) { _, _ in
+    .onChange(of: editorDraft.startURL) { _, _ in
       clearValidation(for: .startURL)
     }
   }
@@ -797,70 +765,30 @@ struct ProfileEditorView: View {
   }
 
   private var notePresentation: ProfileNotePresentation {
-    ProfileNotePresentation.resolve(note)
+    ProfileNotePresentation.resolve(editorDraft.note)
   }
 
   private var folderPresentation: ProfileEditorFolderPresentation {
     ProfileEditorFolderPresentation.resolve(
       folders: folders,
-      selectedFolderID: selectedFolderID
+      selectedFolderID: editorDraft.folderID
     )
   }
 
   private var advancedOptionsSection: some View {
     Section {
-      Button {
-        focusedField = nil
-        if reduceMotion {
-          showsAdvancedOptions.toggle()
-        } else {
-          withAnimation(.easeInOut(duration: 0.18)) {
-            showsAdvancedOptions.toggle()
-          }
+      DisclosureGroup(isExpanded: Binding(
+        get: { showsAdvancedOptions },
+        set: { expanded in
+          focusedField = nil
+          showsAdvancedOptions = expanded
         }
-      } label: {
-        HStack {
-          Image(
-            systemName:
-              showsAdvancedOptions
-                ? "chevron.down"
-                : "chevron.right"
-          )
-          .font(.caption.weight(.semibold))
-          .accessibilityHidden(true)
-          Text("Дополнительно")
-            .fontWeight(.semibold)
-          Spacer()
-          Text(ProfileEditorAdvancedPresentation.summary)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .truncationMode(.tail)
-        }
-        .frame(
-          maxWidth: .infinity,
-          minHeight: 28,
-          alignment: .leading
-        )
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Дополнительные настройки профиля")
-      .accessibilityValue(
-        showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
-      )
-      .accessibilityHint(
-        showsAdvancedOptions
-          ? "Скрывает папку, теги, стартовую страницу и оформление"
-          : "Показывает папку, теги, стартовую страницу и оформление"
-      )
-
-      if showsAdvancedOptions {
+      )) {
         Text("Организация")
           .font(.headline)
         folderControl
         ProfileTagEditor(
-          tags: $tags,
+          tags: $editorDraft.tags,
           input: $pendingTagInput,
           suggestions: suggestedTags,
           focusRequest: validationIssue?.field == .tags ? validationNavigationRequest : 0
@@ -873,7 +801,7 @@ struct ProfileEditorView: View {
         VStack(alignment: .leading, spacing: 6) {
           Text("Стартовая страница")
             .font(.headline)
-          TextField("Стартовая страница", text: $startURL)
+          TextField("Стартовая страница", text: $editorDraft.startURL)
             .labelsHidden()
             .accessibilityLabel("Стартовая страница")
             .focused($focusedField, equals: .startURL)
@@ -890,7 +818,18 @@ struct ProfileEditorView: View {
         Text("Цвет")
           .font(.headline)
         appearanceColorGrid
+      } label: {
+        HStack {
+          Text("Дополнительно").fontWeight(.semibold)
+          Spacer()
+          Text(ProfileEditorAdvancedPresentation.summary)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        .accessibilityLabel("Дополнительные настройки профиля")
       }
+      .disclosureGroupStyle(NeAntikDisclosureStyle())
     }
   }
 
@@ -907,11 +846,11 @@ struct ProfileEditorView: View {
     ) {
       ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
         Button {
-          symbolName = symbol
+          editorDraft.symbolName = symbol
         } label: {
           RoundedRectangle(cornerRadius: 10)
             .fill(
-              symbolName == symbol
+              editorDraft.symbolName == symbol
                 ? Color.accentColor
                 : Color.secondary.opacity(0.12)
             )
@@ -920,7 +859,7 @@ struct ProfileEditorView: View {
               Image(systemName: symbol)
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(
-                  symbolName == symbol ? Color.white : Color.primary
+                  editorDraft.symbolName == symbol ? Color.white : Color.primary
                 )
             }
         }
@@ -929,7 +868,7 @@ struct ProfileEditorView: View {
           "Иконка \(ProfileAppearance.title(for: symbol))"
         )
         .accessibilityValue(
-          symbolName == symbol ? "Выбрана" : "Не выбрана"
+          editorDraft.symbolName == symbol ? "Выбрана" : "Не выбрана"
         )
       }
     }
@@ -948,13 +887,13 @@ struct ProfileEditorView: View {
     ) {
       ForEach(ProfileAppearance.colors, id: \.self) { hex in
         Button {
-          colorHex = hex
+          editorDraft.colorHex = hex
         } label: {
           Circle()
             .fill(Color(hex: hex))
             .frame(width: 24, height: 24)
             .overlay {
-              if colorHex == hex {
+              if editorDraft.colorHex == hex {
                 Image(systemName: "checkmark")
                   .font(.system(size: 9, weight: .bold))
                   .foregroundStyle(
@@ -969,7 +908,7 @@ struct ProfileEditorView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(ProfileAppearance.title(forColor: hex))
-        .accessibilityValue(colorHex == hex ? "Выбран" : "Не выбран")
+        .accessibilityValue(editorDraft.colorHex == hex ? "Выбран" : "Не выбран")
       }
     }
   }
@@ -981,7 +920,7 @@ struct ProfileEditorView: View {
         Menu {
           ForEach(folderPresentation.quickOptions) { option in
             Button {
-              selectedFolderID = option.folderID
+              editorDraft.folderID = option.folderID
             } label: {
               if option.isSelected {
                 Label(option.title, systemImage: "checkmark")
@@ -1009,7 +948,7 @@ struct ProfileEditorView: View {
         )
       }
     } else {
-      Picker("Папка", selection: $selectedFolderID) {
+      Picker("Папка", selection: $editorDraft.folderID) {
         ForEach(folderPresentation.quickOptions) { option in
           Text(option.title).tag(option.folderID)
         }
@@ -1021,84 +960,29 @@ struct ProfileEditorView: View {
 
   @ViewBuilder
   private var noteEditor: some View {
-    Button {
-      let willExpand = !showsNoteEditor
-      if reduceMotion {
-        showsNoteEditor = willExpand
-      } else {
-        withAnimation(.easeInOut(duration: 0.18)) {
-          showsNoteEditor = willExpand
+    DisclosureGroup(isExpanded: Binding(
+      get: { showsNoteEditor },
+      set: { expanded in
+        showsNoteEditor = expanded
+        if expanded {
+          Task { @MainActor in
+            await Task.yield()
+            focusedField = .note
+          }
+        } else if focusedField == .note {
+          focusedField = nil
         }
       }
-      if willExpand {
-        Task { @MainActor in
-          await Task.yield()
-          focusedField = .note
-        }
-      } else if focusedField == .note {
-        focusedField = nil
-      }
-    } label: {
-      HStack(spacing: 8) {
-        Image(
-          systemName: showsNoteEditor ? "chevron.down" : "chevron.right"
-        )
-        .font(.caption.weight(.semibold))
-        Image(systemName: "note.text")
-          .accessibilityHidden(true)
-        Text("Заметка (необязательно)")
-          .fontWeight(.semibold)
-        Spacer()
-        Text(
-          notePresentation.collapsedSummary.isEmpty
-            ? "Не добавлена"
-            : "Добавлена"
-        )
-        .font(.caption)
-        .foregroundStyle(.secondary)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .accessibilityLabel("Необязательная заметка профиля")
-    .accessibilityValue(
-      showsNoteEditor
-        ? "Развёрнуто"
-        : (
-          notePresentation.collapsedSummary.isEmpty
-            ? "Свёрнуто, не добавлена"
-            : "Свёрнуто, добавлена"
-        )
-    )
-    .accessibilityHint(
-      showsNoteEditor
-        ? "Скрывает поле заметки"
-        : "Показывает поле заметки"
-    )
-
-    if !showsNoteEditor,
-      !notePresentation.collapsedSummary.isEmpty
-    {
-      Text(notePresentation.collapsedSummary)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .truncationMode(.tail)
-        .accessibilityLabel("Краткая заметка")
-        .accessibilityValue(notePresentation.collapsedSummary)
-    }
-
-    if showsNoteEditor {
+    )) {
       ZStack(alignment: .topLeading) {
-        TextEditor(text: $note)
+        TextEditor(text: $editorDraft.note)
           .focused($focusedField, equals: .note)
           .id(ProfileEditorField.note)
           .accessibilityLabel("Необязательная заметка профиля")
           .accessibilityHint(
             "До \(BrowserProfile.maximumNoteLength) символов"
           )
-        if note.isEmpty {
+        if editorDraft.note.isEmpty {
           Text("Короткий контекст для этого профиля")
             .foregroundStyle(.secondary)
             .padding(.horizontal, 6)
@@ -1144,7 +1028,34 @@ struct ProfileEditorView: View {
           .foregroundStyle(.red)
           .accessibilityElement(children: .combine)
       }
+    } label: {
+      HStack {
+        Label("Заметка (необязательно)", systemImage: "note.text")
+          .fontWeight(.semibold)
+        Spacer()
+        Text(notePresentation.collapsedSummary.isEmpty ? "Не добавлена" : "Добавлена")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      .accessibilityLabel(
+        notePresentation.collapsedSummary.isEmpty
+          ? "Необязательная заметка профиля, не добавлена"
+          : "Необязательная заметка профиля, добавлена"
+      )
     }
+    .disclosureGroupStyle(NeAntikDisclosureStyle())
+    if !showsNoteEditor,
+      !notePresentation.collapsedSummary.isEmpty
+    {
+      Text(notePresentation.collapsedSummary)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .accessibilityLabel("Краткая заметка")
+        .accessibilityValue(notePresentation.collapsedSummary)
+    }
+
   }
 
   private var proxyImportOrderPicker: some View {
@@ -1170,17 +1081,17 @@ struct ProfileEditorView: View {
   }
 
   private func makeProxy() throws -> ProxyConfiguration? {
-    guard usesProxy else { return nil }
-    guard let port = Int(proxyPort) else {
+    guard editorDraft.usesProxy else { return nil }
+    guard let port = Int(editorDraft.proxyPort) else {
       throw NeAntikError.invalidProxy
     }
     let value = ProxyConfiguration(
-      kind: proxyKind,
-      host: proxyHost.trimmingCharacters(in: .whitespacesAndNewlines),
+      kind: editorDraft.proxyKind,
+      host: editorDraft.proxyHost.trimmingCharacters(in: .whitespacesAndNewlines),
       port: port,
-      username: proxyKind == .socks5
+      username: editorDraft.proxyKind == .socks5
         ? ""
-        : proxyUsername.trimmingCharacters(
+        : editorDraft.proxyUsername.trimmingCharacters(
           in: .whitespacesAndNewlines
         )
     )
@@ -1193,9 +1104,9 @@ struct ProfileEditorView: View {
   private var draftProxyReuseAssessment: ProxyReuseAssessment {
     let draft = ProxyReuseInput(
       profileID: draftProfileID,
-      kind: usesProxy ? proxyKind : nil,
-      host: usesProxy ? proxyHost : nil,
-      port: usesProxy ? Int(proxyPort) : nil
+      kind: editorDraft.usesProxy ? editorDraft.proxyKind : nil,
+      host: editorDraft.usesProxy ? editorDraft.proxyHost : nil,
+      port: editorDraft.usesProxy ? Int(editorDraft.proxyPort) : nil
     )
     return .assess(
       selectedProfileID: draftProfileID,
@@ -1210,10 +1121,10 @@ struct ProfileEditorView: View {
     }
     guard savePresentation.canSave else { return }
     do {
-      let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+      let cleanName = editorDraft.name.trimmingCharacters(in: .whitespacesAndNewlines)
       guard BrowserProfile.isValidName(cleanName),
         let cleanStartURL =
-          BrowserLaunchBuilder.validatedStartURL(startURL)
+          BrowserLaunchBuilder.validatedStartURL(editorDraft.startURL)
       else {
         throw NeAntikError.invalidProfile
       }
@@ -1223,12 +1134,12 @@ struct ProfileEditorView: View {
         name: cleanName
       )
       profile.name = cleanName
-      profile.colorHex = colorHex
-      profile.symbolName = symbolName
+      profile.colorHex = editorDraft.colorHex
+      profile.symbolName = editorDraft.symbolName
       guard let normalizedTags = BrowserProfile.normalizedTags(resolvedTagDraft.tags) else {
         throw ProfileTagsValidationError()
       }
-      guard let normalizedNote = BrowserProfile.normalizedNote(note) else {
+      guard let normalizedNote = BrowserProfile.normalizedNote(editorDraft.note) else {
         throw NeAntikError.invalidProfile
       }
       profile.tags = normalizedTags
@@ -1252,11 +1163,11 @@ struct ProfileEditorView: View {
         currentHasUsername: proxy?.username.isEmpty == false,
         originalHadUsername:
           original?.proxy?.username.isEmpty == false,
-        enteredPassword: proxyPassword,
+        enteredPassword: editorDraft.proxyPassword,
         originalPassword: originalProxyPassword,
         readFailed: proxyPasswordReadFailed
       )
-      try onSave(profile, passwordUpdate, selectedFolderID)
+      try onSave(profile, passwordUpdate, editorDraft.folderID)
       dismiss()
     } catch {
       errorMessage = error.localizedDescription
@@ -1320,7 +1231,7 @@ struct ProfileEditorView: View {
       guard let proxy = try makeProxy() else { return }
       startProxyTest(
         configuration: proxy,
-        password: proxyPassword
+        password: editorDraft.proxyPassword
       )
     } catch {
       errorMessage = error.localizedDescription
@@ -1345,15 +1256,15 @@ struct ProfileEditorView: View {
         : proxyImportText
       let draft = try ProxyImportParser.parse(
         source,
-        kind: proxyKind,
+        kind: editorDraft.proxyKind,
         order: proxyImportOrder
       )
       isApplyingProxyImport = true
-      usesProxy = true
-      proxyHost = draft.configuration.host
-      proxyPort = String(draft.configuration.port)
-      proxyUsername = draft.configuration.username
-      proxyPassword = draft.password
+      editorDraft.usesProxy = true
+      editorDraft.proxyHost = draft.configuration.host
+      editorDraft.proxyPort = String(draft.configuration.port)
+      editorDraft.proxyUsername = draft.configuration.username
+      editorDraft.proxyPassword = draft.password
       proxyImportNotice = UserNotice(
         "Прокси распознан: \(draft.redactedSummary). " +
           "Соединение ещё не проверено.",
@@ -1445,23 +1356,13 @@ struct ProfileEditorView: View {
     invalidateProxyEvidence()
   }
 
-  private var editorDraft: ProfileEditorDraft {
-    ProfileEditorDraft(
-      name: name, colorHex: colorHex, symbolName: symbolName,
-      tags: tags, note: note, folderID: selectedFolderID,
-      startURL: startURL, usesProxy: usesProxy, proxyKind: proxyKind,
-      proxyHost: proxyHost, proxyPort: proxyPort,
-      proxyUsername: proxyUsername, proxyPassword: proxyPassword
-    )
-  }
-
   private var savePresentation: ProfileEditorSavePresentation {
     .resolve(
       isNew: original == nil,
       hasChanges: editorDraft != initialDraft || refreshedProxyEvidence || !pendingTagInput.isEmpty,
-      issue: currentValidationIssue, usesProxy: usesProxy,
-      kind: proxyKind,
-      hasUsername: !proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+      issue: currentValidationIssue, usesProxy: editorDraft.usesProxy,
+      kind: editorDraft.proxyKind,
+      hasUsername: !editorDraft.proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
       isTesting: isTesting, refreshedEvidence: refreshedProxyEvidence,
       invalidatedEvidence: invalidatedProxyEvidence,
       latestProbeFailed: testNotice?.level == .failure
@@ -1473,7 +1374,7 @@ struct ProfileEditorView: View {
   }
 
   private var resolvedTagDraft: ProfileTagEditorInputResult {
-    ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: tags)
+    ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: editorDraft.tags)
   }
 
   private var currentValidationIssue: ProfileEditorValidationIssue? {

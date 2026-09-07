@@ -166,40 +166,12 @@ struct FileFingerprintEvidenceRecoveryStore:
             return nil
         }
         defer { _ = Darwin.close(descriptor) }
-        var before = stat()
-        guard Darwin.fstat(descriptor, &before) == 0,
-              Self.isPrivateRegularFile(before),
-              before.st_size > 0,
-              before.st_size <=
-                FingerprintEvidenceEnvelopeCodec.maximumEnvelopeBytes
-        else {
-            throw FingerprintEvidenceReleaseError.unsafeManifest
-        }
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: 64 * 1_024)
-        while true {
-            let count = Darwin.read(descriptor, &buffer, buffer.count)
-            if count < 0 {
-                if errno == EINTR { continue }
-                throw FingerprintEvidenceReleaseError
-                    .operationFailed(Int(errno))
-            }
-            if count == 0 { break }
-            data.append(buffer, count: count)
-            guard data.count <=
-                    FingerprintEvidenceEnvelopeCodec.maximumEnvelopeBytes
-            else {
-                throw FingerprintEvidenceReleaseError.unsafeManifest
-            }
-        }
-        var after = stat()
-        guard Darwin.fstat(descriptor, &after) == 0,
-              Self.sameIdentityAndContentMetadata(before, after),
-              data.count == Int(after.st_size)
-        else {
-            throw FingerprintEvidenceReleaseError.unsafeManifest
-        }
-        return data
+        return try SecureFile.readPrivateDescriptor(
+            descriptor, minimumBytes: 1,
+            maximumBytes: FingerprintEvidenceEnvelopeCodec.maximumEnvelopeBytes,
+            unsafe: { FingerprintEvidenceReleaseError.unsafeManifest },
+            failed: { FingerprintEvidenceReleaseError.operationFailed(Int($0)) }
+        )
     }
 
     private func validatePrivateDirectory(
@@ -214,28 +186,6 @@ struct FileFingerprintEvidenceRecoveryStore:
         else {
             throw FingerprintEvidenceReleaseError.unsafeManifest
         }
-    }
-
-    private static func isPrivateRegularFile(_ status: stat) -> Bool {
-        status.st_uid == geteuid() &&
-            status.st_nlink == 1 &&
-            status.st_mode & mode_t(S_IFMT) ==
-                mode_t(S_IFREG) &&
-            status.st_mode & mode_t(0o077) == 0
-    }
-
-    private static func sameIdentityAndContentMetadata(
-        _ lhs: stat,
-        _ rhs: stat
-    ) -> Bool {
-        lhs.st_dev == rhs.st_dev &&
-            lhs.st_ino == rhs.st_ino &&
-            lhs.st_nlink == rhs.st_nlink &&
-            lhs.st_size == rhs.st_size &&
-            lhs.st_mtimespec.tv_sec == rhs.st_mtimespec.tv_sec &&
-            lhs.st_mtimespec.tv_nsec == rhs.st_mtimespec.tv_nsec &&
-            lhs.st_ctimespec.tv_sec == rhs.st_ctimespec.tv_sec &&
-            lhs.st_ctimespec.tv_nsec == rhs.st_ctimespec.tv_nsec
     }
 
     private static func isSafeComponent(_ value: String) -> Bool {
@@ -357,7 +307,7 @@ final class AtomicFingerprintEvidenceReleaseOutput:
         }
         if result == 0 {
             guard allowIdenticalExisting,
-                  Self.isSafeRegular(existing)
+                  SecureFile.isPrivateRegular(existing)
             else {
                 _ = Darwin.close(parentDescriptor)
                 throw FingerprintEvidenceEnrollmentError
@@ -408,7 +358,7 @@ final class AtomicFingerprintEvidenceReleaseOutput:
         }
         var created = stat()
         guard Darwin.fstat(descriptor, &created) == 0,
-              Self.isSafeRegular(created)
+              SecureFile.isPrivateRegular(created)
         else {
             let code = errno == 0 ? EFTYPE : errno
             _ = Darwin.close(descriptor)
@@ -518,69 +468,12 @@ final class AtomicFingerprintEvidenceReleaseOutput:
             return nil
         }
         defer { _ = Darwin.close(descriptor) }
-        var status = stat()
-        guard Darwin.fstat(descriptor, &status) == 0,
-              Self.isSafeRegular(status),
-              status.st_size <=
-                FingerprintEvidenceEnvelopeCodec.maximumEnvelopeBytes
-        else {
-            throw FingerprintEvidenceEnrollmentError
-                .unsafeOutputEntry
-        }
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: 64 * 1_024)
-        while true {
-            let count = Darwin.read(
-                descriptor,
-                &buffer,
-                buffer.count
-            )
-            if count < 0 {
-                if errno == EINTR { continue }
-                throw FingerprintEvidenceEnrollmentError
-                    .operationFailed(errno)
-            }
-            if count == 0 { break }
-            data.append(buffer, count: count)
-            guard data.count <=
-                    FingerprintEvidenceEnvelopeCodec
-                        .maximumEnvelopeBytes
-            else {
-                throw FingerprintEvidenceEnrollmentError
-                    .unsafeOutputEntry
-            }
-        }
-        var after = stat()
-        guard Darwin.fstat(descriptor, &after) == 0,
-              Self.sameIdentityAndContentMetadata(status, after),
-              data.count == Int(after.st_size)
-        else {
-            throw FingerprintEvidenceEnrollmentError
-                .unsafeOutputEntry
-        }
-        return data
-    }
-
-    private static func sameIdentityAndContentMetadata(
-        _ lhs: stat,
-        _ rhs: stat
-    ) -> Bool {
-        lhs.st_dev == rhs.st_dev &&
-            lhs.st_ino == rhs.st_ino &&
-            lhs.st_nlink == rhs.st_nlink &&
-            lhs.st_size == rhs.st_size &&
-            lhs.st_mtimespec.tv_sec == rhs.st_mtimespec.tv_sec &&
-            lhs.st_mtimespec.tv_nsec == rhs.st_mtimespec.tv_nsec &&
-            lhs.st_ctimespec.tv_sec == rhs.st_ctimespec.tv_sec &&
-            lhs.st_ctimespec.tv_nsec == rhs.st_ctimespec.tv_nsec
-    }
-
-    private static func isSafeRegular(_ status: stat) -> Bool {
-        status.st_uid == geteuid() &&
-            status.st_nlink == 1 &&
-            status.st_mode & mode_t(S_IFMT) ==
-                mode_t(S_IFREG) &&
-            status.st_mode & mode_t(0o077) == 0
+        return try SecureFile.readPrivateDescriptor(
+            descriptor, minimumBytes: 0,
+            maximumBytes: FingerprintEvidenceEnvelopeCodec.maximumEnvelopeBytes,
+            unsafe: { FingerprintEvidenceEnrollmentError.unsafeOutputEntry },
+            failed: { FingerprintEvidenceEnrollmentError.operationFailed($0) }
+        )
     }
 
     private static func writeAll(

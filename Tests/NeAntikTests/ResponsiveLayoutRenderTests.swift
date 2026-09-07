@@ -6,6 +6,23 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
+    @Test func sharedDisclosureRendersBothStatesAndAppearances() throws {
+        for expanded in [false, true] {
+            for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
+                try render(
+                    DisclosureGroup("Подробности профиля", isExpanded: .constant(expanded)) {
+                        Text("Название и безопасная диагностическая сводка")
+                    }
+                    .disclosureGroupStyle(NeAntikDisclosureStyle())
+                    .padding(12),
+                    name: "shared-disclosure-\(expanded ? "open" : "closed")-\(name)",
+                    size: CGSize(width: 360, height: 130),
+                    colorScheme: scheme
+                )
+            }
+        }
+    }
+
     @Test func longValidTagKeepsRemovalVisibleInNarrowEditor() throws {
         let tag = String(repeating: "界", count: BrowserProfile.maximumTagLength)
         #expect(BrowserProfile.normalizedTags([tag]) == [tag])

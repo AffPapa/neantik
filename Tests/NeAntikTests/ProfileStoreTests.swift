@@ -5,6 +5,86 @@ import Testing
 @MainActor
 struct ProfileStoreTests {
     @Test
+    func recoverableDocumentMissingAndPreviousBackupPolicies() throws {
+        for policy in [RecoverableDocumentStorage<Data>.EntryPolicy.profiles, .organization] {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            let paths = AppPaths(rootDirectory: root)
+            try paths.prepareBaseDirectories()
+            defer { try? FileManager.default.removeItem(at: root) }
+            let document = RecoverableDocumentStorage<Data>(
+                paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
+                maximumBytes: 32, policy: policy, decode: { $0 }
+            )
+            try document.ensureSnapshot()
+            #expect(!FileManager.default.fileExists(atPath: paths.profilesBackupFile.path))
+            let first = Data("first".utf8)
+            let empty = Data("empty".utf8)
+            try document.persist(first, synchronize: false) { policy == .profiles ? first : empty }
+            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == (policy == .profiles ? first : empty))
+            try document.persist(Data("second".utf8), synchronize: false) {
+                Issue.record("Existing document must not invoke missing-backup policy")
+                return Data()
+            }
+            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == first)
+            let before = try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32)
+            try document.ensureSnapshot()
+            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == before)
+        }
+    }
+
+    @Test
+    func recoverableDocumentDecodeFailureNeverOverwritesCurrentOrBackup() throws {
+        for rejected in ["corrupt", "unsupported"] {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            let paths = AppPaths(rootDirectory: root)
+            try paths.prepareBaseDirectories()
+            defer { try? FileManager.default.removeItem(at: root) }
+            let current = Data(rejected.utf8), backup = Data("previous".utf8)
+            try paths.writePrivateFile(current, to: paths.profilesFile)
+            try paths.writePrivateFile(backup, to: paths.profilesBackupFile)
+            let document = RecoverableDocumentStorage<Data>(
+                paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
+                maximumBytes: 32, policy: .organization,
+                decode: { _ in throw POSIXError(.EINVAL) }
+            )
+            #expect(throws: POSIXError(.EINVAL)) {
+                try document.persist(Data("new".utf8), synchronize: false) { Data() }
+            }
+            #expect(try paths.readPrivateFile(paths.profilesFile, maximumBytes: 32) == current)
+            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == backup)
+        }
+    }
+
+    @Test
+    func recoverableDocumentSnapshotDecodePolicyAndUnsafeBackup() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let raw = Data("raw corrupt bytes".utf8)
+        try paths.writePrivateFile(raw, to: paths.profilesFile)
+        func document(_ policy: RecoverableDocumentStorage<Data>.EntryPolicy) -> RecoverableDocumentStorage<Data> {
+            RecoverableDocumentStorage(
+                paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
+                maximumBytes: 32, policy: policy, decode: { _ in throw POSIXError(.EINVAL) }
+            )
+        }
+        #expect(throws: POSIXError(.EINVAL)) { try document(.organization).ensureSnapshot() }
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesBackupFile.path))
+        try document(.profiles).ensureSnapshot()
+        #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == raw)
+        try FileManager.default.removeItem(at: paths.profilesBackupFile)
+        let target = root.appendingPathComponent("target")
+        try paths.writePrivateFile(Data("untouched".utf8), to: target)
+        try FileManager.default.createSymbolicLink(at: paths.profilesBackupFile, withDestinationURL: target)
+        #expect(throws: (any Error).self) {
+            try document(.profiles).persist(Data("new".utf8), synchronize: true) { Data() }
+        }
+        #expect(try paths.readPrivateFile(paths.profilesFile, maximumBytes: 32) == raw)
+        #expect(try paths.readPrivateFile(target, maximumBytes: 32) == Data("untouched".utf8))
+    }
+
+    @Test
     func rejectsUnsafeOrOversizedProfileNames() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

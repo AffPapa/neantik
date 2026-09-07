@@ -1116,80 +1116,26 @@ final class ProfileStore: ObservableObject {
         try requireOrganizationStorage()
         try beforeOrganizationPersist()
         let data = try Self.encodeOrganization(organization)
-        if synchronizeRecoverySnapshot {
-            try paths.writePrivateFile(
-                data,
-                to: paths.profileOrganizationBackupFile
-            )
-            try paths.writePrivateFile(
-                data,
-                to: paths.profileOrganizationFile
-            )
-            return
-        }
-        switch try paths.privateFileEntryKind(
-            paths.profileOrganizationFile
-        ) {
-        case .regular:
-            try paths.validatePrivateFile(paths.profileOrganizationFile)
-            let previousData = try paths.readPrivateFile(
-                paths.profileOrganizationFile,
-                maximumBytes: Self.maximumOrganizationMetadataBytes
-            )
-            _ = try Self.decodeOrganization(
-                previousData,
-                knownProfileIDs: Set(profiles.map(\.id))
-            )
-            try paths.writePrivateFile(
-                previousData,
-                to: paths.profileOrganizationBackupFile
-            )
-        case .missing:
-            try paths.writePrivateFile(
-                try Self.encodeOrganization(.empty),
-                to: paths.profileOrganizationBackupFile
-            )
-        case .unsafe:
-            throw POSIXError(.EFTYPE)
-        }
-        try paths.writePrivateFile(data, to: paths.profileOrganizationFile)
+        try Self.organizationStorage(paths: paths, knownProfileIDs: Set(profiles.map(\.id)))
+            .persist(data, synchronize: synchronizeRecoverySnapshot) {
+                try Self.encodeOrganization(.empty)
+            }
     }
 
     private func ensureOrganizationRecoverySnapshotIfNeeded() throws {
-        switch try paths.privateFileEntryKind(
-            paths.profileOrganizationFile
-        ) {
-        case .missing:
-            return
-        case .unsafe:
-            throw POSIXError(.EFTYPE)
-        case .regular:
-            break
-        }
+        try Self.organizationStorage(paths: paths, knownProfileIDs: Set(profiles.map(\.id)))
+            .ensureSnapshot()
+    }
 
-        switch try paths.privateFileEntryKind(
-            paths.profileOrganizationBackupFile
-        ) {
-        case .regular:
-            try paths.validatePrivateFile(
-                paths.profileOrganizationBackupFile
-            )
-        case .missing:
-            let data = try paths.readPrivateFile(
-                paths.profileOrganizationFile,
-                maximumBytes: Self.maximumOrganizationMetadataBytes
-            )
-            _ = try Self.decodeOrganization(
-                data,
-                knownProfileIDs: Set(profiles.map(\.id))
-            )
-            try paths.writePrivateFile(
-                data,
-                to: paths.profileOrganizationBackupFile
-            )
-        case .unsafe:
-            throw POSIXError(.EFTYPE)
-        }
+    private static func organizationStorage(
+        paths: AppPaths, knownProfileIDs: Set<UUID>
+    ) -> RecoverableDocumentStorage<(state: ProfileOrganizationState, changed: Bool)> {
+        RecoverableDocumentStorage(
+            paths: paths, current: paths.profileOrganizationFile,
+            backup: paths.profileOrganizationBackupFile,
+            maximumBytes: maximumOrganizationMetadataBytes, policy: .organization,
+            decode: { try decodeOrganization($0, knownProfileIDs: knownProfileIDs) }
+        )
     }
 
     private func requireStorage() throws {
@@ -1257,27 +1203,8 @@ final class ProfileStore: ObservableObject {
                 backupData,
                 knownProfileIDs: knownProfileIDs
             )
-            let rejectedURL: URL?
-            if ProfileRecoveryRetention.shouldPreserveRejectedFile(
-                byteCount: currentData.count
-            ) {
-                let candidate = paths.profilesRecoveryDirectory
-                    .appendingPathComponent(
-                        "profile-organization-rejected-\(UUID().uuidString).json"
-                    )
-                try paths.writePrivateFile(currentData, to: candidate)
-                rejectedURL = candidate
-            } else {
-                rejectedURL = nil
-            }
-            try paths.writePrivateFile(
-                backupData,
-                to: paths.profileOrganizationFile
-            )
-            try? ProfileRecoveryRetention.prune(
-                directory: paths.profilesRecoveryDirectory,
-                preserving: rejectedURL
-            )
+            let rejectedURL = try organizationStorage(paths: paths, knownProfileIDs: knownProfileIDs)
+                .restore(backupData, preserving: currentData, prefix: "profile-organization")
             return ProfileOrganizationLoad(
                 state: recovered.state,
                 changed: recovered.changed,

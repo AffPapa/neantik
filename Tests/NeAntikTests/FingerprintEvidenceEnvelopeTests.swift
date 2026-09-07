@@ -5,6 +5,25 @@ import Testing
 
 struct FingerprintEvidenceEnvelopeTests {
     @Test
+    func canonicalEvidenceFramingRejectsAlternateBytes() throws {
+        let canonical = Data(#"{"a":1,"b":"/"}"#.utf8)
+        let object = try #require(CanonicalEvidenceJSON.object(canonical))
+        #expect(object["a"] as? Int == 1)
+        #expect(object["b"] as? String == "/")
+        for text in [
+            "", "[]", "null", "1", "{broken}",
+            #"{"b":"/","a":1}"#,
+            #"{ "a":1,"b":"/"}"#,
+            #"{"a":1,"a":1,"b":"/"}"#,
+            #"{"a":1,"b":"\/"}"#,
+            #"{"a":1,"b":"/"}"# + "\n"
+        ] {
+            #expect(CanonicalEvidenceJSON.object(Data(text.utf8)) == nil)
+        }
+        #expect(CanonicalEvidenceJSON.object(Data([0xff, 0xfe, 0x7b])) == nil)
+    }
+
+    @Test
     func signsAndVerifiesExactPayloadAgainstExternalManifest() throws {
         let fixture = makeFixture()
 

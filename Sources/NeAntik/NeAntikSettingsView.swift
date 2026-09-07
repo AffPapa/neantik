@@ -3,6 +3,7 @@ import SwiftUI
 struct NeAntikSettingsView: View {
     @ObservedObject var preferences: WorkspacePreferenceStore
     @State private var shortcutQuery = ""
+    @State private var showsShortcutReference = false
     @FocusState private var shortcutSearchIsFocused: Bool
 
     private var matchingShortcuts: [NeAntikShortcut] {
@@ -44,9 +45,12 @@ struct NeAntikSettingsView: View {
             Section("Сочетания клавиш") {
                 HStack {
                     Button {
+                        showsShortcutReference = true
                         shortcutSearchIsFocused = true
                     } label: {
                         Image(systemName: "magnifyingglass")
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .keyboardShortcut("f", modifiers: .command)
@@ -54,8 +58,14 @@ struct NeAntikSettingsView: View {
                     .help("Найти сочетание клавиш (⌘F)")
 
                     TextField("Найти команду, клавиши или раздел", text: $shortcutQuery)
+                        .labelsHidden()
                         .accessibilityLabel("Поиск сочетаний клавиш")
                         .focused($shortcutSearchIsFocused)
+                        .onChange(of: shortcutQuery) { _, query in
+                            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                showsShortcutReference = true
+                            }
+                        }
                         .onExitCommand {
                             if shortcutQuery.isEmpty {
                                 shortcutSearchIsFocused = false
@@ -76,30 +86,33 @@ struct NeAntikSettingsView: View {
                     }
                 }
                 .id("shortcutSearch")
-                if shortcuts.isEmpty {
-                    Text("Сочетания не найдены")
-                    Text("Попробуй название команды или клавиши.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button("Очистить поиск", action: clearShortcutSearch)
-                } else if !shortcutQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("Найдено сочетаний: \(shortcuts.count)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(NeAntikShortcutCategory.allCases) { category in
-                    let group = shortcuts.filter { $0.category == category }
-                    if !group.isEmpty {
-                        shortcutGroup(category, shortcuts: group)
+                DisclosureGroup("Справочник команд", isExpanded: $showsShortcutReference) {
+                    if shortcuts.isEmpty {
+                        Text("Сочетания не найдены")
+                        Text("Попробуй название команды или клавиши.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button("Очистить поиск", action: clearShortcutSearch)
+                    } else if !shortcutQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("Найдено сочетаний: \(shortcuts.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                }
+                    ForEach(NeAntikShortcutCategory.allCases) { category in
+                        let group = shortcuts.filter { $0.category == category }
+                        if !group.isEmpty {
+                            shortcutGroup(category, shortcuts: group)
+                        }
+                    }
 
-                Text(
-                    "Сочетания работают в активном NeAntik и не переназначаются. " +
-                        "В поиске Escape сначала очищает запрос, затем снимает фокус."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                    Text(
+                        "Сочетания работают в активном NeAntik и не переназначаются. " +
+                            "В поиске Escape сначала очищает запрос, затем снимает фокус."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .disclosureGroupStyle(NeAntikDisclosureStyle())
             }
         }
         .formStyle(.grouped)
@@ -107,6 +120,7 @@ struct NeAntikSettingsView: View {
 
     private func revealShortcutReference(using scrollProxy: ScrollViewProxy) {
         guard preferences.consumeShortcutReferenceRequest() else { return }
+        showsShortcutReference = true
         scrollProxy.scrollTo("shortcutSearch", anchor: .top)
         shortcutSearchIsFocused = true
     }
