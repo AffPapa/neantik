@@ -1,4 +1,4 @@
-# NeAntik 0.3 product contract
+# NeAntik 0.4 candidate product contract
 
 ## Outcome
 
@@ -7,6 +7,18 @@ sign in to a website, close the browser, and later return to the same session.
 Profiles must not share cookies or local storage. When a compatible patched
 runtime is selected, every profile must also retain a stable distinct browser
 identity.
+
+The 0.4 candidate proposes a readable unique name and exposes Create and open
+in the ordinary editor. Creation persists atomically before the editor closes;
+opening then re-reads the saved profile and uses normal guarded launch. A
+failed opening leaves the profile available to retry. Only create is also
+available. Valid pasted proxy input resolves at submit; manual connection
+fields and optional diagnostics are disclosed on demand.
+
+New profiles use a blank local startup page. Existing saved/custom startup
+URLs remain unchanged. A running profile's primary row action returns to its
+verified window; Stop remains an explicit separate action. This does not
+promise automatic restoration of closed tabs or indefinitely valid logins.
 
 On an empty workspace, the primary action creates and opens one permanent
 local profile with a stable identity. It states that the initial route is

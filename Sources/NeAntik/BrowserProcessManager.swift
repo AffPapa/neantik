@@ -210,11 +210,14 @@ enum BrowserLaunchBuilder {
 
     static func normalizedStartURL(_ value: String) -> URL {
         validatedStartURL(value) ??
-            URL(string: "https://www.google.com")!
+            URL(string: BrowserProfile.defaultStartURL)!
     }
 
     static func validatedStartURL(_ value: String) -> URL? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed == "about:blank" {
+            return URL(string: trimmed)
+        }
         if let url = URL(string: trimmed),
            let scheme = url.scheme?.lowercased(),
            scheme == "http" || scheme == "https",

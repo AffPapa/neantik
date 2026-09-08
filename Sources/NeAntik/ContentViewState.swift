@@ -1,16 +1,19 @@
 import Foundation
 
 struct EditorRequest: Identifiable {
+    let initialFocus: ProfileEditorField?
     let id = UUID()
     let profile: BrowserProfile?
     let targetFolderID: UUID?
     let openedProcessState: BrowserProfileProcessState?
 
     init(
+        initialFocus: ProfileEditorField? = nil,
         profile: BrowserProfile?,
         targetFolderID: UUID? = nil,
         openedProcessState: BrowserProfileProcessState? = nil
     ) {
+        self.initialFocus = initialFocus
         self.profile = profile
         self.targetFolderID = targetFolderID
         self.openedProcessState = openedProcessState

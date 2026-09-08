@@ -289,8 +289,25 @@ struct BrowserLaunchBuilderTests {
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("javascript:alert(1)")
-                .absoluteString == "https://www.google.com"
+                .absoluteString == "about:blank"
         )
+    }
+
+    @Test
+    func permitsOnlyTheBlankInternalStartPage() {
+        #expect(
+            BrowserLaunchBuilder.validatedStartURL("about:blank")?
+                .absoluteString == "about:blank"
+        )
+        for value in [
+            "about:config", "about:blank#fragment", "about:blank?query=1",
+            "about://blank", "about:blank/", "about:bl%61nk",
+            "chrome://settings", "chrome-extension://abc/page.html",
+            "file:///tmp/private", "data:text/html,<script>alert(1)</script>",
+            "javascript:alert(1)"
+        ] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value) == nil)
+        }
     }
 
     @Test
@@ -786,12 +803,12 @@ struct BrowserLaunchBuilderTests {
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("https://")
-                .absoluteString == "https://www.google.com"
+                .absoluteString == "about:blank"
         )
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("https://user:pass@example.com")
-                .absoluteString == "https://www.google.com"
+                .absoluteString == "about:blank"
         )
         #expect(BrowserLaunchBuilder.validatedStartURL("https://") == nil)
         #expect(

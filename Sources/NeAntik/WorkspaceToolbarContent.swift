@@ -15,11 +15,13 @@ struct WorkspaceToolbarContent: ToolbarContent {
     @ToolbarContentBuilder
     var body: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            Button(action: onPresentReadiness) {
-                Label("Готовность", systemImage: "checkmark.shield")
+            Menu {
+                Button("Диагностика приложения…", systemImage: "stethoscope", action: onPresentReadiness)
+            } label: {
+                Label("Помощь", systemImage: "questionmark.circle")
             }
-            .help("Проверить приложение, движок, данные и процессы")
-            .accessibilityLabel("Открыть центр готовности NeAntik")
+            .help("Диагностика приложения, если что-то не работает")
+            .accessibilityLabel("Помощь и диагностика NeAntik")
         }
         ToolbarItem(placement: .primaryAction) {
             Button(action: onToggleInspector) {

@@ -95,34 +95,9 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
       detail:
         "Источник: \(evidence.source) · проверено " +
         "\(evidence.observedAt.neAntikDisplayDateTime). " +
-        (isFresh
-          ? "Перед каждым запуском профиля NeAntik проверит " +
-            "прокси заново."
-          : "Перед следующим запуском профиля NeAntik проверит " +
-            "прокси заново."),
-      systemImage: isFresh
-        ? "checkmark.circle.fill"
-        : "exclamationmark.triangle.fill",
-      requiresAttention: !isFresh
-    )
-  }
-}
-
-struct ProfileEditorHeadingPresentation: Equatable, Sendable {
-  let title: String
-  let subtitle: String?
-
-  static func resolve(
-    original: BrowserProfile?,
-    currentName: String
-  ) -> Self {
-    guard original != nil else {
-      return Self(title: "Создание профиля", subtitle: nil)
-    }
-    let name = currentName.trimmingCharacters(in: .whitespacesAndNewlines)
-    return Self(
-      title: "Редактирование профиля",
-      subtitle: name.isEmpty ? nil : name
+        "Перед запуском NeAntik проверит прокси заново.",
+      systemImage: isFresh ? "checkmark.circle" : "clock",
+      requiresAttention: false
     )
   }
 }
@@ -151,8 +126,9 @@ enum ProfileEditorAdvancedPresentation {
       }
       parts.append("\(tagCount) \(noun)")
     }
-    if !startURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-      parts.append("URL настроен")
+    let page = startURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !page.isEmpty {
+      parts.append(page == "about:blank" ? "Пустая страница" : "URL настроен")
     }
     return parts.joined(separator: " · ")
   }
@@ -169,6 +145,8 @@ struct ProfileEditorView: View {
     ProxyPasswordUpdate,
     UUID?
   ) throws -> Void
+  private let canCreateAndOpen: Bool
+  private let onCreateAndOpen: ((BrowserProfile, ProxyPasswordUpdate, UUID?) throws -> Void)?
   private let originalProxyPassword: String?
   private let proxyPasswordReadFailed: Bool
   private let draftProfileID: UUID
@@ -200,6 +178,7 @@ struct ProfileEditorView: View {
   @State private var invalidatedProxyEvidence = false
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
+  @State private var showsProxyDetails = false
   @State private var showingDiscardConfirmation = false
   @State private var showingFolderPicker = false
   @FocusState private var focusedField: ProfileEditorField?
@@ -215,6 +194,9 @@ struct ProfileEditorView: View {
     appliesOnNextLaunch: Bool = false,
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
+    initialName: String = "",
+    canCreateAndOpen: Bool = false,
+    onCreateAndOpen: ((BrowserProfile, ProxyPasswordUpdate, UUID?) throws -> Void)? = nil,
     onSave: @escaping (
       BrowserProfile,
       ProxyPasswordUpdate,
@@ -228,15 +210,17 @@ struct ProfileEditorView: View {
     self.proxyReuseInputs = proxyReuseInputs
     self.appliesOnNextLaunch = appliesOnNextLaunch
     self.onSave = onSave
+    self.canCreateAndOpen = canCreateAndOpen
+    self.onCreateAndOpen = onCreateAndOpen
     self.initialFocus = initialFocus
     _showsAdvancedOptions = State(
       initialValue: showsAdvancedOptionsInitially
     )
 
-    let profile = original ?? BrowserProfile(name: "")
+    let profile = original ?? BrowserProfile(name: initialName)
     draftProfileID = profile.id
     _showsNoteEditor = State(
-      initialValue: original == nil || initialFocus == .note
+      initialValue: initialFocus == .note
     )
     if original == nil {
       originalProxyPassword = nil
@@ -356,11 +340,11 @@ struct ProfileEditorView: View {
             .onChange(of: editorDraft.name) { _, _ in
               clearValidation(for: .name)
             }
-          Text(
-            "\(editorDraft.name.count) из \(BrowserProfile.maximumNameLength) символов"
-          )
-          .font(.caption)
-          .foregroundStyle(.secondary)
+          if editorDraft.name.count >= BrowserProfile.maximumNameLength - 20 {
+            Text("\(editorDraft.name.count) из \(BrowserProfile.maximumNameLength) символов")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
           validationLabel(for: .name)
 
           noteEditor
@@ -373,12 +357,6 @@ struct ProfileEditorView: View {
               .id(ProfileEditorField.proxyImport)
           }
           if editorDraft.usesProxy {
-            Picker("Тип", selection: $editorDraft.proxyKind) {
-              ForEach(ProxyKind.allCases) { kind in
-                Text(kind.title).tag(kind)
-              }
-            }
-
             SecureField(
               "Вставить прокси одной строкой",
               text: $proxyImportText
@@ -400,20 +378,27 @@ struct ProfileEditorView: View {
               .accessibilityElement(children: .combine)
             }
 
-            ViewThatFits(in: .horizontal) {
-              HStack {
-                proxyImportOrderPicker
-                Spacer(minLength: 8)
-                importProxyButton
-              }
-              VStack(alignment: .leading, spacing: 8) {
-                proxyImportOrderPicker
-                importProxyButton
-              }
-            }
+            importProxyButton
             if let proxyImportNotice {
               UserNoticeLabel(notice: proxyImportNotice)
             }
+
+            if let proxy = try? makeProxy(), proxyImportText.isEmpty {
+              Label("\(proxy.kind.title) · \(proxy.displayEndpoint)", systemImage: "network")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            Text("Подключение, часовой пояс и язык проверим автоматически при запуске.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+
+            DisclosureGroup("Параметры подключения", isExpanded: $showsProxyDetails) {
+            Picker("Тип", selection: $editorDraft.proxyKind) {
+              ForEach(ProxyKind.allCases) { kind in
+                Text(kind.title).tag(kind)
+              }
+            }
+            proxyImportOrderPicker
 
             ViewThatFits(in: .horizontal) {
               HStack {
@@ -521,8 +506,8 @@ struct ProfileEditorView: View {
                 } label: {
                   Label("Проверить прокси", systemImage: "network")
                 }
-                .disabled(editorDraft.proxyIssue != nil)
-                if let issue = editorDraft.proxyIssue {
+                .disabled(proxyDraftIssue != nil)
+                if let issue = proxyDraftIssue {
                   Text(issue.message)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -591,6 +576,8 @@ struct ProfileEditorView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
             }
+            }
+            .disclosureGroupStyle(NeAntikDisclosureStyle())
           } else {
             Label(
               "Прямое подключение",
@@ -643,12 +630,16 @@ struct ProfileEditorView: View {
         }
         .keyboardShortcut(.cancelAction)
 
-        Button(original == nil ? "Создать" : "Сохранить") {
-          save()
+        if original == nil, onCreateAndOpen != nil {
+          Button("Только создать") { save() }
+            .disabled(!savePresentation.canSave)
+        }
+        Button(original == nil ? (onCreateAndOpen == nil ? "Создать" : "Создать и открыть") : "Сохранить") {
+          save(andOpen: original == nil && onCreateAndOpen != nil)
         }
         .buttonStyle(.borderedProminent)
         .keyboardShortcut(.defaultAction)
-        .disabled(!savePresentation.canSave)
+        .disabled(!savePresentation.canSave || (original == nil && onCreateAndOpen != nil && !canCreateAndOpen))
       }
       .padding()
       .fixedSize(horizontal: false, vertical: true)
@@ -689,6 +680,9 @@ struct ProfileEditorView: View {
       guard let target else { return }
       if target == .note {
         showsNoteEditor = true
+      }
+      if [.proxyHost, .proxyPort, .proxyUsername, .proxyPassword].contains(target) {
+        showsProxyDetails = true
       }
       Task { @MainActor in
         await Task.yield()
@@ -742,9 +736,11 @@ struct ProfileEditorView: View {
     }
     .onChange(of: proxyImportOrder) { _, _ in
       proxyImportNotice = nil
+      invalidateProxyEvidence()
     }
     .onChange(of: proxyImportText) { _, _ in
       clearValidation(for: .proxyImport)
+      if !isApplyingProxyImport { invalidateProxyEvidence() }
     }
     .onChange(of: editorDraft.tags) { _, _ in
       clearValidation(for: .tags)
@@ -850,6 +846,9 @@ struct ProfileEditorView: View {
             .labelsHidden()
             .accessibilityLabel("Стартовая страница")
             .focused($focusedField, equals: .startURL)
+          Text("about:blank — пустая страница. Можно указать адрес сайта.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .id(ProfileEditorField.startURL)
         validationLabel(for: .startURL)
@@ -1169,13 +1168,15 @@ struct ProfileEditorView: View {
     )
   }
 
-  private func save() {
+  private func save(andOpen: Bool = false) {
     if let issue = currentValidationIssue {
       presentValidation(issue)
       return
     }
     guard savePresentation.canSave else { return }
+    guard !andOpen || (original == nil && canCreateAndOpen && onCreateAndOpen != nil) else { return }
     do {
+      try applyPendingProxyImport()
       let cleanName = editorDraft.name.trimmingCharacters(in: .whitespacesAndNewlines)
       guard BrowserProfile.isValidName(cleanName),
         let cleanStartURL =
@@ -1222,7 +1223,11 @@ struct ProfileEditorView: View {
         originalPassword: originalProxyPassword,
         readFailed: proxyPasswordReadFailed
       )
-      try onSave(profile, passwordUpdate, editorDraft.folderID)
+      if andOpen, let onCreateAndOpen {
+        try onCreateAndOpen(profile, passwordUpdate, editorDraft.folderID)
+      } else {
+        try onSave(profile, passwordUpdate, editorDraft.folderID)
+      }
       dismiss()
     } catch {
       errorMessage = error.localizedDescription
@@ -1252,7 +1257,11 @@ struct ProfileEditorView: View {
     switch issue.field {
     case .startURL, .tags:
       showsAdvancedOptions = true
-    case .name, .note, .proxyHost, .proxyPort, .proxyUsername, .proxyPassword, .proxyImport:
+    case .proxyHost, .proxyPort, .proxyUsername, .proxyPassword:
+      showsProxyDetails = true
+    case .proxyImport:
+      showsProxyDetails = true
+    case .name, .note:
       break
     }
     if issue.field == .note {
@@ -1278,15 +1287,17 @@ struct ProfileEditorView: View {
   }
 
   private func testProxy() {
-    if let issue = editorDraft.proxyIssue {
+    if let issue = proxyDraftIssue {
       presentValidation(issue)
       return
     }
     do {
-      guard let proxy = try makeProxy() else { return }
+      guard let input = try editorDraft.proxyTestInput(
+        pendingProxyText: proxyImportText, order: proxyImportOrder
+      ) else { return }
       startProxyTest(
-        configuration: proxy,
-        password: editorDraft.proxyPassword
+        configuration: input.configuration,
+        password: input.password
       )
     } catch {
       errorMessage = error.localizedDescription
@@ -1314,6 +1325,7 @@ struct ProfileEditorView: View {
         kind: editorDraft.proxyKind,
         order: proxyImportOrder
       )
+      invalidateProxyEvidence()
       isApplyingProxyImport = true
       editorDraft.usesProxy = true
       editorDraft.proxyHost = draft.configuration.host
@@ -1322,7 +1334,7 @@ struct ProfileEditorView: View {
       editorDraft.proxyPassword = draft.password
       proxyImportNotice = UserNotice(
         "Прокси распознан: \(draft.redactedSummary). " +
-          "Соединение ещё не проверено.",
+          "Проверим соединение при запуске.",
         level: .information
       )
       announce(proxyImportNotice?.message ?? "Прокси распознан.")
@@ -1414,10 +1426,10 @@ struct ProfileEditorView: View {
   private var savePresentation: ProfileEditorSavePresentation {
     .resolve(
       isNew: original == nil,
-      hasChanges: editorDraft != initialDraft || refreshedProxyEvidence || !pendingTagInput.isEmpty,
+      hasChanges: hasUnsavedChanges,
       issue: currentValidationIssue, usesProxy: editorDraft.usesProxy,
       kind: editorDraft.proxyKind,
-      hasUsername: !editorDraft.proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+      hasUsername: !(proxyImportPreview?.configuration.username ?? editorDraft.proxyUsername).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
       isTesting: isTesting, refreshedEvidence: refreshedProxyEvidence,
       invalidatedEvidence: invalidatedProxyEvidence,
       latestProbeFailed: testNotice?.level == .failure
@@ -1433,7 +1445,28 @@ struct ProfileEditorView: View {
   }
 
   private var currentValidationIssue: ProfileEditorValidationIssue? {
-    editorDraft.saveIssue(pendingProxyText: proxyImportText, pendingTagInput: pendingTagInput)
+    editorDraft.saveIssue(pendingProxyText: proxyImportText, pendingTagInput: pendingTagInput, order: proxyImportOrder)
+  }
+
+  private var proxyDraftIssue: ProfileEditorValidationIssue? {
+    do {
+      return try editorDraft.resolvingProxyImport(proxyImportText, order: proxyImportOrder).proxyIssue
+    } catch {
+      return ProfileEditorValidationIssue(field: .proxyImport, message: error.localizedDescription)
+    }
+  }
+
+  private func applyPendingProxyImport() throws {
+    guard !proxyImportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+    let draft = try editorDraft.resolvingProxyImport(proxyImportText, order: proxyImportOrder)
+    invalidateProxyEvidence()
+    isApplyingProxyImport = true
+    editorDraft = draft
+    proxyImportText = ""
+    Task { @MainActor in
+      await Task.yield()
+      isApplyingProxyImport = false
+    }
   }
 
   @MainActor

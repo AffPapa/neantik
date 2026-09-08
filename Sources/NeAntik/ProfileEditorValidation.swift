@@ -87,7 +87,7 @@ enum ProfileEditorValidation {
         }
         return ProfileEditorValidationIssue(
             field: .proxyImport,
-            message: "Строка прокси ещё не применена. Нажми «Вставить прокси» или очисти поле."
+            message: "Осталась строка прокси. Включи прокси или очисти строку."
         )
     }
 
@@ -131,7 +131,7 @@ enum ProfileEditorValidation {
         guard BrowserLaunchBuilder.validatedStartURL(startURL) != nil else {
             return ProfileEditorValidationIssue(
                 field: .startURL,
-                message: "Проверь адрес стартовой страницы."
+                message: "Введи адрес сайта или about:blank для пустой страницы."
             )
         }
 

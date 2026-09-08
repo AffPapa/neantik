@@ -115,6 +115,7 @@ struct ProfileDuplicationTests {
         #expect(copy.colorHex == source.colorHex)
         #expect(copy.symbolName == source.symbolName)
         #expect(copy.tags == source.tags)
+        #expect(copy.startURL == source.startURL)
         #expect(copy.note.isEmpty)
         #expect(!copy.isPinned)
         #expect(!copy.isArchived)

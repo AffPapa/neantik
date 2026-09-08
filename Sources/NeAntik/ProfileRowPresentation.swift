@@ -1,5 +1,37 @@
 import Foundation
 
+/// The row's primary action resumes known working windows. Lifecycle controls
+/// remain available separately, and uncertain states retain their safe policy.
+struct ProfileRowPrimaryActionPresentation: Equatable, Sendable {
+    enum Action: Equatable, Sendable {
+        case focusWindow
+        case launchControl
+    }
+
+    let action: Action
+    let presentation: BrowserLaunchActionPresentation
+
+    static func resolve(
+        processState: BrowserProfileProcessState,
+        launchAction: BrowserLaunchActionPresentation
+    ) -> Self {
+        switch processState {
+        case .managed, .externalVerified:
+            Self(
+                action: .focusWindow,
+                presentation: BrowserLaunchActionPresentation(
+                    title: "Открыть окно",
+                    systemImage: "macwindow",
+                    isEnabled: true,
+                    help: "Показать уже открытое окно браузера"
+                )
+            )
+        default:
+            Self(action: .launchControl, presentation: launchAction)
+        }
+    }
+}
+
 /// A compact, text-first projection for the daily profile list.
 ///
 /// Status and route remain readable without relying on color, while the note

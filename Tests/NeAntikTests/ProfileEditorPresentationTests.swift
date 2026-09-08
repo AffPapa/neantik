@@ -51,6 +51,9 @@ struct ProfileEditorPresentationTests {
 
     @Test
     func advancedSummaryReflectsConfiguredProfileState() {
+        #expect(ProfileEditorAdvancedPresentation.summary(
+            folderTitle: "Работа", tagCount: 0, startURL: "about:blank"
+        ) == "Работа · Пустая страница")
         #expect(
             ProfileEditorAdvancedPresentation.summary(
                 folderTitle: "Арбитраж",
@@ -189,9 +192,9 @@ struct ProfileEditorPresentationTests {
             now: now
         )
         #expect(fresh.title == "Данные прокси актуальны")
-        #expect(fresh.systemImage == "checkmark.circle.fill")
+        #expect(fresh.systemImage == "checkmark.circle")
         #expect(!fresh.requiresAttention)
-        #expect(fresh.detail.contains("Перед каждым запуском"))
+        #expect(fresh.detail.contains("Перед запуском"))
 
         let stale = ProfileEditorProxyContextPresentation.resolve(
             evidence: .ipAPI(
@@ -202,9 +205,9 @@ struct ProfileEditorPresentationTests {
             now: now
         )
         #expect(stale.title.contains("устарел"))
-        #expect(stale.systemImage == "exclamationmark.triangle.fill")
-        #expect(stale.requiresAttention)
-        #expect(stale.detail.contains("Перед следующим запуском"))
+        #expect(stale.systemImage == "clock")
+        #expect(!stale.requiresAttention)
+        #expect(stale.detail.contains("Перед запуском"))
     }
 }
 
@@ -251,13 +254,13 @@ extension ProfileEditorPresentationTests {
         #expect(state().routeSummary == "Напрямую · отдельного прокси нет")
         let authenticated = state(proxy: true, username: true)
         #expect(authenticated.routeSummary.contains("Связке ключей"))
-        #expect(authenticated.routeSummary.contains("не проверен"))
+        #expect(authenticated.routeSummary.contains("автоматически при запуске"))
         #expect(state(proxy: true, kind: .socks5, username: true).routeSummary.contains("без логина"))
     }
 
     @Test func changedAndFailedProbesOverrideEarlierSuccess() {
         #expect(state(proxy: true, refreshed: true).routeSummary.contains("при запуске повторим"))
-        #expect(state(proxy: true, refreshed: true, invalidated: true).routeSummary.contains("проверь снова"))
+        #expect(state(proxy: true, refreshed: true, invalidated: true).routeSummary.contains("проверим при запуске"))
         #expect(state(proxy: true, refreshed: true, failed: true).routeSummary.contains("не удалась"))
     }
 
@@ -289,7 +292,7 @@ extension ProfileEditorPresentationTests {
         edited = initial
         #expect(edited == initial)
         #expect(edited.firstIssue == nil)
-        #expect(edited.saveIssue(pendingProxyText: "proxy.example:80", pendingTagInput: "")?.field == .proxyImport)
+        #expect(edited.saveIssue(pendingProxyText: "proxy.example:80", pendingTagInput: "") == nil)
     }
 
     @Test func overlongNameRemainsAnEditableDraftWithSpecificValidation() {
@@ -308,21 +311,29 @@ extension ProfileEditorPresentationTests {
         #expect(ProfileEditorValidation.nameMessage(for: "Работа\u{202E}A")?.contains("управляющие") == true)
     }
 
-    @Test func unappliedProxyTextBlocksSavingEvenWhenExistingRouteIsValid() throws {
+    @Test func validProxyPasteCanBeSavedWithoutSeparateImportStep() throws {
         let edited = draft(name: "Другое")
         #expect(edited.firstIssue == nil)
         #expect(draft(name: "", port: "0").saveIssue(
             pendingProxyText: "next.example:8080", pendingTagInput: ""
-        )?.field == .proxyImport)
+        )?.field == .name)
         #expect(draft(name: "", port: "0").saveIssue(
             pendingProxyText: " \n ", pendingTagInput: ""
         )?.field == .name)
-        for pending in ["next.example:8080", "invalid proxy", "user:secret@next.example:8080"] {
+        for pending in ["invalid proxy", "user:secret@bad host:8080", "host:1234:user:5678"] {
             let issue = try #require(edited.saveIssue(pendingProxyText: pending, pendingTagInput: ""))
             #expect(issue.field == .proxyImport)
             #expect(!issue.message.contains(pending))
             #expect(!state(changes: true, issue: issue, proxy: true).canSave)
             #expect(!state(isNew: true, issue: issue).canSave)
+        }
+        for pending in ["next.example:8080", "user:secret@next.example:8080"] {
+            #expect(edited.saveIssue(pendingProxyText: pending, pendingTagInput: "") == nil)
+            let resolved = try edited.resolvingProxyImport(pending)
+            #expect(resolved.proxyHost == "next.example")
+            #expect(resolved.proxyPort == "8080")
+            #expect(resolved.name == edited.name)
+            #expect(edited.proxyHost == "127.0.0.1")
         }
         // A failed parse retains the pending input and thus the Save guard.
         let invalid = "invalid proxy"
@@ -337,6 +348,61 @@ extension ProfileEditorPresentationTests {
             #expect(issue == nil)
             #expect(state(changes: true, issue: issue, proxy: true).canSave)
         }
+    }
+
+    @Test func pendingProxyRequiresExplicitRouteAndAmbiguousOrder() throws {
+        var direct = draft()
+        direct.usesProxy = false
+        let pending = "user:secret@next.example:8080"
+        #expect(direct.saveIssue(pendingProxyText: pending, pendingTagInput: "")?.field == .proxyImport)
+        #expect(throws: ProxyImportError.invalid) { try direct.resolvingProxyImport(pending) }
+        #expect(!direct.usesProxy)
+        let ambiguous = "host:1234:user:5678"
+        #expect(draft().saveIssue(pendingProxyText: ambiguous, pendingTagInput: "")?.field == .proxyImport)
+        #expect(draft().saveIssue(pendingProxyText: ambiguous, pendingTagInput: "", order: .endpointFirst) == nil)
+        let resolved = try draft().resolvingProxyImport(ambiguous, order: .endpointFirst)
+        #expect(resolved.proxyHost == "host")
+        #expect(resolved.proxyPassword == "5678")
+        #expect(draft().saveIssue(pendingProxyText: "next.example:8080", pendingTagInput: String(repeating: "x", count: 1_000))?.field == .tags)
+    }
+
+    @Test func pastedUnauthenticatedProxyRemovesPreviousDraftCredentials() throws {
+        var authenticated = draft()
+        authenticated.proxyUsername = "previous-user"
+        authenticated.proxyPassword = "previous-secret"
+        let resolved = try authenticated.resolvingProxyImport("next.example:8080")
+        #expect(resolved.proxyUsername.isEmpty)
+        #expect(resolved.proxyPassword.isEmpty)
+        #expect(authenticated.proxyPassword == "previous-secret")
+        #expect(ProxyPasswordUpdate.resolve(
+            currentHasUsername: false, originalHadUsername: true,
+            enteredPassword: resolved.proxyPassword, originalPassword: "previous-secret", readFailed: false
+        ) == .delete)
+    }
+
+    @Test func testingPendingProxyCapturesInputWithoutApplyingIt() throws {
+        var savedDraft = draft()
+        savedDraft.proxyUsername = "previous-user"
+        savedDraft.proxyPassword = "previous-secret"
+        let pending = "next-user:next-secret@next.example:8181"
+        let input = try #require(try savedDraft.proxyTestInput(pendingProxyText: pending))
+        #expect(input.configuration.host == "next.example")
+        #expect(input.configuration.port == 8181)
+        #expect(input.configuration.username == "next-user")
+        #expect(input.password == "next-secret")
+        #expect(savedDraft.proxyHost == "127.0.0.1")
+        #expect(savedDraft.proxyUsername == "previous-user")
+        #expect(savedDraft.proxyPassword == "previous-secret")
+        #expect(pending == "next-user:next-secret@next.example:8181")
+        #expect(!input.redactedSummary.contains("next-secret"))
+        #expect(try draft(name: "").proxyTestInput(pendingProxyText: "next.example:80") != nil)
+        #expect(throws: ProxyImportError.ambiguous) {
+            try savedDraft.proxyTestInput(pendingProxyText: "host:1234:user:5678")
+        }
+        var direct = savedDraft
+        direct.usesProxy = false
+        #expect(try direct.proxyTestInput(pendingProxyText: "") == nil)
+        #expect(throws: ProxyImportError.invalid) { try direct.proxyTestInput(pendingProxyText: pending) }
     }
 
     @Test func proxyTestValidationDoesNotRequireProfileName() {

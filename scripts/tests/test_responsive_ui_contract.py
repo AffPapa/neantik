@@ -233,7 +233,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         toolbar = WORKSPACE_TOOLBAR.read_text(encoding="utf-8")
 
         self.assertIn("ToolbarItem(placement: .primaryAction)", toolbar)
-        self.assertIn('Label("Готовность", systemImage: "checkmark.shield")', toolbar)
+        self.assertIn('Label("Помощь", systemImage: "questionmark.circle")', toolbar)
+        self.assertIn('"Диагностика приложения…"', toolbar)
         self.assertIn("onPresentReadiness", toolbar)
         self.assertIn("Button(action: onToggleInspector)", toolbar)
         self.assertIn('systemImage: "sidebar.right"', toolbar)
@@ -592,7 +593,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertEqual(text.count("workspaceSheetRequest = WorkspaceSheetRequest("), 1)
         self.assertIn("hasBlockingModal: isWorkspaceSheetOrConfirmationPresented", presentation)
         self.assertIn("hasWorkspaceAlert: workspaceAlert != nil", presentation)
-        self.assertEqual(text.count(".sheet(item: $workspaceSheetRequest)"), 1)
+        self.assertEqual(text.count(".sheet(item: $workspaceSheetRequest, onDismiss: openSavedProfileAfterEditor)"), 1)
+        self.assertIn("private func openSavedProfileAfterEditor()", text)
+        self.assertIn("beginEditing(profile, focusing: .proxyImport)", text)
+        self.assertIn("initialFocus: request.initialFocus", text)
         modal_guard = text.split("private var isWorkspaceModalPresented:", 1)[1].split(
             "private var workspaceCommandSet:", 1
         )[0]
@@ -665,8 +669,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
-        self.assertIn('title: "Создание профиля"', text)
-        self.assertIn('title: "Редактирование профиля"', text)
+        heading = (ROOT / "Sources/NeAntik/ProfileEditorSavePresentation.swift").read_text()
+        self.assertIn('title: "Создание профиля"', heading)
+        self.assertIn('title: "Редактирование профиля"', heading)
+        self.assertIn("ProfileEditorHeadingPresentation.resolve(", text)
         self.assertIn(".accessibilityHeading(.h1)", text)
         self.assertIn(
             'static let summary = "Стартовая страница, папка, теги и оформление"',
@@ -730,7 +736,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             r'\s*: "Необязательная заметка профиля, добавлена"\s*\)',
         )
         self.assertIn(
-            "initialValue: original == nil || initialFocus == .note",
+            "initialValue: initialFocus == .note",
             editor,
         )
         self.assertIn('"Не добавлена"', note_editor)
@@ -888,7 +894,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
     def test_narrow_proxy_and_audit_controls_have_fallbacks(self) -> None:
         editor = EDITOR.read_text(encoding="utf-8")
         audit = AUDIT.read_text(encoding="utf-8")
-        self.assertGreaterEqual(editor.count("ViewThatFits"), 2)
+        proxy_fields = editor.split('DisclosureGroup("Параметры подключения"', 1)[1]
+        self.assertIn("ViewThatFits(in: .horizontal)", proxy_fields)
+        self.assertIn("VStack(alignment: .leading, spacing: 8)", proxy_fields)
         self.assertGreaterEqual(audit.count("ViewThatFits"), 2)
         self.assertIn(".focused($primaryActionIsFocused)", audit)
 
