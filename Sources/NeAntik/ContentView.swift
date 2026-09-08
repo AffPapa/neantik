@@ -58,6 +58,7 @@ struct ContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
     @State private var workspaceSheetRequest: WorkspaceSheetRequest?
+    @State private var profileToOpenAfterEditor: UUID?
     @State private var isRefreshingWorkspaceReadiness = false
     @State private var workspaceReadinessNotice: UserNotice?
     @State private var readinessSystemInspection:
@@ -441,7 +442,7 @@ struct ContentView: View {
 
     private var workspaceSheets: some View {
         workspaceBase
-        .sheet(item: $workspaceSheetRequest) { request in
+        .sheet(item: $workspaceSheetRequest, onDismiss: openSavedProfileAfterEditor) { request in
             workspaceSheet(for: request.destination)
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
@@ -704,7 +705,7 @@ struct ContentView: View {
                 Button("Изменить прокси…") {
                     launchPreparationFailure = nil
                     if let profile = store.profile(withID: failure.profileID) {
-                        beginEditing(profile)
+                        beginEditing(profile, focusing: .proxyImport)
                     }
                 }
             }
@@ -919,9 +920,21 @@ struct ContentView: View {
                 excluding: request.profile?.id
             ),
             appliesOnNextLaunch:
-                request.openedProcessState?.isConfirmedRunning == true
+                request.openedProcessState?.isConfirmedRunning == true,
+            initialFocus: request.initialFocus,
+            initialName: FirstProfileBootstrap.makeProfile(existingProfiles: store.profiles)?.name
+                ?? QuickProfileBootstrap.nextAvailableName(existingProfiles: store.profiles),
+            canCreateAndOpen: runtimeAvailability == .ready,
+            onCreateAndOpen: { profile, passwordUpdate, folderID in
+                // Persist first; a failed launch must never become a failed save.
+                let saved = try saveProfileEditorDraft(
+                    profile, passwordUpdate: passwordUpdate, folderID: folderID,
+                    original: request.profile, openedProcessState: request.openedProcessState
+                )
+                profileToOpenAfterEditor = saved.id
+            }
         ) { profile, passwordUpdate, folderID in
-            try saveProfileEditorDraft(
+            _ = try saveProfileEditorDraft(
                 profile,
                 passwordUpdate: passwordUpdate,
                 folderID: folderID,
@@ -937,7 +950,7 @@ struct ContentView: View {
         folderID: UUID?,
         original: BrowserProfile?,
         openedProcessState: BrowserProfileProcessState?
-    ) throws {
+    ) throws -> BrowserProfile {
         if let original {
             try ProfileEditorProcessPolicy.validateSave(
                 openedState: openedProcessState ?? .checking,
@@ -988,6 +1001,16 @@ struct ContentView: View {
         {
             clearProxyHealth(for: saved.id)
         }
+        return saved
+    }
+
+    private func openSavedProfileAfterEditor() {
+        guard let id = profileToOpenAfterEditor else { return }
+        profileToOpenAfterEditor = nil
+        guard !isWorkspaceModalPresented,
+              let profile = store.profile(withID: id), !profile.isArchived
+        else { return }
+        launch(profile)
     }
 
     private func recoverDeletedProfileCredentials() async {
@@ -1071,13 +1094,14 @@ struct ContentView: View {
         )
     }
 
-    private func beginEditing(_ profile: BrowserProfile) {
+    private func beginEditing(_ profile: BrowserProfile, focusing field: ProfileEditorField? = nil) {
         let state = presentedProcessState(for: profile)
         guard state == .stopped || state.isConfirmedRunning else {
             localError = "Состояние профиля пока не подтверждено. Повтори после проверки процесса."
             return
         }
         presentWorkspaceSheet(.editor(EditorRequest(
+            initialFocus: field,
             profile: profile,
             openedProcessState: state
         )))

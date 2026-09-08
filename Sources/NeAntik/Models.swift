@@ -668,7 +668,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNoteLength = 1_000
     static let maximumNoteUTF8Bytes = 4_096
     static let maximumStartURLUTF8Bytes = 16 * 1_024
-    static let defaultStartURL = "https://aff.top/tools/fingerprint"
+    static let defaultStartURL = "about:blank"
 
     var id: UUID
     var name: String

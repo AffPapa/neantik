@@ -1,6 +1,6 @@
 # NeAntik project map
 
-Current source map: 2026-09-07. This document is the current routing source for
+Current source map: 2026-09-08. This document is the current routing source for
 product and code work. The older v4 documents remain dated design records.
 
 Proxya reference adoption: `PROXYA_ADOPTION_2026-09-06.md` records the exact
@@ -21,11 +21,12 @@ technical storage details remain available below. No persisted schema changes.
 
 ## Release truth and boundary
 
-- Latest verified immutable GitHub release: `v0.3.24`, version/build `0.3.24 (27)`.
+- Latest verified GitHub release at the start of this cycle: `v0.3.25`, version/build `0.3.25 (28)`.
+- Current source candidate: `0.4.0 (29)`, not a published binary until Direct gates pass.
 - The architecture-compaction branch is development work; it does not replace
   published artifacts or assign a new public version before release gates.
 - Exact released source commit:
-  `74141165c568e0bc2de56f976e29154ccd1d298b`.
+  `b0afa5731b64a6b18e3b039c5fcaaefe18758757`.
 - Released runtime: source-built Chromium `152.0.7977.82`, ARM64, Metal,
   Developer ID signed and verified before lock promotion.
   The September 3 official macOS Stable baseline is `152.0.7977.82/.83`
@@ -45,11 +46,37 @@ technical storage details remain available below. No persisted schema changes.
 - A later source commit is not a release. A new binary needs a new
   version/build, exact merged commit, Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and re-downloaded SHA-256 evidence.
-- The public website is synchronized read-only from GitHub release metadata.
-  Its page and `release.json` were verified showing `0.3.24 (27)` and link directly to the exact
-  GitHub assets; AffPapa keeps no second binary copy. The legacy restricted
-  wrapper remains fail-closed without its dedicated deploy key and was not
-  bypassed with another key or manual server access.
+- GitHub is the current release channel. The user maintains the AffPapa site
+  separately; website access and deployment are excluded from this cycle.
+  Legacy site tooling does not gate GitHub-only work and must not be bypassed
+  through alternate server credentials.
+
+## 0.4 simple-workspaces candidate
+
+Research: `SIMPLE_WORKSPACES_RESEARCH_2026-09-08.md` summarizes eighteen
+documented products and thirteen review sets. Quick creation is established
+practice; the selected change simplifies NeAntik's existing local workflow.
+
+- `ProfileEditorView` supplies suggested names, Create and open / Only create,
+  paste-first proxy entry, manual details disclosure and explicit automatic
+  launch-preparation copy. `ProfileEditorDraft.resolvingProxyImport` validates
+  pasted configuration without mutating the original draft.
+- `ContentView.saveProfileEditorDraft` returns the persisted profile. A
+  window-local pending UUID is consumed once on editor dismissal; the current
+  profile is reloaded and passed through the existing guarded launch path.
+  Cancellation or persistence failure cannot enqueue launch. Launch failure
+  retains the saved profile.
+- `ProfileRowPrimaryActionPresentation` selects verified-window focus for
+  managed/externalVerified processes; lifecycle restrictions and Stop remain
+  explicit. It does not change the native menu's Start/Stop shortcut contract.
+- `BrowserProfile.defaultStartURL` is `about:blank` for new profiles only.
+  `BrowserLaunchBuilder.validatedStartURL` allows that exact internal address
+  alongside existing HTTP/S rules. Stored URLs and clone URLs are preserved.
+- `WorkspaceToolbarContent` places optional diagnostics in Help; error-to-
+  readiness recovery remains available. No new persisted setting or schema.
+
+The dated sections below record historical deliveries; their version labels
+are not current-public-release claims. Verify current publication from GitHub.
 
 ## Product contract
 

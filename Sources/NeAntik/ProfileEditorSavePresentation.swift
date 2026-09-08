@@ -1,6 +1,19 @@
 import Foundation
 import SwiftUI
 
+struct ProfileEditorHeadingPresentation: Equatable, Sendable {
+    let title: String
+    let subtitle: String?
+
+    static func resolve(original: BrowserProfile?, currentName: String) -> Self {
+        guard original != nil else {
+            return Self(title: "Создание профиля", subtitle: nil)
+        }
+        let name = currentName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return Self(title: "Редактирование профиля", subtitle: name.isEmpty ? nil : name)
+    }
+}
+
 /// Ephemeral editor values only. Never encoded, logged or written to defaults.
 struct ProfileEditorDraft: Equatable {
     var name: String
@@ -35,10 +48,47 @@ struct ProfileEditorDraft: Equatable {
         )
     }
 
-    func saveIssue(pendingProxyText: String, pendingTagInput: String) -> ProfileEditorValidationIssue? {
-        ProfileEditorValidation.pendingProxyImportIssue(pendingProxyText) ??
-        firstIssue ?? ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: tags).error.map {
-            ProfileEditorValidationIssue(field: .tags, message: $0.localizedDescription)
+    func resolvingProxyImport(_ text: String, order: ProxyImportOrder = .automatic) throws -> Self {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return self }
+        guard usesProxy else { throw ProxyImportError.invalid }
+        let imported = try ProxyImportParser.parse(text, kind: proxyKind, order: order)
+        var draft = self
+        draft.proxyHost = imported.configuration.host
+        draft.proxyPort = String(imported.configuration.port)
+        draft.proxyUsername = imported.configuration.username
+        draft.proxyPassword = imported.password
+        return draft
+    }
+
+    /// Capture only the route being explicitly tested; do not apply pasted
+    /// credentials to the editor or persist them as a side effect of Test.
+    func proxyTestInput(pendingProxyText: String, order: ProxyImportOrder = .automatic) throws -> ProxyImportDraft? {
+        let draft = try resolvingProxyImport(pendingProxyText, order: order)
+        guard draft.usesProxy else { return nil }
+        guard draft.proxyIssue == nil, let port = Int(draft.proxyPort) else {
+            throw NeAntikError.invalidProxy
+        }
+        let configuration = ProxyConfiguration(
+            kind: draft.proxyKind,
+            host: draft.proxyHost.trimmingCharacters(in: .whitespacesAndNewlines),
+            port: port,
+            username: draft.proxyKind == .socks5 ? "" : draft.proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+        guard configuration.isValid else { throw NeAntikError.invalidProxy }
+        return ProxyImportDraft(configuration: configuration, password: draft.proxyPassword)
+    }
+
+    func saveIssue(pendingProxyText: String, pendingTagInput: String, order: ProxyImportOrder = .automatic) -> ProfileEditorValidationIssue? {
+        if !usesProxy, let issue = ProfileEditorValidation.pendingProxyImportIssue(pendingProxyText) {
+            return issue
+        }
+        do {
+            let draft = try resolvingProxyImport(pendingProxyText, order: order)
+            return draft.firstIssue ?? ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: draft.tags).error.map {
+                ProfileEditorValidationIssue(field: .tags, message: $0.localizedDescription)
+            }
+        } catch {
+            return ProfileEditorValidationIssue(field: .proxyImport, message: error.localizedDescription)
         }
     }
 }
@@ -72,9 +122,9 @@ struct ProfileEditorSavePresentation: Equatable {
                 ? "без логина" : "с логином · пароль в Связке ключей"
             let probe = isTesting ? "проверяется"
                 : latestProbeFailed ? "последняя проверка не удалась"
-                : invalidatedEvidence ? "настройки изменены · проверь снова"
+                : invalidatedEvidence ? "настройки изменены · проверим при запуске"
                 : refreshedEvidence ? "ответ получен · при запуске повторим"
-                : "в этом окне не проверен"
+                : "проверим автоматически при запуске"
             route = "\(kind.title) · \(auth) · \(probe)"
         }
         return Self(

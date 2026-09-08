@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## Direct 0.4.0 (29) — September 8, 2026 (candidate)
+
+- Simplify the daily workflow to create, open and return. New profiles get an
+  editable unique name; Create and open saves the profile and credentials first,
+  then runs the existing guarded launch after the editor closes. Create without
+  opening remains available. A launch failure does not discard the profile.
+- Proxy entry is paste-first, with a redacted local preview and manual fields
+  available on demand. Launch preparation remains automatic; manual checking
+  is optional and never replaces fresh route validation before launch.
+- The primary action on a running profile returns to its verified browser
+  window. Explicit Stop remains available in the profile menu.
+- New profiles start on a blank page without opening an external diagnostic
+  site. Existing saved startup URLs, cookies, data and identity are preserved.
+- Based on a fresh review/workflow study: no task-specific fingerprint presets,
+  country selector without a real proxy, extra dependencies or cloud service.
+  This is a public-alpha candidate, not a promise of universal anonymity or a
+  published download until all Direct gates pass.
+
 ## Direct 0.3.25 (28) — September 7, 2026 (candidate)
 
 - The profile inspector can be closed after a search returns no profiles;

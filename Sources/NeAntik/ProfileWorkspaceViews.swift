@@ -431,22 +431,26 @@ struct ProfileRow<Actions: View>: View {
     private func launchButton(
         _ presentation: ProfileRowPresentation
     ) -> some View {
-        Button(action: onToggleRunning) {
+        let primary = ProfileRowPrimaryActionPresentation.resolve(
+            processState: processState,
+            launchAction: launchAction
+        )
+        let action = primary.presentation
+        let title = ProfileRowPresentation.compactLaunchTitle(action.title)
+        return Button(
+            action: primary.action == .focusWindow ? onFocusRunning : onToggleRunning
+        ) {
             if presentation.statusTone == .activity,
-               !launchAction.isEnabled
+               !action.isEnabled
             {
                 ProgressView()
                     .controlSize(.small)
                     .accessibilityHidden(true)
             } else {
                 ViewThatFits(in: .horizontal) {
-                    Label(
-                        ProfileRowPresentation.compactLaunchTitle(
-                            launchAction.title
-                        ),
-                        systemImage: launchAction.systemImage
-                    )
-                    Image(systemName: launchAction.systemImage)
+                    Label(title, systemImage: action.systemImage)
+                    Text(title)
+                    Image(systemName: action.systemImage)
                         .accessibilityHidden(true)
                 }
             }
@@ -454,10 +458,10 @@ struct ProfileRow<Actions: View>: View {
         .frame(minWidth: 28, minHeight: 28)
         .buttonStyle(.borderedProminent)
         .controlSize(.small)
-        .tint(launchTint)
-        .disabled(!launchAction.isEnabled)
-        .help("\(launchAction.help): «\(profile.name)»")
-        .accessibilityLabel("\(launchAction.title) профиль \(profile.name)")
+        .tint(.teal)
+        .disabled(!action.isEnabled)
+        .help("\(action.help): «\(profile.name)»")
+        .accessibilityLabel("\(action.title): «\(profile.name)»")
         .layoutPriority(2)
     }
 
@@ -484,10 +488,6 @@ struct ProfileRow<Actions: View>: View {
         case .healthy:
             return .green
         }
-    }
-
-    private var launchTint: Color {
-        processState.statusTone == .healthy ? .red : .teal
     }
 
     private var organizationMetadata: some View {
@@ -699,7 +699,7 @@ struct ProfileDetailView: View {
             }
 
             GroupBox("Стартовая страница") {
-                LabeledContent("URL", value: profile.startURL)
+                LabeledContent("При открытии", value: profile.startURL == "about:blank" ? "Пустая страница" : profile.startURL)
                     .textSelection(.enabled)
                     .padding(.vertical, 4)
             }

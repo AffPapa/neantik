@@ -4,19 +4,22 @@ import Testing
 
 struct ProfileOrganizationTests {
     @Test
-    func newProfileUsesEditableAffTopFingerprintStartPage() {
+    func newProfileStartsOnLocalBlankPage() {
         let profile = BrowserProfile(name: "Новый профиль")
 
         #expect(
-            profile.startURL == "https://aff.top/tools/fingerprint"
+            profile.startURL == "about:blank"
         )
     }
 
-    @Test
-    func storedStartPageSurvivesDecodeWithoutMigration() throws {
+    @Test(arguments: [
+        "https://www.google.com", "https://aff.top/tools/fingerprint",
+        "https://example.com/saved?tab=work", "about:blank"
+    ])
+    func storedStartPageSurvivesDecodeWithoutMigration(startURL: String) throws {
         let profile = BrowserProfile(
             name: "Существующий профиль",
-            startURL: "https://www.google.com"
+            startURL: startURL
         )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -28,7 +31,8 @@ struct ProfileOrganizationTests {
             from: encoder.encode(profile)
         )
 
-        #expect(decoded.startURL == "https://www.google.com")
+        #expect(decoded.startURL == startURL)
+        #expect(decoded.duplicated().startURL == startURL)
     }
 
     @Test
@@ -41,7 +45,8 @@ struct ProfileOrganizationTests {
             name: "Старый профиль",
             colorHex: "#10B981",
             symbolName: "shield.fill",
-            tags: ["Работа"]
+            tags: ["Работа"],
+            startURL: "https://aff.top/tools/fingerprint"
         )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -65,6 +70,7 @@ struct ProfileOrganizationTests {
         let second = try decoder.decode(BrowserProfile.self, from: legacyData)
 
         #expect(first.id == id)
+        #expect(first.startURL == "https://aff.top/tools/fingerprint")
         #expect(first.colorHex == "#10B981")
         #expect(first.tags.isEmpty)
         #expect(first.note.isEmpty)

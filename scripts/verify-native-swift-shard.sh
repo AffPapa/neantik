@@ -93,6 +93,7 @@ case "$SHARD" in
       ResponsiveLayoutRenderTests
       ProfileInspectorPolicyTests
       ProfileRowLayoutTests
+      ProfileRowPresentationTests
       WorkspaceDomainTests
       WorkspaceLayoutTests
       WorkspacePreferenceStoreTests

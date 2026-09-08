@@ -10,39 +10,35 @@ separately installed Chrome, or telemetry.
 ## Download
 
 Download the signed and notarized application from
-[GitHub Release v0.3.24](https://github.com/AffPapa/neantik/releases/tag/v0.3.24).
+[GitHub Release v0.3.25](https://github.com/AffPapa/neantik/releases/tag/v0.3.25).
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
 Current published GitHub public-alpha release:
 
-- NeAntik `0.3.24` build `27`;
+- NeAntik `0.3.25` build `28`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `152.0.7977.82`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.24-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.24-arm64-notarized.dmg`;
+- ZIP: `NeAntik-0.3.25-arm64-notarized.zip`;
+- DMG: `NeAntik-0.3.25-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-Product website: <https://affpapa.org/neantik>. Its version, build, hashes, and
-download links are synchronized with GitHub Release `v0.3.24`; GitHub serves
-the files and AffPapa keeps no second binary copy.
+GitHub Releases is the source of current version, downloads and checksums.
+The [product website](https://affpapa.org/neantik) is maintained separately
+and is not a prerequisite for a release.
 
-## In development: 0.3.25 (28)
+## In development: 0.4.0 (29) — open and work
 
-The next release simplifies existing controls without adding sections:
-explicit inspector dismissal, compact search help, an easier settings click
-target, clearer note labels for VoiceOver, and correct batch-selection
-announcements. It also prepares the not-yet-shipped native profile cards,
-settings layout, and internal architecture changes; notes no longer hide the
-folder and tags, and the Advanced summary reflects the configured folder, tags,
-and start URL. Proxy import also shows a safe local preview of the endpoint
-and redacted username before applying it, without revealing the password. This
-is a development preview, not a downloadable binary release: `0.3.24 (27)`
-remains the public download until the complete Direct Distribution cycle
-passes.
+An editable suggested name, optional pasted proxy, and Create and open.
+Manual connection fields are available on demand; launch preparation is
+automatic. A running profile's primary action returns to its window. New
+profiles start on a blank page; existing data and startup URLs are preserved.
+
+This is a development preview: `0.3.25 (28)` remains the public download until
+the full Direct Distribution cycle passes.
 
 The capabilities below are included in the published, signed, and notarized
-`0.3.24 (27)` release.
+`0.3.25 (28)` release.
 
 ## Quick start
 
@@ -125,7 +121,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.24` is published for public-alpha profile isolation. Strict
+Version `0.3.25` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
