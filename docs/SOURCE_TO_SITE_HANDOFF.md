@@ -3,7 +3,7 @@
 Status: reconciled 2026-09-08. GitHub-only release operation; the owner maintains
 the AffPapa page separately. Historical filename retained for existing links.
 
-## Current fact
+## Verified baseline at the start of the 0.4.0 cycle
 
 - GitHub release `v0.3.25`, version/build `0.3.25 (28)`, is published and
   immutable.
@@ -26,6 +26,15 @@ the AffPapa page separately. Historical filename retained for existing links.
    is `0.4.0 (29)`.
 2. Move `CHANGELOG.md` from Unreleased to `Direct VERSION (BUILD)` and update
    both READMEs before building.
+   Before merging, verify the runtime candidate lock against its source
+   provenance and all owned manifests. Refreshing even the security baseline's
+   `checkedAt` changes that binding. If stale, use the canonical source root
+   to export a fresh candidate lock, verify the actual built runtime, and
+   promote it with `promote-runtime-candidate-lock.py`; include the generated
+   source-lock change in the reviewed PR. Do not edit evidence hashes by hand.
+   After merging, rebuild the engineering donor with the same verified runtime
+   and fresh evidence before preparing the Direct candidate. Keep previous
+   candidate/donor bundles and their manifests in a private rollback directory.
 3. Merge the source PR after all checks and use its exact merge SHA, never a
    mutable branch name.
 4. Run full source, Swift, Python, ARM64 and live-manager/browser gates plus:

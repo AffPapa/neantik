@@ -63,7 +63,7 @@
   "ownedManifests": {
     "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
     "neantikPatchSeriesSHA256": "7c0a9bc9ca590ed5fffb7a4ecf649ca87aba772d18375e0715088302d5890c6e",
-    "securityBaselineSHA256": "7d407a205ce0e65372df860b48cd14b90c43a4675e952d38e46a1c0515df27b2"
+    "securityBaselineSHA256": "d88db3db8a331685bd66f852f184d513c90f74a7307ac8a8606e9b545fa14ff1"
   },
   "schemaVersion": 4,
   "sourceContractSHA256": "0ea3277e53e4f07c2d8974eaca008b71a745af2c756d5be5231ad6796fbf99c9",
