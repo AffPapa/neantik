@@ -10,41 +10,38 @@ separately installed Chrome, or telemetry.
 ## Download
 
 Download the signed and notarized application from
-[GitHub Release v0.3.25](https://github.com/AffPapa/neantik/releases/tag/v0.3.25).
+[the latest GitHub Release](https://github.com/AffPapa/neantik/releases/latest).
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Current published GitHub public-alpha release:
+The application is distributed through GitHub Releases:
 
-- NeAntik `0.3.25` build `28`;
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `152.0.7977.82`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.25-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.25-arm64-notarized.dmg`;
+- embedded Chromium, ARM64, Metal;
+- notarized ZIP and DMG files with a version number in their names;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
 GitHub Releases is the source of current version, downloads and checksums.
 The [product website](https://affpapa.org/neantik) is maintained separately
 and is not a prerequisite for a release.
 
-## In development: 0.4.0 (29) — open and work
+## Source capabilities in 0.4.0 (29) — open and work
 
 An editable suggested name, optional pasted proxy, and Create and open.
 Manual connection fields are available on demand; launch preparation is
 automatic. A running profile's primary action returns to its window. New
 profiles start on a blank page; existing data and startup URLs are preserved.
 
-This is a development preview: `0.3.25 (28)` remains the public download until
-the full Direct Distribution cycle passes.
-
-The capabilities below are included in the published, signed, and notarized
-`0.3.25 (28)` release.
+Source code can be ahead of the downloadable application. The GitHub Release
+records the published version, verification results, and files. New binaries
+become available only after the full Direct Distribution cycle passes.
 
 ## Quick start
 
-1. Create a profile and give it a clear name.
+1. Create a profile; you can edit the suggested name.
 2. Paste a proxy if needed; NeAntik parses it locally.
-3. Click **Launch**. Cookies and site data stay inside that profile.
+3. In 0.4.0, click **Create and open**; use **Launch** for a previously saved
+   profile. Cookies and site data stay inside that profile.
 
 ## What it does
 
@@ -121,7 +118,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.25` is published for public-alpha profile isolation. Strict
+The public-alpha channel is intended for profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
