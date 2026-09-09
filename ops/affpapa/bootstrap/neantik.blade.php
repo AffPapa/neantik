@@ -471,8 +471,8 @@
         <div class="nk-hero-grid">
             <div>
                 <p class="badge"><span class="badge-dot" aria-hidden="true"></span>Public Alpha · Apple Silicon · Chromium {{ $runtimeMajor }}</p>
-                <h1 class="hero-title">Отдельный браузер<br>для каждой рабочей сессии</h1>
-                <p class="hero-lead">NeAntik разделяет cookies, сессии, storage и&nbsp;proxy между профилями. Встроенный Chromium {{ $runtimeMajor }} — ничего не&nbsp;нужно устанавливать отдельно. SwiftUI, без Electron, без аккаунта, без телеметрии.</p>
+                <h1 class="hero-title">У каждого дела —<br>свой интернет</h1>
+                <p class="hero-lead">Работа, личные дела и&nbsp;проекты — в&nbsp;отдельных браузерных сессиях. У&nbsp;каждой свои входы на&nbsp;сайты, cookies и&nbsp;данные. Прокси — по&nbsp;необходимости. Встроенный Chromium {{ $runtimeMajor }}, без регистрации в&nbsp;NeAntik.</p>
 
                 <div class="nk-platform">
                     <span class="chip">macOS 14+</span>

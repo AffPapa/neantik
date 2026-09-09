@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct NeAntikApp: App {
+    @StateObject private var workplaceNavigation = WorkplaceNavigation()
     @NSApplicationDelegateAdaptor(NeAntikApplicationDelegate.self)
     private var applicationDelegate
     @StateObject private var store: ProfileStore
@@ -155,7 +156,8 @@ struct NeAntikApp: App {
                 runtimeLocator: runtimeLocator,
                 launchIntent: launchIntent,
                 fingerprintEvidenceReleaseContext:
-                    fingerprintEvidenceReleaseContext
+                    fingerprintEvidenceReleaseContext,
+                workplaceNavigation: workplaceNavigation
             )
             .preferredColorScheme(uiSmokeColorScheme)
             .background {
@@ -184,6 +186,13 @@ struct NeAntikApp: App {
         .commands {
             WorkspaceCommandMenu()
             ProfileCommandMenu()
+        }
+
+        MenuBarExtra(isInserted: .constant(!launchIntent.opensFingerprintAudit)) {
+            WorkplaceMenu(store: store, processes: processes, navigation: workplaceNavigation)
+                .disabled(workplaceNavigation.isBlocked)
+        } label: {
+            WorkplaceMenuLabel(store: store, processes: processes)
         }
 
         Settings {

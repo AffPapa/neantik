@@ -19,7 +19,7 @@ extension NeAntikShortcut {
     /// Reference text, not a second authorization model: menu state remains authoritative.
     var availability: String {
         switch self {
-        case .newProfile, .newFolder, .findProfiles:
+        case .newProfile, .newFolder, .findProfiles, .workplaceHome, .workplaceCatalog:
             "В главном окне, когда не открыт диалог"
         case .settings:
             "В активном приложении NeAntik"
@@ -62,6 +62,8 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
     case newProfile
     case newFolder
     case findProfiles
+    case workplaceHome
+    case workplaceCatalog
     case settings
     case shortcutReference
     case toggleSelectedProfile
@@ -76,7 +78,7 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
     var category: NeAntikShortcutCategory {
         switch self {
         case .newProfile, .newFolder, .findProfiles, .settings,
-             .shortcutReference:
+             .shortcutReference, .workplaceHome, .workplaceCatalog:
             .workspace
         case .toggleSelectedProfile, .focusSelectedProfile,
              .editSelectedProfile,
@@ -90,6 +92,8 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
         case .newProfile: "Новый профиль"
         case .newFolder: "Новая папка"
         case .findProfiles: "Найти профиль"
+        case .workplaceHome: "Рабочие места"
+        case .workplaceCatalog: "Полный каталог"
         case .settings: "Открыть настройки"
         case .shortcutReference: "Показать сочетания клавиш"
         case .toggleSelectedProfile: "Запустить или остановить"
@@ -111,6 +115,10 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
             "n"
         case .findProfiles:
             "f"
+        case .workplaceHome:
+            "1"
+        case .workplaceCatalog:
+            "2"
         case .settings:
             ","
         case .shortcutReference:

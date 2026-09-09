@@ -25,23 +25,26 @@ GitHub Releases is the source of current version, downloads and checksums.
 The [product website](https://affpapa.org/neantik) is maintained separately
 and is not a prerequisite for a release.
 
-## Source capabilities in 0.4.0 (29) — open and work
+## Workplaces — the next NeAntik workflow
 
-An editable suggested name, optional pasted proxy, and Create and open.
-Manual connection fields are available on demand; launch preparation is
-automatic. A running profile's primary action returns to its window. New
-profiles start on a blank page; existing data and startup URLs are preserved.
+Each part of your day gets its own internet. A workplace is an existing isolated
+profile with a name, persistent browser session, and optional proxy. Existing
+cookies, site data and identity are preserved.
 
-Source code can be ahead of the downloadable application. The GitHub Release
-records the published version, verification results, and files. New binaries
-become available only after the full Direct Distribution cycle passes.
+Current source adds a home for pinned/recent workplaces, local name/tag/note
+search, Open/Continue actions and a separate full catalog. Command-1 opens home;
+Command-2 opens the catalog. The native macOS menu offers recent workplaces and
+displays the name of the verified active browser process.
+
+These are source capabilities. Check GitHub Releases for the actual published
+version, verification results and downloadable files.
 
 ## Quick start
 
-1. Create a profile; you can edit the suggested name.
-2. Paste a proxy if needed; NeAntik parses it locally.
-3. In 0.4.0, click **Create and open**; use **Launch** for a previously saved
-   profile. Cookies and site data stay inside that profile.
+1. Create a workplace; rename the suggestion for the task at hand.
+2. Paste a proxy if needed.
+3. Click **Create and open**. Connection preparation runs before launch.
+4. Return through **Continue**; stopping remains a separate catalog action.
 
 ## What it does
 

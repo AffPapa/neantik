@@ -176,6 +176,8 @@ struct WorkspaceCommandSet {
     let toggleInspector: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
+    var showWorkplaceHome: () -> Void = {}
+    var showWorkplaceCatalog: () -> Void = {}
 
     static let unavailable = WorkspaceCommandSet(
         isEnabled: false,
@@ -247,6 +249,15 @@ struct WorkspaceCommandMenu: Commands {
         }
 
         CommandMenu("Рабочее пространство") {
+            Button("Рабочие места", action: resolved.showWorkplaceHome)
+                .keyboardShortcut(NeAntikShortcut.workplaceHome.keyEquivalent,
+                                  modifiers: NeAntikShortcut.workplaceHome.modifiers)
+                .disabled(!resolved.isEnabled)
+            Button("Полный каталог", action: resolved.showWorkplaceCatalog)
+                .keyboardShortcut(NeAntikShortcut.workplaceCatalog.keyEquivalent,
+                                  modifiers: NeAntikShortcut.workplaceCatalog.modifiers)
+                .disabled(!resolved.isEnabled)
+            Divider()
             Button(
                 resolved.showsInspector
                     ? "Скрыть сведения"

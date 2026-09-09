@@ -9,7 +9,7 @@ class ProfileInspectorPolicyContractTests(unittest.TestCase):
     def test_toolbar_and_command_use_the_shared_policy(self):
         content = (ROOT / "Sources/NeAntik/ContentView.swift").read_text()
         toolbar = (ROOT / "Sources/NeAntik/WorkspaceToolbarContent.swift").read_text()
-        self.assertIn("canToggleInspector: ProfileInspectorPolicy.canToggle(", content)
+        self.assertIn("canToggleInspector: !showsWorkplaceHome && ProfileInspectorPolicy.canToggle(", content)
         self.assertIn(".disabled(!ProfileInspectorPolicy.canToggle(", toolbar)
         self.assertIn("guard !isWorkspaceModalPresented else { return .unavailable }", content)
 

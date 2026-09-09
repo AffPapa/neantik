@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## Direct 0.5.0 (30) — September 9, 2026 (candidate)
+
+- Introduce a workplace home with pinned/recent sessions, local name/tag/note
+  search, Open/Continue actions and a separate full catalog (Command-1/2).
+- Add a native macOS menu for recent workplaces and verified active context.
+  Navigation is blocked while an editor or confirmation is presented.
+- Revalidate process identity and unchanged ownership evidence before returning
+  to a browser window. Never activate a process from an unverified retained PID.
+- Preserve existing profile storage, credentials, cookies and identity. No new
+  cloud service, setting, runtime patch or data migration is introduced.
+
 ## Direct 0.4.0 (29) — September 8, 2026 (candidate)
 
 - Simplify the daily workflow to create, open and return. New profiles get an
