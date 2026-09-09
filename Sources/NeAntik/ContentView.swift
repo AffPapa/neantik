@@ -12,6 +12,7 @@ struct ContentView: View {
         ProxyHealthCoordinator
     @ObservedObject var workspacePreferences:
         WorkspacePreferenceStore
+    @ObservedObject var workplaceNavigation: WorkplaceNavigation
 
     let keychain: KeychainStore
     let credentialCleanup: DeletedProfileCredentialCleanup
@@ -90,13 +91,15 @@ struct ContentView: View {
         launchIntent: NeAntikLaunchIntent,
         fingerprintEvidenceReleaseContext: FingerprintEvidenceReleaseContext?,
         initialRuntime: BrowserRuntime? = nil,
-        initialOperationalFilter: ProfileOperationalFilter = .all
+        initialOperationalFilter: ProfileOperationalFilter = .all,
+        workplaceNavigation: WorkplaceNavigation? = nil
     ) {
         self.store = store
         self.processes = processes
         self.fingerprintObservationStore = fingerprintObservationStore
         self.proxyHealthCoordinator = proxyHealthCoordinator
         self.workspacePreferences = workspacePreferences
+        self.workplaceNavigation = workplaceNavigation ?? WorkplaceNavigation()
         self.keychain = keychain
         self.credentialCleanup = credentialCleanup
         self.runtimeLocator = runtimeLocator
@@ -146,7 +149,7 @@ struct ContentView: View {
         return WorkspaceCommandSet(
             isEnabled: true,
             selectedFolderName: selectedFolder?.name,
-            canToggleInspector: ProfileInspectorPolicy.canToggle(
+            canToggleInspector: !showsWorkplaceHome && ProfileInspectorPolicy.canToggle(
                 isPresented: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil
             ),
@@ -166,7 +169,9 @@ struct ContentView: View {
             deleteSelectedFolder: {
                 guard let selectedFolder else { return }
                 folderPendingDelete = selectedFolder
-            }
+            },
+            showWorkplaceHome: showWorkplaceHome,
+            showWorkplaceCatalog: showWorkplaceCatalog
         )
     }
 
@@ -387,7 +392,106 @@ struct ContentView: View {
         workspaceLifecycle
     }
 
-    private var workspaceBase: some View { workspaceNavigation }
+    @State private var showsWorkplaceHome = true
+    @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0)
+
+    private var workspaceBase: some View {
+        Group {
+            if showsWorkplaceHome && !store.profiles.isEmpty {
+                workplaceHome
+            } else {
+                workspaceNavigation
+            }
+        }
+        .onAppear {
+            refreshWorkplaceHome()
+            handleWorkplaceNavigation()
+        }
+        .onChange(of: store.profileListRevision) { _, _ in refreshWorkplaceHome() }
+        .onChange(of: profileSearchText) { _, _ in refreshWorkplaceHome() }
+        .onChange(of: workplaceNavigation.pending) { _, _ in handleWorkplaceNavigation() }
+        .onChange(of: isWorkspaceModalPresented) { _, value in workplaceNavigation.isBlocked = value }
+    }
+
+    private var workplaceHome: some View {
+        WorkplaceHomeView(
+            projection: workplaceHomeProjection,
+            search: $profileSearchText,
+            searchFocus: $profileSearchIsFocused,
+            presentation: workplaceOpenPresentation,
+            onOpen: openWorkplace,
+            onInspect: { profile in
+                showsWorkplaceHome = false
+                revealSavedProfile(profile)
+                showsProfileInspector = true
+            },
+            onCreate: beginCreatingProfile,
+            onCatalog: showWorkplaceCatalog
+        )
+        .toolbar {
+            Button("Каталог", systemImage: "sidebar.left", action: showWorkplaceCatalog)
+        }
+        .focusedSceneValue(\.neAntikProfileCommands, ProfileCommandSet.unavailable)
+        .focusedSceneValue(\.neAntikWorkspaceCommands, workspaceCommandSet)
+    }
+
+    private func refreshWorkplaceHome() {
+        workplaceHomeProjection = WorkplaceHomeProjection.resolve(
+            profiles: store.profiles, search: profileSearchText
+        )
+    }
+
+    private func showWorkplaceCatalog() {
+        guard !isWorkspaceModalPresented else { return }
+        showsWorkplaceHome = false
+        profileRouteFilter = .all
+        profileOperationalFilter = .all
+        applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
+        normalizeSelection()
+    }
+
+    private func showWorkplaceHome() {
+        guard !isWorkspaceModalPresented else { return }
+        showsWorkplaceHome = true
+        showsProfileInspector = false
+        resetProfileFilters()
+    }
+
+    private func workplaceOpenPresentation(_ profile: BrowserProfile) -> WorkplaceOpenPresentation {
+        WorkplaceOpenPresentation.resolve(
+            state: presentedProcessState(for: profile), archived: profile.isArchived,
+            runtime: runtimeAvailability, preparing: launchOperations.isActive(profile.id),
+            testing: isProxyTestInFlight(profileID: profile.id)
+        )
+    }
+
+    private func openWorkplace(_ requested: BrowserProfile) {
+        guard !isWorkspaceModalPresented,
+              let profile = store.profile(withID: requested.id) else { return }
+        switch workplaceOpenPresentation(profile).action {
+        case .launch: launch(profile)
+        case .activate: _ = processes.focus(profileID: profile.id)
+        case .cancel: cancelLaunchPreparation(profileID: profile.id)
+        case .unavailable: break
+        }
+    }
+
+    private func handleWorkplaceNavigation() {
+        guard let destination = workplaceNavigation.consume(), !isWorkspaceModalPresented else { return }
+        switch destination {
+        case .home: showWorkplaceHome()
+        case .create: beginCreatingProfile()
+        case let .open(id):
+            guard let profile = store.profile(withID: id) else { return }
+            if workplaceOpenPresentation(profile).action == .unavailable {
+                showsWorkplaceHome = false
+                revealSavedProfile(profile)
+                showsProfileInspector = true
+            } else {
+                openWorkplace(profile)
+            }
+        }
+    }
 
     private var workspaceNavigation: some View {
         let listState = currentProfileListViewState
@@ -423,6 +527,10 @@ struct ContentView: View {
             minHeight: WorkspaceLayout.minimumWindowHeight
         )
         .toolbar {
+            ToolbarItem {
+                Button("Рабочие места", systemImage: "house", action: showWorkplaceHome)
+                .disabled(isWorkspaceModalPresented)
+            }
             WorkspaceToolbarContent(
                 showsProfileInspector: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil,

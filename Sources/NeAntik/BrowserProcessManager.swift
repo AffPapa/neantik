@@ -966,18 +966,56 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     @discardableResult
-    func focus(profileID: UUID) -> Bool {
-        let pid = managed[profileID]?.process?.processIdentifier ??
-            externalLocks[profileID]?.pid
-        guard let pid,
-              let application = NSRunningApplication(
-                processIdentifier: pid
-              )
-        else {
-            lastError = "Не удалось найти окно этого браузера."
+    func focus(
+        profileID: UUID,
+        using activator: (pid_t, String) -> Bool = { pid, executablePath in
+            guard let app = NSRunningApplication(processIdentifier: pid),
+                  !app.isTerminated,
+                  app.executableURL?.standardizedFileURL.path == executablePath
+            else { return false }
+            return app.activate(options: [.activateAllWindows])
+        }
+    ) -> Bool {
+        guard let lock = verifiedWindowLease(profileID: profileID) else {
+            lastError = "Не удалось подтвердить окно этого рабочего места. " +
+                "Открой его через Dock. Повторный браузер не запускался."
             return false
         }
-        return application.activate(options: [.activateAllWindows])
+        let activated = activator(lock.pid, lock.executablePath)
+        if !activated { lastError = "Не удалось перейти в окно этого рабочего места. Открой его через Dock." }
+        return activated
+    }
+
+    func verifiedProfileID(forProcessID pid: pid_t) -> UUID? {
+        guard pid > 0 else { return nil }
+        let candidates = Set(managed.compactMap { id, record in
+            record.process?.processIdentifier == pid ? id : nil
+        } + externalLocks.compactMap { id, lock in lock.pid == pid ? id : nil })
+        guard candidates.count == 1, let id = candidates.first,
+              verifiedWindowLease(profileID: id)?.pid == pid else { return nil }
+        return id
+    }
+
+    private func verifiedWindowLease(profileID: UUID) -> BrowserProcessLock? {
+        let state = processState(for: profileID)
+        guard state == .managed || state == .externalVerified || state == .externalManualOnly,
+              let snapshot = currentLeaseSnapshot(
+                profileID: profileID, managedOwner: managed[profileID]?.ownerToken,
+                externalLock: externalLocks[profileID]
+              ),
+              let lock = try? Self.decodeLock(snapshot),
+              lock.phase == .running, lock.pid > 0,
+              lock.browserDataPath == paths.browserDataDirectory(for: profileID).path,
+              processIdentityInspector(lock) == .expected,
+              currentLeaseSnapshot(
+                profileID: profileID, managedOwner: managed[profileID]?.ownerToken,
+                externalLock: externalLocks[profileID]
+              ) == snapshot
+        else { return nil }
+        if let process = managed[profileID]?.process {
+            guard process.isRunning, process.processIdentifier == lock.pid else { return nil }
+        }
+        return lock
     }
 
     func withVerifiedProfileDeletion<T>(

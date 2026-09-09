@@ -77,6 +77,7 @@ case "$SHARD" in
       ProfileRevisionAndTransactionTests
       ProfileTagAppearanceTests
       UXDraftProtectionTests
+      WorkplaceHomeTests
       WorkspaceUXPresentationTests
     )
     ;;
