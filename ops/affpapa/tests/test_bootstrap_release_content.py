@@ -54,7 +54,8 @@ class BootstrapReleaseContentTests(unittest.TestCase):
         self.assertNotIn("Запустить проверку", self.template)
         self.assertNotIn("Запустите A → B → A", self.template)
         self.assertIn("Каждый выпуск проверяется автоматически", self.template)
-        self.assertIn("профиль, proxy, встроенный Chromium", self.template)
+        user_flow = self.template.split('id="neantik-how"', 1)[1].split("{{-- ═══ PRIVACY", 1)[0]
+        self.assertNotIn("A → B → A", user_flow)
 
     def test_landing_does_not_freeze_apple_silicon_generations(self) -> None:
         self.assertNotIn("M1–M4", self.template)
