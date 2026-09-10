@@ -454,14 +454,22 @@ struct ProxyTestOperationRegistryTests {
 }
 
 private actor OwnedProxyBoundaryBarrier {
+    private enum Arrival: Sendable {
+        case reached
+        case finished(String?)
+    }
+
     private var reached = false
     private var released = false
     private var finished = false
     private var completionError: String?
     private var continuation: CheckedContinuation<Void, Never>?
+    private var arrivalContinuation: CheckedContinuation<Arrival, Never>?
 
     func suspend() async {
         reached = true
+        arrivalContinuation?.resume(returning: .reached)
+        arrivalContinuation = nil
         guard !released else { return }
         await withCheckedContinuation { continuation = $0 }
     }
@@ -469,17 +477,32 @@ private actor OwnedProxyBoundaryBarrier {
     func completed(error: String?) {
         finished = true
         completionError = error
+        arrivalContinuation?.resume(returning: .finished(error))
+        arrivalContinuation = nil
     }
 
     func waitUntilReached() async throws {
-        for _ in 0..<2_000 {
-            if reached { return }
-            if finished {
-                throw BoundaryFailure(reason: completionError ?? "Operation exited before boundary")
-            }
-            try await Task.sleep(for: .milliseconds(1))
+        if reached { return }
+        if finished {
+            throw BoundaryFailure(
+                reason: completionError ?? "Operation exited before boundary"
+            )
         }
-        throw BoundaryFailure(reason: "Timed out waiting for operation boundary")
+        let arrival = await withCheckedContinuation {
+            (continuation: CheckedContinuation<Arrival, Never>) in
+            if reached {
+                continuation.resume(returning: .reached)
+            } else if finished {
+                continuation.resume(returning: .finished(completionError))
+            } else {
+                arrivalContinuation = continuation
+            }
+        }
+        if case let .finished(error) = arrival {
+            throw BoundaryFailure(
+                reason: error ?? "Operation exited before boundary"
+            )
+        }
     }
 
     func resume() {
