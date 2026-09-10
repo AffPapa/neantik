@@ -1,6 +1,6 @@
 # NeAntik changelog
 
-## Unreleased
+## Direct 0.5.1 (31) — September 10, 2026
 
 - Keep the same workplace home from first launch onward, with one-click creation,
   visible runtime recovery, a direct archive entry and clearable search.
@@ -14,10 +14,9 @@
   user-requested force stops do not produce crash warnings.
 - Disable menu actions during modal work and use workplace terminology in the
   main creation, editing and search commands. Add no new user settings.
-- Prepare a runtime fallback for submitted HTTPS DuckDuckGo queries without
+- Provide a runtime fallback for submitted HTTPS DuckDuckGo queries without
   suggestions/prefetch, preserving explicit user search choices, and remove the
-  unreachable distribution-provided Web Store shortcut. These runtime changes
-  require a rebuilt, verified runtime before a downloadable release.
+  unreachable distribution-provided Web Store shortcut. The release includes the rebuilt and verified runtime.
 
 ## Direct 0.5.0 (30) — September 9, 2026 (candidate)
 
