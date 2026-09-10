@@ -1,24 +1,141 @@
 import Foundation
 import SwiftUI
 
+/// A transient, local-only way to narrow the Home list. It deliberately does
+/// not become profile metadata or alter the Catalog's composable query state.
+enum WorkplaceHomeQuickFilter: String, CaseIterable, Identifiable, Sendable {
+    case all
+    case running
+    case attention
+    case unfiled
+    case untagged
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .all: "Все"
+        case .running: "Запущено"
+        case .attention: "Требуют внимания"
+        case .unfiled: "Без папки"
+        case .untagged: "Без тегов"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .all: "rectangle.stack"
+        case .running: "play.circle.fill"
+        case .attention: "exclamationmark.triangle.fill"
+        case .unfiled: "folder.badge.questionmark"
+        case .untagged: "tag.slash"
+        }
+    }
+
+    var emptyTitle: String {
+        switch self {
+        case .all: "Нет активных рабочих мест"
+        case .running: "Нет запущенных рабочих мест"
+        case .attention: "Всё в порядке"
+        case .unfiled: "Все рабочие места распределены по папкам"
+        case .untagged: "У всех рабочих мест есть теги"
+        }
+    }
+
+    var emptyMessage: String {
+        switch self {
+        case .all: "Рабочие места в архиве сохраняют ваши данные. Их можно вернуть и продолжить работу."
+        case .running: "Открой рабочее место — оно появится здесь."
+        case .attention: "Нет ошибок подключения и состояний, требующих действия."
+        case .unfiled: "Новые рабочие места без папки появляются в этом списке."
+        case .untagged: "Теги помогают быстрее находить рабочие места."
+        }
+    }
+}
+
+struct WorkplaceHomeSummary: Equatable, Sendable {
+    let activeCount: Int
+    let runningCount: Int
+    let attentionCount: Int
+    let unfiledCount: Int
+    let untaggedCount: Int
+
+    static let empty = Self(
+        activeCount: 0,
+        runningCount: 0,
+        attentionCount: 0,
+        unfiledCount: 0,
+        untaggedCount: 0
+    )
+
+    func count(for filter: WorkplaceHomeQuickFilter) -> Int {
+        switch filter {
+        case .all: activeCount
+        case .running: runningCount
+        case .attention: attentionCount
+        case .unfiled: unfiledCount
+        case .untagged: untaggedCount
+        }
+    }
+}
+
 /// A view of existing profiles, never another profile store. No browser data or
 /// credentials are inspected to build the home screen.
 struct WorkplaceHomeProjection: Equatable, Sendable {
     let profiles: [BrowserProfile]
     let matchCount: Int
+    let summary: WorkplaceHomeSummary
+    private let matchesByQuickFilter: [WorkplaceHomeQuickFilter: [BrowserProfile]]
+
+    init(
+        profiles: [BrowserProfile],
+        matchCount: Int,
+        summary: WorkplaceHomeSummary = .empty,
+        matchesByQuickFilter: [WorkplaceHomeQuickFilter: [BrowserProfile]] = [:]
+    ) {
+        self.profiles = profiles
+        self.matchCount = matchCount
+        self.summary = summary
+        self.matchesByQuickFilter = matchesByQuickFilter.isEmpty
+            ? [.all: profiles]
+            : matchesByQuickFilter
+    }
 
     static func resolve(
         profiles: [BrowserProfile],
         search: String,
         limit: Int = 24,
-        revealProfileID: UUID? = nil
+        revealProfileID: UUID? = nil,
+        processState: (UUID) -> BrowserProfileProcessState = { _ in .stopped },
+        proxyHealth: (BrowserProfile) -> ProxyHealthState? = { _ in nil },
+        organization: ProfileOrganizationState = .empty
     ) -> Self {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        let matches = profiles.filter { profile in
-            !profile.isArchived && (query.isEmpty ||
-                ([profile.name, profile.note] + profile.tags).contains {
-                    $0.localizedStandardContains(query)
-                })
+        let activeProfiles = profiles.filter { !$0.isArchived }
+        let operational = ProfileOperationalProjection.resolve(
+            profiles: activeProfiles,
+            processState: processState,
+            proxyHealth: proxyHealth
+        )
+        let unfiledIDs = Set(activeProfiles.compactMap { profile in
+            organization.folder(withID: organization.folderID(forProfileID: profile.id)) == nil
+                ? profile.id
+                : nil
+        })
+        let untaggedIDs = Set(activeProfiles.compactMap { profile in
+            profile.tags.isEmpty ? profile.id : nil
+        })
+        let summary = WorkplaceHomeSummary(
+            activeCount: activeProfiles.count,
+            runningCount: operational.runningProfileIDs.count,
+            attentionCount: operational.attentionProfileIDs.count,
+            unfiledCount: unfiledIDs.count,
+            untaggedCount: untaggedIDs.count
+        )
+        let matches = activeProfiles.filter { profile in
+            query.isEmpty || ([profile.name, profile.note] + profile.tags).contains {
+                $0.localizedStandardContains(query)
+            }
         }.sorted { lhs, rhs in
             if lhs.isPinned != rhs.isPinned { return lhs.isPinned }
             let left = lhs.lastLaunchedAt ?? lhs.createdAt
@@ -26,25 +143,63 @@ struct WorkplaceHomeProjection: Equatable, Sendable {
             if left != right { return left > right }
             return lhs.id.uuidString < rhs.id.uuidString
         }
+        let matchesByQuickFilter = Dictionary(
+            uniqueKeysWithValues: WorkplaceHomeQuickFilter.allCases.map { filter in
+                (filter, matches.filter { profile in
+                    switch filter {
+                    case .all: true
+                    case .running: operational.runningProfileIDs.contains(profile.id)
+                    case .attention: operational.attentionProfileIDs.contains(profile.id)
+                    case .unfiled: unfiledIDs.contains(profile.id)
+                    case .untagged: untaggedIDs.contains(profile.id)
+                    }
+                })
+            }
+        )
+        let visibleProfiles = visibleProfiles(
+            matches: matches, limit: limit, revealProfileID: revealProfileID
+        )
+
+        return Self(
+            profiles: visibleProfiles,
+            matchCount: matches.count,
+            summary: summary,
+            matchesByQuickFilter: matchesByQuickFilter
+        )
+    }
+
+    func profiles(
+        for quickFilter: WorkplaceHomeQuickFilter,
+        limit: Int = 24,
+        revealProfileID: UUID? = nil
+    ) -> [BrowserProfile] {
+        Self.visibleProfiles(
+            matches: matchesByQuickFilter[quickFilter] ?? [],
+            limit: limit,
+            revealProfileID: revealProfileID
+        )
+    }
+
+    func matchCount(for quickFilter: WorkplaceHomeQuickFilter) -> Int {
+        (matchesByQuickFilter[quickFilter] ?? []).count
+    }
+
+    private static func visibleProfiles(
+        matches: [BrowserProfile],
+        limit: Int,
+        revealProfileID: UUID?
+    ) -> [BrowserProfile] {
         let effectiveLimit = max(0, limit)
         var visibleProfiles = Array(matches.prefix(effectiveLimit))
-
-        // A newly created workplace must be visible immediately, even when a
-        // full Home list is headed by pinned workplaces. This is presentation
-        // only: it never changes pinning or the stored ordering.
         if effectiveLimit > 0,
            let revealProfileID,
-           let revealedProfile = matches.first(where: { $0.id == revealProfileID }),
+           let revealed = matches.first(where: { $0.id == revealProfileID }),
            !visibleProfiles.contains(where: { $0.id == revealProfileID })
         {
-            if visibleProfiles.isEmpty {
-                visibleProfiles = [revealedProfile]
-            } else {
-                visibleProfiles[visibleProfiles.index(before: visibleProfiles.endIndex)] = revealedProfile
-            }
+            if visibleProfiles.isEmpty { visibleProfiles = [revealed] }
+            else { visibleProfiles[visibleProfiles.index(before: visibleProfiles.endIndex)] = revealed }
         }
-
-        return Self(profiles: visibleProfiles, matchCount: matches.count)
+        return visibleProfiles
     }
 }
 
@@ -111,8 +266,13 @@ struct WorkplaceHomeView: View {
     let onRetryRuntimeCheck: () -> Void
     let onArchive: () -> Void
     var notice: (BrowserProfile) -> String? = { _ in nil }
+    @State private var quickFilter: WorkplaceHomeQuickFilter = .all
 
     var body: some View {
+        let profiles = projection.profiles(
+            for: quickFilter, revealProfileID: revealProfileID
+        )
+        let matchCount = projection.matchCount(for: quickFilter)
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 5) {
@@ -147,7 +307,7 @@ struct WorkplaceHomeView: View {
                             }
                         }
                         .onSubmit {
-                            if projection.matchCount == 1, let profile = projection.profiles.first {
+                            if matchCount == 1, let profile = profiles.first {
                                 onOpen(profile)
                             }
                         }
@@ -160,20 +320,27 @@ struct WorkplaceHomeView: View {
                         .help("Очистить поиск")
                     }
                 }
+                quickFilterBar
                 ScrollViewReader { scrollProxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                        ForEach(projection.profiles) { profile in
+                        ForEach(profiles) { profile in
                             workplaceRow(profile)
                                 .id(profile.id)
                             Divider()
                         }
-                        if projection.matchCount == 0 {
+                        if matchCount == 0 {
                             if search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                ContentUnavailableView("Нет активных рабочих мест",
-                                    systemImage: "square.grid.2x2",
-                                    description: Text("Рабочие места в архиве сохраняют ваши данные. Их можно вернуть и продолжить работу."))
-                                Button("Открыть архив", systemImage: "archivebox", action: onArchive)
+                                ContentUnavailableView(
+                                    quickFilter.emptyTitle,
+                                    systemImage: quickFilter.systemImage,
+                                    description: Text(quickFilter.emptyMessage)
+                                )
+                                if quickFilter == .all {
+                                    Button("Открыть архив", systemImage: "archivebox", action: onArchive)
+                                } else {
+                                    Button("Показать все", action: { quickFilter = .all })
+                                }
                             } else {
                                 ContentUnavailableView("Ничего не найдено",
                                     systemImage: "magnifyingglass",
@@ -182,8 +349,8 @@ struct WorkplaceHomeView: View {
                                 Button("Очистить поиск", action: clearSearch)
                             }
                         }
-                        if projection.matchCount > projection.profiles.count {
-                            Button("Все рабочие места (\(projection.matchCount))", action: onCatalog)
+                        if matchCount > profiles.count {
+                            Button("Все рабочие места (\(matchCount))", action: onCatalog)
                                 .padding(.top, 16)
                         }
                         }
@@ -208,9 +375,67 @@ struct WorkplaceHomeView: View {
         searchFocus.wrappedValue = true
     }
 
+    @ViewBuilder
+    private var quickFilterBar: some View {
+        let filters = WorkplaceHomeQuickFilter.allCases.filter {
+            $0 == .all || projection.summary.count(for: $0) > 0 || $0 == quickFilter
+        }
+        if filters.count > 1 || quickFilter != .all {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    ForEach(filters) { filter in
+                        quickFilterButton(filter)
+                    }
+                }
+            }
+            .accessibilityLabel("Состояние рабочих мест")
+        }
+    }
+
+    private func quickFilterButton(
+        _ filter: WorkplaceHomeQuickFilter
+    ) -> some View {
+        let selected = filter == quickFilter
+        let count = projection.summary.count(for: filter)
+        return Button {
+            quickFilter = filter
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: filter.systemImage)
+                    .accessibilityHidden(true)
+                Text(filter.title)
+                Text("\(count)")
+                    .font(.caption2.monospacedDigit())
+            }
+            .font(.caption.weight(selected ? .semibold : .regular))
+            .padding(.horizontal, 9)
+            .frame(minHeight: 28)
+            .background(
+                (filter == .attention ? Color.orange : Color.accentColor)
+                    .opacity(selected ? 0.18 : 0.07),
+                in: Capsule()
+            )
+            .overlay {
+                Capsule().stroke(
+                    selected
+                        ? (filter == .attention ? Color.orange : Color.accentColor).opacity(0.55)
+                        : Color.clear,
+                    lineWidth: 1
+                )
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(filter.title): \(count)")
+        .accessibilityValue(selected ? "Выбрано" : "Не выбрано")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
     private func scrollToRevealedProfile(using proxy: ScrollViewProxy) {
         guard let revealProfileID,
-              projection.profiles.contains(where: { $0.id == revealProfileID })
+              projection.profiles(
+                  for: quickFilter,
+                  revealProfileID: revealProfileID
+              ).contains(where: { $0.id == revealProfileID })
         else { return }
         DispatchQueue.main.async {
             proxy.scrollTo(revealProfileID, anchor: .center)
@@ -267,6 +492,29 @@ struct WorkplaceHomeView: View {
                 Button(commands.presentation.pinTitle,
                        systemImage: commands.presentation.pinSystemImage,
                        action: commands.togglePinned)
+                Menu("Папка", systemImage: "folder") {
+                    ForEach(commands.folderOptions) { option in
+                        Button {
+                            commands.moveToFolder(option.folderID)
+                        } label: {
+                            Label(
+                                option.title,
+                                systemImage: option.isSelected
+                                    ? "checkmark"
+                                    : "folder"
+                            )
+                        }
+                        .disabled(option.isSelected)
+                    }
+                    if commands.hasMoreFolderOptions {
+                        Divider()
+                        Button("Выбрать папку…", action: commands.chooseFolder)
+                    }
+                }
+                Button("Теги…", systemImage: "tag", action: commands.editTags)
+                    .disabled(!commands.presentation.editIsEnabled)
+                Button("Создать похожее", systemImage: "plus.square.on.square", action: commands.duplicate)
+                    .disabled(!commands.presentation.editIsEnabled)
                 Button("Изменить…", systemImage: "pencil", action: commands.edit)
                     .disabled(!commands.presentation.editIsEnabled)
                 Button("Сведения", systemImage: "info.circle") { onInspect(profile) }

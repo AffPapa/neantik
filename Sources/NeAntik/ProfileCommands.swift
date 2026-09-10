@@ -132,6 +132,7 @@ struct ProfileCommandSet {
     let toggleRunning: () -> Void
     let focusRunning: () -> Void
     let edit: () -> Void
+    let editTags: () -> Void
     let editNote: () -> Void
     let togglePinned: () -> Void
     let duplicate: () -> Void
@@ -148,6 +149,7 @@ struct ProfileCommandSet {
         toggleRunning: {},
         focusRunning: {},
         edit: {},
+        editTags: {},
         editNote: {},
         togglePinned: {},
         duplicate: {},

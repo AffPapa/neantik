@@ -66,6 +66,68 @@ struct WorkplaceHomeTests {
         #expect(result.matchCount == 0)
     }
 
+    @Test func quickViewsStayLocalAndClassifyOnlyActionableState() {
+        let folder = ProfileFolder(name: "Клиенты")
+        let running = BrowserProfile(name: "Running", tags: ["Оплата"])
+        let recovery = BrowserProfile(name: "Recovery")
+        let checking = BrowserProfile(name: "Checking")
+        let unfiled = BrowserProfile(name: "Loose", tags: ["Личное"])
+        let archived = BrowserProfile(name: "Archive", isArchived: true)
+        let organization = ProfileOrganizationState(
+            folders: [folder],
+            assignmentsByProfileID: [running.id: folder.id]
+        )
+        let states: [UUID: BrowserProfileProcessState] = [
+            running.id: .managed,
+            recovery.id: .recoveryRequired,
+            checking.id: .checking,
+        ]
+
+        let result = WorkplaceHomeProjection.resolve(
+            profiles: [running, recovery, checking, unfiled, archived],
+            search: "",
+            processState: { states[$0] ?? .stopped },
+            organization: organization
+        )
+
+        #expect(result.summary.activeCount == 4)
+        #expect(result.summary.runningCount == 1)
+        #expect(result.summary.attentionCount == 1)
+        #expect(result.summary.unfiledCount == 3)
+        #expect(result.summary.untaggedCount == 2)
+        #expect(result.profiles(for: .running).map(\.id) == [running.id])
+        #expect(result.profiles(for: .attention).map(\.id) == [recovery.id])
+        #expect(Set(result.profiles(for: .unfiled).map(\.id)) == [recovery.id, checking.id, unfiled.id])
+        #expect(Set(result.profiles(for: .untagged).map(\.id)) == [recovery.id, checking.id])
+        #expect(!result.profiles(for: .all).contains(where: { $0.id == archived.id }))
+    }
+
+    @Test func quickViewsReadOperationalStateOncePerActiveWorkplace() {
+        let places = (0..<2_000).map { index in
+            BrowserProfile(name: "Place \(index)")
+        }
+        var processReads = 0
+        var proxyReads = 0
+
+        let result = WorkplaceHomeProjection.resolve(
+            profiles: places,
+            search: "",
+            processState: { _ in
+                processReads += 1
+                return .stopped
+            },
+            proxyHealth: { _ in
+                proxyReads += 1
+                return nil
+            }
+        )
+
+        #expect(result.summary.activeCount == places.count)
+        #expect(result.matchCount(for: .all) == places.count)
+        #expect(processReads == places.count)
+        #expect(proxyReads == places.count)
+    }
+
     @Test func openNeverStopsRunningPlaceEvenWithoutRuntime() {
         for state in [BrowserProfileProcessState.managed, .externalVerified, .externalManualOnly] {
             let result = WorkplaceOpenPresentation.resolve(state: state, archived: false, runtime: .missing)

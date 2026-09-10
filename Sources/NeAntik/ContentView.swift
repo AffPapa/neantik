@@ -393,7 +393,7 @@ struct ContentView: View {
     }
 
     @State private var showsWorkplaceHome = true
-    @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0)
+    @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0, summary: .empty)
     @State private var homeRevealID: UUID?
 
     private var workspaceBase: some View {
@@ -410,6 +410,8 @@ struct ContentView: View {
         }
         .onChange(of: store.profileListRevision) { _, _ in refreshWorkplaceHome() }
         .onChange(of: profileSearchText) { _, _ in refreshWorkplaceHome() }
+        .onChange(of: processes.processStateRevision) { _, _ in refreshWorkplaceHome() }
+        .onChange(of: proxyHealthCoordinator.healthByProfileID) { _, _ in refreshWorkplaceHome() }
         .onChange(of: workplaceNavigation.pending) { _, _ in handleWorkplaceNavigation() }
         .onChange(of: isWorkspaceModalPresented) { _, value in workplaceNavigation.isBlocked = value }
     }
@@ -456,7 +458,10 @@ struct ContentView: View {
         workplaceHomeProjection = WorkplaceHomeProjection.resolve(
             profiles: store.profiles,
             search: profileSearchText,
-            revealProfileID: homeRevealID
+            revealProfileID: homeRevealID,
+            processState: { processes.processState(for: $0) },
+            proxyHealth: { proxyHealthCoordinator.state(for: $0) },
+            organization: store.organization
         )
     }
 
@@ -1063,7 +1068,6 @@ struct ContentView: View {
                 ?? QuickProfileBootstrap.nextAvailableName(existingProfiles: store.profiles),
             canCreateAndOpen: runtimeAvailability == .ready,
             onCreateAndOpen: { profile, passwordUpdate, folderID in
-                // Persist first; a failed launch must never become a failed save.
                 let saved = try saveProfileEditorDraft(
                     profile, passwordUpdate: passwordUpdate, folderID: folderID,
                     original: request.profile, openedProcessState: request.openedProcessState
@@ -2658,6 +2662,7 @@ struct ContentView: View {
                 _ = processes.focus(profileID: profile.id)
             },
             edit: { beginEditing(profile) },
+            editTags: { beginEditing(profile, focusing: .tags) },
             editNote: { beginEditingNote(profile) },
             togglePinned: {
                 guard !isWorkspaceModalPresented else { return }
@@ -2867,9 +2872,7 @@ struct ContentView: View {
                     preparationReceipt: nil
                 )
             case .prepareProxyContext:
-                // Every browser session gets its own route observation.
-                // A manual health check is useful feedback, not authority to
-                // reuse a potentially rotating endpoint at Start time.
+                // Each launch obtains its own route observation.
                 startAutomaticLaunchPreparation(
                     profile,
                     runtime: runtime
@@ -2924,9 +2927,7 @@ struct ContentView: View {
         try BrowserLaunchStagedPreflight.validate(
             BrowserLaunchPreflightInput(
                 profile: profile,
-                // Presentation can synthesize `.checking` while proxy launch
-                // preparation is in flight. Safety must inspect the actual
-                // process state so a successful preparation can launch.
+                // Safety uses the actual state, not a transient UI state.
                 processState: processes.processState(for: profile.id),
                 runtimePreflight: BrowserRuntimePreflightValidator.validate(
                     runtime
