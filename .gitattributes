@@ -5,7 +5,8 @@
 *.py text eol=lf
 *.json text eol=lf
 *.plist text eol=lf
-*.patch text eol=lf
+# Unified diffs use a literal space for empty context lines.
+*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof
 *.icns binary
 *.png binary
 *.zip binary
