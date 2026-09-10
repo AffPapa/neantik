@@ -32,6 +32,7 @@ case "$SHARD" in
       BulkProxyRunProgressTests
       DisplayDateFormattingTests
       RussianCountTests
+      RuntimeResolutionStateTests
       UserNoticeTests
     )
     ;;
@@ -93,6 +94,7 @@ case "$SHARD" in
       ProxyTestOperationRegistryTests
       ProxyTesterTests
       ResponsiveLayoutRenderTests
+      WorkplaceMenuProjectionTests
       ProfileInspectorPolicyTests
       ProfileRowLayoutTests
       ProfileRowPresentationTests

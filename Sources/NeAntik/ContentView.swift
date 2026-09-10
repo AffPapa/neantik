@@ -27,10 +27,11 @@ struct ContentView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
     @State private var localError: String?
-    @State private var launchPreparationFailure: LaunchPreparationFailure?
+    @State private var launchIssue: LaunchPreparationFailure?
     @State private var forceStopRequest: BrowserProfile?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
+    @State private var runtimeState = RuntimeResolutionState()
     @State private var clipboardLease = ClipboardLeaseState()
     @State private var clipboardNotice: ClipboardNotice?
     @State private var clipboardClearTask: Task<Void, Never>?
@@ -141,7 +142,7 @@ struct ContentView: View {
             showingReleaseFingerprintAudit ||
             showingDeleteConfirmation ||
             folderPendingDelete != nil ||
-            launchPreparationFailure != nil
+            launchIssue != nil
     }
 
     private var workspaceCommandSet: WorkspaceCommandSet {
@@ -394,6 +395,7 @@ struct ContentView: View {
 
     @State private var showsWorkplaceHome = true
     @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0, summary: .empty)
+    @State private var homeResolver = WorkplaceHomeStateResolver()
     @State private var homeRevealID: UUID?
 
     private var workspaceBase: some View {
@@ -455,13 +457,16 @@ struct ContentView: View {
     }
 
     private func refreshWorkplaceHome() {
-        workplaceHomeProjection = WorkplaceHomeProjection.resolve(
+        workplaceHomeProjection = homeResolver.resolve(
+            profileRevision: store.profileListRevision,
+            processRevision: processes.processStateRevision,
+            healthRecords: proxyHealthCoordinator.healthByProfileID,
             profiles: store.profiles,
+            organization: store.organization,
             search: profileSearchText,
             revealProfileID: homeRevealID,
             processState: { processes.processState(for: $0) },
-            proxyHealth: { proxyHealthCoordinator.state(for: $0) },
-            organization: store.organization
+            proxyHealth: { proxyHealthCoordinator.state(for: $0) }
         )
     }
 
@@ -826,33 +831,33 @@ struct ContentView: View {
             )
         }
         .alert(
-            launchPreparationFailure?.title ?? "Не удалось запустить",
+            launchIssue?.title ?? "Не удалось запустить",
             isPresented: Binding(
-                get: { launchPreparationFailure != nil },
+                get: { launchIssue != nil },
                 set: { visible in
                     if !visible {
-                        launchPreparationFailure = nil
+                        launchIssue = nil
                     }
                 }
             ),
-            presenting: launchPreparationFailure
+            presenting: launchIssue
         ) { failure in
             Button("Повторить") {
-                launchPreparationFailure = nil
+                launchIssue = nil
                 if let profile = store.profile(withID: failure.profileID) {
                     launch(profile)
                 }
             }
             if failure.offersProxyEdit {
                 Button("Изменить прокси…") {
-                    launchPreparationFailure = nil
+                    launchIssue = nil
                     if let profile = store.profile(withID: failure.profileID) {
                         beginEditing(profile, focusing: .proxyImport)
                     }
                 }
             }
             Button("Отмена", role: .cancel) {
-                launchPreparationFailure = nil
+                launchIssue = nil
             }
         } message: { failure in
             Text(failure.message)
@@ -2872,14 +2877,13 @@ struct ContentView: View {
                     preparationReceipt: nil
                 )
             case .prepareProxyContext:
-                // Each launch obtains its own route observation.
                 startAutomaticLaunchPreparation(
                     profile,
                     runtime: runtime
                 )
             }
         } catch {
-            launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                 profileID: profile.id,
                 message: error.localizedDescription,
                 title: "Браузер не запустился",
@@ -2927,7 +2931,6 @@ struct ContentView: View {
         try BrowserLaunchStagedPreflight.validate(
             BrowserLaunchPreflightInput(
                 profile: profile,
-                // Safety uses the actual state, not a transient UI state.
                 processState: processes.processState(for: profile.id),
                 runtimePreflight: BrowserRuntimePreflightValidator.validate(
                     runtime
@@ -2945,7 +2948,7 @@ struct ContentView: View {
     ) {
         guard !launchOperations.isActive(profile.id) else { return }
         guard !isProxyTestInFlight(profileID: profile.id) else {
-            launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                 profileID: profile.id,
                 message:
                     "Прокси уже проверяется в другом окне. Дождись завершения или отмени проверку там."
@@ -2958,7 +2961,7 @@ struct ContentView: View {
             defer { launchOperations.finish(launchToken) }
             guard !Task.isCancelled, launchOperations.isCurrent(launchToken) else { return }
             guard let token = beginProxyTest(for: profile) else {
-                launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                     profileID: profile.id,
                     message:
                         "Не удалось начать подготовку прокси. Повтори запуск."
@@ -2976,14 +2979,14 @@ struct ContentView: View {
                 let message = localError ??
                     "Подготовка прокси уже выполняется в другом окне."
                 localError = nil
-                launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                     profileID: profile.id,
                     message: message
                 )
                 return
             }
             guard state.latestAttempt.outcome == .succeeded else {
-                launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                     profileID: profile.id,
                     message: NeAntikError.proxyTestFailed(
                         state.latestAttempt.outcome.userSummary
@@ -2994,7 +2997,7 @@ struct ContentView: View {
             guard let currentProfile = store.profile(withID: profile.id),
                   currentProfile.proxy == profile.proxy
             else {
-                launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                     profileID: profile.id,
                     message:
                         "Профиль изменился во время подготовки. Проверь прокси и повтори запуск."
@@ -3009,7 +3012,7 @@ struct ContentView: View {
                 proxyHealth: currentHealth
             ) == .launchImmediately
             else {
-                launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                     profileID: profile.id,
                     message:
                         "Прокси отвечает, но его часовой пояс и язык не удалось безопасно согласовать с профилем."
@@ -3027,7 +3030,7 @@ struct ContentView: View {
                         )
                 )
             } catch {
-                launchPreparationFailure = LaunchPreparationFailure(
+            launchIssue = LaunchPreparationFailure(
                     profileID: currentProfile.id,
                     message:
                         "Прокси подготовлен, но браузер не запустился. " +
@@ -3041,12 +3044,15 @@ struct ContentView: View {
     }
 
     private func resolveRuntime() async {
+        let generation = runtimeState.begin()
         isResolvingRuntime = true
         let locator = runtimeLocator
         let value = await Task.detached(priority: .userInitiated) {
             locator.preferredRuntime()
         }.value
-        guard !Task.isCancelled else {
+        guard !Task.isCancelled,
+              runtimeState.isCurrent(generation)
+        else {
             return
         }
         resolvedRuntime = value

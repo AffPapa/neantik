@@ -198,6 +198,23 @@ struct ProfileTagEditorTests {
     #expect(editor.folders == [folder])
     #expect(editor.suggestedTags == ["qa", "demo"])
   }
+
+  @MainActor
+  @Test
+  func tagFocusOpensTheAdvancedEditorSection() {
+    #expect(ProfileEditorInitialPresentation.showsAdvancedOptions(
+      initialFocus: .tags,
+      requested: false
+    ))
+    #expect(ProfileEditorInitialPresentation.showsAdvancedOptions(
+      initialFocus: .startURL,
+      requested: false
+    ))
+    #expect(!ProfileEditorInitialPresentation.showsAdvancedOptions(
+      initialFocus: .name,
+      requested: false
+    ))
+  }
 }
 
 private struct ProfileTagEditorKeychainBackend: KeychainBackend {

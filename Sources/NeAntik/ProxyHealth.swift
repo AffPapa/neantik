@@ -239,6 +239,7 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
     case unsupportedSchema
     case unsafePath
     case capacityExceeded
+    case writeFailed
 
     var errorDescription: String? {
         switch self {
@@ -250,6 +251,8 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
                 "открыть."
         case .capacityExceeded:
             "История проверок прокси достигла безопасного лимита."
+        case .writeFailed:
+            "Историю проверок прокси не удалось надёжно сохранить."
         }
     }
 }
@@ -539,11 +542,94 @@ actor ProxyHealthStore {
         guard data.count <= Self.maximumFileBytes else {
             throw ProxyHealthStoreError.capacityExceeded
         }
-        try data.write(to: fileURL, options: .atomic)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600],
-            ofItemAtPath: fileURL.path
-        )
+        try replacePrivateFile(data, at: fileURL)
+    }
+
+    nonisolated private static func replacePrivateFile(
+        _ data: Data,
+        at fileURL: URL
+    ) throws {
+        let parent = fileURL.deletingLastPathComponent()
+        let name = fileURL.lastPathComponent
+        guard !name.isEmpty, name != ".", name != ".." else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        let parentDescriptor = parent.path.withCString {
+            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard parentDescriptor >= 0 else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        defer { _ = Darwin.close(parentDescriptor) }
+
+        var parentStatus = stat()
+        guard Darwin.fstat(parentDescriptor, &parentStatus) == 0,
+              parentStatus.st_uid == geteuid(),
+              parentStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR)
+        else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        guard Darwin.fchmod(parentDescriptor, mode_t(S_IRWXU)) == 0 else {
+            throw ProxyHealthStoreError.writeFailed
+        }
+        var existingStatus = stat()
+        let existingResult = name.withCString {
+            Darwin.fstatat(parentDescriptor, $0, &existingStatus, AT_SYMLINK_NOFOLLOW)
+        }
+        guard existingResult == 0 || errno == ENOENT else {
+            throw ProxyHealthStoreError.writeFailed
+        }
+        if existingResult == 0,
+           (existingStatus.st_mode & mode_t(S_IFMT)) != mode_t(S_IFREG) {
+            throw ProxyHealthStoreError.unsafePath
+        }
+
+        let temporaryName = ".\(name).\(UUID().uuidString).tmp"
+        let descriptor = temporaryName.withCString {
+            Darwin.openat(
+                parentDescriptor,
+                $0,
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                mode_t(S_IRUSR | S_IWUSR)
+            )
+        }
+        guard descriptor >= 0 else { throw ProxyHealthStoreError.writeFailed }
+        var committed = false
+        defer {
+            _ = Darwin.close(descriptor)
+            if !committed {
+                _ = temporaryName.withCString { Darwin.unlinkat(parentDescriptor, $0, 0) }
+            }
+        }
+        var temporaryStatus = stat()
+        guard Darwin.fstat(descriptor, &temporaryStatus) == 0,
+              temporaryStatus.st_uid == geteuid(),
+              temporaryStatus.st_nlink == 1,
+              temporaryStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG)
+        else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        try data.withUnsafeBytes { buffer in
+            guard var pointer = buffer.baseAddress else { return }
+            var remaining = buffer.count
+            while remaining > 0 {
+                let written = Darwin.write(descriptor, pointer, remaining)
+                if written < 0 {
+                    if errno == EINTR { continue }
+                    throw ProxyHealthStoreError.writeFailed
+                }
+                guard written > 0 else { throw ProxyHealthStoreError.writeFailed }
+                pointer = pointer.advanced(by: written)
+                remaining -= written
+            }
+        }
+        guard Darwin.fsync(descriptor) == 0,
+              temporaryName.withCString({ Darwin.renameat(parentDescriptor, $0, parentDescriptor, name) }) == 0,
+              Darwin.fsync(parentDescriptor) == 0
+        else {
+            throw ProxyHealthStoreError.writeFailed
+        }
+        committed = true
     }
 
     nonisolated private static func entryStatus(

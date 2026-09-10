@@ -1,5 +1,18 @@
 # NeAntik changelog
 
+## Direct 0.5.4 (34) — September 10, 2026
+
+- Make Home search faster on large local workplace lists: the sorted index and
+  existing operational state are reused while you type, and quick-view counts
+  always match the visible search result.
+- Keep the menu lightweight by projecting only the eight recent workplaces it
+  needs. Resolving a newer browser runtime can no longer let an older result
+  overwrite it.
+- Open tags directly when Home requests them, including keyboard focus in the
+  advanced editor section.
+- Store coarse local proxy-health observations through a descriptor-bound,
+  owner-only write path with durable file and directory commits.
+
 ## Direct 0.5.3 (33) — September 10, 2026
 
 - Home now makes the current state visible without a second dashboard: local
