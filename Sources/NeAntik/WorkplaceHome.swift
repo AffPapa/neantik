@@ -8,7 +8,10 @@ struct WorkplaceHomeProjection: Equatable, Sendable {
     let matchCount: Int
 
     static func resolve(
-        profiles: [BrowserProfile], search: String, limit: Int = 24
+        profiles: [BrowserProfile],
+        search: String,
+        limit: Int = 24,
+        revealProfileID: UUID? = nil
     ) -> Self {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
         let matches = profiles.filter { profile in
@@ -23,10 +26,25 @@ struct WorkplaceHomeProjection: Equatable, Sendable {
             if left != right { return left > right }
             return lhs.id.uuidString < rhs.id.uuidString
         }
-        return Self(
-            profiles: Array(matches.prefix(max(0, limit))),
-            matchCount: matches.count
-        )
+        let effectiveLimit = max(0, limit)
+        var visibleProfiles = Array(matches.prefix(effectiveLimit))
+
+        // A newly created workplace must be visible immediately, even when a
+        // full Home list is headed by pinned workplaces. This is presentation
+        // only: it never changes pinning or the stored ordering.
+        if effectiveLimit > 0,
+           let revealProfileID,
+           let revealedProfile = matches.first(where: { $0.id == revealProfileID }),
+           !visibleProfiles.contains(where: { $0.id == revealProfileID })
+        {
+            if visibleProfiles.isEmpty {
+                visibleProfiles = [revealedProfile]
+            } else {
+                visibleProfiles[visibleProfiles.index(before: visibleProfiles.endIndex)] = revealedProfile
+            }
+        }
+
+        return Self(profiles: visibleProfiles, matchCount: matches.count)
     }
 }
 
@@ -76,6 +94,7 @@ struct WorkplaceOpenPresentation: Equatable, Sendable {
 
 struct WorkplaceHomeView: View {
     let projection: WorkplaceHomeProjection
+    let revealProfileID: UUID?
     let isFirstRun: Bool
     let runtimeAvailability: BrowserRuntimeAvailability
     let isCreatingProfile: Bool
@@ -141,10 +160,12 @@ struct WorkplaceHomeView: View {
                         .help("Очистить поиск")
                     }
                 }
-                ScrollView {
-                    LazyVStack(spacing: 0) {
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
                         ForEach(projection.profiles) { profile in
                             workplaceRow(profile)
+                                .id(profile.id)
                             Divider()
                         }
                         if projection.matchCount == 0 {
@@ -165,6 +186,13 @@ struct WorkplaceHomeView: View {
                             Button("Все рабочие места (\(projection.matchCount))", action: onCatalog)
                                 .padding(.top, 16)
                         }
+                        }
+                    }
+                    .onAppear {
+                        scrollToRevealedProfile(using: scrollProxy)
+                    }
+                    .onChange(of: revealProfileID) { _, _ in
+                        scrollToRevealedProfile(using: scrollProxy)
                     }
                 }
             }
@@ -178,6 +206,15 @@ struct WorkplaceHomeView: View {
     private func clearSearch() {
         search = ""
         searchFocus.wrappedValue = true
+    }
+
+    private func scrollToRevealedProfile(using proxy: ScrollViewProxy) {
+        guard let revealProfileID,
+              projection.profiles.contains(where: { $0.id == revealProfileID })
+        else { return }
+        DispatchQueue.main.async {
+            proxy.scrollTo(revealProfileID, anchor: .center)
+        }
     }
 
     private func workplaceRow(_ profile: BrowserProfile) -> some View {
