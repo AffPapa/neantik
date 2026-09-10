@@ -134,6 +134,12 @@ enum ProfileEditorAdvancedPresentation {
   }
 }
 
+enum ProfileEditorInitialPresentation {
+  static func showsAdvancedOptions(initialFocus: ProfileEditorField?, requested: Bool) -> Bool {
+    requested || [.tags, .startURL].contains(initialFocus)
+  }
+}
+
 struct ProfileEditorView: View {
   let original: BrowserProfile?
   let keychain: KeychainStore
@@ -214,7 +220,7 @@ struct ProfileEditorView: View {
     self.onCreateAndOpen = onCreateAndOpen
     self.initialFocus = initialFocus
     _showsAdvancedOptions = State(
-      initialValue: showsAdvancedOptionsInitially
+      initialValue: ProfileEditorInitialPresentation.showsAdvancedOptions(initialFocus: initialFocus, requested: showsAdvancedOptionsInitially)
     )
 
     let profile = original ?? BrowserProfile(name: initialName)
@@ -832,7 +838,9 @@ struct ProfileEditorView: View {
           tags: $editorDraft.tags,
           input: $pendingTagInput,
           suggestions: suggestedTags,
-          focusRequest: validationIssue?.field == .tags ? validationNavigationRequest : 0
+          focusRequest: validationIssue?.field == .tags
+            ? validationNavigationRequest
+            : (initialFocus == .tags ? 1 : 0)
         )
         .id(ProfileEditorField.tags)
         validationLabel(for: .tags)

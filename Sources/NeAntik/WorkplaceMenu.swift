@@ -31,7 +31,7 @@ struct WorkplaceMenu: View {
     @ObservedObject var navigation: WorkplaceNavigation
 
     private var places: [BrowserProfile] {
-        WorkplaceHomeProjection.resolve(profiles: store.profiles, search: "", limit: 8).profiles
+        WorkplaceMenuProjection.recentPlaces(profiles: store.profiles)
     }
 
     var body: some View {

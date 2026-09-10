@@ -110,61 +110,20 @@ struct WorkplaceHomeProjection: Equatable, Sendable {
         proxyHealth: (BrowserProfile) -> ProxyHealthState? = { _ in nil },
         organization: ProfileOrganizationState = .empty
     ) -> Self {
-        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        let activeProfiles = profiles.filter { !$0.isArchived }
+        let index = WorkplaceHomeIndex(
+            profiles: profiles,
+            organization: organization
+        )
         let operational = ProfileOperationalProjection.resolve(
-            profiles: activeProfiles,
+            profiles: index.orderedActiveProfiles,
             processState: processState,
             proxyHealth: proxyHealth
         )
-        let unfiledIDs = Set(activeProfiles.compactMap { profile in
-            organization.folder(withID: organization.folderID(forProfileID: profile.id)) == nil
-                ? profile.id
-                : nil
-        })
-        let untaggedIDs = Set(activeProfiles.compactMap { profile in
-            profile.tags.isEmpty ? profile.id : nil
-        })
-        let summary = WorkplaceHomeSummary(
-            activeCount: activeProfiles.count,
-            runningCount: operational.runningProfileIDs.count,
-            attentionCount: operational.attentionProfileIDs.count,
-            unfiledCount: unfiledIDs.count,
-            untaggedCount: untaggedIDs.count
-        )
-        let matches = activeProfiles.filter { profile in
-            query.isEmpty || ([profile.name, profile.note] + profile.tags).contains {
-                $0.localizedStandardContains(query)
-            }
-        }.sorted { lhs, rhs in
-            if lhs.isPinned != rhs.isPinned { return lhs.isPinned }
-            let left = lhs.lastLaunchedAt ?? lhs.createdAt
-            let right = rhs.lastLaunchedAt ?? rhs.createdAt
-            if left != right { return left > right }
-            return lhs.id.uuidString < rhs.id.uuidString
-        }
-        let matchesByQuickFilter = Dictionary(
-            uniqueKeysWithValues: WorkplaceHomeQuickFilter.allCases.map { filter in
-                (filter, matches.filter { profile in
-                    switch filter {
-                    case .all: true
-                    case .running: operational.runningProfileIDs.contains(profile.id)
-                    case .attention: operational.attentionProfileIDs.contains(profile.id)
-                    case .unfiled: unfiledIDs.contains(profile.id)
-                    case .untagged: untaggedIDs.contains(profile.id)
-                    }
-                })
-            }
-        )
-        let visibleProfiles = visibleProfiles(
-            matches: matches, limit: limit, revealProfileID: revealProfileID
-        )
-
-        return Self(
-            profiles: visibleProfiles,
-            matchCount: matches.count,
-            summary: summary,
-            matchesByQuickFilter: matchesByQuickFilter
+        return index.resolve(
+            search: search,
+            operational: operational,
+            limit: limit,
+            revealProfileID: revealProfileID
         )
     }
 
@@ -184,7 +143,7 @@ struct WorkplaceHomeProjection: Equatable, Sendable {
         (matchesByQuickFilter[quickFilter] ?? []).count
     }
 
-    private static func visibleProfiles(
+    static func visibleProfiles(
         matches: [BrowserProfile],
         limit: Int,
         revealProfileID: UUID?
@@ -396,7 +355,7 @@ struct WorkplaceHomeView: View {
         _ filter: WorkplaceHomeQuickFilter
     ) -> some View {
         let selected = filter == quickFilter
-        let count = projection.summary.count(for: filter)
+        let count = projection.matchCount(for: filter)
         return Button {
             quickFilter = filter
         } label: {

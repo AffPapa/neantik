@@ -128,6 +128,50 @@ struct WorkplaceHomeTests {
         #expect(proxyReads == places.count)
     }
 
+    @Test func quickViewCountsRespectTheCurrentSearch() {
+        let running = BrowserProfile(name: "Running")
+        let stopped = BrowserProfile(name: "Stopped")
+        let result = WorkplaceHomeProjection.resolve(
+            profiles: [running, stopped],
+            search: "Stopped",
+            processState: { $0 == running.id ? .managed : .stopped }
+        )
+
+        #expect(result.summary.runningCount == 1)
+        #expect(result.matchCount(for: .running) == 0)
+        #expect(result.profiles(for: .running).isEmpty)
+    }
+
+    @MainActor @Test func homeResolverDoesNotReinspectOrResortForSearchOnlyUpdates() {
+        let places = (0..<10_000).map { index in
+            BrowserProfile(
+                name: "Place \(index)",
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+        }
+        let resolver = WorkplaceHomeStateResolver()
+        var processReads = 0
+        var proxyReads = 0
+        let resolve: (String) -> WorkplaceHomeProjection = { search in
+            resolver.resolve(
+                profileRevision: 1,
+                processRevision: 1,
+                healthRecords: [:],
+                profiles: places,
+                organization: .empty,
+                search: search,
+                revealProfileID: nil,
+                processState: { _ in processReads += 1; return .stopped },
+                proxyHealth: { _ in proxyReads += 1; return nil }
+            )
+        }
+
+        #expect(resolve("Place 1").matchCount > 0)
+        #expect(resolve("Place 2").matchCount > 0)
+        #expect(processReads == places.count)
+        #expect(proxyReads == places.count)
+    }
+
     @Test func openNeverStopsRunningPlaceEvenWithoutRuntime() {
         for state in [BrowserProfileProcessState.managed, .externalVerified, .externalManualOnly] {
             let result = WorkplaceOpenPresentation.resolve(state: state, archived: false, runtime: .missing)

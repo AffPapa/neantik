@@ -603,7 +603,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         for condition in [
             "workspaceSheetRequest != nil", "showingReleaseFingerprintAudit",
             "showingDeleteConfirmation", "folderPendingDelete != nil",
-            "forceStopRequest != nil", "launchPreparationFailure != nil",
+            "forceStopRequest != nil", "launchIssue != nil",
             "workspaceAlert != nil",
         ]:
             self.assertIn(condition, modal_guard)
