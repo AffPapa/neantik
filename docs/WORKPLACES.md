@@ -26,7 +26,7 @@ background browsing, hosted account or external AI service.
 
 The Chromium window remains independent. A shared browser shell, embedded
 workplace switcher and browser-internal context label are not delivered by this
-candidate. Those require a separate runtime change and fresh fingerprint,
+release. Those require a separate runtime change and fresh fingerprint,
 network, signing and runtime provenance evidence. Do not advertise them as done.
 
 Automation should remove repeated setup while preserving explicit destination
@@ -35,7 +35,7 @@ session, wrong-context actions, and steps needed to recover after interruption.
 Any automatic routing proposal must be visible and reversible; unknown links
 must not silently move between identities.
 
-## Everyday-work refinement (unreleased)
+## Published 0.5.1 everyday-work refinement
 
 The same home now covers first run, ordinary work and recovery. Existing guarded
 one-click onboarding remains; the empty state links directly to the archive.
@@ -56,7 +56,11 @@ identity and proxy preflight are unchanged.
 
 ## Publication
 
-These refinements are source changes until their own verified Direct release.
-The published 0.5.0 downloads are not replaced or relabelled as this candidate.
-AffPapa updates are handled separately by the owner; no portal deployment is
-part of this audit. A separate landing must be identified before updating it.
+These refinements are published in
+[Direct 0.5.1 (31)](https://github.com/AffPapa/neantik/releases/tag/v0.5.1),
+from source commit `a7ce19238bbd03f146e95aa215707e7db19ed31d`.
+GitHub Releases is authoritative for downloadable files, SHA-256 and release
+validation. The 0.5.0 downloads remain unchanged.
+The [standalone landing](https://nevision-stats.iryadom.chatgpt.site/) provides
+product and installation information. AffPapa updates are handled separately
+by the owner; no portal deployment is part of this release.
