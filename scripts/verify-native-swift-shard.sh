@@ -22,6 +22,7 @@ case "$SHARD" in
       BrowserProcessInventoryTests
       BrowserProcessLifecyclePresentationTests
       BrowserProcessManagerTests
+      WorkplaceExitNoticeTests
       BrowserTerminationPresentationTests
       BrowserRuntimeInspectorTests
       BrowserRuntimeLaunchTrustTests

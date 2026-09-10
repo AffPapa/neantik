@@ -36,6 +36,7 @@ struct WorkplaceOpenPresentation: Equatable, Sendable {
     let title: String
     let detail: String
     let systemImage: String
+    var showsInlineDetail = true
 
     static func resolve(
         state: BrowserProfileProcessState,
@@ -66,7 +67,8 @@ struct WorkplaceOpenPresentation: Equatable, Sendable {
                     (state == .stopped && !testing ? "Открыть" : presentation.title),
                 detail: presentation.help,
                 systemImage: preparing ? "xmark" :
-                    (state == .stopped ? "arrow.up.right" : presentation.systemImage)
+                    (state == .stopped ? "arrow.up.right" : presentation.systemImage),
+                showsInlineDetail: state != .stopped || runtime == .ready
             )
         }
     }
@@ -74,6 +76,9 @@ struct WorkplaceOpenPresentation: Equatable, Sendable {
 
 struct WorkplaceHomeView: View {
     let projection: WorkplaceHomeProjection
+    let isFirstRun: Bool
+    let runtimeAvailability: BrowserRuntimeAvailability
+    let isCreatingProfile: Bool
     @Binding var search: String
     let searchFocus: FocusState<Bool>.Binding
     let presentation: (BrowserProfile) -> WorkplaceOpenPresentation
@@ -81,6 +86,12 @@ struct WorkplaceHomeView: View {
     let onInspect: (BrowserProfile) -> Void
     let onCreate: () -> Void
     let onCatalog: () -> Void
+    let profileCommands: (BrowserProfile) -> ProfileCommandSet
+    let canStop: (BrowserProfile) -> Bool
+    let onCreateAndOpen: () -> Void
+    let onRetryRuntimeCheck: () -> Void
+    let onArchive: () -> Void
+    var notice: (BrowserProfile) -> String? = { _ in nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -91,36 +102,69 @@ struct WorkplaceHomeView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Создать…", systemImage: "plus", action: onCreate)
+                if !isFirstRun {
+                    Button("Создать…", systemImage: "plus", action: onCreate)
+                }
             }
-            TextField("Найти рабочее место, тег или заметку", text: $search)
-                .textFieldStyle(.roundedBorder)
-                .focused(searchFocus)
-                .accessibilityLabel("Поиск рабочих мест")
-                .onSubmit {
-                    if projection.matchCount == 1, let profile = projection.profiles.first {
-                        onOpen(profile)
+            if isFirstRun {
+                FirstProfileOnboardingView(
+                    runtimeAvailability: runtimeAvailability,
+                    isCreatingProfile: isCreatingProfile,
+                    onCreateAndOpen: onCreateAndOpen,
+                    onRetryRuntimeCheck: onRetryRuntimeCheck,
+                    onConfigure: onCreate
+                )
+            } else {
+                HStack(spacing: 8) {
+                    TextField("Найти рабочее место, тег или заметку", text: $search)
+                        .textFieldStyle(.roundedBorder)
+                        .focused(searchFocus)
+                        .accessibilityLabel("Поиск рабочих мест")
+                        .onExitCommand {
+                            if search.isEmpty {
+                                searchFocus.wrappedValue = false
+                            } else {
+                                clearSearch()
+                            }
+                        }
+                        .onSubmit {
+                            if projection.matchCount == 1, let profile = projection.profiles.first {
+                                onOpen(profile)
+                            }
+                        }
+                    if !search.isEmpty {
+                        Button(action: clearSearch) {
+                            Image(systemName: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Очистить поиск рабочих мест")
+                        .help("Очистить поиск")
                     }
                 }
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(projection.profiles) { profile in
-                        workplaceRow(profile)
-                        Divider()
-                    }
-                    if projection.matchCount == 0 {
-                        if search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            ContentUnavailableView("Нет активных рабочих мест",
-                                systemImage: "square.grid.2x2",
-                                description: Text("Создайте рабочее место или верните его из архива в каталоге."))
-                        } else {
-                            ContentUnavailableView.search(text: search)
-                                .padding(.top, 24)
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(projection.profiles) { profile in
+                            workplaceRow(profile)
+                            Divider()
                         }
-                    }
-                    if projection.matchCount > projection.profiles.count {
-                        Button("Все рабочие места (\(projection.matchCount))", action: onCatalog)
-                            .padding(.top, 16)
+                        if projection.matchCount == 0 {
+                            if search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                ContentUnavailableView("Нет активных рабочих мест",
+                                    systemImage: "square.grid.2x2",
+                                    description: Text("Рабочие места в архиве сохраняют ваши данные. Их можно вернуть и продолжить работу."))
+                                Button("Открыть архив", systemImage: "archivebox", action: onArchive)
+                            } else {
+                                ContentUnavailableView("Ничего не найдено",
+                                    systemImage: "magnifyingglass",
+                                    description: Text("Попробуй другое название, тег или слово из заметки."))
+                                    .padding(.top, 24)
+                                Button("Очистить поиск", action: clearSearch)
+                            }
+                        }
+                        if projection.matchCount > projection.profiles.count {
+                            Button("Все рабочие места (\(projection.matchCount))", action: onCatalog)
+                                .padding(.top, 16)
+                        }
                     }
                 }
             }
@@ -131,8 +175,14 @@ struct WorkplaceHomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    private func clearSearch() {
+        search = ""
+        searchFocus.wrappedValue = true
+    }
+
     private func workplaceRow(_ profile: BrowserProfile) -> some View {
         let action = presentation(profile)
+        let commands = profileCommands(profile)
         return HStack(spacing: 14) {
             Image(systemName: ProfileAppearance.displaySymbol(profile.symbolName, profileID: profile.id))
                 .font(.title2)
@@ -147,8 +197,28 @@ struct WorkplaceHomeView: View {
                             .accessibilityLabel("Закреплено")
                     }
                 }
-                Text(profile.proxy == nil ? "Прямое подключение" : "Через прокси")
-                    .font(.caption).foregroundStyle(.secondary)
+                if let message = notice(profile), !message.isEmpty {
+                    Text(message)
+                        .font(.caption).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if action.action == .unavailable && action.showsInlineDetail {
+                    Text(action.detail)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    let note = profile.note.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !note.isEmpty {
+                        Text(note).lineLimit(1)
+                            .font(.caption).foregroundStyle(.secondary)
+                    } else if !profile.tags.isEmpty {
+                        Text(profile.tags.joined(separator: " · ")).lineLimit(1)
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if profile.proxy != nil {
+                    Label("Через прокси", systemImage: "network")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             Spacer(minLength: 8)
             Button(action.title, systemImage: action.systemImage) { onOpen(profile) }
@@ -156,11 +226,24 @@ struct WorkplaceHomeView: View {
                 .help(action.detail)
                 .accessibilityLabel("\(action.title): \(profile.name)")
                 .accessibilityHint(action.detail)
-            Button { onInspect(profile) } label: {
+            Menu {
+                Button(commands.presentation.pinTitle,
+                       systemImage: commands.presentation.pinSystemImage,
+                       action: commands.togglePinned)
+                Button("Изменить…", systemImage: "pencil", action: commands.edit)
+                    .disabled(!commands.presentation.editIsEnabled)
+                Button("Сведения", systemImage: "info.circle") { onInspect(profile) }
+                if canStop(profile) {
+                    Divider()
+                    Button("Остановить", systemImage: "stop.fill", action: commands.toggleRunning)
+                        .disabled(!commands.presentation.launchIsEnabled)
+                }
+            } label: {
                 Image(systemName: "ellipsis")
             }
-            .accessibilityLabel("Сведения и настройки: \(profile.name)")
-            .help("Сведения и настройки рабочего места")
+            .menuIndicator(.hidden)
+            .accessibilityLabel("Действия: \(profile.name)")
+            .help("Действия с рабочим местом")
         }
         .padding(.vertical, 16)
     }

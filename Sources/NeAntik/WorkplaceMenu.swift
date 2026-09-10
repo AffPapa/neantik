@@ -35,25 +35,28 @@ struct WorkplaceMenu: View {
     }
 
     var body: some View {
-        Button("Рабочие места…") { request(.home) }
-        Button("Создать рабочее место…") { request(.create) }
-        if !places.isEmpty {
-            Divider()
-            ForEach(places) { profile in
-                Button {
-                    guard !navigation.isBlocked else { return }
-                    let state = processes.processState(for: profile.id)
-                    if state == .managed || state == .externalVerified {
-                        if !processes.focus(profileID: profile.id) { request(.home) }
-                    } else {
-                        request(.open(profile.id))
+        Group {
+            Button("Рабочие места…") { request(.home) }
+            Button("Создать рабочее место…") { request(.create) }
+            if !places.isEmpty {
+                Divider()
+                ForEach(places) { profile in
+                    Button {
+                        guard !navigation.isBlocked else { return }
+                        let state = processes.processState(for: profile.id)
+                        if state == .managed || state == .externalVerified {
+                            if !processes.focus(profileID: profile.id) { request(.home) }
+                        } else {
+                            request(.open(profile.id))
+                        }
+                    } label: {
+                        Label(profile.name, systemImage: processes.processState(for: profile.id).isRunning
+                              ? "macwindow" : "arrow.up.right")
                     }
-                } label: {
-                    Label(profile.name, systemImage: processes.processState(for: profile.id).isRunning
-                          ? "macwindow" : "arrow.up.right")
                 }
             }
         }
+        .disabled(navigation.isBlocked)
     }
 
     private func request(_ destination: WorkplaceNavigation.Destination) {

@@ -36,7 +36,7 @@ struct ProfileEditorPresentationTests {
             original: nil,
             currentName: "Новый"
         )
-        #expect(create.title == "Создание профиля")
+        #expect(create.title == "Новое рабочее место")
         #expect(create.subtitle == nil)
 
         let profile = BrowserProfile(name: "TikTok · US · 01")
@@ -44,7 +44,7 @@ struct ProfileEditorPresentationTests {
             original: profile,
             currentName: profile.name
         )
-        #expect(edit.title == "Редактирование профиля")
+        #expect(edit.title == "Настройки рабочего места")
         #expect(edit.subtitle == profile.name)
         #expect(ProfileEditorAdvancedPresentation.summary.contains("Стартовая"))
     }
@@ -271,6 +271,23 @@ extension ProfileEditorPresentationTests {
             usesProxy: true, proxyKind: .http, proxyHost: "127.0.0.1",
             proxyPort: port, proxyUsername: "", proxyPassword: ""
         )
+    }
+
+    @Test func editorSessionProtectsOnlyUnsavedUserWork() {
+        let baseline = draft()
+        let session = ProfileEditorSession(profileID: UUID(), initialDraft: baseline)
+        #expect(!session.hasUnsavedChanges(draft: baseline))
+        var edited = baseline
+        edited.name = "Другое рабочее место"
+        #expect(session.hasUnsavedChanges(draft: edited))
+        edited.name = baseline.name
+        #expect(!session.hasUnsavedChanges(draft: edited))
+        #expect(session.hasUnsavedChanges(draft: baseline, pendingProxyText: "proxy.example:80"))
+        #expect(session.hasUnsavedChanges(draft: baseline, pendingTagInput: "клиент"))
+        #expect(session.hasUnsavedChanges(draft: baseline, refreshedProxyEvidence: true))
+        edited.proxyPassword = "new-secret"
+        #expect(session.hasUnsavedChanges(draft: edited))
+        #expect(session.initialDraft == baseline)
     }
 
     @Test func actualDraftEqualityRecognizesRevertedEdits() {

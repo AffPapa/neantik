@@ -22,7 +22,7 @@ struct FirstProfileBootstrapTests {
             FirstProfileBootstrap.makeProfile(existingProfiles: [])
         )
 
-        #expect(profile.name == "Основной профиль")
+        #expect(profile.name == "Моё рабочее место")
         #expect(profile.proxy == nil)
         #expect(profile.startURL == BrowserProfile.defaultStartURL)
         #expect(!profile.isArchived)
@@ -69,7 +69,7 @@ struct FirstProfileBootstrapTests {
             existingProfiles: [BrowserProfile(name: "Основной профиль")]
         )
 
-        #expect(profile.name == "Профиль 2")
+        #expect(profile.name == "Рабочее место 2")
         #expect(profile.proxy == nil)
         #expect(profile.startURL == BrowserProfile.defaultStartURL)
         #expect(profile.lastLaunchedAt == nil)
@@ -81,11 +81,29 @@ struct FirstProfileBootstrapTests {
         let profile = QuickProfileBootstrap.makeProfile(
             existingProfiles: [
                 BrowserProfile(name: "Основной профиль"),
-                BrowserProfile(name: "пРоФиЛь 3   "),
+                BrowserProfile(name: "рАбОчЕе МеСтО 3   "),
             ]
         )
 
-        #expect(profile.name == "Профиль 4")
+        #expect(profile.name == "Рабочее место 4")
+    }
+
+    @Test
+    func newNamesPreserveLegacyPlacesAndSkipArchivedCollisions() {
+        let existing = [
+            BrowserProfile(name: "Основной профиль"),
+            BrowserProfile(name: "Профиль 2"),
+            BrowserProfile(name: "  РАБОЧЕЕ МЕСТО 4  ", isArchived: true),
+        ]
+        let snapshot = existing
+        let created = QuickProfileBootstrap.makeProfile(existingProfiles: existing)
+
+        #expect(created.name == "Рабочее место 5")
+        #expect(existing == snapshot)
+        #expect(existing[0].name == "Основной профиль")
+        #expect(existing[1].name == "Профиль 2")
+        #expect(FirstProfileBootstrap.makeProfile(existingProfiles: existing) == nil)
+        #expect(!existing.contains { $0.id == created.id })
     }
 
     @Test

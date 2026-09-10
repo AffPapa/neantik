@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 enum FirstProfileBootstrap {
-    static let defaultName = "Основной профиль"
+    static let defaultName = "Моё рабочее место"
     static let routeSummary = "Прямое подключение"
 
     static func makeProfile(
@@ -21,7 +21,7 @@ enum FirstProfileBootstrap {
 /// identifier and identity for every invocation. The workspace may still put
 /// the result into the currently selected folder.
 enum QuickProfileBootstrap {
-    static let namePrefix = "Профиль"
+    static let namePrefix = "Рабочее место"
 
     static func makeProfile(
         existingProfiles: [BrowserProfile]
@@ -201,14 +201,14 @@ struct FirstProfileOnboardingView: View {
     var body: some View {
         ContentUnavailableView {
             Label(
-                "Создай первый профиль",
+                "Первое рабочее место",
                 systemImage: "person.crop.rectangle.stack"
             )
         } description: {
             VStack(spacing: 6) {
                 Text(
-                    "NeAntik создаст постоянный локальный профиль браузера " +
-                        "со стабильными настройками среды."
+                    "Ваши входы на сайты и данные сохранятся в этом рабочем месте. " +
+                        "Можно сразу открыть браузер — настройки не обязательны."
                 )
                 Label(
                     "Сеть: \(FirstProfileBootstrap.routeSummary)",
@@ -305,12 +305,12 @@ struct FirstProfileOnboardingView: View {
     }
 
     private var configureButton: some View {
-        Button("Настроить…", action: onConfigure)
+        Button("Выбрать название и прокси…", action: onConfigure)
             .frame(minHeight: 28)
             .fixedSize(horizontal: true, vertical: false)
             .disabled(isCreatingProfile)
             .accessibilityHint(
-                "Открывает полную настройку профиля и прокси"
+                "Открывает название рабочего места и необязательное подключение через прокси"
             )
     }
 

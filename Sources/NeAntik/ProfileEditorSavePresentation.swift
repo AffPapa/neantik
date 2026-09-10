@@ -7,10 +7,28 @@ struct ProfileEditorHeadingPresentation: Equatable, Sendable {
 
     static func resolve(original: BrowserProfile?, currentName: String) -> Self {
         guard original != nil else {
-            return Self(title: "Создание профиля", subtitle: nil)
+            return Self(title: "Новое рабочее место", subtitle: nil)
         }
         let name = currentName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return Self(title: "Редактирование профиля", subtitle: name.isEmpty ? nil : name)
+        return Self(title: "Настройки рабочего места", subtitle: name.isEmpty ? nil : name)
+    }
+}
+
+/// Stable for the lifetime of one presented editor. SwiftUI may reconstruct the
+/// view while preserving its editable State; the baseline and profile identity
+/// must survive those same reconstructions, including for an unsaved new place.
+struct ProfileEditorSession {
+    let profileID: UUID
+    let initialDraft: ProfileEditorDraft
+
+    func hasUnsavedChanges(
+        draft: ProfileEditorDraft,
+        refreshedProxyEvidence: Bool = false,
+        pendingProxyText: String = "",
+        pendingTagInput: String = ""
+    ) -> Bool {
+        draft != initialDraft || refreshedProxyEvidence ||
+            !pendingProxyText.isEmpty || !pendingTagInput.isEmpty
     }
 }
 

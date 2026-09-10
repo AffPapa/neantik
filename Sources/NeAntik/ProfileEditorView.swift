@@ -149,10 +149,10 @@ struct ProfileEditorView: View {
   private let onCreateAndOpen: ((BrowserProfile, ProxyPasswordUpdate, UUID?) throws -> Void)?
   private let originalProxyPassword: String?
   private let proxyPasswordReadFailed: Bool
-  private let draftProfileID: UUID
+  @State private var editorSession: ProfileEditorSession
+  private var draftProfileID: UUID { editorSession.profileID }
   private let initialFocus: ProfileEditorField?
   private let appliesOnNextLaunch: Bool
-  private let initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
   @State private var editorDraft: ProfileEditorDraft
@@ -218,7 +218,6 @@ struct ProfileEditorView: View {
     )
 
     let profile = original ?? BrowserProfile(name: initialName)
-    draftProfileID = profile.id
     _showsNoteEditor = State(
       initialValue: initialFocus == .note
     )
@@ -256,7 +255,7 @@ struct ProfileEditorView: View {
     _detectedProxyContextEvidence = State(
       initialValue: profile.identity.proxyContextEvidence
     )
-    initialDraft = ProfileEditorDraft(
+    let initialDraft = ProfileEditorDraft(
       name: profile.name, colorHex: profile.colorHex,
       symbolName: profile.displaySymbolName, tags: profile.tags,
       note: profile.note,
@@ -269,6 +268,7 @@ struct ProfileEditorView: View {
       proxyUsername: profile.proxy?.username ?? "",
       proxyPassword: originalProxyPassword ?? ""
     )
+    _editorSession = State(initialValue: ProfileEditorSession(profileID: profile.id, initialDraft: initialDraft))
     _editorDraft = State(initialValue: initialDraft)
   }
 
@@ -329,9 +329,9 @@ struct ProfileEditorView: View {
             .accessibilityElement(children: .combine)
           }
         }
-        Section("Профиль") {
+        Section("Рабочее место") {
           TextField("Название", text: $editorDraft.name)
-            .accessibilityLabel("Название профиля")
+            .accessibilityLabel("Название рабочего места")
             .focused($focusedField, equals: .name)
             .id(ProfileEditorField.name)
             .onSubmit {
@@ -673,7 +673,7 @@ struct ProfileEditorView: View {
         dismiss()
       }
     } message: {
-      Text("Несохранённые изменения профиля будут потеряны.")
+      Text("Несохранённые изменения рабочего места будут потеряны.")
     }
     .onAppear {
       let target = initialFocus ?? (original == nil ? .name : nil)
@@ -1437,7 +1437,7 @@ struct ProfileEditorView: View {
   }
 
   private var hasUnsavedChanges: Bool {
-    editorDraft != initialDraft || refreshedProxyEvidence || !proxyImportText.isEmpty || !pendingTagInput.isEmpty
+    editorSession.hasUnsavedChanges(draft: editorDraft, refreshedProxyEvidence: refreshedProxyEvidence, pendingProxyText: proxyImportText, pendingTagInput: pendingTagInput)
   }
 
   private var resolvedTagDraft: ProfileTagEditorInputResult {
