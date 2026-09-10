@@ -1,5 +1,18 @@
 # NeAntik changelog
 
+## Direct 0.5.3 (33) — September 10, 2026
+
+- Home now makes the current state visible without a second dashboard: local
+  quick views show running workplaces, items requiring attention, workplaces
+  without folders and workplaces without tags. Counts never inspect browser
+  data, credentials or proxy endpoints.
+- Running means a confirmed browser process only. Attention reuses existing
+  recovery and credential-free route-health state; opening a quick view never
+  starts a browser, checks a proxy or changes a profile.
+- The Home row menu now offers a bounded folder picker, opens tags directly in
+  the existing validated editor and can create a similar workplace. It reuses
+  the current local store, undo-aware folder move and fresh-identity copy flow.
+
 ## Direct 0.5.2 (32) — September 10, 2026
 
 - A newly created workplace now appears immediately on the Home screen even
