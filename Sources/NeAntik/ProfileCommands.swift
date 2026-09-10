@@ -224,7 +224,7 @@ struct WorkspaceCommandMenu: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("Новый профиль…", action: resolved.createProfile)
+            Button("Новое рабочее место…", action: resolved.createProfile)
                 .keyboardShortcut(
                     NeAntikShortcut.newProfile.keyEquivalent,
                     modifiers: NeAntikShortcut.newProfile.modifiers
@@ -240,7 +240,7 @@ struct WorkspaceCommandMenu: Commands {
         }
 
         CommandGroup(after: .textEditing) {
-            Button("Найти профиль", action: resolved.focusProfileSearch)
+            Button("Найти рабочее место", action: resolved.focusProfileSearch)
                 .keyboardShortcut(
                     NeAntikShortcut.findProfiles.keyEquivalent,
                     modifiers: NeAntikShortcut.findProfiles.modifiers

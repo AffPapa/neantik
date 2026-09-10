@@ -18,7 +18,7 @@ Do not edit generated values by hand.
 - Source contract binary binding: `pending-new-build`
 - Source contract candidate: `152.0.7977.82`
 - Owned patchset status: `release-ready`
-- Ported patch groups: `11`
+- Ported patch groups: `12`
 
 The distributed application must also contain Chromium-generated third-party
 notices and its generated SPDX SBOM. This summary does not replace either
@@ -59,7 +59,7 @@ historical upstream implementation used to develop and validate this work.
 
 ## NeAntik owned patchset
 
-The release-required Chromium changes are the 11 ported groups
+The release-required Chromium changes are the 12 ported groups
 declared in `runtime/nevision-patches/series.json`. The release verifier binds
 the packaged manifest and license files to the checked-in copies and separately
 verifies the final source-built runtime, generated notices, and SPDX SBOM.

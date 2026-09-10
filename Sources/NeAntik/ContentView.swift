@@ -397,7 +397,7 @@ struct ContentView: View {
 
     private var workspaceBase: some View {
         Group {
-            if showsWorkplaceHome && !store.profiles.isEmpty {
+            if showsWorkplaceHome {
                 workplaceHome
             } else {
                 workspaceNavigation
@@ -414,22 +414,37 @@ struct ContentView: View {
     }
 
     private var workplaceHome: some View {
-        WorkplaceHomeView(
+        VStack(spacing: 0) {
+            if !store.profiles.isEmpty { runtimeReadinessBanner }
+            WorkplaceHomeView(
             projection: workplaceHomeProjection,
+            isFirstRun: store.profiles.isEmpty,
+            runtimeAvailability: runtimeAvailability,
+            isCreatingProfile: isCreatingProfileQuickly,
             search: $profileSearchText,
             searchFocus: $profileSearchIsFocused,
             presentation: workplaceOpenPresentation,
             onOpen: openWorkplace,
             onInspect: { profile in
+                guard !isWorkspaceModalPresented else { return }
                 showsWorkplaceHome = false
                 revealSavedProfile(profile)
                 showsProfileInspector = true
             },
             onCreate: beginCreatingProfile,
-            onCatalog: showWorkplaceCatalog
-        )
+            onCatalog: showWorkplaceCatalog,
+            profileCommands: { profileCommandSet(for: $0) },
+            canStop: { [.managed, .externalVerified].contains(presentedProcessState(for: $0)) },
+            onCreateAndOpen: createAndOpenProfileQuickly,
+            onRetryRuntimeCheck: { Task { await resolveRuntime() } },
+            onArchive: showWorkplaceArchive,
+            notice: { processes.workplaceExitNotices[$0.id]?.message }
+            )
+        }
         .toolbar {
             Button("Каталог", systemImage: "sidebar.left", action: showWorkplaceCatalog)
+            Button("Помощь", systemImage: "questionmark.circle", action: presentWorkspaceReadiness)
+                .help("Если что-то не работает")
         }
         .focusedSceneValue(\.neAntikProfileCommands, ProfileCommandSet.unavailable)
         .focusedSceneValue(\.neAntikWorkspaceCommands, workspaceCommandSet)
@@ -448,6 +463,13 @@ struct ContentView: View {
         profileOperationalFilter = .all
         applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
         normalizeSelection()
+    }
+
+    private func showWorkplaceArchive() {
+        guard !isWorkspaceModalPresented else { return }
+        showsWorkplaceHome = false
+        resetProfileFilters()
+        applyWorkspaceQuery(.default.selecting(scope: .archived))
     }
 
     private func showWorkplaceHome() {
@@ -2209,37 +2231,11 @@ struct ContentView: View {
     @ViewBuilder
     private var runtimeReadinessBanner: some View {
         if runtimeAvailability != .ready {
-            HStack(alignment: .top, spacing: 8) {
-                if isResolvingRuntime {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Image(systemName: runtimeStatusIcon)
-                        .foregroundStyle(runtimeStatusColor)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(runtimeReadinessTitle)
-                    .font(.subheadline.weight(.medium))
-                    Text(runtimeReadinessMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-                if !isResolvingRuntime {
-                    Button("Подробнее") {
-                        presentWorkspaceReadiness()
-                    }
-                    .controlSize(.small)
-                    .help("Открыть центр готовности и повторить проверку")
-                    .accessibilityLabel(
-                        "Открыть центр готовности NeAntik"
-                    )
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(Color.orange.opacity(0.10))
-            .accessibilityElement(children: .contain)
+            RuntimeReadinessBanner(
+                isResolving: isResolvingRuntime, statusIcon: runtimeStatusIcon,
+                statusColor: runtimeStatusColor, title: runtimeReadinessTitle,
+                message: runtimeReadinessMessage, onDetails: presentWorkspaceReadiness
+            )
         }
     }
 
@@ -2612,6 +2608,7 @@ struct ContentView: View {
         for profile: BrowserProfile,
         processState requestedProcessState: BrowserProfileProcessState? = nil
     ) -> ProfileCommandSet {
+        guard !isWorkspaceModalPresented else { return .unavailable }
         let processState = requestedProcessState ?? presentedProcessState(
             for: profile
         )
@@ -2637,6 +2634,7 @@ struct ContentView: View {
             folderOptions: folderProjection.options,
             hasMoreFolderOptions: folderProjection.hasMore,
             toggleRunning: {
+                guard !isWorkspaceModalPresented else { return }
                 if launchOperations.isActive(profile.id) {
                     cancelLaunchPreparation(profileID: profile.id)
                 } else if processState.isRunning {
@@ -2650,7 +2648,10 @@ struct ContentView: View {
             },
             edit: { beginEditing(profile) },
             editNote: { beginEditingNote(profile) },
-            togglePinned: { togglePinned(profile) },
+            togglePinned: {
+                guard !isWorkspaceModalPresented else { return }
+                togglePinned(profile)
+            },
             duplicate: { beginDuplicating(profile) },
             moveToFolder: { moveProfile(profile, toFolderID: $0) },
             chooseFolder: {

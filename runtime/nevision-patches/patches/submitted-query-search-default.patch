@@ -1,0 +1,188 @@
+--- a/components/search_engines/template_url_prepopulate_data_resolver.cc
++++ b/components/search_engines/template_url_prepopulate_data_resolver.cc
+@@ -22,6 +22,22 @@
+ 
+ namespace TemplateURLPrepopulateData {
+ 
++namespace {
++constexpr int kNeAntikSearchId = 1001;
++
++std::unique_ptr<TemplateURLData> NeAntikSearchFallback() {
++  auto data = std::make_unique<TemplateURLData>();
++  data->SetShortName(u"DuckDuckGo");
++  data->SetKeyword(u"ddg");
++  data->SetURL("https://duckduckgo.com/?q={searchTerms}");
++  data->prepopulate_id = kNeAntikSearchId;
++  data->sync_guid = "60eca939-e2d2-48df-96cf-a80cb6001001";
++  data->safe_for_autoreplace = false;
++  data->input_encodings = {"UTF-8"};
++  return data;
++}
++}  // namespace
++
+ Resolver::Resolver(
+     PrefService& prefs,
+     regional_capabilities::RegionalCapabilitiesService& regional_capabilities)
+@@ -29,13 +45,18 @@
+ 
+ std::vector<std::unique_ptr<TemplateURLData>> Resolver::GetPrepopulatedEngines()
+     const {
+-  return TemplateURLPrepopulateData::GetPrepopulatedEngines(
++  auto engines = TemplateURLPrepopulateData::GetPrepopulatedEngines(
+       profile_prefs_.get(),
+       regional_capabilities_->GetRegionalPrepopulatedEngines());
++  engines.push_back(NeAntikSearchFallback());
++  return engines;
+ }
+ 
+ std::unique_ptr<TemplateURLData> Resolver::GetPrepopulatedEngine(
+     int prepopulated_id) const {
++  if (prepopulated_id == kNeAntikSearchId) {
++    return NeAntikSearchFallback();
++  }
+   return TemplateURLPrepopulateData::GetPrepopulatedEngine(
+       profile_prefs_.get(),
+       regional_capabilities_->GetRegionalPrepopulatedEngines(),
+@@ -44,6 +65,9 @@
+ 
+ std::unique_ptr<TemplateURLData> Resolver::GetEngineFromFullList(
+     int prepopulated_id) const {
++  if (prepopulated_id == kNeAntikSearchId) {
++    return NeAntikSearchFallback();
++  }
+   return TemplateURLPrepopulateData::GetPrepopulatedEngineFromFullList(
+       profile_prefs_.get(),
+       regional_capabilities_->GetRegionalPrepopulatedEngines(),
+@@ -51,9 +75,10 @@
+ }
+ 
+ std::unique_ptr<TemplateURLData> Resolver::GetFallbackSearch() const {
+-  return TemplateURLPrepopulateData::GetPrepopulatedFallbackSearch(
+-      profile_prefs_.get(),
+-      regional_capabilities_->GetRegionalPrepopulatedEngines());
++  // Keep user, extension and policy choices above this fallback. A distinct
++  // distribution ID preserves the existing catalog and lets TemplateURLService
++  // find this entry for settings, database reconciliation and reset-to-default.
++  return NeAntikSearchFallback();
+ }
+ 
+ std::optional<BuiltinKeywordsMetadata>
+--- a/components/search_engines/default_search_manager_unittest.cc
++++ b/components/search_engines/default_search_manager_unittest.cc
+@@ -951,3 +951,59 @@
+               base::Time());
+ }
+ #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
++
++// NeAntik's fallback must work without sending keystrokes to a provider.
++TEST_F(DefaultSearchManagerTest, NeAntikSubmittedQueryFallback) {
++  auto manager = create_manager();
++  DefaultSearchManager::Source source;
++  const auto* engine = manager->GetDefaultSearchEngine(&source);
++  ASSERT_TRUE(engine);
++  EXPECT_EQ(DefaultSearchManager::FROM_FALLBACK, source);
++  EXPECT_EQ(u"DuckDuckGo", engine->short_name());
++  EXPECT_EQ("https://duckduckgo.com/?q={searchTerms}", engine->url());
++  EXPECT_EQ(1001, engine->prepopulate_id);
++  auto definitions = prepopulate_data_resolver().GetPrepopulatedEngines();
++  size_t matches = 0;
++  for (const auto& definition : definitions) {
++    if (definition->prepopulate_id == engine->prepopulate_id) {
++      ++matches;
++      EXPECT_EQ(engine->url(), definition->url());
++      EXPECT_EQ(engine->sync_guid, definition->sync_guid);
++    }
++  }
++  EXPECT_EQ(1u, matches);
++  auto resolved = prepopulate_data_resolver().GetEngineFromFullList(1001);
++  ASSERT_TRUE(resolved);
++  EXPECT_EQ(engine->url(), resolved->url());
++  EXPECT_TRUE(resolved->suggestions_url.empty());
++  EXPECT_FALSE(engine->safe_for_autoreplace);
++  EXPECT_TRUE(engine->suggestions_url.empty());
++  EXPECT_TRUE(engine->image_url.empty());
++  EXPECT_TRUE(engine->new_tab_url.empty());
++  EXPECT_TRUE(engine->favicon_url.is_empty());
++  EXPECT_FALSE(engine->preconnect_to_search_url);
++  EXPECT_FALSE(engine->prefetch_likely_navigations);
++}
++
++TEST_F(DefaultSearchManagerTest, NeAntikPreservesExplicitSearchChoices) {
++  auto manager = create_manager();
++  auto custom = GenerateDummyTemplateURLData("chosen");
++  manager->SetUserSelectedDefaultSearchEngine(*custom);
++  DefaultSearchManager::Source source;
++  const auto* engine = manager->GetDefaultSearchEngine(&source);
++  ASSERT_TRUE(engine);
++  EXPECT_EQ(DefaultSearchManager::FROM_USER, source);
++  EXPECT_EQ(custom->url(), engine->url());
++
++  // Even an explicit opt-out of search remains the user's choice.
++  auto no_search = prepopulate_data_resolver().GetEngineFromFullList(1);
++  ASSERT_TRUE(no_search);
++  ASSERT_EQ(u"No Search", no_search->short_name());
++  manager->SetUserSelectedDefaultSearchEngine(*no_search);
++  auto reloaded = create_manager();
++  engine = reloaded->GetDefaultSearchEngine(&source);
++  ASSERT_TRUE(engine);
++  EXPECT_EQ(DefaultSearchManager::FROM_USER, source);
++  EXPECT_EQ(u"No Search", engine->short_name());
++  EXPECT_EQ("http://{searchTerms}", engine->url());
++}
+--- a/chrome/browser/history/top_sites_factory.cc
++++ b/chrome/browser/history/top_sites_factory.cc
+@@ -50,14 +50,9 @@
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+ // Android does not use prepopulated pages.
+-constexpr auto kRawPrepopulatedPages = std::to_array<RawPrepopulatedPage>({
+-    {
+-        IDS_WEBSTORE_URL,
+-        IDS_EXTENSION_WEB_STORE_TITLE_SHORT,
+-        IDR_WEBSTORE_ICON_32,
+-        SkColorSetRGB(63, 132, 197),
+-    },
+-});
++// NeAntik does not seed a link to the disabled upstream extension store.
++// User history and custom shortcuts remain managed by the normal TopSites flow.
++constexpr std::array<RawPrepopulatedPage, 0> kRawPrepopulatedPages = {};
+ #endif
+ 
+ void InitializePrepopulatedPageList(
+--- a/chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc
++++ b/chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc
+@@ -129,6 +129,15 @@
+   std::unique_ptr<ntp_tiles::MostVisitedSites> most_visited_sites_;
+ };
+ 
++// A fresh NeAntik workplace must not advertise a disabled store endpoint.
++IN_PROC_BROWSER_TEST_F(NTPTilesTest, NeAntikDoesNotSeedWebStore) {
++  MostVisitedSitesWaiter waiter;
++  most_visited_sites_->AddMostVisitedURLsObserver(&waiter, 8);
++  NTPTilesVector tiles = waiter.WaitForTiles();
++  EXPECT_THAT(tiles, Not(Contains(
++      MatchesTile("Web Store", kWebstoreUrl, TileSource::TOP_SITES))));
++}
++
+ // Tests that after navigating to a URL, ntp tiles will include the URL.
+ IN_PROC_BROWSER_TEST_F(NTPTilesTest, LoadURL) {
+   ASSERT_TRUE(embedded_test_server()->Start());
+@@ -212,8 +221,7 @@
+   EXPECT_THAT(
+       tiles,
+       UnorderedElementsAre(
+-          MatchesTile("OK", page_url.spec().c_str(), TileSource::TOP_SITES),
+-          MatchesTile("Web Store", kWebstoreUrl, TileSource::TOP_SITES)));
++          MatchesTile("OK", page_url.spec().c_str(), TileSource::TOP_SITES)));
+ }
+ 
+ // Tests that after navigating to a URL that is blocked for the supervised user,
+@@ -238,8 +246,6 @@
+   NTPTilesVector tiles = waiter.WaitForTiles();
+   EXPECT_THAT(tiles, UnorderedElementsAre(
+                          MatchesTile("simple page", page_url.spec().c_str(),
+-                                     TileSource::TOP_SITES),
+-                         MatchesTile("Web Store", kWebstoreUrl,
+                                      TileSource::TOP_SITES)));
+ }
+ 

@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Keep the same workplace home from first launch onward, with one-click creation,
+  visible runtime recovery, a direct archive entry and clearable search.
+- Offer pin, edit, details and ordinary stop from a compact workplace menu;
+  show notes/tags for recognition and keep advanced tools in the catalog.
+- Keep a stable editor draft identity and baseline. Cancel closes an untouched
+  form immediately; actual unsaved changes still require confirmation.
+- Restore the previous tabs when reopening an existing workplace with the default
+  blank startup page. Explicit startup pages and audit launches remain explicit.
+- Explain unexpected browser exits on the affected workplace. Ordinary stops and
+  user-requested force stops do not produce crash warnings.
+- Disable menu actions during modal work and use workplace terminology in the
+  main creation, editing and search commands. Add no new user settings.
+- Prepare a runtime fallback for submitted HTTPS DuckDuckGo queries without
+  suggestions/prefetch, preserving explicit user search choices, and remove the
+  unreachable distribution-provided Web Store shortcut. These runtime changes
+  require a rebuilt, verified runtime before a downloadable release.
+
 ## Direct 0.5.0 (30) — September 9, 2026 (candidate)
 
 - Introduce a workplace home with pinned/recent sessions, local name/tag/note

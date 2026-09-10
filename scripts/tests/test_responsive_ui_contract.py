@@ -552,7 +552,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("onConfigure: beginCreatingProfile", empty_state)
 
         self.assertIn('"Создать и открыть"', onboarding)
-        self.assertIn('Button("Настроить…"', onboarding)
+        self.assertIn('Button("Выбрать название и прокси…"', onboarding)
         self.assertIn("FirstProfileBootstrap.routeSummary", onboarding)
         self.assertIn("ViewThatFits(in: .horizontal)", onboarding)
         self.assertIn(".buttonStyle(.borderedProminent)", onboarding)
@@ -579,7 +579,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         self.assertIn('primaryTitle: "Повторить проверку"', onboarding)
         self.assertIn("terminalAccessibilityAnnouncement", onboarding)
-        self.assertIn("постоянный локальный профиль браузера", onboarding)
+        self.assertIn("Ваши входы на сайты и данные сохранятся в этом рабочем месте.", onboarding)
 
     def test_ordinary_sheet_route_preserves_open_modal_and_readiness_refresh(self):
         text = CONTENT.read_text(encoding="utf-8")
@@ -670,8 +670,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
         heading = (ROOT / "Sources/NeAntik/ProfileEditorSavePresentation.swift").read_text()
-        self.assertIn('title: "Создание профиля"', heading)
-        self.assertIn('title: "Редактирование профиля"', heading)
+        self.assertIn('title: "Новое рабочее место"', heading)
+        self.assertIn('title: "Настройки рабочего места"', heading)
         self.assertIn("ProfileEditorHeadingPresentation.resolve(", text)
         self.assertIn(".accessibilityHeading(.h1)", text)
         self.assertIn(
@@ -697,7 +697,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         editor = EDITOR.read_text(encoding="utf-8")
-        profile_start = editor.index('Section("Профиль")')
+        profile_start = editor.index('Section("Рабочее место")')
         network_start = editor.index('Section("Сеть")', profile_start)
         profile = editor[profile_start:network_start]
         note_editor_start = editor.index("private var noteEditor")

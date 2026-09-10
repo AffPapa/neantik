@@ -89,16 +89,16 @@ enum NeAntikShortcut: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .newProfile: "Новый профиль"
+        case .newProfile: "Новое рабочее место"
         case .newFolder: "Новая папка"
-        case .findProfiles: "Найти профиль"
+        case .findProfiles: "Найти рабочее место"
         case .workplaceHome: "Рабочие места"
         case .workplaceCatalog: "Полный каталог"
         case .settings: "Открыть настройки"
         case .shortcutReference: "Показать сочетания клавиш"
         case .toggleSelectedProfile: "Запустить или остановить"
         case .focusSelectedProfile: "Показать окно браузера"
-        case .editSelectedProfile: "Изменить профиль"
+        case .editSelectedProfile: "Настройки рабочего места"
         case .editSelectedNote: "Изменить заметку"
         case .toggleInspector: "Показать или скрыть сведения"
         case .duplicateProfile: "Создать похожий"

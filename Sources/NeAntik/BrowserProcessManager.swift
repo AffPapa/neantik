@@ -94,11 +94,16 @@ enum BrowserLaunchBuilder {
             runtimeCapabilities: runtimeCapabilities,
             now: now
         )
+        // A returning workplace resumes its own saved tabs. Explicit start
+        // pages and reserved audit URLs retain their deterministic launch.
+        let restoresWorkplace = purpose == .normal && startURLOverride == nil &&
+            profile.lastLaunchedAt != nil &&
+            profile.startURL.trimmingCharacters(in: .whitespacesAndNewlines) == BrowserProfile.defaultStartURL
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
             "--no-default-browser-check",
-            "--new-window"
+            restoresWorkplace ? "--restore-last-session" : "--new-window"
         ]
         let disabledFeatures = policy.disabledFeatures
 
@@ -161,7 +166,7 @@ enum BrowserLaunchBuilder {
         )
         let startURL =
             startURLOverride ?? normalizedStartURL(profile.startURL)
-        arguments.append(startURL.absoluteString)
+        if !restoresWorkplace { arguments.append(startURL.absoluteString) }
         return arguments
     }
 
@@ -333,6 +338,8 @@ final class BrowserProcessManager: ObservableObject {
     @Published private(set) var stopPhases: [UUID: BrowserStopPhase] = [:]
     @Published private(set) var recoveredInterruptedManagerSession = false
     @Published private(set) var lastBrowserExit: BrowserExitEvent?
+    /// Ephemeral row feedback, never serialized into lifecycle diagnostics.
+    @Published private(set) var workplaceExitNotices: [UUID: WorkplaceExitNotice] = [:]
 
     private let paths: AppPaths
     private let processIdentityInspector:
@@ -1579,6 +1586,7 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken,
                 at: lockURL
             )
+            workplaceExitNotices.removeValue(forKey: profile.id)
         } catch {
             if process.isRunning {
                 managed[profile.id]?.startupFailed = true
@@ -1807,6 +1815,10 @@ final class BrowserProcessManager: ObservableObject {
                 terminationStatus: process.terminationStatus
             )
             recordBrowserExit(classification, at: now())
+            workplaceExitNotices[profileID] = WorkplaceExitNotice.resolve(
+                classification: classification,
+                wasForceStopped: wasForced
+            )
             try? appendDiagnostic(
                 "browser_exit classification=\(classification.rawValue)",
                 to: paths.logFile(for: profileID)

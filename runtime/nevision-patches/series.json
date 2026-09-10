@@ -100,8 +100,8 @@
         "profile A remains stable across repeated OfflineAudio renders",
         "profile B receives a different deterministic bounded sparse-sample perturbation"
       ],
-            "postimageSHA256": {
-                "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "23e625d70a3272cd32379295217a33ced42e849fd045535c4897db1807f919c9"
+      "postimageSHA256": {
+        "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "23e625d70a3272cd32379295217a33ced42e849fd045535c4897db1807f919c9"
       }
     },
     {
@@ -143,9 +143,9 @@
         "WebRTC candidate data is hashed rather than persisted raw",
         "proxy failover remains disabled by NeAntik launch configuration"
       ],
-            "postimageSHA256": {
-                "third_party/blink/renderer/core/BUILD.gn": "2733efa54b4fe66f33571b1277e139273831a728cb3f119ac17b4385396e95d7",
-                "third_party/blink/renderer/core/core_initializer.cc": "a7a4a6ec5d2596829c4a9230eb1c269c3f1fe2723342d31e422df89d5ed5388d"
+      "postimageSHA256": {
+        "third_party/blink/renderer/core/BUILD.gn": "2733efa54b4fe66f33571b1277e139273831a728cb3f119ac17b4385396e95d7",
+        "third_party/blink/renderer/core/core_initializer.cc": "a7a4a6ec5d2596829c4a9230eb1c269c3f1fe2723342d31e422df89d5ed5388d"
       }
     },
     {
@@ -165,8 +165,8 @@
         "profile seed never randomizes browser version",
         "security baseline verifier remains the source of public release eligibility"
       ],
-            "postimageSHA256": {
-                "components/version_info/version_info_with_user_agent.h": "cb28b86d2e228e3c3c97ade6613573853ccc8815f4483c239b66d20346ab10d1"
+      "postimageSHA256": {
+        "components/version_info/version_info_with_user_agent.h": "cb28b86d2e228e3c3c97ade6613573853ccc8815f4483c239b66d20346ab10d1"
       }
     },
     {
@@ -212,9 +212,9 @@
         "source lock records Chromium base, mac packaging base, patchset hash, notices, and binary hashes",
         "ARM64 Metal build and normal GUI A -> B -> A evidence are regenerated after Chromium 152 port"
       ],
-            "postimageSHA256": {
-                "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
-                "chrome/app/app-Info.plist": "1fab7408680ca4c31a1898e74d701253606fb4cea075e717d924056b4658101a"
+      "postimageSHA256": {
+        "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
+        "chrome/app/app-Info.plist": "1fab7408680ca4c31a1898e74d701253606fb4cea075e717d924056b4658101a"
       }
     },
     {
@@ -286,6 +286,37 @@
       },
       "postimageSHA256": {
         "components/ungoogled/nevision_fingerprint.cc": "039b44e03f8230b98ee584c8d089fd2425e5789fbfc0a955249f0785c9d2cf1a"
+      }
+    },
+    {
+      "id": "submitted-query-search-default",
+      "title": "Submitted-query search fallback without remote suggestions",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "runtime/nevision-patches/README.md",
+        "scripts/tests/test_runtime_search_default_patch.py"
+      ],
+      "patchFile": "patches/submitted-query-search-default.patch",
+      "patchSHA256": "220aebf46217a26283b8082cda68147f7e350f2192ba66183439570365839e7c",
+      "requiredBehavior": [
+        "new workspaces without a selected engine use HTTPS DuckDuckGo search",
+        "fallback has no suggestions, image, remote new-tab, favicon, preconnect or navigation-prefetch endpoints",
+        "explicit user-selected, extension and policy search choices retain priority; no profile preferences migration",
+        "fresh new tabs do not seed the disabled upstream extension-store URL",
+        "existing user history and custom shortcuts are not deleted or migrated"
+      ],
+      "incrementalPreimageSHA256": {
+        "components/search_engines/template_url_prepopulate_data_resolver.cc": "96bf52f1ad47d6bd091ebd766929f238c161a8fe8151f3809c03b906ba54f113",
+        "components/search_engines/default_search_manager_unittest.cc": "a410c79e09cfb40a4503a57515e96e47f1fb2b229abad1e821be3fa864ee9259",
+        "chrome/browser/history/top_sites_factory.cc": "706d6dd7cb70c92b7cef4706e95c11a557e28e3f1899e0cedc430deef7cc73b1",
+        "chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc": "5405966fcbe97191ac6014411bb175f1ab1b4c851831000886e1012bda48c9ab"
+      },
+      "postimageSHA256": {
+        "components/search_engines/template_url_prepopulate_data_resolver.cc": "b211dba1611611b8c59d3b08bc08fed44da8167643baf9ab5673e210ae1f9e0f",
+        "components/search_engines/default_search_manager_unittest.cc": "292a06cc032458854b64d52da986449b6d673cad316949dc88e858b3039ad298",
+        "chrome/browser/history/top_sites_factory.cc": "40d1d2aca0365c191af919b1f7715cb8c9f3e3f0b73c2821b1b3a07999c090e1",
+        "chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc": "2d05ff93fc14975fa0d8338cc945091f4a648607b3b32f830a31df87d1befd4a"
       }
     }
   ]

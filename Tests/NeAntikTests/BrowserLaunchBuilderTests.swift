@@ -26,6 +26,34 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 
 struct BrowserLaunchBuilderTests {
     @Test
+    func returningWorkplaceRestoresTabsWithoutAnExtraBlankWindow() {
+        let data = URL(fileURLWithPath: "/tmp/workplace-a")
+        var profile = BrowserProfile(name: "Workplace A")
+        let first = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data)
+        #expect(first.contains("--new-window"))
+        #expect(first.last == "about:blank")
+        profile.lastLaunchedAt = Date()
+        let returning = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data)
+        #expect(returning.contains("--restore-last-session"))
+        #expect(!returning.contains("--new-window"))
+        #expect(!returning.contains("about:blank"))
+        #expect(returning.contains("--user-data-dir=/tmp/workplace-a"))
+        let explicit = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
+            startURLOverride: URL(string: "https://example.com"))
+        #expect(!explicit.contains("--restore-last-session"))
+        #expect(explicit.last == "https://example.com")
+        let audit = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
+            startURLOverride: URL(string: "http://127.0.0.1:32123/"),
+            purpose: .fingerprintAudit(httpLoopbackPort: 32123))
+        #expect(!audit.contains("--restore-last-session"))
+        #expect(audit.last == "http://127.0.0.1:32123/")
+        profile.startURL = "https://example.org"
+        let custom = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data)
+        #expect(!custom.contains("--restore-last-session"))
+        #expect(custom.last == "https://example.org")
+    }
+
+    @Test
     func createsIsolatedProfileArguments() {
         let profile = BrowserProfile(
             name: "Work",

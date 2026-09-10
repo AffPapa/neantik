@@ -4,7 +4,7 @@ Product direction: each part of your day has its own internet. The primary
 object is a named, persistent workplace; the user returns to an activity rather
 than managing browser process records.
 
-## 0.5.0 candidate
+## Published 0.5.0 behavior
 
 - Home lists pinned and recent active profiles, capped at 24. Search matches
   local names, tags and notes; a single match can be opened with Return.
@@ -35,9 +35,28 @@ session, wrong-context actions, and steps needed to recover after interruption.
 Any automatic routing proposal must be visible and reversible; unknown links
 must not silently move between identities.
 
+## Everyday-work refinement (unreleased)
+
+The same home now covers first run, ordinary work and recovery. Existing guarded
+one-click onboarding remains; the empty state links directly to the archive.
+Home search has a clear button and Escape behavior. The row menu offers pin,
+edit, details and ordinary stop through the same command policies as the catalog.
+A note or tags helps identify the workplace without exposing proxy endpoints.
+
+The editor retains one stable draft identity and baseline while SwiftUI refreshes.
+Closing an untouched form needs no confirmation. Real changes retain discard
+protection. Runtime-unavailable and per-workplace unexpected-exit feedback show
+what to do next; recovery does not automatically launch another browser.
+
+Normal reopening of a previously launched workplace with the default about:blank
+startup restores its own last tabs without appending another blank window.
+A configured startup address, explicit override and fingerprint-audit launch
+retain their explicit destinations. The user-data directory, credentials,
+identity and proxy preflight are unchanged.
+
 ## Publication
 
-README and CHANGELOG describe source capabilities until a notarized release is
-published. The website hero change is source-only until the root-owned template
-is deployed through its administrative installation procedure. The restricted
-six-file release channel cannot upload executable Blade templates.
+These refinements are source changes until their own verified Direct release.
+The published 0.5.0 downloads are not replaced or relabelled as this candidate.
+AffPapa updates are handled separately by the owner; no portal deployment is
+part of this audit. A separate landing must be identified before updating it.

@@ -53,7 +53,7 @@
     "modifiedCriticalFileSHA256": "485647e6626d100ce1f10bb7d38f797d4f59c5fc2c70b7087a2d0122ff180343"
   },
   "ownedInputs": {
-    "runtime/nevision-patches/series.json": "7c0a9bc9ca590ed5fffb7a4ecf649ca87aba772d18375e0715088302d5890c6e",
+    "runtime/nevision-patches/series.json": "7be7057811a9cd2feb34daac2be2393d0ab8197b52b8174858f0fa5ee075428d",
     "scripts/apply-neantik-patchset.py": "28070771e25546ececced16dcaa73b229470ffdfdd422f94cb041ce8680c01b0",
     "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
     "scripts/apply-owned-runtime-device-tuples.py": "75bb4a1d32d1dc82763200f32905783c9ca5e86033bf2314dca071dc47522ecc",

@@ -59,3 +59,38 @@ must not be used to qualify Chromium 152.
 NeAntik's public position is local profile privacy, deterministic separation,
 source/binary evidence and user-visible A → B → A measurement. Do not add
 automation-evasion or bot-evasion patches.
+
+## Submitted-query search fallback
+
+The `submitted-query-search-default` group fixes fresh workplaces inheriting
+ungoogled Chromium's `No Search` fallback (`http://{searchTerms}`). It adds
+a distinct distribution engine (ID 1001) through the resolver: DuckDuckGo submits queries
+to HTTPS, with no remote suggestions, image search, new-tab URL, favicon,
+preconnect or navigation prefetch. The separate ID and stable GUID keep the default present in the settings
+catalog and reset-to-default flow. Resolver lookups preserve its minimal
+endpoint definition without modifying existing built-in engine IDs.
+
+The existing engine catalog is retained. Explicit user selections (including
+No Search), extension selections and policy retain their existing precedence.
+No Preferences files or hashes are edited. The manager's `--no-first-run`
+behavior remains unchanged; macOS global initial preferences are not used.
+
+This is a source patch, not proof of a rebuilt or released runtime. The old
+signed runtime remains unchanged until the normal build/provenance, signing,
+notarization and browser checks pass. Chromium regression tests added to
+`DefaultSearchManagerTest` cover fallback endpoint restrictions and a persisted
+explicit No Search selection. Run the full DefaultSearchManagerTest suite when
+building the patched runtime; narrow new tests alone are insufficient.
+
+After building, inspect a completely isolated fresh workspace: the omnibox
+should name DuckDuckGo, submitting a query should navigate to its HTTPS search,
+and typing without submission must not contact a suggestion endpoint. Verify
+`chrome://settings/searchEngines` reflects the active default, and that choosing
+another engine survives exit/relaunch. Recheck a copied test workspace with an
+explicit No Search selection. Never use production profile data for this QA.
+
+The same reviewed incremental group also leaves the fresh TopSites seed
+list empty, removing the built-in link to the disabled upstream store. It does
+not delete user history or custom shortcuts. The Chromium NTPTiles tests retain
+visited-page coverage and add a fresh-profile no-store regression; the two
+supervised-user expectations are updated to stop expecting that seeded tile.
