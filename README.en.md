@@ -22,29 +22,34 @@ The application is distributed through GitHub Releases:
 - SHA-256 sidecars are published with both GitHub Release assets.
 
 GitHub Releases is the source of current version, downloads and checksums.
-The [product website](https://affpapa.org/neantik) is maintained separately
+The [standalone product site](https://nevision-stats.iryadom.chatgpt.site/)
+provides product, installation and changelog information. The
+[AffPapa page](https://affpapa.org/neantik) is maintained separately by the owner
 and is not a prerequisite for a release.
 
-## Workplaces — the next NeAntik workflow
+## Workplaces
 
 Each part of your day gets its own internet. A workplace is an existing isolated
 profile with a name, persistent browser session, and optional proxy. Existing
 cookies, site data and identity are preserved.
 
-Current source adds a home for pinned/recent workplaces, local name/tag/note
+Version 0.5.1 includes a home for pinned/recent workplaces, local name/tag/note
 search, Open/Continue actions and a separate full catalog. Command-1 opens home;
 Command-2 opens the catalog. The native macOS menu offers recent workplaces and
 displays the name of the verified active browser process.
 
-These are source capabilities. Check GitHub Releases for the actual published
-version, verification results and downloadable files.
+First-run creation uses the same home without mandatory configuration. A compact
+row menu provides pin, edit, details and stop. Reopening a workplace with the
+default blank startup restores its previous tabs; configured startup URLs retain
+priority. See [GitHub Release 0.5.1](https://github.com/AffPapa/neantik/releases/tag/v0.5.1)
+for verification results and downloadable files.
 
 ## Quick start
 
 1. Create a workplace; rename the suggestion for the task at hand.
 2. Paste a proxy if needed.
 3. Click **Create and open**. Connection preparation runs before launch.
-4. Return through **Continue**; stopping remains a separate catalog action.
+4. Return through **Continue**; stopping remains a separate action in the row menu or catalog.
 
 ## What it does
 
