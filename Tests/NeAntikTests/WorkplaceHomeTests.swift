@@ -26,6 +26,46 @@ struct WorkplaceHomeTests {
         }
     }
 
+    @Test func newlyCreatedPlaceIsVisibleWhenPinnedPlacesFillHome() {
+        let pinned = (0 ..< 24).map { index in
+            BrowserProfile(
+                name: "Pinned \(index)",
+                isPinned: true,
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+        }
+        let created = BrowserProfile(
+            name: "New workplace",
+            createdAt: Date(timeIntervalSince1970: 1_000)
+        )
+
+        let result = WorkplaceHomeProjection.resolve(
+            profiles: pinned + [created],
+            search: "",
+            limit: 24,
+            revealProfileID: created.id
+        )
+
+        #expect(result.matchCount == 25)
+        #expect(result.profiles.count == 24)
+        #expect(result.profiles.contains(where: { $0.id == created.id }))
+        #expect(result.profiles.filter(\.isPinned).count == 23)
+    }
+
+    @Test func revealDoesNotBypassHomeSearchOrArchiveBoundary() {
+        let active = BrowserProfile(name: "Design")
+        let archived = BrowserProfile(name: "Archive", isArchived: true)
+
+        let result = WorkplaceHomeProjection.resolve(
+            profiles: [active, archived],
+            search: "Other",
+            revealProfileID: archived.id
+        )
+
+        #expect(result.profiles.isEmpty)
+        #expect(result.matchCount == 0)
+    }
+
     @Test func openNeverStopsRunningPlaceEvenWithoutRuntime() {
         for state in [BrowserProfileProcessState.managed, .externalVerified, .externalManualOnly] {
             let result = WorkplaceOpenPresentation.resolve(state: state, archived: false, runtime: .missing)

@@ -394,6 +394,7 @@ struct ContentView: View {
 
     @State private var showsWorkplaceHome = true
     @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0)
+    @State private var workplaceHomeRevealProfileID: UUID?
 
     private var workspaceBase: some View {
         Group {
@@ -418,6 +419,7 @@ struct ContentView: View {
             if !store.profiles.isEmpty { runtimeReadinessBanner }
             WorkplaceHomeView(
             projection: workplaceHomeProjection,
+            revealProfileID: workplaceHomeRevealProfileID,
             isFirstRun: store.profiles.isEmpty,
             runtimeAvailability: runtimeAvailability,
             isCreatingProfile: isCreatingProfileQuickly,
@@ -452,12 +454,15 @@ struct ContentView: View {
 
     private func refreshWorkplaceHome() {
         workplaceHomeProjection = WorkplaceHomeProjection.resolve(
-            profiles: store.profiles, search: profileSearchText
+            profiles: store.profiles,
+            search: profileSearchText,
+            revealProfileID: workplaceHomeRevealProfileID
         )
     }
 
     private func showWorkplaceCatalog() {
         guard !isWorkspaceModalPresented else { return }
+        workplaceHomeRevealProfileID = nil
         showsWorkplaceHome = false
         profileRouteFilter = .all
         profileOperationalFilter = .all
@@ -467,6 +472,7 @@ struct ContentView: View {
 
     private func showWorkplaceArchive() {
         guard !isWorkspaceModalPresented else { return }
+        workplaceHomeRevealProfileID = nil
         showsWorkplaceHome = false
         resetProfileFilters()
         applyWorkspaceQuery(.default.selecting(scope: .archived))
@@ -474,6 +480,7 @@ struct ContentView: View {
 
     private func showWorkplaceHome() {
         guard !isWorkspaceModalPresented else { return }
+        workplaceHomeRevealProfileID = nil
         showsWorkplaceHome = true
         showsProfileInspector = false
         resetProfileFilters()
@@ -1194,6 +1201,10 @@ struct ContentView: View {
         preferredProfileSelection = decision.selectedProfileID
         selection = decision.selectedProfileID
         normalizeSelection(preferred: decision.selectedProfileID)
+        if showsWorkplaceHome {
+            workplaceHomeRevealProfileID = decision.selectedProfileID
+            refreshWorkplaceHome()
+        }
     }
 
     private func clearWorkspaceAlert(

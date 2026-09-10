@@ -1272,6 +1272,7 @@ private struct WorkplaceHomeRenderFixture: View {
     var body: some View {
         WorkplaceHomeView(
             projection: WorkplaceHomeProjection.resolve(profiles: profiles, search: search),
+            revealProfileID: nil,
             isFirstRun: profiles.isEmpty,
             runtimeAvailability: runtime,
             isCreatingProfile: false,
