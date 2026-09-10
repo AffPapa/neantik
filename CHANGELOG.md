@@ -1,5 +1,15 @@
 # NeAntik changelog
 
+## Direct 0.5.2 (32) — September 10, 2026
+
+- A newly created workplace now appears immediately on the Home screen even
+  when the first 24 rows are occupied by pinned workplaces. It is revealed and
+  scrolled into view without changing its pin state or your saved ordering.
+- Keep Home search local to workplace names, tags and notes; proxy endpoints
+  and credentials remain outside the Home search surface.
+- Stabilize the cancellation boundary for proxy-operation tests so the full
+  isolated native suite does not race under parallel load.
+
 ## Direct 0.5.1 (31) — September 10, 2026
 
 - Keep the same workplace home from first launch onward, with one-click creation,
