@@ -147,12 +147,23 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
     private var operationalFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                ForEach(ProfileOperationalFilter.allCases) { filter in
+                ForEach(visibleOperationalFilters) { filter in
                     operationalFilterButton(filter)
                 }
             }
         }
         .accessibilityLabel("Быстрые представления профилей")
+    }
+
+    /// Keep the daily header quiet: empty operational views are discoverable
+    /// from the filter menu, while an active empty filter remains visible so
+    /// the user can return to «Все».
+    private var visibleOperationalFilters: [ProfileOperationalFilter] {
+        ProfileOperationalFilter.allCases.filter { filter in
+            filter == .all ||
+                summary.count(for: filter) > 0 ||
+                operationalFilter == filter
+        }
     }
 
     private func operationalFilterButton(
