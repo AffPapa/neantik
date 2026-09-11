@@ -393,7 +393,9 @@ struct ContentView: View {
         workspaceLifecycle
     }
 
-    @State private var showsWorkplaceHome = true
+    // The catalog is the single daily workspace. Home remains a hidden
+    // compatibility route for the shortcut/menu and first-run recovery.
+    @State private var showsWorkplaceHome = false
     @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0, summary: .empty)
     @State private var homeResolver = WorkplaceHomeStateResolver()
     @State private var homeRevealID: UUID?
@@ -566,10 +568,6 @@ struct ContentView: View {
             minHeight: WorkspaceLayout.minimumWindowHeight
         )
         .toolbar {
-            ToolbarItem {
-                Button("Рабочие места", systemImage: "house", action: showWorkplaceHome)
-                .disabled(isWorkspaceModalPresented)
-            }
             WorkspaceToolbarContent(
                 showsProfileInspector: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil,
