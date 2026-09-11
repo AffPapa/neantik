@@ -83,14 +83,12 @@ struct FingerprintAuditView: View {
         self.onReport = onReport
         isReleaseAudit = releaseContext != nil
 
-        let first =
-            profiles.first(where: { $0.id == initialFirstID }) ??
-            profiles.first!
-        let second =
-            profiles.first(where: { $0.id != first.id }) ??
-            first
-        _firstID = State(initialValue: first.id)
-        _secondID = State(initialValue: second.id)
+        let firstID = profiles.first(where: { $0.id == initialFirstID })?.id ??
+            profiles.first?.id ?? UUID()
+        let secondID = profiles.first(where: { $0.id != firstID })?.id ??
+            firstID
+        _firstID = State(initialValue: firstID)
+        _secondID = State(initialValue: secondID)
         _coordinator = StateObject(
             wrappedValue: FingerprintAuditCoordinator(
                 paths: paths,

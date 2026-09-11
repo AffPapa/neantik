@@ -1,5 +1,10 @@
 # NeAntik changelog
 
+## Direct 0.5.5 (35) — September 11, 2026
+
+- Проверка отпечатка безопасно открывается даже при пустом или ещё не загруженном списке профилей.
+- Расширенные настройки и диагностика остаются скрытыми до явного запроса; основной сценарий не изменён.
+
 ## Direct 0.5.4 (34) — September 10, 2026
 
 - Make Home search faster on large local workplace lists: the sorted index and
