@@ -145,7 +145,7 @@ struct ContentView: View {
         return WorkspaceCommandSet(
             isEnabled: true,
             selectedFolderName: selectedFolder?.name,
-            canToggleInspector: !showsWorkplaceHome && ProfileInspectorPolicy.canToggle(
+            canToggleInspector: ProfileInspectorPolicy.canToggle(
                 isPresented: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil
             ),
@@ -166,7 +166,6 @@ struct ContentView: View {
                 guard let selectedFolder else { return }
                 folderPendingDelete = selectedFolder
             },
-            showWorkplaceHome: showWorkplaceHome,
             showWorkplaceCatalog: showWorkplaceCatalog,
             presentCommandPalette: { showsCommandPalette = true },
             commandPaletteAction: executeWorkspaceCommand
@@ -369,30 +368,15 @@ struct ContentView: View {
     var body: some View {
         workspaceLifecycle
     }
-    @State private var showsWorkplaceHome = false
-    @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0, summary: .empty)
-    @State private var homeResolver = WorkplaceHomeStateResolver()
-    @State private var homeRevealID: UUID?
     private var workspaceBase: some View {
-        Group {
-            if showsWorkplaceHome {
-                workplaceHome
-            } else {
-                workspaceNavigation
-            }
-        }
+        workspaceNavigation
         .onAppear {
-            refreshWorkplaceHome()
             handleWorkplaceNavigation()
             recordTelemetrySnapshot()
         }
         .onChange(of: store.profileListRevision) { _, _ in
-            refreshWorkplaceHome()
             recordTelemetryProfileChanges()
         }
-        .onChange(of: profileSearchText) { _, _ in refreshWorkplaceHome() }
-        .onChange(of: processes.processStateRevision) { _, _ in refreshWorkplaceHome() }
-        .onChange(of: proxyHealthCoordinator.healthByProfileID) { _, _ in refreshWorkplaceHome() }
         .onChange(of: workplaceNavigation.pending) { _, _ in handleWorkplaceNavigation() }
         .onChange(of: isWorkspaceModalPresented) { _, value in workplaceNavigation.isBlocked = value }
         .sheet(isPresented: $showsCommandPalette) {
@@ -418,60 +402,8 @@ struct ContentView: View {
             }
         }
     }
-    private var workplaceHome: some View {
-        VStack(spacing: 0) {
-            if !store.profiles.isEmpty { runtimeReadinessBanner }
-            WorkplaceHomeView(
-            projection: workplaceHomeProjection,
-            revealProfileID: homeRevealID,
-            isFirstRun: store.profiles.isEmpty,
-            runtimeAvailability: runtimeAvailability,
-            isCreatingProfile: isCreatingProfileQuickly,
-            search: $profileSearchText,
-            searchFocus: $profileSearchIsFocused,
-            presentation: workplaceOpenPresentation,
-            onOpen: openWorkplace,
-            onInspect: { profile in
-                guard !isWorkspaceModalPresented else { return }
-                showsWorkplaceHome = false
-                revealSavedProfile(profile)
-                showsProfileInspector = true
-            },
-            onCreate: beginCreatingProfile,
-            onCatalog: showWorkplaceCatalog,
-            profileCommands: { profileCommandSet(for: $0) },
-            canStop: { [.managed, .externalVerified].contains(presentedProcessState(for: $0)) },
-            onCreateAndOpen: createAndOpenProfileQuickly,
-            onRetryRuntimeCheck: { Task { await resolveRuntime() } },
-            onArchive: showWorkplaceArchive,
-            notice: { processes.workplaceExitNotices[$0.id]?.message }
-            )
-        }
-        .toolbar {
-            Button("Каталог", systemImage: "sidebar.left", action: showWorkplaceCatalog)
-            Button("Помощь", systemImage: "questionmark.circle", action: presentWorkspaceReadiness)
-                .help("Если что-то не работает")
-        }
-        .focusedSceneValue(\.neAntikProfileCommands, ProfileCommandSet.unavailable)
-        .focusedSceneValue(\.neAntikWorkspaceCommands, workspaceCommandSet)
-    }
-    private func refreshWorkplaceHome() {
-        workplaceHomeProjection = homeResolver.resolve(
-            profileRevision: store.profileListRevision,
-            processRevision: processes.processStateRevision,
-            healthRecords: proxyHealthCoordinator.healthByProfileID,
-            profiles: store.profiles,
-            organization: store.organization,
-            search: profileSearchText,
-            revealProfileID: homeRevealID,
-            processState: { processes.processState(for: $0) },
-            proxyHealth: { proxyHealthCoordinator.state(for: $0) }
-        )
-    }
     private func showWorkplaceCatalog() {
         guard !isWorkspaceModalPresented else { return }
-        homeRevealID = nil
-        showsWorkplaceHome = false
         profileRouteFilter = .all
         profileOperationalFilter = .all
         applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
@@ -479,17 +411,8 @@ struct ContentView: View {
     }
     private func showWorkplaceArchive() {
         guard !isWorkspaceModalPresented else { return }
-        homeRevealID = nil
-        showsWorkplaceHome = false
         resetProfileFilters()
         applyWorkspaceQuery(.default.selecting(scope: .archived))
-    }
-    private func showWorkplaceHome() {
-        guard !isWorkspaceModalPresented else { return }
-        homeRevealID = nil
-        showsWorkplaceHome = true
-        showsProfileInspector = false
-        resetProfileFilters()
     }
     private func executeWorkspaceCommand(_ command: WorkspaceCommand) {
         switch command {
@@ -528,12 +451,11 @@ struct ContentView: View {
     private func handleWorkplaceNavigation() {
         guard let destination = workplaceNavigation.consume(), !isWorkspaceModalPresented else { return }
         switch destination {
-        case .home: showWorkplaceHome()
+        case .catalog: showWorkplaceCatalog()
         case .create: beginCreatingProfile()
         case let .open(id):
             guard let profile = store.profile(withID: id) else { return }
             if workplaceOpenPresentation(profile).action == .unavailable {
-                showsWorkplaceHome = false
                 revealSavedProfile(profile)
                 showsProfileInspector = true
             } else {
@@ -1210,10 +1132,6 @@ struct ContentView: View {
         preferredProfileSelection = decision.selectedProfileID
         selection = decision.selectedProfileID
         normalizeSelection(preferred: decision.selectedProfileID)
-        if showsWorkplaceHome {
-            homeRevealID = decision.selectedProfileID
-            refreshWorkplaceHome()
-        }
     }
     private func clearWorkspaceAlert(
         _ source: WorkspaceAlertPresentation.Source

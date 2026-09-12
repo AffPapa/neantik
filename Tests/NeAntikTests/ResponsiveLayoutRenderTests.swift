@@ -6,33 +6,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
-    /// Render the production Home view with deterministic state fixtures. These
-    /// images supplement the full ContentView renders with recovery/empty states;
-    /// actions are inert and never open browsers or read production profiles.
-    @Test func workplaceHomeRecoveryAndFirstRunRenderAcrossSizes() throws {
-        let minimum = CGSize(width: 820, height: 560)
-        let wide = CGSize(width: 1_440, height: 900)
-        let cases: [(String, WorkplaceHomeRenderState, CGSize, ColorScheme)] = [
-            ("first-ready-minimum-light", .firstReady, minimum, .light),
-            ("first-missing-minimum-dark", .firstMissing, minimum, .dark),
-            ("archive-minimum-light", .archive, minimum, .light),
-            ("search-empty-minimum-dark", .searchEmpty, minimum, .dark),
-            ("recovery-minimum-light", .recovery, minimum, .light),
-            ("recovery-minimum-dark", .recovery, minimum, .dark),
-            ("recovery-wide-light", .recovery, wide, .light),
-            ("recovery-wide-dark", .recovery, wide, .dark),
-        ]
-        for (name, state, size, scheme) in cases {
-            try render(
-                WorkplaceHomeRenderFixture(state: state),
-                name: "workplace-home-\(name)",
-                size: size,
-                colorScheme: scheme,
-                settleTime: 0.15
-            )
-        }
-    }
-
     @Test func sharedDisclosureRendersBothStatesAndAppearances() throws {
         for expanded in [false, true] {
             for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
@@ -506,6 +479,7 @@ struct ResponsiveLayoutRenderTests {
                     ),
                     onRecheck: {},
                     onCopyDiagnostics: {},
+                    onExportDiagnostics: {},
                     onCopyApplicationPath: {},
                     onRevealApplication: {},
                     onOpenSystemSettings: {}

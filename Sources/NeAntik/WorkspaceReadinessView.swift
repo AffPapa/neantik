@@ -7,6 +7,7 @@ struct WorkspaceReadinessView: View {
     let notice: UserNotice?
     let onRecheck: () -> Void
     let onCopyDiagnostics: () -> Void
+    let onExportDiagnostics: () -> Void
     let onCopyApplicationPath: () -> Void
     let onRevealApplication: () -> Void
     let onOpenSystemSettings: () -> Void
@@ -210,6 +211,12 @@ struct WorkspaceReadinessView: View {
             } label: {
                 Label("Скопировать диагностику", systemImage: "doc.on.doc")
             }
+            Button {
+                onExportDiagnostics()
+            } label: {
+                Label("Сохранить пакет", systemImage: "square.and.arrow.down")
+            }
+            .help("Сохранить JSON без секретов и данных профилей")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)

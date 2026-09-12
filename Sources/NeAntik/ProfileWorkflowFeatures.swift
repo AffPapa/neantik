@@ -63,6 +63,33 @@ enum ProfileSemanticSearch {
 }
 
 enum ProfileAutomationSuggestions {
+    struct Suggestion: Identifiable, Equatable, Sendable {
+        let title: String
+        let query: String
+        let count: Int
+        var id: String { query }
+    }
+
+    /// Smart, read-only collections. They are derived on demand from local
+    /// metadata and never create folders or mutate a profile.
+    static func smartSuggestions(
+        for profiles: [BrowserProfile],
+        now: Date = Date()
+    ) -> [Suggestion] {
+        let active = profiles.filter { !$0.isArchived }
+        let candidates: [(String, String, (BrowserProfile) -> Bool)] = [
+            ("Без прокси", "proxy:no", { $0.proxy == nil }),
+            ("С прокси", "proxy:yes", { $0.proxy != nil }),
+            ("Ни разу не запускались", "status:never", { $0.lastLaunchedAt == nil }),
+            ("Без тегов", "missing:tags", { $0.tags.isEmpty }),
+        ]
+        return candidates.compactMap { title, query, predicate in
+            let count = active.filter(predicate).count
+            guard count > 0 else { return nil }
+            return Suggestion(title: title, query: query, count: count)
+        }
+    }
+
     static func tags(for profiles: [BrowserProfile], minimumCount: Int = 2) -> [String] {
         let counts = profiles.flatMap(\.tags).reduce(into: [:]) { $0[$1, default: 0] += 1 }
         return counts.filter { $0.value >= minimumCount }.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key.localizedStandardCompare($1.key) == .orderedAscending }.map(\.key)
