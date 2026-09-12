@@ -2017,7 +2017,7 @@ def resume_known_transaction(
         )
         staple_target, canonical_target = move_app_for_stapling(staged_app)
         run_stapler_checked(
-            ["xcrun", "stapler", "staple", str(staple_target)],
+            ["xcrun", "stapler", "staple", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="recovery stapling accepted candidate",
@@ -2865,7 +2865,7 @@ def run_transaction(
         )
         staple_target, canonical_target = move_app_for_stapling(staged_app)
         run_stapler_checked(
-            ["xcrun", "stapler", "staple", str(staple_target)],
+            ["xcrun", "stapler", "staple", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="stapling accepted candidate",
