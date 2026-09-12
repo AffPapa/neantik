@@ -1,5 +1,9 @@
 import Foundation
 
+struct RecoveryProfileID: Identifiable, Equatable {
+    let id: UUID
+}
+
 struct EditorRequest: Identifiable {
     let initialFocus: ProfileEditorField?
     let id = UUID()
@@ -20,16 +24,23 @@ struct EditorRequest: Identifiable {
     }
 }
 
+struct QuickCreateRequest: Identifiable {
+    let id = UUID()
+    let targetFolderID: UUID?
+}
+
 /// One immutable presentation snapshot; selecting another row cannot retarget it.
 struct WorkspaceSheetRequest: Identifiable {
     enum Destination {
         case editor(EditorRequest)
+        case quickCreate(QuickCreateRequest)
         case duplication(ProfileDuplicationRequest)
         case note(BrowserProfile)
         case folderName(ProfileFolder?)
         case folderPicker(Set<UUID>)
         case batchTags(Set<UUID>)
         case proxyImport(targetFolderID: UUID?)
+        case cookieImport(BrowserProfile)
         case readiness
         case fingerprintAudit(FingerprintAuditRequest)
     }

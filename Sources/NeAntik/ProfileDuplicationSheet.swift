@@ -121,6 +121,25 @@ struct ProfileDuplicationSheet: View {
                     .foregroundStyle(.secondary)
                 }
 
+                Section("Что будет перенесено") {
+                    ForEach(ProfileDuplicationPolicy.transfers(from: source, options: options)) { transfer in
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(transfer.title)
+                                Text(transfer.detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        } icon: {
+                            Image(systemName: transfer.systemImage)
+                                .foregroundStyle(transfer.isCopied ? .green : .secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(transfer.title): \(transfer.detail)")
+                    }
+                }
+
                 Section("Сеть") {
                     Toggle(
                         "Скопировать прокси",

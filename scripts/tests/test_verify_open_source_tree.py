@@ -45,7 +45,6 @@ class OpenSourceTreePrivacyTests(unittest.TestCase):
     ) -> None:
         for path in (
             "Sources/NeAntik/RuntimePreferenceStore.swift",
-            "Sources/NeAntik/Telemetry.swift",
             "Sources/NeAntik/UpdateManifest.swift",
         ):
             self.assertIn(path, MODULE.FORBIDDEN_PUBLIC_PATHS)

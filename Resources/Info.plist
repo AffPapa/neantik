@@ -23,11 +23,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.5.7</string>
+	<string>0.6.1</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>37</string>
+	<string>43</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -46,5 +46,7 @@
 	<string>Copyright © 2026 NeAntik. All rights reserved.</string>
 	<key>NeAntikDeveloperTeamIdentifier</key>
 	<string>H6VGU2M6JD</string>
+	<key>NeAntikTelemetryEndpoint</key>
+	<string>https://nevision-stats.iryadom.chatgpt.site/api/ingest</string>
 </dict>
 </plist>

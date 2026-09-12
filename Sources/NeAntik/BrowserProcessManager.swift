@@ -96,7 +96,12 @@ enum BrowserLaunchBuilder {
         )
         // A returning workplace resumes its own saved tabs. Explicit start
         // pages and reserved audit URLs retain their deterministic launch.
+        let startupTabURLs = purpose == .normal && startURLOverride == nil
+            ? profile.startupTabs.validURLs.map(\.absoluteString)
+            : []
+        let usesStartupTabs = !startupTabURLs.isEmpty
         let restoresWorkplace = purpose == .normal && startURLOverride == nil &&
+            !usesStartupTabs &&
             profile.lastLaunchedAt != nil &&
             profile.startURL.trimmingCharacters(in: .whitespacesAndNewlines) == BrowserProfile.defaultStartURL
         var arguments = [
@@ -135,7 +140,7 @@ enum BrowserLaunchBuilder {
             )
             let bypass: String
             switch purpose {
-            case .normal:
+            case .normal, .clean:
                 bypass = "<-loopback>"
             case let .fingerprintAudit(httpLoopbackPort):
                 precondition(httpLoopbackPort != 0)
@@ -164,9 +169,15 @@ enum BrowserLaunchBuilder {
         arguments.append(
             contentsOf: sanitizedAdditionalArguments(additionalArguments)
         )
-        let startURL =
-            startURLOverride ?? normalizedStartURL(profile.startURL)
-        if !restoresWorkplace { arguments.append(startURL.absoluteString) }
+        if !restoresWorkplace {
+            if !startupTabURLs.isEmpty {
+                arguments.append(contentsOf: startupTabURLs)
+            } else {
+                let startURL =
+                    startURLOverride ?? normalizedStartURL(profile.startURL)
+                arguments.append(startURL.absoluteString)
+            }
+        }
         return arguments
     }
 
@@ -340,6 +351,9 @@ final class BrowserProcessManager: ObservableObject {
     @Published private(set) var lastBrowserExit: BrowserExitEvent?
     /// Ephemeral row feedback, never serialized into lifecycle diagnostics.
     @Published private(set) var workplaceExitNotices: [UUID: WorkplaceExitNotice] = [:]
+    /// Profiles paused by the local memory saver. This state is deliberately
+    /// ephemeral: a relaunch always starts a profile in the normal state.
+    @Published private(set) var memorySavingSuspendedProfileIDs = Set<UUID>()
 
     private let paths: AppPaths
     private let processIdentityInspector:
@@ -361,6 +375,7 @@ final class BrowserProcessManager: ObservableObject {
     }
     private var stopCompletionTasks: [UUID: Task<Void, Never>] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
+    private var transientBrowserDataDirectories: [UUID: URL] = [:]
     private var externalLocks: [UUID: BrowserProcessLock] = [:] {
         didSet { processStateRevision &+= 1 }
     }
@@ -1423,7 +1438,7 @@ final class BrowserProcessManager: ObservableObject {
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived
         }
-        if profile.proxy != nil, purpose == .normal {
+        if profile.proxy != nil, purpose == .normal || purpose == .clean {
             guard let preparationReceipt,
                   preparationReceipt.authorizes(profile),
                   consumedProxyPreparationKeys.insert(
@@ -1433,18 +1448,25 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.proxyPreparationRequired
             }
         }
+        let cleanDirectory: URL? = purpose == .clean && browserDataDirectoryOverride == nil
+            ? FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "NeAntik-clean-\(profile.id.uuidString)-\(UUID().uuidString)",
+                    isDirectory: true
+                )
+            : nil
         let browserDataDirectory =
-            browserDataDirectoryOverride ??
+            browserDataDirectoryOverride ?? cleanDirectory ??
             paths.browserDataDirectory(for: profile.id)
         let ownsFreshFingerprintAuditDirectory: Bool
         switch purpose {
-        case .normal:
+        case .normal, .clean:
             guard fingerprintAuditReservation == nil else {
                 throw NeAntikError.fingerprintAuditFailed(
                     "Резерв проверки нельзя использовать для обычного запуска."
                 )
             }
-            ownsFreshFingerprintAuditDirectory = false
+            ownsFreshFingerprintAuditDirectory = purpose == .clean
         case let .fingerprintAudit(httpLoopbackPort):
             guard let reservation = fingerprintAuditReservation,
                   let browserDataDirectoryOverride,
@@ -1554,7 +1576,10 @@ final class BrowserProcessManager: ObservableObject {
         managed[profile.id] = ManagedBrowserProcess(
             ownerToken: ownerToken, browserDataDirectory: browserDataDirectory
         )
-        if browserDataDirectoryOverride != nil &&
+        if let cleanDirectory {
+            transientBrowserDataDirectories[profile.id] = cleanDirectory
+        }
+        if browserDataDirectoryOverride != nil && cleanDirectory == nil &&
             !profileDirectoryExistedBeforeLaunch {
             transientEmptyProfileDirectoryIDs.insert(profile.id)
         }
@@ -1606,6 +1631,7 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken
             )
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
+            cleanupTransientBrowserDataDirectoryIfSafe(profileID: profile.id)
             recordBrowserExit(.startupFailure, at: now())
             try? appendDiagnostic(
                 "browser_exit classification=" +
@@ -1642,6 +1668,13 @@ final class BrowserProcessManager: ObservableObject {
     func stop(profileID: UUID) {
         if let process = managed[profileID]?.process {
             if process.isRunning {
+                // SIGSTOP pauses a process. Resume it before asking Chromium
+                // to terminate so the normal graceful shutdown path remains
+                // available and the profile lock can be released safely.
+                if memorySavingSuspendedProfileIDs.contains(profileID) {
+                    _ = process.resume()
+                    memorySavingSuspendedProfileIDs.remove(profileID)
+                }
                 guard stopPhase(for: profileID) == .idle else {
                     return
                 }
@@ -1730,6 +1763,56 @@ final class BrowserProcessManager: ObservableObject {
         handleTermination(profileID: profileID, process: nil)
     }
 
+    /// Pause one manager-owned Chromium process to reduce background CPU and
+    /// memory pressure. External or unverified processes are never signalled.
+    /// The operation is intentionally explicit; policy decisions are made by
+    /// `AutomaticMemorySavingPolicy` and applied by the manager only after the
+    /// caller has a current, verified snapshot.
+    @discardableResult
+    func suspendForMemorySaving(profileID: UUID) -> Bool {
+        guard let process = managed[profileID]?.process,
+              process.isRunning,
+              stopPhase(for: profileID) == .idle
+        else { return false }
+        guard process.suspend() else {
+            lastError = "Не удалось временно приостановить рабочее место."
+            return false
+        }
+        memorySavingSuspendedProfileIDs.insert(profileID)
+        return true
+    }
+
+    /// Resume a process paused by `suspendForMemorySaving`. A profile that was
+    /// not paused by this manager is left untouched.
+    @discardableResult
+    func resumeFromMemorySaving(profileID: UUID) -> Bool {
+        guard memorySavingSuspendedProfileIDs.contains(profileID),
+              let process = managed[profileID]?.process,
+              process.isRunning
+        else { return false }
+        guard process.resume() else {
+            lastError = "Не удалось возобновить рабочее место."
+            return false
+        }
+        memorySavingSuspendedProfileIDs.remove(profileID)
+        return true
+    }
+
+    /// Apply already-evaluated policy decisions. Snapshots remain caller-owned
+    /// so this method never guesses memory usage or silently changes profiles.
+    func applyMemorySavingDecisions(_ decisions: [MemorySavingDecision]) {
+        for decision in decisions {
+            switch decision.action {
+            case .suspend:
+                _ = suspendForMemorySaving(profileID: decision.profileID)
+            case .resume:
+                _ = resumeFromMemorySaving(profileID: decision.profileID)
+            case .keepRunning:
+                break
+            }
+        }
+    }
+
     private func scheduleManagedStopEscalation(
         profileID: UUID,
         process: Process
@@ -1804,6 +1887,7 @@ final class BrowserProcessManager: ObservableObject {
         }
         let priorStopPhase = stopPhase(for: profileID)
         let entry = removeManagedProcess(profileID: profileID)
+        memorySavingSuspendedProfileIDs.remove(profileID)
         let wasForced = entry?.wasForced ?? false
         let startupFailed = entry?.startupFailed ?? false
         if let process {
@@ -1852,9 +1936,8 @@ final class BrowserProcessManager: ObservableObject {
                     profileID: profileID,
                     ownerToken: managedOwner
                 )
-                cleanupTransientProfileDirectoryIfSafe(
-                    profileID: profileID
-                )
+                cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+                cleanupTransientBrowserDataDirectoryIfSafe(profileID: profileID)
             } else if let externalLock {
                 removeLockIfMatches(
                     externalLock,
@@ -2231,6 +2314,19 @@ final class BrowserProcessManager: ObservableObject {
             passiveInventoryObservationTask = nil
         }
         cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+        cleanupTransientBrowserDataDirectoryIfSafe(profileID: profileID)
+    }
+
+    private func cleanupTransientBrowserDataDirectoryIfSafe(profileID: UUID) {
+        guard let directory = transientBrowserDataDirectories[profileID],
+              browserDataProcessInspector(directory) == .absent
+        else { return }
+        do {
+            try FileManager.default.removeItem(at: directory)
+            transientBrowserDataDirectories.removeValue(forKey: profileID)
+        } catch {
+            // Retry after a later reconciliation if the filesystem is busy.
+        }
     }
 
     private func cleanupTransientProfileDirectoryIfSafe(

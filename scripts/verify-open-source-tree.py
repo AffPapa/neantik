@@ -43,10 +43,8 @@ FORBIDDEN_NAMES = {
 }
 FORBIDDEN_PUBLIC_PATHS = {
     "Sources/NeAntik/RuntimePreferenceStore.swift",
-    "Sources/NeAntik/Telemetry.swift",
     "Sources/NeAntik/UpdateManifest.swift",
     "Tests/NeAntikTests/RuntimePreferenceStoreTests.swift",
-    "Tests/NeAntikTests/TelemetryTests.swift",
     "Tests/NeAntikTests/UpdateManifestTests.swift",
     "docs/" + "TELEMETRY_AND_PUBLIC_STATS.md",
 }

@@ -4,7 +4,7 @@ import SwiftUI
 /// In-process UI intent only. There is no URL scheme, listener or write API.
 @MainActor
 final class WorkplaceNavigation: ObservableObject {
-    enum Destination: Equatable { case home, create, open(UUID) }
+    enum Destination: Equatable { case catalog, create, open(UUID) }
     struct Request: Equatable {
         let id = UUID()
         let destination: Destination
@@ -36,7 +36,7 @@ struct WorkplaceMenu: View {
 
     var body: some View {
         Group {
-            Button("Рабочие места…") { request(.home) }
+            Button("Рабочие места…") { request(.catalog) }
             Button("Создать рабочее место…") { request(.create) }
             if !places.isEmpty {
                 Divider()
@@ -45,7 +45,7 @@ struct WorkplaceMenu: View {
                         guard !navigation.isBlocked else { return }
                         let state = processes.processState(for: profile.id)
                         if state == .managed || state == .externalVerified {
-                            if !processes.focus(profileID: profile.id) { request(.home) }
+                            if !processes.focus(profileID: profile.id) { request(.catalog) }
                         } else {
                             request(.open(profile.id))
                         }

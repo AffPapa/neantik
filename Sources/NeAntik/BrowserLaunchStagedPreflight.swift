@@ -34,19 +34,22 @@ struct BrowserLaunchPreflightInput: Equatable, Sendable {
     let runtimePreflight: BrowserRuntimePreflight
     let storage: WorkspaceStorageState
     let storageIntegrity: WorkspaceStorageIntegrityState
+    let readiness: ProfileReadinessReport?
 
     init(
         profile: BrowserProfile,
         processState: BrowserProfileProcessState,
         runtimePreflight: BrowserRuntimePreflight,
         storage: WorkspaceStorageState,
-        storageIntegrity: WorkspaceStorageIntegrityState = .passed
+        storageIntegrity: WorkspaceStorageIntegrityState = .passed,
+        readiness: ProfileReadinessReport? = nil
     ) {
         self.profile = profile
         self.processState = processState
         self.runtimePreflight = runtimePreflight
         self.storage = storage
         self.storageIntegrity = storageIntegrity
+        self.readiness = readiness
     }
 }
 
@@ -120,6 +123,14 @@ enum BrowserLaunchStagedPreflight {
                 stage: .proxy,
                 message: "адрес или порт прокси некорректны.",
                 recovery: "Измени прокси профиля."
+            )
+        }
+
+        if let readiness = input.readiness, readiness.status != .ready {
+            throw BrowserLaunchStagedFailure(
+                stage: .consistency,
+                message: readiness.issues.first ?? "профиль ещё не готов.",
+                recovery: "Открой сведения профиля и устрани указанную проблему."
             )
         }
 

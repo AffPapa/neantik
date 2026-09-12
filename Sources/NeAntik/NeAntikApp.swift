@@ -16,6 +16,7 @@ struct NeAntikApp: App {
         ProxyHealthCoordinator
     @StateObject private var workspacePreferences:
         WorkspacePreferenceStore
+    @StateObject private var telemetry = NeAntikTelemetry()
 
     private let keychain: KeychainStore
     private let credentialCleanup: DeletedProfileCredentialCleanup
@@ -151,6 +152,7 @@ struct NeAntikApp: App {
                 fingerprintObservationStore: fingerprintObservationStore,
                 proxyHealthCoordinator: proxyHealthCoordinator,
                 workspacePreferences: workspacePreferences,
+                telemetry: telemetry,
                 keychain: keychain,
                 credentialCleanup: credentialCleanup,
                 runtimeLocator: runtimeLocator,

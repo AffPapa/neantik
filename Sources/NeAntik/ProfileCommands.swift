@@ -130,6 +130,7 @@ struct ProfileCommandSet {
     let folderOptions: [ProfileFolderCommandOption]
     let hasMoreFolderOptions: Bool
     let toggleRunning: () -> Void
+    let cleanLaunch: () -> Void
     let focusRunning: () -> Void
     let edit: () -> Void
     let editTags: () -> Void
@@ -147,6 +148,7 @@ struct ProfileCommandSet {
         folderOptions: [],
         hasMoreFolderOptions: false,
         toggleRunning: {},
+        cleanLaunch: {},
         focusRunning: {},
         edit: {},
         editTags: {},
@@ -178,8 +180,11 @@ struct WorkspaceCommandSet {
     let toggleInspector: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
-    var showWorkplaceHome: () -> Void = {}
     var showWorkplaceCatalog: () -> Void = {}
+    /// Opens the keyboard-first command surface. Keeping this in the focused
+    /// command set means the menu and palette share the same modal guards.
+    var presentCommandPalette: () -> Void = {}
+    var commandPaletteAction: (WorkspaceCommand) -> Void = { _ in }
 
     static let unavailable = WorkspaceCommandSet(
         isEnabled: false,
@@ -248,13 +253,13 @@ struct WorkspaceCommandMenu: Commands {
                     modifiers: NeAntikShortcut.findProfiles.modifiers
                 )
                 .disabled(!resolved.isEnabled)
+
+            Button("Палитра команд…", systemImage: "command", action: resolved.presentCommandPalette)
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(!resolved.isEnabled)
         }
 
         CommandMenu("Рабочее пространство") {
-            Button("Рабочие места", action: resolved.showWorkplaceHome)
-                .keyboardShortcut(NeAntikShortcut.workplaceHome.keyEquivalent,
-                                  modifiers: NeAntikShortcut.workplaceHome.modifiers)
-                .disabled(!resolved.isEnabled)
             Button("Полный каталог", action: resolved.showWorkplaceCatalog)
                 .keyboardShortcut(NeAntikShortcut.workplaceCatalog.keyEquivalent,
                                   modifiers: NeAntikShortcut.workplaceCatalog.modifiers)
@@ -345,6 +350,10 @@ struct ProfileCommandMenu: Commands {
                 modifiers: NeAntikShortcut.toggleSelectedProfile.modifiers
             )
             .disabled(!resolved.presentation.launchIsEnabled)
+
+            Button("Чистый запуск", systemImage: "sparkles", action: resolved.cleanLaunch)
+                .help("Открыть этот профиль в пустой временной среде")
+                .disabled(!resolved.presentation.launchIsEnabled)
 
             Button(
                 "Изменить…",

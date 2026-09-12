@@ -61,6 +61,8 @@ case "$SHARD" in
   profiles-a)
     SUITES=(
       ProfileCommandPresentationTests
+      ProfileAutomationTests
+      ProfileAutomationSuggestionsTests
       ProfileBatchActionsTests
       ProfileEditorProcessPolicyTests
       ProfileEditorPasswordTests
@@ -70,6 +72,8 @@ case "$SHARD" in
       ProfileEnvironmentInspectorTests
       ProfileEnvironmentPresentationTests
       ProfileEnvironmentAccessibilityTests
+      ProfileSurfaceInspectionTests
+      ProfileWorkflowFeaturesTests
       ProfileListProjectionTests
       ProfileOperationalProjectionTests
       ProfileListOrderingTests
@@ -79,13 +83,13 @@ case "$SHARD" in
       ProfileRevisionAndTransactionTests
       ProfileTagAppearanceTests
       UXDraftProtectionTests
-      WorkplaceHomeTests
       WorkspaceUXPresentationTests
     )
     ;;
   profiles-b)
     SUITES=(
       ProfileTagEditorTests
+      EncryptedProfileBackupTests
       ProfileStoreTests
       ProfileStorageMeasurementTests
       ProxyHealthTests
@@ -104,6 +108,7 @@ case "$SHARD" in
       WorkspaceQueryStateTests
       WorkspaceReadinessTests
       WorkspaceAlertPresentationTests
+      PrivacySafeDiagnosticPackageTests
     )
     ;;
   *)
@@ -145,8 +150,11 @@ for SUITE in "${SUITES[@]}"; do
         --filter "$SUITE"
   ) 2>&1 | tee "$TEST_OUTPUT"
 
+  # Swift Testing emits "Test run with ..." while XCTest classes emit
+  # "Executed ... tests, with 0 failures". Accept either positive result,
+  # but keep the count fail-closed so a missing or zero-test filter fails CI.
   if ! grep -Eq \
-    'Test run with [1-9][0-9]* tests? in [1-9][0-9]* suites? passed' \
+    '(Test run with [1-9][0-9]* tests? in [1-9][0-9]* suites? passed|Executed [1-9][0-9]* tests?, with 0 failures)' \
     "$TEST_OUTPUT"; then
     echo "Swift suite did not execute a positive test count: $SUITE" >&2
     exit 1

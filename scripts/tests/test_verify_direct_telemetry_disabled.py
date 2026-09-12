@@ -20,7 +20,7 @@ sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 
-class DirectTelemetryDisabledTests(unittest.TestCase):
+class DirectTelemetryContractTests(unittest.TestCase):
     def test_accepts_disabled_identifier_free_contract(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = make_project(Path(temporary))
@@ -31,10 +31,10 @@ class DirectTelemetryDisabledTests(unittest.TestCase):
             root = make_project(Path(temporary))
             info_path = root / "Resources/Info.plist"
             with info_path.open("wb") as file:
-                plistlib.dump({"NeAntikTelemetryEndpoint": ""}, file)
+                plistlib.dump({"NeAntikTelemetryEndpoint": "http://insecure"}, file)
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
-                "configuration keys",
+                "missing or insecure",
             ):
                 MODULE.verify(root)
 
@@ -45,13 +45,14 @@ class DirectTelemetryDisabledTests(unittest.TestCase):
             source.write_text("struct TelemetryController {}", encoding="utf-8")
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
-                "telemetry implementation",
+                "dormant telemetry marker",
             ):
                 MODULE.verify(root)
 
     def test_rejects_missing_source_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = make_project(Path(temporary))
+            (root / "Sources/NeAntik/Telemetry.swift").unlink()
             (root / "Sources/NeAntik").rmdir()
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
@@ -64,16 +65,18 @@ def make_project(root: Path) -> Path:
     resources = root / "Resources"
     resources.mkdir(parents=True)
     with (resources / "Info.plist").open("wb") as file:
-        plistlib.dump({}, file)
+        plistlib.dump({"NeAntikTelemetryEndpoint": "https://example.test/api/ingest"}, file)
     with (resources / "PrivacyInfo.xcprivacy").open("wb") as file:
         plistlib.dump(
             {
                 "NSPrivacyTracking": False,
-                "NSPrivacyCollectedDataTypes": [],
+                "NSPrivacyCollectedDataTypes": [{}],
             },
             file,
         )
-    (root / "Sources/NeAntik").mkdir(parents=True)
+    source_dir = root / "Sources/NeAntik"
+    source_dir.mkdir(parents=True)
+    (source_dir / "Telemetry.swift").write_text("struct SafeTelemetry {}", encoding="utf-8")
     return root
 
 

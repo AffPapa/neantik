@@ -42,6 +42,13 @@ struct NeAntikSettingsView: View {
                 }
             }
 
+            Section("Обезличенная статистика") {
+                Toggle("Помогать улучшать NeAntik", isOn: $preferences.telemetryEnabled)
+                Text("Передаются только агрегированные события: запуски, количество рабочих мест и прокси. URL, cookies, имена профилей, прокси и отпечатки не передаются.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Сочетания клавиш") {
                 HStack {
                     Button {

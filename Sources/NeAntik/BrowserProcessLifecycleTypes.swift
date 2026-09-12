@@ -215,5 +215,8 @@ enum BrowserStopPhase: Equatable, Sendable {
 
 enum BrowserLaunchPurpose: Equatable, Sendable {
     case normal
+    /// Starts an isolated, empty browser data directory without changing the
+    /// saved workplace.
+    case clean
     case fingerprintAudit(httpLoopbackPort: UInt16)
 }

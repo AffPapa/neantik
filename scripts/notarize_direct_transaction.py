@@ -8,6 +8,7 @@ import json
 import os
 import plistlib
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -230,6 +231,33 @@ def run_checked(
             if part
         )
     return result.output
+
+
+def run_stapler_checked(
+    command: list[str],
+    *,
+    cwd: Path,
+    runner: CommandRunner,
+    label: str,
+) -> str:
+    """Retry transient Apple ticket propagation failures (stapler error 73)."""
+    last_error: DirectNotaryTransactionError | None = None
+    # Apple may report Accepted before the CDN ticket is available to
+    # stapler. Allow a bounded six-minute propagation window.
+    for attempt in range(1, 13):
+        result = runner(command, cwd)
+        if result.returncode == 0:
+            return result.output
+        detail = "\n".join(
+            part for part in (result.output.strip(), result.stderr.strip()) if part
+        )
+        last_error = DirectNotaryTransactionError(
+            f"{label} failed" + (f":\n{detail}" if detail else "")
+        )
+        if "Error 73" not in detail or attempt == 12:
+            raise last_error
+        time.sleep(30)
+    raise last_error or DirectNotaryTransactionError(f"{label} failed")
 
 
 def _reject_duplicate_json_pairs(
@@ -571,6 +599,74 @@ def extract_candidate_app(
             "release archive must contain only one top-level NeAntik.app"
         )
     return app
+
+
+def extract_staple_app(
+    archive: Path,
+    destination: Path,
+    *,
+    project_root: Path,
+    runner: CommandRunner,
+) -> Path:
+    app = extract_candidate_app(
+        archive,
+        destination,
+        project_root=project_root,
+        runner=runner,
+    )
+    root_value = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+    if not root_value:
+        return app
+    root = Path(root_value)
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / "NeAntik.app"
+    if target.exists() or target.is_symlink():
+        if target.is_dir() and not target.is_symlink():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    subprocess.run(
+        ["/usr/bin/ditto", "--norsrc", str(app), str(target)],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    shutil.rmtree(app)
+    return target
+
+
+def canonicalize_stapled_app(app: Path) -> Path:
+    root_value = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+    if not root_value:
+        return app
+    target = Path(root_value) / "NeAntik.app"
+    if target.exists() or target.is_symlink():
+        if target.is_dir() and not target.is_symlink():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    shutil.move(str(app), str(target))
+    return target
+
+
+def move_app_for_stapling(app: Path) -> tuple[Path, Path | None]:
+    # Apple's stapler expects the canonical bundle name and can reject a
+    # notarized ticket when the app is renamed immediately before stapling.
+    # `extract_staple_app` already copies with ditto --norsrc, so no further
+    # relocation is needed here.
+    return app, None
+
+
+def restore_canonical_app(app: Path, canonical: Path | None) -> Path:
+    if canonical is None:
+        return app
+    if canonical.exists() or canonical.is_symlink():
+        if canonical.is_dir() and not canonical.is_symlink():
+            shutil.rmtree(canonical)
+        else:
+            canonical.unlink()
+    shutil.move(str(app), str(canonical))
+    return canonical
 
 
 def read_version(info_plist: Path) -> str:
@@ -1893,9 +1989,17 @@ def resume_known_transaction(
             final_check_root,
         ):
             directory.mkdir(mode=0o700)
+        staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+        if staple_work_root:
+            staging_parent = Path(staple_work_root) / f"neantik-staple-{uuid.uuid4().hex}"
+            staging_parent.mkdir(parents=True, mode=0o755)
+            staging_parent.chmod(0o755)
+            accepted_root = staging_parent / "accepted"
+            accepted_root.mkdir(parents=True, mode=0o700)
+            accepted_root.chmod(0o755)
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
-            lambda: extract_candidate_app(
+            lambda: extract_staple_app(
                 submitted,
                 accepted_root,
                 project_root=project_root,
@@ -1911,18 +2015,20 @@ def resume_known_transaction(
             runner=runner,
             full_preflight=False,
         )
-        run_checked(
+        staple_target, canonical_target = move_app_for_stapling(staged_app)
+        run_stapler_checked(
             ["xcrun", "stapler", "staple", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="recovery stapling accepted candidate",
         )
-        run_checked(
-            ["xcrun", "stapler", "validate", str(staged_app)],
+        run_stapler_checked(
+            ["xcrun", "stapler", "validate", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="recovery stapled ticket validation",
         )
+        staged_app = restore_canonical_app(staple_target, canonical_target)
         run_checked(
             [
                 "spctl",
@@ -2729,9 +2835,18 @@ def run_transaction(
         )
         hook("notary-accepted", context)
 
+        staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+        if staple_work_root:
+            staging_parent = Path(staple_work_root) / f"neantik-staple-{uuid.uuid4().hex}"
+            staging_parent.mkdir(parents=True, mode=0o755)
+            staging_parent.chmod(0o755)
+            accepted_root = staging_parent / "accepted"
+            accepted_root.mkdir(parents=True, mode=0o700)
+            accepted_root.chmod(0o755)
+
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
-            lambda: extract_candidate_app(
+            lambda: extract_staple_app(
                 submitted,
                 accepted_root,
                 project_root=project_root,
@@ -2748,18 +2863,20 @@ def run_transaction(
             runner=runner,
             full_preflight=False,
         )
-        run_checked(
+        staple_target, canonical_target = move_app_for_stapling(staged_app)
+        run_stapler_checked(
             ["xcrun", "stapler", "staple", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="stapling accepted candidate",
         )
-        run_checked(
-            ["xcrun", "stapler", "validate", str(staged_app)],
+        run_stapler_checked(
+            ["xcrun", "stapler", "validate", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="stapled ticket validation",
         )
+        staged_app = restore_canonical_app(staple_target, canonical_target)
         run_checked(
             [
                 "spctl",

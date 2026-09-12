@@ -679,6 +679,9 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var isPinned: Bool
     var isArchived: Bool
     var startURL: String
+    /// Optional pages opened together on a normal launch. Kept separate from
+    /// `startURL` so existing profiles retain their one-page behaviour.
+    var startupTabs: StartupTabSet
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -696,6 +699,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         isPinned: Bool = false,
         isArchived: Bool = false,
         startURL: String = BrowserProfile.defaultStartURL,
+        startupTabs: StartupTabSet = StartupTabSet(),
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -713,6 +717,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.isPinned = isPinned
         self.isArchived = isArchived
         self.startURL = startURL
+        self.startupTabs = startupTabs
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -792,6 +797,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
               startURL.utf8.count <= Self.maximumStartURLUTF8Bytes,
               PersistedInlineText.isSafe(startURL),
               BrowserLaunchBuilder.validatedStartURL(startURL) != nil,
+              startupTabs.isValid,
               proxy?.isValid != false
         else {
             return nil
@@ -799,6 +805,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         var value = self
         value.tags = cleanTags
         value.note = cleanNote
+        value.startupTabs = StartupTabSet(urls: startupTabs.validURLs.map(\.absoluteString))
         return value
     }
 
@@ -840,6 +847,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             tags: tags,
             note: "",
             startURL: startURL,
+            startupTabs: startupTabs,
             proxy: copyingProxy ? proxy : nil,
             identity: BrowserIdentity(),
             createdAt: date,
@@ -861,6 +869,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case isPinned
         case isArchived
         case startURL
+        case startupTabs
         case proxy
         case identity
         case createdAt
@@ -898,6 +907,10 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             forKey: .isArchived
         ) ?? false
         startURL = try container.decode(String.self, forKey: .startURL)
+        startupTabs = try container.decodeIfPresent(
+            StartupTabSet.self,
+            forKey: .startupTabs
+        ) ?? StartupTabSet()
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
             forKey: .proxy

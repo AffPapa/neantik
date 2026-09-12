@@ -6,33 +6,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
-    /// Render the production Home view with deterministic state fixtures. These
-    /// images supplement the full ContentView renders with recovery/empty states;
-    /// actions are inert and never open browsers or read production profiles.
-    @Test func workplaceHomeRecoveryAndFirstRunRenderAcrossSizes() throws {
-        let minimum = CGSize(width: 820, height: 560)
-        let wide = CGSize(width: 1_440, height: 900)
-        let cases: [(String, WorkplaceHomeRenderState, CGSize, ColorScheme)] = [
-            ("first-ready-minimum-light", .firstReady, minimum, .light),
-            ("first-missing-minimum-dark", .firstMissing, minimum, .dark),
-            ("archive-minimum-light", .archive, minimum, .light),
-            ("search-empty-minimum-dark", .searchEmpty, minimum, .dark),
-            ("recovery-minimum-light", .recovery, minimum, .light),
-            ("recovery-minimum-dark", .recovery, minimum, .dark),
-            ("recovery-wide-light", .recovery, wide, .light),
-            ("recovery-wide-dark", .recovery, wide, .dark),
-        ]
-        for (name, state, size, scheme) in cases {
-            try render(
-                WorkplaceHomeRenderFixture(state: state),
-                name: "workplace-home-\(name)",
-                size: size,
-                colorScheme: scheme,
-                settleTime: 0.15
-            )
-        }
-    }
-
     @Test func sharedDisclosureRendersBothStatesAndAppearances() throws {
         for expanded in [false, true] {
             for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
@@ -506,6 +479,7 @@ struct ResponsiveLayoutRenderTests {
                     ),
                     onRecheck: {},
                     onCopyDiagnostics: {},
+                    onExportDiagnostics: {},
                     onCopyApplicationPath: {},
                     onRevealApplication: {},
                     onOpenSystemSettings: {}
@@ -1213,94 +1187,6 @@ struct ResponsiveLayoutRenderTests {
             }
         }
         return false
-    }
-}
-
-private enum WorkplaceHomeRenderState {
-    case firstReady, firstMissing, archive, searchEmpty, recovery
-}
-
-@MainActor
-private struct WorkplaceHomeRenderFixture: View {
-    let state: WorkplaceHomeRenderState
-    @FocusState private var searchFocused: Bool
-    @State private var search: String
-
-    init(state: WorkplaceHomeRenderState) {
-        self.state = state
-        _search = State(initialValue: state == .searchEmpty ? "Неизвестное рабочее место" : "")
-    }
-
-    private var profiles: [BrowserProfile] {
-        switch state {
-        case .firstReady, .firstMissing:
-            return []
-        case .archive:
-            return [BrowserProfile(id: layoutFixtureID(201), name: "Сохранённый проект", isArchived: true)]
-        case .searchEmpty, .recovery:
-            return [
-                BrowserProfile(
-                    id: layoutFixtureID(202),
-                    name: "Очень длинное рабочее место для проверки Unicode и сохранённого контекста — 東京",
-                    tags: ["Работа", "Клиент"],
-                    note: "Следующий шаг: проверить заказ, сверить ответ клиента и продолжить работу с сохранёнными документами.",
-                    isPinned: true,
-                    proxy: ProxyConfiguration(kind: .https, host: "proxy.example", port: 8_080, username: "")
-                ),
-                BrowserProfile(id: layoutFixtureID(203), name: "Продолжить после неожиданного закрытия", isPinned: true),
-                BrowserProfile(id: layoutFixtureID(204), name: "Окно требует восстановления", isPinned: true),
-                BrowserProfile(id: layoutFixtureID(205), name: "Личное", tags: ["Покупки", "Поездка"]),
-            ].map { profile in
-                var fixed = profile
-                fixed.createdAt = Date(timeIntervalSince1970: 1_700_000_000)
-                fixed.updatedAt = fixed.createdAt
-                return fixed
-            }
-        }
-    }
-
-    private var runtime: BrowserRuntimeAvailability {
-        state == .firstMissing ? .missing : .ready
-    }
-
-    private func processState(for profile: BrowserProfile) -> BrowserProfileProcessState {
-        if profile.id == layoutFixtureID(204) { return .recoveryRequired }
-        if profile.id == layoutFixtureID(205) { return .managed }
-        return .stopped
-    }
-
-    var body: some View {
-        WorkplaceHomeView(
-            projection: WorkplaceHomeProjection.resolve(profiles: profiles, search: search),
-            revealProfileID: nil,
-            isFirstRun: profiles.isEmpty,
-            runtimeAvailability: runtime,
-            isCreatingProfile: false,
-            search: $search,
-            searchFocus: $searchFocused,
-            presentation: { profile in
-                WorkplaceOpenPresentation.resolve(
-                    state: processState(for: profile),
-                    archived: profile.isArchived,
-                    runtime: runtime
-                )
-            },
-            onOpen: { _ in },
-            onInspect: { _ in },
-            onCreate: {},
-            onCatalog: {},
-            profileCommands: { _ in .unavailable },
-            canStop: { _ in false },
-            onCreateAndOpen: {},
-            onRetryRuntimeCheck: {},
-            onArchive: {},
-            notice: { profile in
-                guard profile.id == layoutFixtureID(203) else { return nil }
-                return WorkplaceExitNotice.resolve(
-                    classification: .crashOrSignal, wasForceStopped: false
-                )?.message
-            }
-        )
     }
 }
 

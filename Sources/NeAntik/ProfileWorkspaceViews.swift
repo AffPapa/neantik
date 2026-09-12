@@ -548,6 +548,12 @@ struct ProfileDetailView: View {
     var onToggleRunning: () -> Void = {}
     var onFocusRunning: () -> Void = {}
     var onEditProfile: () -> Void = {}
+    var onImportCookies: () -> Void = {}
+    var snapshots: [URL] = []
+    var stabilityRecords: [ProfileStabilityRecord] = []
+    var activityEvents: [LocalActivityEvent] = []
+    var onExportBackup: () -> Void = {}
+    var onRestoreSnapshot: (URL) -> Void = { _ in }
 
     private var isRunning: Bool {
         processState.isRunning
@@ -704,6 +710,23 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
+            let readiness = ProfileReadinessReport.evaluate(
+                profile: profile,
+                proxyReady: profile.proxy == nil
+            )
+            GroupBox("Готовность") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(readiness.title, systemImage: readiness.systemImage)
+                        .foregroundStyle(readiness.status == .ready ? .green : readiness.status == .attention ? .orange : .yellow)
+                    ForEach(readiness.issues, id: \.self) { issue in
+                        Text(issue)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
             GroupBox("Профиль") {
                 VStack(alignment: .leading, spacing: 10) {
                     Label(
@@ -728,6 +751,103 @@ struct ProfileDetailView: View {
                 .padding(.vertical, 4)
             }
 
+            let contract = IdentityContract.derive(from: profile)
+            GroupBox("Контракт среды") {
+                VStack(alignment: .leading, spacing: 5) {
+                    LabeledContent("Язык", value: contract.localeIdentifier ?? "Авто")
+                    LabeledContent("Часовой пояс", value: contract.timezoneIdentifier ?? "Авто")
+                    LabeledContent("WebRTC", value: contract.webRTCMode)
+                    LabeledContent("Устройство", value: String(contract.deviceTupleID.prefix(12)))
+                }
+                .font(.caption)
+                .padding(.vertical, 4)
+            }
+
+            GroupBox("Стабильность") {
+                if let latest = stabilityRecords.first {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Проверено (latest.observedAt.neAntikDisplayDateTime)")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Label(latest.fingerprintChanged || latest.proxyChanged || latest.cookiesChanged || latest.tabsChanged
+                              ? "Есть изменения со времени прошлого запуска" : "Среда стабильна",
+                              systemImage: latest.fingerprintChanged || latest.proxyChanged || latest.cookiesChanged || latest.tabsChanged
+                              ? "exclamationmark.triangle" : "checkmark.circle")
+                        if latest.proxyChanged { Text("Изменился прокси") }
+                        if latest.cookiesChanged { Text("Изменились cookies") }
+                        if latest.tabsChanged { Text("Изменились вкладки") }
+                    }
+                    .font(.caption)
+                    .padding(.vertical, 4)
+                } else {
+                    Text("История появится после первого запуска")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                }
+            }
+
+            GroupBox("Последние события") {
+                if activityEvents.isEmpty {
+                    Text("Событий пока нет").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(activityEvents.prefix(5)) { event in
+                            Label(Self.activityTitle(event.kind), systemImage: "clock")
+                        }
+                    }
+                    .font(.caption)
+                }
+            }
+
+            ExtensionSurfaceInspectionView(
+                profileDirectory: URL(fileURLWithPath: browserDataPath,
+                                       isDirectory: true)
+            )
+
+            GroupBox {
+                HStack(spacing: 10) {
+                    Label("Добавить cookies из JSON или Netscape-файла", systemImage: "arrow.down.doc")
+                        .font(.callout)
+                    Spacer(minLength: 8)
+                    Button("Импортировать…", systemImage: "plus") {
+                        onImportCookies()
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 4)
+            } label: {
+                Label("Cookies", systemImage: "checkmark.shield")
+            }
+
+            GroupBox {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Label("Локальная копия профиля", systemImage: "lock.doc")
+                        Spacer()
+                        Button("Экспортировать…", systemImage: "square.and.arrow.up",
+                               action: onExportBackup)
+                        .controlSize(.small)
+                    }
+                    Text("Снимки создаются автоматически перед изменениями и восстанавливаются атомарно.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ForEach(snapshots.prefix(3), id: \.path) { snapshot in
+                        HStack {
+                            Label(snapshot.lastPathComponent, systemImage: "clock.arrow.circlepath")
+                                .font(.caption).lineLimit(1)
+                            Spacer()
+                            Button("Вернуть") { onRestoreSnapshot(snapshot) }
+                                .controlSize(.small)
+                        }
+                    }
+                    if snapshots.isEmpty {
+                        Text("Снимков пока нет")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            } label: {
+                Label("Восстановление", systemImage: "arrow.counterclockwise")
+            }
+
             DisclosureGroup("Технические сведения", isExpanded: $technicalDetailsExpanded) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Папка данных браузера")
@@ -747,6 +867,17 @@ struct ProfileDetailView: View {
                 .padding(.top, 10)
             }
             .disclosureGroupStyle(NeAntikDisclosureStyle())
+        }
+    }
+
+    private static func activityTitle(_ kind: LocalActivityEvent.Kind) -> String {
+        switch kind {
+        case .launched: "Запуск"
+        case .stopped: "Остановка"
+        case .restored: "Восстановление"
+        case .proxyFailed: "Ошибка прокси"
+        case .snapshotCreated: "Создан снимок"
+        case .cleanLaunch: "Чистый запуск"
         }
     }
 
