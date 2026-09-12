@@ -24,10 +24,16 @@ struct EditorRequest: Identifiable {
     }
 }
 
+struct QuickCreateRequest: Identifiable {
+    let id = UUID()
+    let targetFolderID: UUID?
+}
+
 /// One immutable presentation snapshot; selecting another row cannot retarget it.
 struct WorkspaceSheetRequest: Identifiable {
     enum Destination {
         case editor(EditorRequest)
+        case quickCreate(QuickCreateRequest)
         case duplication(ProfileDuplicationRequest)
         case note(BrowserProfile)
         case folderName(ProfileFolder?)

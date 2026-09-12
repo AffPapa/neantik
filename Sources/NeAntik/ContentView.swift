@@ -550,6 +550,25 @@ struct ContentView: View {
         switch destination {
         case let .editor(request):
             profileEditorSheet(for: request)
+        case let .quickCreate(request):
+            ProfileCreationWizardView(
+                targetFolderID: request.targetFolderID,
+                onCancel: { workspaceSheetRequest = nil },
+                onCreate: { profile, shouldOpen in
+                    let saved = try saveProfileEditorDraft(
+                        profile, passwordUpdate: .keepExisting,
+                        folderID: request.targetFolderID, original: nil,
+                        openedProcessState: nil
+                    )
+                    workspaceSheetRequest = nil
+                    if shouldOpen {
+                        Task { @MainActor in
+                            await Task.yield()
+                            launch(saved)
+                        }
+                    }
+                }
+            )
         case let .duplication(request):
             ProfileDuplicationSheet(
                 source: request.source,
@@ -1263,10 +1282,7 @@ struct ContentView: View {
     }
     private func beginCreatingProfile() {
         guard !isWorkspaceModalPresented else { return }
-        presentWorkspaceSheet(.editor(EditorRequest(
-            profile: nil,
-            targetFolderID: selectedFolderID
-        )))
+        presentWorkspaceSheet(.quickCreate(QuickCreateRequest(targetFolderID: selectedFolderID)))
     }
     private func beginCreatingFolder() {
         guard !isWorkspaceModalPresented else { return }
