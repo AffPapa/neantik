@@ -54,6 +54,31 @@ struct BrowserLaunchBuilderTests {
     }
 
     @Test
+    func startupTabsReplaceSessionRestoreAndOpenInDeclaredOrder() {
+        let data = URL(fileURLWithPath: "/tmp/workplace-startup-tabs")
+        var profile = BrowserProfile(
+            name: "Campaign",
+            startupTabs: StartupTabSet(urls: [
+                "https://example.com/one",
+                "https://example.org/two"
+            ])
+        )
+        profile.lastLaunchedAt = Date()
+
+        let arguments = BrowserLaunchBuilder.arguments(
+            profile: profile,
+            browserDataDirectory: data
+        )
+
+        #expect(arguments.contains("--new-window"))
+        #expect(!arguments.contains("--restore-last-session"))
+        #expect(arguments.suffix(2) == [
+            "https://example.com/one",
+            "https://example.org/two"
+        ])
+    }
+
+    @Test
     func createsIsolatedProfileArguments() {
         let profile = BrowserProfile(
             name: "Work",

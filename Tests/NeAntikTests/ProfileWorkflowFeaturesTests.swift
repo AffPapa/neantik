@@ -44,6 +44,31 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
         XCTAssertFalse(StartupTabSet(urls: ["file:///tmp/private"]).isValid)
     }
 
+    func testStartupTabsPersistAndLegacyProfilesDefaultToEmpty() throws {
+        let profile = BrowserProfile(
+            name: "Pinned tabs",
+            startupTabs: StartupTabSet(urls: [
+                "https://example.com/one",
+                "https://example.org/two"
+            ])
+        )
+        let encoder = JSONEncoder.neantikStable
+        let decoder = JSONDecoder.neantikStable
+        let decoded = try decoder.decode(
+            BrowserProfile.self,
+            from: encoder.encode(profile)
+        )
+        XCTAssertEqual(decoded.startupTabs, profile.startupTabs)
+
+        var legacy = try JSONSerialization.jsonObject(
+            with: encoder.encode(profile)
+        ) as! [String: Any]
+        legacy.removeValue(forKey: "startupTabs")
+        let legacyData = try JSONSerialization.data(withJSONObject: legacy)
+        let migrated = try decoder.decode(BrowserProfile.self, from: legacyData)
+        XCTAssertEqual(migrated.startupTabs, StartupTabSet())
+    }
+
     func testActivityLogIsBoundedAndNewestFirst() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

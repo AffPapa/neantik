@@ -96,7 +96,12 @@ enum BrowserLaunchBuilder {
         )
         // A returning workplace resumes its own saved tabs. Explicit start
         // pages and reserved audit URLs retain their deterministic launch.
+        let startupTabURLs = purpose == .normal && startURLOverride == nil
+            ? profile.startupTabs.validURLs.map(\.absoluteString)
+            : []
+        let usesStartupTabs = !startupTabURLs.isEmpty
         let restoresWorkplace = purpose == .normal && startURLOverride == nil &&
+            !usesStartupTabs &&
             profile.lastLaunchedAt != nil &&
             profile.startURL.trimmingCharacters(in: .whitespacesAndNewlines) == BrowserProfile.defaultStartURL
         var arguments = [
@@ -164,9 +169,15 @@ enum BrowserLaunchBuilder {
         arguments.append(
             contentsOf: sanitizedAdditionalArguments(additionalArguments)
         )
-        let startURL =
-            startURLOverride ?? normalizedStartURL(profile.startURL)
-        if !restoresWorkplace { arguments.append(startURL.absoluteString) }
+        if !restoresWorkplace {
+            if !startupTabURLs.isEmpty {
+                arguments.append(contentsOf: startupTabURLs)
+            } else {
+                let startURL =
+                    startURLOverride ?? normalizedStartURL(profile.startURL)
+                arguments.append(startURL.absoluteString)
+            }
+        }
         return arguments
     }
 
