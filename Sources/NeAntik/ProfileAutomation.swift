@@ -102,7 +102,12 @@ struct ProfileReadinessReport: Codable, Equatable, Sendable {
         // Host locale and timezone are automatic defaults when the profile
         // does not override them; they are not launch blockers.
         var issues = IdentityContract.derive(from: profile).issues.filter { issue in
-            !issue.contains("Часовой пояс") && !issue.contains("Язык")
+            // Host locale, timezone and display geometry are automatic defaults.
+            // A window can start before AppKit reports a display, so none of
+            // these host-derived values may block a normal profile launch.
+            !issue.contains("Часовой пояс") &&
+                !issue.contains("Язык") &&
+                !issue.contains("Размер экрана")
         }
         if profile.proxy != nil && proxyReady != true { issues.append("Прокси нужно проверить") }
         if !runtimeReady { issues.append("Версия Chromium требует проверки") }
