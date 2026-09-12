@@ -131,24 +131,38 @@ struct CookieImportView: View {
     }
 
     private func readFile(_ url: URL, displayName: String?) {
-        isLoading = true
-        errorMessage = nil
-        sourceName = displayName
         Task { @MainActor in
+            isLoading = true
+            errorMessage = nil
+            sourceName = displayName
             defer { isLoading = false }
             do {
+                // Finder and the file importer can hand us security-scoped
+                // URLs. Keep access scoped to this read, and reject an
+                // oversized file before allocating its contents in memory.
+                let didAccess = url.startAccessingSecurityScopedResource()
+                defer {
+                    if didAccess { url.stopAccessingSecurityScopedResource() }
+                }
+                if let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                   size > CookieImportParser.maximumBytes {
+                    throw CookieImportError.tooLarge
+                }
                 let data = try Data(contentsOf: url, options: [.mappedIfSafe])
                 cookies = try CookieImportParser.parse(data)
             } catch {
                 cookies = []
+                sourceName = nil
                 errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             }
         }
     }
 
     private func loadDroppedFile(_ provider: NSItemProvider) {
-        isLoading = true
-        errorMessage = nil
+        Task { @MainActor in
+            isLoading = true
+            errorMessage = nil
+        }
         let fileType = provider.registeredTypeIdentifiers.first(where: {
             $0 == UTType.fileURL.identifier || $0 == UTType.item.identifier
         })
