@@ -623,11 +623,11 @@ def canonicalize_stapled_app(app: Path) -> Path:
 
 
 def move_app_for_stapling(app: Path) -> tuple[Path, Path | None]:
-    if not os.environ.get("NEANTIK_STAPLE_WORK_ROOT") or app.name != "NeAntik.app":
-        return app, None
-    staged = app.parent / f"NeAntik-staple-{uuid.uuid4().hex}.app"
-    shutil.move(str(app), str(staged))
-    return staged, app
+    # Apple's stapler expects the canonical bundle name and can reject a
+    # notarized ticket when the app is renamed immediately before stapling.
+    # `extract_staple_app` already copies with ditto --norsrc, so no further
+    # relocation is needed here.
+    return app, None
 
 
 def restore_canonical_app(app: Path, canonical: Path | None) -> Path:
