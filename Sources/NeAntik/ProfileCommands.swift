@@ -180,7 +180,6 @@ struct WorkspaceCommandSet {
     let toggleInspector: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
-    var showWorkplaceHome: () -> Void = {}
     var showWorkplaceCatalog: () -> Void = {}
     /// Opens the keyboard-first command surface. Keeping this in the focused
     /// command set means the menu and palette share the same modal guards.
@@ -261,10 +260,6 @@ struct WorkspaceCommandMenu: Commands {
         }
 
         CommandMenu("Рабочее пространство") {
-            Button("Рабочие места", action: resolved.showWorkplaceHome)
-                .keyboardShortcut(NeAntikShortcut.workplaceHome.keyEquivalent,
-                                  modifiers: NeAntikShortcut.workplaceHome.modifiers)
-                .disabled(!resolved.isEnabled)
             Button("Полный каталог", action: resolved.showWorkplaceCatalog)
                 .keyboardShortcut(NeAntikShortcut.workplaceCatalog.keyEquivalent,
                                   modifiers: NeAntikShortcut.workplaceCatalog.modifiers)
