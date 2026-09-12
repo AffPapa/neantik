@@ -4,7 +4,7 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 
 | # | Function | Status | Evidence / gap |
 |---:|---|---|---|
-| 1 | Profile creation wizard | PARTIAL | `ProfileCreationWizard` + tests; the editor remains the primary creation surface, so the reduced purpose-first flow is not yet the default. |
+| 1 | Profile creation wizard | PASS | Purpose-first SwiftUI wizard is now the default creation route: name + purpose, with optional immediate open; advanced editor remains available after creation. |
 | 2 | Identity Contract | PASS (surface) | `IdentityContract` derives the environment tuple and the inspector now shows language, timezone, WebRTC and device tuple; launch enforcement still reports only readiness issues. |
 | 3 | Readiness center | PASS | `ProfileReadinessReport` is visible in the inspector and real launch gate blocks actionable proxy/runtime problems with human-readable reasons. |
 | 4 | Proxy preflight | PASS | Existing coordinator/tester launch gate. |
