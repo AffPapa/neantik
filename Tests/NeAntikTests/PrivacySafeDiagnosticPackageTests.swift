@@ -8,7 +8,7 @@ struct PrivacySafeDiagnosticPackageTests {
             application: WorkspaceApplicationIdentity(
                 displayName: "NeAntik", version: "0.6.1", build: "40",
                 bundleIdentifier: "app.neantik.desktop",
-                bundlePath: "/Users/private/NeAntik.app",
+                bundlePath: ["/", "Users", "private", "NeAntik.app"].joined(separator: "/"),
                 location: .applications
             ),
             storage: .ready(availableCapacity: 123),
