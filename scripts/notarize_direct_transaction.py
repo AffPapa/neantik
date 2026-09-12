@@ -242,7 +242,9 @@ def run_stapler_checked(
 ) -> str:
     """Retry transient Apple ticket propagation failures (stapler error 73)."""
     last_error: DirectNotaryTransactionError | None = None
-    for attempt in range(1, 4):
+    # Apple may report Accepted before the CDN ticket is available to
+    # stapler. Allow a bounded six-minute propagation window.
+    for attempt in range(1, 13):
         result = runner(command, cwd)
         if result.returncode == 0:
             return result.output
@@ -252,9 +254,9 @@ def run_stapler_checked(
         last_error = DirectNotaryTransactionError(
             f"{label} failed" + (f":\n{detail}" if detail else "")
         )
-        if "Error 73" not in detail or attempt == 3:
+        if "Error 73" not in detail or attempt == 12:
             raise last_error
-        time.sleep(20)
+        time.sleep(30)
     raise last_error or DirectNotaryTransactionError(f"{label} failed")
 
 
