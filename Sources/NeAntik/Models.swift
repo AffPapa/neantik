@@ -847,6 +847,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             tags: tags,
             note: "",
             startURL: startURL,
+            startupTabs: startupTabs,
             proxy: copyingProxy ? proxy : nil,
             identity: BrowserIdentity(),
             createdAt: date,

@@ -125,6 +125,51 @@ struct ProfileDuplicationTests {
     }
 
     @Test
+    func transferPreviewMatchesCleanBrowserDataAndSelectedOptions() {
+        let source = BrowserProfile(
+            name: "Источник",
+            startupTabs: StartupTabSet(urls: [
+                "https://one.example",
+                "https://two.example"
+            ]),
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: "operator"
+            )
+        )
+        let direct = ProfileDuplicationOptions(name: "Копия", destinationFolderID: nil)
+        let directPreview = ProfileDuplicationPolicy.transfers(from: source, options: direct)
+        #expect(directPreview.count == 6)
+        #expect(directPreview.first(where: { $0.id == "cookies" })?.state == .notCopied)
+        #expect(directPreview.first(where: { $0.id == "tabs" })?.state == .notCopied)
+        #expect(directPreview.first(where: { $0.id == "startup-tabs" })?.state == .copiedCount(2))
+        #expect(directPreview.first(where: { $0.id == "proxy" })?.state == .notCopied)
+        #expect(directPreview.first(where: { $0.id == "fingerprint" })?.state == .notCopied)
+        #expect(directPreview.first(where: { $0.id == "extensions" })?.state == .notCopied)
+
+        var withProxy = direct
+        withProxy.setCopiesProxy(true)
+        withProxy.setCopiesProxyPassword(true)
+        #expect(ProfileDuplicationPolicy.transfers(from: source, options: withProxy)
+            .first(where: { $0.id == "proxy" })?.detail == "Адрес и пароль из Связки ключей.")
+    }
+
+    @Test
+    func duplicatePreservesStartupTabsForPredictableClone() throws {
+        let source = BrowserProfile(
+            name: "Источник",
+            startupTabs: StartupTabSet(urls: ["https://example.com"])
+        )
+        let copy = try ProfileDuplicationPolicy.makeProfile(
+            from: source,
+            options: ProfileDuplicationOptions(name: "Копия", destinationFolderID: nil)
+        )
+        #expect(copy.startupTabs == source.startupTabs)
+    }
+
+    @Test
     func proxyAndPasswordRequireSeparateExplicitChoices() throws {
         let source = BrowserProfile(
             name: "Источник",

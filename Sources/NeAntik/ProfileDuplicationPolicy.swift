@@ -81,6 +81,33 @@ enum ProfileDuplicationError: LocalizedError, Equatable {
     }
 }
 
+struct ProfileDuplicationTransfer: Equatable, Sendable, Identifiable {
+    enum State: Equatable, Sendable {
+        case copied
+        case notCopied
+        case copiedCount(Int)
+    }
+
+    let id: String
+    let title: String
+    let detail: String
+    let state: State
+
+    var systemImage: String {
+        switch state {
+        case .copied, .copiedCount: "checkmark.circle.fill"
+        case .notCopied: "minus.circle"
+        }
+    }
+
+    var isCopied: Bool {
+        switch state {
+        case .copied, .copiedCount: true
+        case .notCopied: false
+        }
+    }
+}
+
 enum ProfileDuplicationPolicy {
     static func requireCurrentSource(
         _ source: BrowserProfile,
@@ -133,6 +160,56 @@ enum ProfileDuplicationPolicy {
             copyingProxy: options.copiesProxy,
             at: date
         )
+    }
+
+    static func transfers(
+        from source: BrowserProfile,
+        options: ProfileDuplicationOptions
+    ) -> [ProfileDuplicationTransfer] {
+        let startupCount = source.startupTabs.validURLs.count
+        let startupDetail = startupCount > 0
+            ? "Перенесётся \(startupCount) \(startupCount == 1 ? "адрес" : "адреса") для следующего запуска."
+            : "У источника нет стартовых вкладок."
+        return [
+            ProfileDuplicationTransfer(
+                id: "cookies",
+                title: "Cookies и данные сайтов",
+                detail: "Начнётся чистое BrowserData без входов и истории источника.",
+                state: .notCopied
+            ),
+            ProfileDuplicationTransfer(
+                id: "tabs",
+                title: "Открытые вкладки",
+                detail: "Текущая сессия вкладок не переносится.",
+                state: .notCopied
+            ),
+            ProfileDuplicationTransfer(
+                id: "startup-tabs",
+                title: "Стартовые вкладки",
+                detail: startupDetail,
+                state: startupCount > 0 ? .copiedCount(startupCount) : .notCopied
+            ),
+            ProfileDuplicationTransfer(
+                id: "proxy",
+                title: "Прокси",
+                detail: options.copiesProxy
+                    ? (options.copiesProxyPassword ? "Адрес и пароль из Связки ключей." : "Адрес прокси без пароля.")
+                    : "Новый профиль будет использовать прямое подключение.",
+                state: options.copiesProxy ? .copied : .notCopied
+            ),
+            ProfileDuplicationTransfer(
+                id: "fingerprint",
+                title: "Цифровая идентичность",
+                detail: "Создастся новая согласованная идентичность.",
+                state: .notCopied
+            ),
+            ProfileDuplicationTransfer(
+                id: "extensions",
+                title: "Расширения",
+                detail: "Расширения не переносятся вместе с чистым BrowserData.",
+                state: .notCopied
+            )
+        ]
     }
 
     static func shouldCopyProxyPassword(
