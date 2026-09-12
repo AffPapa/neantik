@@ -592,7 +592,7 @@ def extract_staple_app(
         return app
     root = Path(root_value)
     root.mkdir(parents=True, exist_ok=True)
-    target = root / "NeAntik.app"
+    target = root / f"NeAntik-staple-{uuid.uuid4().hex}.app"
     if target.exists() or target.is_symlink():
         if target.is_dir() and not target.is_symlink():
             shutil.rmtree(target)
@@ -605,6 +605,20 @@ def extract_staple_app(
         stderr=subprocess.DEVNULL,
     )
     shutil.rmtree(app)
+    return target
+
+
+def canonicalize_stapled_app(app: Path) -> Path:
+    root_value = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+    if not root_value:
+        return app
+    target = Path(root_value) / "NeAntik.app"
+    if target.exists() or target.is_symlink():
+        if target.is_dir() and not target.is_symlink():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    shutil.move(str(app), str(target))
     return target
 
 
@@ -1966,6 +1980,7 @@ def resume_known_transaction(
             runner=runner,
             label="recovery stapled ticket validation",
         )
+        staged_app = canonicalize_stapled_app(staged_app)
         run_checked(
             [
                 "spctl",
@@ -2812,6 +2827,7 @@ def run_transaction(
             runner=runner,
             label="stapled ticket validation",
         )
+        staged_app = canonicalize_stapled_app(staged_app)
         run_checked(
             [
                 "spctl",
