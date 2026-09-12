@@ -16,7 +16,7 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 | 10 | Extension risk surface | MISSING | No permissions inventory UI/model. |
 | 11 | Encrypted local backup | MISSING | Existing metadata backups; no user archive export. |
 | 12 | Privacy-safe diagnostics | PARTIAL | Privacy-safe primitives exist; no dedicated export package flow. |
-| 13 | Command palette | PARTIAL | Command model/tests; no connected palette UI. |
+| 13 | Command palette | PASS | SwiftUI palette with search, Enter/Escape, menu entry and ⌘⇧P shortcut. |
 | 14 | Semantic search | PARTIAL | Ranking model/tests; list search still uses legacy path. |
 | 15 | Automatic folders/tags | PARTIAL | Suggestions model/tests; not automatically applied in catalog. |
 | 16 | Clone preview | PARTIAL | Clone action exists; no transfer preview sheet. |
