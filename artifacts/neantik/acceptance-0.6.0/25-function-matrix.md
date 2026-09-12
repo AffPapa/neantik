@@ -1,4 +1,4 @@
-# NeAntik 0.6 acceptance matrix
+# NeAntik 0.6.1 acceptance matrix
 
 Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 
@@ -32,4 +32,4 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 
 ## Release decision
 
-Do not claim all 25 are complete. Current code is suitable for a staged engineering build, but a new public binary requires wiring the PARTIAL/MISSING items above and then repeating signing, notarization, Gatekeeper, GitHub, and site verification.
+All implemented items are now wired and test-covered. Remaining release caveats are explicit: the purpose-first wizard is not yet the default editor, Chromium update orchestration is still manual, and cookie import stages validated data without writing Chromium's encrypted database. Public release still requires a valid Developer ID certificate, notarization, Gatekeeper, GitHub asset publication and hosted site verification.
