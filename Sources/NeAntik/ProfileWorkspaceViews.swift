@@ -549,6 +549,9 @@ struct ProfileDetailView: View {
     var onFocusRunning: () -> Void = {}
     var onEditProfile: () -> Void = {}
     var onImportCookies: () -> Void = {}
+    var snapshots: [URL] = []
+    var onExportBackup: () -> Void = {}
+    var onRestoreSnapshot: (URL) -> Void = { _ in }
 
     private var isRunning: Bool {
         processState.isRunning
@@ -759,6 +762,36 @@ struct ProfileDetailView: View {
                 .padding(.vertical, 4)
             } label: {
                 Label("Cookies", systemImage: "checkmark.shield")
+            }
+
+            GroupBox {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Label("Локальная копия профиля", systemImage: "lock.doc")
+                        Spacer()
+                        Button("Экспортировать…", systemImage: "square.and.arrow.up",
+                               action: onExportBackup)
+                        .controlSize(.small)
+                    }
+                    Text("Снимки создаются автоматически перед изменениями и восстанавливаются атомарно.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ForEach(snapshots.prefix(3), id: \.path) { snapshot in
+                        HStack {
+                            Label(snapshot.lastPathComponent, systemImage: "clock.arrow.circlepath")
+                                .font(.caption).lineLimit(1)
+                            Spacer()
+                            Button("Вернуть") { onRestoreSnapshot(snapshot) }
+                                .controlSize(.small)
+                        }
+                    }
+                    if snapshots.isEmpty {
+                        Text("Снимков пока нет")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            } label: {
+                Label("Восстановление", systemImage: "arrow.counterclockwise")
             }
 
             DisclosureGroup("Технические сведения", isExpanded: $technicalDetailsExpanded) {

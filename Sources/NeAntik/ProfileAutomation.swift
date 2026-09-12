@@ -279,6 +279,51 @@ struct AtomicProfileSnapshotStore: Sendable {
         try FileManager.default.moveItem(at: temporary, to: final)
         return final
     }
+
+    /// Returns snapshots newest first. Hidden temporary copies are ignored.
+    func snapshots(for profileID: UUID) -> [URL] {
+        let folder = root.appendingPathComponent(profileID.uuidString, isDirectory: true)
+        return (try? FileManager.default.contentsOfDirectory(
+            at: folder, includingPropertiesForKeys: [.creationDateKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ))?.filter { url in
+            (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+        }.sorted { lhs, rhs in
+            let left = (try? lhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+            let right = (try? rhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+            return left > right
+        } ?? []
+    }
+
+    /// Replaces browser data only after a complete staged copy exists.
+    /// The existing directory is retained as a sibling rollback copy until
+    /// the replacement is safely moved into place.
+    func restore(snapshot: URL, to browserData: URL) throws {
+        let values = try snapshot.resourceValues(forKeys: [.isDirectoryKey])
+        guard values.isDirectory == true,
+              snapshot.path.hasPrefix(root.path + "/") else {
+            throw CocoaError(.fileReadNoSuchFile)
+        }
+        let parent = browserData.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        let staged = parent.appendingPathComponent(".restore-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.copyItem(at: snapshot, to: staged)
+        let previous = parent.appendingPathComponent(".previous-\(UUID().uuidString)", isDirectory: true)
+        if FileManager.default.fileExists(atPath: browserData.path) {
+            try FileManager.default.moveItem(at: browserData, to: previous)
+        }
+        do {
+            try FileManager.default.moveItem(at: staged, to: browserData)
+            try? FileManager.default.removeItem(at: previous)
+        } catch {
+            try? FileManager.default.removeItem(at: browserData)
+            if FileManager.default.fileExists(atPath: previous.path) {
+                try? FileManager.default.moveItem(at: previous, to: browserData)
+            }
+            try? FileManager.default.removeItem(at: staged)
+            throw error
+        }
+    }
 }
 
 enum ChromiumCompatibilityDecision: Equatable, Sendable { case compatible, migrate, rollbackRequired }

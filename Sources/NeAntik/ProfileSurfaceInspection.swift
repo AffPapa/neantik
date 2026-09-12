@@ -237,8 +237,11 @@ struct ExtensionSurfaceInspectionView: View {
     }
 
     private static func detail(for item: InstalledExtension) -> String {
-        let access = item.hostAccessCount == 0 ? "нет доступа к сайтам" : "доступ к сайтам: (item.hostAccessCount)"
-        let permissions = item.permissionCount == 0 ? "без разрешений" : "разрешений: (item.permissionCount)"
-        return item.risk == .review ? "Нужна проверка · (access) · (permissions)" : "(access) · (permissions)"
+        let access = item.hostAccessCount == 0 ? "нет доступа к сайтам" :
+            "доступ к сайтам: " + String(item.hostAccessCount)
+        let permissions = item.permissionCount == 0 ? "без разрешений" :
+            "разрешений: " + String(item.permissionCount)
+        let value = access + " · " + permissions
+        return item.risk == .review ? "Нужна проверка · " + value : value
     }
 }
