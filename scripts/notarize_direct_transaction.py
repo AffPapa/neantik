@@ -1893,6 +1893,10 @@ def resume_known_transaction(
             final_check_root,
         ):
             directory.mkdir(mode=0o700)
+        staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+        if staple_work_root:
+            accepted_root = Path(staple_work_root) / retry_root.name / "accepted"
+            accepted_root.mkdir(parents=True, mode=0o700)
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
             lambda: extract_candidate_app(
@@ -2728,6 +2732,11 @@ def run_transaction(
             destination=accepted_receipt_destination,
         )
         hook("notary-accepted", context)
+
+        staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+        if staple_work_root:
+            accepted_root = Path(staple_work_root) / transaction_root.name / "accepted"
+            accepted_root.mkdir(parents=True, mode=0o700)
 
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
