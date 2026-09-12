@@ -351,6 +351,9 @@ final class BrowserProcessManager: ObservableObject {
     @Published private(set) var lastBrowserExit: BrowserExitEvent?
     /// Ephemeral row feedback, never serialized into lifecycle diagnostics.
     @Published private(set) var workplaceExitNotices: [UUID: WorkplaceExitNotice] = [:]
+    /// Profiles paused by the local memory saver. This state is deliberately
+    /// ephemeral: a relaunch always starts a profile in the normal state.
+    @Published private(set) var memorySavingSuspendedProfileIDs = Set<UUID>()
 
     private let paths: AppPaths
     private let processIdentityInspector:
@@ -1665,6 +1668,13 @@ final class BrowserProcessManager: ObservableObject {
     func stop(profileID: UUID) {
         if let process = managed[profileID]?.process {
             if process.isRunning {
+                // SIGSTOP pauses a process. Resume it before asking Chromium
+                // to terminate so the normal graceful shutdown path remains
+                // available and the profile lock can be released safely.
+                if memorySavingSuspendedProfileIDs.contains(profileID) {
+                    _ = process.resume()
+                    memorySavingSuspendedProfileIDs.remove(profileID)
+                }
                 guard stopPhase(for: profileID) == .idle else {
                     return
                 }
@@ -1753,6 +1763,56 @@ final class BrowserProcessManager: ObservableObject {
         handleTermination(profileID: profileID, process: nil)
     }
 
+    /// Pause one manager-owned Chromium process to reduce background CPU and
+    /// memory pressure. External or unverified processes are never signalled.
+    /// The operation is intentionally explicit; policy decisions are made by
+    /// `AutomaticMemorySavingPolicy` and applied by the manager only after the
+    /// caller has a current, verified snapshot.
+    @discardableResult
+    func suspendForMemorySaving(profileID: UUID) -> Bool {
+        guard let process = managed[profileID]?.process,
+              process.isRunning,
+              stopPhase(for: profileID) == .idle
+        else { return false }
+        guard process.suspend() else {
+            lastError = "Не удалось временно приостановить рабочее место."
+            return false
+        }
+        memorySavingSuspendedProfileIDs.insert(profileID)
+        return true
+    }
+
+    /// Resume a process paused by `suspendForMemorySaving`. A profile that was
+    /// not paused by this manager is left untouched.
+    @discardableResult
+    func resumeFromMemorySaving(profileID: UUID) -> Bool {
+        guard memorySavingSuspendedProfileIDs.contains(profileID),
+              let process = managed[profileID]?.process,
+              process.isRunning
+        else { return false }
+        guard process.resume() else {
+            lastError = "Не удалось возобновить рабочее место."
+            return false
+        }
+        memorySavingSuspendedProfileIDs.remove(profileID)
+        return true
+    }
+
+    /// Apply already-evaluated policy decisions. Snapshots remain caller-owned
+    /// so this method never guesses memory usage or silently changes profiles.
+    func applyMemorySavingDecisions(_ decisions: [MemorySavingDecision]) {
+        for decision in decisions {
+            switch decision.action {
+            case .suspend:
+                _ = suspendForMemorySaving(profileID: decision.profileID)
+            case .resume:
+                _ = resumeFromMemorySaving(profileID: decision.profileID)
+            case .keepRunning:
+                break
+            }
+        }
+    }
+
     private func scheduleManagedStopEscalation(
         profileID: UUID,
         process: Process
@@ -1827,6 +1887,7 @@ final class BrowserProcessManager: ObservableObject {
         }
         let priorStopPhase = stopPhase(for: profileID)
         let entry = removeManagedProcess(profileID: profileID)
+        memorySavingSuspendedProfileIDs.remove(profileID)
         let wasForced = entry?.wasForced ?? false
         let startupFailed = entry?.startupFailed ?? false
         if let process {

@@ -6,6 +6,31 @@ import Testing
 @MainActor
 struct BrowserProcessManagerTests {
     @Test
+    func memorySavingCanPauseAndResumeOnlyManagedProcess() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let executable = root.appendingPathComponent("fake-browser")
+        try Data("#!/bin/sh\nexec /bin/sleep 30\n".utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        let manager = BrowserProcessManager(
+            paths: AppPaths(rootDirectory: root.appendingPathComponent("data")),
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let profile = BrowserProfile(name: "Memory saver")
+        let runtime = BrowserRuntime(name: "Test", executableURL: executable, source: "Test")
+        defer { manager.stop(profileID: profile.id) }
+
+        try manager.launch(profile: profile, runtime: runtime)
+        #expect(manager.suspendForMemorySaving(profileID: profile.id))
+        #expect(manager.memorySavingSuspendedProfileIDs == [profile.id])
+        #expect(manager.resumeFromMemorySaving(profileID: profile.id))
+        #expect(manager.memorySavingSuspendedProfileIDs.isEmpty)
+    }
+
+    @Test
     func managedRecordCleanupDoesNotLetOldTerminationEraseRelaunch() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
