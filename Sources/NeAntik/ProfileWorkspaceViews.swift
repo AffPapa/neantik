@@ -550,6 +550,7 @@ struct ProfileDetailView: View {
     var onEditProfile: () -> Void = {}
     var onImportCookies: () -> Void = {}
     var snapshots: [URL] = []
+    var stabilityRecords: [ProfileStabilityRecord] = []
     var onExportBackup: () -> Void = {}
     var onRestoreSnapshot: (URL) -> Void = { _ in }
 
@@ -747,6 +748,40 @@ struct ProfileDetailView: View {
                     )
                 }
                 .padding(.vertical, 4)
+            }
+
+            let contract = IdentityContract.derive(from: profile)
+            GroupBox("Контракт среды") {
+                VStack(alignment: .leading, spacing: 5) {
+                    LabeledContent("Язык", value: contract.localeIdentifier ?? "Авто")
+                    LabeledContent("Часовой пояс", value: contract.timezoneIdentifier ?? "Авто")
+                    LabeledContent("WebRTC", value: contract.webRTCMode)
+                    LabeledContent("Устройство", value: String(contract.deviceTupleID.prefix(12)))
+                }
+                .font(.caption)
+                .padding(.vertical, 4)
+            }
+
+            GroupBox("Стабильность") {
+                if let latest = stabilityRecords.first {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Проверено (latest.observedAt.neAntikDisplayDateTime)")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Label(latest.fingerprintChanged || latest.proxyChanged || latest.cookiesChanged || latest.tabsChanged
+                              ? "Есть изменения со времени прошлого запуска" : "Среда стабильна",
+                              systemImage: latest.fingerprintChanged || latest.proxyChanged || latest.cookiesChanged || latest.tabsChanged
+                              ? "exclamationmark.triangle" : "checkmark.circle")
+                        if latest.proxyChanged { Text("Изменился прокси") }
+                        if latest.cookiesChanged { Text("Изменились cookies") }
+                        if latest.tabsChanged { Text("Изменились вкладки") }
+                    }
+                    .font(.caption)
+                    .padding(.vertical, 4)
+                } else {
+                    Text("История появится после первого запуска")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                }
             }
 
             ExtensionSurfaceInspectionView(

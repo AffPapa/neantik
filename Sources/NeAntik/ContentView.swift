@@ -2762,6 +2762,8 @@ struct ContentView: View {
                 },
                 snapshots: AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
                     .snapshots(for: profile.id),
+                stabilityRecords: ProfileStabilityHistoryStore(rootDirectory: store.paths.rootDirectory)
+                    .records(for: profile.id),
                 onExportBackup: { recoveryProfileID = RecoveryProfileID(id: profile.id) },
                 onRestoreSnapshot: { snapshot in restoreSnapshot(snapshot, for: profile) }
             )
