@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// The only decision required by the quick-create flow. All other profile
@@ -110,16 +111,94 @@ struct ProfileStabilityRecord: Codable, Equatable, Sendable {
     let proxyKind: ProxyKind?
     let deviceTupleID: String
     let tabCount: Int
+    let cookieCount: Int?
     let fingerprintChanged: Bool
+    /// These flags are deliberately booleans: the history must explain drift
+    /// without persisting cookies, URLs, credentials, or a proxy endpoint.
+    let proxyChanged: Bool
+    let cookiesChanged: Bool
+    let tabsChanged: Bool
+
+    private init(profileID: UUID, observedAt: Date, revision: UInt64,
+                 proxyKind: ProxyKind?, deviceTupleID: String, tabCount: Int,
+                 cookieCount: Int?, proxyToken: String?, fingerprintChanged: Bool,
+                 proxyChanged: Bool, cookiesChanged: Bool, tabsChanged: Bool) {
+        self.profileID = profileID
+        self.observedAt = observedAt
+        self.revision = revision
+        self.proxyKind = proxyKind
+        self.deviceTupleID = deviceTupleID
+        self.tabCount = tabCount
+        self.cookieCount = cookieCount
+        self.proxyToken = proxyToken
+        self.fingerprintChanged = fingerprintChanged
+        self.proxyChanged = proxyChanged
+        self.cookiesChanged = cookiesChanged
+        self.tabsChanged = tabsChanged
+    }
 
     static func capture(profile: BrowserProfile, tabCount: Int = 0,
-                        previous: Self? = nil, now: Date = Date()) -> Self {
-        Self(profileID: profile.id, observedAt: now, revision: profile.revision,
+                        cookieCount: Int? = nil, previous: Self? = nil,
+                        now: Date = Date()) -> Self {
+        let safeTabCount = max(0, tabCount)
+        let proxyToken = profile.proxy.map { proxy in
+            SHA256.hash(data: Data("\(proxy.kind.rawValue)|\(proxy.host)|\(proxy.port)".utf8))
+                .map { String(format: "%02x", $0) }.joined()
+        }
+        return Self(profileID: profile.id, observedAt: now, revision: profile.revision,
              proxyKind: profile.proxy?.kind, deviceTupleID: profile.identity.deviceTupleID,
-             tabCount: max(0, tabCount), fingerprintChanged: previous.map {
-                $0.deviceTupleID != profile.identity.deviceTupleID
-            } ?? false)
+             tabCount: safeTabCount, cookieCount: cookieCount.map { max(0, $0) }, fingerprintChanged: previous.map {
+                 $0.deviceTupleID != profile.identity.deviceTupleID
+             } ?? false,
+             proxyChanged: previous.map { $0.proxyToken != proxyToken } ?? false,
+             cookiesChanged: previous.map {
+                 cookieCount != nil && $0.cookieCount != nil && $0.cookieCount != cookieCount
+             } ?? false,
+             tabsChanged: previous.map { $0.tabCount != safeTabCount } ?? false,
+             proxyToken: proxyToken)
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case profileID, observedAt, revision, proxyKind, deviceTupleID,
+             tabCount, cookieCount, proxyToken, fingerprintChanged, proxyChanged, cookiesChanged, tabsChanged
+    }
+
+    private init(profileID: UUID, observedAt: Date, revision: UInt64,
+                 proxyKind: ProxyKind?, deviceTupleID: String, tabCount: Int,
+                 cookieCount: Int?, fingerprintChanged: Bool,
+                 proxyChanged: Bool, cookiesChanged: Bool, tabsChanged: Bool,
+                 proxyToken: String?) {
+        self.profileID = profileID
+        self.observedAt = observedAt
+        self.revision = revision
+        self.proxyKind = proxyKind
+        self.deviceTupleID = deviceTupleID
+        self.tabCount = tabCount
+        self.cookieCount = cookieCount
+        self.fingerprintChanged = fingerprintChanged
+        self.proxyChanged = proxyChanged
+        self.cookiesChanged = cookiesChanged
+        self.tabsChanged = tabsChanged
+        self.proxyToken = proxyToken
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        profileID = try c.decode(UUID.self, forKey: .profileID)
+        observedAt = try c.decode(Date.self, forKey: .observedAt)
+        revision = try c.decode(UInt64.self, forKey: .revision)
+        proxyKind = try c.decodeIfPresent(ProxyKind.self, forKey: .proxyKind)
+        deviceTupleID = try c.decode(String.self, forKey: .deviceTupleID)
+        tabCount = max(0, try c.decode(Int.self, forKey: .tabCount))
+        cookieCount = try c.decodeIfPresent(Int.self, forKey: .cookieCount).map { max(0, $0) }
+        proxyToken = try c.decodeIfPresent(String.self, forKey: .proxyToken)
+        fingerprintChanged = try c.decodeIfPresent(Bool.self, forKey: .fingerprintChanged) ?? false
+        proxyChanged = try c.decodeIfPresent(Bool.self, forKey: .proxyChanged) ?? false
+        cookiesChanged = try c.decodeIfPresent(Bool.self, forKey: .cookiesChanged) ?? false
+        tabsChanged = try c.decodeIfPresent(Bool.self, forKey: .tabsChanged) ?? false
+    }
+
+    private let proxyToken: String?
 }
 
 /// Small bounded history, persisted as one atomically replaced JSON file.
@@ -145,8 +224,10 @@ struct ProfileStabilityHistoryStore: Sendable {
                                        from: Data(contentsOf: fileURL))) ?? []
         all.removeAll { $0.profileID == record.profileID && $0.observedAt == record.observedAt }
         all.append(record)
-        all.sort { $0.observedAt > $1.observedAt }
-        let limited = Array(all.prefix(maximumRecords))
+        // Retain a useful window for every profile. A global cap would let a
+        // noisy profile evict the history of all other workspaces.
+        let limited = all
+            .groupedByProfileHistory(maximumRecords: maximumRecords)
         let data = try JSONEncoder.neantikStable.encode(limited)
         let temporary = fileURL.appendingPathExtension("tmp-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -169,6 +250,15 @@ struct ProfileStabilityHistoryStore: Sendable {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             throw CocoaError(.fileWriteUnknown)
         }
+    }
+}
+
+private extension Array where Element == ProfileStabilityRecord {
+    func groupedByProfileHistory(maximumRecords: Int) -> [Element] {
+        Dictionary(grouping: self, by: \.profileID)
+            .values
+            .flatMap { $0.sorted { $0.observedAt > $1.observedAt }.prefix(maximumRecords) }
+            .sorted { $0.observedAt > $1.observedAt }
     }
 }
 
@@ -202,8 +292,16 @@ enum ChromiumCompatibilityChecker {
     }
 }
 
-private extension JSONEncoder {
+extension JSONEncoder {
     static var neantikStable: JSONEncoder {
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.sortedKeys]; return encoder
+    }
+}
+
+extension JSONDecoder {
+    static var neantikStable: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
     }
 }

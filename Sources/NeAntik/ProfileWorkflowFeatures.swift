@@ -131,7 +131,7 @@ struct LocalActivityLogStore: Sendable {
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        let temporary = fileURL.appendingPathExtension("tmp-(UUID().uuidString)")
+        let temporary = fileURL.appendingPathExtension("tmp-\(UUID().uuidString)")
         try data.write(to: temporary, options: .atomic)
         do {
             if FileManager.default.fileExists(atPath: fileURL.path) {
