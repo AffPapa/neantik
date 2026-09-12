@@ -1,10 +1,8 @@
 import AppKit
 import SwiftUI
-
 struct ContentView: View {
-    @Environment(\.openSettings) private var openSettings
-
-    @ObservedObject var store: ProfileStore
+   @Environment(\.openSettings) private var openSettings
+  @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
     @ObservedObject var fingerprintObservationStore:
         FingerprintObservationStore
@@ -12,15 +10,14 @@ struct ContentView: View {
         ProxyHealthCoordinator
     @ObservedObject var workspacePreferences:
         WorkspacePreferenceStore
+    @ObservedObject var telemetry: NeAntikTelemetry
     @ObservedObject var workplaceNavigation: WorkplaceNavigation
-
     let keychain: KeychainStore
     let credentialCleanup: DeletedProfileCredentialCleanup
     let runtimeLocator: BrowserRuntimeLocator
     let launchIntent: NeAntikLaunchIntent
     let fingerprintEvidenceReleaseContext:
         FingerprintEvidenceReleaseContext?
-
     @State private var selection: UUID?
     @State private var batchSelectedProfileIDs = Set<UUID>()
     @State private var workspaceBatchUndo: WorkspaceBatchUndo?
@@ -79,13 +76,13 @@ struct ContentView: View {
     @State private var filteredCountAnnouncementTask: Task<Void, Never>?
     @State private var listFeedbackNotice: UserNotice?
     @State private var listFeedbackTask: Task<Void, Never>?
-
     init(
         store: ProfileStore,
         processes: BrowserProcessManager,
         fingerprintObservationStore: FingerprintObservationStore,
         proxyHealthCoordinator: ProxyHealthCoordinator,
         workspacePreferences: WorkspacePreferenceStore,
+        telemetry: NeAntikTelemetry? = nil,
         keychain: KeychainStore,
         credentialCleanup: DeletedProfileCredentialCleanup,
         runtimeLocator: BrowserRuntimeLocator,
@@ -100,6 +97,7 @@ struct ContentView: View {
         self.fingerprintObservationStore = fingerprintObservationStore
         self.proxyHealthCoordinator = proxyHealthCoordinator
         self.workspacePreferences = workspacePreferences
+        self.telemetry = telemetry ?? NeAntikTelemetry()
         self.workplaceNavigation = workplaceNavigation ?? WorkplaceNavigation()
         self.keychain = keychain
         self.credentialCleanup = credentialCleanup
@@ -118,11 +116,9 @@ struct ContentView: View {
             )
         )
     }
-
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
     }
-
     private var selectedProfileCommandSet: ProfileCommandSet {
         guard !isWorkspaceModalPresented,
               let selectedProfile
@@ -131,11 +127,9 @@ struct ContentView: View {
         }
         return profileCommandSet(for: selectedProfile)
     }
-
     private var isWorkspaceModalPresented: Bool {
         isWorkspaceSheetOrConfirmationPresented || workspaceAlert != nil
     }
-
     private var isWorkspaceSheetOrConfirmationPresented: Bool {
         workspaceSheetRequest != nil ||
             forceStopRequest != nil ||
@@ -144,7 +138,6 @@ struct ContentView: View {
             folderPendingDelete != nil ||
             launchIssue != nil
     }
-
     private var workspaceCommandSet: WorkspaceCommandSet {
         guard !isWorkspaceModalPresented else { return .unavailable }
         return WorkspaceCommandSet(
@@ -175,7 +168,6 @@ struct ContentView: View {
             showWorkplaceCatalog: showWorkplaceCatalog
         )
     }
-
     private func presentedProcessState(
         for profile: BrowserProfile
     ) -> BrowserProfileProcessState {
@@ -187,18 +179,15 @@ struct ContentView: View {
         }
         return .checking
     }
-
     private func isProxyTestInFlight(profileID: UUID) -> Bool {
         proxyOperations.isActive(profileID) ||
             proxyHealthCoordinator.isTesting(profileID: profileID)
     }
-
     private var visibleProfiles: [BrowserProfile] {
         currentOperationalProjection.profiles(
             for: profileOperationalFilter
         )
     }
-
     private var currentOperationalProjection: ProfileOperationalProjection {
         ProfileOperationalProjection.resolve(
             profiles: currentProfileListViewState.visibleProfiles,
@@ -206,11 +195,9 @@ struct ContentView: View {
             proxyHealth: { proxyHealthCoordinator.state(for: $0) }
         )
     }
-
     private var selectedProfileTagName: String? {
         currentProfileListViewState.selectedTagDisplayName
     }
-
     private var currentProfileListIndex: ProfileListIndex {
         profileListResolver.resolveIndex(
             revision: store.profileListRevision,
@@ -218,7 +205,6 @@ struct ContentView: View {
             organization: store.organization
         )
     }
-
     private var currentProfileListViewState: ProfileListViewState {
         profileListResolver.resolve(
             revision: store.profileListRevision,
@@ -230,7 +216,6 @@ struct ContentView: View {
             ordering: profileListOrdering
         )
     }
-
     private var workspaceQuery: WorkspaceQueryState {
         WorkspaceQueryState(
             scope: profileListScope,
@@ -238,18 +223,15 @@ struct ContentView: View {
             tag: selectedProfileTag
         )
     }
-
     private var selectedFolderID: UUID? {
         guard case let .folder(id) = selectedFolderFilter else {
             return nil
         }
         return id
     }
-
     private var selectedFolder: ProfileFolder? {
         store.folder(withID: selectedFolderID)
     }
-
     private var bulkProxyActionProjection: BulkProxyActionProjection {
         BulkProxyActionProjection.resolve(
             visibleProfiles: visibleProfiles,
@@ -258,19 +240,15 @@ struct ContentView: View {
             isTesting: { isProxyTestInFlight(profileID: $0) }
         )
     }
-
     private var fingerprintAuditProfiles: [BrowserProfile] {
         store.profiles.filter { !$0.isArchived }
     }
-
     private var runtime: BrowserRuntime? {
         resolvedRuntime
     }
-
     private var runtimePreflight: BrowserRuntimePreflight? {
         runtime.map(BrowserRuntimePreflightValidator.validate)
     }
-
     private var runtimeAvailability: BrowserRuntimeAvailability {
         if isResolvingRuntime { return .resolving }
         guard runtime != nil else { return .missing }
@@ -286,7 +264,6 @@ struct ContentView: View {
                     "Не удалось проверить браузерный движок."
             )
     }
-
     private var selectedEnvironmentSnapshot: ProfileEnvironmentSnapshot? {
         guard let selectedProfile else { return nil }
         return WorkspaceDomain.environmentSnapshot(
@@ -301,7 +278,6 @@ struct ContentView: View {
                 )
         )
     }
-
     private var workspaceReadinessSnapshot: WorkspaceReadinessSnapshot {
         var runningCount = 0
         var processAttentionCount = 0
@@ -345,7 +321,6 @@ struct ContentView: View {
             )
         )
     }
-
     private var workspaceAlert: WorkspaceAlertPresentation? {
         guard fingerprintEvidenceReleaseContext == nil else { return nil }
         if let localError {
@@ -371,7 +346,6 @@ struct ContentView: View {
         }
         return nil
     }
-
     private var workspaceAlertBinding:
         Binding<WorkspaceAlertPresentation?>
     {
@@ -388,18 +362,13 @@ struct ContentView: View {
             }
         )
     }
-
     var body: some View {
         workspaceLifecycle
     }
-
-    // The catalog is the single daily workspace. Home remains a hidden
-    // compatibility route for the shortcut/menu and first-run recovery.
     @State private var showsWorkplaceHome = false
     @State private var workplaceHomeProjection = WorkplaceHomeProjection(profiles: [], matchCount: 0, summary: .empty)
     @State private var homeResolver = WorkplaceHomeStateResolver()
     @State private var homeRevealID: UUID?
-
     private var workspaceBase: some View {
         Group {
             if showsWorkplaceHome {
@@ -411,15 +380,18 @@ struct ContentView: View {
         .onAppear {
             refreshWorkplaceHome()
             handleWorkplaceNavigation()
+            recordTelemetrySnapshot()
         }
-        .onChange(of: store.profileListRevision) { _, _ in refreshWorkplaceHome() }
+        .onChange(of: store.profileListRevision) { _, _ in
+            refreshWorkplaceHome()
+            recordTelemetryProfileChanges()
+        }
         .onChange(of: profileSearchText) { _, _ in refreshWorkplaceHome() }
         .onChange(of: processes.processStateRevision) { _, _ in refreshWorkplaceHome() }
         .onChange(of: proxyHealthCoordinator.healthByProfileID) { _, _ in refreshWorkplaceHome() }
         .onChange(of: workplaceNavigation.pending) { _, _ in handleWorkplaceNavigation() }
         .onChange(of: isWorkspaceModalPresented) { _, value in workplaceNavigation.isBlocked = value }
     }
-
     private var workplaceHome: some View {
         VStack(spacing: 0) {
             if !store.profiles.isEmpty { runtimeReadinessBanner }
@@ -457,7 +429,6 @@ struct ContentView: View {
         .focusedSceneValue(\.neAntikProfileCommands, ProfileCommandSet.unavailable)
         .focusedSceneValue(\.neAntikWorkspaceCommands, workspaceCommandSet)
     }
-
     private func refreshWorkplaceHome() {
         workplaceHomeProjection = homeResolver.resolve(
             profileRevision: store.profileListRevision,
@@ -471,7 +442,6 @@ struct ContentView: View {
             proxyHealth: { proxyHealthCoordinator.state(for: $0) }
         )
     }
-
     private func showWorkplaceCatalog() {
         guard !isWorkspaceModalPresented else { return }
         homeRevealID = nil
@@ -481,7 +451,6 @@ struct ContentView: View {
         applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
         normalizeSelection()
     }
-
     private func showWorkplaceArchive() {
         guard !isWorkspaceModalPresented else { return }
         homeRevealID = nil
@@ -489,7 +458,6 @@ struct ContentView: View {
         resetProfileFilters()
         applyWorkspaceQuery(.default.selecting(scope: .archived))
     }
-
     private func showWorkplaceHome() {
         guard !isWorkspaceModalPresented else { return }
         homeRevealID = nil
@@ -497,7 +465,6 @@ struct ContentView: View {
         showsProfileInspector = false
         resetProfileFilters()
     }
-
     private func workplaceOpenPresentation(_ profile: BrowserProfile) -> WorkplaceOpenPresentation {
         WorkplaceOpenPresentation.resolve(
             state: presentedProcessState(for: profile), archived: profile.isArchived,
@@ -505,7 +472,6 @@ struct ContentView: View {
             testing: isProxyTestInFlight(profileID: profile.id)
         )
     }
-
     private func openWorkplace(_ requested: BrowserProfile) {
         guard !isWorkspaceModalPresented,
               let profile = store.profile(withID: requested.id) else { return }
@@ -516,7 +482,6 @@ struct ContentView: View {
         case .unavailable: break
         }
     }
-
     private func handleWorkplaceNavigation() {
         guard let destination = workplaceNavigation.consume(), !isWorkspaceModalPresented else { return }
         switch destination {
@@ -533,7 +498,6 @@ struct ContentView: View {
             }
         }
     }
-
     private var workspaceNavigation: some View {
         let listState = currentProfileListViewState
         return NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -584,7 +548,6 @@ struct ContentView: View {
             workspaceCommandSet
         )
     }
-
     private var workspaceSheets: some View {
         workspaceBase
         .sheet(item: $workspaceSheetRequest, onDismiss: openSavedProfileAfterEditor) { request in
@@ -615,7 +578,6 @@ struct ContentView: View {
             }
         }
     }
-
     @ViewBuilder
     private func workspaceSheet(
         for destination: WorkspaceSheetRequest.Destination
@@ -759,7 +721,6 @@ struct ContentView: View {
             )
         }
     }
-
     @discardableResult
     private func presentWorkspaceSheet(
         _ destination: WorkspaceSheetRequest.Destination,
@@ -774,7 +735,6 @@ struct ContentView: View {
         workspaceSheetRequest = WorkspaceSheetRequest(destination: destination)
         return true
     }
-
     private var workspaceAlerts: some View {
         workspaceSheets
         .alert(
@@ -886,7 +846,6 @@ struct ContentView: View {
             workspaceAlert(for: presentation)
         }
     }
-
     private func workspaceAlert(
         for presentation: WorkspaceAlertPresentation
     ) -> Alert {
@@ -911,7 +870,6 @@ struct ContentView: View {
             }
         )
     }
-
     private var workspaceStateObservers: some View {
         workspaceAlerts
         .onAppear {
@@ -983,7 +941,6 @@ struct ContentView: View {
             announceRuntimeAvailability(availability)
         }
     }
-
     private var workspaceNotifications: some View {
         workspaceStateObservers
         .onReceive(
@@ -1026,7 +983,6 @@ struct ContentView: View {
             processes.markManagerShutdownClean()
         }
     }
-
     private var workspaceLifecycle: some View {
         workspaceNotifications
         .task {
@@ -1044,7 +1000,6 @@ struct ContentView: View {
             cancelProxyTests()
         }
     }
-
     private func profileEditorSheet(
         for request: EditorRequest
     ) -> some View {
@@ -1087,7 +1042,6 @@ struct ContentView: View {
             )
         }
     }
-
     private func saveProfileEditorDraft(
         _ profile: BrowserProfile,
         passwordUpdate: ProxyPasswordUpdate,
@@ -1147,7 +1101,6 @@ struct ContentView: View {
         }
         return saved
     }
-
     private func openSavedProfileAfterEditor() {
         guard let id = profileToOpenAfterEditor else { return }
         profileToOpenAfterEditor = nil
@@ -1156,7 +1109,6 @@ struct ContentView: View {
         else { return }
         launch(profile)
     }
-
     private func recoverDeletedProfileCredentials() async {
         let summary = await credentialCleanup.runOnce(
             metadataIsTrusted: store.hasTrustedMetadata,
@@ -1172,7 +1124,6 @@ struct ContentView: View {
                 "Не удалось завершить очистку некоторых ранее удалённых паролей прокси. NeAntik безопасно повторит попытку при следующем запуске."
         }
     }
-
     private func finishDeletedProfile(_ profile: BrowserProfile) {
         batchSelectedProfileIDs.remove(profile.id)
         if store.profiles.isEmpty {
@@ -1185,14 +1136,12 @@ struct ContentView: View {
         fingerprintObservationStore.remove(profileID: profile.id)
         clearProxyHealth(for: profile.id)
     }
-
     private func normalizeSelection(preferred: UUID? = nil) {
         selection = ProfileListProjection.normalizedSelection(
             preferred ?? preferredProfileSelection ?? selection,
             in: visibleProfiles
         )
     }
-
     private func revealSavedProfile(_ profile: BrowserProfile) {
         let decision = ProfilePostSaveRevealPolicy.resolve(
             savedProfile: profile,
@@ -1213,7 +1162,6 @@ struct ContentView: View {
             refreshWorkplaceHome()
         }
     }
-
     private func clearWorkspaceAlert(
         _ source: WorkspaceAlertPresentation.Source
     ) {
@@ -1226,7 +1174,6 @@ struct ContentView: View {
             store.lastError = nil
         }
     }
-
     private var profileSelectionBinding: Binding<UUID?> {
         Binding(
             get: { selection },
@@ -1241,7 +1188,6 @@ struct ContentView: View {
             }
         )
     }
-
     private func beginEditing(_ profile: BrowserProfile, focusing field: ProfileEditorField? = nil) {
         let state = presentedProcessState(for: profile)
         guard state == .stopped || state.isConfirmedRunning else {
@@ -1254,7 +1200,6 @@ struct ContentView: View {
             openedProcessState: state
         )))
     }
-
     private func beginEditingNote(_ profile: BrowserProfile) {
         guard store.profile(withID: profile.id) != nil else {
             localError = "Профиль больше не существует."
@@ -1262,7 +1207,6 @@ struct ContentView: View {
         }
         presentWorkspaceSheet(.note(profile))
     }
-
     private func saveProfileNote(
         _ note: String,
         profileID: UUID,
@@ -1273,13 +1217,11 @@ struct ContentView: View {
         )
         revealSavedProfile(saved)
     }
-
     private func revealProfile(_ profile: BrowserProfile) {
         NSWorkspace.shared.activateFileViewerSelecting([
             store.paths.profileDirectory(for: profile.id)
         ])
     }
-
     private func requestProfileDeletion(_ profile: BrowserProfile) {
         guard !processes.runningProfileIDs.contains(profile.id) else {
             localError = "Сначала останови профиль, потом удаляй."
@@ -1288,7 +1230,6 @@ struct ContentView: View {
         selection = profile.id
         showingDeleteConfirmation = true
     }
-
     private func resetProfileFilters() {
         clearBatchSelectionForFilterChange()
         profileSearchText = ""
@@ -1297,13 +1238,11 @@ struct ContentView: View {
         applyWorkspaceQuery(workspaceQuery.reset(), normalize: false)
         normalizeSelection(preferred: preferredProfileSelection)
     }
-
     private func resetProfileView() {
         profileListOrdering = .pinnedThenName
         workspacePreferences.resetInterface()
         resetProfileFilters()
     }
-
     private func toggleProfileInspector() {
         guard !isWorkspaceModalPresented,
               ProfileInspectorPolicy.canToggle(
@@ -1312,7 +1251,6 @@ struct ContentView: View {
               ) else { return }
         showsProfileInspector.toggle()
     }
-
     private func applyWorkspaceQuery(
         _ query: WorkspaceQueryState,
         normalize: Bool = true
@@ -1325,7 +1263,6 @@ struct ContentView: View {
             normalizeSelection(preferred: preferredProfileSelection)
         }
     }
-
     private func beginCreatingProfile() {
         guard !isWorkspaceModalPresented else { return }
         presentWorkspaceSheet(.editor(EditorRequest(
@@ -1333,12 +1270,10 @@ struct ContentView: View {
             targetFolderID: selectedFolderID
         )))
     }
-
     private func beginCreatingFolder() {
         guard !isWorkspaceModalPresented else { return }
         presentWorkspaceSheet(.folderName(nil))
     }
-
     private func createAndOpenProfileQuickly() {
         guard runtimeAvailability == .ready else {
             if !isResolvingRuntime {
@@ -1349,16 +1284,13 @@ struct ContentView: View {
         guard !isCreatingProfileQuickly,
               !isWorkspaceModalPresented
         else { return }
-
         let profile = FirstProfileBootstrap.makeProfile(
             existingProfiles: store.profiles
         ) ?? QuickProfileBootstrap.makeProfile(
             existingProfiles: store.profiles
         )
-
         isCreatingProfileQuickly = true
         defer { isCreatingProfileQuickly = false }
-
         do {
             let saved = try store.upsert(
                 profile,
@@ -1370,7 +1302,6 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func moveProfile(
         _ profile: BrowserProfile,
         toFolderID folderID: UUID?
@@ -1381,7 +1312,6 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func performMoveProfile(
         _ profile: BrowserProfile,
         toFolderID folderID: UUID?
@@ -1389,7 +1319,6 @@ struct ContentView: View {
         try store.assignProfile(profile.id, toFolderID: folderID)
         normalizeSelection(preferred: profile.id)
     }
-
     private func moveProfiles(
         _ profileIDs: Set<UUID>,
         toFolderID folderID: UUID?
@@ -1406,7 +1335,6 @@ struct ContentView: View {
         }
         normalizeSelection(preferred: selection)
     }
-
     private func applyBatchMetadata(
         _ action: ProfileMetadataBatchAction,
         to profileIDs: Set<UUID>? = nil
@@ -1417,7 +1345,6 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func performBatchMetadata(
         _ action: ProfileMetadataBatchAction,
         to profileIDs: Set<UUID>? = nil
@@ -1435,7 +1362,6 @@ struct ContentView: View {
         }
         normalizeSelection(preferred: selection)
     }
-
     private func undoLastBatchAction() {
         guard let workspaceBatchUndo else { return }
         do {
@@ -1457,7 +1383,6 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func deleteFolder(_ folder: ProfileFolder) {
         do {
             _ = try store.deleteFolder(withID: folder.id)
@@ -1471,11 +1396,9 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func profileCountWord(_ count: Int) -> String {
         RussianCount.word(count, one: "профиль", few: "профиля", many: "профилей")
     }
-
     private func togglePinned(_ profile: BrowserProfile) {
         do {
             let saved = try store.mutateProfile(withID: profile.id) {
@@ -1486,7 +1409,6 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func toggleArchived(_ profile: BrowserProfile) {
         guard !processes.runningProfileIDs.contains(profile.id) else {
             localError = "Сначала останови профиль, потом перемещай его в архив."
@@ -1506,7 +1428,6 @@ struct ContentView: View {
             localError = error.localizedDescription
         }
     }
-
     private func beginDuplicating(_ profile: BrowserProfile) {
         presentWorkspaceSheet(.duplication(ProfileDuplicationRequest(
             source: profile,
@@ -1514,7 +1435,6 @@ struct ContentView: View {
             destinationFolderID: store.folderID(forProfileID: profile.id)
         )))
     }
-
     private func saveDuplicate(
         sourceProfileID: UUID,
         expectedSourceRevision: UInt64,
@@ -1534,7 +1454,6 @@ struct ContentView: View {
             announceWorkspaceStatus(bulkProxyStatusMessage)
         }
     }
-
     private func createProfiles(
         from drafts: [ProxyImportDraft],
         baseName: String,
@@ -1547,12 +1466,10 @@ struct ContentView: View {
             keychain: keychain,
             targetFolderID: targetFolderID
         )
-
         if let last = created.last {
             revealSavedProfile(last)
         }
     }
-
     private func workspaceSources(
         _ listState: ProfileListViewState
     ) -> some View {
@@ -1589,7 +1506,6 @@ struct ContentView: View {
                         workspaceQuery.selecting(scope: .active)
                     )
                 }
-
                 sourceButton(
                     title: "Закреплённые",
                     systemImage: "pin.fill",
@@ -1605,7 +1521,6 @@ struct ContentView: View {
                         workspaceQuery.selecting(scope: .pinned)
                     )
                 }
-
                 if sourceIndex.archivedCount > 0 {
                     sourceButton(
                         title: "Архив",
@@ -1627,7 +1542,6 @@ struct ContentView: View {
                 Text("Профили")
                     .foregroundStyle(Color(nsColor: .secondaryLabelColor))
             }
-
             Section {
                 HStack {
                     sourceDisclosureButton(
@@ -1647,7 +1561,6 @@ struct ContentView: View {
                     .frame(width: 32, height: 32)
                     .help("Новая папка…")
                     .accessibilityLabel("Новая папка…")
-
                     if let selectedFolder {
                         Button {
                             presentWorkspaceSheet(.folderName(selectedFolder))
@@ -1671,7 +1584,6 @@ struct ContentView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color(nsColor: .secondaryLabelColor))
                 .listRowBackground(Color.clear)
-
                 if foldersSourceExpanded {
                     sourceButton(
                         title: "Без папки",
@@ -1690,7 +1602,6 @@ struct ContentView: View {
                             )
                         )
                     }
-
                     ForEach(folderPreview.visibleItems) { folder in
                         sourceButton(
                             title: folder.name,
@@ -1723,7 +1634,6 @@ struct ContentView: View {
                             }
                         }
                     }
-
                     if folderPreview.hasHiddenItems || showsAllFolders {
                         previewToggleButton(
                             isExpanded: showsAllFolders,
@@ -1735,7 +1645,6 @@ struct ContentView: View {
                     }
                 }
             }
-
             if !tagSummaries.isEmpty || selectedProfileTag != nil {
                 Section {
                     if tagsSourceExpanded {
@@ -1795,7 +1704,6 @@ struct ContentView: View {
         }
         .navigationTitle("NeAntik")
     }
-
     private func profileListPane(
         _ listState: ProfileListViewState
     ) -> some View {
@@ -1824,7 +1732,6 @@ struct ContentView: View {
                 runtimeReadinessBanner
                 activeFiltersBar
                 runningProfilesStrip
-
                 if store.profiles.isEmpty {
                     FirstProfileOnboardingView(
                         runtimeAvailability: runtimeAvailability,
@@ -2044,7 +1951,6 @@ struct ContentView: View {
         .background(Color(nsColor: .controlBackgroundColor))
         .navigationTitle(workspaceHeaderTitle)
     }
-
     private func performEmptyStateAction(
         _ action: ProfileListEmptyAction
     ) {
@@ -2065,7 +1971,6 @@ struct ContentView: View {
             resetProfileFilters()
         }
     }
-
     @ViewBuilder
     private func profileTableHeader(
         usesWideLayout: Bool
@@ -2119,7 +2024,6 @@ struct ContentView: View {
             .accessibilityAddTraits(.isHeader)
         }
     }
-
     private var runningProfilesStrip: some View {
         RunningProfilesTimelineStrip(
             itemProvider: { now in
@@ -2140,7 +2044,6 @@ struct ContentView: View {
             }
         )
     }
-
     private func profileListHeader(
         operationalProjection: ProfileOperationalProjection,
         operationalProfiles: [BrowserProfile]
@@ -2183,7 +2086,6 @@ struct ContentView: View {
             onFilteredCountChange: scheduleFilteredCountAnnouncement
         )
     }
-
     private var workspaceHeaderTitle: String {
         if let selectedFolder {
             return selectedFolder.name
@@ -2193,7 +2095,6 @@ struct ContentView: View {
         }
         return profileListScope.title
     }
-
     private var profileListViewMenu: some View {
         Menu {
             Picker("Сортировка", selection: $profileListOrdering) {
@@ -2234,7 +2135,6 @@ struct ContentView: View {
                 workspacePreferences.rowDensity.title
         )
     }
-
     private var profileRouteFilterBinding: Binding<ProfileRouteFilter> {
         Binding(
             get: { profileRouteFilter },
@@ -2245,7 +2145,6 @@ struct ContentView: View {
             }
         )
     }
-
     @ViewBuilder
     private var runtimeReadinessBanner: some View {
         if runtimeAvailability != .ready {
@@ -2256,7 +2155,6 @@ struct ContentView: View {
             )
         }
     }
-
     @ViewBuilder
     private var activeFiltersBar: some View {
         if selectedProfileTag != nil || selectedFolderFilter != .all ||
@@ -2321,7 +2219,6 @@ struct ContentView: View {
             Divider()
         }
     }
-
     private func filterChip(
         _ title: String,
         systemImage: String,
@@ -2354,7 +2251,6 @@ struct ContentView: View {
         .help("Убрать фильтр «\(title)»")
         .accessibilityLabel("Убрать фильтр \(title)")
     }
-
     private func sourceButton(
         title: String,
         systemImage: String,
@@ -2417,7 +2313,6 @@ struct ContentView: View {
         .accessibilityValue(isSelected ? "Выбрано" : "Не выбрано")
         .accessibilityHint("Показывает соответствующие профили")
     }
-
     private func sourceDisclosureButton(
         title: String,
         isExpanded: Binding<Bool>
@@ -2452,7 +2347,6 @@ struct ContentView: View {
                 : "Разворачивает раздел"
         )
     }
-
     private func previewToggleButton(
         isExpanded: Bool,
         hiddenCount: Int,
@@ -2474,7 +2368,6 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
     }
-
     private func moveWorkspaceSourceFocus(
         from current: WorkspaceSourceFocus,
         offset: Int
@@ -2501,7 +2394,6 @@ struct ContentView: View {
         let next = min(max(position + offset, 0), order.count - 1)
         focusedWorkspaceSource = order[next]
     }
-
     private var selectedWorkspaceSourceFocus: WorkspaceSourceFocus {
         if let selectedProfileTag {
             return .tag(selectedProfileTag)
@@ -2523,7 +2415,6 @@ struct ContentView: View {
             return .allProfiles
         }
     }
-
     @ViewBuilder
     private func profileContextMenu(
         _ profile: BrowserProfile,
@@ -2621,7 +2512,6 @@ struct ContentView: View {
         )
         .disabled(!commands.presentation.deleteIsEnabled)
     }
-
     private func profileCommandSet(
         for profile: BrowserProfile,
         processState requestedProcessState: BrowserProfileProcessState? = nil
@@ -2681,7 +2571,6 @@ struct ContentView: View {
             delete: { requestProfileDeletion(profile) }
         )
     }
-
     @ViewBuilder
     private var detail: some View {
         if let profile = selectedProfile {
@@ -2788,7 +2677,6 @@ struct ContentView: View {
             emptyDetail
         }
     }
-
     private var emptyDetail: some View {
         Group {
             if store.profiles.isEmpty {
@@ -2817,14 +2705,12 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
     private var runtimeStatusIcon: String {
         guard let runtime else { return "exclamationmark.triangle.fill" }
         return runtime.supportsFingerprintIdentity
             ? "shield.lefthalf.filled"
             : "externaldrive.fill"
     }
-
     private var runtimeStatusColor: Color {
         switch runtimeAvailability {
         case .missing, .invalid:
@@ -2835,7 +2721,6 @@ struct ContentView: View {
             return .secondary
         }
     }
-
     private var runtimeReadinessTitle: String {
         switch runtimeAvailability {
         case .resolving:
@@ -2846,7 +2731,6 @@ struct ContentView: View {
             "Встроенный браузер недоступен"
         }
     }
-
     private var runtimeReadinessMessage: String {
         switch runtimeAvailability {
         case .resolving:
@@ -2860,7 +2744,6 @@ struct ContentView: View {
             message
         }
     }
-
     private func launch(_ profile: BrowserProfile) {
         do {
             let runtime = try launchReadyRuntime()
@@ -2889,7 +2772,6 @@ struct ContentView: View {
             )
         }
     }
-
     private func launchReadyRuntime() throws -> BrowserRuntime {
         guard let runtime else {
             throw NeAntikError.browserNotFound
@@ -2898,7 +2780,6 @@ struct ContentView: View {
             resolved: runtime
         )
     }
-
     private func launchPreparedProfile(
         _ profile: BrowserProfile,
         runtime: BrowserRuntime,
@@ -2912,12 +2793,12 @@ struct ContentView: View {
             runtime: launchRuntime,
             preparationReceipt: preparationReceipt
         )
+        telemetry.record(.browserLaunched, profileCount: store.profiles.count, proxyProfileCount: telemetryProxyCount)
         guard store.markLaunched(profile.id) else {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
     }
-
     private func validateLaunchPreflight(
         _ profile: BrowserProfile,
         runtime: BrowserRuntime
@@ -2938,7 +2819,6 @@ struct ContentView: View {
             )
         )
     }
-
     @MainActor
     private func startAutomaticLaunchPreparation(
         _ profile: BrowserProfile,
@@ -2953,7 +2833,6 @@ struct ContentView: View {
             )
             return
         }
-
         guard let launchToken = launchOperations.claim(profile.id) else { return }
         let task = Task { @MainActor in
             defer { launchOperations.finish(launchToken) }
@@ -3040,7 +2919,6 @@ struct ContentView: View {
         }
         launchOperations.attach(task, to: launchToken)
     }
-
     private func resolveRuntime() async {
         let generation = runtimeState.begin()
         isResolvingRuntime = true
@@ -3057,11 +2935,9 @@ struct ContentView: View {
         isResolvingRuntime = false
         presentReleaseFingerprintAuditIfNeeded()
     }
-
     private func presentWorkspaceReadiness() {
         presentWorkspaceReadiness(recoveringWorkspaceAlert: false)
     }
-
     private func presentWorkspaceReadiness(recoveringWorkspaceAlert: Bool) {
         guard presentWorkspaceSheet(
             .readiness,
@@ -3070,7 +2946,6 @@ struct ContentView: View {
         workspaceReadinessNotice = nil
         Task { await refreshWorkspaceReadiness() }
     }
-
     private func refreshWorkspaceReadiness() async {
         guard !isRefreshingWorkspaceReadiness else { return }
         isRefreshingWorkspaceReadiness = true
@@ -3097,21 +2972,18 @@ struct ContentView: View {
         isRefreshingWorkspaceReadiness = false
         announceWorkspaceStatus(workspaceReadinessSnapshot.title)
     }
-
     private func copyWorkspaceReadinessDiagnostics() {
         writeWorkspaceReadinessClipboard(
             workspaceReadinessSnapshot.diagnosticText,
             notice: "Диагностика скопирована без секретов"
         )
     }
-
     private func copyWorkspaceApplicationPath() {
         writeWorkspaceReadinessClipboard(
             readinessSystemInspection.application.bundlePath,
             notice: "Путь к NeAntik.app скопирован"
         )
     }
-
     private func writeWorkspaceReadinessClipboard(
         _ value: String,
         notice: String
@@ -3129,7 +3001,6 @@ struct ContentView: View {
             UserNotice(notice, level: .success)
         )
     }
-
     private func revealWorkspaceApplication() {
         NSWorkspace.shared.activateFileViewerSelecting([
             URL(
@@ -3138,7 +3009,6 @@ struct ContentView: View {
             )
         ])
     }
-
     private func openWorkspaceSystemSettings() {
         guard let settingsURL = NSWorkspace.shared.urlForApplication(
             withBundleIdentifier: "com.apple.systempreferences"
@@ -3157,12 +3027,10 @@ struct ContentView: View {
             )
         )
     }
-
     private func presentWorkspaceReadinessNotice(_ notice: UserNotice) {
         workspaceReadinessNotice = notice
         announceWorkspaceStatus(notice.accessibilitySummary)
     }
-
     private func announceRuntimeAvailability(
         _ availability: BrowserRuntimeAvailability
     ) {
@@ -3179,7 +3047,6 @@ struct ContentView: View {
         }
         announceWorkspaceStatus(message)
     }
-
     private func announceWorkspaceStatus(_ message: String) {
         guard workspaceAnnouncementGate.shouldAnnounce(message) else {
             return
@@ -3193,7 +3060,6 @@ struct ContentView: View {
             ]
         )
     }
-
     private func scheduleFilteredCountAnnouncement(
         _ presentation: ProfileFilteredCountPresentation
     ) {
@@ -3204,7 +3070,6 @@ struct ContentView: View {
             announceWorkspaceStatus(presentation.announcement)
         }
     }
-
     private func clearBatchSelectionForFilterChange() {
         let count = batchSelectedProfileIDs.count
         guard count > 0 else { return }
@@ -3221,7 +3086,6 @@ struct ContentView: View {
             listFeedbackNotice = nil
         }
     }
-
     private func beginFingerprintAudit() {
         guard let runtime,
               runtimePreflight?.isReady == true,
@@ -3237,7 +3101,6 @@ struct ContentView: View {
             runtime: runtime
         )))
     }
-
     @MainActor
     private func loadProxyHealth() async {
         await proxyHealthCoordinator.reload(profiles: store.profiles)
@@ -3247,7 +3110,6 @@ struct ContentView: View {
             localError = error
         }
     }
-
     @MainActor
     private func startProxyTest(_ profile: BrowserProfile) {
         guard processes.processState(for: profile.id) == .stopped,
@@ -3262,7 +3124,6 @@ struct ContentView: View {
             )
         }
     }
-
     @MainActor
     private func performProxyTest(
         _ profile: BrowserProfile
@@ -3277,7 +3138,6 @@ struct ContentView: View {
             token: token
         )?.latestAttempt.outcome
     }
-
     @MainActor
     private func beginProxyTest(
         for profile: BrowserProfile
@@ -3287,7 +3147,6 @@ struct ContentView: View {
         else { return nil }
         return token
     }
-
     @MainActor
     private func executeProxyTest(
         _ profile: BrowserProfile,
@@ -3299,7 +3158,6 @@ struct ContentView: View {
         proxyOperations.attach(task, to: token)
         return await ProfileOperationOwner.value(of: task)
     }
-
     @MainActor
     private func runProxyTest(
         _ profile: BrowserProfile,
@@ -3331,7 +3189,6 @@ struct ContentView: View {
             return nil
         }
     }
-
     @MainActor
     private func proxyHealthCommit(
         profileID: UUID,
@@ -3399,7 +3256,6 @@ struct ContentView: View {
         } catch {
             throw error
         }
-
         guard let currentProfile = store.profile(withID: profileID),
               currentProfile.proxy == expectedProxy,
               let currentIdentity = ProxyHealthIdentity(
@@ -3413,7 +3269,6 @@ struct ContentView: View {
             currentIdentity: currentIdentity
         )
     }
-
     @MainActor
     private func toggleBulkProxyTests() {
         if let bulkProxyTestTask {
@@ -3431,7 +3286,6 @@ struct ContentView: View {
         }
         startBulkProxyTests(bulkProxyActionProjection.profiles)
     }
-
     @MainActor
     private func retryFailedBulkProxyTests() {
         let failed = Set(bulkProxyFailedProfileIDs)
@@ -3449,7 +3303,6 @@ struct ContentView: View {
         }
         startBulkProxyTests(eligible)
     }
-
     @MainActor
     private func startBulkProxyTests(_ profiles: [BrowserProfile]) {
         guard !profiles.isEmpty else { return }
@@ -3502,7 +3355,6 @@ struct ContentView: View {
             }
         }
     }
-
     @MainActor
     private func clearProxyHealth(for profileID: UUID) {
         cancelLaunchPreparation(profileID: profileID)
@@ -3519,13 +3371,11 @@ struct ContentView: View {
             }
         }
     }
-
     @MainActor
     private func cancelProxyTest(profileID: UUID) {
         cancelLaunchPreparation(profileID: profileID)
         proxyOperations.cancel(profileID)
     }
-
     @MainActor
     private func cancelProxyTests() {
         launchOperations.cancelAll()
@@ -3535,13 +3385,11 @@ struct ContentView: View {
         bulkProxyProgress = nil
         proxyOperations.cancelAll()
     }
-
     @MainActor
     private func cancelLaunchPreparation(profileID: UUID) {
         launchOperations.cancel(profileID)
         proxyOperations.cancel(profileID)
     }
-
     private func presentReleaseFingerprintAuditIfNeeded() {
         guard launchIntent.opensFingerprintAudit,
               !handledReleaseAuditIntent,
@@ -3550,7 +3398,6 @@ struct ContentView: View {
             return
         }
         handledReleaseAuditIntent = true
-
         guard runtime?.supportsFingerprintIdentity == true,
               runtimePreflight?.isReady == true
         else {
@@ -3560,7 +3407,6 @@ struct ContentView: View {
             )
             return
         }
-
         NSApplication.shared.activate(ignoringOtherApps: true)
         if releaseAuditProfiles.count < 2 {
             releaseAuditProfiles = Self.makeReleaseAuditProfiles()
@@ -3568,7 +3414,6 @@ struct ContentView: View {
         selection = releaseAuditProfiles.first?.id
         showingReleaseFingerprintAudit = true
     }
-
     private func failFingerprintReleaseBeforePresentation(
         _ message: String
     ) {
@@ -3592,7 +3437,6 @@ struct ContentView: View {
             NSApplication.shared.terminate(nil)
         }
     }
-
     private static func makeReleaseAuditProfiles() -> [BrowserProfile] {
         [
             BrowserProfile(
@@ -3617,7 +3461,6 @@ struct ContentView: View {
             )
         ]
     }
-
     private func clearClipboardLater(changeCount: Int) {
         clipboardClearTask = Task { @MainActor in
             do {
@@ -3628,7 +3471,6 @@ struct ContentView: View {
             clearClipboardIfLeaseIsActive(changeCount: changeCount)
         }
     }
-
     private func copyToClipboard(
         _ value: String,
         profileID: UUID,
@@ -3637,7 +3479,6 @@ struct ContentView: View {
         cancelClipboardTasks()
         clipboardLease.cancel()
         clipboardNotice = nil
-
         let item = NSPasteboardItem()
         guard item.setString(value, forType: .string) else {
             localError = "Не удалось подготовить данные прокси для копирования."
@@ -3655,7 +3496,6 @@ struct ContentView: View {
                 "org.nspasteboard.ConcealedType"
             )
         )
-
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         guard pasteboard.writeObjects([item]) else {
@@ -3689,14 +3529,12 @@ struct ContentView: View {
             }
         }
     }
-
     private func cancelClipboardTasks() {
         clipboardClearTask?.cancel()
         clipboardClearTask = nil
         clipboardNoticeTask?.cancel()
         clipboardNoticeTask = nil
     }
-
     private func clearClipboardIfLeaseIsActive(changeCount: Int? = nil) {
         let pasteboard = NSPasteboard.general
         if clipboardLease.consumeIfOwned(
@@ -3704,6 +3542,5 @@ struct ContentView: View {
             expectedChangeCount: changeCount
         ) {
             pasteboard.clearContents()
-        }
-    }
+        }    }
 }

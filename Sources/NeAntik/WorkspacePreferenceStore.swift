@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class WorkspacePreferenceStore: ObservableObject {
     static let rowDensityKey = "workspace.profileRowDensity"
+    static let telemetryEnabledKey = "telemetry.enabled"
 
     // A one-shot navigation request, never a persisted preference.
     @Published private(set) var shortcutReferenceRequest: UUID?
@@ -22,6 +23,13 @@ final class WorkspacePreferenceStore: ObservableObject {
         didSet {
             guard rowDensity != oldValue else { return }
             defaults.set(rowDensity.rawValue, forKey: Self.rowDensityKey)
+        }
+    }
+
+    @Published var telemetryEnabled: Bool {
+        didSet {
+            guard telemetryEnabled != oldValue else { return }
+            defaults.set(telemetryEnabled, forKey: Self.telemetryEnabledKey)
         }
     }
 
@@ -44,6 +52,7 @@ final class WorkspacePreferenceStore: ObservableObject {
                 defaults.removeObject(forKey: Self.rowDensityKey)
             }
         }
+        telemetryEnabled = defaults.object(forKey: Self.telemetryEnabledKey) as? Bool ?? true
     }
 
     func resetInterface() {

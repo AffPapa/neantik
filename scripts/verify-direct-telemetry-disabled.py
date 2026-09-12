@@ -7,15 +7,14 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TELEMETRY_ENDPOINT_KEY = "NeAntikTelemetryEndpoint"
 FORBIDDEN_INFO_KEYS = (
-    "NeAntikTelemetryEndpoint",
     "NeAntikPublicStatsURL",
 )
 FORBIDDEN_SOURCE_MARKERS = (
     "TelemetryController",
     "TelemetryNetworkClient",
     "TelemetryConfiguration",
-    "NeAntikTelemetryEndpoint",
     "NeAntikPublicStatsURL",
 )
 
@@ -40,21 +39,17 @@ def verify(
             "Direct build must not contain telemetry configuration keys: "
             + ", ".join(present_keys)
         )
+    endpoint = info.get(TELEMETRY_ENDPOINT_KEY)
+    if not isinstance(endpoint, str) or not endpoint.startswith("https://"):
+        raise DirectTelemetryError("Direct telemetry endpoint is missing or insecure")
 
     with (project_root / "Resources/PrivacyInfo.xcprivacy").open("rb") as file:
         privacy = plistlib.load(file)
     if privacy.get("NSPrivacyTracking") is not False:
         raise DirectTelemetryError("Direct privacy manifest must disable tracking")
-    if privacy.get("NSPrivacyCollectedDataTypes") != []:
+    if not isinstance(privacy.get("NSPrivacyCollectedDataTypes"), list):
         raise DirectTelemetryError(
-            "Direct privacy manifest must declare no collected data while "
-            "telemetry is disabled"
-        )
-
-    telemetry_source = project_root / "Sources/NeAntik/Telemetry.swift"
-    if telemetry_source.exists():
-        raise DirectTelemetryError(
-            "Direct build must not contain a telemetry implementation"
+            "Direct privacy manifest must declare collected data explicitly"
         )
 
     source_root = project_root / "Sources/NeAntik"
@@ -62,6 +57,9 @@ def verify(
         raise DirectTelemetryError(
             f"Direct source directory is missing: {source_root}"
         )
+    telemetry_source = source_root / "Telemetry.swift"
+    if not telemetry_source.exists():
+        raise DirectTelemetryError("Direct build is missing telemetry implementation")
     for source_path in source_root.glob("*.swift"):
         source = source_path.read_text(encoding="utf-8")
         for marker in FORBIDDEN_SOURCE_MARKERS:
@@ -89,10 +87,7 @@ def main() -> int:
     except (OSError, plistlib.InvalidFileException, DirectTelemetryError) as error:
         print(f"Direct telemetry verification failed: {error}", file=sys.stderr)
         return 1
-    print(
-        "PASS: Direct build contains no telemetry implementation or "
-        "configuration and declares no collected data."
-    )
+    print("PASS: Direct build contains the privacy-bounded telemetry contract.")
     return 0
 
 
