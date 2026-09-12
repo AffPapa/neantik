@@ -13,6 +13,8 @@ enum NeAntikTelemetryEvent: String, Sendable {
 /// value, cookie, page content or fingerprint material is ever serialized.
 @MainActor
 final class NeAntikTelemetry: ObservableObject {
+    static let fallbackVersion = "0.6.1"
+    static let fallbackBuild = "43"
     private static let installationKey = "telemetry.installationID"
     private static let endpoint = URL(string: "https://nevision-stats.iryadom.chatgpt.site/api/ingest")!
 
@@ -37,8 +39,8 @@ final class NeAntikTelemetry: ObservableObject {
     func record(_ event: NeAntikTelemetryEvent, profileCount: Int, proxyProfileCount: Int) {
         guard enabled else { return }
         let info = Bundle.main.infoDictionary ?? [:]
-        let version = info["CFBundleShortVersionString"] as? String ?? "0.0.0"
-        let build = info["CFBundleVersion"] as? String ?? "0"
+        let version = Self.validVersion(info["CFBundleShortVersionString"] as? String)
+        let build = Self.validBuild(info["CFBundleVersion"] as? String)
         let osMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
         let payload: [String: Any] = [
             "schemaVersion": 1,
@@ -64,5 +66,20 @@ final class NeAntikTelemetry: ObservableObject {
         Task.detached(priority: .utility) {
             _ = try? await URLSession.shared.data(for: request)
         }
+    }
+
+    static func validVersion(_ raw: String?) -> String {
+        guard let raw,
+              raw.range(of: #"^\d+\.\d+\.\d+$"#, options: .regularExpression) != nil,
+              raw != "0.0.0"
+        else { return fallbackVersion }
+        return raw
+    }
+
+    static func validBuild(_ raw: String?) -> String {
+        guard let raw,
+              raw.range(of: #"^[1-9]\d*$"#, options: .regularExpression) != nil
+        else { return fallbackBuild }
+        return raw
     }
 }
