@@ -119,24 +119,6 @@ struct ProfileStabilityRecord: Codable, Equatable, Sendable {
     let cookiesChanged: Bool
     let tabsChanged: Bool
 
-    private init(profileID: UUID, observedAt: Date, revision: UInt64,
-                 proxyKind: ProxyKind?, deviceTupleID: String, tabCount: Int,
-                 cookieCount: Int?, proxyToken: String?, fingerprintChanged: Bool,
-                 proxyChanged: Bool, cookiesChanged: Bool, tabsChanged: Bool) {
-        self.profileID = profileID
-        self.observedAt = observedAt
-        self.revision = revision
-        self.proxyKind = proxyKind
-        self.deviceTupleID = deviceTupleID
-        self.tabCount = tabCount
-        self.cookieCount = cookieCount
-        self.proxyToken = proxyToken
-        self.fingerprintChanged = fingerprintChanged
-        self.proxyChanged = proxyChanged
-        self.cookiesChanged = cookiesChanged
-        self.tabsChanged = tabsChanged
-    }
-
     static func capture(profile: BrowserProfile, tabCount: Int = 0,
                         cookieCount: Int? = nil, previous: Self? = nil,
                         now: Date = Date()) -> Self {
