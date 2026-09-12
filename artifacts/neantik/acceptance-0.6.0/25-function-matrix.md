@@ -20,7 +20,7 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 | 14 | Semantic search | PARTIAL | Ranking model/tests; list search still uses legacy path. |
 | 15 | Automatic folders/tags | PARTIAL | Suggestions model/tests; not automatically applied in catalog. |
 | 16 | Clone preview | PARTIAL | Clone action exists; no transfer preview sheet. |
-| 17 | Clean launch | PARTIAL | Mode primitive exists; not wired to launch control. |
+| 17 | Clean launch | PASS | Profile action calls `launch(profile, purpose: .clean)` and uses an isolated temporary data directory. |
 | 18 | Startup tabs | PASS | Persisted on `BrowserProfile`; launch builder opens them in order and disables stale-session restore. |
 | 19 | Reopen last profile | PASS | Existing shortcut/recent-profile flow. |
 | 20 | Activity log | PARTIAL | Bounded local store + launch integration + tests; compact history UI remains. |
