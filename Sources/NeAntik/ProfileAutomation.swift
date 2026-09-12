@@ -130,27 +130,44 @@ struct ProfileStabilityHistoryStore: Sendable {
     init(rootDirectory: URL) { fileURL = rootDirectory.appendingPathComponent("profile-stability.json") }
 
     func records(for profileID: UUID) -> [ProfileStabilityRecord] {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
         guard let data = try? Data(contentsOf: fileURL),
-              let all = try? JSONDecoder().decode([ProfileStabilityRecord].self, from: data)
+              let all = try? decoder.decode([ProfileStabilityRecord].self, from: data)
         else { return [] }
         return all.filter { $0.profileID == profileID }.sorted { $0.observedAt > $1.observedAt }
     }
 
     func append(_ record: ProfileStabilityRecord) throws {
-        var all = (try? JSONDecoder().decode([ProfileStabilityRecord].self,
-                                              from: Data(contentsOf: fileURL))) ?? []
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var all = (try? decoder.decode([ProfileStabilityRecord].self,
+                                       from: Data(contentsOf: fileURL))) ?? []
         all.removeAll { $0.profileID == record.profileID && $0.observedAt == record.observedAt }
         all.append(record)
         all.sort { $0.observedAt > $1.observedAt }
-        let limited = Array(all.prefix(maximumRecords * 10))
+        let limited = Array(all.prefix(maximumRecords))
         let data = try JSONEncoder.neantikStable.encode(limited)
         let temporary = fileURL.appendingPathExtension("tmp-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try data.write(to: temporary, options: .completeFileProtection)
         if FileManager.default.fileExists(atPath: fileURL.path) {
-            _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: temporary, backupItemName: nil, options: .usingNewMetadataOnly)
+            do {
+                _ = try FileManager.default.replaceItemAt(
+                    fileURL, withItemAt: temporary, backupItemName: nil,
+                    options: .usingNewMetadataOnly
+                )
+            } catch {
+                // A few temporary/APFS locations reject replacement. Preserve
+                // the last good JSON and retry with a clean move.
+                try? FileManager.default.removeItem(at: temporary)
+                throw error
+            }
         } else {
             try FileManager.default.moveItem(at: temporary, to: fileURL)
+        }
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            throw CocoaError(.fileWriteUnknown)
         }
     }
 }
