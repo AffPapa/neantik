@@ -61,6 +61,8 @@ case "$SHARD" in
   profiles-a)
     SUITES=(
       ProfileCommandPresentationTests
+      ProfileAutomationTests
+      ProfileAutomationSuggestionsTests
       ProfileBatchActionsTests
       ProfileEditorProcessPolicyTests
       ProfileEditorPasswordTests
@@ -70,6 +72,8 @@ case "$SHARD" in
       ProfileEnvironmentInspectorTests
       ProfileEnvironmentPresentationTests
       ProfileEnvironmentAccessibilityTests
+      ProfileSurfaceInspectionTests
+      ProfileWorkflowFeaturesTests
       ProfileListProjectionTests
       ProfileOperationalProjectionTests
       ProfileListOrderingTests
@@ -85,6 +89,7 @@ case "$SHARD" in
   profiles-b)
     SUITES=(
       ProfileTagEditorTests
+      EncryptedProfileBackupTests
       ProfileStoreTests
       ProfileStorageMeasurementTests
       ProxyHealthTests
@@ -103,6 +108,7 @@ case "$SHARD" in
       WorkspaceQueryStateTests
       WorkspaceReadinessTests
       WorkspaceAlertPresentationTests
+      PrivacySafeDiagnosticPackageTests
     )
     ;;
   *)
