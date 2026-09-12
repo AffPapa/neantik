@@ -19,14 +19,14 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 | 13 | Command palette | PASS | SwiftUI palette with search, Enter/Escape, menu entry and ⌘⇧P shortcut. |
 | 14 | Semantic search | PARTIAL | Ranking model/tests; list search still uses legacy path. |
 | 15 | Automatic folders/tags | PARTIAL | Suggestions model/tests; not automatically applied in catalog. |
-| 16 | Clone preview | PARTIAL | Clone action exists; no transfer preview sheet. |
+| 16 | Clone preview | PASS | Preview sheet lists cookies, tabs, startup tabs, proxy, fingerprint and extensions before cloning. |
 | 17 | Clean launch | PASS | Profile action calls `launch(profile, purpose: .clean)` and uses an isolated temporary data directory. |
 | 18 | Startup tabs | PASS | Persisted on `BrowserProfile`; launch builder opens them in order and disables stale-session restore. |
 | 19 | Reopen last profile | PASS | Existing shortcut/recent-profile flow. |
 | 20 | Activity log | PARTIAL | Bounded local store + launch integration + tests; compact history UI remains. |
 | 21 | Memory saving | MISSING | No automatic suspend policy. |
 | 22 | Human-readable errors | PASS | Existing typed launch/proxy/storage error copy. |
-| 23 | Cookie drag-and-drop | PARTIAL | JSON/Netscape parser + tests; no drop/import UI. |
+| 23 | Cookie drag-and-drop | PARTIAL | Dropzone, file picker, validation and preview are live; applying into Chromium encrypted DB remains gated on authenticated browser protocol. |
 | 24 | On-demand fingerprint check | PASS | Existing fingerprint audit flow. |
 | 25 | Runtime version check | PASS | Existing startup/runtime preflight. |
 
