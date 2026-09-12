@@ -121,6 +121,20 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
             r"Test run with \[1-9\]\[0-9\]\* tests\?",
         )
 
+    def test_shard_runner_accepts_positive_xctest_count_but_rejects_zero(
+        self,
+    ) -> None:
+        runner = SHARD_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn(
+            r"Executed [1-9][0-9]* tests?, with 0 failures",
+            runner,
+        )
+        self.assertIn(
+            r"Test run with [1-9][0-9]* tests? in [1-9][0-9]* suites? passed",
+            runner,
+        )
+
     def test_live_runner_is_explicit_local_and_fail_closed(self) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
         runner = LIVE_SCRIPT.read_text(encoding="utf-8")
