@@ -2887,6 +2887,14 @@ struct ContentView: View {
         let launchRuntime = try BrowserRuntimeLaunchTrustPolicy
             .validatedRuntime(resolved: runtime)
         try validateLaunchPreflight(profile, runtime: launchRuntime)
+        // Capture a local rollback point before the browser mutates its data.
+        // This is best-effort so a first launch with no data directory is
+        // never blocked by recovery storage.
+        let browserData = store.paths.browserDataDirectory(for: profile.id)
+        if FileManager.default.fileExists(atPath: browserData.path) {
+            _ = try? AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
+                .create(profileID: profile.id, browserData: browserData)
+        }
         try processes.launch(
             profile: profile,
             runtime: launchRuntime,
