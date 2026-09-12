@@ -8,6 +8,7 @@ import json
 import os
 import plistlib
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -571,6 +572,29 @@ def extract_candidate_app(
             "release archive must contain only one top-level NeAntik.app"
         )
     return app
+
+
+def extract_staple_app(
+    archive: Path,
+    destination: Path,
+    *,
+    project_root: Path,
+    runner: CommandRunner,
+) -> Path:
+    app = extract_candidate_app(
+        archive,
+        destination,
+        project_root=project_root,
+        runner=runner,
+    )
+    root_value = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
+    if not root_value:
+        return app
+    root = Path(root_value)
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / f"NeAntik-{uuid.uuid4().hex}.app"
+    shutil.move(str(app), str(target))
+    return target
 
 
 def read_version(info_plist: Path) -> str:
@@ -1903,7 +1927,7 @@ def resume_known_transaction(
             accepted_root.chmod(0o755)
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
-            lambda: extract_candidate_app(
+            lambda: extract_staple_app(
                 submitted,
                 accepted_root,
                 project_root=project_root,
@@ -2748,7 +2772,7 @@ def run_transaction(
 
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
-            lambda: extract_candidate_app(
+            lambda: extract_staple_app(
                 submitted,
                 accepted_root,
                 project_root=project_root,
