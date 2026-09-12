@@ -598,7 +598,13 @@ def extract_staple_app(
             shutil.rmtree(target)
         else:
             target.unlink()
-    shutil.move(str(app), str(target))
+    subprocess.run(
+        ["/usr/bin/ditto", "--norsrc", str(app), str(target)],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    shutil.rmtree(app)
     return target
 
 
