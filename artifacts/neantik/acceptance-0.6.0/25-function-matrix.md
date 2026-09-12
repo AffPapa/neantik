@@ -6,7 +6,7 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 |---:|---|---|---|
 | 1 | Profile creation wizard | PARTIAL | `ProfileCreationWizard` + tests; primary UI still opens `ProfileEditorView`. |
 | 2 | Identity Contract | PARTIAL | `IdentityContract` derives values; not yet part of launch gate. |
-| 3 | Readiness center | PARTIAL | `ProfileReadinessReport` exists; no live inspector/readiness surface. |
+| 3 | Readiness center | PARTIAL | `ProfileReadinessReport` is now visible in the profile inspector; proxy/runtime live remediation remains outside this panel. |
 | 4 | Proxy preflight | PASS | Existing coordinator/tester launch gate. |
 | 5 | Stability history | PASS (core) | Per-profile bounded history with drift flags; no dedicated UI. |
 | 6 | Crash recovery | PASS | Existing recovery and tab restoration flow. |
@@ -21,9 +21,9 @@ Audited 2026-09-12 against the current source tree and SwiftUI entry points.
 | 15 | Automatic folders/tags | PARTIAL | Suggestions model/tests; not automatically applied in catalog. |
 | 16 | Clone preview | PARTIAL | Clone action exists; no transfer preview sheet. |
 | 17 | Clean launch | PARTIAL | Mode primitive exists; not wired to launch control. |
-| 18 | Startup tabs | PARTIAL | Validated model exists; not persisted/invoked on launch. |
+| 18 | Startup tabs | PASS | Persisted on `BrowserProfile`; launch builder opens them in order and disables stale-session restore. |
 | 19 | Reopen last profile | PASS | Existing shortcut/recent-profile flow. |
-| 20 | Activity log | PARTIAL | Bounded local store + tests; compact UI absent. |
+| 20 | Activity log | PARTIAL | Bounded local store + launch integration + tests; compact history UI remains. |
 | 21 | Memory saving | MISSING | No automatic suspend policy. |
 | 22 | Human-readable errors | PASS | Existing typed launch/proxy/storage error copy. |
 | 23 | Cookie drag-and-drop | PARTIAL | JSON/Netscape parser + tests; no drop/import UI. |
