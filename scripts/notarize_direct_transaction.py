@@ -592,7 +592,12 @@ def extract_staple_app(
         return app
     root = Path(root_value)
     root.mkdir(parents=True, exist_ok=True)
-    target = root / f"NeAntik-{uuid.uuid4().hex}.app"
+    target = root / "NeAntik.app"
+    if target.exists() or target.is_symlink():
+        if target.is_dir() and not target.is_symlink():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
     shutil.move(str(app), str(target))
     return target
 
