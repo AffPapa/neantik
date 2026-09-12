@@ -704,6 +704,23 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
             }
 
+            let readiness = ProfileReadinessReport.evaluate(
+                profile: profile,
+                proxyReady: profile.proxy == nil
+            )
+            GroupBox("Готовность") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(readiness.title, systemImage: readiness.systemImage)
+                        .foregroundStyle(readiness.status == .ready ? .green : readiness.status == .attention ? .orange : .yellow)
+                    ForEach(readiness.issues, id: \.self) { issue in
+                        Text(issue)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
             GroupBox("Профиль") {
                 VStack(alignment: .leading, spacing: 10) {
                     Label(

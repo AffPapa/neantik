@@ -104,6 +104,25 @@ struct ProfileReadinessReport: Codable, Equatable, Sendable {
     }
 }
 
+extension ProfileReadinessReport {
+    var title: String {
+        switch status {
+        case .ready: "Готово"
+        case .attention: "Есть проблема"
+        case .checkRequired: "Нужна проверка"
+        }
+    }
+
+    var systemImage: String {
+        switch status {
+        case .ready: "checkmark.circle.fill"
+        case .attention: "exclamationmark.triangle.fill"
+        case .checkRequired: "questionmark.circle.fill"
+        }
+    }
+
+}
+
 struct ProfileStabilityRecord: Codable, Equatable, Sendable {
     let profileID: UUID
     let observedAt: Date
