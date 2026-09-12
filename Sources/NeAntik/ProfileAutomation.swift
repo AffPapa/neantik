@@ -82,6 +82,9 @@ struct IdentityContract: Codable, Equatable, Sendable {
         // untouched; an absent optional screen override is therefore valid.
         if timezoneIdentifier?.isEmpty != false { result.append("Часовой пояс не определён") }
         if localeIdentifier?.isEmpty != false { result.append("Язык не определён") }
+        if screenWidth == nil || screenHeight == nil {
+            result.append("Размер экрана не определён")
+        }
         if webRTCMode.isEmpty { result.append("WebRTC не настроен") }
         return result
     }
