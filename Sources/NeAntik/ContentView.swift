@@ -57,6 +57,7 @@ struct ContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
     @State private var showsCommandPalette = false
+    @State private var recoveryProfileID: RecoveryProfileID?
     @State private var workspaceSheetRequest: WorkspaceSheetRequest?
     @State private var profileToOpenAfterEditor: UUID?
     @State private var isRefreshingWorkspaceReadiness = false
@@ -400,6 +401,21 @@ struct ContentView: View {
                 action: executeWorkspaceCommand,
                 dismiss: { showsCommandPalette = false }
             )
+        }
+        .sheet(item: $recoveryProfileID) { recovery in
+            if let profile = store.profile(withID: recovery.id) {
+                ProfileRecoveryView(
+                    profileName: profile.name,
+                    snapshots: AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
+                        .snapshots(for: profile.id),
+                    onExport: { password in exportBackup(profile, password: password) },
+                    onRestoreSnapshot: { snapshot in
+                        restoreSnapshot(snapshot, for: profile)
+                        recoveryProfileID = nil
+                    }
+                )
+                .frame(minWidth: 480, minHeight: 240)
+            }
         }
     }
     private var workplaceHome: some View {
@@ -1257,6 +1273,33 @@ struct ContentView: View {
         NSWorkspace.shared.activateFileViewerSelecting([
             store.paths.profileDirectory(for: profile.id)
         ])
+    }
+    private func exportBackup(_ profile: BrowserProfile, password: String) {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "\(profile.name).neantik-backup"
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        do {
+            try EncryptedProfileBackup.export(profile: profile, password: password, to: destination)
+            localError = "Зашифрованная копия профиля сохранена."
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+    private func restoreSnapshot(_ snapshot: URL, for profile: BrowserProfile) {
+        guard presentedProcessState(for: profile) == .stopped else {
+            localError = "Сначала останови профиль, потом восстанавливай снимок."
+            return
+        }
+        do {
+            try AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory).restore(
+                snapshot: snapshot,
+                to: store.paths.browserDataDirectory(for: profile.id)
+            )
+            localError = "Снимок профиля восстановлен."
+        } catch {
+            localError = "Не удалось восстановить снимок: \(error.localizedDescription)"
+        }
     }
     private func requestProfileDeletion(_ profile: BrowserProfile) {
         guard !processes.runningProfileIDs.contains(profile.id) else {
@@ -2716,7 +2759,11 @@ struct ContentView: View {
                 },
                 onImportCookies: {
                     presentWorkspaceSheet(.cookieImport(profile))
-                }
+                },
+                snapshots: AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
+                    .snapshots(for: profile.id),
+                onExportBackup: { recoveryProfileID = RecoveryProfileID(id: profile.id) },
+                onRestoreSnapshot: { snapshot in restoreSnapshot(snapshot, for: profile) }
             )
             .id(profile.id)
         } else {

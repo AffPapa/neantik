@@ -1,5 +1,9 @@
 import Foundation
 
+struct RecoveryProfileID: Identifiable, Equatable {
+    let id: UUID
+}
+
 struct EditorRequest: Identifiable {
     let initialFocus: ProfileEditorField?
     let id = UUID()
