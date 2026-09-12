@@ -551,6 +551,7 @@ struct ProfileDetailView: View {
     var onImportCookies: () -> Void = {}
     var snapshots: [URL] = []
     var stabilityRecords: [ProfileStabilityRecord] = []
+    var activityEvents: [LocalActivityEvent] = []
     var onExportBackup: () -> Void = {}
     var onRestoreSnapshot: (URL) -> Void = { _ in }
 
@@ -784,6 +785,19 @@ struct ProfileDetailView: View {
                 }
             }
 
+            GroupBox("Последние события") {
+                if activityEvents.isEmpty {
+                    Text("Событий пока нет").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(activityEvents.prefix(5)) { event in
+                            Label(Self.activityTitle(event.kind), systemImage: "clock")
+                        }
+                    }
+                    .font(.caption)
+                }
+            }
+
             ExtensionSurfaceInspectionView(
                 profileDirectory: URL(fileURLWithPath: browserDataPath,
                                        isDirectory: true)
@@ -853,6 +867,17 @@ struct ProfileDetailView: View {
                 .padding(.top, 10)
             }
             .disclosureGroupStyle(NeAntikDisclosureStyle())
+        }
+    }
+
+    private static func activityTitle(_ kind: LocalActivityEvent.Kind) -> String {
+        switch kind {
+        case .launched: "Запуск"
+        case .stopped: "Остановка"
+        case .restored: "Восстановление"
+        case .proxyFailed: "Ошибка прокси"
+        case .snapshotCreated: "Создан снимок"
+        case .cleanLaunch: "Чистый запуск"
         }
     }
 

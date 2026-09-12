@@ -2764,6 +2764,9 @@ struct ContentView: View {
                     .snapshots(for: profile.id),
                 stabilityRecords: ProfileStabilityHistoryStore(rootDirectory: store.paths.rootDirectory)
                     .records(for: profile.id),
+                activityEvents: LocalActivityLogStore(rootDirectory: store.paths.rootDirectory)
+                    .events(limit: 5)
+                    .filter { $0.profileID == profile.id },
                 onExportBackup: { recoveryProfileID = RecoveryProfileID(id: profile.id) },
                 onRestoreSnapshot: { snapshot in restoreSnapshot(snapshot, for: profile) }
             )
