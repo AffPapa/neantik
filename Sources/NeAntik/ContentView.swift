@@ -2973,6 +2973,7 @@ struct ContentView: View {
                 readiness: ProfileReadinessReport.evaluate(
                     profile: profile,
                     proxyReady: profile.proxy == nil ||
+                        proxyHealthCoordinator.state(for: profile) == nil ||
                         proxyHealthCoordinator.state(for: profile)?.hasCompleteRouteContext == true,
                     runtimeReady: true
                 )
