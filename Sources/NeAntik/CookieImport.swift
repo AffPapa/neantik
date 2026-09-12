@@ -44,7 +44,10 @@ enum CookieImportParser {
             let fields = value.split(separator: "\t", omittingEmptySubsequences: false)
             guard fields.count >= 7 else { throw CookieImportError.invalidRecord(offset + 1) }
             guard let expiry = Double(fields[4]) else { throw CookieImportError.invalidRecord(offset + 1) }
-            let cookie = ImportedCookie(name: String(fields[5]), value: String(fields[6]), domain: String(fields[0]), path: String(fields[2]), expires: expiry > 0 ? Date(timeIntervalSince1970: expiry) : nil, secure: fields[3].uppercased() == "TRUE", httpOnly: fields[1].uppercased() == "TRUE")
+            // Netscape's second column means "include subdomains", not
+            // HttpOnly. HttpOnly is not represented by this format and must
+            // never be inferred from it.
+            let cookie = ImportedCookie(name: String(fields[5]), value: String(fields[6]), domain: String(fields[0]), path: String(fields[2]), expires: expiry > 0 ? Date(timeIntervalSince1970: expiry) : nil, secure: fields[3].uppercased() == "TRUE", httpOnly: false)
             guard isValid(cookie) else { throw CookieImportError.invalidRecord(offset + 1) }
             result.append(cookie)
             guard result.count <= maximumCookies else { throw CookieImportError.tooMany }

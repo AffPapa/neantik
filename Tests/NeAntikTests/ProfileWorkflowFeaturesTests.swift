@@ -27,7 +27,9 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
         let json = Data(#"[{"name":"sid","value":"x","domain":"example.com","path":"/","secure":true}]"#.utf8)
         XCTAssertEqual(try CookieImportParser.parse(json).first?.name, "sid")
         let netscape = Data(".example.com\tTRUE\t/\tFALSE\t0\tsid\tx\n".utf8)
-        XCTAssertEqual(try CookieImportParser.parse(netscape).first?.domain, ".example.com")
+        let imported = try CookieImportParser.parse(netscape).first
+        XCTAssertEqual(imported?.domain, ".example.com")
+        XCTAssertFalse(imported?.httpOnly ?? true)
     }
 
     func testCookieParserRejectsInvalidPath() {
@@ -40,5 +42,18 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
     func testStartupTabsOnlyAllowHTTP() {
         XCTAssertTrue(StartupTabSet(urls: ["https://example.com"]).isValid)
         XCTAssertFalse(StartupTabSet(urls: ["file:///tmp/private"]).isValid)
+    }
+
+    func testActivityLogIsBoundedAndNewestFirst() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        let log = LocalActivityLogStore(rootDirectory: root, maximumEvents: 2)
+        let old = LocalActivityEvent(kind: .launched, date: Date(timeIntervalSince1970: 1))
+        let newer = LocalActivityEvent(kind: .restored, date: Date(timeIntervalSince1970: 2))
+        let newest = LocalActivityEvent(kind: .cleanLaunch, date: Date(timeIntervalSince1970: 3))
+        try log.append(old)
+        try log.append(newer)
+        try log.append(newest)
+        XCTAssertEqual(log.events().map(\.kind), [.cleanLaunch, .restored])
     }
 }

@@ -99,6 +99,56 @@ struct LocalActivityEvent: Codable, Equatable, Identifiable, Sendable {
     init(kind: Kind, profileID: UUID? = nil, date: Date = Date()) { id = UUID(); self.kind = kind; self.profileID = profileID; self.date = date }
 }
 
+/// Bounded, local-only activity history for the compact profile surface.
+/// It deliberately stores identifiers and event kinds only: URLs, proxy
+/// values, cookies and profile names never enter this journal.
+struct LocalActivityLogStore: Sendable {
+    let fileURL: URL
+    let maximumEvents: Int
+
+    init(rootDirectory: URL, maximumEvents: Int = 100) {
+        self.fileURL = rootDirectory.appendingPathComponent("activity-log.json")
+        self.maximumEvents = max(1, maximumEvents)
+    }
+
+    func events(limit: Int? = nil) -> [LocalActivityEvent] {
+        guard let data = try? Data(contentsOf: fileURL),
+              let decoded = try? JSONDecoder.neantikStable.decode(
+                [LocalActivityEvent].self, from: data
+              ) else { return [] }
+        let ordered = decoded.sorted { $0.date > $1.date }
+        return Array(ordered.prefix(max(0, limit ?? maximumEvents)))
+    }
+
+    func append(_ event: LocalActivityEvent) throws {
+        var current = events()
+        current.removeAll { $0.id == event.id }
+        current.insert(event, at: 0)
+        let data = try JSONEncoder.neantikStable.encode(
+            Array(current.prefix(maximumEvents))
+        )
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let temporary = fileURL.appendingPathExtension("tmp-(UUID().uuidString)")
+        try data.write(to: temporary, options: .atomic)
+        do {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                _ = try FileManager.default.replaceItemAt(
+                    fileURL, withItemAt: temporary, backupItemName: nil,
+                    options: .usingNewMetadataOnly
+                )
+            } else {
+                try FileManager.default.moveItem(at: temporary, to: fileURL)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw error
+        }
+    }
+}
+
 struct FingerprintExplanation: Equatable, Sendable {
     let title: String
     let details: [String]
