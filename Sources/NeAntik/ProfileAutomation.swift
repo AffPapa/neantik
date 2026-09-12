@@ -346,6 +346,76 @@ enum ChromiumCompatibilityChecker {
     }
 }
 
+/// Records the runtime that last opened each profile and applies the safe
+/// compatibility rule at the process boundary. Chromium can migrate its
+/// on-disk format when the bundled version changes, so a migration is only
+/// allowed when the existing profile directory is present and a snapshot was
+/// captured immediately before launch. A missing directory for a previously
+/// opened profile is blocked rather than silently creating a new identity.
+struct ChromiumCompatibilityCoordinator: Sendable {
+    struct Marker: Codable, Equatable, Sendable {
+        let profileID: UUID
+        let runtimeVersion: String
+        let recordedAt: Date
+    }
+
+    enum Action: Equatable, Sendable {
+        case firstLaunch
+        case compatible
+        case migrate
+        case rollbackRequired
+    }
+
+    let markerURL: URL
+
+    init(rootDirectory: URL) {
+        markerURL = rootDirectory.appendingPathComponent("chromium-compatibility.json")
+    }
+
+    func action(for profileID: UUID, runtimeVersion: String?, profileDataExists: Bool,
+                snapshotAvailable: Bool) -> Action {
+        guard let runtimeVersion, !runtimeVersion.isEmpty else {
+            return profileDataExists ? .compatible : .firstLaunch
+        }
+        let previous = markers()[profileID]?.runtimeVersion
+        guard previous != nil else { return .firstLaunch }
+        guard profileDataExists else { return .rollbackRequired }
+        guard previous == runtimeVersion else {
+            return snapshotAvailable ? .migrate : .rollbackRequired
+        }
+        return .compatible
+    }
+
+    /// Commits the marker only after Chromium has started successfully.
+    /// A corrupt marker file is treated as empty and repaired atomically.
+    func record(profileID: UUID, runtimeVersion: String?, now: Date = Date()) throws {
+        guard let runtimeVersion, !runtimeVersion.isEmpty else { return }
+        var values = markers()
+        values[profileID] = Marker(profileID: profileID, runtimeVersion: runtimeVersion, recordedAt: now)
+        let data = try JSONEncoder.neantikStable.encode(Array(values.values).sorted { $0.profileID.uuidString < $1.profileID.uuidString })
+        try FileManager.default.createDirectory(at: markerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let temporary = markerURL.appendingPathExtension("tmp-\(UUID().uuidString)")
+        try data.write(to: temporary, options: .atomic)
+        do {
+            if FileManager.default.fileExists(atPath: markerURL.path) {
+                _ = try FileManager.default.replaceItemAt(markerURL, withItemAt: temporary, backupItemName: nil, options: .usingNewMetadataOnly)
+            } else {
+                try FileManager.default.moveItem(at: temporary, to: markerURL)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw error
+        }
+    }
+
+    private func markers() -> [UUID: Marker] {
+        guard let data = try? Data(contentsOf: markerURL),
+              let values = try? JSONDecoder.neantikStable.decode([Marker].self, from: data)
+        else { return [:] }
+        return Dictionary(uniqueKeysWithValues: values.map { ($0.profileID, $0) })
+    }
+}
+
 extension JSONEncoder {
     static var neantikStable: JSONEncoder {
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.sortedKeys]; return encoder

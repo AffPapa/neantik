@@ -67,4 +67,25 @@ final class ProfileAutomationTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: target.appendingPathComponent("Preferences")), Data("ok".utf8))
         XCTAssertFalse(FileManager.default.fileExists(atPath: target.appendingPathComponent(".tmp").path))
     }
+
+    func testChromiumCompatibilityAllowsFirstLaunchAndRecordsMarker() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        let id = UUID()
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: false, snapshotAvailable: false), .firstLaunch)
+        try coordinator.record(profileID: id, runtimeVersion: "152", now: Date(timeIntervalSince1970: 10))
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: true, snapshotAvailable: true), .compatible)
+    }
+
+    func testChromiumCompatibilityRequiresSnapshotForRuntimeMigration() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        let id = UUID()
+        try coordinator.record(profileID: id, runtimeVersion: "151")
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: true, snapshotAvailable: false), .rollbackRequired)
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: true, snapshotAvailable: true), .migrate)
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: false, snapshotAvailable: true), .rollbackRequired)
+    }
 }

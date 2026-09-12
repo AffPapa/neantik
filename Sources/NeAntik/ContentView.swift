@@ -2862,9 +2862,28 @@ struct ContentView: View {
         // This is best-effort so a first launch with no data directory is
         // never blocked by recovery storage.
         let browserData = store.paths.browserDataDirectory(for: profile.id)
+        let compatibility = ChromiumCompatibilityCoordinator(
+            rootDirectory: store.paths.rootDirectory
+        )
+        var rollbackSnapshot: URL?
         if FileManager.default.fileExists(atPath: browserData.path) {
-            _ = try? AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
-                .create(profileID: profile.id, browserData: browserData)
+            rollbackSnapshot = try? AtomicProfileSnapshotStore(
+                rootDirectory: store.paths.rootDirectory
+            ).create(profileID: profile.id, browserData: browserData)
+        }
+        switch compatibility.action(
+            for: profile.id,
+            runtimeVersion: launchRuntime.inspection.version,
+            profileDataExists: FileManager.default.fileExists(atPath: browserData.path),
+            snapshotAvailable: rollbackSnapshot != nil
+        ) {
+        case .rollbackRequired:
+            throw NeAntikError.runtimeValidationFailed(
+                "Данные рабочего места не прошли проверку после обновления Chromium. " +
+                    "Восстанови последний снимок в сведениях профиля и повтори запуск."
+            )
+        case .firstLaunch, .compatible, .migrate:
+            break
         }
         try processes.launch(
             profile: profile,
@@ -2886,6 +2905,12 @@ struct ContentView: View {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
+        // The marker advances only after both Chromium and the profile state
+        // were accepted, so a failed launch never claims compatibility.
+        try? compatibility.record(
+            profileID: profile.id,
+            runtimeVersion: launchRuntime.inspection.version
+        )
     }
     private func validateLaunchPreflight(
         _ profile: BrowserProfile,
