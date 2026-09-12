@@ -56,6 +56,7 @@ struct ContentView: View {
     @State private var bulkProxyFailedProfileIDs: [UUID] = []
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showsProfileInspector = false
+    @State private var showsCommandPalette = false
     @State private var workspaceSheetRequest: WorkspaceSheetRequest?
     @State private var profileToOpenAfterEditor: UUID?
     @State private var isRefreshingWorkspaceReadiness = false
@@ -165,7 +166,9 @@ struct ContentView: View {
                 folderPendingDelete = selectedFolder
             },
             showWorkplaceHome: showWorkplaceHome,
-            showWorkplaceCatalog: showWorkplaceCatalog
+            showWorkplaceCatalog: showWorkplaceCatalog,
+            presentCommandPalette: { showsCommandPalette = true },
+            commandPaletteAction: executeWorkspaceCommand
         )
     }
     private func presentedProcessState(
@@ -391,6 +394,13 @@ struct ContentView: View {
         .onChange(of: proxyHealthCoordinator.healthByProfileID) { _, _ in refreshWorkplaceHome() }
         .onChange(of: workplaceNavigation.pending) { _, _ in handleWorkplaceNavigation() }
         .onChange(of: isWorkspaceModalPresented) { _, value in workplaceNavigation.isBlocked = value }
+        .sheet(isPresented: $showsCommandPalette) {
+            WorkspaceCommandPalette(
+                isEnabled: !isWorkspaceModalPresented,
+                action: executeWorkspaceCommand,
+                dismiss: { showsCommandPalette = false }
+            )
+        }
     }
     private var workplaceHome: some View {
         VStack(spacing: 0) {
@@ -464,6 +474,23 @@ struct ContentView: View {
         showsWorkplaceHome = true
         showsProfileInspector = false
         resetProfileFilters()
+    }
+    private func executeWorkspaceCommand(_ command: WorkspaceCommand) {
+        switch command {
+        case .newProfile: beginCreatingProfile()
+        case .search: profileSearchIsFocused = true
+        case .reopenLast:
+            guard let profile = store.profiles.max(by: { ($0.lastLaunchedAt ?? $0.createdAt) < ($1.lastLaunchedAt ?? $1.createdAt) }) else {
+                localError = "Пока нет рабочего места для открытия."
+                return
+            }
+            revealSavedProfile(profile); launch(profile)
+        case .cleanLaunch:
+            guard let profile = selectedProfile else { localError = "Сначала выберите рабочее место."; return }
+            profileCommandSet(for: profile).cleanLaunch()
+        case .duplicate: selectedProfileCommandSet.duplicate()
+        case .inspectFingerprint: beginFingerprintAudit()
+        }
     }
     private func workplaceOpenPresentation(_ profile: BrowserProfile) -> WorkplaceOpenPresentation {
         WorkplaceOpenPresentation.resolve(
@@ -2551,6 +2578,13 @@ struct ContentView: View {
                     launch(profile)
                 }
             },
+            cleanLaunch: {
+                guard !isWorkspaceModalPresented,
+                      !processState.isRunning,
+                      !launchOperations.isActive(profile.id)
+                else { return }
+                launch(profile, purpose: .clean)
+            },
             focusRunning: {
                 _ = processes.focus(profileID: profile.id)
             },
@@ -2744,7 +2778,10 @@ struct ContentView: View {
             message
         }
     }
-    private func launch(_ profile: BrowserProfile) {
+    private func launch(
+        _ profile: BrowserProfile,
+        purpose: BrowserLaunchPurpose = .normal
+    ) {
         do {
             let runtime = try launchReadyRuntime()
             try validateLaunchPreflight(profile, runtime: runtime)
@@ -2755,12 +2792,14 @@ struct ContentView: View {
                 try launchPreparedProfile(
                     profile,
                     runtime: runtime,
-                    preparationReceipt: nil
+                    preparationReceipt: nil,
+                    purpose: purpose
                 )
             case .prepareProxyContext:
                 startAutomaticLaunchPreparation(
                     profile,
-                    runtime: runtime
+                    runtime: runtime,
+                    purpose: purpose
                 )
             }
         } catch {
@@ -2783,7 +2822,8 @@ struct ContentView: View {
     private func launchPreparedProfile(
         _ profile: BrowserProfile,
         runtime: BrowserRuntime,
-        preparationReceipt: BrowserLaunchPreparationReceipt?
+        preparationReceipt: BrowserLaunchPreparationReceipt?,
+        purpose: BrowserLaunchPurpose = .normal
     ) throws {
         let launchRuntime = try BrowserRuntimeLaunchTrustPolicy
             .validatedRuntime(resolved: runtime)
@@ -2791,7 +2831,8 @@ struct ContentView: View {
         try processes.launch(
             profile: profile,
             runtime: launchRuntime,
-            preparationReceipt: preparationReceipt
+            preparationReceipt: preparationReceipt,
+            purpose: purpose
         )
         telemetry.record(.browserLaunched, profileCount: store.profiles.count, proxyProfileCount: telemetryProxyCount)
         // Keep the operational journal local and privacy-bounded. Logging is
@@ -2826,7 +2867,8 @@ struct ContentView: View {
     @MainActor
     private func startAutomaticLaunchPreparation(
         _ profile: BrowserProfile,
-        runtime: BrowserRuntime
+        runtime: BrowserRuntime,
+        purpose: BrowserLaunchPurpose = .normal
     ) {
         guard !launchOperations.isActive(profile.id) else { return }
         guard !isProxyTestInFlight(profileID: profile.id) else {
@@ -2908,7 +2950,8 @@ struct ContentView: View {
                         BrowserLaunchPreparationPolicy.receipt(
                             profile: currentProfile,
                             proxyHealth: currentHealth
-                        )
+                        ),
+                    purpose: purpose
                 )
             } catch {
             launchIssue = LaunchPreparationFailure(
