@@ -28,6 +28,19 @@ final class ProfileAutomationTests: XCTestCase {
         XCTAssertTrue(current.fingerprintChanged)
     }
 
+    func testStabilityExplainsProxyCookieAndTabDriftWithoutStoringSecrets() throws {
+        let proxy = ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 8080, username: "private")
+        let first = BrowserProfile(name: "Test", proxy: proxy)
+        let old = ProfileStabilityRecord.capture(profile: first, tabCount: 1, cookieCount: 2)
+        let changed = BrowserProfile(name: "Test")
+        let current = ProfileStabilityRecord.capture(profile: changed, tabCount: 3, cookieCount: 4, previous: old)
+        XCTAssertTrue(current.proxyChanged)
+        XCTAssertTrue(current.cookiesChanged)
+        XCTAssertTrue(current.tabsChanged)
+        let encoded = try JSONEncoder().encode(current)
+        XCTAssertFalse(String(data: encoded, encoding: .utf8)?.contains("private") ?? true)
+    }
+
     func testStabilityStoreIsBoundedAndReadable() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
