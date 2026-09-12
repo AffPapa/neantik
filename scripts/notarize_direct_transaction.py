@@ -1895,8 +1895,12 @@ def resume_known_transaction(
             directory.mkdir(mode=0o700)
         staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
         if staple_work_root:
-            accepted_root = Path(staple_work_root) / retry_root.name / "accepted"
+            staging_parent = Path(staple_work_root) / retry_root.name
+            staging_parent.mkdir(parents=True, mode=0o755)
+            staging_parent.chmod(0o755)
+            accepted_root = staging_parent / "accepted"
             accepted_root.mkdir(parents=True, mode=0o700)
+            accepted_root.chmod(0o755)
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
             lambda: extract_candidate_app(
@@ -2735,8 +2739,12 @@ def run_transaction(
 
         staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
         if staple_work_root:
-            accepted_root = Path(staple_work_root) / transaction_root.name / "accepted"
+            staging_parent = Path(staple_work_root) / transaction_root.name
+            staging_parent.mkdir(parents=True, mode=0o755)
+            staging_parent.chmod(0o755)
+            accepted_root = staging_parent / "accepted"
             accepted_root.mkdir(parents=True, mode=0o700)
+            accepted_root.chmod(0o755)
 
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
