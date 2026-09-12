@@ -622,6 +622,26 @@ def canonicalize_stapled_app(app: Path) -> Path:
     return target
 
 
+def move_app_for_stapling(app: Path) -> tuple[Path, Path | None]:
+    if not os.environ.get("NEANTIK_STAPLE_WORK_ROOT") or app.name != "NeAntik.app":
+        return app, None
+    staged = app.parent / f"NeAntik-staple-{uuid.uuid4().hex}.app"
+    shutil.move(str(app), str(staged))
+    return staged, app
+
+
+def restore_canonical_app(app: Path, canonical: Path | None) -> Path:
+    if canonical is None:
+        return app
+    if canonical.exists() or canonical.is_symlink():
+        if canonical.is_dir() and not canonical.is_symlink():
+            shutil.rmtree(canonical)
+        else:
+            canonical.unlink()
+    shutil.move(str(app), str(canonical))
+    return canonical
+
+
 def read_version(info_plist: Path) -> str:
     with info_plist.open("rb") as file:
         value = plistlib.load(file).get("CFBundleShortVersionString")
@@ -1968,19 +1988,20 @@ def resume_known_transaction(
             runner=runner,
             full_preflight=False,
         )
+        staple_target, canonical_target = move_app_for_stapling(staged_app)
         run_checked(
-            ["xcrun", "stapler", "staple", str(staged_app)],
+            ["xcrun", "stapler", "staple", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="recovery stapling accepted candidate",
         )
         run_checked(
-            ["xcrun", "stapler", "validate", str(staged_app)],
+            ["xcrun", "stapler", "validate", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="recovery stapled ticket validation",
         )
-        staged_app = canonicalize_stapled_app(staged_app)
+        staged_app = restore_canonical_app(staple_target, canonical_target)
         run_checked(
             [
                 "spctl",
@@ -2815,19 +2836,20 @@ def run_transaction(
             runner=runner,
             full_preflight=False,
         )
+        staple_target, canonical_target = move_app_for_stapling(staged_app)
         run_checked(
-            ["xcrun", "stapler", "staple", str(staged_app)],
+            ["xcrun", "stapler", "staple", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="stapling accepted candidate",
         )
         run_checked(
-            ["xcrun", "stapler", "validate", str(staged_app)],
+            ["xcrun", "stapler", "validate", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="stapled ticket validation",
         )
-        staged_app = canonicalize_stapled_app(staged_app)
+        staged_app = restore_canonical_app(staple_target, canonical_target)
         run_checked(
             [
                 "spctl",
