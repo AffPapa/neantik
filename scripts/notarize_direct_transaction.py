@@ -1895,7 +1895,7 @@ def resume_known_transaction(
             directory.mkdir(mode=0o700)
         staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
         if staple_work_root:
-            staging_parent = Path(staple_work_root) / retry_root.name
+            staging_parent = Path(staple_work_root) / f"neantik-staple-{uuid.uuid4().hex}"
             staging_parent.mkdir(parents=True, mode=0o755)
             staging_parent.chmod(0o755)
             accepted_root = staging_parent / "accepted"
@@ -2739,7 +2739,7 @@ def run_transaction(
 
         staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
         if staple_work_root:
-            staging_parent = Path(staple_work_root) / transaction_root.name
+            staging_parent = Path(staple_work_root) / f"neantik-staple-{uuid.uuid4().hex}"
             staging_parent.mkdir(parents=True, mode=0o755)
             staging_parent.chmod(0o755)
             accepted_root = staging_parent / "accepted"
