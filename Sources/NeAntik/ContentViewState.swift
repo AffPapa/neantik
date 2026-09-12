@@ -30,6 +30,7 @@ struct WorkspaceSheetRequest: Identifiable {
         case folderPicker(Set<UUID>)
         case batchTags(Set<UUID>)
         case proxyImport(targetFolderID: UUID?)
+        case cookieImport(BrowserProfile)
         case readiness
         case fingerprintAudit(FingerprintAuditRequest)
     }

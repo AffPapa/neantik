@@ -548,6 +548,7 @@ struct ProfileDetailView: View {
     var onToggleRunning: () -> Void = {}
     var onFocusRunning: () -> Void = {}
     var onEditProfile: () -> Void = {}
+    var onImportCookies: () -> Void = {}
 
     private var isRunning: Bool {
         processState.isRunning
@@ -743,6 +744,21 @@ struct ProfileDetailView: View {
                     )
                 }
                 .padding(.vertical, 4)
+            }
+
+            GroupBox {
+                HStack(spacing: 10) {
+                    Label("Добавить cookies из JSON или Netscape-файла", systemImage: "arrow.down.doc")
+                        .font(.callout)
+                    Spacer(minLength: 8)
+                    Button("Импортировать…", systemImage: "plus") {
+                        onImportCookies()
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 4)
+            } label: {
+                Label("Cookies", systemImage: "checkmark.shield")
             }
 
             DisclosureGroup("Технические сведения", isExpanded: $technicalDetailsExpanded) {

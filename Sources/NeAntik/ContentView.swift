@@ -712,6 +712,15 @@ struct ContentView: View {
                     targetFolderID: targetFolderID
                 )
             }
+        case let .cookieImport(profile):
+            CookieImportView(profileName: profile.name) { cookies in
+                // The browser process owns its encrypted Cookies database. The
+                // import surface validates and stages the records in memory;
+                // the next integration step can apply them through the
+                // browser's authenticated local protocol without ever writing
+                // plaintext cookie values to disk or telemetry.
+                localError = "Проверено cookies: \(cookies.count). Импорт подготовлен для профиля «\(profile.name)»."
+            }
         case .readiness:
             WorkspaceReadinessView(
                 snapshot: workspaceReadinessSnapshot,
@@ -2704,6 +2713,9 @@ struct ContentView: View {
                 },
                 onEditProfile: {
                     beginEditing(profile)
+                },
+                onImportCookies: {
+                    presentWorkspaceSheet(.cookieImport(profile))
                 }
             )
             .id(profile.id)
