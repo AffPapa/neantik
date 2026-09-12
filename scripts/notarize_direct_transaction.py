@@ -233,6 +233,31 @@ def run_checked(
     return result.output
 
 
+def run_stapler_checked(
+    command: list[str],
+    *,
+    cwd: Path,
+    runner: CommandRunner,
+    label: str,
+) -> str:
+    """Retry transient Apple ticket propagation failures (stapler error 73)."""
+    last_error: DirectNotaryTransactionError | None = None
+    for attempt in range(1, 4):
+        result = runner(command, cwd)
+        if result.returncode == 0:
+            return result.output
+        detail = "\n".join(
+            part for part in (result.output.strip(), result.stderr.strip()) if part
+        )
+        last_error = DirectNotaryTransactionError(
+            f"{label} failed" + (f":\n{detail}" if detail else "")
+        )
+        if "Error 73" not in detail or attempt == 3:
+            raise last_error
+        time.sleep(20)
+    raise last_error or DirectNotaryTransactionError(f"{label} failed")
+
+
 def _reject_duplicate_json_pairs(
     pairs: list[tuple[str, object]],
 ) -> dict[str, object]:
@@ -1989,13 +2014,13 @@ def resume_known_transaction(
             full_preflight=False,
         )
         staple_target, canonical_target = move_app_for_stapling(staged_app)
-        run_checked(
+        run_stapler_checked(
             ["xcrun", "stapler", "staple", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="recovery stapling accepted candidate",
         )
-        run_checked(
+        run_stapler_checked(
             ["xcrun", "stapler", "validate", str(staple_target)],
             cwd=project_root,
             runner=runner,
@@ -2837,13 +2862,13 @@ def run_transaction(
             full_preflight=False,
         )
         staple_target, canonical_target = move_app_for_stapling(staged_app)
-        run_checked(
+        run_stapler_checked(
             ["xcrun", "stapler", "staple", str(staple_target)],
             cwd=project_root,
             runner=runner,
             label="stapling accepted candidate",
         )
-        run_checked(
+        run_stapler_checked(
             ["xcrun", "stapler", "validate", str(staple_target)],
             cwd=project_root,
             runner=runner,
