@@ -79,6 +79,30 @@ struct BrowserLaunchBuilderTests {
     }
 
     @Test
+    func cleanLaunchNeverRestoresSavedSessionOrStartupTabs() {
+        let data = URL(fileURLWithPath: "/tmp/neantik-clean")
+        var profile = BrowserProfile(
+            name: "Clean",
+            startupTabs: StartupTabSet(urls: [
+                "https://saved.example/one",
+                "https://saved.example/two"
+            ])
+        )
+        profile.lastLaunchedAt = Date()
+
+        let arguments = BrowserLaunchBuilder.arguments(
+            profile: profile,
+            browserDataDirectory: data,
+            purpose: .clean
+        )
+
+        #expect(arguments.contains("--new-window"))
+        #expect(!arguments.contains("--restore-last-session"))
+        #expect(!arguments.contains("https://saved.example/one"))
+        #expect(arguments.last == BrowserProfile.defaultStartURL)
+    }
+
+    @Test
     func createsIsolatedProfileArguments() {
         let profile = BrowserProfile(
             name: "Work",

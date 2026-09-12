@@ -140,7 +140,7 @@ enum BrowserLaunchBuilder {
             )
             let bypass: String
             switch purpose {
-            case .normal:
+            case .normal, .clean:
                 bypass = "<-loopback>"
             case let .fingerprintAudit(httpLoopbackPort):
                 precondition(httpLoopbackPort != 0)
@@ -372,6 +372,7 @@ final class BrowserProcessManager: ObservableObject {
     }
     private var stopCompletionTasks: [UUID: Task<Void, Never>] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
+    private var transientBrowserDataDirectories: [UUID: URL] = [:]
     private var externalLocks: [UUID: BrowserProcessLock] = [:] {
         didSet { processStateRevision &+= 1 }
     }
@@ -1434,7 +1435,7 @@ final class BrowserProcessManager: ObservableObject {
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived
         }
-        if profile.proxy != nil, purpose == .normal {
+        if profile.proxy != nil, purpose == .normal || purpose == .clean {
             guard let preparationReceipt,
                   preparationReceipt.authorizes(profile),
                   consumedProxyPreparationKeys.insert(
@@ -1444,18 +1445,25 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.proxyPreparationRequired
             }
         }
+        let cleanDirectory: URL? = purpose == .clean && browserDataDirectoryOverride == nil
+            ? FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "NeAntik-clean-\(profile.id.uuidString)-\(UUID().uuidString)",
+                    isDirectory: true
+                )
+            : nil
         let browserDataDirectory =
-            browserDataDirectoryOverride ??
+            browserDataDirectoryOverride ?? cleanDirectory ??
             paths.browserDataDirectory(for: profile.id)
         let ownsFreshFingerprintAuditDirectory: Bool
         switch purpose {
-        case .normal:
+        case .normal, .clean:
             guard fingerprintAuditReservation == nil else {
                 throw NeAntikError.fingerprintAuditFailed(
                     "Резерв проверки нельзя использовать для обычного запуска."
                 )
             }
-            ownsFreshFingerprintAuditDirectory = false
+            ownsFreshFingerprintAuditDirectory = purpose == .clean
         case let .fingerprintAudit(httpLoopbackPort):
             guard let reservation = fingerprintAuditReservation,
                   let browserDataDirectoryOverride,
@@ -1565,7 +1573,10 @@ final class BrowserProcessManager: ObservableObject {
         managed[profile.id] = ManagedBrowserProcess(
             ownerToken: ownerToken, browserDataDirectory: browserDataDirectory
         )
-        if browserDataDirectoryOverride != nil &&
+        if let cleanDirectory {
+            transientBrowserDataDirectories[profile.id] = cleanDirectory
+        }
+        if browserDataDirectoryOverride != nil && cleanDirectory == nil &&
             !profileDirectoryExistedBeforeLaunch {
             transientEmptyProfileDirectoryIDs.insert(profile.id)
         }
@@ -1617,6 +1628,7 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken
             )
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
+            cleanupTransientBrowserDataDirectoryIfSafe(profileID: profile.id)
             recordBrowserExit(.startupFailure, at: now())
             try? appendDiagnostic(
                 "browser_exit classification=" +
@@ -1863,9 +1875,8 @@ final class BrowserProcessManager: ObservableObject {
                     profileID: profileID,
                     ownerToken: managedOwner
                 )
-                cleanupTransientProfileDirectoryIfSafe(
-                    profileID: profileID
-                )
+                cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+                cleanupTransientBrowserDataDirectoryIfSafe(profileID: profileID)
             } else if let externalLock {
                 removeLockIfMatches(
                     externalLock,
@@ -2242,6 +2253,19 @@ final class BrowserProcessManager: ObservableObject {
             passiveInventoryObservationTask = nil
         }
         cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+        cleanupTransientBrowserDataDirectoryIfSafe(profileID: profileID)
+    }
+
+    private func cleanupTransientBrowserDataDirectoryIfSafe(profileID: UUID) {
+        guard let directory = transientBrowserDataDirectories[profileID],
+              browserDataProcessInspector(directory) == .absent
+        else { return }
+        do {
+            try FileManager.default.removeItem(at: directory)
+            transientBrowserDataDirectories.removeValue(forKey: profileID)
+        } catch {
+            // Retry after a later reconciliation if the filesystem is busy.
+        }
     }
 
     private func cleanupTransientProfileDirectoryIfSafe(

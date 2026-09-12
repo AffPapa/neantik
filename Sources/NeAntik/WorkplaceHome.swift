@@ -482,6 +482,9 @@ struct WorkplaceHomeView: View {
                     Button("Остановить", systemImage: "stop.fill", action: commands.toggleRunning)
                         .disabled(!commands.presentation.launchIsEnabled)
                 }
+                Button("Чистый запуск", systemImage: "sparkles", action: commands.cleanLaunch)
+                    .disabled(!commands.presentation.launchIsEnabled)
+                    .help("Открыть без сохранённых вкладок и временных данных")
             } label: {
                 Image(systemName: "ellipsis")
             }

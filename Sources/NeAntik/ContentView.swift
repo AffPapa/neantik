@@ -2838,7 +2838,12 @@ struct ContentView: View {
         // Keep the operational journal local and privacy-bounded. Logging is
         // best-effort so a damaged journal can never prevent a valid launch.
         try? LocalActivityLogStore(rootDirectory: store.paths.rootDirectory)
-            .append(LocalActivityEvent(kind: .launched, profileID: profile.id))
+            .append(
+                LocalActivityEvent(
+                    kind: purpose == .clean ? .cleanLaunch : .launched,
+                    profileID: profile.id
+                )
+            )
         guard store.markLaunched(profile.id) else {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
