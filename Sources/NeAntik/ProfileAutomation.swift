@@ -78,9 +78,10 @@ struct IdentityContract: Codable, Equatable, Sendable {
 
     var issues: [String] {
         var result: [String] = []
-        if timezoneIdentifier == nil { result.append("Часовой пояс не определён") }
-        if localeIdentifier == nil { result.append("Язык не определён") }
-        if screenWidth == nil || screenHeight == nil { result.append("Размер экрана не определён") }
+        // Auto values are resolved from the host when the user leaves them
+        // untouched; an absent optional screen override is therefore valid.
+        if timezoneIdentifier?.isEmpty != false { result.append("Часовой пояс не определён") }
+        if localeIdentifier?.isEmpty != false { result.append("Язык не определён") }
         if webRTCMode.isEmpty { result.append("WebRTC не настроен") }
         return result
     }
@@ -95,7 +96,11 @@ struct ProfileReadinessReport: Codable, Equatable, Sendable {
 
     static func evaluate(profile: BrowserProfile, proxyReady: Bool? = nil,
                          runtimeReady: Bool = true, now: Date = Date()) -> Self {
-        var issues = IdentityContract.derive(from: profile).issues
+        // Host locale and timezone are automatic defaults when the profile
+        // does not override them; they are not launch blockers.
+        var issues = IdentityContract.derive(from: profile).issues.filter { issue in
+            !issue.contains("Часовой пояс") && !issue.contains("Язык")
+        }
         if profile.proxy != nil && proxyReady != true { issues.append("Прокси нужно проверить") }
         if !runtimeReady { issues.append("Версия Chromium требует проверки") }
         let status: ProfileReadinessStatus = issues.isEmpty ? .ready :

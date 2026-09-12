@@ -748,6 +748,7 @@ struct ContentView: View {
                     Task { await refreshWorkspaceReadiness() }
                 },
                 onCopyDiagnostics: copyWorkspaceReadinessDiagnostics,
+                onExportDiagnostics: exportWorkspaceReadinessDiagnostics,
                 onCopyApplicationPath: copyWorkspaceApplicationPath,
                 onRevealApplication: revealWorkspaceApplication,
                 onOpenSystemSettings: openWorkspaceSystemSettings
@@ -1568,6 +1569,9 @@ struct ContentView: View {
                 ? .max
                 : ProfileListProjection.defaultPreviewLimit
         )
+        let smartSuggestions = ProfileAutomationSuggestions.smartSuggestions(
+            for: store.profiles
+        )
         return List {
             Section {
                 sourceButton(
@@ -1762,6 +1766,34 @@ struct ContentView: View {
                         title: "Теги",
                         isExpanded: $tagsSourceExpanded
                     )
+                }
+            }
+            if !smartSuggestions.isEmpty {
+                Section {
+                    ForEach(smartSuggestions) { suggestion in
+                        Button {
+                            selectedProfileTag = nil
+                            selectedFolderFilter = .all
+                            profileSearchText = suggestion.query
+                            announceWorkspaceStatus("Фильтр: \(suggestion.title)")
+                        } label: {
+                            Label {
+                                Text(suggestion.title)
+                                Spacer()
+                                Text("\(suggestion.count)")
+                                    .foregroundStyle(.secondary)
+                            } icon: {
+                                Image(systemName: "wand.and.stars")
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .help("Локальная подборка по данным рабочих мест")
+                    }
+                } header: {
+                    Text("Автоматически")
+                        .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                } footer: {
+                    Text("Подборки обновляются сами и ничего не меняют в профилях.")
                 }
             }
         }
@@ -2937,7 +2969,13 @@ struct ContentView: View {
                     runtime
                 ),
                 storage: inspection.storage,
-                storageIntegrity: inspection.storageIntegrity
+                storageIntegrity: inspection.storageIntegrity,
+                readiness: ProfileReadinessReport.evaluate(
+                    profile: profile,
+                    proxyReady: profile.proxy == nil ||
+                        proxyHealthCoordinator.state(for: profile)?.hasCompleteRouteContext == true,
+                    runtimeReady: true
+                )
             )
         )
     }
@@ -3101,6 +3139,27 @@ struct ContentView: View {
             workspaceReadinessSnapshot.diagnosticText,
             notice: "Диагностика скопирована без секретов"
         )
+    }
+    private func exportWorkspaceReadinessDiagnostics() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "neantik-diagnostics.json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try PrivacySafeDiagnosticPackage(
+                snapshot: workspaceReadinessSnapshot
+            ).encoded().write(to: url, options: [.atomic])
+            presentWorkspaceReadinessNotice(UserNotice(
+                "Пакет сохранён. Секреты и данные профилей не включены.",
+                level: .success
+            ))
+        } catch {
+            presentWorkspaceReadinessNotice(UserNotice(
+                "Не удалось сохранить пакет. Попробуй выбрать другой файл.",
+                level: .failure
+            ))
+        }
     }
     private func copyWorkspaceApplicationPath() {
         writeWorkspaceReadinessClipboard(
