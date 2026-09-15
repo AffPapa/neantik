@@ -258,7 +258,7 @@ separates two levels:
   worker coherence. A legacy schema 1 report may remain valid public-alpha
   evidence, but can never satisfy the strict production gate.
 
-A schema 7 report is production-qualified only when all of the following are
+A schema 8 report is production-qualified only when all of the following are
 true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
@@ -271,6 +271,8 @@ true:
 - WebGL pixels differ between profiles A and B.
 - repeated Canvas, OfflineAudio, WebGL pixel, and ClientRects reads match the
   first read in each capture, so per-call random noise cannot pass;
+- Canvas readback and encoded output use one deterministic profile transform,
+  and exact OfflineAudio digital silence remains exact silence;
 - Canvas and WebGL results from the main realm agree with a dedicated Web
   Worker using OffscreenCanvas;
 - main-realm and worker UA, Client Hints, platform, languages, timezone,
@@ -314,6 +316,10 @@ independent Python verifier enforce the same distinction. Missing worker,
 OffscreenCanvas, CSS media-query, or shader-precision evidence is a confirmed
 strict-production limitation; the gates must not synthesize or substitute
 values to obtain a pass.
+
+Schema 8 also records a sorted, allowlisted set of privacy-safe strict failure
+identifiers. The identifiers name the failed invariant only; they never contain
+captured surface values, URLs, profile metadata, proxy endpoints, or secrets.
 
 NeAntik re-inspects the signature, version, architecture, and both binary
 hashes before and after A -> B -> A. If the runtime changes during the check,

@@ -5,10 +5,10 @@ import XCTest
 final class ProfileWorkflowFeaturesTests: XCTestCase {
     @MainActor
     func testTelemetryNeverFallsBackToZeroVersionOrBuild() {
-        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.1")
-        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.1")
-        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "43")
-        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "43")
+        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.4")
+        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.4")
+        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "46")
+        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "46")
         XCTAssertEqual(NeAntikTelemetry.validBuild("17"), "17")
     }
     func testCommandPaletteMatchesRussianAndEnglishTerms() {

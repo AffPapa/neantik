@@ -119,7 +119,7 @@
 -      StaticBitmapImage::ShuffleSubchannelColorData(image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy);
 +      StaticBitmapImage::ShuffleSubchannelColorData(
 +          image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy,
-+          "canvas-image-data");
++          "canvas-rendered-surface");
      }
    }
  
@@ -131,7 +131,8 @@
      // shuffle subchannel color data within the pixmap
 -    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(), 0, 0);
 +    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(),
-+                                                  0, 0, "image-encoder");
++                                                  0, 0,
++                                                  "canvas-rendered-surface");
    }
    switch (mime_type) {
      case kMimeTypeJpeg: {

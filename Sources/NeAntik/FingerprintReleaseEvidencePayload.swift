@@ -19,8 +19,16 @@ enum FingerprintReleaseCriticalSurfaceState:
 struct FingerprintReleaseEvidencePayload:
     Codable, Equatable, Sendable
 {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
     static let kindName = "neantik-fingerprint-release-result"
+    static let allowedStrictFailureIDs: Set<String> = [
+        "audio-repeat",
+        "canvas-repeat",
+        "client-rects-repeat",
+        "css-screen",
+        "webgl-pixels-repeat",
+        "webgl-shader-worker"
+    ]
 
     let schemaVersion: Int
     let kind: String
@@ -50,6 +58,7 @@ struct FingerprintReleaseEvidencePayload:
     let networkPrivacyControlled: Bool
     let publicAlphaQualified: Bool
     let productionQualified: Bool
+    let strictFailureIDs: [String]
     let limitations: [String]
 
     init(
@@ -137,6 +146,7 @@ struct FingerprintReleaseEvidencePayload:
             report.isPublicAlphaReleaseQualified
         productionQualified =
             report.isProductionReleaseQualified
+        strictFailureIDs = report.strictContextFailureIDs
         limitations =
             publicAlphaQualified && !productionQualified
             ? ["strict-coherence-not-qualified"]

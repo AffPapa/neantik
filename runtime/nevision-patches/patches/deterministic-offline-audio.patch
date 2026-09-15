@@ -35,7 +35,9 @@ diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_context.c
 +    }
 +    auto samples = channel_data->AsSpan();
 +    for (size_t index = 0; index < samples.size(); index += kSampleStride) {
-+      if (!std::isfinite(samples[index])) {
++      // Preserve exact digital silence. Adding energy to a silent graph is
++      // observable behavior that no native audio pipeline would produce.
++      if (!std::isfinite(samples[index]) || samples[index] == 0.0f) {
 +        continue;
 +      }
 +      const uint32_t salt_index =

@@ -437,7 +437,7 @@ enum FingerprintEvidenceEnvelopeCodec {
                   "identitySequenceValid", "crossRealmConsistent",
                   "deviceTupleConsistent", "networkPrivacyControlled",
                   "publicAlphaQualified", "productionQualified",
-                  "limitations"
+                  "strictFailureIDs", "limitations"
               ],
               isCanonicalUTCSecondTimestamp(
                   dictionary["createdAt"]
@@ -491,6 +491,14 @@ enum FingerprintEvidenceEnvelopeCodec {
                 payload.unavailableRequiredKeys.sorted(),
               payload.unstableRequiredKeys ==
                 payload.unstableRequiredKeys.sorted(),
+              payload.strictFailureIDs ==
+                payload.strictFailureIDs.sorted(),
+              Set(payload.strictFailureIDs).count ==
+                payload.strictFailureIDs.count,
+              Set(payload.strictFailureIDs).isSubset(
+                  of: FingerprintReleaseEvidencePayload
+                    .allowedStrictFailureIDs
+              ),
               Set(payload.changedCriticalKeys).isSubset(
                   of: Set(FingerprintAuditReport.criticalKeys)
               ),
@@ -502,6 +510,7 @@ enum FingerprintEvidenceEnvelopeCodec {
                     payload.networkPrivacyControlled &&
                     payload.unavailableRequiredKeys.isEmpty &&
                     payload.unstableRequiredKeys.isEmpty &&
+                    payload.strictFailureIDs.isEmpty &&
                     payload.limitations.isEmpty
                 ),
               payload.productionQualified

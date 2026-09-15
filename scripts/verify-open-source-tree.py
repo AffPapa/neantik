@@ -341,10 +341,28 @@ def verify_release_metadata() -> None:
             fail(f"invalid release version in releases/v{version}.json")
         return tuple(int(part) for part in version.split("."))
 
-    metadata = max(parsed_metadata, key=version_key)
-    archive = metadata["archive"]
-    sidecar = PROJECT_ROOT / "releases" / f"{archive['name']}.sha256"
-    expected = f"{archive['sha256']}  {archive['name']}\n"
+    complete_metadata = [
+        metadata
+        for metadata in parsed_metadata
+        if isinstance(metadata, dict) and metadata.get("archive") is not None
+    ]
+    if not complete_metadata:
+        fail("no complete public archive metadata is present")
+    metadata = max(complete_metadata, key=version_key)
+    archive = metadata.get("archive")
+    if not isinstance(archive, dict):
+        fail(f"invalid archive metadata for releases/v{metadata['version']}.json")
+    archive_name = archive.get("name")
+    archive_sha256 = archive.get("sha256")
+    if (
+        not isinstance(archive_name, str)
+        or not archive_name
+        or not isinstance(archive_sha256, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", archive_sha256)
+    ):
+        fail(f"invalid archive metadata for releases/v{metadata['version']}.json")
+    sidecar = PROJECT_ROOT / "releases" / f"{archive_name}.sha256"
+    expected = f"{archive_sha256}  {archive_name}\n"
     if sidecar.read_text(encoding="utf-8") != expected:
         fail(
             "release checksum sidecar does not match "

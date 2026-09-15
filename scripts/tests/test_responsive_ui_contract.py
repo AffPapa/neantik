@@ -552,7 +552,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("onConfigure: beginCreatingProfile", empty_state)
 
         self.assertIn('"Создать и открыть"', onboarding)
-        self.assertIn('Button("Выбрать название и прокси…"', onboarding)
+        self.assertIn('Button("Выбрать название…"', onboarding)
         self.assertIn("FirstProfileBootstrap.routeSummary", onboarding)
         self.assertIn("ViewThatFits(in: .horizontal)", onboarding)
         self.assertIn(".buttonStyle(.borderedProminent)", onboarding)

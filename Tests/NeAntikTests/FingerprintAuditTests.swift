@@ -1085,6 +1085,7 @@ struct FingerprintAuditTests {
             }
         )
         #expect(!result.isProductionReleaseQualified)
+        #expect(result.strictContextFailureIDs == ["audio-repeat"])
         #expect(
             result.productionReleaseIssues.contains {
                 $0.contains("audio value disagrees with audio_repeat")

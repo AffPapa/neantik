@@ -737,6 +737,7 @@ def collect_authenticated_evidence(
         "summary": {
             "qualified": payload["publicAlphaQualified"],
             "productionQualified": payload["productionQualified"],
+            "strictFailureIDs": payload["strictFailureIDs"],
             "changedCriticalKeys": payload["changedCriticalKeys"],
             "unstableRequiredKeys":
                 payload["unstableRequiredKeys"],
