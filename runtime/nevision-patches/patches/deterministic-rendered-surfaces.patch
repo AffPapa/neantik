@@ -125,7 +125,7 @@
  
 --- a/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
 +++ b/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
-@@ -48,7 +48,8 @@
+@@ -48,7 +48,9 @@
                            double quality) {
    if (RuntimeEnabledFeatures::FingerprintingCanvasImageDataNoiseEnabled()) {
      // shuffle subchannel color data within the pixmap

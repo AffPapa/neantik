@@ -75,6 +75,30 @@ def assert_patch_scope_allowed(patch_path: Path, forbidden_scopes: list[str], gr
             )
 
 
+def assert_patch_syntax_valid(patch_path: Path, group_id: str) -> None:
+    completed = subprocess.run(
+        [
+            "git",
+            "apply",
+            "--numstat",
+            "--whitespace=nowarn",
+            str(patch_path),
+        ],
+        cwd=patch_path.parent,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if completed.returncode == 0:
+        return
+    detail = completed.stdout.strip()
+    raise PatchsetManifestError(
+        f"{group_id} patchFile is not a valid unified diff"
+        + (f":\n{detail}" if detail else "")
+    )
+
+
 def source_postimage_mismatches(
     source_root: Path,
     manifest: dict[str, object],
@@ -411,6 +435,7 @@ def verify_manifest(
                         f"{group_id}.incrementalPreimageSHA256 must map "
                         "source paths to SHA-256 strings"
                     )
+            assert_patch_syntax_valid(patch_path, group_id)
             ported_patch_paths.append(patch_path)
             group_diagnostics.append(
                 {

@@ -69,7 +69,7 @@
         "runtime/fingerprint-chromium.lock.json"
       ],
       "patchFile": "patches/deterministic-rendered-surfaces.patch",
-      "patchSHA256": "1ddc11b2c9c549170aa3ba5dcaf855c98cc001abe22f72838f49541faa6c3a74",
+      "patchSHA256": "44743dee88ecaa715c432a9498b6eaf35124c390207fd12a9b281060e61c6e25",
       "requiredBehavior": [
         "profile A remains stable across A -> B -> A",
         "profile B differs from profile A on at least two critical rendered/audio surfaces",
@@ -80,7 +80,7 @@
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "b342916b037965d07cfee4f0d0a7f432236f657777010052c5bd7efdeb32d64f",
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f95128efcb8885770bf291a171459d4d4218aee8ef0f5f82ec44407e5ff69dc5",
         "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "45ad8e699d6d15f176d8974ad122a293b12eba5842d9308b07215e1766411f81",
-        "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "07494697695d2121cbcb7031c2320e7ebf57fdabf0c5fe68e07e57d7f8d89694"
+        "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "573be42d23cd944e62750078c8854bc02ee4f2002db03b5563616c72b8074477"
       }
     },
     {
@@ -94,7 +94,7 @@
         "docs/FINGERPRINT_RUNTIME.md"
       ],
       "patchFile": "patches/deterministic-offline-audio.patch",
-      "patchSHA256": "b0558b538af54c1745ada02a5f7edf11260e6199c5c7b85c7fdfafa64cbfc811",
+      "patchSHA256": "d29297676c2252c654dfeccc64f8ba274eac32bf2b7388fd26d5c9ea27551bb3",
       "requiredBehavior": [
         "OfflineAudio keeps the requested sample rate, frame count, and graph semantics",
         "profile A remains stable across repeated OfflineAudio renders",
@@ -181,7 +181,7 @@
         "scripts/verify-gui-fingerprint-report.py"
       ],
       "patchFile": "patches/minimal-apple-device-tuple.patch",
-      "patchSHA256": "4059a41377f5aa9272734e435d4f82767b35b03ed4196189b66b8f17fc914d4b",
+      "patchSHA256": "6fb4f1734d74ba69455d85a4d34300b8c0b0f4fbc71c2c55ef2ec83b9e87aad7",
       "requiredBehavior": [
         "if tuple spoofing is retained, GPU, CPU, memory, screen, scale, platform, and Client Hints come from one reviewed tuple",
         "if tuple spoofing is deferred, real device values are kept and only rendered/noise surfaces differ",

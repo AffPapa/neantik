@@ -14,7 +14,7 @@ diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_context.c
  #include "media/base/audio_glitch_info.h"
  #include "third_party/blink/public/platform/platform.h"
  #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
-@@ -55,6 +58,36 @@ namespace blink {
+@@ -55,6 +58,38 @@ namespace blink {
  
  namespace {
  
@@ -53,7 +53,7 @@ diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_context.c
  OfflineAudioContext* CreateOfflineAudioContext(
      ExecutionContext* context,
      unsigned number_of_channels,
-@@ -429,6 +462,7 @@ void OfflineAudioContext::FireCompletionEvent() {
+@@ -429,6 +465,7 @@ void OfflineAudioContext::FireCompletionEvent() {
      if (!rendered_buffer) {
        return;
      }
