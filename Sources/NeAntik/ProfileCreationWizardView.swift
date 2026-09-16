@@ -28,7 +28,12 @@ struct ProfileCreationWizardView: View {
                 Spacer()
                 Button("Создать и открыть") { submit(open: true) }
                     .keyboardShortcut(.defaultAction)
-                Button("Создать") { submit(open: false) }
+                Menu {
+                    Button("Создать без запуска") { submit(open: false) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .help("Дополнительные варианты создания")
             }
         }
         .padding(24)
