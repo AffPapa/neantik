@@ -604,7 +604,7 @@ struct FingerprintEvidenceEnvelopeTests {
     private func payload() -> Data {
         try! JSONSerialization.data(
             withJSONObject: [
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "kind": "neantik-fingerprint-release-result",
                 "createdAt": "1970-01-01T00:00:03Z",
                 "releaseChannel": "public-alpha",
@@ -640,6 +640,7 @@ struct FingerprintEvidenceEnvelopeTests {
                 "networkPrivacyControlled": false,
                 "publicAlphaQualified": true,
                 "productionQualified": false,
+                "strictFailureIDs": [],
                 "limitations": [
                     "strict-coherence-not-qualified"
                 ]

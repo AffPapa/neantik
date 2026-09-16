@@ -150,7 +150,16 @@ RELEASE_PAYLOAD_KEYS = {
     "networkPrivacyControlled",
     "publicAlphaQualified",
     "productionQualified",
+    "strictFailureIDs",
     "limitations",
+}
+STRICT_FAILURE_IDS = {
+    "audio-repeat",
+    "canvas-repeat",
+    "client-rects-repeat",
+    "css-screen",
+    "webgl-pixels-repeat",
+    "webgl-shader-worker",
 }
 CRITICAL_SURFACE_KEYS = {
     "canvas",
@@ -536,7 +545,7 @@ def _validate_release_payload(value: Any) -> dict[str, Any]:
     )
     _require_exact_integer(
         payload.get("schemaVersion"),
-        1,
+        2,
         "Fingerprint evidence payload schemaVersion",
     )
     _require_exact_string(
@@ -646,6 +655,14 @@ def _validate_release_payload(value: Any) -> dict[str, Any]:
         payload.get("limitations"),
         "Fingerprint evidence payload limitations",
     )
+    strict_failure_ids = _require_sorted_unique_string_list(
+        payload.get("strictFailureIDs"),
+        "Fingerprint evidence payload strictFailureIDs",
+    )
+    if not set(strict_failure_ids).issubset(STRICT_FAILURE_IDS):
+        raise FingerprintEvidenceVerificationError(
+            "Fingerprint evidence payload strictFailureIDs are invalid."
+        )
     for key in (
         "profileSequenceValid",
         "identitySequenceValid",
@@ -674,6 +691,7 @@ def _validate_release_payload(value: Any) -> dict[str, Any]:
             or not payload["networkPrivacyControlled"]
             or unavailable
             or unstable
+            or strict_failure_ids
             or limitations
         ):
             raise FingerprintEvidenceVerificationError(

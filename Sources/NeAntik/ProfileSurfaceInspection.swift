@@ -57,7 +57,9 @@ enum ExtensionSurfaceScanner {
     /// ignored to keep the inspection bounded and profile-local.
     static func scan(profileDirectory: URL,
                      fileManager: FileManager = .default) -> ExtensionSurfaceReport {
-        let directory = profileDirectory.appendingPathComponent("Extensions", isDirectory: true)
+        let directory = profileDirectory
+            .appendingPathComponent("Default", isDirectory: true)
+            .appendingPathComponent("Extensions", isDirectory: true)
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: directory.path, isDirectory: &isDirectory) else {
             // Chromium omits Extensions until the first extension is

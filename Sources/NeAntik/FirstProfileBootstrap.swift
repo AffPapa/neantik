@@ -305,12 +305,12 @@ struct FirstProfileOnboardingView: View {
     }
 
     private var configureButton: some View {
-        Button("Выбрать название и прокси…", action: onConfigure)
+        Button("Выбрать название…", action: onConfigure)
             .frame(minHeight: 28)
             .fixedSize(horizontal: true, vertical: false)
             .disabled(isCreatingProfile)
             .accessibilityHint(
-                "Открывает название рабочего места и необязательное подключение через прокси"
+                "Открывает выбор названия и назначения рабочего места"
             )
     }
 

@@ -51,7 +51,7 @@ enum WorkspaceLayout {
 
     static let minimumProfileColumnWidth: CGFloat = 520
     static let idealProfileColumnWidth: CGFloat = 820
-    static let maximumProfileColumnWidth: CGFloat = 1_400
+    static let maximumProfileColumnWidth: CGFloat = 3_200
 
     static let minimumInspectorWidth: CGFloat = 360
     static let idealInspectorWidth: CGFloat = 440

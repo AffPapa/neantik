@@ -51,7 +51,7 @@
   "ownedInputs": {
     "runtime/apple-device-tuples.json": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
     "runtime/chromium-152-toolchain-lock.json": "1bd134675b33ce24661a0210c98d5a6dc3a6fb565b484b39940f2b22de861932",
-    "runtime/nevision-patches/series.json": "7be7057811a9cd2feb34daac2be2393d0ab8197b52b8174858f0fa5ee075428d",
+    "runtime/nevision-patches/series.json": "291dbdcdc6e4d8e4c3788f3afb3f3cf27e4fbc5998e07c9c9bc7fbd4d90cd451",
     "scripts/apply-neantik-patchset.py": "28070771e25546ececced16dcaa73b229470ffdfdd422f94cb041ce8680c01b0",
     "scripts/apply-owned-runtime-device-tuples.py": "75bb4a1d32d1dc82763200f32905783c9ca5e86033bf2314dca071dc47522ecc",
     "scripts/build-runtime.sh": "f6e30da7a14335398c66941fbc2c8ad54b2cdd4e23033167bfa21f0abd9f86cb",
@@ -62,12 +62,12 @@
   },
   "ownedManifests": {
     "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
-    "neantikPatchSeriesSHA256": "7be7057811a9cd2feb34daac2be2393d0ab8197b52b8174858f0fa5ee075428d",
-    "securityBaselineSHA256": "d88db3db8a331685bd66f852f184d513c90f74a7307ac8a8606e9b545fa14ff1"
+    "neantikPatchSeriesSHA256": "291dbdcdc6e4d8e4c3788f3afb3f3cf27e4fbc5998e07c9c9bc7fbd4d90cd451",
+    "securityBaselineSHA256": "418029f0b639c7a07a1d62eddb338bdd90b441c94eb22df0ca40f7658cc1a169"
   },
   "schemaVersion": 4,
-  "sourceContractSHA256": "f64a16026a625a8445ce6deb8676cd78f1127329fe969663232b59d0c0bb5b13",
-  "sourceProvenanceSHA256": "a2bcf78ac6d58142be77ef262d4c604f59f85559c69f6bf5a4042743f774a619",
+  "sourceContractSHA256": "333d92f5490f7b1f0a046e80a7808e783dbbcdb102c26c869dd80037a02021db",
+  "sourceProvenanceSHA256": "6ac21543b52663c817889115bcd58dad4226301696056c66db4e6a5a7a26fcbf",
   "status": "source-qualified",
   "targetArchitecture": "arm64"
 }

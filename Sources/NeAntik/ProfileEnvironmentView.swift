@@ -858,12 +858,12 @@ enum ProfileEnvironmentPresentation {
             return "Нужно проверить"
         case .success:
             return hasAutomaticLaunchFix
-                ? "Готово · прокси проверится при запуске"
-                : "Среда готова"
+                ? "Настроено · прокси проверится при запуске"
+                : "Среда настроена"
         case .neutral:
             return hasAutomaticLaunchFix
-                ? "Готово · прокси проверится при запуске"
-                : "Среда готова"
+                ? "Настроено · прокси проверится при запуске"
+                : "Среда настроена"
         }
     }
 

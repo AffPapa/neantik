@@ -69,7 +69,7 @@
         "runtime/fingerprint-chromium.lock.json"
       ],
       "patchFile": "patches/deterministic-rendered-surfaces.patch",
-      "patchSHA256": "4e10cb02a6fab439f1e8bcddbe6e02537d2d42b05022196088c60a9d905ea9d6",
+      "patchSHA256": "44743dee88ecaa715c432a9498b6eaf35124c390207fd12a9b281060e61c6e25",
       "requiredBehavior": [
         "profile A remains stable across A -> B -> A",
         "profile B differs from profile A on at least two critical rendered/audio surfaces",
@@ -79,8 +79,8 @@
         "third_party/blink/renderer/core/dom/document.cc": "07e0f15974043db7eb1db13df5c18786ce6f90392ab7bf4a152d510fcf6bd836",
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "b342916b037965d07cfee4f0d0a7f432236f657777010052c5bd7efdeb32d64f",
         "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "f95128efcb8885770bf291a171459d4d4218aee8ef0f5f82ec44407e5ff69dc5",
-        "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "85a7fa0bef19675978035360f4c5f68baf48b9244178ed7524158da43dd876b2",
-        "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "2c1d41aadd13c875bb9749f58c7a55334391900d349318f5924badfa1dcb738c"
+        "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "45ad8e699d6d15f176d8974ad122a293b12eba5842d9308b07215e1766411f81",
+        "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "573be42d23cd944e62750078c8854bc02ee4f2002db03b5563616c72b8074477"
       }
     },
     {
@@ -94,14 +94,14 @@
         "docs/FINGERPRINT_RUNTIME.md"
       ],
       "patchFile": "patches/deterministic-offline-audio.patch",
-      "patchSHA256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652",
+      "patchSHA256": "d29297676c2252c654dfeccc64f8ba274eac32bf2b7388fd26d5c9ea27551bb3",
       "requiredBehavior": [
         "OfflineAudio keeps the requested sample rate, frame count, and graph semantics",
         "profile A remains stable across repeated OfflineAudio renders",
         "profile B receives a different deterministic bounded sparse-sample perturbation"
       ],
       "postimageSHA256": {
-        "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "23e625d70a3272cd32379295217a33ced42e849fd045535c4897db1807f919c9"
+        "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "323c19f9a0391cf9735aca1bd2f45b48b0b07568e755777752244f801acf406d"
       }
     },
     {
@@ -181,17 +181,19 @@
         "scripts/verify-gui-fingerprint-report.py"
       ],
       "patchFile": "patches/minimal-apple-device-tuple.patch",
-      "patchSHA256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7",
+      "patchSHA256": "6fb4f1734d74ba69455d85a4d34300b8c0b0f4fbc71c2c55ef2ec83b9e87aad7",
       "requiredBehavior": [
         "if tuple spoofing is retained, GPU, CPU, memory, screen, scale, platform, and Client Hints come from one reviewed tuple",
         "if tuple spoofing is deferred, real device values are kept and only rendered/noise surfaces differ",
-        "independent random CPU/GPU/screen guesses are forbidden"
+        "independent random CPU/GPU/screen guesses are forbidden",
+        "CSS device-width and device-height use the same reviewed screen tuple as the Screen API"
       ],
       "postimageSHA256": {
         "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
         "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
         "third_party/blink/renderer/core/frame/screen.cc": "98b03954aeecf4373e0920999651e85c763a6b160d3eaf43b3cb1a1e08bad921",
-        "third_party/blink/renderer/core/frame/local_dom_window.cc": "d06d7347cb0229ac69ae747b7acc61c4a819d788a6283bbb84241476d1978aee"
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "d06d7347cb0229ac69ae747b7acc61c4a819d788a6283bbb84241476d1978aee",
+        "third_party/blink/renderer/core/css/media_values.cc": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629"
       }
     },
     {

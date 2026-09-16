@@ -555,6 +555,15 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
     }
 
+    /// Stable, privacy-safe identifiers for strict coherence failures. These
+    /// names describe only the failed invariant and never include profile
+    /// names, surface values, hashes, network addresses, or identity seeds.
+    var strictContextFailureIDs: [String] {
+        Array(Set(labeledCaptures.flatMap { _, capture in
+            Self.strictContextFailureIDs(for: capture)
+        })).sorted()
+    }
+
     private var strictContextConsistencyIssues: [String] {
         labeledCaptures.flatMap { label, capture in
             Self.strictContextIssues(for: capture, label: label)
@@ -1168,6 +1177,44 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             )
         }
         return issues
+    }
+
+    private static func strictContextFailureIDs(
+        for capture: FingerprintCapture
+    ) -> [String] {
+        let values = capture.values
+        var failures: [String] = []
+        for (first, second, identifier) in [
+            ("audio", "audio_repeat", "audio-repeat"),
+            ("canvas", "canvas_repeat", "canvas-repeat"),
+            (
+                "client_rects",
+                "client_rects_repeat",
+                "client-rects-repeat"
+            ),
+            (
+                "webgl_pixels",
+                "webgl_pixels_repeat",
+                "webgl-pixels-repeat"
+            ),
+            (
+                "webgl_shader_precision",
+                "worker_webgl_shader_precision",
+                "webgl-shader-worker"
+            )
+        ] where isAvailable(values[first]) &&
+            isAvailable(values[second]) &&
+            values[first] != values[second]
+        {
+            failures.append(identifier)
+        }
+        if isAvailable(values["css_screen_match"]),
+           values["css_screen_match"] !=
+            "width:1|height:1|resolution:1"
+        {
+            failures.append("css-screen")
+        }
+        return failures
     }
 
     private struct WebRTCCandidateSummary: Decodable {

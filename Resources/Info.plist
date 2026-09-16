@@ -4,10 +4,6 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ru</string>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>ru</string>
-	</array>
 	<key>CFBundleDisplayName</key>
 	<string>NeAntik</string>
 	<key>CFBundleExecutable</key>
@@ -18,16 +14,20 @@
 	<string>app.neantik.desktop</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ru</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>NeAntik</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.1</string>
+	<string>0.6.4</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>43</string>
+	<string>46</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>

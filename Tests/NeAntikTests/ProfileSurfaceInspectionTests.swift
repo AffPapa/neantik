@@ -5,7 +5,10 @@ import Testing
 struct ProfileSurfaceInspectionTests {
     @Test func scansExtensionManifestWithoutReturningManifestContents() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let version = root.appendingPathComponent("Extensions/abc/1.2.3", isDirectory: true)
+        let version = root.appendingPathComponent(
+            "Default/Extensions/abc/1.2.3",
+            isDirectory: true
+        )
         try FileManager.default.createDirectory(at: version, withIntermediateDirectories: true)
         let manifest = """
         {"name":"Review helper","version":"1.2.3","permissions":["storage","webRequest"],"host_permissions":["https://example.test/*"]}
@@ -31,7 +34,10 @@ struct ProfileSurfaceInspectionTests {
 
     @Test func broadHostAccessIsMarkedForReview() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let version = root.appendingPathComponent("Extensions/abc/1", isDirectory: true)
+        let version = root.appendingPathComponent(
+            "Default/Extensions/abc/1",
+            isDirectory: true
+        )
         try FileManager.default.createDirectory(at: version, withIntermediateDirectories: true)
         try Data(#"{"name":"Broad","host_permissions":["<all_urls>"]}"#.utf8).write(to: version.appendingPathComponent("manifest.json"))
         defer { try? FileManager.default.removeItem(at: root) }

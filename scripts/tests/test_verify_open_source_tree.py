@@ -17,6 +17,11 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_version_reservations_do_not_replace_complete_archive_metadata(
+        self,
+    ) -> None:
+        MODULE.verify_release_metadata()
+
     def test_provisioning_profiles_are_forbidden_from_public_source(self) -> None:
         self.assertIn(".provisionprofile", MODULE.FORBIDDEN_SUFFIXES)
         self.assertIn(".mobileprovision", MODULE.FORBIDDEN_SUFFIXES)

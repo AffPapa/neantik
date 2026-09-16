@@ -119,19 +119,20 @@
 -      StaticBitmapImage::ShuffleSubchannelColorData(image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy);
 +      StaticBitmapImage::ShuffleSubchannelColorData(
 +          image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy,
-+          "canvas-image-data");
++          "canvas-rendered-surface");
      }
    }
  
 --- a/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
 +++ b/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
-@@ -48,7 +48,8 @@
+@@ -48,7 +48,9 @@
                            double quality) {
    if (RuntimeEnabledFeatures::FingerprintingCanvasImageDataNoiseEnabled()) {
      // shuffle subchannel color data within the pixmap
 -    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(), 0, 0);
 +    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(),
-+                                                  0, 0, "image-encoder");
++                                                  0, 0,
++                                                  "canvas-rendered-surface");
    }
    switch (mime_type) {
      case kMimeTypeJpeg: {

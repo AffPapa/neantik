@@ -213,7 +213,7 @@ def main() -> int:
     )
     payload = canonical(
         {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "kind": "neantik-fingerprint-release-result",
             "createdAt": "1970-01-01T00:00:03Z",
             "releaseChannel": "public-alpha",
@@ -245,6 +245,7 @@ def main() -> int:
             "networkPrivacyControlled": False,
             "publicAlphaQualified": True,
             "productionQualified": False,
+            "strictFailureIDs": [],
             "limitations": ["strict-coherence-not-qualified"],
         }
     )

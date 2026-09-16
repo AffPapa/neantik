@@ -9,7 +9,7 @@ struct WorkspaceLayoutTests {
 
         #expect(WorkspaceLayout.minimumProfileColumnWidth == 520)
         #expect(WorkspaceLayout.idealProfileColumnWidth == 820)
-        #expect(WorkspaceLayout.maximumProfileColumnWidth == 1_400)
+        #expect(WorkspaceLayout.maximumProfileColumnWidth == 3_200)
 
         #expect(WorkspaceLayout.minimumInspectorWidth == 360)
         #expect(WorkspaceLayout.idealInspectorWidth == 440)

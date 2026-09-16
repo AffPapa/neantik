@@ -20,6 +20,13 @@ final class ProfileAutomationTests: XCTestCase {
         XCTAssertFalse(contract.issues.contains("WebRTC не настроен"))
     }
 
+    func testReadinessDoesNotBlockWhenHostDisplayIsNotReportedYet() {
+        let profile = BrowserProfile(name: "Test")
+        let report = ProfileReadinessReport.evaluate(profile: profile)
+        XCTAssertEqual(report.status, .ready)
+        XCTAssertFalse(report.issues.contains("Размер экрана не определён"))
+    }
+
     func testStabilityDetectsIdentityChange() {
         let first = BrowserProfile(name: "Test", identity: BrowserIdentity(seed: 1))
         let changed = BrowserProfile(name: "Test", identity: BrowserIdentity(seed: 2))

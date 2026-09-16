@@ -304,7 +304,7 @@ struct ProfileEnvironmentPresentationTests {
                 failureCount: 0,
                 attentionCount: 0,
                 hasAutomaticLaunchFix: true
-            ) == "Готово · прокси проверится при запуске"
+            ) == "Настроено · прокси проверится при запуске"
         )
     }
 
@@ -337,7 +337,7 @@ struct ProfileEnvironmentPresentationTests {
                 highestSeverity: .success,
                 failureCount: 0,
                 attentionCount: 0
-            ) == "Среда готова"
+            ) == "Среда настроена"
         )
     }
 
