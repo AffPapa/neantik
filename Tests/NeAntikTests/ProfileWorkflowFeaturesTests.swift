@@ -5,12 +5,38 @@ import XCTest
 final class ProfileWorkflowFeaturesTests: XCTestCase {
     @MainActor
     func testTelemetryNeverFallsBackToZeroVersionOrBuild() {
-        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.8")
-        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.8")
-        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "50")
-        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "50")
+        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.9")
+        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.9")
+        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "51")
+        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "51")
         XCTAssertEqual(NeAntikTelemetry.validBuild("17"), "17")
     }
+
+    func testTelemetryPayloadAddsOnlyBoundedAggregateHealthCounts() {
+        let payload = NeAntikTelemetry.makePayload(
+            event: .snapshot,
+            installationHash: "abc",
+            version: "0.6.9",
+            build: "51",
+            osMajor: 26,
+            profileCount: 3,
+            proxyProfileCount: 9,
+            attentionProfileCount: 2,
+            extensionReviewProfileCount: 4,
+            storageReviewProfileCount: -1
+        )
+        XCTAssertEqual(payload["schemaVersion"] as? Int, 2)
+        XCTAssertEqual(payload["profileCount"] as? Int, 3)
+        XCTAssertEqual(payload["proxyProfileCount"] as? Int, 3)
+        XCTAssertEqual(payload["attentionProfileCount"] as? Int, 2)
+        XCTAssertEqual(payload["extensionReviewProfileCount"] as? Int, 3)
+        XCTAssertEqual(payload["storageReviewProfileCount"] as? Int, 0)
+        XCTAssertNil(payload["profileName"])
+        XCTAssertNil(payload["proxy"])
+        XCTAssertNil(payload["url"])
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(payload))
+    }
+
     func testCommandPaletteMatchesRussianAndEnglishTerms() {
         XCTAssertTrue(WorkspaceCommand.cleanLaunch.matches("чистый"))
         XCTAssertTrue(WorkspaceCommand.search.matches("search"))

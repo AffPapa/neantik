@@ -1,5 +1,14 @@
 # NeAntik changelog
 
+## Direct 0.6.9 (51) — операционный контур профиля
+
+- добавлен быстрый operational health профиля: один статус, главная причина, понятное действие и safe launch with warning для восстановимых проблем;
+- добавлен безопасный план облегчения профиля: только disposable Chromium cache/temp папки, без cookies, паролей и рабочего состояния;
+- добавлены локальные QA fixtures для собственного checker harness: normal, conflict, crash и extensions профили без прокси/секретов;
+- добавлен release QA snapshot: tests, open-source tree, ZIP, DMG, GitHub assets и site gate в одном privacy-safe резюме;
+- обезличенная статистика получила bounded агрегаты проблемных профилей, расширений и storage без URL, имён профилей, cookies, proxy endpoints и fingerprint material;
+- Chromium не пересобирался: используется проверенный runtime 152.
+
 ## Direct 0.6.8 (50) — быстрые локальные проверки
 
 - сканер storage-поверхностей больше не загружает большие Chromium-папки целиком: проверка идёт неглубоким bounded-pass и останавливается на лимите;

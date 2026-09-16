@@ -83,3 +83,12 @@ must never enter the diagnostic report.
 - Extension version selection is a single-pass local directory scan; the report
   still returns only manifest-derived counts and risk labels, not manifest
   bodies or browsing state.
+
+## Added in 0.6.9
+
+- Profile operational health reduces checker-facing failures to one local status,
+  one primary issue and one safe action before launch.
+- Local checker fixtures cover normal, inconsistent, crash-recovery and extension
+  review scenarios without URLs, cookies, proxy values or profile secrets.
+- Telemetry remains aggregate-only and now reports bounded profile attention,
+  extension-review and storage-review counts.

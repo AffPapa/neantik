@@ -23,11 +23,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.8</string>
+	<string>0.6.9</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>50</string>
+	<string>51</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
