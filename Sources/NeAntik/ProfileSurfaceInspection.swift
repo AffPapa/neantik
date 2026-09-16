@@ -85,7 +85,14 @@ enum ExtensionSurfaceScanner {
                 includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
                 options: [.skipsHiddenFiles]
             ) else { continue }
-            for versionURL in versions.sorted(by: { $0.lastPathComponent > $1.lastPathComponent }) {
+            // We only inspect the newest lexical version. Selecting it in a
+            // single pass avoids allocating and sorting every historical
+            // version directory (large profiles can contain hundreds).
+            guard let versionURL = versions.lazy
+                .filter({ Self.isSafeChild($0, parent: idURL) && Self.isDirectory($0) && !Self.isSymbolicLink($0) })
+                .max(by: { $0.lastPathComponent < $1.lastPathComponent })
+            else { continue }
+            do {
                 guard Self.isSafeChild(versionURL, parent: idURL),
                       Self.isDirectory(versionURL),
                       !Self.isSymbolicLink(versionURL) else { continue }
@@ -97,7 +104,6 @@ enum ExtensionSurfaceScanner {
                 result.append(makeExtension(id: idURL.lastPathComponent,
                                             version: versionURL.lastPathComponent,
                                             manifest: manifest))
-                break
             }
         }
         return ExtensionSurfaceReport(extensions: result, isAvailable: true, issue: nil)
