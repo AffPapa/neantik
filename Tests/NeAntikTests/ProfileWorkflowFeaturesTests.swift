@@ -7,8 +7,8 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
     func testTelemetryNeverFallsBackToZeroVersionOrBuild() {
         XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.5")
         XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.5")
-        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "46")
-        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "46")
+        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "47")
+        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "47")
         XCTAssertEqual(NeAntikTelemetry.validBuild("17"), "17")
     }
     func testCommandPaletteMatchesRussianAndEnglishTerms() {

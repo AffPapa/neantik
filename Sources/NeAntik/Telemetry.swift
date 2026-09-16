@@ -14,7 +14,7 @@ enum NeAntikTelemetryEvent: String, Sendable {
 @MainActor
 final class NeAntikTelemetry: ObservableObject {
     static let fallbackVersion = "0.6.5"
-    static let fallbackBuild = "46"
+    static let fallbackBuild = "47"
     private static let installationKey = "telemetry.installationID"
     private static let endpoint = URL(string: "https://nevision-stats.iryadom.chatgpt.site/api/ingest")!
 
