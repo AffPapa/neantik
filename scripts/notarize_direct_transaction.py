@@ -3167,7 +3167,7 @@ def run_transaction(
         STATE.NotaryTransactionStateError,
     ) as error:
         raise DirectNotaryTransactionError(
-            "Direct notarization transaction failed"
+            f"Direct notarization transaction failed: {type(error).__name__}: {error}"
         ) from error
     finally:
         try:
