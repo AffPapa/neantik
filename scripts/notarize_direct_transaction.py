@@ -1723,7 +1723,7 @@ def _assert_inputs_match_transaction_receipt(
         )
 
 
-def resume_accepted_transaction_from_pinned_state(
+def resume_known_transaction_from_pinned_state(
     active: tuple[Path, tuple[STATE.StateReceipt, ...]],
     *,
     project_root: Path,
@@ -1743,7 +1743,7 @@ def resume_accepted_transaction_from_pinned_state(
         for index, (_prefix, stage) in enumerate(STATE.STAGES)
     }
     if (
-        stage_index.get(latest, -1) < stage_index["accepted"]
+        stage_index.get(latest, -1) < stage_index["submission-known"]
         or created.get("archiveName") != archive_name
         or created.get("releaseChannel") != release_channel
     ):
@@ -2697,7 +2697,7 @@ def run_transaction(
                 release_channel=release_channel,
             )
             if not active_matches_current_release:
-                recovered = resume_accepted_transaction_from_pinned_state(
+                recovered = resume_known_transaction_from_pinned_state(
                     active,
                     project_root=project_root,
                     dist=dist,
