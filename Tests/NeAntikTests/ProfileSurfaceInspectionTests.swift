@@ -44,6 +44,19 @@ struct ProfileSurfaceInspectionTests {
         #expect(ExtensionSurfaceScanner.scan(profileDirectory: root).requiresReview)
     }
 
+    @Test func extensionScanUsesNewestVersionManifest() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let base = root.appendingPathComponent("Default/Extensions/abc", isDirectory: true)
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: base.appendingPathComponent("1"), withIntermediateDirectories: true)
+        try Data(#"{"name":"Old","version":"1"}"#.utf8).write(to: base.appendingPathComponent("1/manifest.json"))
+        try FileManager.default.createDirectory(at: base.appendingPathComponent("2"), withIntermediateDirectories: true)
+        try Data(#"{"name":"Newest","version":"2"}"#.utf8).write(to: base.appendingPathComponent("2/manifest.json"))
+        defer { try? FileManager.default.removeItem(at: root) }
+        let report = ExtensionSurfaceScanner.scan(profileDirectory: root)
+        #expect(report.extensions.first?.name == "Newest")
+    }
+
     @Test func memoryPolicyKeepsFocusedAndSuspendsOldInactiveProcessUnderPressure() {
         let focused = UUID()
         let old = UUID()
