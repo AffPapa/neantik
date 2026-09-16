@@ -56,12 +56,15 @@ struct BrowserRuntimeLocator: Sendable {
             "NeAntik Browser.app",
             isDirectory: true
         )
-        let executable = normalizedExecutable(neAntikApp)
-        guard declaredNeAntikFlavor(for: executable) ==
-            .fingerprintChromium
+        guard let metadata = bundleMetadata(for: neAntikApp),
+              metadata.bundleIdentifier == "app.neantik.runtime",
+              metadata.flavor == "fingerprint-chromium"
         else {
             return []
         }
+        let executable = neAntikApp.appendingPathComponent(
+            "Contents/MacOS/\(metadata.executable)"
+        )
         return [Candidate(
             name: "NeAntik Browser",
             url: executable,
@@ -93,12 +96,13 @@ struct BrowserRuntimeLocator: Sendable {
         )
     }
 
-    private func declaredNeAntikFlavor(
-        for executableURL: URL
-    ) -> BrowserRuntimeFlavor? {
-        guard let appURL = appBundleURL(for: executableURL) else {
-            return nil
-        }
+    private struct BundleMetadata {
+        let bundleIdentifier: String
+        let flavor: String
+        let executable: String
+    }
+
+    private func bundleMetadata(for appURL: URL) -> BundleMetadata? {
         let infoURL = appURL.appendingPathComponent("Contents/Info.plist")
         guard let data = try? Data(contentsOf: infoURL),
               let object = try? PropertyListSerialization.propertyList(
@@ -106,14 +110,14 @@ struct BrowserRuntimeLocator: Sendable {
                   format: nil
               ),
               let dictionary = object as? [String: Any],
-              dictionary["CFBundleIdentifier"] as? String ==
-                "app.neantik.runtime",
-              dictionary["NeAntikRuntimeFlavor"] as? String ==
-                "fingerprint-chromium"
+              let bundleIdentifier = dictionary["CFBundleIdentifier"] as? String,
+              let flavor = dictionary["NeAntikRuntimeFlavor"] as? String,
+              let executable = dictionary["CFBundleExecutable"] as? String,
+              !executable.isEmpty, !executable.contains("/")
         else {
             return nil
         }
-        return .fingerprintChromium
+        return BundleMetadata(bundleIdentifier: bundleIdentifier, flavor: flavor, executable: executable)
     }
 
     private func appBundleURL(for url: URL) -> URL? {
