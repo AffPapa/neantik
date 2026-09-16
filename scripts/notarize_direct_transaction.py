@@ -744,12 +744,12 @@ def snapshot_candidate_inputs(
 
 
 def assert_candidate_inputs_unchanged(inputs: CandidateInputs) -> None:
-    for snapshot, maximum_bytes in (
-        (inputs.info, MAXIMUM_INFO_PLIST_BYTES),
-        (inputs.manifest, MAXIMUM_MANIFEST_BYTES),
-        (inputs.source_binding, MAXIMUM_SOURCE_BINDING_BYTES),
-        (inputs.evidence, MAXIMUM_EVIDENCE_BYTES),
-        (inputs.attestation, MAXIMUM_ATTESTATION_BYTES),
+    for label, snapshot, maximum_bytes in (
+        ("Info.plist", inputs.info, MAXIMUM_INFO_PLIST_BYTES),
+        ("direct-candidate-manifest.json", inputs.manifest, MAXIMUM_MANIFEST_BYTES),
+        ("direct-candidate-source.json", inputs.source_binding, MAXIMUM_SOURCE_BINDING_BYTES),
+        ("fingerprint-audit.json", inputs.evidence, MAXIMUM_EVIDENCE_BYTES),
+        ("fingerprint-audit-summary.json", inputs.attestation, MAXIMUM_ATTESTATION_BYTES),
     ):
         try:
             SNAPSHOT.assert_snapshot_source_unchanged(
@@ -762,7 +762,7 @@ def assert_candidate_inputs_unchanged(inputs: CandidateInputs) -> None:
             )
         except SNAPSHOT.ReleaseInputSnapshotError as error:
             raise DirectNotaryTransactionError(
-                "candidate release input changed during notarization"
+                f"candidate release input changed during notarization: {label}: {error}"
             ) from error
 
 
