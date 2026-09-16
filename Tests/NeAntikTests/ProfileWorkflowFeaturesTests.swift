@@ -5,10 +5,10 @@ import XCTest
 final class ProfileWorkflowFeaturesTests: XCTestCase {
     @MainActor
     func testTelemetryNeverFallsBackToZeroVersionOrBuild() {
-        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.10")
-        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.10")
-        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "52")
-        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "52")
+        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), NeAntikTelemetry.fallbackVersion)
+        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), NeAntikTelemetry.fallbackVersion)
+        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), NeAntikTelemetry.fallbackBuild)
+        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), NeAntikTelemetry.fallbackBuild)
         XCTAssertEqual(NeAntikTelemetry.validBuild("17"), "17")
     }
 
@@ -51,7 +51,11 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
             extensionReviewProfileCount: 1,
             storageReviewProfileCount: 9
         )
-        XCTAssertTrue(summary.telegramText.contains("Версия: 0.6.10 (52)"))
+        XCTAssertTrue(
+            summary.telegramText.contains(
+                "Версия: \(NeAntikTelemetry.fallbackVersion) (\(NeAntikTelemetry.fallbackBuild))"
+            )
+        )
         XCTAssertTrue(summary.telegramText.contains("Профилей: 4"))
         XCTAssertTrue(summary.telegramText.contains("storage на проверке: 4"))
         XCTAssertFalse(summary.telegramText.lowercased().contains("proxy.example"))
