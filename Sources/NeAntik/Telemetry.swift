@@ -2,6 +2,16 @@ import CryptoKit
 import Combine
 import Foundation
 
+
+struct NeAntikTelemetrySummary: Equatable, Sendable {
+    let title: String
+    let lines: [String]
+
+    var telegramText: String {
+        ([title] + lines).joined(separator: "\n")
+    }
+}
+
 enum NeAntikTelemetryEvent: String, Sendable {
     case snapshot
     case profileCreated = "profile_created"
@@ -13,8 +23,8 @@ enum NeAntikTelemetryEvent: String, Sendable {
 /// value, cookie, page content or fingerprint material is ever serialized.
 @MainActor
 final class NeAntikTelemetry: ObservableObject {
-    static let fallbackVersion = "0.6.9"
-    static let fallbackBuild = "51"
+    nonisolated static let fallbackVersion = "0.6.10"
+    nonisolated static let fallbackBuild = "52"
     private static let installationKey = "telemetry.installationID"
     private static let endpoint = URL(string: "https://nevision-stats.iryadom.chatgpt.site/api/ingest")!
 
@@ -116,11 +126,47 @@ final class NeAntikTelemetry: ObservableObject {
         ]
     }
 
+
+    nonisolated static func makeSummary(
+        event: NeAntikTelemetryEvent,
+        version: String,
+        build: String,
+        osMajor: Int,
+        profileCount: Int,
+        proxyProfileCount: Int,
+        attentionProfileCount: Int,
+        extensionReviewProfileCount: Int,
+        storageReviewProfileCount: Int
+    ) -> NeAntikTelemetrySummary {
+        let payload = makePayload(
+            event: event,
+            installationHash: "redacted",
+            version: validVersion(version),
+            build: validBuild(build),
+            osMajor: osMajor,
+            profileCount: profileCount,
+            proxyProfileCount: proxyProfileCount,
+            attentionProfileCount: attentionProfileCount,
+            extensionReviewProfileCount: extensionReviewProfileCount,
+            storageReviewProfileCount: storageReviewProfileCount
+        )
+        func int(_ key: String) -> Int { payload[key] as? Int ?? 0 }
+        return NeAntikTelemetrySummary(
+            title: "NeAntik: обезличенное событие · \(event.rawValue)",
+            lines: [
+                "Версия: \(payload["version"] as? String ?? fallbackVersion) (\(payload["build"] as? String ?? fallbackBuild)) · macOS \(int("osMajor"))",
+                "Профилей: \(int("profileCount")); с прокси: \(int("proxyProfileCount")); требуют внимания: \(int("attentionProfileCount"))",
+                "Расширения на проверке: \(int("extensionReviewProfileCount")); storage на проверке: \(int("storageReviewProfileCount"))",
+                "Приватные данные не отправляются: URL, cookies, пароли, proxy endpoint, имена профилей."
+            ]
+        )
+    }
+
     nonisolated private static func boundedCount(_ value: Int, maximum: Int) -> Int {
         max(0, min(value, maximum))
     }
 
-    static func validVersion(_ raw: String?) -> String {
+    nonisolated static func validVersion(_ raw: String?) -> String {
         guard let raw,
               raw.range(of: #"^\d+\.\d+\.\d+$"#, options: .regularExpression) != nil,
               raw != "0.0.0"
@@ -128,7 +174,7 @@ final class NeAntikTelemetry: ObservableObject {
         return raw
     }
 
-    static func validBuild(_ raw: String?) -> String {
+    nonisolated static func validBuild(_ raw: String?) -> String {
         guard let raw,
               raw.range(of: #"^[1-9]\d*$"#, options: .regularExpression) != nil
         else { return fallbackBuild }

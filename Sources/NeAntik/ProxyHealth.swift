@@ -115,6 +115,8 @@ struct ProxyHealthSuccess: Codable, Equatable, Sendable {
 }
 
 struct ProxyHealthState: Codable, Equatable, Sendable {
+    static let freshnessLifetime: TimeInterval = 30 * 24 * 60 * 60
+
     let latestAttempt: ProxyHealthAttempt
     let lastSuccess: ProxyHealthSuccess?
 
@@ -123,6 +125,11 @@ struct ProxyHealthState: Codable, Equatable, Sendable {
             lastSuccess?.exitAddressWasObserved == true &&
             lastSuccess?.timezoneIdentifier != nil &&
             lastSuccess?.localeIdentifier != nil
+    }
+
+    func isFresh(relativeTo now: Date = Date()) -> Bool {
+        let age = now.timeIntervalSince(latestAttempt.checkedAt)
+        return age >= -5 * 60 && age <= Self.freshnessLifetime
     }
 }
 

@@ -1,5 +1,14 @@
 # NeAntik changelog
 
+## Direct 0.6.10 (52) — свежесть прокси и безопасные действия
+
+- smart view «Внимание» теперь показывает proxied-профили без свежей проверки маршрута: missing, stale, failed и incomplete proxy receipt больше не теряются в общем списке;
+- Profile Doctor различает «прокси не проверялся», «проверка прокси устарела» и «route context неполный», сохраняя запуск с предупреждением для восстановимых случаев;
+- safe compact получил исполняемый локальный executor: удаляются только allowlisted Chromium cache/temp папки внутри профиля, symlink и неизвестные пути пропускаются;
+- Telegram summary для telemetry стал человекочитаемым и privacy-bounded: версия/build, macOS, агрегаты профилей, прокси, attention, extensions и storage без URL, cookies, паролей, proxy endpoints и имён профилей;
+- исправлена сборка telemetry summary под actor isolation Swift, fallback version/build синхронизированы с 0.6.10 (52);
+- Chromium не пересобирался: используется проверенный runtime 152.
+
 ## Direct 0.6.9 (51) — операционный контур профиля
 
 - добавлен быстрый operational health профиля: один статус, главная причина, понятное действие и safe launch with warning для восстановимых проблем;

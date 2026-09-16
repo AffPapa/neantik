@@ -5,10 +5,10 @@ import XCTest
 final class ProfileWorkflowFeaturesTests: XCTestCase {
     @MainActor
     func testTelemetryNeverFallsBackToZeroVersionOrBuild() {
-        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.9")
-        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.9")
-        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "51")
-        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "51")
+        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.10")
+        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.10")
+        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "52")
+        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "52")
         XCTAssertEqual(NeAntikTelemetry.validBuild("17"), "17")
     }
 
@@ -16,8 +16,8 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
         let payload = NeAntikTelemetry.makePayload(
             event: .snapshot,
             installationHash: "abc",
-            version: "0.6.9",
-            build: "51",
+            version: "0.6.10",
+            build: "52",
             osMajor: 26,
             profileCount: 3,
             proxyProfileCount: 9,
@@ -35,6 +35,27 @@ final class ProfileWorkflowFeaturesTests: XCTestCase {
         XCTAssertNil(payload["proxy"])
         XCTAssertNil(payload["url"])
         XCTAssertTrue(JSONSerialization.isValidJSONObject(payload))
+    }
+
+
+
+    func testTelemetrySummaryIsHumanReadableAndPrivacyBounded() {
+        let summary = NeAntikTelemetry.makeSummary(
+            event: .snapshot,
+            version: "0.0.0",
+            build: "0",
+            osMajor: 26,
+            profileCount: 4,
+            proxyProfileCount: 2,
+            attentionProfileCount: 1,
+            extensionReviewProfileCount: 1,
+            storageReviewProfileCount: 9
+        )
+        XCTAssertTrue(summary.telegramText.contains("Версия: 0.6.10 (52)"))
+        XCTAssertTrue(summary.telegramText.contains("Профилей: 4"))
+        XCTAssertTrue(summary.telegramText.contains("storage на проверке: 4"))
+        XCTAssertFalse(summary.telegramText.lowercased().contains("proxy.example"))
+        XCTAssertFalse(summary.telegramText.lowercased().contains("sid="))
     }
 
     func testCommandPaletteMatchesRussianAndEnglishTerms() {

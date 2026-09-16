@@ -45,6 +45,7 @@ enum ProfileOperationalHealthEvaluator {
         readiness: ProfileReadinessReport,
         storage: ProfileStorageSurfaceReport? = nil,
         extensions: ExtensionSurfaceReport? = nil,
+        proxyHealth: ProxyHealthState? = nil,
         profileDirectoryExists: Bool = true,
         hasActiveLock: Bool = false,
         runtimeReady: Bool = true,
@@ -92,15 +93,35 @@ enum ProfileOperationalHealthEvaluator {
                 canAutoFix: true
             ))
         }
-        if profile.proxy != nil && readiness.issues.contains(where: { $0.contains("Прокси") }) {
-            issues.append(issue(
-                id: "proxy-check",
-                severity: .warning,
-                title: "Прокси не проверялся",
-                explanation: "Перед запуском стоит проверить доступность маршрута, не раскрывая endpoint в отчётах.",
-                actionTitle: "Проверить прокси",
-                canAutoFix: true
-            ))
+        if profile.proxy != nil {
+            if proxyHealth == nil {
+                issues.append(issue(
+                    id: "proxy-check",
+                    severity: .warning,
+                    title: "Прокси не проверялся",
+                    explanation: "Перед запуском стоит проверить доступность маршрута, не раскрывая endpoint в отчётах.",
+                    actionTitle: "Проверить прокси",
+                    canAutoFix: true
+                ))
+            } else if let proxyHealth, !proxyHealth.isFresh(relativeTo: now) {
+                issues.append(issue(
+                    id: "proxy-stale",
+                    severity: .warning,
+                    title: "Проверка прокси устарела",
+                    explanation: "Маршрут мог измениться с момента последней проверки.",
+                    actionTitle: "Проверить прокси",
+                    canAutoFix: true
+                ))
+            } else if let proxyHealth, !proxyHealth.hasCompleteRouteContext {
+                issues.append(issue(
+                    id: "proxy-context",
+                    severity: .warning,
+                    title: "Прокси требует уточнения",
+                    explanation: "Последняя проверка не подтвердила полный route context.",
+                    actionTitle: "Проверить прокси",
+                    canAutoFix: true
+                ))
+            }
         }
         if storage?.requiresReview == true {
             issues.append(issue(
@@ -222,6 +243,67 @@ enum ProfileDisposableCleanupPlanner {
             )
         }
         return ProfileDisposableCleanupPlan(candidates: candidates)
+    }
+}
+
+
+struct ProfileDisposableCleanupResult: Codable, Equatable, Sendable {
+    struct Skipped: Codable, Equatable, Sendable {
+        let relativePath: String
+        let reason: String
+    }
+
+    let removedRelativePaths: [String]
+    let skipped: [Skipped]
+
+    var removedCount: Int { removedRelativePaths.count }
+    var summary: String {
+        if skipped.isEmpty {
+            return "Очистка cache: удалено \(removedCount)"
+        }
+        return "Очистка cache: удалено \(removedCount), пропущено \(skipped.count)"
+    }
+}
+
+enum ProfileDisposableCleanupExecutor {
+    static func execute(
+        plan: ProfileDisposableCleanupPlan,
+        profileDirectory: URL,
+        fileManager: FileManager = .default
+    ) -> ProfileDisposableCleanupResult {
+        let root = profileDirectory.standardizedFileURL
+        var removed: [String] = []
+        var skipped: [ProfileDisposableCleanupResult.Skipped] = []
+
+        for candidate in plan.candidates {
+            guard ProfileDisposableCleanupPlanner.disposableRelativePaths.contains(candidate.relativePath) else {
+                skipped.append(.init(relativePath: candidate.relativePath, reason: "Неизвестный путь"))
+                continue
+            }
+            let url = root.appendingPathComponent(candidate.relativePath).standardizedFileURL
+            guard url.path.hasPrefix(root.path + "/") else {
+                skipped.append(.init(relativePath: candidate.relativePath, reason: "Путь вне профиля"))
+                continue
+            }
+            do {
+                let values = try url.resourceValues(forKeys: [.isSymbolicLinkKey, .isDirectoryKey])
+                guard values.isSymbolicLink != true else {
+                    skipped.append(.init(relativePath: candidate.relativePath, reason: "Symlink не удаляется"))
+                    continue
+                }
+                guard values.isDirectory == true else {
+                    skipped.append(.init(relativePath: candidate.relativePath, reason: "Не папка"))
+                    continue
+                }
+                try fileManager.removeItem(at: url)
+                removed.append(candidate.relativePath)
+            } catch CocoaError.fileNoSuchFile {
+                skipped.append(.init(relativePath: candidate.relativePath, reason: "Уже удалено"))
+            } catch {
+                skipped.append(.init(relativePath: candidate.relativePath, reason: "Не удалось удалить"))
+            }
+        }
+        return ProfileDisposableCleanupResult(removedRelativePaths: removed, skipped: skipped)
     }
 }
 

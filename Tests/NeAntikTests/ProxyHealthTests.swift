@@ -55,6 +55,48 @@ struct ProxyHealthTests {
     }
 
     @Test
+    func proxyReceiptFreshnessIsBoundedAndClockSkewTolerant() {
+        let now = Date(timeIntervalSince1970: 1_800_100_000)
+        let fresh = ProxyHealthState(
+            latestAttempt: ProxyHealthAttempt(
+                checkedAt: now.addingTimeInterval(
+                    -ProxyHealthState.freshnessLifetime
+                ),
+                outcome: .succeeded
+            ),
+            lastSuccess: nil
+        )
+        let stale = ProxyHealthState(
+            latestAttempt: ProxyHealthAttempt(
+                checkedAt: now.addingTimeInterval(
+                    -ProxyHealthState.freshnessLifetime - 1
+                ),
+                outcome: .succeeded
+            ),
+            lastSuccess: nil
+        )
+        let smallFutureSkew = ProxyHealthState(
+            latestAttempt: ProxyHealthAttempt(
+                checkedAt: now.addingTimeInterval(5 * 60),
+                outcome: .succeeded
+            ),
+            lastSuccess: nil
+        )
+        let largeFutureSkew = ProxyHealthState(
+            latestAttempt: ProxyHealthAttempt(
+                checkedAt: now.addingTimeInterval(5 * 60 + 1),
+                outcome: .succeeded
+            ),
+            lastSuccess: nil
+        )
+
+        #expect(fresh.isFresh(relativeTo: now))
+        #expect(!stale.isFresh(relativeTo: now))
+        #expect(smallFutureSkew.isFresh(relativeTo: now))
+        #expect(!largeFutureSkew.isFresh(relativeTo: now))
+    }
+
+    @Test
     func failureRetainsLastSuccessWithoutInventingLatency() {
         let success = ProxyHealthUpdatePolicy.success(
             ProxyTestObservation(
