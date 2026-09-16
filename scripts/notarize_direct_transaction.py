@@ -743,6 +743,106 @@ def snapshot_candidate_inputs(
         ) from error
 
 
+def snapshot_pinned_release_input(
+    path: Path,
+    *,
+    maximum_bytes: int,
+) -> SNAPSHOT.ReleaseInputSnapshot:
+    descriptor = -1
+    try:
+        descriptor = os.open(
+            path,
+            os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0),
+        )
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_uid != os.geteuid()
+            or before.st_nlink != 1
+            or before.st_mode & 0o022
+            or before.st_size <= 0
+            or before.st_size > maximum_bytes
+        ):
+            raise DirectNotaryTransactionError(
+                "pinned candidate release input is unsafe"
+            )
+        digest = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > maximum_bytes:
+                raise DirectNotaryTransactionError(
+                    "pinned candidate release input exceeds its size limit"
+                )
+            digest.update(chunk)
+        after = os.fstat(descriptor)
+        if (
+            before.st_dev != after.st_dev
+            or before.st_ino != after.st_ino
+            or before.st_nlink != after.st_nlink
+            or before.st_size != after.st_size
+            or before.st_mtime_ns != after.st_mtime_ns
+            or before.st_ctime_ns != after.st_ctime_ns
+            or total != after.st_size
+        ):
+            raise DirectNotaryTransactionError(
+                "pinned candidate release input changed while reading"
+            )
+        return SNAPSHOT.ReleaseInputSnapshot(
+            source=path.absolute(),
+            pinned=path.absolute(),
+            sha256=digest.hexdigest(),
+            size=total,
+            device=before.st_dev,
+            inode=before.st_ino,
+            mtime_ns=before.st_mtime_ns,
+            ctime_ns=before.st_ctime_ns,
+            pinned_device=before.st_dev,
+            pinned_inode=before.st_ino,
+            pinned_mtime_ns=before.st_mtime_ns,
+            pinned_ctime_ns=before.st_ctime_ns,
+        )
+    except OSError as error:
+        raise DirectNotaryTransactionError(
+            "pinned candidate release input is unavailable"
+        ) from error
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
+def load_pinned_candidate_inputs(
+    transaction_root: Path,
+) -> CandidateInputs:
+    inputs_root = transaction_root / "inputs"
+    inputs = CandidateInputs(
+        info=snapshot_pinned_release_input(
+            inputs_root / "Info.plist",
+            maximum_bytes=MAXIMUM_INFO_PLIST_BYTES,
+        ),
+        manifest=snapshot_pinned_release_input(
+            inputs_root / "direct-candidate-manifest.json",
+            maximum_bytes=MAXIMUM_MANIFEST_BYTES,
+        ),
+        source_binding=snapshot_pinned_release_input(
+            inputs_root / "direct-candidate-source.json",
+            maximum_bytes=MAXIMUM_SOURCE_BINDING_BYTES,
+        ),
+        evidence=snapshot_pinned_release_input(
+            inputs_root / "fingerprint-evidence-schema8.json",
+            maximum_bytes=MAXIMUM_EVIDENCE_BYTES,
+        ),
+        attestation=snapshot_pinned_release_input(
+            inputs_root / "fingerprint-attestation.json",
+            maximum_bytes=MAXIMUM_ATTESTATION_BYTES,
+        ),
+    )
+    return inputs
+
+
 def assert_candidate_inputs_unchanged(inputs: CandidateInputs) -> None:
     for label, snapshot, maximum_bytes in (
         ("Info.plist", inputs.info, MAXIMUM_INFO_PLIST_BYTES),
@@ -1593,6 +1693,93 @@ def _validate_reconciliation_marker(
         raise DirectNotaryTransactionError(
             "notary reconciliation marker is invalid"
         )
+
+
+def _transaction_receipt_candidate_hashes(
+    receipts: tuple[STATE.StateReceipt, ...],
+) -> dict[str, object]:
+    created = _receipt_data(receipts, "transaction-created")
+    candidate_hashes = created.get("candidateInputs")
+    if not isinstance(candidate_hashes, dict):
+        raise DirectNotaryTransactionError(
+            "durable transaction candidate inputs are invalid"
+        )
+    return candidate_hashes
+
+
+def _assert_inputs_match_transaction_receipt(
+    inputs: CandidateInputs,
+    receipts: tuple[STATE.StateReceipt, ...],
+) -> None:
+    if _transaction_receipt_candidate_hashes(receipts) != {
+        "infoPlist": inputs.info.sha256,
+        "manifest": inputs.manifest.sha256,
+        "sourceBinding": inputs.source_binding.sha256,
+        "evidence": inputs.evidence.sha256,
+        "attestation": inputs.attestation.sha256,
+    }:
+        raise DirectNotaryTransactionError(
+            "pinned transaction inputs do not match durable state"
+        )
+
+
+def resume_accepted_transaction_from_pinned_state(
+    active: tuple[Path, tuple[STATE.StateReceipt, ...]],
+    *,
+    project_root: Path,
+    dist: Path,
+    archive_name: str,
+    release_channel: str,
+    notary_profile: str,
+    notary_auth_arguments: tuple[str, ...],
+    runner: CommandRunner,
+    hook: PhaseHook,
+) -> dict[str, str] | None:
+    transaction_root, receipts = active
+    created = _receipt_data(receipts, "transaction-created")
+    latest = receipts[-1].stage
+    stage_index = {
+        stage: index
+        for index, (_prefix, stage) in enumerate(STATE.STAGES)
+    }
+    if (
+        stage_index.get(latest, -1) < stage_index["accepted"]
+        or created.get("archiveName") != archive_name
+        or created.get("releaseChannel") != release_channel
+    ):
+        return None
+    release_payload = created.get("releaseSource")
+    runtime_build_evidence = created.get("runtimeBuildEvidence")
+    if not isinstance(release_payload, dict) or not isinstance(
+        runtime_build_evidence,
+        dict,
+    ):
+        raise DirectNotaryTransactionError(
+            "durable transaction release source is invalid"
+        )
+    inputs = load_pinned_candidate_inputs(transaction_root)
+    _assert_inputs_match_transaction_receipt(inputs, receipts)
+    release_source = SOURCE.ReleaseSourceSnapshot(
+        project_root=project_root,
+        payload=release_payload,
+        files=(),
+    )
+    validate_candidate_source_binding(inputs, release_source)
+    return resume_known_transaction(
+        active,
+        project_root=project_root,
+        dist=dist,
+        archive_name=archive_name,
+        inputs=inputs,
+        release_source=release_source,
+        runtime_build_evidence=runtime_build_evidence,
+        release_channel=release_channel,
+        notary_profile=notary_profile,
+        notary_auth_arguments=notary_auth_arguments,
+        runner=runner,
+        hook=hook,
+        source_assertion=lambda _snapshot: None,
+    )
 
 
 def reconcile_mismatched_submit_intent(
@@ -2501,23 +2688,36 @@ def run_transaction(
             exclude=transaction_root,
         )
         if active is not None:
-            if (
-                not _transaction_matches_current_release(
-                    active[1],
+            active_matches_current_release = _transaction_matches_current_release(
+                active[1],
+                archive_name=archive_name,
+                inputs=inputs,
+                release_source=release_source,
+                runtime_build_evidence=bound_runtime_build_evidence,
+                release_channel=release_channel,
+            )
+            if not active_matches_current_release:
+                recovered = resume_accepted_transaction_from_pinned_state(
+                    active,
+                    project_root=project_root,
+                    dist=dist,
                     archive_name=archive_name,
-                    inputs=inputs,
-                    release_source=release_source,
-                    runtime_build_evidence=bound_runtime_build_evidence,
                     release_channel=release_channel,
+                    notary_profile=notary_profile,
+                    notary_auth_arguments=notary_auth,
+                    runner=runner,
+                    hook=hook,
                 )
-                and reconcile_mismatched_submit_intent(
+                if recovered is not None:
+                    transaction_complete = True
+                    return recovered
+                if reconcile_mismatched_submit_intent(
                     active,
                     project_root=project_root,
                     notary_auth_arguments=notary_auth,
                     runner=runner,
-                )
-            ):
-                active = None
+                ):
+                    active = None
         if active is not None:
             resumed = resume_known_transaction(
                 active,
