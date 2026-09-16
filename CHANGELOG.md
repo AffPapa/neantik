@@ -1,3 +1,9 @@
+## Direct 0.6.11 (53) — полный immutable release set
+
+- повторный patch-выпуск после immutable `v0.6.10`, где GitHub успел принять только DMG assets;
+- сохраняет улучшения 0.6.10: freshness прокси, безопасный compact, Telegram-safe telemetry summary и protected notary recovery;
+- Chromium не пересобирался: используется проверенный runtime 152.
+
 # NeAntik changelog
 
 ## Direct 0.6.10 (52) — свежесть прокси и безопасные действия
