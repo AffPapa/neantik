@@ -529,7 +529,10 @@ struct ContentView: View {
                     runtime: runtime,
                     processes: processes,
                     paths: store.paths,
-                    releaseContext: fingerprintEvidenceReleaseContext
+                    releaseContext: fingerprintEvidenceReleaseContext,
+                    releaseCompletionHandler: {
+                        Darwin.exit(EXIT_SUCCESS)
+                    }
                 )
             } else {
                 ContentUnavailableView(

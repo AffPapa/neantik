@@ -75,6 +75,7 @@ struct FingerprintAuditView: View {
         processes: BrowserProcessManager,
         paths: AppPaths,
         releaseContext: FingerprintEvidenceReleaseContext? = nil,
+        releaseCompletionHandler: (@MainActor @Sendable () -> Void)? = nil,
         onReport: @escaping (FingerprintAuditReport) -> Void = { _ in }
     ) {
         self.profiles = profiles
@@ -93,7 +94,8 @@ struct FingerprintAuditView: View {
             wrappedValue: FingerprintAuditCoordinator(
                 paths: paths,
                 processes: processes,
-                releaseContext: releaseContext
+                releaseContext: releaseContext,
+                releaseCompletionHandler: releaseCompletionHandler
             )
         )
     }

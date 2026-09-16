@@ -13,8 +13,8 @@ enum NeAntikTelemetryEvent: String, Sendable {
 /// value, cookie, page content or fingerprint material is ever serialized.
 @MainActor
 final class NeAntikTelemetry: ObservableObject {
-    static let fallbackVersion = "0.6.7"
-    static let fallbackBuild = "49"
+    static let fallbackVersion = "0.6.8"
+    static let fallbackBuild = "50"
     private static let installationKey = "telemetry.installationID"
     private static let endpoint = URL(string: "https://nevision-stats.iryadom.chatgpt.site/api/ingest")!
 

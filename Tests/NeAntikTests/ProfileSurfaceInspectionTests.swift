@@ -118,6 +118,33 @@ struct ProfileSurfaceInspectionTests {
         #expect(indexed.fileCount == 0)
     }
 
+    @Test func storageSurfaceStopsAtBoundedAreaLimit() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let localStorage = root.appendingPathComponent(
+            "Default/Local Storage",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: localStorage,
+            withIntermediateDirectories: true
+        )
+        for index in 0...ProfileStorageSurfaceScanner.maximumEntriesPerArea {
+            try Data("x".utf8).write(
+                to: localStorage.appendingPathComponent("entry-\(index).ldb")
+            )
+        }
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let report = ProfileStorageSurfaceScanner.scan(profileDirectory: root)
+        let local = try #require(
+            report.areas.first { $0.id == "local-storage" }
+        )
+
+        #expect(!local.isAvailable)
+        #expect(local.fileCount == ProfileStorageSurfaceScanner.maximumEntriesPerArea)
+        #expect(local.issue == "Слишком много записей для быстрой проверки.")
+    }
+
     @Test func storageSurfaceIgnoresSymlinkedEntries() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let outside = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

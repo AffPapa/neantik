@@ -76,7 +76,6 @@ struct ProfileStorageSurfaceReport: Equatable, Sendable {
 
 enum ExtensionSurfaceScanner {
     static let maximumExtensions = 128
-    static let maximumVersionsPerExtension = 8
     static let maximumManifestBytes = 512 * 1_024
 
     /// `profileDirectory` is the Chromium user-data directory for exactly
@@ -107,18 +106,13 @@ enum ExtensionSurfaceScanner {
                   Self.isSafeChild(idURL, parent: directory),
                   Self.isDirectory(idURL),
                   !Self.isSymbolicLink(idURL) else { continue }
-            guard let versions = try? fileManager.contentsOfDirectory(
-                at: idURL,
-                includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
-                options: [.skipsHiddenFiles]
-            ) else { continue }
             // We only inspect the newest lexical version. Selecting it in a
-            // single pass avoids allocating and sorting every historical
-            // version directory (large profiles can contain hundreds).
-            guard let versionURL = versions.lazy
-                .filter({ Self.isSafeChild($0, parent: idURL) && Self.isDirectory($0) && !Self.isSymbolicLink($0) })
-                .max(by: { $0.lastPathComponent < $1.lastPathComponent })
-            else { continue }
+            // bounded single pass avoids allocating and sorting every
+            // historical version directory on old, extension-heavy profiles.
+            guard let versionURL = newestVersionDirectory(
+                in: idURL,
+                fileManager: fileManager
+            ) else { continue }
             do {
                 guard Self.isSafeChild(versionURL, parent: idURL),
                       Self.isDirectory(versionURL),
@@ -147,6 +141,31 @@ enum ExtensionSurfaceScanner {
 
     private static func isSymbolicLink(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true
+    }
+
+    private static func newestVersionDirectory(
+        in directory: URL,
+        fileManager: FileManager
+    ) -> URL? {
+        guard let enumerator = fileManager.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+            options: [.skipsHiddenFiles]
+        ) else { return nil }
+
+        var newest: URL?
+        for case let candidate as URL in enumerator {
+            enumerator.skipDescendants()
+            guard Self.isSafeChild(candidate, parent: directory),
+                  Self.isDirectory(candidate),
+                  !Self.isSymbolicLink(candidate)
+            else { continue }
+            if newest == nil ||
+                candidate.lastPathComponent > newest!.lastPathComponent {
+                newest = candidate
+            }
+        }
+        return newest
     }
 
     private static func makeExtension(id: String, version: String, manifest: [String: Any]) -> InstalledExtension {
@@ -278,14 +297,9 @@ enum ProfileStorageSurfaceScanner {
             )
         }
 
-        guard let entries = try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [
-                .isDirectoryKey,
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-            ],
-            options: [.skipsHiddenFiles]
+        guard let counts = boundedCounts(
+            in: directory,
+            fileManager: fileManager
         ) else {
             return ProfileStorageSurfaceReport.Area(
                 id: spec.id,
@@ -297,9 +311,51 @@ enum ProfileStorageSurfaceScanner {
             )
         }
 
+        return ProfileStorageSurfaceReport.Area(
+            id: spec.id,
+            title: spec.title,
+            namespaceCount: counts.namespaceCount,
+            fileCount: counts.fileCount,
+            isAvailable: !counts.reachedLimit,
+            issue: counts.reachedLimit
+                ? "Слишком много записей для быстрой проверки."
+                : nil
+        )
+    }
+
+    private struct BoundedCounts {
+        let namespaceCount: Int
+        let fileCount: Int
+        let reachedLimit: Bool
+    }
+
+    private static func boundedCounts(
+        in directory: URL,
+        fileManager: FileManager
+    ) -> BoundedCounts? {
+        guard let enumerator = fileManager.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [
+                .isDirectoryKey,
+                .isRegularFileKey,
+                .isSymbolicLinkKey,
+            ],
+            options: [.skipsHiddenFiles]
+        ) else { return nil }
+
+        var inspected = 0
         var namespaceCount = 0
         var fileCount = 0
-        for entry in entries.prefix(maximumEntriesPerArea) {
+        for case let entry as URL in enumerator {
+            enumerator.skipDescendants()
+            inspected += 1
+            if inspected > maximumEntriesPerArea {
+                return BoundedCounts(
+                    namespaceCount: namespaceCount,
+                    fileCount: fileCount,
+                    reachedLimit: true
+                )
+            }
             guard ExtensionSurfaceScanner.isSafeChildForSurfaceInspection(
                 entry,
                 parent: directory
@@ -315,15 +371,10 @@ enum ProfileStorageSurfaceScanner {
             }
         }
 
-        return ProfileStorageSurfaceReport.Area(
-            id: spec.id,
-            title: spec.title,
+        return BoundedCounts(
             namespaceCount: namespaceCount,
             fileCount: fileCount,
-            isAvailable: entries.count <= maximumEntriesPerArea,
-            issue: entries.count > maximumEntriesPerArea
-                ? "Слишком много записей для быстрой проверки."
-                : nil
+            reachedLimit: false
         )
     }
 

@@ -1508,17 +1508,20 @@ final class FingerprintAuditCoordinator: ObservableObject {
     private let paths: AppPaths
     private let processes: BrowserProcessManager
     private let releaseContext: FingerprintEvidenceReleaseContext?
+    private let releaseCompletionHandler: (@MainActor @Sendable () -> Void)?
     private var task: Task<Void, Never>?
     private var activeProfileID: UUID?
 
     init(
         paths: AppPaths,
         processes: BrowserProcessManager,
-        releaseContext: FingerprintEvidenceReleaseContext? = nil
+        releaseContext: FingerprintEvidenceReleaseContext? = nil,
+        releaseCompletionHandler: (@MainActor @Sendable () -> Void)? = nil
     ) {
         self.paths = paths
         self.processes = processes
         self.releaseContext = releaseContext
+        self.releaseCompletionHandler = releaseCompletionHandler
         do {
             try FingerprintAuditReportStore(
                 paths: paths
@@ -1675,6 +1678,9 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 reportURL = savedURL
                 releaseEvidenceIsReady = releaseContext != nil
                 phase = newReport.verdict.title
+                if releaseContext != nil {
+                    releaseCompletionHandler?()
+                }
             } catch is CancellationError {
                 phase = "Отменено"
             } catch {

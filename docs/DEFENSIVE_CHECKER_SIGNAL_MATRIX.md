@@ -74,3 +74,12 @@ must never enter the diagnostic report.
   never reads keys, values, origin strings, cookies, URLs or proxy material.
 - Symlinked entries inside a storage area are ignored so the inspection remains
   bounded to the current profile directory.
+
+## Added in 0.6.8
+
+- Storage surface inspection now uses a shallow bounded pass with early stop,
+  so oversized profile folders produce an explicit review status instead of
+  slowing the manager.
+- Extension version selection is a single-pass local directory scan; the report
+  still returns only manifest-derived counts and risk labels, not manifest
+  bodies or browsing state.
