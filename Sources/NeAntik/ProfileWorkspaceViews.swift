@@ -786,6 +786,11 @@ struct ProfileDetailView: View {
                                        isDirectory: true)
             )
 
+            ProfileStorageSurfaceInspectionView(
+                profileDirectory: URL(fileURLWithPath: browserDataPath,
+                                       isDirectory: true)
+            )
+
             GroupBox {
                 HStack(spacing: 10) {
                     Label("Добавить cookies из JSON или Netscape-файла", systemImage: "arrow.down.doc")

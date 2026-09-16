@@ -47,6 +47,33 @@ struct ExtensionSurfaceReport: Equatable, Sendable {
     )
 }
 
+struct ProfileStorageSurfaceReport: Equatable, Sendable {
+    struct Area: Equatable, Identifiable, Sendable {
+        let id: String
+        let title: String
+        let namespaceCount: Int
+        let fileCount: Int
+        let isAvailable: Bool
+        let issue: String?
+
+        var hasState: Bool {
+            namespaceCount > 0 || fileCount > 0
+        }
+    }
+
+    let areas: [Area]
+    let isAvailable: Bool
+    let issue: String?
+
+    var hasBrowserState: Bool {
+        areas.contains(where: \.hasState)
+    }
+
+    var requiresReview: Bool {
+        !isAvailable || areas.contains { !$0.isAvailable }
+    }
+}
+
 enum ExtensionSurfaceScanner {
     static let maximumExtensions = 128
     static let maximumVersionsPerExtension = 8
@@ -145,6 +172,194 @@ enum ExtensionSurfaceScanner {
     }
 }
 
+enum ProfileStorageSurfaceScanner {
+    private struct AreaSpec {
+        let id: String
+        let title: String
+        let relativePath: String
+    }
+
+    static let maximumEntriesPerArea = 256
+
+    private static let areaSpecs = [
+        AreaSpec(
+            id: "local-storage",
+            title: "localStorage",
+            relativePath: "Default/Local Storage"
+        ),
+        AreaSpec(
+            id: "session-storage",
+            title: "sessionStorage",
+            relativePath: "Default/Session Storage"
+        ),
+        AreaSpec(
+            id: "indexed-db",
+            title: "IndexedDB",
+            relativePath: "Default/IndexedDB"
+        ),
+        AreaSpec(
+            id: "service-workers",
+            title: "Service workers",
+            relativePath: "Default/Service Worker"
+        ),
+        AreaSpec(
+            id: "cache-storage",
+            title: "Cache storage",
+            relativePath: "Default/Cache/Cache_Data"
+        ),
+    ]
+
+    /// Counts Chromium storage namespaces without reading keys, values, URLs
+    /// or origin strings. The result is safe for diagnostics because it only
+    /// says whether each local storage surface exists and has state.
+    static func scan(
+        profileDirectory: URL,
+        fileManager: FileManager = .default
+    ) -> ProfileStorageSurfaceReport {
+        var rootMetadata = stat()
+        guard lstat(profileDirectory.path, &rootMetadata) == 0 else {
+            if errno == ENOENT {
+                return ProfileStorageSurfaceReport(
+                    areas: emptyAreas(),
+                    isAvailable: true,
+                    issue: nil
+                )
+            }
+            return unavailable("Папка профиля недоступна.")
+        }
+        guard rootMetadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR)
+        else {
+            return unavailable("Папка профиля была заменена небезопасной ссылкой.")
+        }
+
+        let areas = areaSpecs.map {
+            scanArea(
+                $0,
+                profileDirectory: profileDirectory,
+                fileManager: fileManager
+            )
+        }
+        return ProfileStorageSurfaceReport(
+            areas: areas,
+            isAvailable: true,
+            issue: nil
+        )
+    }
+
+    private static func scanArea(
+        _ spec: AreaSpec,
+        profileDirectory: URL,
+        fileManager: FileManager
+    ) -> ProfileStorageSurfaceReport.Area {
+        let directory = profileDirectory.appendingPathComponent(
+            spec.relativePath,
+            isDirectory: true
+        )
+        var metadata = stat()
+        guard lstat(directory.path, &metadata) == 0 else {
+            return ProfileStorageSurfaceReport.Area(
+                id: spec.id,
+                title: spec.title,
+                namespaceCount: 0,
+                fileCount: 0,
+                isAvailable: errno == ENOENT,
+                issue: errno == ENOENT ? nil : "Не удалось проверить область."
+            )
+        }
+        guard metadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR)
+        else {
+            return ProfileStorageSurfaceReport.Area(
+                id: spec.id,
+                title: spec.title,
+                namespaceCount: 0,
+                fileCount: 0,
+                isAvailable: false,
+                issue: "Область не является папкой."
+            )
+        }
+
+        guard let entries = try? fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [
+                .isDirectoryKey,
+                .isRegularFileKey,
+                .isSymbolicLinkKey,
+            ],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return ProfileStorageSurfaceReport.Area(
+                id: spec.id,
+                title: spec.title,
+                namespaceCount: 0,
+                fileCount: 0,
+                isAvailable: false,
+                issue: "Не удалось прочитать область."
+            )
+        }
+
+        var namespaceCount = 0
+        var fileCount = 0
+        for entry in entries.prefix(maximumEntriesPerArea) {
+            guard ExtensionSurfaceScanner.isSafeChildForSurfaceInspection(
+                entry,
+                parent: directory
+            ) else { continue }
+            let values = try? entry.resourceValues(
+                forKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey]
+            )
+            guard values?.isSymbolicLink != true else { continue }
+            if values?.isDirectory == true {
+                namespaceCount += 1
+            } else if values?.isRegularFile == true {
+                fileCount += 1
+            }
+        }
+
+        return ProfileStorageSurfaceReport.Area(
+            id: spec.id,
+            title: spec.title,
+            namespaceCount: namespaceCount,
+            fileCount: fileCount,
+            isAvailable: entries.count <= maximumEntriesPerArea,
+            issue: entries.count > maximumEntriesPerArea
+                ? "Слишком много записей для быстрой проверки."
+                : nil
+        )
+    }
+
+    private static func emptyAreas() -> [ProfileStorageSurfaceReport.Area] {
+        areaSpecs.map {
+            ProfileStorageSurfaceReport.Area(
+                id: $0.id,
+                title: $0.title,
+                namespaceCount: 0,
+                fileCount: 0,
+                isAvailable: true,
+                issue: nil
+            )
+        }
+    }
+
+    private static func unavailable(
+        _ issue: String
+    ) -> ProfileStorageSurfaceReport {
+        ProfileStorageSurfaceReport(
+            areas: emptyAreas(),
+            isAvailable: false,
+            issue: issue
+        )
+    }
+}
+
+extension ExtensionSurfaceScanner {
+    fileprivate static func isSafeChildForSurfaceInspection(
+        _ item: URL,
+        parent: URL
+    ) -> Bool {
+        isSafeChild(item, parent: parent)
+    }
+}
+
 struct MemoryProcessSnapshot: Equatable, Sendable {
     let profileID: UUID
     let processID: Int32
@@ -190,6 +405,71 @@ enum AutomaticMemorySavingPolicy {
             return MemorySavingDecision(profileID: snapshot.profileID, action: .keepRunning,
                                         explanation: "Рабочее место недавно использовалось.")
         }
+    }
+}
+
+struct ProfileStorageSurfaceInspectionView: View {
+    let profileDirectory: URL
+    @State private var report: ProfileStorageSurfaceReport?
+
+    init(profileDirectory: URL) {
+        self.profileDirectory = profileDirectory
+        _report = State(initialValue: nil)
+    }
+
+    var body: some View {
+        GroupBox {
+            if let report {
+                if let issue = report.issue {
+                    Label(issue, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                } else if !report.hasBrowserState {
+                    Label("Локальное состояние пока пустое", systemImage: "checkmark.shield")
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(report.areas) { area in
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Image(systemName: area.isAvailable ? "internaldrive" : "exclamationmark.triangle")
+                                    .foregroundStyle(area.isAvailable ? Color.secondary : Color.orange)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(area.title)
+                                    Text(Self.detail(for: area))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+            } else {
+                ProgressView("Проверяю локальное состояние…")
+                    .controlSize(.small)
+            }
+        } label: {
+            Label("Локальное хранилище", systemImage: "internaldrive")
+        }
+        .task(id: profileDirectory.path) {
+            report = await Task.detached(priority: .utility) {
+                ProfileStorageSurfaceScanner.scan(
+                    profileDirectory: profileDirectory
+                )
+            }.value
+        }
+    }
+
+    private static func detail(
+        for area: ProfileStorageSurfaceReport.Area
+    ) -> String {
+        if let issue = area.issue {
+            return issue
+        }
+        if !area.hasState {
+            return "нет локального состояния"
+        }
+        return "областей: \(area.namespaceCount), файлов: \(area.fileCount)"
     }
 }
 

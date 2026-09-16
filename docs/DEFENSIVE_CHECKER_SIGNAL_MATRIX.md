@@ -64,3 +64,13 @@ Each new signal must have four tests: normal profile, intentionally
 inconsistent profile, missing observation, and repeatability across two
 launches. Raw URLs, cookies, credentials, proxy endpoints and profile names
 must never enter the diagnostic report.
+
+## Added in 0.6.7
+
+- The profile details view now includes a local storage surface inspection for
+  localStorage, sessionStorage, IndexedDB, service-worker state and cache
+  storage.
+- The scanner reports only coarse namespace/file counts and availability. It
+  never reads keys, values, origin strings, cookies, URLs or proxy material.
+- Symlinked entries inside a storage area are ignored so the inspection remains
+  bounded to the current profile directory.

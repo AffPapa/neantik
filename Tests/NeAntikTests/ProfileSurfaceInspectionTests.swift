@@ -78,4 +78,76 @@ struct ProfileSurfaceInspectionTests {
         ], now: now, residentThreshold: 1_000, inactiveInterval: 60).first
         #expect(decision?.action == .keepRunning)
     }
+
+    @Test func storageSurfaceCountsNamespacesWithoutReadingState() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let localStorage = root.appendingPathComponent(
+            "Default/Local Storage/leveldb",
+            isDirectory: true
+        )
+        let indexedDB = root.appendingPathComponent(
+            "Default/IndexedDB/https_example.test_0.indexeddb.leveldb",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: localStorage,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: indexedDB,
+            withIntermediateDirectories: true
+        )
+        try Data("secret-url-should-never-be-returned".utf8).write(
+            to: localStorage.appendingPathComponent("000003.log")
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let report = ProfileStorageSurfaceScanner.scan(profileDirectory: root)
+
+        #expect(report.isAvailable)
+        #expect(report.hasBrowserState)
+        let local = try #require(
+            report.areas.first { $0.id == "local-storage" }
+        )
+        #expect(local.namespaceCount == 1)
+        #expect(local.fileCount == 0)
+        let indexed = try #require(
+            report.areas.first { $0.id == "indexed-db" }
+        )
+        #expect(indexed.namespaceCount == 1)
+        #expect(indexed.fileCount == 0)
+    }
+
+    @Test func storageSurfaceIgnoresSymlinkedEntries() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let outside = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let localStorage = root.appendingPathComponent(
+            "Default/Local Storage",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: localStorage,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: outside,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createSymbolicLink(
+            at: localStorage.appendingPathComponent("linked-leveldb"),
+            withDestinationURL: outside
+        )
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+
+        let report = ProfileStorageSurfaceScanner.scan(profileDirectory: root)
+        let local = try #require(
+            report.areas.first { $0.id == "local-storage" }
+        )
+        #expect(local.namespaceCount == 0)
+        #expect(local.fileCount == 0)
+        #expect(local.isAvailable)
+    }
 }
