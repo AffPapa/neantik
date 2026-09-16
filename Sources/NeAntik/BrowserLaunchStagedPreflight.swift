@@ -129,8 +129,8 @@ enum BrowserLaunchStagedPreflight {
         if let readiness = input.readiness, readiness.status != .ready {
             throw BrowserLaunchStagedFailure(
                 stage: .consistency,
-                message: readiness.issues.first ?? "профиль ещё не готов.",
-                recovery: "Открой сведения профиля и устрани указанную проблему."
+                message: readiness.primaryIssue ?? "профиль ещё не готов.",
+                recovery: readiness.nextAction ?? "Открой сведения профиля и устрани указанную проблему."
             )
         }
 
