@@ -520,6 +520,7 @@ private enum ProfileStorageMeasurementState: Equatable {
 }
 
 struct ProfileDetailView: View {
+    @State private var diagnosticsExpanded = false
     @State private var technicalDetailsExpanded = false
     @State private var noteExpanded = false
     @State private var storageMeasurement:
@@ -752,6 +753,8 @@ struct ProfileDetailView: View {
                 .padding(.vertical, 4)
             }
 
+            DisclosureGroup("Диагностика и восстановление", isExpanded: $diagnosticsExpanded) {
+            VStack(alignment: .leading, spacing: 16) {
             GroupBox("Стабильность") {
                 if let latest = stabilityRecords.first {
                     VStack(alignment: .leading, spacing: 5) {
@@ -861,7 +864,13 @@ struct ProfileDetailView: View {
                 .padding(.top, 10)
             }
             .disclosureGroupStyle(NeAntikDisclosureStyle())
+            }
+            .padding(.top, 2)
+            .disclosureGroupStyle(NeAntikDisclosureStyle())
+            .help("Проверки, события, cookies, снимки и восстановление профиля")
+            .accessibilityHint("Раздел закрыт, чтобы основной экран оставался компактным")
         }
+    }
     }
 
     private static func activityTitle(_ kind: LocalActivityEvent.Kind) -> String {
