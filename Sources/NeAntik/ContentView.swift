@@ -71,6 +71,7 @@ struct ContentView: View {
     @State private var tagsSourceExpanded = true
     @State private var showsAllFolders = false
     @State private var showsAllTags = false
+    @State private var showsSmartSuggestions = false
     @State private var isCreatingProfileQuickly = false
     @State private var profileListResolver = ProfileListStateResolver()
     @State private var workspaceAnnouncementGate =
@@ -1707,30 +1708,32 @@ struct ContentView: View {
             }
             if !smartSuggestions.isEmpty {
                 Section {
-                    ForEach(smartSuggestions) { suggestion in
-                        Button {
-                            selectedProfileTag = nil
-                            selectedFolderFilter = .all
-                            profileSearchText = suggestion.query
-                            announceWorkspaceStatus("Фильтр: \(suggestion.title)")
-                        } label: {
-                            Label {
-                                Text(suggestion.title)
-                                Spacer()
-                                Text("\(suggestion.count)")
-                                    .foregroundStyle(.secondary)
-                            } icon: {
-                                Image(systemName: "wand.and.stars")
+                    if showsSmartSuggestions {
+                        ForEach(smartSuggestions) { suggestion in
+                            Button {
+                                selectedProfileTag = nil
+                                selectedFolderFilter = .all
+                                profileSearchText = suggestion.query
+                                announceWorkspaceStatus("Фильтр: \(suggestion.title)")
+                            } label: {
+                                Label {
+                                    Text(suggestion.title)
+                                    Spacer()
+                                    Text("\(suggestion.count)")
+                                        .foregroundStyle(.secondary)
+                                } icon: {
+                                    Image(systemName: "wand.and.stars")
+                                }
                             }
+                            .buttonStyle(.plain)
+                            .help("Локальная подборка по данным рабочих мест")
                         }
-                        .buttonStyle(.plain)
-                        .help("Локальная подборка по данным рабочих мест")
                     }
                 } header: {
-                    Text("Автоматически")
-                        .foregroundStyle(Color(nsColor: .secondaryLabelColor))
-                } footer: {
-                    Text("Подборки обновляются сами и ничего не меняют в профилях.")
+                    sourceDisclosureButton(
+                        title: "Умные подборки",
+                        isExpanded: $showsSmartSuggestions
+                    )
                 }
             }
         }
