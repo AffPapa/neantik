@@ -131,6 +131,20 @@ struct BrowserLaunchStagedPreflightTests {
         }
     }
 
+    @Test
+    func dryRunExplainsLaunchWithoutPrivateData() {
+        let profile = BrowserProfile(
+            name: "QA profile",
+            proxy: ProxyConfiguration(kind: .http, host: "proxy.example", port: 8080, username: "")
+        )
+        let preview = BrowserLaunchDryRun.build(input(profile: profile))
+
+        #expect(preview.isLaunchable)
+        #expect(preview.profileName == "QA profile")
+        #expect(preview.steps.map(\.stage) == BrowserLaunchStage.allCases)
+        #expect(preview.steps.allSatisfy { !$0.detail.contains("proxy.example") })
+    }
+
     private func input(
         profile: BrowserProfile,
         runtime: BrowserRuntimePreflight = BrowserRuntimePreflight(
