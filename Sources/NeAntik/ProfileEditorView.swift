@@ -363,7 +363,7 @@ struct ProfileEditorView: View {
               .id(ProfileEditorField.proxyImport)
           }
           if editorDraft.usesProxy {
-            SecureField(
+            TextField(
               "Вставить прокси одной строкой",
               text: $proxyImportText
             )
