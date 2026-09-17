@@ -853,6 +853,7 @@ struct ProfileEditorView: View {
           TextField("Стартовая страница", text: $editorDraft.startURL)
             .labelsHidden()
             .accessibilityLabel("Стартовая страница")
+            .help("Адрес, который откроется при запуске профиля")
             .focused($focusedField, equals: .startURL)
           Text("about:blank — пустая страница. Можно указать адрес сайта.")
             .font(.caption)

@@ -288,6 +288,7 @@ struct ProfileTagEditor: View {
         )
         .font(.caption)
         .foregroundStyle(.secondary)
+        .accessibilityLabel("Тегов: \(tags.count) из \(BrowserProfile.maximumTagCount)")
       }
     }
     .onChange(of: input) { _, value in
@@ -319,6 +320,7 @@ struct ProfileTagEditor: View {
     .focused($inputIsFocused)
     .onSubmit(commitInput)
     .disabled(tags.count >= BrowserProfile.maximumTagCount && input.isEmpty)
+    .help("Добавь тег и нажми Return; запятая добавляет несколько тегов подряд")
     .accessibilityLabel("Новый тег профиля")
     .accessibilityHint("Нажми Return или введи запятую, чтобы добавить тег")
   }
