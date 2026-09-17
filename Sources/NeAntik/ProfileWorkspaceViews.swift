@@ -617,8 +617,12 @@ struct ProfileDetailView: View {
                     .accessibilityHint(launchAction.help)
                     Button("Окно", systemImage: "macwindow", action: onFocusRunning)
                         .disabled(!processState.isConfirmedRunning)
+                        .help("Показать уже открытое окно профиля")
+                        .accessibilityHint("Переключает фокус на окно браузера этого профиля")
                     Button("Изменить", systemImage: "pencil", action: onEditProfile)
                         .disabled(!canEditProfile)
+                        .help("Изменить прокси, стартовую страницу и организацию профиля")
+                        .accessibilityHint("Открывает настройки выбранного профиля")
                 }
                 Menu("Действия", systemImage: "ellipsis.circle") {
                     Button(
@@ -631,8 +635,10 @@ struct ProfileDetailView: View {
                     .accessibilityHint(launchAction.help)
                     Button("Показать окно", systemImage: "macwindow", action: onFocusRunning)
                         .disabled(!processState.isConfirmedRunning)
+                        .help("Переключить фокус на окно браузера")
                     Button("Изменить…", systemImage: "pencil", action: onEditProfile)
                         .disabled(!canEditProfile)
+                        .help("Изменить только параметры этого профиля")
                 }
                 .accessibilityLabel("Действия профиля")
             }
