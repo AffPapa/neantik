@@ -502,7 +502,11 @@ struct ContentView: View {
                 showsProfileInspector: showsProfileInspector,
                 hasSelectedProfile: selectedProfile != nil,
                 onPresentReadiness: presentWorkspaceReadiness,
-                onToggleInspector: toggleProfileInspector
+                onToggleInspector: toggleProfileInspector,
+                isSidebarVisible: columnVisibility != .detailOnly,
+                onToggleSidebar: {
+                    columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                }
             )
         }
         .focusedSceneValue(

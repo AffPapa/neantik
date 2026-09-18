@@ -11,6 +11,8 @@ struct WorkspaceToolbarContent: ToolbarContent {
     let hasSelectedProfile: Bool
     let onPresentReadiness: () -> Void
     let onToggleInspector: () -> Void
+    let isSidebarVisible: Bool
+    let onToggleSidebar: () -> Void
 
     @ToolbarContentBuilder
     var body: some ToolbarContent {
@@ -22,6 +24,16 @@ struct WorkspaceToolbarContent: ToolbarContent {
             }
             .help("Диагностика приложения, если что-то не работает")
             .accessibilityLabel("Помощь и диагностика NeAntik")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button(action: onToggleSidebar) {
+                Label(
+                    isSidebarVisible ? "Скрыть разделы" : "Показать разделы",
+                    systemImage: "sidebar.leading"
+                )
+            }
+            .help(isSidebarVisible ? "Скрыть папки и теги" : "Показать папки и теги")
+            .accessibilityLabel(isSidebarVisible ? "Скрыть разделы" : "Показать разделы")
         }
         ToolbarItem(placement: .primaryAction) {
             Button(action: onToggleInspector) {
