@@ -50,6 +50,14 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                     createProfileMenu
                         .fixedSize(horizontal: true, vertical: false)
                 }
+                if !runtimeIsReady {
+                    Label(
+                        "Проверяем среду — создать можно, запуск станет доступен после проверки.",
+                        systemImage: "hourglass"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
                 ViewThatFits(in: .horizontal) {
                     commandRow
                     commandRow.labelStyle(.iconOnly)
@@ -134,11 +142,11 @@ struct ProfileListHeaderView<FiltersMenu: View>: View {
                 .fixedSize(horizontal: true, vertical: false)
                 .frame(minHeight: 28)
         } primaryAction: {
-            onCreateConfiguredProfile()
+            onCreateQuickProfile()
         }
         .buttonStyle(.borderedProminent)
         .tint(.accentColor)
-        .help("Создать профиль (⌘N). В меню можно сразу создать и открыть профиль без прокси")
+        .help("Создать и открыть рабочее место (⌘N). Расширенные настройки — в меню")
         .accessibilityLabel(
             "Создать профиль; доступны дополнительные варианты"
         )

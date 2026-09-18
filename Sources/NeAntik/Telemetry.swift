@@ -2,6 +2,16 @@ import CryptoKit
 import Combine
 import Foundation
 
+
+struct NeAntikTelemetrySummary: Equatable, Sendable {
+    let title: String
+    let lines: [String]
+
+    var telegramText: String {
+        ([title] + lines).joined(separator: "\n")
+    }
+}
+
 enum NeAntikTelemetryEvent: String, Sendable {
     case snapshot
     case profileCreated = "profile_created"
@@ -13,8 +23,8 @@ enum NeAntikTelemetryEvent: String, Sendable {
 /// value, cookie, page content or fingerprint material is ever serialized.
 @MainActor
 final class NeAntikTelemetry: ObservableObject {
-    static let fallbackVersion = "0.6.4"
-    static let fallbackBuild = "46"
+    nonisolated static let fallbackVersion = "0.6.20"
+    nonisolated static let fallbackBuild = "59"
     private static let installationKey = "telemetry.installationID"
     private static let endpoint = URL(string: "https://nevision-stats.iryadom.chatgpt.site/api/ingest")!
 
@@ -36,25 +46,30 @@ final class NeAntikTelemetry: ObservableObject {
         installationHash = SHA256.hash(data: Data(rawID.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
-    func record(_ event: NeAntikTelemetryEvent, profileCount: Int, proxyProfileCount: Int) {
+    func record(
+        _ event: NeAntikTelemetryEvent,
+        profileCount: Int,
+        proxyProfileCount: Int,
+        attentionProfileCount: Int = 0,
+        extensionReviewProfileCount: Int = 0,
+        storageReviewProfileCount: Int = 0
+    ) {
         guard enabled else { return }
         let info = Bundle.main.infoDictionary ?? [:]
         let version = Self.validVersion(info["CFBundleShortVersionString"] as? String)
         let build = Self.validBuild(info["CFBundleVersion"] as? String)
-        let osMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
-        let payload: [String: Any] = [
-            "schemaVersion": 1,
-            "eventID": UUID().uuidString.lowercased(),
-            "installationHash": installationHash,
-            "edition": "direct",
-            "version": version,
-            "build": build,
-            "osMajor": osMajor,
-            "architecture": "arm64",
-            "profileCount": max(0, min(profileCount, 10_000)),
-            "proxyProfileCount": max(0, min(proxyProfileCount, profileCount)),
-            "event": event.rawValue
-        ]
+        let payload = Self.makePayload(
+            event: event,
+            installationHash: installationHash,
+            version: version,
+            build: build,
+            osMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion,
+            profileCount: profileCount,
+            proxyProfileCount: proxyProfileCount,
+            attentionProfileCount: attentionProfileCount,
+            extensionReviewProfileCount: extensionReviewProfileCount,
+            storageReviewProfileCount: storageReviewProfileCount
+        )
         guard JSONSerialization.isValidJSONObject(payload),
               let body = try? JSONSerialization.data(withJSONObject: payload)
         else { return }
@@ -68,7 +83,90 @@ final class NeAntikTelemetry: ObservableObject {
         }
     }
 
-    static func validVersion(_ raw: String?) -> String {
+    nonisolated static func makePayload(
+        event: NeAntikTelemetryEvent,
+        installationHash: String,
+        version: String,
+        build: String,
+        osMajor: Int,
+        profileCount: Int,
+        proxyProfileCount: Int,
+        attentionProfileCount: Int = 0,
+        extensionReviewProfileCount: Int = 0,
+        storageReviewProfileCount: Int = 0
+    ) -> [String: Any] {
+        let sanitizedProfileCount = max(0, min(profileCount, 10_000))
+        return [
+            "schemaVersion": 2,
+            "eventID": UUID().uuidString.lowercased(),
+            "installationHash": installationHash,
+            "edition": "direct",
+            "version": version,
+            "build": build,
+            "osMajor": osMajor,
+            "architecture": "arm64",
+            "profileCount": sanitizedProfileCount,
+            "proxyProfileCount": boundedCount(
+                proxyProfileCount,
+                maximum: sanitizedProfileCount
+            ),
+            "attentionProfileCount": boundedCount(
+                attentionProfileCount,
+                maximum: sanitizedProfileCount
+            ),
+            "extensionReviewProfileCount": boundedCount(
+                extensionReviewProfileCount,
+                maximum: sanitizedProfileCount
+            ),
+            "storageReviewProfileCount": boundedCount(
+                storageReviewProfileCount,
+                maximum: sanitizedProfileCount
+            ),
+            "event": event.rawValue
+        ]
+    }
+
+
+    nonisolated static func makeSummary(
+        event: NeAntikTelemetryEvent,
+        version: String,
+        build: String,
+        osMajor: Int,
+        profileCount: Int,
+        proxyProfileCount: Int,
+        attentionProfileCount: Int,
+        extensionReviewProfileCount: Int,
+        storageReviewProfileCount: Int
+    ) -> NeAntikTelemetrySummary {
+        let payload = makePayload(
+            event: event,
+            installationHash: "redacted",
+            version: validVersion(version),
+            build: validBuild(build),
+            osMajor: osMajor,
+            profileCount: profileCount,
+            proxyProfileCount: proxyProfileCount,
+            attentionProfileCount: attentionProfileCount,
+            extensionReviewProfileCount: extensionReviewProfileCount,
+            storageReviewProfileCount: storageReviewProfileCount
+        )
+        func int(_ key: String) -> Int { payload[key] as? Int ?? 0 }
+        return NeAntikTelemetrySummary(
+            title: "NeAntik: обезличенное событие · \(event.rawValue)",
+            lines: [
+                "Версия: \(payload["version"] as? String ?? fallbackVersion) (\(payload["build"] as? String ?? fallbackBuild)) · macOS \(int("osMajor"))",
+                "Профилей: \(int("profileCount")); с прокси: \(int("proxyProfileCount")); требуют внимания: \(int("attentionProfileCount"))",
+                "Расширения на проверке: \(int("extensionReviewProfileCount")); storage на проверке: \(int("storageReviewProfileCount"))",
+                "Приватные данные не отправляются: URL, cookies, пароли, proxy endpoint, имена профилей."
+            ]
+        )
+    }
+
+    nonisolated private static func boundedCount(_ value: Int, maximum: Int) -> Int {
+        max(0, min(value, maximum))
+    }
+
+    nonisolated static func validVersion(_ raw: String?) -> String {
         guard let raw,
               raw.range(of: #"^\d+\.\d+\.\d+$"#, options: .regularExpression) != nil,
               raw != "0.0.0"
@@ -76,7 +174,7 @@ final class NeAntikTelemetry: ObservableObject {
         return raw
     }
 
-    static func validBuild(_ raw: String?) -> String {
+    nonisolated static func validBuild(_ raw: String?) -> String {
         guard let raw,
               raw.range(of: #"^[1-9]\d*$"#, options: .regularExpression) != nil
         else { return fallbackBuild }

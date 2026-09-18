@@ -109,16 +109,25 @@ struct ProfileBatchActionBar: View {
     @ViewBuilder
     private var selectionSummary: some View {
         if presentation.hasSelection {
-            Text("Выбрано: \(presentation.selectedCount)")
+            Text(selectionSummaryText)
                 .font(.subheadline.weight(.semibold))
                 .accessibilityLabel(
-                    "Выбрано профилей: \(presentation.selectedCount)"
+                    selectionSummaryText
                 )
         } else {
             Text("Массовые действия")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var selectionSummaryText: String {
+        let count = presentation.selectedCount
+        let noun = count == 1 ? "рабочее место" : "рабочих мест"
+        if presentation.allVisibleSelected {
+            return "Выбрано (count) (noun) в текущем списке"
+        }
+        return "Выбрано (count) (noun)"
     }
 
     private var toggleAllButton: some View {

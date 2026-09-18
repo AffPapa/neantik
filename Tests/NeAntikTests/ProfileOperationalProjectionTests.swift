@@ -4,7 +4,8 @@ import Testing
 
 struct ProfileOperationalProjectionTests {
     @Test
-    func derivesSmartViewsWithoutTreatingUncheckedProxyAsBroken() {
+    func derivesSmartViewsWithUncheckedAndStaleProxyReceipts() {
+        let now = Date(timeIntervalSince1970: 1_800_100_000)
         let running = BrowserProfile(
             name: "Running",
             lastLaunchedAt: Date(timeIntervalSince1970: 100)
@@ -37,12 +38,22 @@ struct ProfileOperationalProjectionTests {
                 username: ""
             )
         )
+        let staleProxy = BrowserProfile(
+            name: "Stale proxy receipt",
+            proxy: ProxyConfiguration(
+                kind: .socks5,
+                host: "stale.example",
+                port: 8_083,
+                username: ""
+            )
+        )
         let profiles = [
             running,
             recovery,
             failedProxy,
             partialProxy,
             uncheckedProxy,
+            staleProxy,
         ]
         let processStates: [UUID: BrowserProfileProcessState] = [
             running.id: .managed,
@@ -58,34 +69,55 @@ struct ProfileOperationalProjectionTests {
             ),
             partialProxy.id: ProxyHealthState(
                 latestAttempt: ProxyHealthAttempt(
-                    checkedAt: Date(timeIntervalSince1970: 201),
+                    checkedAt: now.addingTimeInterval(-60),
                     outcome: .succeeded
                 ),
                 lastSuccess: nil
+            ),
+            staleProxy.id: ProxyHealthState(
+                latestAttempt: ProxyHealthAttempt(
+                    checkedAt: now.addingTimeInterval(
+                        -ProxyHealthState.freshnessLifetime - 60
+                    ),
+                    outcome: .succeeded
+                ),
+                lastSuccess: ProxyHealthSuccess(
+                    observedAt: now.addingTimeInterval(
+                        -ProxyHealthState.freshnessLifetime - 60
+                    ),
+                    responseTimeMilliseconds: 100,
+                    exitAddressWasObserved: true,
+                    city: nil,
+                    countryName: "Germany",
+                    countryCode: "DE",
+                    timezoneIdentifier: "Europe/Berlin",
+                    localeIdentifier: "de-DE"
+                )
             ),
         ]
 
         let projection = ProfileOperationalProjection.resolve(
             profiles: profiles,
             processState: { processStates[$0] ?? .stopped },
-            proxyHealth: { proxyStates[$0.id] }
+            proxyHealth: { proxyStates[$0.id] },
+            now: now
         )
 
-        #expect(projection.summary.allCount == 5)
+        #expect(projection.summary.allCount == 6)
         #expect(projection.summary.runningCount == 1)
-        #expect(projection.summary.attentionCount == 3)
-        #expect(projection.summary.neverLaunchedCount == 4)
+        #expect(projection.summary.attentionCount == 5)
+        #expect(projection.summary.neverLaunchedCount == 5)
         #expect(projection.profiles(for: .running) == [running])
         #expect(
             projection.profiles(for: .attention) == [
                 recovery,
                 failedProxy,
                 partialProxy,
+                uncheckedProxy,
+                staleProxy,
             ]
         )
-        #expect(
-            !projection.attentionProfileIDs.contains(uncheckedProxy.id)
-        )
+        #expect(projection.attentionProfileIDs.contains(uncheckedProxy.id))
     }
 
     @Test

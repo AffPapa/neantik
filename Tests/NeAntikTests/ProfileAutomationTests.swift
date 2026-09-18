@@ -25,6 +25,15 @@ final class ProfileAutomationTests: XCTestCase {
         let report = ProfileReadinessReport.evaluate(profile: profile)
         XCTAssertEqual(report.status, .ready)
         XCTAssertFalse(report.issues.contains("Размер экрана не определён"))
+        XCTAssertNil(report.primaryIssue)
+        XCTAssertNil(report.nextAction)
+    }
+
+    func testReadinessExposesOneDeterministicRecoveryAction() {
+        let profile = BrowserProfile(name: "Test", proxy: ProxyConfiguration(kind: .http, host: "bad host", port: 0, username: ""))
+        let report = ProfileReadinessReport.evaluate(profile: profile, proxyReady: false)
+        XCTAssertEqual(report.primaryIssue, "Прокси нужно проверить")
+        XCTAssertEqual(report.nextAction, "Проверь подключение прокси в сведениях профиля.")
     }
 
     func testStabilityDetectsIdentityChange() {

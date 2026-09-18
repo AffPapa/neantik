@@ -53,6 +53,88 @@ struct BrowserLaunchPreflightInput: Equatable, Sendable {
     }
 }
 
+/// A privacy-safe, UI-independent launch preview. It deliberately contains
+/// no profile paths, proxy endpoints, process identifiers or browser output.
+/// The manager can render it before starting Chromium and the QA harness can
+/// persist it as a deterministic explanation of a launch decision.
+struct BrowserLaunchDryRun: Equatable, Sendable {
+    struct Step: Equatable, Sendable {
+        let stage: BrowserLaunchStage
+        let title: String
+        let state: State
+        let detail: String
+    }
+
+    enum State: String, Equatable, Sendable {
+        case ready
+        case review
+        case blocked
+    }
+
+    let profileID: UUID
+    let profileRevision: UInt64
+    let profileName: String
+    let steps: [Step]
+
+    var isLaunchable: Bool { !steps.contains { $0.state == .blocked } }
+    var primaryMessage: String {
+        steps.first(where: { $0.state != .ready })?.detail ??
+            "Профиль готов к запуску."
+    }
+
+    static func build(_ input: BrowserLaunchPreflightInput) -> Self {
+        let runtime = input.runtimePreflight.isReady
+            ? Step(stage: .runtime, title: "Браузерный движок", state: .ready,
+                   detail: "Встроенный Chromium найден и готов.")
+            : Step(stage: .runtime, title: "Браузерный движок", state: .blocked,
+                   detail: input.runtimePreflight.errors.first ?? "Chromium не готов.")
+        let storageState: State
+        let storageDetail: String
+        switch input.storage {
+        case .ready(let capacity):
+            if let capacity, capacity < BrowserLaunchStagedPreflight.minimumAvailableCapacity {
+                storageState = .review
+                storageDetail = "Свободного места мало; запуск возможен после очистки временных данных."
+            } else {
+                storageState = .ready
+                storageDetail = "Папка данных доступна для записи."
+            }
+        case .checking: storageState = .review; storageDetail = "Проверка локальных данных ещё выполняется."
+        case .readOnly: storageState = .blocked; storageDetail = "Папка данных доступна только для чтения."
+        case .unavailable: storageState = .blocked; storageDetail = "Папка данных недоступна."
+        }
+        let proxy: Step
+        if let configured = input.profile.proxy {
+            proxy = configured.isValid
+                ? Step(stage: .proxy, title: "Прокси", state: .review,
+                       detail: "Прокси настроен; перед запуском будет выполнена свежая проверка маршрута.")
+                : Step(stage: .proxy, title: "Прокси", state: .blocked,
+                       detail: "Адрес или порт прокси некорректны.")
+        } else {
+            proxy = Step(stage: .proxy, title: "Прокси", state: .ready,
+                         detail: "Прямое подключение без прокси.")
+        }
+        let consistency: Step
+        if input.profile.isArchived {
+            consistency = Step(stage: .consistency, title: "Профиль", state: .blocked,
+                               detail: "Профиль находится в архиве.")
+        } else if let readiness = input.readiness, readiness.status != .ready {
+            consistency = Step(stage: .consistency, title: "Профиль", state: .review,
+                               detail: readiness.primaryIssue ?? "Профиль требует проверки.")
+        } else {
+            consistency = Step(stage: .consistency, title: "Профиль", state: .ready,
+                               detail: "Параметры профиля согласованы.")
+        }
+        let process = input.processState == .stopped
+            ? Step(stage: .process, title: "Процесс", state: .ready, detail: "Профиль свободен для запуска.")
+            : Step(stage: .process, title: "Процесс", state: .blocked,
+                   detail: input.processState.guidance ?? "Профиль уже используется.")
+        return Self(profileID: input.profile.id, profileRevision: input.profile.revision,
+                    profileName: input.profile.name,
+                    steps: [runtime, Step(stage: .storage, title: "Локальные данные", state: storageState, detail: storageDetail), proxy, consistency, process])
+    }
+}
+
 /// Pure, ordered preflight for an ordinary user launch.
 ///
 /// Keeping the five stages explicit makes a failure actionable without
@@ -129,8 +211,8 @@ enum BrowserLaunchStagedPreflight {
         if let readiness = input.readiness, readiness.status != .ready {
             throw BrowserLaunchStagedFailure(
                 stage: .consistency,
-                message: readiness.issues.first ?? "профиль ещё не готов.",
-                recovery: "Открой сведения профиля и устрани указанную проблему."
+                message: readiness.primaryIssue ?? "профиль ещё не готов.",
+                recovery: readiness.nextAction ?? "Открой сведения профиля и устрани указанную проблему."
             )
         }
 

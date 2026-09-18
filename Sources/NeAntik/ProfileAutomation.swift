@@ -134,6 +134,21 @@ extension ProfileReadinessReport {
         }
     }
 
+    /// The compact surface should present one decision at a time. Keep the
+    /// full issue list for diagnostics, but expose a deterministic primary
+    /// issue and the single next action used by launch errors and row details.
+    var primaryIssue: String? { issues.first }
+
+    var nextAction: String? {
+        guard let issue = primaryIssue else { return nil }
+        if issue.contains("Прокси") { return "Проверь подключение прокси в сведениях профиля." }
+        if issue.contains("Chromium") { return "Проверь установленное ядро и повтори запуск." }
+        if issue.contains("WebRTC") { return "Открой сведения профиля и проверь режим WebRTC." }
+        if issue.contains("часовой пояс") { return "Выбери часовой пояс или оставь автоматический режим." }
+        if issue.contains("Язык") { return "Выбери язык или оставь автоматический режим." }
+        return "Открой сведения профиля и устрани указанную проблему."
+    }
+
 }
 
 struct ProfileStabilityRecord: Codable, Equatable, Sendable {

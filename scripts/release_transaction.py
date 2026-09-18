@@ -405,7 +405,10 @@ def observe_sealed_phase(
             result = action()
         except BaseException as error:
             action_error = error
-        events = queue.control(None, 8, 0)
+        try:
+            events = queue.control(None, 8, 0)
+        except OSError:
+            events = []
         digest, total = _hash_descriptor(
             descriptor,
             maximum_bytes=maximum_bytes,

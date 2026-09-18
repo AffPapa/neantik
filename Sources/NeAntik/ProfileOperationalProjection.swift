@@ -124,7 +124,8 @@ struct ProfileOperationalProjection: Equatable, Sendable {
     static func resolve(
         profiles: [BrowserProfile],
         processState: (UUID) -> BrowserProfileProcessState,
-        proxyHealth: (BrowserProfile) -> ProxyHealthState?
+        proxyHealth: (BrowserProfile) -> ProxyHealthState?,
+        now: Date = Date()
     ) -> Self {
         var runningProfileIDs = Set<UUID>()
         var attentionProfileIDs = Set<UUID>()
@@ -132,9 +133,13 @@ struct ProfileOperationalProjection: Equatable, Sendable {
 
         for profile in profiles {
             let state = processState(profile.id)
-            let proxyNeedsAttention = proxyHealth(profile).map {
-                !$0.hasCompleteRouteContext
-            } ?? false
+            let health = proxyHealth(profile)
+            let proxyNeedsAttention = profile.proxy != nil && (
+                health.map {
+                    !$0.hasCompleteRouteContext ||
+                        !$0.isFresh(relativeTo: now)
+                } ?? true
+            )
             if state.isConfirmedRunning {
                 runningProfileIDs.insert(profile.id)
             }

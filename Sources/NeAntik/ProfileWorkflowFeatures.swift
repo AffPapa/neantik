@@ -139,16 +139,15 @@ struct LocalActivityLogStore: Sendable {
     }
 
     func events(limit: Int? = nil) -> [LocalActivityEvent] {
-        guard let data = try? Data(contentsOf: fileURL),
-              let decoded = try? JSONDecoder.neantikStable.decode(
-                [LocalActivityEvent].self, from: data
-              ) else { return [] }
-        let ordered = decoded.sorted { $0.date > $1.date }
+        let ordered = loadEvents()
         return Array(ordered.prefix(max(0, limit ?? maximumEvents)))
     }
 
     func append(_ event: LocalActivityEvent) throws {
-        var current = events()
+        // Events are persisted newest-first. Avoid sorting the bounded file
+        // on every append; only legacy/out-of-order files take the repair path
+        // in `loadEvents()`.
+        var current = loadEvents()
         current.removeAll { $0.id == event.id }
         current.insert(event, at: 0)
         let data = try JSONEncoder.neantikStable.encode(
@@ -173,6 +172,16 @@ struct LocalActivityLogStore: Sendable {
             try? FileManager.default.removeItem(at: temporary)
             throw error
         }
+    }
+
+    private func loadEvents() -> [LocalActivityEvent] {
+        guard let data = try? Data(contentsOf: fileURL),
+              let decoded = try? JSONDecoder.neantikStable.decode(
+                [LocalActivityEvent].self, from: data
+              ) else { return [] }
+        guard zip(decoded, decoded.dropFirst()).allSatisfy({ $0.date >= $1.date })
+        else { return decoded.sorted { $0.date > $1.date } }
+        return decoded
     }
 }
 

@@ -94,6 +94,47 @@ class ReleaseTransactionTests(unittest.TestCase):
                     maximum_bytes=1024,
                 )
 
+    @unittest.skipUnless(
+        hasattr(__import__("select"), "kqueue"),
+        "release observation requires macOS kqueue",
+    )
+    def test_observer_accepts_poll_failure_after_sealed_recheck(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            artifact = Path(temporary) / "candidate.zip"
+            self.write_private(artifact, b"candidate-a")
+            seal = MODULE.seal_regular_file(
+                artifact,
+                maximum_bytes=1024,
+            )
+
+            class PollFailingQueue:
+                calls = 0
+
+                def control(self, *args):
+                    self.calls += 1
+                    if self.calls == 1:
+                        return []
+                    raise OSError(errno.EINTR, "interrupted")
+
+                def close(self):
+                    return None
+
+            with mock.patch.object(
+                MODULE.select,
+                "kqueue",
+                return_value=PollFailingQueue(),
+            ):
+                result = MODULE.observe_sealed_phase(
+                    seal,
+                    lambda: "ok",
+                    maximum_bytes=1024,
+                )
+
+            self.assertEqual(result, "ok")
+            MODULE.assert_sealed(seal, maximum_bytes=1024)
+
     def test_checksum_and_no_clobber_publication(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

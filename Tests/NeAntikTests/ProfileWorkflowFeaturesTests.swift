@@ -5,12 +5,63 @@ import XCTest
 final class ProfileWorkflowFeaturesTests: XCTestCase {
     @MainActor
     func testTelemetryNeverFallsBackToZeroVersionOrBuild() {
-        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), "0.6.4")
-        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), "0.6.4")
-        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), "46")
-        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), "46")
+        XCTAssertEqual(NeAntikTelemetry.validVersion(nil), NeAntikTelemetry.fallbackVersion)
+        XCTAssertEqual(NeAntikTelemetry.validVersion("0.0.0"), NeAntikTelemetry.fallbackVersion)
+        XCTAssertEqual(NeAntikTelemetry.validBuild(nil), NeAntikTelemetry.fallbackBuild)
+        XCTAssertEqual(NeAntikTelemetry.validBuild("0"), NeAntikTelemetry.fallbackBuild)
         XCTAssertEqual(NeAntikTelemetry.validBuild("17"), "17")
     }
+
+    func testTelemetryPayloadAddsOnlyBoundedAggregateHealthCounts() {
+        let payload = NeAntikTelemetry.makePayload(
+            event: .snapshot,
+            installationHash: "abc",
+            version: "0.6.10",
+            build: "52",
+            osMajor: 26,
+            profileCount: 3,
+            proxyProfileCount: 9,
+            attentionProfileCount: 2,
+            extensionReviewProfileCount: 4,
+            storageReviewProfileCount: -1
+        )
+        XCTAssertEqual(payload["schemaVersion"] as? Int, 2)
+        XCTAssertEqual(payload["profileCount"] as? Int, 3)
+        XCTAssertEqual(payload["proxyProfileCount"] as? Int, 3)
+        XCTAssertEqual(payload["attentionProfileCount"] as? Int, 2)
+        XCTAssertEqual(payload["extensionReviewProfileCount"] as? Int, 3)
+        XCTAssertEqual(payload["storageReviewProfileCount"] as? Int, 0)
+        XCTAssertNil(payload["profileName"])
+        XCTAssertNil(payload["proxy"])
+        XCTAssertNil(payload["url"])
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(payload))
+    }
+
+
+
+    func testTelemetrySummaryIsHumanReadableAndPrivacyBounded() {
+        let summary = NeAntikTelemetry.makeSummary(
+            event: .snapshot,
+            version: "0.0.0",
+            build: "0",
+            osMajor: 26,
+            profileCount: 4,
+            proxyProfileCount: 2,
+            attentionProfileCount: 1,
+            extensionReviewProfileCount: 1,
+            storageReviewProfileCount: 9
+        )
+        XCTAssertTrue(
+            summary.telegramText.contains(
+                "Версия: \(NeAntikTelemetry.fallbackVersion) (\(NeAntikTelemetry.fallbackBuild))"
+            )
+        )
+        XCTAssertTrue(summary.telegramText.contains("Профилей: 4"))
+        XCTAssertTrue(summary.telegramText.contains("storage на проверке: 4"))
+        XCTAssertFalse(summary.telegramText.lowercased().contains("proxy.example"))
+        XCTAssertFalse(summary.telegramText.lowercased().contains("sid="))
+    }
+
     func testCommandPaletteMatchesRussianAndEnglishTerms() {
         XCTAssertTrue(WorkspaceCommand.cleanLaunch.matches("чистый"))
         XCTAssertTrue(WorkspaceCommand.search.matches("search"))

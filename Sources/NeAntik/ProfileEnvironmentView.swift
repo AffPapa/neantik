@@ -52,6 +52,8 @@ struct ProfileEnvironmentView: View {
                     }
                 }
                 .disclosureGroupStyle(NeAntikDisclosureStyle())
+                .help("Показать проверенные параметры среды и дополнительные проверки")
+                .accessibilityHint("Подробности скрыты, чтобы экран оставался компактным")
             }
             .padding(.vertical, 4)
         } label: {

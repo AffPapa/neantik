@@ -91,6 +91,7 @@ case "$SHARD" in
       ProfileTagEditorTests
       EncryptedProfileBackupTests
       ProfileStoreTests
+      ProfileOperationsTests
       ProfileStorageMeasurementTests
       ProxyHealthTests
       ProxyImportParserTests

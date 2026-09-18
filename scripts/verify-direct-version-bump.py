@@ -71,7 +71,13 @@ def read_release_contract(path: Path) -> PublishedRelease:
         raise VersionBumpError(
             f"release contract {path.name} version does not match its filename"
         )
-    if tag != f"v{version}":
+    # Public Direct releases carry a monotonically numbered suffix (for
+    # example v0.6.5-public-1) while the contract filename remains the
+    # product version. Accept that explicit channel suffix but reject tags
+    # belonging to another version.
+    if not isinstance(tag, str) or not re.fullmatch(
+        rf"v{re.escape(version)}(?:-public-\d+)?", tag
+    ):
         raise VersionBumpError(
             f"release contract {path.name} tag does not match its version"
         )
