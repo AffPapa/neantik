@@ -63,6 +63,7 @@ case "$SHARD" in
     SUITES=(
       ProfileCommandPresentationTests
       ProfileAutomationTests
+      SnapshotCrashBoundaryTests
       ProfileAutomationSuggestionsTests
       ProfileBatchActionsTests
       ProfileEditorProcessPolicyTests
@@ -70,6 +71,7 @@ case "$SHARD" in
       ProfileEditorPresentationTests
       ProfileEditorValidationTests
       ProfileDuplicationTests
+      ProfileDuplicationPersistenceTests
       ProfileEnvironmentInspectorTests
       ProfileEnvironmentPresentationTests
       ProfileEnvironmentAccessibilityTests

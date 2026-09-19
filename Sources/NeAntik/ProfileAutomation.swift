@@ -346,7 +346,9 @@ struct AtomicProfileSnapshotStore: Sendable {
         let values = try snapshot.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         guard values.isDirectory == true,
               values.isSymbolicLink != true,
-              snapshot.path.hasPrefix(root.path + "/") else {
+              snapshot.resolvingSymlinksInPath().path.hasPrefix(
+                root.resolvingSymlinksInPath().path + "/"
+              ) else {
             throw CocoaError(.fileReadNoSuchFile)
         }
         if let profileID {
