@@ -50,14 +50,15 @@ def verify(source_path: Path = DEFAULT_SOURCE) -> str:
         )
 
     return (
-        "Secure Enclave release authority verified: hardware-backed, "
-        "attribute-checked and fail-closed."
+        "Secure Enclave source policy verified: hardware-backed key checks "
+        "and fail-closed markers present; actual key availability and signing "
+        "remain unverified by this static check."
     )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Verify the Direct release evidence authority."
+        description="Check source-policy markers; does not test a live Secure Enclave key."
     )
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
     args = parser.parse_args()

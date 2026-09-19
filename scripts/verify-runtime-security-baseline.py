@@ -43,6 +43,7 @@ def verify(
     today: date,
     *,
     allow_public_alpha_tuples: bool = False,
+    accept_reviewed_153_36: bool = False,
 ) -> str:
     lock = load_object(lock_path, "runtime source lock")
     baseline = load_object(baseline_path, "runtime security baseline")
@@ -118,7 +119,14 @@ def verify(
             "Runtime security baseline is stale "
             f"({age} days old; maximum {maximum_age}). Refresh it from {reference}"
         )
-    if runtime < minimum:
+    accepted_gap = (
+        accept_reviewed_153_36
+        and runtime == (153, 0, 8010, 36)
+        and minimum in {(153, 0, 8010, 52), (153, 0, 8010, 53)}
+    )
+    if accept_reviewed_153_36 and not accepted_gap:
+        fail('The reviewed exception covers only Chromium 153.0.8010.36 against .52/.53; new versions require a new review.')
+    if runtime < minimum and not accepted_gap:
         fail(
             "Public Direct release blocked: pinned Chromium "
             f"{runtime_raw} is below the security baseline {minimum_raw}. "
@@ -130,13 +138,16 @@ def verify(
         if security_fix_count > 0
         else "security fixes not enumerated by the official post"
     )
+    version_summary = (
+        f"WARNING: explicit reviewed-version exception; Chromium {runtime_raw} < {minimum_raw}; NOT security-current"
+        if accepted_gap else f"Chromium {runtime_raw} >= {minimum_raw}"
+    )
 
     verification = lock.get("verification")
     if not isinstance(verification, dict):
         if allow_public_alpha_tuples and lock.get("status") == "source-qualified":
             return (
-                f"Runtime security baseline verified for public alpha: Chromium {runtime_raw} >= "
-                f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
+                f"Runtime version decision for public alpha: {version_summary}; baseline age {age} day(s); source {source_label}; "
                 f"{security_summary}; source-only runtime lock has no "
                 "coherent Apple device tuple verification object; GUI fingerprint evidence "
                 "must remain bound by the Direct release gate."
@@ -152,15 +163,13 @@ def verify(
                 "reviewed tuple catalog and pass browser evidence."
             )
         return (
-            f"Runtime security baseline verified for public alpha: Chromium {runtime_raw} >= "
-            f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
+            f"Runtime version decision for public alpha: {version_summary}; baseline age {age} day(s); source {source_label}; "
             f"{security_summary}; coherent Apple device tuple hardening "
             f"not complete (status: {tuple_status!r})."
         )
 
     return (
-        f"Runtime security baseline verified: Chromium {runtime_raw} >= "
-        f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
+        f"Runtime version decision: {version_summary}; baseline age {age} day(s); source {source_label}; "
         f"{security_summary}; coherent Apple device tuples verified."
     )
 
@@ -170,6 +179,8 @@ def main() -> None:
     parser.add_argument("--lock", type=Path, default=DEFAULT_LOCK)
     parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
     parser.add_argument("--today", type=date.fromisoformat, default=date.today())
+    parser.add_argument('--accept-reviewed-153-36', action='store_true',
+                        help='Explicitly accept the reviewed .36 versus .52/.53 gap; does not waive freshness or tuple gates.')
     parser.add_argument(
         "--allow-public-alpha-tuples",
         action="store_true",
@@ -185,6 +196,7 @@ def main() -> None:
             args.baseline,
             args.today,
             allow_public_alpha_tuples=args.allow_public_alpha_tuples,
+            accept_reviewed_153_36=args.accept_reviewed_153_36,
         )
     )
 

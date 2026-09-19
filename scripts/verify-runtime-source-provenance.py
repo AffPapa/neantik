@@ -35,6 +35,8 @@ def main() -> int:
         ),
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--contract", type=Path)
+    parser.add_argument("--rebase-plan", type=Path)
     args = parser.parse_args()
     try:
         if not args.provenance.is_absolute():
@@ -46,17 +48,23 @@ def main() -> int:
             "emitted Chromium source provenance",
         )
         project_root = args.project_root.resolve()
-        verify_document(document, project_root=project_root)
+        selected = {
+            "contract_path": args.contract or project_root / "runtime/chromium-152-source-contract.json",
+            "rebase_plan_path": args.rebase_plan or project_root / "runtime/chromium-152-rebase-plan.json",
+        }
+        verify_document(document, project_root=project_root, **selected)
         if args.runtime_lock is not None:
             verify_candidate_lock(
                 args.runtime_lock,
                 args.provenance,
                 project_root=project_root,
+                **selected,
             )
         if args.source_root is not None:
             fresh = build_provenance(
                 args.source_root,
                 project_root=project_root,
+                **selected,
             )
             if document != fresh:
                 raise SourceProvenanceError(

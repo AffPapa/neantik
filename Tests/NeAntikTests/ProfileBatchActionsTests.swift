@@ -4,6 +4,16 @@ import Testing
 
 struct ProfileBatchActionsTests {
     @Test
+    func selectionSummaryInterpolatesCountAndRussianPlural() {
+        for (count, noun) in [(1, "рабочее место"), (2, "рабочих места"), (5, "рабочих мест"), (11, "рабочих мест"), (21, "рабочее место"), (24, "рабочих места")] {
+            let profiles = (0..<count).map { BrowserProfile(name: "Test \($0)") }
+            let selected = Set(profiles.map(\.id))
+            let presentation = ProfileBatchSelectionPresentation.resolve(visibleProfiles: profiles, selectedProfileIDs: selected, runningProfileIDs: [])
+            #expect(presentation.selectionSummaryText == "Выбрано \(count) \(noun) в текущем списке")
+        }
+    }
+
+    @Test
     func visibleTagSuggestionsShareAccentInsensitiveIdentityAndTrimQuery() {
         let profiles = [BrowserProfile(name: "A", tags: ["Café", "Other"])]
         #expect(ProfileBatchTagPreview.visibleSuggestions(

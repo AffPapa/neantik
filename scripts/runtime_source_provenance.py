@@ -141,6 +141,14 @@ def verify_contract(
     contract_path: Path = DEFAULT_CONTRACT,
     rebase_plan_path: Path = DEFAULT_REBASE_PLAN,
 ) -> dict[str, Any]:
+    from gclient_source_contract import read_object, verify_gclient_contract
+    from gclient_source_evidence import EvidenceError
+    try:
+        selected, _ = read_object(contract_path)
+        if selected.get("sourceMode") == "gclient":
+            return verify_gclient_contract(project_root, contract_path, rebase_plan_path)
+    except EvidenceError as error:
+        raise SourceProvenanceError(str(error)) from error
     project_root = project_root.resolve()
     contract_path = contract_path.resolve()
     rebase_plan_path = rebase_plan_path.resolve()
@@ -439,6 +447,23 @@ def build_provenance(
     rebase_plan_path: Path = DEFAULT_REBASE_PLAN,
     check_runner: Callable[[list[str], str], str] = default_check_runner,
 ) -> dict[str, Any]:
+    selected = verify_contract(project_root=project_root, contract_path=contract_path,
+                               rebase_plan_path=rebase_plan_path)
+    if selected["sourceMode"] == "gclient":
+        from gclient_source_contract import verify_gclient_source
+        from gclient_source_evidence import EvidenceError
+        before = expected_static_document(project_root=project_root,
+            contract_path=contract_path, rebase_plan_path=rebase_plan_path)
+        try:
+            verify_gclient_source(project_root, source_root, contract_path, rebase_plan_path)
+        except EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        document = expected_static_document(project_root=project_root,
+            contract_path=contract_path, rebase_plan_path=rebase_plan_path)
+        if document != before:
+            raise SourceProvenanceError("Gclient contract inputs changed during source verification")
+        document["sourceChecks"] = {"reviewedGclientInputs": "verified", "buildToolFiles": "verified"}
+        return document
     if not source_root.is_absolute():
         raise SourceProvenanceError("Chromium source root must be absolute")
     source_root = source_root.resolve()
@@ -615,6 +640,12 @@ def expected_static_document(
         contract_path=contract_path,
         rebase_plan_path=rebase_plan_path,
     )
+    if contract["sourceMode"] == "gclient":
+        return {"schemaVersion": 2, "binaryBindingStatus": "pending-new-build",
+                "contractSHA256": sha256_file(contract_path),
+                "rebasePlanSHA256": sha256_file(rebase_plan_path),
+                **{key: contract[key] for key in ("targetChromiumVersion", "targetArchitecture",
+                   "sourceMode", "officialChromiumBase", "ownedInputs", "inputBundle", "buildToolFiles")}}
     mac = dict(contract["macPackaging"])
     common = dict(contract["commonChromium"])
     mac["effectiveCommonCommit"] = common["commit"]
@@ -678,6 +709,8 @@ def verify_document(
         "ownedPatchset": "already-applied",
         "ownedAppleDeviceTuples": "verified",
     }
+    if expected["sourceMode"] == "gclient":
+        expected_checks = {"reviewedGclientInputs": "verified", "buildToolFiles": "verified"}
     if checks != expected_checks:
         raise SourceProvenanceError("Emitted provenance sourceChecks are incomplete")
 

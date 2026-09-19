@@ -44,6 +44,18 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             self.assertGreaterEqual(objects, 3)
             self.assertEqual(blobs, 1)
 
+    def test_large_blob_is_not_silently_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_repo(root)
+            token = "ghp_" + "SyntheticOnlyNotARealCredential12345"
+            (root / "large.txt").write_text("x" * (4 * 1024 * 1024 + 1) + "\n" + token + "\n")
+            self.commit_all(root, "synthetic scanner fixture")
+            with self.assertRaises(MODULE.HistorySecretAuditError) as context:
+                MODULE.audit(root)
+            self.assertIn("GitHub token", str(context.exception))
+            self.assertNotIn(token, str(context.exception))
+
     def test_deleted_private_key_still_fails_without_printing_value(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

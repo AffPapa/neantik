@@ -17,6 +17,27 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeSecurityBaselineTests(unittest.TestCase):
+    def test_reviewed_gap_is_explicit_narrow_and_not_security_success(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            lock = self.write_json(root, 'lock.json', self.lock('153.0.8010.36'))
+            baseline = self.write_json(root, 'baseline.json', self.baseline(minimum='153.0.8010.52'))
+            today = date(2026, 7, 25)
+            with self.assertRaises(SystemExit):
+                MODULE.verify(lock, baseline, today)
+            result = MODULE.verify(lock, baseline, today, accept_reviewed_153_36=True)
+            self.assertIn('NOT security-current', result)
+            self.assertNotIn('>=', result)
+            with self.assertRaises(SystemExit):
+                MODULE.verify(lock, baseline, date(2026, 8, 25), accept_reviewed_153_36=True)
+            self.write_json(root, 'lock.json', self.lock('153.0.8010.36', tuple_status='unverified'))
+            with self.assertRaises(SystemExit):
+                MODULE.verify(lock, baseline, today, accept_reviewed_153_36=True)
+            self.write_json(root, 'lock.json', self.lock('153.0.8010.36'))
+            self.write_json(root, 'baseline.json', self.baseline(minimum='153.0.8010.54'))
+            with self.assertRaises(SystemExit):
+                MODULE.verify(lock, baseline, today, accept_reviewed_153_36=True)
+
     def write_json(self, root: Path, name: str, value: object) -> Path:
         path = root / name
         path.write_text(json.dumps(value), encoding="utf-8")

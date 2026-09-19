@@ -20,6 +20,29 @@ SPEC.loader.exec_module(MODULE)
 
 
 class PrepareReleaseSnapshotTests(unittest.TestCase):
+    def test_security_disclosure_survives_curated_notes_and_is_idempotent(self):
+        release = {"runtime": {"version": "153.0.8010.36"},
+                   "limitations": [], "securityBaseline": {}}
+        content = {"changelog": [{"items": ["Короткое описание."]}]}
+        MODULE.disclose_reviewed_runtime_gap(release, content)
+        MODULE.disclose_reviewed_runtime_gap(release, content)
+        self.assertEqual(len(content["changelog"][0]["items"]), 2)
+        warning = content["changelog"][0]["items"][0]
+        self.assertIn("не является актуальной", warning)
+        self.assertEqual(release["limitations"], [warning])
+        self.assertEqual(release["securityBaseline"]["assessment"], "below-reviewed-security-baseline")
+
+    def test_disclosure_never_drops_notes_to_fit_limit(self):
+        release = {"runtime": {"version": "153.0.8010.36"},
+                   "limitations": [], "securityBaseline": {}}
+        content = {"changelog": [{"items": ["item"] * 30}]}
+        with self.assertRaises(MODULE.SnapshotError):
+            MODULE.disclose_reviewed_runtime_gap(release, content)
+        self.assertEqual(len(content["changelog"][0]["items"]), 30)
+        release["runtime"]["version"] = "152.0.7977.64"
+        MODULE.disclose_reviewed_runtime_gap(release, content)
+        self.assertEqual(release["securityBaseline"], {})
+
     def test_curated_notes_reject_invalid_input_before_staging(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -251,8 +274,15 @@ class ReleaseSourceSeparationTests(unittest.TestCase):
     def test_curated_notes_override_only_current_items(self) -> None:
         self.assert_pinned_snapshot(["Понятные настройки и заметки профилей."])
 
-    def assert_pinned_snapshot(self, curated: list[str] | None = None) -> None:
+    def test_selected_153_warning_comes_from_pinned_runtime_despite_curated_notes(self):
+        self.assert_pinned_snapshot(["Краткое описание."], runtime_version="153.0.8010.36")
+
+    def assert_pinned_snapshot(self, curated: list[str] | None = None,
+                               runtime_version: str = "152.0.7977.64") -> None:
         source = release_source_tree()
+        source["runtime/fingerprint-chromium.lock.json"] = json.dumps(
+            {"fingerprintChromium": {"chromiumVersion": runtime_version}}
+        ).encode()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "project"
             output = Path(temporary) / "release"
@@ -299,8 +329,14 @@ class ReleaseSourceSeparationTests(unittest.TestCase):
             self.assertEqual(release["source"]["tag"], RELEASE_TAG)
             self.assertEqual(release["version"], "0.3.17")
             self.assertEqual(release["build"], 20)
-            self.assertEqual(release["runtime"]["version"], "152.0.7977.64")
-            self.assertEqual(content["changelog"][0]["items"], curated or [PINNED_ITEM])
+            self.assertEqual(release["runtime"]["version"], runtime_version)
+            items = content["changelog"][0]["items"]
+            if runtime_version == "153.0.8010.36":
+                self.assertIn("не является актуальной", items[0])
+                self.assertIn(items[0], release["limitations"])
+                self.assertEqual(items[1:], curated or [PINNED_ITEM])
+            else:
+                self.assertEqual(items, curated or [PINNED_ITEM])
             original_content = json.loads(source["ops/affpapa/bootstrap/content.json"])
             self.assertEqual(content["changelog"][1:], original_content["changelog"])
             self.assertEqual(content["changelog"][0]["version"], "0.3.17")

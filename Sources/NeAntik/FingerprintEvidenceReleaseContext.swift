@@ -429,7 +429,7 @@ final class FingerprintEvidenceReleaseContext {
         return Self.hex(SHA256.hash(data: material))
     }
 
-    private static func parseCandidateMetadata(
+    static func parseCandidateMetadata(
         _ data: Data
     ) throws -> (
         metadata: FingerprintEvidenceCandidateMetadata,
@@ -532,6 +532,12 @@ final class FingerprintEvidenceReleaseContext {
         key: String,
         path: String
     ) -> Bool {
+        if key == "sourceContract" {
+            return [
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-153-source-contract.json"
+            ].contains(path)
+        }
         let fixed = [
             "managerInfoPlist": "Contents/Info.plist",
             "managerExecutable": "Contents/MacOS/NeAntik",
@@ -543,8 +549,6 @@ final class FingerprintEvidenceReleaseContext {
                 "Contents/Resources/NeAntikRuntimeEvidence/runtime-verification.json",
             "runtimeCandidateLock":
                 "Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json",
-            "sourceContract":
-                "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
             "sourceProvenance":
                 "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json",
             "buildArguments":

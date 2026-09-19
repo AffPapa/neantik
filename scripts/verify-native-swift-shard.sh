@@ -19,6 +19,7 @@ case "$SHARD" in
       BrowserLaunchPreparationPolicyTests
       BrowserLaunchStagedPreflightTests
       BrowserLaunchPolicyTests
+      BrowserLaunchMemoryGuardTests
       BrowserProcessInventoryTests
       BrowserProcessLifecyclePresentationTests
       BrowserProcessManagerTests

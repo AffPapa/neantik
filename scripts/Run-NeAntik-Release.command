@@ -53,6 +53,18 @@ else
     --signing-identity "$NEANTIK_SIGNING_IDENTITY" >/dev/null
 fi
 
+verify_selected_runtime_source_evidence() {
+  local provenance="$1" lock="$2" contract plan
+  contract=$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" \
+    "$PROJECT_DIR" "$lock" --field contract) || return 66
+  plan=$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" \
+    "$PROJECT_DIR" "$lock" --field plan) || return 66
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+    "$provenance" --contract "$contract" --rebase-plan "$plan" || return 66
+  "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+    "$lock" "$provenance" --contract "$contract" --rebase-plan "$plan"
+}
+
 cache_runtime_source_evidence() {
   local cached_dir="$ATTEMPT_STATE_ROOT/runtime-source-evidence"
   local configured_provenance="${NEANTIK_SOURCE_PROVENANCE:-}"
@@ -66,10 +78,8 @@ cache_runtime_source_evidence() {
       echo "Runtime source evidence variables must name two existing absolute files." >&2
       return 66
     fi
-    if ! "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
-        "$configured_provenance" >/dev/null 2>&1 ||
-      ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
-        "$configured_lock" "$configured_provenance" >/dev/null 2>&1; then
+    if ! verify_selected_runtime_source_evidence \
+        "$configured_provenance" "$configured_lock" >/dev/null 2>&1; then
       echo "Configured runtime source evidence did not pass verification." >&2
       return 66
     fi
@@ -106,10 +116,8 @@ cache_runtime_source_evidence() {
       lock="$evidence_dir/fingerprint-chromium.lock.json"
     fi
     [[ -f "$provenance" && -f "$lock" ]] || continue
-    if ! "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
-        "$provenance" >/dev/null 2>&1 ||
-      ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
-        "$lock" "$provenance" >/dev/null 2>&1; then
+    if ! verify_selected_runtime_source_evidence \
+        "$provenance" "$lock" >/dev/null 2>&1; then
       continue
     fi
 

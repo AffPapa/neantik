@@ -19,12 +19,16 @@ def main() -> int:
     parser.add_argument("candidate_lock", type=Path)
     parser.add_argument("provenance", type=Path)
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--contract", type=Path)
+    parser.add_argument("--rebase-plan", type=Path)
     args = parser.parse_args()
     try:
         verify_candidate_lock(
             args.candidate_lock,
             args.provenance,
             project_root=args.project_root.resolve(),
+            contract_path=args.contract,
+            rebase_plan_path=args.rebase_plan,
         )
     except (OSError, SourceProvenanceError) as error:
         print(f"Candidate lock verification failed: {error}", file=sys.stderr)

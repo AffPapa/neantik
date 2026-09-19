@@ -1,0 +1,970 @@
+--- a/chrome/app/app-Info.plist
++++ b/chrome/app/app-Info.plist
+@@ -149,14 +149,18 @@
+ 	<string>${EXECUTABLE_NAME}</string>
+ 	<key>CFBundleIconFile</key>
+ 	<string>app.icns</string>
+-	<key>CFBundleIconName</key>
+-	<string>AppIcon</string>
+ 	<key>CFBundleIdentifier</key>
+ 	<string>${CHROMIUM_BUNDLE_ID}</string>
+ 	<key>CFBundleInfoDictionaryVersion</key>
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+ 	<string>${CHROMIUM_SHORT_NAME}</string>
++	<key>LSApplicationCategoryType</key>
++	<string>public.app-category.utilities</string>
++	<key>NeAntikRuntimeFlavor</key>
++	<string>fingerprint-chromium</string>
++	<key>NeAntikRuntimeBuildMode</key>
++	<string>source-build</string>
+ 	<key>CFBundlePackageType</key>
+ 	<string>APPL</string>
+ 	<key>CFBundleSignature</key>
+--- a/chrome/app/theme/chromium/BRANDING
++++ b/chrome/app/theme/chromium/BRANDING
+@@ -1,10 +1,10 @@
+-COMPANY_FULLNAME=The Chromium Authors
+-COMPANY_SHORTNAME=The Chromium Authors
+-PRODUCT_FULLNAME=Chromium
+-PRODUCT_SHORTNAME=Chromium
+-PRODUCT_INSTALLER_FULLNAME=Chromium Installer
+-PRODUCT_INSTALLER_SHORTNAME=Chromium Installer
+-COPYRIGHT=Copyright @LASTCHANGE_YEAR@ The Chromium Authors. All rights reserved.
+-MAC_BUNDLE_ID=org.chromium.Chromium
+-MAC_CREATOR_CODE=Cr24
++COMPANY_FULLNAME=NeAntik
++COMPANY_SHORTNAME=NeAntik
++PRODUCT_FULLNAME=NeAntik Browser
++PRODUCT_SHORTNAME=NeAntik
++PRODUCT_INSTALLER_FULLNAME=NeAntik Browser Installer
++PRODUCT_INSTALLER_SHORTNAME=NeAntik Installer
++COPYRIGHT=Copyright @LASTCHANGE_YEAR@ The Chromium Authors and NeAntik contributors.
++MAC_BUNDLE_ID=app.neantik.runtime
++MAC_CREATOR_CODE=NVsn
+ MAC_TEAM_ID=
+--- a/chrome/browser/history/top_sites_factory.cc
++++ b/chrome/browser/history/top_sites_factory.cc
+@@ -50,14 +50,9 @@
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+ // Android does not use prepopulated pages.
+-constexpr auto kRawPrepopulatedPages = std::to_array<RawPrepopulatedPage>({
+-    {
+-        IDS_WEBSTORE_URL,
+-        IDS_EXTENSION_WEB_STORE_TITLE_SHORT,
+-        IDR_WEBSTORE_ICON_32,
+-        SkColorSetRGB(63, 132, 197),
+-    },
+-});
++// NeAntik does not seed a link to the disabled upstream extension store.
++// User history and custom shortcuts remain managed by the normal TopSites flow.
++constexpr std::array<RawPrepopulatedPage, 0> kRawPrepopulatedPages = {};
+ #endif
+ 
+ void InitializePrepopulatedPageList(
+--- a/chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc
++++ b/chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc
+@@ -129,6 +129,15 @@
+   std::unique_ptr<ntp_tiles::MostVisitedSites> most_visited_sites_;
+ };
+ 
++// A fresh NeAntik workplace must not advertise a disabled store endpoint.
++IN_PROC_BROWSER_TEST_F(NTPTilesTest, NeAntikDoesNotSeedWebStore) {
++  MostVisitedSitesWaiter waiter;
++  most_visited_sites_->AddMostVisitedURLsObserver(&waiter, 8);
++  NTPTilesVector tiles = waiter.WaitForTiles();
++  EXPECT_THAT(tiles, Not(Contains(
++      MatchesTile("Web Store", kWebstoreUrl, TileSource::TOP_SITES))));
++}
++
+ // Tests that after navigating to a URL, ntp tiles will include the URL.
+ IN_PROC_BROWSER_TEST_F(NTPTilesTest, LoadURL) {
+   ASSERT_TRUE(embedded_test_server()->Start());
+@@ -212,8 +221,7 @@
+   EXPECT_THAT(
+       tiles,
+       UnorderedElementsAre(
+-          MatchesTile("OK", page_url.spec().c_str(), TileSource::TOP_SITES),
+-          MatchesTile("Web Store", kWebstoreUrl, TileSource::TOP_SITES)));
++          MatchesTile("OK", page_url.spec().c_str(), TileSource::TOP_SITES)));
+ }
+ 
+ // Tests that after navigating to a URL that is blocked for the supervised user,
+@@ -238,8 +246,6 @@
+   NTPTilesVector tiles = waiter.WaitForTiles();
+   EXPECT_THAT(tiles, UnorderedElementsAre(
+                          MatchesTile("simple page", page_url.spec().c_str(),
+-                                     TileSource::TOP_SITES),
+-                         MatchesTile("Web Store", kWebstoreUrl,
+                                      TileSource::TOP_SITES)));
+ }
+ 
+--- a/components/embedder_support/BUILD.gn
++++ b/components/embedder_support/BUILD.gn
+@@ -60,6 +60,7 @@
+     "//build:branding_buildflags",
+     "//components/policy/core/common",
+     "//components/prefs",
++    "//components/ungoogled:ungoogled_switches",
+     "//components/version_info",
+     "//net",
+     "//third_party/blink/public/common:headers",
+--- a/components/embedder_support/user_agent_utils.cc
++++ b/components/embedder_support/user_agent_utils.cc
+@@ -28,6 +28,8 @@
+ #include "build/build_config.h"
+ #include "components/embedder_support/pref_names.h"
+ #include "components/embedder_support/switches.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "components/policy/core/common/policy_pref_names.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/version_info/version_info.h"
+@@ -609,6 +611,13 @@
+   return std::string();
+ #else
+ 
++#if BUILDFLAG(IS_MAC)
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed)
++        .platform_version;
++  }
++#endif
++
+   int32_t major, minor, bugfix = 0;
+   base::SysInfo::OperatingSystemVersionNumbers(&major, &minor, &bugfix);
+   return base::StringPrintf("%d.%d.%d", major, minor, bugfix);
+--- a/components/search_engines/default_search_manager_unittest.cc
++++ b/components/search_engines/default_search_manager_unittest.cc
+@@ -951,3 +951,59 @@
+               base::Time());
+ }
+ #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
++
++// NeAntik's fallback must work without sending keystrokes to a provider.
++TEST_F(DefaultSearchManagerTest, NeAntikSubmittedQueryFallback) {
++  auto manager = create_manager();
++  DefaultSearchManager::Source source;
++  const auto* engine = manager->GetDefaultSearchEngine(&source);
++  ASSERT_TRUE(engine);
++  EXPECT_EQ(DefaultSearchManager::FROM_FALLBACK, source);
++  EXPECT_EQ(u"DuckDuckGo", engine->short_name());
++  EXPECT_EQ("https://duckduckgo.com/?q={searchTerms}", engine->url());
++  EXPECT_EQ(1001, engine->prepopulate_id);
++  auto definitions = prepopulate_data_resolver().GetPrepopulatedEngines();
++  size_t matches = 0;
++  for (const auto& definition : definitions) {
++    if (definition->prepopulate_id == engine->prepopulate_id) {
++      ++matches;
++      EXPECT_EQ(engine->url(), definition->url());
++      EXPECT_EQ(engine->sync_guid, definition->sync_guid);
++    }
++  }
++  EXPECT_EQ(1u, matches);
++  auto resolved = prepopulate_data_resolver().GetEngineFromFullList(1001);
++  ASSERT_TRUE(resolved);
++  EXPECT_EQ(engine->url(), resolved->url());
++  EXPECT_TRUE(resolved->suggestions_url.empty());
++  EXPECT_FALSE(engine->safe_for_autoreplace);
++  EXPECT_TRUE(engine->suggestions_url.empty());
++  EXPECT_TRUE(engine->image_url.empty());
++  EXPECT_TRUE(engine->new_tab_url.empty());
++  EXPECT_TRUE(engine->favicon_url.is_empty());
++  EXPECT_FALSE(engine->preconnect_to_search_url);
++  EXPECT_FALSE(engine->prefetch_likely_navigations);
++}
++
++TEST_F(DefaultSearchManagerTest, NeAntikPreservesExplicitSearchChoices) {
++  auto manager = create_manager();
++  auto custom = GenerateDummyTemplateURLData("chosen");
++  manager->SetUserSelectedDefaultSearchEngine(*custom);
++  DefaultSearchManager::Source source;
++  const auto* engine = manager->GetDefaultSearchEngine(&source);
++  ASSERT_TRUE(engine);
++  EXPECT_EQ(DefaultSearchManager::FROM_USER, source);
++  EXPECT_EQ(custom->url(), engine->url());
++
++  // Even an explicit opt-out of search remains the user's choice.
++  auto no_search = prepopulate_data_resolver().GetEngineFromFullList(1);
++  ASSERT_TRUE(no_search);
++  ASSERT_EQ(u"No Search", no_search->short_name());
++  manager->SetUserSelectedDefaultSearchEngine(*no_search);
++  auto reloaded = create_manager();
++  engine = reloaded->GetDefaultSearchEngine(&source);
++  ASSERT_TRUE(engine);
++  EXPECT_EQ(DefaultSearchManager::FROM_USER, source);
++  EXPECT_EQ(u"No Search", engine->short_name());
++  EXPECT_EQ("http://{searchTerms}", engine->url());
++}
+--- a/components/search_engines/template_url_prepopulate_data_resolver.cc
++++ b/components/search_engines/template_url_prepopulate_data_resolver.cc
+@@ -23,6 +23,22 @@
+ 
+ namespace TemplateURLPrepopulateData {
+ 
++namespace {
++constexpr int kNeAntikSearchId = 1001;
++
++std::unique_ptr<TemplateURLData> NeAntikSearchFallback() {
++  auto data = std::make_unique<TemplateURLData>();
++  data->SetShortName(u"DuckDuckGo");
++  data->SetKeyword(u"ddg");
++  data->SetURL("https://duckduckgo.com/?q={searchTerms}");
++  data->prepopulate_id = kNeAntikSearchId;
++  data->sync_guid = "60eca939-e2d2-48df-96cf-a80cb6001001";
++  data->safe_for_autoreplace = false;
++  data->input_encodings = {"UTF-8"};
++  return data;
++}
++}  // namespace
++
+ Resolver::Resolver(
+     PrefService& prefs,
+     regional_capabilities::RegionalCapabilitiesService& regional_capabilities)
+@@ -30,13 +46,18 @@
+ 
+ std::vector<std::unique_ptr<TemplateURLData>> Resolver::GetPrepopulatedEngines()
+     const {
+-  return TemplateURLPrepopulateData::GetPrepopulatedEngines(
++  auto engines = TemplateURLPrepopulateData::GetPrepopulatedEngines(
+       profile_prefs_.get(),
+       regional_capabilities_->GetRegionalPrepopulatedEngines());
++  engines.push_back(NeAntikSearchFallback());
++  return engines;
+ }
+ 
+ std::unique_ptr<TemplateURLData> Resolver::GetPrepopulatedEngine(
+     int prepopulated_id) const {
++  if (prepopulated_id == kNeAntikSearchId) {
++    return NeAntikSearchFallback();
++  }
+   return TemplateURLPrepopulateData::GetPrepopulatedEngine(
+       profile_prefs_.get(),
+       regional_capabilities_->GetRegionalPrepopulatedEngines(),
+@@ -45,6 +66,9 @@
+ 
+ std::unique_ptr<TemplateURLData> Resolver::GetEngineFromFullList(
+     int prepopulated_id) const {
++  if (prepopulated_id == kNeAntikSearchId) {
++    return NeAntikSearchFallback();
++  }
+   return TemplateURLPrepopulateData::GetPrepopulatedEngineFromFullList(
+       profile_prefs_.get(),
+       regional_capabilities_->GetRegionalPrepopulatedEngines(),
+@@ -59,9 +83,10 @@
+ }
+ 
+ std::unique_ptr<TemplateURLData> Resolver::GetFallbackSearch() const {
+-  return TemplateURLPrepopulateData::GetPrepopulatedFallbackSearch(
+-      profile_prefs_.get(),
+-      regional_capabilities_->GetRegionalPrepopulatedEngines());
++  // Keep user, extension and policy choices above this fallback. A distinct
++  // distribution ID preserves the existing catalog and lets TemplateURLService
++  // find this entry for settings, database reconciliation and reset-to-default.
++  return NeAntikSearchFallback();
+ }
+ 
+ std::optional<BuiltinKeywordsMetadata>
+--- a/components/ungoogled/BUILD.gn
++++ b/components/ungoogled/BUILD.gn
+@@ -6,6 +6,8 @@
+   sources = [
+     "ungoogled_switches.h",
+     "ungoogled_switches.cc",
++    "nevision_fingerprint.h",
++    "nevision_fingerprint.cc",
+   ]
+ 
+   defines = [ "IS_UNGOOGLED_IMPL" ]
+--- /dev/null
++++ b/components/ungoogled/neantik_apple_device_tuples.h
+@@ -0,0 +1,49 @@
++// Generated by apply-owned-runtime-device-tuples.py.
++// Source: runtime/apple-device-tuples.json. Do not edit by hand.
++#ifndef COMPONENTS_UNGOOGLED_NEANTIK_APPLE_DEVICE_TUPLES_H_
++#define COMPONENTS_UNGOOGLED_NEANTIK_APPLE_DEVICE_TUPLES_H_
++
++#include <cstddef>
++#include <cstdint>
++
++namespace ungoogled::nevision {
++
++struct AppleDeviceTuple {
++  const char* id;
++  const char* gpu_model;
++  unsigned hardware_concurrency;
++  unsigned physical_memory_gb;
++  unsigned web_device_memory_gb;
++  int screen_width;
++  int screen_height;
++  int available_width;
++  int available_height;
++  unsigned color_depth;
++  double device_scale_factor;
++  const char* platform_version;
++};
++
++inline constexpr AppleDeviceTuple kAppleDeviceTuples[] = {
++    {"macbook-air-m1", "M1", 8, 8, 8, 1280, 800, 1280, 775, 24, 2, "15.5.0"},
++    {"macbook-pro-m1-pro", "M1 Pro", 10, 16, 8, 1512, 982, 1512, 957, 24, 2, "15.4.1"},
++    {"macbook-air-m2", "M2", 8, 8, 8, 1280, 832, 1280, 807, 24, 2, "15.4.0"},
++    {"macbook-pro-m2-max", "M2 Max", 12, 32, 8, 1728, 1117, 1728, 1092, 24, 2, "15.3.2"},
++    {"macbook-pro-m2-pro", "M2 Pro", 12, 16, 8, 1512, 982, 1512, 957, 24, 2, "15.3.1"},
++    {"macbook-air-m3", "M3", 8, 8, 8, 1280, 832, 1280, 807, 24, 2, "15.3.0"},
++    {"macbook-pro-m3-max", "M3 Max", 16, 36, 8, 1728, 1117, 1728, 1092, 24, 2, "15.2.0"},
++    {"macbook-pro-m3-pro", "M3 Pro", 12, 18, 8, 1512, 982, 1512, 957, 24, 2, "15.1.1"},
++    {"macbook-air-m4", "M4", 10, 16, 8, 1280, 832, 1280, 807, 24, 2, "15.1.0"},
++    {"macbook-pro-m4-max", "M4 Max", 16, 36, 8, 1728, 1117, 1728, 1092, 24, 2, "15.0.1"},
++    {"macbook-pro-m4-pro", "M4 Pro", 14, 24, 8, 1512, 982, 1512, 957, 24, 2, "15.5.0"},
++};
++
++inline constexpr size_t kAppleDeviceTupleCount =
++    sizeof(kAppleDeviceTuples) / sizeof(kAppleDeviceTuples[0]);
++
++inline const AppleDeviceTuple& GetAppleDeviceTuple(uint32_t seed) {
++  return kAppleDeviceTuples[seed % kAppleDeviceTupleCount];
++}
++
++}  // namespace ungoogled::nevision
++
++#endif  // COMPONENTS_UNGOOGLED_NEANTIK_APPLE_DEVICE_TUPLES_H_
+--- /dev/null
++++ b/components/ungoogled/nevision_fingerprint.cc
+@@ -0,0 +1,83 @@
++// Copyright (c) 2026 NeAntik Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/ungoogled/nevision_fingerprint.h"
++
++#include <limits>
++#include <optional>
++#include <string>
++#include <string_view>
++
++#include "base/environment.h"
++#include "base/hash/hash.h"
++#include "base/strings/string_number_conversions.h"
++
++namespace ungoogled::nevision {
++
++namespace {
++
++constexpr uint32_t kMaximumRuntimeSeed =
++    static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
++
++std::optional<uint32_t> ReadSeedFromEnvironment() {
++  std::optional<std::string> value =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_SEED");
++  if (!value) {
++    return std::nullopt;
++  }
++
++  uint32_t seed = 0;
++  if (!base::StringToUint(*value, &seed)) {
++    return std::nullopt;
++  }
++  if (seed == 0 || seed > kMaximumRuntimeSeed) {
++    return std::nullopt;
++  }
++  return seed;
++}
++
++const std::optional<uint32_t>& CachedProfileSeed() {
++  // The manager fixes the child environment before Process.run(). Reading it
++  // once avoids an environment lookup for every deterministic audio sample or
++  // pixel while keeping one stable value for the lifetime of this process.
++  static const std::optional<uint32_t> seed = ReadSeedFromEnvironment();
++  return seed;
++}
++
++uint32_t SaltedProfileHash(uint32_t seed, std::string_view salt) {
++  return base::PersistentHash(base::NumberToString(seed) + ":" +
++                              std::string(salt));
++}
++
++}  // namespace
++
++std::optional<uint32_t> GetProfileSeed() {
++  return CachedProfileSeed();
++}
++
++std::optional<double> GetProfileUnitInterval(std::string_view salt) {
++  std::optional<uint32_t> seed = GetProfileSeed();
++  if (!seed) {
++    return std::nullopt;
++  }
++  return static_cast<double>(SaltedProfileHash(*seed, salt)) /
++         static_cast<double>(std::numeric_limits<uint32_t>::max());
++}
++
++uint8_t GetProfileByte(std::string_view salt,
++                       uint32_t index,
++                       uint8_t exclusive_max) {
++  if (exclusive_max == 0) {
++    return 0;
++  }
++  std::optional<uint32_t> seed = GetProfileSeed();
++  if (!seed) {
++    return 0;
++  }
++  uint32_t hash = SaltedProfileHash(
++      *seed, std::string(salt) + ":" + base::NumberToString(index));
++  return static_cast<uint8_t>(hash % exclusive_max);
++}
++
++}  // namespace ungoogled::nevision
+--- /dev/null
++++ b/components/ungoogled/nevision_fingerprint.h
+@@ -0,0 +1,38 @@
++// Copyright (c) 2026 NeAntik Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef COMPONENTS_UNGOOGLED_NEANTIK_FINGERPRINT_H_
++#define COMPONENTS_UNGOOGLED_NEANTIK_FINGERPRINT_H_
++
++#include <stdint.h>
++
++#include <optional>
++#include <string_view>
++
++#include "base/component_export.h"
++
++namespace ungoogled::nevision {
++
++// Returns the validated NeAntik profile seed inherited through the private
++// process environment. The value is intentionally constrained to a signed
++// 31-bit range to match the native launch contract. Missing, zero, or malformed
++// values return std::nullopt so callers preserve stock Chromium behavior.
++COMPONENT_EXPORT(UNGOOGLED) std::optional<uint32_t> GetProfileSeed();
++
++// Returns a deterministic unit interval value derived from the profile seed and
++// a call-site salt. Missing or malformed profile seed returns std::nullopt.
++COMPONENT_EXPORT(UNGOOGLED)
++std::optional<double> GetProfileUnitInterval(std::string_view salt);
++
++// Returns a deterministic byte in [0, exclusive_max) derived from the profile
++// seed, call-site salt, and index. Missing or malformed profile seed returns
++// zero so callers can fail closed without adding random noise.
++COMPONENT_EXPORT(UNGOOGLED)
++uint8_t GetProfileByte(std::string_view salt,
++                       uint32_t index,
++                       uint8_t exclusive_max);
++
++}  // namespace ungoogled::nevision
++
++#endif  // COMPONENTS_UNGOOGLED_NEANTIK_FINGERPRINT_H_
+--- a/components/version_info/version_info_with_user_agent.h
++++ b/components/version_info/version_info_with_user_agent.h
+@@ -12,6 +12,11 @@
+ 
+ namespace version_info {
+ 
++// NeAntik keeps UA version coupled to the compiled Chromium PRODUCT_VERSION.
++// Profile fingerprint seeds must not randomize or downgrade browser version.
++static_assert(sizeof(PRODUCT_VERSION) > 1,
++              "Chromium PRODUCT_VERSION must be compiled into User-Agent");
++
+ // Returns the product name and reduced version information for the User-Agent
+ // header, in the format: Chrome/<major_version>.0.0.0
+ std::string GetProductNameAndVersionForReducedUserAgent();
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -408,6 +408,7 @@
+     ":make_deprecation_info",
+     ":xml_ffi",
+     "//base",
++    "//components/ungoogled:ungoogled_switches",
+     "//components/paint_preview/common",
+     "//components/performance_manager/public/mojom:mojom_blink",
+     "//components/shared_highlighting/core/common",
+--- a/third_party/blink/renderer/core/core_initializer.cc
++++ b/third_party/blink/renderer/core/core_initializer.cc
+@@ -30,6 +30,10 @@
+ 
+ #include "third_party/blink/renderer/core/core_initializer.h"
+ 
++#include <memory>
++
++#include "base/environment.h"
++#include "base/no_destructor.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/public/web/blink.h"
+ #include "third_party/blink/renderer/bindings/core/v8/binding_security.h"
+@@ -76,6 +80,35 @@
+ 
+ namespace blink {
+ 
++std::unique_ptr<TimeZoneController::TimeZoneOverride>&
++NeAntikTimeZoneOverrideHandle() {
++  static base::NoDestructor<
++      std::unique_ptr<TimeZoneController::TimeZoneOverride>>
++      handle;
++  return *handle;
++}
++
++void ApplyNeAntikTimeZoneOverrideFromEnvironment() {
++  std::optional<std::string> timezone_value =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_TIMEZONE");
++  if (!timezone_value) {
++    return;
++  }
++
++  String timezone_id = String::FromUtf8(*timezone_value);
++  if (timezone_id.empty()) {
++    return;
++  }
++
++  TimeZoneController::TimeZoneOverrideResult result =
++      TimeZoneController::SetTimeZoneOverride(timezone_id);
++  if (result.status ==
++          TimeZoneController::TimeZoneOverrideStatus::kSuccess &&
++      result.handle) {
++    NeAntikTimeZoneOverrideHandle() = std::move(result.handle);
++  }
++}
++
+ CoreInitializer* CoreInitializer::instance_ = nullptr;
+ 
+ // Function defined in third_party/blink/public/web/blink.h.
+@@ -173,6 +206,7 @@
+   ScriptStateImpl::Init();
+ 
+   TimeZoneController::Init();
++  ApplyNeAntikTimeZoneOverrideFromEnvironment();
+ 
+   FontGlobalContext::Init();
+ 
+--- a/third_party/blink/renderer/core/css/media_values.cc
++++ b/third_party/blink/renderer/core/css/media_values.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "third_party/blink/renderer/core/css/media_values.h"
+ 
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "third_party/blink/public/common/css/scripting.h"
+ #include "third_party/blink/renderer/core/css/css_resolution_units.h"
+ #include "third_party/blink/renderer/core/css/css_to_length_conversion_data.h"
+@@ -164,6 +166,9 @@
+ 
+ int MediaValues::CalculateDeviceWidth(LocalFrame* frame) {
+   DCHECK(frame && frame->View() && frame->GetSettings() && frame->GetPage());
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed).screen_width;
++  }
+   const display::ScreenInfo& screen_info =
+       frame->GetPage()->GetChromeClient().GetScreenInfo(*frame);
+   int device_width = screen_info.rect.width();
+@@ -176,6 +181,9 @@
+ 
+ int MediaValues::CalculateDeviceHeight(LocalFrame* frame) {
+   DCHECK(frame && frame->View() && frame->GetSettings() && frame->GetPage());
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed).screen_height;
++  }
+   const display::ScreenInfo& screen_info =
+       frame->GetPage()->GetChromeClient().GetScreenInfo(*frame);
+   int device_height = screen_info.rect.height();
+--- a/third_party/blink/renderer/core/dom/document.cc
++++ b/third_party/blink/renderer/core/dom/document.cc
+@@ -46,6 +46,7 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
+ #include "base/trace_event/trace_event.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "cc/animation/animation_host.h"
+ #include "cc/animation/animation_timeline.h"
+ #include "cc/input/overscroll_behavior.h"
+@@ -1059,9 +1060,17 @@
+   TRACE_EVENT("blink", "Document::Document", perfetto::Flow::FromPointer(this));
+   DCHECK(agent_);
+   if (RuntimeEnabledFeatures::FingerprintingClientRectsNoiseEnabled()) {
+-    // Precompute -0.0003% to 0.0003% noise factor for get*ClientRect*() fingerprinting
+-    noise_factor_x_ = 1 + (base::RandDouble() - 0.5) * 0.000003;
+-    noise_factor_y_ = 1 + (base::RandDouble() - 0.5) * 0.000003;
++    // Precompute -0.0003% to 0.0003% deterministic profile noise factors for
++    // get*ClientRect*() fingerprinting. Without a valid NeAntik profile seed,
++    // preserve the historical random ungoogled behavior.
++    auto noise_x =
++        ungoogled::nevision::GetProfileUnitInterval("client-rects-x");
++    auto noise_y =
++        ungoogled::nevision::GetProfileUnitInterval("client-rects-y");
++    noise_factor_x_ =
++        1 + (noise_x.value_or(base::RandDouble()) - 0.5) * 0.000003;
++    noise_factor_y_ =
++        1 + (noise_y.value_or(base::RandDouble()) - 0.5) * 0.000003;
+   }
+   if (base::FeatureList::IsEnabled(features::kDelayAsyncScriptExecution) &&
+       features::kDelayAsyncScriptExecutionDelayByDefaultParam.Get()) {
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -35,6 +35,8 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/trace_event/trace_id_helper.h"
+ #include "base/trace_event/typed_macros.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "build/build_config.h"
+ #include "cc/input/snap_selection_strategy.h"
+ #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
+@@ -1936,6 +1938,10 @@
+     return 0.0;
+   }
+ 
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed)
++        .device_scale_factor;
++  }
+   return GetFrame()->DevicePixelRatio();
+ }
+ 
+--- a/third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc
++++ b/third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc
+@@ -5,10 +5,16 @@
+ #include "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.h"
+ 
+ #include "base/system/sys_info.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ 
+ namespace blink {
+ 
+ unsigned NavigatorConcurrentHardware::hardwareConcurrency() const {
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed)
++        .hardware_concurrency;
++  }
+   return static_cast<unsigned>(base::SysInfo::NumberOfProcessors());
+ }
+ 
+--- a/third_party/blink/renderer/core/frame/navigator_device_memory.cc
++++ b/third_party/blink/renderer/core/frame/navigator_device_memory.cc
+@@ -8,10 +8,16 @@
+ #include "third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom-shared.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ 
+ namespace blink {
+ 
+ float NavigatorDeviceMemory::deviceMemory() const {
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed)
++        .web_device_memory_gb;
++  }
+   return ApproximatedDeviceMemory::GetApproximatedDeviceMemory();
+ }
+ 
+--- a/third_party/blink/renderer/core/frame/screen.cc
++++ b/third_party/blink/renderer/core/frame/screen.cc
+@@ -29,6 +29,8 @@
+ #include "third_party/blink/renderer/core/frame/screen.h"
+ 
+ #include "base/numerics/safe_conversions.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-blink.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/event_target_names.h"
+@@ -41,6 +43,17 @@
+ 
+ namespace blink {
+ 
++namespace {
++
++const ungoogled::nevision::AppleDeviceTuple*
++GetNeAntikAppleScreenTuple() {
++  const auto seed = ungoogled::nevision::GetProfileSeed();
++  return seed ? &ungoogled::nevision::GetAppleDeviceTuple(*seed)
++              : nullptr;
++}
++
++}  // namespace
++
+ Screen::Screen(LocalDOMWindow* window, int64_t display_id)
+     : ExecutionContextClient(window), display_id_(display_id) {}
+ 
+@@ -109,6 +122,9 @@
+   if (!DomWindow()) {
+     return unknown_color_depth;
+   }
++  if (const auto* tuple = GetNeAntikAppleScreenTuple()) {
++    return tuple->color_depth;
++  }
+   return GetScreenInfo().depth == 0
+              ? unknown_color_depth
+              : base::saturated_cast<unsigned>(GetScreenInfo().depth);
+@@ -172,6 +188,12 @@
+ gfx::Rect Screen::GetRect(bool available) const {
+   if (!DomWindow())
+     return gfx::Rect();
++  if (const auto* tuple = GetNeAntikAppleScreenTuple()) {
++    return gfx::Rect(
++        0, 0,
++        available ? tuple->available_width : tuple->screen_width,
++        available ? tuple->available_height : tuple->screen_height);
++  }
+   LocalFrame* frame = DomWindow()->GetFrame();
+   const display::ScreenInfo& screen_info = GetScreenInfo();
+   gfx::Rect rect = available ? screen_info.available_rect : screen_info.rect;
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -518,7 +518,9 @@
+       DCHECK(!bounds.intersect(SkIRect::MakeXYWH(sx, sy, sw, sh)));
+     }
+     if (read_pixels_successful && RuntimeEnabledFeatures::FingerprintingCanvasImageDataNoiseEnabled()) {
+-      StaticBitmapImage::ShuffleSubchannelColorData(image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy);
++      StaticBitmapImage::ShuffleSubchannelColorData(
++          image_data_pixmap.addr(), image_data_pixmap.info(), sx, sy,
++          "canvas-rendered-surface");
+     }
+   }
+ 
+--- a/third_party/blink/renderer/modules/webaudio/offline_audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/offline_audio_context.cc
+@@ -25,8 +25,12 @@
+ 
+ #include "third_party/blink/renderer/modules/webaudio/offline_audio_context.h"
+ 
++#include <algorithm>
++#include <cmath>
++
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "media/base/audio_glitch_info.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+@@ -54,6 +58,38 @@
+ 
+ namespace {
+ 
++// Keep OfflineAudio output stable for a profile without changing the reported
++// sample rate, frame count, or audio graph. The perturbation is deterministic,
++// bounded far below audible amplitude, and applied only to sparse samples
++// after rendering has completed.
++void ApplyNeAntikOfflineAudioFingerprint(AudioBuffer* buffer) {
++  if (!buffer || !ungoogled::nevision::GetProfileSeed()) {
++    return;
++  }
++  constexpr size_t kSampleStride = 128;
++  constexpr float kNoiseStep = 0.0000001f;
++  for (unsigned channel = 0; channel < buffer->numberOfChannels(); ++channel) {
++    auto channel_data = buffer->getChannelData(channel);
++    if (!channel_data) {
++      continue;
++    }
++    auto samples = channel_data->AsSpan();
++    for (size_t index = 0; index < samples.size(); index += kSampleStride) {
++      // Preserve exact digital silence. Adding energy to a silent graph is
++      // observable behavior that no native audio pipeline would produce.
++      if (!std::isfinite(samples[index]) || samples[index] == 0.0f) {
++        continue;
++      }
++      const uint32_t salt_index =
++          static_cast<uint32_t>(index) ^ (channel * 0x9e3779b9u);
++      const int bucket = ungoogled::nevision::GetProfileByte(
++          "offline-audio-sample", salt_index, 9);
++      const float noise = static_cast<float>(bucket - 4) * kNoiseStep;
++      samples[index] = std::clamp(samples[index] + noise, -1.0f, 1.0f);
++    }
++  }
++}
++
+ OfflineAudioContext* CreateOfflineAudioContext(
+     ExecutionContext* context,
+     unsigned number_of_channels,
+@@ -436,6 +472,7 @@
+     if (!rendered_buffer) {
+       return;
+     }
++    ApplyNeAntikOfflineAudioFingerprint(rendered_buffer);
+ 
+     // Call the offline rendering completion event listener and resolve the
+     // promise too.
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -27,6 +27,7 @@
+ 
+ #include <inttypes.h>
+ 
++#include <algorithm>
+ #include <memory>
+ #include <utility>
+ 
+@@ -45,6 +46,8 @@
+ #include "base/trace_event/memory_dump_manager.h"
+ #include "base/trace_event/trace_event.h"
+ #include "build/build_config.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "components/viz/common/gpu/raster_context_provider.h"
+ #include "components/viz/common/resources/shared_image_format_utils.h"
+ #include "device/vr/buildflags/buildflags.h"
+@@ -4200,6 +4203,16 @@
+       return ScriptValue::CreateNull(script_state->GetIsolate());
+     case WebGLDebugRendererInfo::kUnmaskedRendererWebgl:
+       if (ExtensionEnabled(kWebGLDebugRendererInfoName)) {
++        if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++          const auto& tuple =
++              ungoogled::nevision::GetAppleDeviceTuple(*seed);
++          return WebGLAny(
++              script_state,
++              String::Format(
++                  "ANGLE (Apple, ANGLE Metal Renderer: Apple %s, "
++                  "Unspecified Version)",
++                  tuple.gpu_model));
++        }
+         if (base::FeatureList::IsEnabled(blink::features::kSpoofWebGLInfo))
+           return WebGLAny(script_state, String(blink::features::kSpoofWebGLRendererParam.Get()));
+         return WebGLAny(script_state,
+@@ -4211,6 +4224,9 @@
+       return ScriptValue::CreateNull(script_state->GetIsolate());
+     case WebGLDebugRendererInfo::kUnmaskedVendorWebgl:
+       if (ExtensionEnabled(kWebGLDebugRendererInfoName)) {
++        if (ungoogled::nevision::GetProfileSeed()) {
++          return WebGLAny(script_state, String("Google Inc. (Apple)"));
++        }
+         if (base::FeatureList::IsEnabled(blink::features::kSpoofWebGLInfo))
+           return WebGLAny(script_state, String(blink::features::kSpoofWebGLVendorParam.Get()));
+         return WebGLAny(script_state,
+@@ -5360,6 +5376,30 @@
+     }
+     ContextGL()->ReadPixels(x, y, width, height, format, type, data);
+   }
++
++  if (width > 0 && height > 0 && data && type == GL_UNSIGNED_BYTE &&
++      (format == GL_RGB || format == GL_RGBA) &&
++      ungoogled::nevision::GetProfileSeed().has_value()) {
++    const uint32_t component_count = format == GL_RGBA ? 4 : 3;
++    const size_t available_bytes = buffer_size.ValueOrDie();
++    const size_t pixel_count =
++        std::min<size_t>(static_cast<size_t>(width) * static_cast<size_t>(height),
++                         available_bytes / component_count);
++    const size_t sample_count = std::min<size_t>(pixel_count, 16);
++    for (size_t i = 0; i < sample_count; ++i) {
++      const size_t pixel_index =
++          (pixel_count * (i + 1)) / (sample_count + 1);
++      const size_t byte_index = pixel_index * component_count;
++      const uint8_t delta = ungoogled::nevision::GetProfileByte(
++          "webgl-read-pixels", static_cast<uint32_t>(i), 3);
++      if (delta == 0) {
++        continue;
++      }
++      data[byte_index] = static_cast<uint8_t>(
++          data[byte_index] >= 255 - delta ? data[byte_index] - delta
++                                          : data[byte_index] + delta);
++    }
++  }
+ }
+ 
+ void WebGLRenderingContextBase::RenderbufferStorageImpl(
+--- a/third_party/blink/renderer/platform/graphics/static_bitmap_image.cc
++++ b/third_party/blink/renderer/platform/graphics/static_bitmap_image.cc
+@@ -4,9 +4,12 @@
+ 
+ #include "third_party/blink/renderer/platform/graphics/static_bitmap_image.h"
+ 
++#include <string>
++
+ #include "base/rand_util.h"
+ #include "base/logging.h"
+ #include "base/numerics/checked_math.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "gpu/command_buffer/client/gles2_interface.h"
+ #include "third_party/blink/renderer/platform/graphics/accelerated_static_bitmap_image.h"
+ #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
+@@ -125,7 +128,11 @@
+ 
+ #define writable_addr(T, p, stride, x, y) (T*)((const char *)p + y * stride + x * sizeof(T))
+ 
+-void StaticBitmapImage::ShuffleSubchannelColorData(const void *addr, const SkImageInfo& info, int srcX, int srcY) {
++void StaticBitmapImage::ShuffleSubchannelColorData(const void* addr,
++                                                   const SkImageInfo& info,
++                                                   int srcX,
++                                                   int srcY,
++                                                   const char* salt) {
+   auto w = info.width() - srcX, h = info.height() - srcY;
+ 
+   // skip tiny images; info.width()/height() can also be 0
+@@ -133,8 +140,11 @@
+     return;
+   }
+ 
+-  // generate the first random number here
+-  double shuffleX = base::RandDouble();
++  // Generate deterministic coordinates when NeAntik supplies a valid profile
++  // seed. Preserve historical random ungoogled behavior otherwise.
++  auto profileShuffleX =
++      ungoogled::nevision::GetProfileUnitInterval(std::string(salt) + "-x");
++  double shuffleX = profileShuffleX.value_or(base::RandDouble());
+ 
+   // cap maximum pixels to change
+   auto pixels = (w + h) / 128;
+@@ -149,8 +159,9 @@
+ 
+   DLOG(INFO) << "BRM: ShuffleSubchannelColorData() w=" << w << " h=" << h << " colorType=" << colorType << " fRowBytes=" << fRowBytes;
+ 
+-  // second random number (for y/height)
+-  double shuffleY = base::RandDouble();
++  auto profileShuffleY =
++      ungoogled::nevision::GetProfileUnitInterval(std::string(salt) + "-y");
++  double shuffleY = profileShuffleY.value_or(base::RandDouble());
+ 
+   // calculate random coordinates using bisection
+   auto currentW = w, currentH = h;
+@@ -158,7 +169,10 @@
+     int x = currentW * shuffleX, y = currentH * shuffleY;
+ 
+     // calculate randomisation amounts for each RGB component
+-    uint8_t shuffleR = base::RandIntInclusive(0, 4);
++    uint8_t shuffleR =
++        profileShuffleX.has_value()
++            ? ungoogled::nevision::GetProfileByte(salt, pixels, 5)
++            : base::RandIntInclusive(0, 4);
+     uint8_t shuffleG = (shuffleR + x) % 4;
+     uint8_t shuffleB = (shuffleG + y) % 4;
+ 
+--- a/third_party/blink/renderer/platform/graphics/static_bitmap_image.h
++++ b/third_party/blink/renderer/platform/graphics/static_bitmap_image.h
+@@ -38,7 +38,11 @@
+ 
+   StaticBitmapImage(ImageOrientation orientation) : orientation_(orientation) {}
+ 
+-  static void ShuffleSubchannelColorData(const void *addr, const SkImageInfo& info, int srcX, int srcY);
++  static void ShuffleSubchannelColorData(const void* addr,
++                                         const SkImageInfo& info,
++                                         int srcX,
++                                         int srcY,
++                                         const char* salt);
+ 
+   bool IsStaticBitmapImage() const override { return true; }
+ 
+--- a/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
++++ b/third_party/blink/renderer/platform/image-encoders/image_encoder.cc
+@@ -48,7 +48,9 @@
+                           double quality) {
+   if (RuntimeEnabledFeatures::FingerprintingCanvasImageDataNoiseEnabled()) {
+     // shuffle subchannel color data within the pixmap
+-    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(), 0, 0);
++    StaticBitmapImage::ShuffleSubchannelColorData(src.writable_addr(), src.info(),
++                                                  0, 0,
++                                                  "canvas-rendered-surface");
+   }
+   switch (mime_type) {
+     case kMimeTypeJpeg: {
+--- a/tools/metrics/BUILD.gn
++++ b/tools/metrics/BUILD.gn
+@@ -45,6 +45,8 @@
+   # for non-git checkouts, as dirmd doesn't work on non-git checkout.
+   # TODO(crbug.com/329080012): Remove this condition once dirmd works
+   # in non-git checkouts.
++  # NeAntik source contract: official lite archives have no Git metadata, so
++  # this guard is release-required even when Chromium provides it upstream.
+   if (path_exists("//.git")) {
+     deps += [ ":histograms_xml" ]
+   }

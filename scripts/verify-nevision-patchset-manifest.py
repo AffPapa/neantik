@@ -304,6 +304,7 @@ def verify_manifest(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, object]:
     manifest = load_object(manifest_path, "NeAntik patchset manifest")
+    manifest_path = manifest_path.resolve()
     rebase_plan = load_object(rebase_plan_path, "Chromium rebase plan")
     if manifest.get("schemaVersion") != 1:
         raise PatchsetManifestError("Unexpected patchset manifest schema")

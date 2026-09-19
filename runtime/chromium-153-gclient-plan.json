@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 2,
+  "sourceMode": "gclient",
+  "targetChromiumVersion": "153.0.8010.36",
+  "officialChromiumCommit": "507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c"
+}

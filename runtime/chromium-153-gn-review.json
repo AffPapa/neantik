@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "status": "gn-binary-reproduced-not-runtime-attestation",
+  "gnRevision": "e8a8e0932a5e42a99e5896aa58e3b8290f4e5b8c",
+  "gnVersion": "2517 (e8a8e0932a5e)",
+  "binarySHA256": "b9c59d5d1963dc06076ac34ce160f9cfd7a5625793fa64674000f3c8c60a5fbb",
+  "binarySize": 2627184,
+  "sourceCoverageSHA256": "364da0d1f6a3a4992c51115849f5487c309db09ce3ff8b77d38486091480090c",
+  "verificationBuildNinjaSHA256": "630d9bf4ddaf092c042ab9551448cd40ff537e796f7ca6d2f897e52e81b37419",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.3.27.1)",
+  "verification": {
+    "regularSourceFilesChecked": 1087,
+    "ninjaStepsCompleted": 216,
+    "ninjaJobs": 2,
+    "binaryComparison": "cmp-exit-0",
+    "originalBinaryReplaced": false,
+    "sourcePathLayout": "../../../tools/gn/",
+    "configuration": "gen.py --no-last-commit-position with reviewed commit header; default release settings"
+  },
+  "limitations": "This binds the independently reproduced GN tool to reviewed GN inputs only. Complete Chromium source provenance, dependency coverage and runtime release verification are separate gates."
+}

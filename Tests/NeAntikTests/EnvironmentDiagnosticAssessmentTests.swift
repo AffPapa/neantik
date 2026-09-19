@@ -4,6 +4,14 @@ import Testing
 
 struct EnvironmentDiagnosticAssessmentTests {
     @Test
+    func configurationAloneNeverClaimsConfirmedSuccess() {
+        let snapshot = makeSnapshot(runtimeSignature: true)
+        let configured = snapshot.sections.flatMap(\.fields).filter { $0.state == .configured }
+        #expect(!configured.isEmpty)
+        #expect(configured.allSatisfy { $0.severity != .success })
+    }
+
+    @Test
     func badRuntimeSignatureIsAnObservedFailure() throws {
         let snapshot = makeSnapshot(runtimeSignature: false)
         let signature = try field(

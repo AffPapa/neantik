@@ -1017,6 +1017,11 @@ def verify_candidate_app(
         ]
         if release_channel == "public-alpha":
             baseline.append("--allow-public-alpha-tuples")
+        reviewed_exception = os.environ.get("NEANTIK_ACCEPT_REVIEWED_153_36", "0")
+        if reviewed_exception not in {"0", "1"}:
+            raise ValueError("NEANTIK_ACCEPT_REVIEWED_153_36 must be 0 or 1")
+        if reviewed_exception == "1":
+            baseline.append("--accept-reviewed-153-36")
         commands[1:1] = [
             ("runtime security baseline", baseline),
             (

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "reviewed-build-adaptations-not-release-attestation",
+  "chromiumVersion": "153.0.8010.36",
+  "sourceMode": "gclient",
+  "targetArchitecture": "arm64",
+  "decisions": [
+    {
+      "patch": "macos/fix-nasm-build-config.patch",
+      "patchSHA256": "7edab94489ce48ceac4d1c682c698e8663df563aa319d709abfe7f9afc277297",
+      "applied": false,
+      "decision": "not-in-active-target-graph",
+      "evidence": "Ninja commands for chrome and chromedriver contain zero NASM references.",
+      "revalidateWhen": "NASM or another target architecture is added."
+    },
+    {
+      "patch": "macos/revert-v8-sanitizer-changes.patch",
+      "patchSHA256": "1e37dd4de50c34df355e4337a5e9e376dfa204cc6dd00a197917609295a0fd34",
+      "applied": false,
+      "decision": "superseded-by-official-clang-support",
+      "requiredV8Flags": [
+        "-fsanitize-ignore-for-ubsan-feature=array-bounds",
+        "-fsanitize-ignore-for-ubsan-feature=return"
+      ],
+      "evidence": "Official Clang 24 reports __has_feature(undefined_behavior_sanitizer) false with the effective V8 flags, true with array-bounds/return alone.",
+      "revalidateWhen": "Compiler, V8 flags or sanitizer configuration changes."
+    },
+    {
+      "patch": "core/ungoogled-chromium/build-with-wasm-rollup.patch",
+      "patchSHA256": "09e3aa3fbf994891bb5ea3b9a619238f479287ada1ec74f1bf398bd9419e5661",
+      "applied": false,
+      "decision": "retain-gclient-native-esbuild-and-rollup",
+      "evidence": "Active graph contains 266 native esbuild and three native Rollup commands; installed pinned CIPD payloads were byte-verified.",
+      "requiredReleaseValidation": "Completed new build and runtime DevTools smoke including inspector overlay."
+    }
+  ],
+  "limitations": "This records three explicit recipe differences only. It neither verifies the full upstream patchset nor attests a runtime binary."
+}

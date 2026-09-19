@@ -164,6 +164,26 @@ class FakeReleaseRunner:
 
 
 class DirectNotaryTransactionTests(unittest.TestCase):
+    def test_reviewed_version_exception_is_explicit_and_keeps_other_gates(self):
+        inputs = mock.MagicMock()
+        for name in ("manifest", "evidence", "attestation"):
+            getattr(inputs, name).pinned = Path("/candidate") / name
+        for enabled in ("0", "1"):
+            with self.subTest(enabled=enabled), mock.patch.dict(
+                os.environ, {"NEANTIK_ACCEPT_REVIEWED_153_36": enabled}
+            ), mock.patch.object(MODULE, "run_checked", return_value=
+                "Authority=Developer ID Application: Test\nTimestamp=2026-09-20\n"
+            ) as checked:
+                MODULE.verify_candidate_app(Path("/NeAntik.app"), project_root=SCRIPTS.parent,
+                    inputs=inputs, release_channel="public-alpha", runner=mock.Mock(),
+                    full_preflight=True)
+                commands = [call.args[0] for call in checked.call_args_list]
+                baseline = next(command for command in commands
+                    if command[0].endswith("verify-runtime-security-baseline.py"))
+                self.assertEqual("--accept-reviewed-153-36" in baseline, enabled == "1")
+                self.assertTrue(any(command[0].endswith("verify-integrated-release.sh") for command in commands))
+                self.assertTrue(any(command[0].endswith("verify-runtime-security-reference.py") for command in commands))
+
     def test_explicit_notary_keychain_is_private_absolute_and_forwarded(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             keychain = Path(temporary) / "release.keychain-db"

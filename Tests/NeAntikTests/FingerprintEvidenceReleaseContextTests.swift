@@ -7,6 +7,27 @@ import Testing
 
 struct FingerprintEvidenceReleaseContextTests {
     @Test
+    func candidateMetadataAllowsReviewedSourceContractsOnly() throws {
+        let fixture = makeContext()
+        let original = try #require(String(data: fixture.manifest, encoding: .utf8))
+        for filename in ["chromium-152-source-contract.json", "chromium-153-source-contract.json"] {
+            let data = Data(original.replacingOccurrences(
+                of: "chromium-152-source-contract.json", with: filename
+            ).utf8)
+            let parsed = try FingerprintEvidenceReleaseContext.parseCandidateMetadata(data)
+            #expect(parsed.metadata.managerVersion == "0.3.13")
+        }
+        for filename in ["chromium-154-source-contract.json", "../chromium-153-source-contract.json", "chromium-153-source-contract.json.bak"] {
+            let data = Data(original.replacingOccurrences(
+                of: "chromium-152-source-contract.json", with: filename
+            ).utf8)
+            #expect(throws: FingerprintEvidenceReleaseError.invalidManifest) {
+                try FingerprintEvidenceReleaseContext.parseCandidateMetadata(data)
+            }
+        }
+    }
+
+    @Test
     func qualifiedReportProducesOnePrivacySafeOneShotEnvelope() throws {
         let fixture = makeContext()
         let report = qualifiedReport()

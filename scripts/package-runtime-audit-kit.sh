@@ -48,9 +48,11 @@ if [[ -z "$SOURCE_ROOT" ||
   echo "Runtime audit kit requires generated Chromium source provenance." >&2
   exit 66
 fi
+SOURCE_CONTRACT="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field contract)"
+SOURCE_PLAN="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field plan)"
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
-  "$SOURCE_PROVENANCE"
+  "$SOURCE_PROVENANCE" --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
 
 RUNTIME_PLIST="$RUNTIME_APP/Contents/Info.plist"
 RUNTIME_VERSION="$(
@@ -94,7 +96,7 @@ mkdir -p "$PACKAGE_DIR" "$EVIDENCE_DIR" "$LICENSES_DIR"
   "$VERIFY_REPORT" \
   "$BUILD_ARGS" \
   "$SOURCE_PROVENANCE" \
-  "$CANDIDATE_LOCK"
+  "$CANDIDATE_LOCK" "$SOURCE_CONTRACT" "$SOURCE_PLAN"
 
 ditto "$RUNTIME_APP" "$PACKAGE_DIR/NeAntik Browser.app"
 "$PROJECT_DIR/scripts/build-runtime-audit-cli.sh" \
@@ -104,18 +106,19 @@ rm -rf "$PACKAGE_DIR/module-cache"
 cp "$PROJECT_DIR/scripts/Run-NeAntik-Runtime-Audit.command" "$PACKAGE_DIR/"
 chmod 0755 "$PACKAGE_DIR/Run-NeAntik-Runtime-Audit.command"
 cp "$PROJECT_DIR/scripts/verify-gui-fingerprint-report.py" "$PACKAGE_DIR/"
+cp "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PACKAGE_DIR/"
 chmod 0755 "$PACKAGE_DIR/verify-gui-fingerprint-report.py"
 cp "$PROJECT_DIR/docs/RUNTIME_AUDIT_KIT_README.md" "$PACKAGE_DIR/README.md"
 cp "$CANDIDATE_LOCK" \
   "$EVIDENCE_DIR/fingerprint-chromium.lock.json"
 cp "$PROJECT_DIR/runtime/security-baseline.json" \
   "$EVIDENCE_DIR/security-baseline.json"
-cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+PATCH_MANIFEST="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field patch-manifest)"
+cp "$PATCH_MANIFEST" \
   "$EVIDENCE_DIR/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE_DIR/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
-  "$EVIDENCE_DIR/chromium-152-source-contract.json"
+cp "$SOURCE_CONTRACT" "$EVIDENCE_DIR/$(basename "$SOURCE_CONTRACT")"
 cp "$SOURCE_PROVENANCE" "$EVIDENCE_DIR/source-provenance.json"
 cp "$BUILD_ARGS" "$EVIDENCE_DIR/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE_DIR/runtime-verification.json"

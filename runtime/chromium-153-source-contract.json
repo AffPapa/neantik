@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "sourceMode": "gclient",
+  "binaryBindingStatus": "pending-new-build",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "153.0.8010.36",
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "153.0.8010.36",
+    "commit": "507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c",
+    "tree": "becc24dfa729d8a13ece59045248922c53f6c488",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+  },
+  "rebasePlanSHA256": "999445b12424b8538c8e049005230dc1d040b0f108bd0930275a7dc77a6b9d55",
+  "inputBundle": {
+    "path": "runtime/chromium-153-inputs/reviewed-input-bundle.json",
+    "sha256": "2fdab30740f15d16a2f3614cccda6c30e02bfd5569117853abdce8893b6bf409"
+  },
+  "buildToolFiles": {
+    "out/Release/gn": "b9c59d5d1963dc06076ac34ce160f9cfd7a5625793fa64674000f3c8c60a5fbb",
+    "third_party/llvm-build/Release+Asserts/bin/clang": "70efde6fd29b79dd209f99a1007fffadf9fb780d5650e2d0d693fd5fb196fbfc"
+  },
+  "ownedInputs": {
+    "runtime/nevision-patches/series-153.json": "6d6676a6d36cd0336f6f85e228d7aed60d31cae41cdfb246b89207352a7115f8",
+    "runtime/nevision-patches/patches/chromium-153-owned-port.patch": "5466c3c3658b5bd9f9534a7a54c0b811c61cb2031d0c96c71db73b8a19fe25e7",
+    "runtime/chromium-153-upstream-attribution.json": "efffec7ce1f96b6655a7b63bfc6f6291ddfb237e2f6b766cc9b34ad5c49a765d",
+    "runtime/chromium-153-build-adaptations.json": "bd26f67295e713547335b3ebac874a67293524b43f9b398f6610d02c1534469b",
+    "runtime/chromium-153-gn-review.json": "c1c8ea34657e141f158a363609fa0c53a2652c527d30b2abdbae1df6493d4f4e",
+    "runtime/chromium-153-owned-port-review.json": "aaa592d14f3b8beda9474379ce568148172a494bd81b1e835bd32ccf7ee4918b",
+    "scripts/gclient_git_recipe.py": "c29913a5e263a2200716dd96086bd845a937824e7747124e3854f3e21f8b9834",
+    "scripts/gclient_input_bundle.py": "cc0f2193f4736c8b8c154c216bd780e0e584014acd7863d296849f87866b568d",
+    "scripts/gclient_payload_recipe.py": "a75dc28549a14082927873526f2491de677d1b2c6b67e4723ec2a79b9cce1da9",
+    "scripts/gclient_source_contract.py": "beedf23e61b5a8f123b4ca983a03415f4a7e5c14d01609665b7baca4ce369862",
+    "scripts/gclient_source_evidence.py": "750caded3cba2e6b962c4f1d92345cd75aa7a69b183d94bb5708e9b5b8153fbb"
+  }
+}

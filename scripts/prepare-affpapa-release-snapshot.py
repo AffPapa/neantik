@@ -309,6 +309,29 @@ def artifact_entry(path: Path, version: str, format_name: str) -> dict[str, Any]
     }
 
 
+def disclose_reviewed_runtime_gap(release: dict, content: dict) -> None:
+    """Mandatory disclosure for the explicitly selected older runtime.
+
+    This documents the gap, never authorizes release or bypasses verification.
+    Keep it independent of optional curated marketing/release notes.
+    """
+    if release["runtime"]["version"] != "153.0.8010.36":
+        return
+    warning = (
+        "Chromium 153.0.8010.36 старее обновления безопасности .52/.53 "
+        "от 17 сентября 2026. Перенос этих исправлений не подтверждён; "
+        "эта сборка не является актуальной по исправлениям безопасности."
+    )
+    items = content["changelog"][0]["items"]
+    remaining = [item for item in items if item != warning]
+    if len(remaining) >= 30:
+        raise SnapshotError("Reserve one release-note item for the runtime security limitation")
+    content["changelog"][0]["items"] = [warning, *remaining]
+    if warning not in release["limitations"]:
+        release["limitations"].append(warning)
+    release["securityBaseline"]["assessment"] = "below-reviewed-security-baseline"
+
+
 def build_snapshot(args: argparse.Namespace) -> dict[str, str]:
     project_root = args.project_root.resolve()
     output = args.output.resolve()
@@ -432,6 +455,7 @@ def build_snapshot(args: argparse.Namespace) -> dict[str, str]:
         }
     )
 
+    disclose_reviewed_runtime_gap(release, content)
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
         prefix=f".{output.name}.", dir=output.parent

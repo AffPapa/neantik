@@ -79,6 +79,8 @@ hdiutil attach \
   "$DMG_PATH" >/dev/null
 MOUNTED=1
 
+python3 "$PROJECT_DIR/scripts/verify_dmg_payload.py" "$MOUNT_POINT"
+
 APP_PATH="$MOUNT_POINT/NeAntik.app"
 RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"
 [[ -d "$APP_PATH" ]] || fail "mounted image does not contain NeAntik.app"

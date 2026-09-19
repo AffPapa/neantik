@@ -50,9 +50,12 @@ def expected_candidate_lock(
     provenance_path: Path,
     *,
     project_root: Path = PROJECT_ROOT,
+    contract_path: Path | None = None,
+    rebase_plan_path: Path | None = None,
 ) -> dict[str, Any]:
     project_root = project_root.resolve()
-    contract_path = project_root / "runtime" / "chromium-152-source-contract.json"
+    contract_path = contract_path or project_root / "runtime" / "chromium-152-source-contract.json"
+    rebase_plan_path = rebase_plan_path or project_root / "runtime" / "chromium-152-rebase-plan.json"
     provenance = load_object(
         provenance_path,
         "emitted Chromium source provenance",
@@ -61,10 +64,12 @@ def expected_candidate_lock(
         provenance,
         project_root=project_root,
         contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     contract = verify_contract(
         project_root=project_root,
         contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     contract_sha = sha256_file(contract_path)
     if provenance.get("contractSHA256") != contract_sha:
@@ -72,12 +77,17 @@ def expected_candidate_lock(
             "Source provenance is not bound to the checked source contract"
         )
     official = contract["officialChromiumBase"]
-    mac_packaging = copy.deepcopy(contract["macPackaging"])
-    mac_packaging["effectiveCommonCommit"] = provenance["macPackaging"][
-        "effectiveCommonCommit"
-    ]
+    gclient = contract["sourceMode"] == "gclient"
+    patch_manifest = project_root / "runtime/nevision-patches" / ("series-153.json" if gclient else "series.json")
+    if gclient:
+        manifest = load_object(patch_manifest, "gclient owned patch manifest")
+        if manifest.get("targetChromiumVersion") != contract["targetChromiumVersion"]:
+            raise SourceProvenanceError("Owned patch manifest differs from gclient Chromium version")
+        relative_manifest = patch_manifest.relative_to(project_root).as_posix()
+        if contract['ownedInputs'].get(relative_manifest) != sha256_file(patch_manifest):
+            raise SourceProvenanceError('Gclient patch manifest must be bound to the source contract')
     candidate = {
-        "schemaVersion": 4,
+        "schemaVersion": 5 if gclient else 4,
         "status": "source-qualified",
         "targetArchitecture": "arm64",
         "sourceContractSHA256": contract_sha,
@@ -89,14 +99,11 @@ def expected_candidate_lock(
             "tree": official["tree"],
             "chromiumVersion": contract["targetChromiumVersion"],
             "licenseSHA256": official["licenseSHA256"],
-            "liteArchive": copy.deepcopy(official["liteArchive"]),
         },
-        "macPackaging": mac_packaging,
-        "commonChromium": copy.deepcopy(contract["commonChromium"]),
         "ownedInputs": copy.deepcopy(contract["ownedInputs"]),
         "ownedManifests": {
             "neantikPatchSeriesSHA256": sha256_file(
-                project_root / "runtime" / "nevision-patches" / "series.json"
+                patch_manifest
             ),
             "appleDeviceTuplesSHA256": sha256_file(
                 project_root / "runtime" / "apple-device-tuples.json"
@@ -114,6 +121,15 @@ def expected_candidate_lock(
             ),
         },
     }
+    if gclient:
+        candidate.update({"sourceMode": "gclient",
+                          "inputBundle": copy.deepcopy(contract["inputBundle"]),
+                          "buildToolFiles": copy.deepcopy(contract["buildToolFiles"])})
+    else:
+        candidate["fingerprintChromium"]["liteArchive"] = copy.deepcopy(official["liteArchive"])
+        candidate["macPackaging"] = copy.deepcopy(contract["macPackaging"])
+        candidate["macPackaging"]["effectiveCommonCommit"] = provenance["macPackaging"]["effectiveCommonCommit"]
+        candidate["commonChromium"] = copy.deepcopy(contract["commonChromium"])
     ensure_no_stale_markers(candidate, "new-candidate runtime lock")
     _reject_local_paths(candidate)
     return candidate
@@ -124,6 +140,8 @@ def verify_candidate_lock(
     provenance_path: Path,
     *,
     project_root: Path = PROJECT_ROOT,
+    contract_path: Path | None = None,
+    rebase_plan_path: Path | None = None,
 ) -> dict[str, Any]:
     if not candidate_path.is_absolute() or not provenance_path.is_absolute():
         raise SourceProvenanceError(
@@ -139,6 +157,8 @@ def verify_candidate_lock(
     expected = expected_candidate_lock(
         provenance_path,
         project_root=project_root,
+        contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     if actual != expected:
         differing = next(

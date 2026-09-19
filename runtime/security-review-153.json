@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-20",
+  "selectedChromiumVersion": "153.0.8010.36",
+  "selectionReason": "User explicitly requested finishing and releasing the existing .36 build instead of restarting on .52/.53.",
+  "observedDesktopStableVersions": ["153.0.8010.52", "153.0.8010.53"],
+  "observedPublishedAt": "2026-09-17",
+  "observedSecurityFixCount": 16,
+  "reference": "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0194356994.html",
+  "sourceLabel": "Chrome Releases",
+  "assessment": "Selected .36 is older than the observed security update. Backport coverage has not been established. Do not describe this candidate as security-current or fully patched.",
+  "releaseGateStatus": "pending-explicit-version-exception-integration",
+  "limitations": "This review records source facts and the user choice. It does not override the baseline verifier, prove mitigations, or authorize skipping signing, notarization, privacy or runtime gates. The old 152 baseline must not be used as evidence that .36 meets the current security baseline."
+}

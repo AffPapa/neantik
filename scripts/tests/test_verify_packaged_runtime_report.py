@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
 SCRIPT = ROOT / "scripts/verify-packaged-runtime-report.py"
 SPEC = importlib.util.spec_from_file_location(
     "verify_packaged_runtime_report",

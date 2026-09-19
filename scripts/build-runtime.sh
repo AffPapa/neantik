@@ -36,6 +36,14 @@ case "$PHASE" in
     ;;
 esac
 
+# Validate before any source preparation or configuration work. This host
+# previously became unresponsive above eight concurrent compiler jobs.
+NINJA_JOBS="${NEANTIK_NINJA_JOBS:-4}"
+if [[ ! "$NINJA_JOBS" =~ ^[1-8]$ ]]; then
+  echo "NEANTIK_NINJA_JOBS must be an integer from 1 through 8." >&2
+  exit 64
+fi
+
 if [[ "$(uname -m)" != "arm64" ]]; then
   echo "NeAntik runtime builds are supported only on Apple Silicon." >&2
   exit 65
@@ -716,6 +724,8 @@ configure_build() {
 }
 
 build_runtime() {
+  python3 "$PROJECT_ROOT/scripts/verify_ninja_log_compatibility.py" \
+    "$TOOLS_DIR/bin/ninja" "$SOURCE_DIR/out/Default"
   configure_build
   if [[ -x "$SOURCE_DIR/out/Default/NeAntik Browser.app/Contents/MacOS/NeAntik Browser" ]]
   then
@@ -724,11 +734,7 @@ build_runtime() {
     require_free_space 25
   fi
 
-  local jobs="${NEANTIK_NINJA_JOBS:-4}"
-  if [[ ! "$jobs" =~ ^[1-9][0-9]*$ ]] || (( jobs > 12 )); then
-    echo "NEANTIK_NINJA_JOBS must be an integer from 1 through 12." >&2
-    exit 64
-  fi
+  local jobs="$NINJA_JOBS"
 
   if [[ -s "$BUILD_LOG" ]]; then
     local previous_build_log
@@ -743,7 +749,7 @@ build_runtime() {
     set -o pipefail
     cd "$SOURCE_DIR"
     NINJA_STATUS='[%f/%t %es %r jobs] ' \
-      ninja -C out/Default -j"$jobs" chrome 2>&1 |
+      "$TOOLS_DIR/bin/ninja" -C out/Default -j"$jobs" chrome 2>&1 |
       tee "$BUILD_LOG"
   )
 }

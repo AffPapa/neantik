@@ -4,10 +4,12 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
 SCRIPT = ROOT / "scripts" / "generate-runtime-integration-notices.py"
 SPEC = importlib.util.spec_from_file_location(
     "generate_runtime_integration_notices",
@@ -20,13 +22,49 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeIntegrationNoticesTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.legacy_root = Path(temporary.name)
+        shutil.copytree(ROOT / 'runtime', self.legacy_root / 'runtime')
+        shutil.copyfile(ROOT / 'scripts/tests/fixtures/runtime-lock-152.json',
+                        self.legacy_root / 'runtime/fingerprint-chromium.lock.json')
+
+    def test_gclient_notices_require_complete_bound_selection(self):
+        with self.assertRaises(MODULE.RuntimeNoticesError):
+            MODULE.render_notices(project_root=ROOT, candidate_path=Path('/unused'))
+        with patch('runtime_candidate_lock.verify_candidate_lock', return_value={}), \
+             patch('gclient_source_contract.verify_gclient_contract', return_value={'ownedInputs': {}}):
+            with self.assertRaisesRegex(MODULE.RuntimeNoticesError, 'attribution must be bound'):
+                MODULE.render_gclient_notices(ROOT, Path('/candidate'), Path('/provenance'), Path('/contract'), Path('/plan'))
+
+    def test_gclient_render_preserves_security_gap_and_checks_license_bytes(self):
+        contract = MODULE.load_json(ROOT / 'runtime/chromium-153-source-contract.json')
+        candidate = {'fingerprintChromium': {
+            'chromiumVersion': contract['targetChromiumVersion'],
+            'repository': 'https://chromium.googlesource.com/chromium/src.git',
+            'commit': '0' * 40,
+            'licenseSHA256': MODULE.sha256_file(ROOT / 'runtime/licenses/Chromium-LICENSE'),
+        }}
+        selection = [Path('/candidate'), Path('/provenance'), Path('/contract'), Path('/plan')]
+        with patch('runtime_candidate_lock.verify_candidate_lock', return_value=candidate), \
+             patch('gclient_source_contract.verify_gclient_contract', return_value=contract):
+            rendered = MODULE.render_gclient_notices(self.legacy_root, *selection)
+            self.assertIn('Source mode: gclient', rendered)
+            self.assertIn('NOT security-current', rendered)
+            self.assertIn('153.0.8010.36', rendered)
+            license_file = self.legacy_root / 'runtime/licenses/Chromium-LICENSE'
+            license_file.write_text('synthetic license drift')
+            with self.assertRaises(MODULE.RuntimeNoticesError):
+                MODULE.render_gclient_notices(self.legacy_root, *selection)
+
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
-        rendered = MODULE.render_notices(project_root=ROOT)
+        rendered = MODULE.render_notices(project_root=self.legacy_root)
         checked_in = (
             ROOT / "docs" / "RUNTIME_INTEGRATION_NOTICES.md"
         ).read_text(encoding="utf-8")
         runtime_lock = MODULE.load_json(
-            ROOT / "runtime" / "fingerprint-chromium.lock.json"
+            self.legacy_root / "runtime" / "fingerprint-chromium.lock.json"
         )
         source_contract = MODULE.load_json(
             ROOT / "runtime" / "chromium-152-source-contract.json"
@@ -52,10 +90,10 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         self.assertNotIn("25 July 2026", rendered)
 
     def test_schema_four_nested_packaging_license_is_runtime_bound(self) -> None:
-        rendered = MODULE.render_notices(project_root=ROOT)
+        rendered = MODULE.render_notices(project_root=self.legacy_root)
 
         expected = (
-            ROOT
+            self.legacy_root
             / "runtime"
             / "fingerprint-chromium.lock.json"
         )
@@ -67,7 +105,7 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
     def test_source_candidate_must_remain_pending_until_runtime_promotion(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)
-            shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            shutil.copytree(self.legacy_root / "runtime", fixture / "runtime")
             runtime_lock_path = (
                 fixture / "runtime" / "fingerprint-chromium.lock.json"
             )
@@ -98,7 +136,7 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
     def test_changed_locked_license_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)
-            shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            shutil.copytree(self.legacy_root / "runtime", fixture / "runtime")
             chromium_license = fixture / "runtime" / "licenses" / "Chromium-LICENSE"
             chromium_license.write_text(
                 chromium_license.read_text(encoding="utf-8") + "\ndrift\n",

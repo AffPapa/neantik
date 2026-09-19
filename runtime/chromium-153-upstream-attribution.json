@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "scope": "upstream-source-license-attribution-only",
+  "targetChromiumVersion": "153.0.8010.36",
+  "sources": [
+    {
+      "name": "ungoogled-chromium-macos",
+      "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+      "commit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+      "tree": "977597e8e338be52f44d282f885ed33c025b3122",
+      "licenseGitPath": "LICENSE",
+      "licenseFile": "runtime/licenses/ungoogled-chromium-macos-LICENSE",
+      "licenseSHA256": "2fdd1ed451121c07df0726a8ac8b86b49315d89a22c683edaf98b579e710504b"
+    },
+    {
+      "name": "ungoogled-chromium",
+      "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+      "commit": "dd8fb9b5c837982faf41ba58cd30a5664e77c329",
+      "tree": "fd01d91237fab8adce7f64c85bf0cf2fac38ea2f",
+      "licenseGitPath": "LICENSE",
+      "licenseFile": "runtime/licenses/fingerprint-chromium-LICENSE",
+      "licenseSHA256": "78bc4abfc3e5606b5b88c3cb9409a3250a7f64cffe704bef0563e11910a29189"
+    }
+  ],
+  "limitations": "License bytes match the named immutable Git objects. This does not claim every upstream patch was applied or attest a compiled binary. Generated Chromium third-party notices and SPDX SBOM remain required."
+}

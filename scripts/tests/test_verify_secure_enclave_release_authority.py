@@ -25,6 +25,7 @@ class SecureEnclaveReleaseAuthorityTests(unittest.TestCase):
 
         self.assertIn("hardware-backed", message)
         self.assertIn("fail-closed", message)
+        self.assertIn("remain unverified by this static check", message)
 
     def test_rejects_software_key_fallback(self) -> None:
         source = MODULE.DEFAULT_SOURCE.read_text(encoding="utf-8")

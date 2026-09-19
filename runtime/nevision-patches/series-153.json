@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "153.0.8010.36",
+  "status": "release-ready",
+  "policy": "Source-patch qualification only: one consolidated reviewed 153 port preserves the twelve historical functional groups. release-ready here is the legacy source-manifest status, not binary, behavior, notarization or publication qualification. No lite archive was used. Runtime behavior still requires testing.",
+  "forbiddenScopes": [
+    "automation-evasion",
+    "webdriver-hiding",
+    "headless-hiding",
+    "fake-shadow-roots",
+    "random-browser-version",
+    "broad-fake-font-list",
+    "independent-cpu-gpu-screen-guesses"
+  ],
+  "generatedInputs": [
+    {
+      "id": "canonical-apple-device-tuples",
+      "catalogPath": "runtime/apple-device-tuples.json",
+      "catalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+      "generatorPath": "scripts/apply-owned-runtime-device-tuples.py",
+      "generatorSHA256": "75bb4a1d32d1dc82763200f32905783c9ca5e86033bf2314dca071dc47522ecc",
+      "postimageSHA256": {
+        "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
+        "components/embedder_support/user_agent_utils.cc": "c3d97522a38a6e284901e712bd0401d02fe1b0775cdbeb992af16035baf63937",
+        "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "033c2a076a5d4225c6428fbca0bcd7f172c0acca2c0fb803e258c9e3b591613a",
+        "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
+        "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
+        "third_party/blink/renderer/core/frame/screen.cc": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "34f4961cb49b1a7e0cacbd482c650e1f7f5b796cd232c5b1e0afcaeb71d9d584"
+      }
+    }
+  ],
+  "patchGroups": [
+    {
+      "id": "chromium-153-consolidated-owned-port",
+      "title": "Consolidated reviewed Chromium 153 owned port",
+      "status": "ported",
+      "releaseRequired": true,
+      "sourceEvidence": [
+        "runtime/chromium-153-owned-port-review.json",
+        "runtime/chromium-153-source-contract.json"
+      ],
+      "patchFile": "patches/chromium-153-owned-port.patch",
+      "patchSHA256": "5466c3c3658b5bd9f9534a7a54c0b811c61cb2031d0c96c71db73b8a19fe25e7",
+      "postimageSHA256": {
+        "chrome/app/app-Info.plist": "1fab7408680ca4c31a1898e74d701253606fb4cea075e717d924056b4658101a",
+        "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
+        "chrome/browser/history/top_sites_factory.cc": "40d1d2aca0365c191af919b1f7715cb8c9f3e3f0b73c2821b1b3a07999c090e1",
+        "chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc": "2d05ff93fc14975fa0d8338cc945091f4a648607b3b32f830a31df87d1befd4a",
+        "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
+        "components/embedder_support/user_agent_utils.cc": "c3d97522a38a6e284901e712bd0401d02fe1b0775cdbeb992af16035baf63937",
+        "components/search_engines/default_search_manager_unittest.cc": "292a06cc032458854b64d52da986449b6d673cad316949dc88e858b3039ad298",
+        "components/search_engines/template_url_prepopulate_data_resolver.cc": "f2ef591528b56aaa576b3d2869adc95d40ccfd7743dd67e2f320bae41f6ad76c",
+        "components/ungoogled/BUILD.gn": "c5e3eb030b64550d18d4dfa81358041f0d32cfca4a2698d2cfdaf7cebe27d99d",
+        "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
+        "components/ungoogled/nevision_fingerprint.cc": "039b44e03f8230b98ee584c8d089fd2425e5789fbfc0a955249f0785c9d2cf1a",
+        "components/ungoogled/nevision_fingerprint.h": "4bec711a94f76de78760bad36227eee41d9bc5a4a0b0d46600825dc882b604e9",
+        "components/ungoogled/ungoogled_switches.cc": "513204634b7aeecf17fe77d367a4931e80f2ad35fd75eb87f601f414759e063d",
+        "components/ungoogled/ungoogled_switches.h": "b12e0a4886c0676458aad5e9317e42417dd011f6a5c4964e154ea2df3595c3c7",
+        "components/version_info/version_info_with_user_agent.h": "cb28b86d2e228e3c3c97ade6613573853ccc8815f4483c239b66d20346ab10d1",
+        "content/browser/renderer_host/render_process_host_impl.cc": "de26e0e43f006702f2eebc22b768d973c3b91dfa6f74951a83848432177a170f",
+        "third_party/blink/renderer/core/BUILD.gn": "2733efa54b4fe66f33571b1277e139273831a728cb3f119ac17b4385396e95d7",
+        "third_party/blink/renderer/core/core_initializer.cc": "9fb088eae14b54d1b60c039c28d204023f9acab538262ca840ec6a61bc041ae7",
+        "third_party/blink/renderer/core/css/media_values.cc": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629",
+        "third_party/blink/renderer/core/dom/document.cc": "f1a8c7f2539b2c3e98b5969f9814ba881736671fcf0808ca8702aa5b6aadc88d",
+        "third_party/blink/renderer/core/frame/local_dom_window.cc": "033c2a076a5d4225c6428fbca0bcd7f172c0acca2c0fb803e258c9e3b591613a",
+        "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
+        "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
+        "third_party/blink/renderer/core/frame/screen.cc": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
+        "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "45bde3054c54d14ddd446677704777124d05d6fdeb5ffcc36ce16c890e0bdb07",
+        "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "c0cc9bc85bc581079da0ea764507af5a23f8c9db1a6e87bf36f1010691cce58b",
+        "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "34f4961cb49b1a7e0cacbd482c650e1f7f5b796cd232c5b1e0afcaeb71d9d584",
+        "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "58f846d44280ec820474b82a5c26504a470541b7de6b614ec07304431937c0ca",
+        "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "b342916b037965d07cfee4f0d0a7f432236f657777010052c5bd7efdeb32d64f",
+        "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "573be42d23cd944e62750078c8854bc02ee4f2002db03b5563616c72b8074477",
+        "tools/metrics/BUILD.gn": "51686b2f8dd10abd61c490d81666e575eb700a77ca3f28f3d9725310076242ad"
+      },
+      "requiredBehavior": [
+        "browser-visible profile identity is derived from the stable NeAntik fingerprint seed",
+        "missing or malformed seed fails closed to stock behavior",
+        "ordinary pages do not receive audit-only DevTools probes",
+        "profile A remains stable across A -> B -> A",
+        "profile B differs from profile A on at least two critical rendered/audio surfaces",
+        "noise uses stable hashing rather than per-load randomness",
+        "OfflineAudio keeps the requested sample rate, frame count, and graph semantics",
+        "profile A remains stable across repeated OfflineAudio renders",
+        "profile B receives a different deterministic bounded sparse-sample perturbation",
+        "WebGL pixels are available in normal GUI mode",
+        "WebGL pixels differ between profile A and profile B",
+        "WebGL pixels remain stable for repeated profile A",
+        "timezone is captured and stable in the GUI fingerprint report",
+        "WebRTC candidate data is hashed rather than persisted raw",
+        "proxy failover remains disabled by NeAntik launch configuration",
+        "UA and Client Hints report the compiled Chromium version",
+        "profile seed never randomizes browser version",
+        "security baseline verifier remains the source of public release eligibility",
+        "if tuple spoofing is retained, GPU, CPU, memory, screen, scale, platform, and Client Hints come from one reviewed tuple",
+        "if tuple spoofing is deferred, real device values are kept and only rendered/noise surfaces differ",
+        "independent random CPU/GPU/screen guesses are forbidden",
+        "CSS device-width and device-height use the same reviewed screen tuple as the Screen API",
+        "bundle metadata identifies NeAntik Browser and app.neantik.runtime",
+        "source lock records Chromium base, mac packaging base, patchset hash, notices, and binary hashes",
+        "ARM64 Metal build and normal GUI A -> B -> A evidence are regenerated after Chromium 152 port",
+        "profile seed is absent from browser and renderer command-line arguments",
+        "child processes inherit the validated seed without telemetry or disk persistence",
+        "missing or malformed inherited values preserve stock Chromium behavior",
+        "each Chromium process validates its inherited profile seed once",
+        "hot deterministic audio and pixel paths do not repeat environment lookups",
+        "missing or malformed inherited values remain stock Chromium behavior for the lifetime of the process",
+        "new workspaces without a selected engine use HTTPS DuckDuckGo search",
+        "fallback has no suggestions, image, remote new-tab, favicon, preconnect or navigation-prefetch endpoints",
+        "explicit user-selected, extension and policy search choices retain priority; no profile preferences migration",
+        "fresh new tabs do not seed the disabled upstream extension-store URL",
+        "existing user history and custom shortcuts are not deleted or migrated",
+        "Git checkouts retain upstream location-tag behavior; gclient is the source mode for this candidate"
+      ],
+      "historicalGroupCoverage": [
+        {
+          "id": "profile-seed-contract",
+          "paths": [
+            "components/ungoogled/BUILD.gn",
+            "components/ungoogled/nevision_fingerprint.cc",
+            "components/ungoogled/nevision_fingerprint.h",
+            "components/ungoogled/ungoogled_switches.cc",
+            "components/ungoogled/ungoogled_switches.h",
+            "content/browser/renderer_host/render_process_host_impl.cc"
+          ]
+        },
+        {
+          "id": "deterministic-rendered-surfaces",
+          "paths": [
+            "third_party/blink/renderer/core/dom/document.cc",
+            "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc",
+            "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc",
+            "third_party/blink/renderer/platform/graphics/static_bitmap_image.h",
+            "third_party/blink/renderer/platform/image-encoders/image_encoder.cc"
+          ]
+        },
+        {
+          "id": "deterministic-offline-audio",
+          "paths": [
+            "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc"
+          ]
+        },
+        {
+          "id": "deterministic-webgl-pixels",
+          "paths": [
+            "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc"
+          ]
+        },
+        {
+          "id": "timezone-locale-network-context",
+          "paths": [
+            "third_party/blink/renderer/core/BUILD.gn",
+            "third_party/blink/renderer/core/core_initializer.cc"
+          ]
+        },
+        {
+          "id": "real-browser-version-contract",
+          "paths": [
+            "components/version_info/version_info_with_user_agent.h"
+          ]
+        },
+        {
+          "id": "minimal-apple-device-tuple",
+          "paths": [
+            "third_party/blink/renderer/core/css/media_values.cc",
+            "third_party/blink/renderer/core/frame/local_dom_window.cc",
+            "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc",
+            "third_party/blink/renderer/core/frame/navigator_device_memory.cc",
+            "third_party/blink/renderer/core/frame/screen.cc"
+          ]
+        },
+        {
+          "id": "neantik-branding-and-source-lock",
+          "paths": [
+            "chrome/app/app-Info.plist",
+            "chrome/app/theme/chromium/BRANDING"
+          ]
+        },
+        {
+          "id": "official-lite-archive-build-contract",
+          "paths": [
+            "tools/metrics/BUILD.gn"
+          ]
+        },
+        {
+          "id": "private-runtime-config-environment",
+          "paths": [
+            "components/ungoogled/nevision_fingerprint.cc",
+            "components/ungoogled/nevision_fingerprint.h",
+            "components/ungoogled/ungoogled_switches.cc",
+            "components/ungoogled/ungoogled_switches.h",
+            "content/browser/renderer_host/render_process_host_impl.cc",
+            "third_party/blink/renderer/core/core_initializer.cc"
+          ]
+        },
+        {
+          "id": "cached-runtime-profile-seed",
+          "paths": [
+            "components/ungoogled/nevision_fingerprint.cc"
+          ]
+        },
+        {
+          "id": "submitted-query-search-default",
+          "paths": [
+            "chrome/browser/history/top_sites_factory.cc",
+            "chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc",
+            "components/search_engines/default_search_manager_unittest.cc",
+            "components/search_engines/template_url_prepopulate_data_resolver.cc"
+          ]
+        }
+      ]
+    }
+  ]
+}

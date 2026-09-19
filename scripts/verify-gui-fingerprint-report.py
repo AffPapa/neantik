@@ -307,12 +307,17 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must use provenance schema 3"
         )
+    from runtime_contract_selection import select_contract
+    try:
+        selected_contract = select_contract(evidence_root, evidence.get("sourceContractSHA256"))
+    except ValueError as error:
+        raise FingerprintReportError(str(error)) from error
     provenance_files = {
         "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
         "candidateLockSHA256":
             evidence_root / "fingerprint-chromium.lock.json",
         "sourceContractSHA256":
-            evidence_root / "chromium-152-source-contract.json",
+            selected_contract,
         "sourceProvenanceSHA256":
             evidence_root / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",

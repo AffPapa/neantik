@@ -45,6 +45,8 @@ def validate_report_binding(
     report_path: Path,
     *,
     project_root: Path = PROJECT_ROOT,
+    contract_path: Path | None = None,
+    rebase_plan_path: Path | None = None,
 ) -> None:
     expected_args = (
         provenance.parent / "src" / "out" / "Default" / "args.gn"
@@ -58,6 +60,8 @@ def validate_report_binding(
         candidate_lock,
         provenance,
         project_root=project_root,
+        contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     if not args_are_metal(args_gn):
         raise SourceProvenanceError(
@@ -109,8 +113,12 @@ def promote(
     runtime_report: Path,
     *,
     project_root: Path = PROJECT_ROOT,
+    contract_path: Path | None = None,
+    rebase_plan_path: Path | None = None,
 ) -> Path:
     project_root = project_root.resolve()
+    contract_path = contract_path or project_root / "runtime/chromium-152-source-contract.json"
+    rebase_plan_path = rebase_plan_path or project_root / "runtime/chromium-152-rebase-plan.json"
     published_lock = (
         project_root / "runtime" / "fingerprint-chromium.lock.json"
     )
@@ -135,6 +143,8 @@ def promote(
         args_gn,
         runtime_report,
         project_root=project_root,
+        contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     with tempfile.TemporaryDirectory(prefix="neantik-candidate-promotion-") as temp:
         fresh_report = Path(temp) / "fresh-runtime-report.json"
@@ -146,6 +156,8 @@ def promote(
                 str(args_gn),
                 str(provenance),
                 str(candidate_lock),
+                str(contract_path),
+                str(rebase_plan_path),
             ],
             check=True,
         )
@@ -164,6 +176,8 @@ def promote(
             args_gn,
             fresh_report,
             project_root=project_root,
+            contract_path=contract_path,
+            rebase_plan_path=rebase_plan_path,
         )
     candidate = load_report(candidate_lock)
     atomic_write_json(published_lock, candidate)
@@ -187,6 +201,8 @@ def main() -> int:
     parser.add_argument("args_gn", type=Path)
     parser.add_argument("runtime_report", type=Path)
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--contract", type=Path)
+    parser.add_argument("--rebase-plan", type=Path)
     parser.add_argument(
         "--confirm-promote-source-lock",
         action="store_true",
@@ -208,6 +224,8 @@ def main() -> int:
             args.args_gn,
             args.runtime_report,
             project_root=args.project_root,
+            contract_path=args.contract,
+            rebase_plan_path=args.rebase_plan,
         )
     except (
         OSError,

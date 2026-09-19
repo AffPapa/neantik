@@ -3,10 +3,8 @@
 import argparse
 import datetime
 import hashlib
-import html
 import json
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -14,6 +12,7 @@ import threading
 import urllib.parse
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from html.parser import HTMLParser
 from pathlib import Path
 
 
@@ -79,11 +78,32 @@ def sha256_file(path):
 
 
 def parse_dumped_result(output):
-    match = re.search(r"NV_RESULT:(\{[^<]+\})", output)
-    if match is None:
-        raise IsolationAuditError("headless_shell output has no NV_RESULT marker")
+    class ResultParser(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.results = []
+            self.current = None
+
+        def handle_starttag(self, tag, attrs):
+            if tag == 'pre' and dict(attrs).get('id') == 'result':
+                self.current = []
+
+        def handle_data(self, data):
+            if self.current is not None:
+                self.current.append(data)
+
+        def handle_endtag(self, tag):
+            if tag == 'pre' and self.current is not None:
+                self.results.append(''.join(self.current))
+                self.current = None
+
+    parser = ResultParser()
+    parser.feed(output)
+    parser.close()
+    if len(parser.results) != 1 or not parser.results[0].startswith('NV_RESULT:'):
+        raise IsolationAuditError("runtime output has no unique completed result")
     try:
-        result = json.loads(html.unescape(match.group(1)))
+        result = json.loads(parser.results[0][len('NV_RESULT:'):])
     except json.JSONDecodeError as error:
         raise IsolationAuditError("NV_RESULT marker is invalid JSON") from error
     if (
@@ -113,21 +133,33 @@ def verify_sequence(captures, token_a, token_b):
     return issues
 
 
+def runtime_mode(runtime):
+    if runtime.name == "headless_shell":
+        return "headless-single-process-storage-diagnostic"
+    if runtime.name in ("NeAntik Browser", "Chromium"):
+        return "browser-headless-multiprocess-storage-diagnostic"
+    raise IsolationAuditError("unsupported runtime executable name")
+
+
+def capture_arguments(runtime, data_directory, url):
+    mode = runtime_mode(runtime)
+    mode_flags = (
+        ["--single-process", "--no-sandbox"]
+        if mode == "headless-single-process-storage-diagnostic"
+        else ["--headless=new"]
+    )
+    return [
+        str(runtime), "--dump-dom", *mode_flags,
+        "--disable-background-networking", "--disable-extensions",
+        "--no-first-run", "--no-default-browser-check",
+        f"--user-data-dir={data_directory}", url,
+    ]
+
+
 def run_capture(runtime, data_directory, base_url, operation, value=""):
     query = urllib.parse.urlencode({"op": operation, "value": value})
     url = f"{base_url}/?{query}"
-    arguments = [
-        str(runtime),
-        "--dump-dom",
-        "--single-process",
-        "--no-sandbox",
-        "--disable-background-networking",
-        "--disable-extensions",
-        "--no-first-run",
-        "--no-default-browser-check",
-        f"--user-data-dir={data_directory}",
-        url,
-    ]
+    arguments = capture_arguments(runtime, data_directory, url)
     process = subprocess.run(
         arguments,
         check=False,
@@ -138,7 +170,7 @@ def run_capture(runtime, data_directory, base_url, operation, value=""):
     if process.returncode != 0:
         error_tail = process.stderr.strip()[-2000:]
         raise IsolationAuditError(
-            f"headless_shell exited {process.returncode}: {error_tail}"
+            f"runtime exited {process.returncode}: {error_tail}"
         )
     return parse_dumped_result(process.stdout)
 
@@ -146,8 +178,9 @@ def run_capture(runtime, data_directory, base_url, operation, value=""):
 def run_audit(runtime, report_path):
     if not runtime.is_absolute() or not runtime.is_file():
         raise IsolationAuditError("runtime must be an existing absolute file")
-    if runtime.name != "headless_shell" or not os.access(runtime, os.X_OK):
-        raise IsolationAuditError("runtime must be an executable headless_shell")
+    mode = runtime_mode(runtime)
+    if not os.access(runtime, os.X_OK):
+        raise IsolationAuditError("runtime must be executable")
     if not report_path.is_absolute():
         raise IsolationAuditError("report path must be absolute")
 
@@ -237,7 +270,7 @@ def run_audit(runtime, report_path):
         "createdAt": datetime.datetime.now(
             datetime.timezone.utc
         ).isoformat().replace("+00:00", "Z"),
-        "executionMode": "headless-single-process-storage-diagnostic",
+        "executionMode": mode,
         "runtime": {
             "path": str(runtime),
             "version": version,
@@ -257,8 +290,9 @@ def run_audit(runtime, report_path):
         "issues": issues,
         "verdict": "verified" if not issues else "failed",
         "boundary": (
-            "Real Blink storage behavior in an explicit single-process "
-            "diagnostic; this does not replace the production GUI fingerprint gate."
+            "Storage diagnostic in the explicitly recorded execution mode; "
+            "this does not replace production GUI, service-worker, IndexedDB, "
+            "cache isolation or fingerprint qualification."
         ),
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)

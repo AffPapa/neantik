@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-09-16",
-  "publishedAt": "2026-09-03",
+  "checkedAt": "2026-09-20",
+  "publishedAt": "2026-09-17",
   "maximumAgeDays": 7,
-  "minimumPublicChromiumVersion": "152.0.7977.82",
+  "minimumPublicChromiumVersion": "153.0.8010.52",
   "alsoObservedPublicChromiumVersions": [
-    "152.0.7977.83"
+    "153.0.8010.53"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 12,
-  "reference": "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01882797386.html",
+  "securityFixCount": 16,
+  "reference": "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0194356994.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
   "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference before every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",

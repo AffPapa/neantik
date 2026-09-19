@@ -70,6 +70,36 @@ struct ProfileSurfaceInspectionTests {
         #expect(decisions.last?.action == .suspend)
     }
 
+    @Test func memoryPolicyResumesPausedProfilesAndDoesNotRepeatSuspension() {
+        let now = Date(timeIntervalSince1970: 10_000)
+        var snapshot = MemoryProcessSnapshot(profileID: UUID(), processID: 1,
+            residentBytes: 2_000, lastActivity: now.addingTimeInterval(-3_600),
+            isFocused: false, isSuspended: true)
+        #expect(AutomaticMemorySavingPolicy.decide([snapshot], now: now,
+            residentThreshold: 1_000).first?.action == .keepRunning)
+        #expect(AutomaticMemorySavingPolicy.decide([snapshot], now: now,
+            residentThreshold: 3_000).first?.action == .resume)
+        snapshot = MemoryProcessSnapshot(profileID: snapshot.profileID, processID: 1,
+            residentBytes: 2_000, lastActivity: now, isFocused: true, isSuspended: true)
+        #expect(AutomaticMemorySavingPolicy.decide([snapshot], now: now,
+            residentThreshold: 1_000).first?.action == .resume)
+        snapshot = MemoryProcessSnapshot(profileID: snapshot.profileID, processID: 1,
+            residentBytes: 2_000, lastActivity: now, isFocused: false, isSuspended: true)
+        #expect(AutomaticMemorySavingPolicy.decide([snapshot], now: now,
+            residentThreshold: 1_000).first?.action == .resume)
+    }
+
+    @Test func memoryPressureSumDoesNotWrapToLowUsage() {
+        let now = Date(timeIntervalSince1970: 10_000)
+        let snapshots = (1...2).map { processID in
+            MemoryProcessSnapshot(profileID: UUID(), processID: Int32(processID),
+                residentBytes: UInt64.max, lastActivity: now.addingTimeInterval(-3_600),
+                isFocused: false)
+        }
+        #expect(AutomaticMemorySavingPolicy.decide(snapshots, now: now,
+            residentThreshold: UInt64.max).allSatisfy { $0.action == .suspend })
+    }
+
     @Test func memoryPolicyDoesNotSuspendRecentlyUsedProcess() {
         let id = UUID()
         let now = Date(timeIntervalSince1970: 10_000)

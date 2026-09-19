@@ -18,6 +18,16 @@ struct ProfileBatchSelectionPresentation: Equatable, Sendable {
 
     var selectedCount: Int { selectedProfileIDs.count }
     var hasSelection: Bool { !selectedProfileIDs.isEmpty }
+    var selectionSummaryText: String {
+        let count = selectedCount
+        let lastTwo = count % 100
+        let noun: String
+        if (11...14).contains(lastTwo) { noun = "рабочих мест" }
+        else if count % 10 == 1 { noun = "рабочее место" }
+        else if (2...4).contains(count % 10) { noun = "рабочих места" }
+        else { noun = "рабочих мест" }
+        return "Выбрано \(count) \(noun)" + (allVisibleSelected ? " в текущем списке" : "")
+    }
 
     static func resolve(
         visibleProfiles: [BrowserProfile],
@@ -122,12 +132,7 @@ struct ProfileBatchActionBar: View {
     }
 
     private var selectionSummaryText: String {
-        let count = presentation.selectedCount
-        let noun = count == 1 ? "рабочее место" : "рабочих мест"
-        if presentation.allVisibleSelected {
-            return "Выбрано (count) (noun) в текущем списке"
-        }
-        return "Выбрано (count) (noun)"
+        presentation.selectionSummaryText
     }
 
     private var toggleAllButton: some View {

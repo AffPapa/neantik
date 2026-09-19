@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+from runtime_contract_selection import select_contract
 
 
 class PackagedRuntimeReportError(ValueError):
@@ -237,11 +238,15 @@ def verify(
         report,
     )
 
+    try:
+        source_contract = select_contract(evidence, field(report, "sourceContractSHA256"))
+    except ValueError as error:
+        raise PackagedRuntimeReportError(str(error)) from error
     evidence_files = {
         "sourceLockSHA256": project_root
         / "runtime/fingerprint-chromium.lock.json",
         "candidateLockSHA256": evidence / "fingerprint-chromium.lock.json",
-        "sourceContractSHA256": evidence / "chromium-152-source-contract.json",
+        "sourceContractSHA256": source_contract,
         "sourceProvenanceSHA256": evidence / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence / "neantik-patch-series.json",
         "appleDeviceTuplesManifestSHA256": evidence / "apple-device-tuples.json",

@@ -4,10 +4,13 @@ import sys
 import tempfile
 import unittest
 import zipfile
+import stat
+from unittest.mock import Mock
 from pathlib import Path
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-direct-notarized-archive.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("verify_direct_notarized_archive", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -23,6 +26,25 @@ EXPECTED = MODULE.ExpectedAppContract(
 
 
 class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
+    def test_unsafe_zip_is_rejected_before_extraction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for unsafe in ('private-canary.txt', 'NeAntik.app/../escape', 'external-link'):
+                archive = root / 'unsafe.zip'
+                with zipfile.ZipFile(archive, 'w') as output:
+                    output.writestr('NeAntik.app/Contents/Info.plist', 'fixture')
+                    if unsafe == 'external-link':
+                        entry = zipfile.ZipInfo('NeAntik.app/Contents/link')
+                        entry.create_system = 3
+                        entry.external_attr = (stat.S_IFLNK | 0o777) << 16
+                        output.writestr(entry, '../../../private-canary')
+                    else:
+                        output.writestr(unsafe, 'synthetic')
+                runner = Mock()
+                with self.subTest(unsafe=unsafe), self.assertRaises(MODULE.DirectNotarizedArchiveError):
+                    MODULE.extract_archive(archive, root / 'output', runner=runner)
+                runner.assert_not_called()
+
     def test_archive_contract_accepts_matching_checksum(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

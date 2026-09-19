@@ -31,6 +31,8 @@ def main() -> int:
         ),
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--contract", type=Path)
+    parser.add_argument("--rebase-plan", type=Path)
     args = parser.parse_args()
     source_root = args.source_root
     output = args.output or source_root.parent / "source-provenance.json"
@@ -38,6 +40,8 @@ def main() -> int:
         document = build_provenance(
             source_root,
             project_root=args.project_root.resolve(),
+            contract_path=args.contract or args.project_root.resolve() / "runtime/chromium-152-source-contract.json",
+            rebase_plan_path=args.rebase_plan or args.project_root.resolve() / "runtime/chromium-152-rebase-plan.json",
         )
         atomic_write_json(output, document)
     except (OSError, SourceProvenanceError) as error:

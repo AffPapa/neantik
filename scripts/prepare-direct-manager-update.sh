@@ -15,6 +15,11 @@ SOURCE_RUNTIME="$SOURCE_APP/Contents/Resources/NeAntik Browser.app"
 CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
 SECURITY_BASELINE_ARGS=()
+case "${NEANTIK_ACCEPT_REVIEWED_153_36:-0}" in
+  0) ;;
+  1) SECURITY_BASELINE_ARGS+=(--accept-reviewed-153-36) ;;
+  *) echo "NEANTIK_ACCEPT_REVIEWED_153_36 must be 0 or 1." >&2; exit 64 ;;
+esac
 RELEASE_ENTITLEMENTS="$PROJECT_DIR/Resources/NeAntik.entitlements"
 EMBEDDED_PROFILE="$CANDIDATE_APP/Contents/embedded.provisionprofile"
 
@@ -52,9 +57,12 @@ resolve_runtime_candidate_lock() {
   source_provenance="$(resolve_source_provenance)"
   local default="$(dirname "$source_provenance")/runtime-candidate-lock.json"
   if [[ ! -f "$default" ]]; then
+    local source_contract source_plan
+    source_contract="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$source_provenance" --field contract)"
+    source_plan="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$source_provenance" --field plan)"
     "$PROJECT_DIR/scripts/export-runtime-candidate-lock.py" \
       "$source_provenance" \
-      --output "$default"
+      --output "$default" --contract "$source_contract" --rebase-plan "$source_plan"
   fi
   echo "$default"
 }
@@ -66,14 +74,19 @@ verify_reviewed_runtime_evidence() {
   local runtime_candidate_lock
   source_provenance="$(resolve_source_provenance)"
   runtime_candidate_lock="$(resolve_runtime_candidate_lock)"
+  local source_contract source_plan
+  source_contract="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$runtime_candidate_lock" --field contract)"
+  source_plan="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$runtime_candidate_lock" --field plan)"
+  local patch_manifest
+  patch_manifest="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$runtime_candidate_lock" --field patch-manifest)"
 
   local comparisons=(
     "$source_provenance:$evidence/source-provenance.json"
     "$runtime_candidate_lock:$evidence/fingerprint-chromium.lock.json"
     "$PROJECT_DIR/runtime/security-baseline.json:$evidence/security-baseline.json"
-    "$PROJECT_DIR/runtime/nevision-patches/series.json:$evidence/neantik-patch-series.json"
+    "$patch_manifest:$evidence/neantik-patch-series.json"
     "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
-    "$PROJECT_DIR/runtime/chromium-152-source-contract.json:$evidence/chromium-152-source-contract.json"
+    "$source_contract:$evidence/$(basename "$source_contract")"
   )
   local comparison
   for comparison in "${comparisons[@]}"; do
@@ -88,10 +101,10 @@ verify_reviewed_runtime_evidence() {
   done
 
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
-    "$evidence/source-provenance.json"
+    "$evidence/source-provenance.json" --contract "$source_contract" --rebase-plan "$source_plan"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
     "$evidence/fingerprint-chromium.lock.json" \
-    "$evidence/source-provenance.json"
+    "$evidence/source-provenance.json" --contract "$source_contract" --rebase-plan "$source_plan"
   python3 "$PROJECT_DIR/scripts/verify-packaged-runtime-report.py" \
     --report "$evidence/runtime-verification.json" \
     --runtime-app "$CANDIDATE_RUNTIME" \
@@ -166,6 +179,7 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
 fi
 
 "$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" \
+  --lock "$(resolve_runtime_candidate_lock)" \
   "${SECURITY_BASELINE_ARGS[@]}"
 "$PROJECT_DIR/scripts/verify-runtime-security-reference.py"
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"

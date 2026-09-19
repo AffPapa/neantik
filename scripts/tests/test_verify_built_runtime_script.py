@@ -1,4 +1,5 @@
 import unittest
+import subprocess
 from pathlib import Path
 
 
@@ -7,6 +8,28 @@ SCRIPT = PROJECT_ROOT / "scripts" / "verify-built-runtime.sh"
 
 
 class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
+    def test_symbol_table_parser_drains_producer_under_pipefail(self):
+        script = SCRIPT.read_text()
+        parser = script.split('otool -l "$MACHO_INSPECTION_PATH" |', 1)[1].split("awk '", 1)[1].split("'", 1)[0]
+        producer = "awk 'BEGIN { print \"cmd LC_SYMTAB\"; print \"stroff 4096\"; print \"cmd LC_OTHER\"; for(i=0;i<200000;i++) print \"stroff 3\"; }'"
+        result = subprocess.run(['/bin/bash', '-c', 'set -euo pipefail; ' + producer + " | awk '" + parser + "'"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, '4096\n')
+
+    def test_live_source_recheck_recognizes_gclient_checkout(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('-e "$POSSIBLE_SOURCE_ROOT/.git"', script)
+        self.assertIn('PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")', script)
+
+    def test_candidate_preparation_forwards_selected_contract_to_binary_and_promotion(self):
+        script = (PROJECT_ROOT / 'scripts/prepare-direct-runtime-candidate.sh').read_text()
+        binary = script.split('"$PROJECT_DIR/scripts/verify-built-runtime.sh"', 1)[1].split('python3 ', 1)[0]
+        self.assertIn('"$SOURCE_CONTRACT"', binary)
+        self.assertIn('"$SOURCE_PLAN"', binary)
+        promotion = script.split('scripts/promote-runtime-candidate-lock.py"', 1)[1].split('--confirm-promote-source-lock', 1)[0]
+        self.assertIn('--contract "$SOURCE_CONTRACT"', promotion)
+        self.assertIn('--rebase-plan "$SOURCE_PLAN"', promotion)
+
     def test_new_report_requires_source_provenance_schema_three(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
 
@@ -87,7 +110,7 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
 
         self.assertIn("CANDIDATE_LOCK_PATH", script)
         self.assertIn(
-            "A new runtime report requires an explicit schema 4 candidate lock.",
+            "A new runtime report requires an explicit source-verified candidate lock.",
             script,
         )
         self.assertIn(
@@ -103,7 +126,7 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
 
         provenance = build.index("export-runtime-source-provenance.py")
         candidate = build.index("export-runtime-candidate-lock.py")
-        ninja = build.index("ninja -C out/Default")
+        ninja = build.index('"$TOOLS_DIR/bin/ninja" -C out/Default')
         self.assertLess(provenance, candidate)
         self.assertLess(candidate, ninja)
 

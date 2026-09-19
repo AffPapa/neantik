@@ -47,6 +47,14 @@ def der_signature(r: int, s: int) -> bytes:
 
 
 class FingerprintEvidenceSchema8Tests(unittest.TestCase):
+    def test_source_contract_paths_are_version_allowlisted(self):
+        prefix = "Contents/Resources/NeAntikRuntimeEvidence/"
+        for version in (152, 153):
+            MODULE._validate_critical_bundle_path("sourceContract", prefix + f"chromium-{version}-source-contract.json")
+        for suffix in ("chromium-154-source-contract.json", "../chromium-153-source-contract.json", "source-contract.json"):
+            with self.subTest(suffix=suffix), self.assertRaises(MODULE.FingerprintEvidenceVerificationError):
+                MODULE._validate_critical_bundle_path("sourceContract", prefix + suffix)
+
     def test_manifest_binding_validation_is_exact_and_on_curve(self) -> None:
         _, manifest, _, _ = fixture_bytes()
         binding = json.loads(manifest)["fingerprintEvidence"]

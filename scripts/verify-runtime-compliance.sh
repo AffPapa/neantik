@@ -19,7 +19,7 @@ fi
 COMPLIANCE_DIR="$1"
 LOCK_FILE="$2"
 MANIFEST="$COMPLIANCE_DIR/compliance-manifest.json"
-if [[ ! -f "$MANIFEST" ]]; then
+if [[ ! -f "$MANIFEST" || -L "$MANIFEST" || -L "$COMPLIANCE_DIR" ]]; then
   echo "Compliance manifest is missing." >&2
   exit 66
 fi
@@ -31,6 +31,7 @@ python3 - <<'PY'
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 
 def fail(message: str) -> None:
@@ -51,6 +52,8 @@ lock = json.loads(lock_path.read_text(encoding="utf-8"))
 if manifest.get("schemaVersion") != 1:
     fail("Unexpected compliance manifest schema.")
 expected_version = lock["fingerprintChromium"]["chromiumVersion"]
+if not isinstance(expected_version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+", expected_version):
+    fail("Invalid compliance Chromium version.")
 if manifest.get("chromiumVersion") != expected_version:
     fail("Compliance Chromium version does not match the source lock.")
 if manifest.get("sourceLockSHA256") != sha256(lock_path):
@@ -58,10 +61,16 @@ if manifest.get("sourceLockSHA256") != sha256(lock_path):
 
 notices_meta = manifest.get("notices", {})
 spdx_meta = manifest.get("spdx", {})
-notices_path = root / str(notices_meta.get("file", ""))
-spdx_path = root / str(spdx_meta.get("file", ""))
-if not notices_path.is_file() or not spdx_path.is_file():
-    fail("Compliance notices or SPDX document is missing.")
+def checked_file(metadata, expected_name):
+    if not isinstance(metadata, dict) or metadata.get("file") != expected_name:
+        fail("Unexpected compliance document filename.")
+    path = root / expected_name
+    if path.is_symlink() or not path.is_file():
+        fail("Compliance document must be a regular non-symlink file.")
+    return path
+
+notices_path = checked_file(notices_meta, "THIRD-PARTY-NOTICES.html")
+spdx_path = checked_file(spdx_meta, f"NeAntik-Chromium-{expected_version}.spdx.json")
 if sha256(notices_path) != notices_meta.get("sha256"):
     fail("Compliance notices hash mismatch.")
 if sha256(spdx_path) != spdx_meta.get("sha256"):

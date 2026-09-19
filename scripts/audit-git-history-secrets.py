@@ -11,7 +11,6 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MAXIMUM_SCANNED_BLOB_BYTES = 4 * 1024 * 1024
 FORBIDDEN_NAMES = {".env", "credentials.json", "service-account.json"}
 FORBIDDEN_SUFFIXES = {
     ".key",
@@ -120,8 +119,6 @@ def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
                 if reason := unsafe_path_reason(path):
                     findings.append(f"{requested_oid} {display_path}: {reason}")
                     break
-            if size > MAXIMUM_SCANNED_BLOB_BYTES:
-                continue
             for label, pattern in SECRET_PATTERNS.items():
                 if pattern.search(payload):
                     findings.append(f"{requested_oid} {display_path}: {label}")

@@ -25,6 +25,7 @@ struct BrowserProcessManagerTests {
 
         try manager.launch(profile: profile, runtime: runtime)
         #expect(manager.suspendForMemorySaving(profileID: profile.id))
+        #expect(manager.suspendForMemorySaving(profileID: profile.id))
         #expect(manager.memorySavingSuspendedProfileIDs == [profile.id])
         #expect(manager.resumeFromMemorySaving(profileID: profile.id))
         #expect(manager.memorySavingSuspendedProfileIDs.isEmpty)

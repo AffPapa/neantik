@@ -2,6 +2,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -18,6 +19,14 @@ SPEC.loader.exec_module(MODULE)
 
 
 class NeAntikPatchsetManifestTests(unittest.TestCase):
+    def test_relative_153_manifest_preserves_patch_resolution(self):
+        summary = MODULE.verify_manifest(
+            manifest_path=Path(os.path.relpath(PROJECT_ROOT / 'runtime/nevision-patches/series-153.json')),
+            rebase_plan_path=PROJECT_ROOT / 'runtime/chromium-153-gclient-plan.json',
+            release=False, verify_source_evidence=True, project_root=PROJECT_ROOT)
+        self.assertEqual(summary['targetChromiumVersion'], '153.0.8010.36')
+        self.assertEqual(summary['portedCount'], 1)
+
     def test_current_manifest_is_valid_port_plan(self) -> None:
         summary = MODULE.verify_manifest(
             manifest_path=PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json",

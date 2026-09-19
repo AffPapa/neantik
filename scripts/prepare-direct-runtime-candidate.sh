@@ -9,6 +9,11 @@ ENGINEERING_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 SECURITY_BASELINE_ARGS=()
+case "${NEANTIK_ACCEPT_REVIEWED_153_36:-0}" in
+  0) ;;
+  1) SECURITY_BASELINE_ARGS+=(--accept-reviewed-153-36) ;;
+  *) echo "NEANTIK_ACCEPT_REVIEWED_153_36 must be 0 or 1." >&2; exit 64 ;;
+esac
 RELEASE_ENTITLEMENTS="$PROJECT_DIR/Resources/NeAntik.entitlements"
 EMBEDDED_PROFILE="$APP_PATH/Contents/embedded.provisionprofile"
 
@@ -85,12 +90,14 @@ if (( METAL_TRUE_COUNT != 1 || METAL_FALSE_COUNT != 0 )); then
   exit 65
 fi
 
+SOURCE_CONTRACT="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field contract)"
+SOURCE_PLAN="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field plan)"
 "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
   "$SOURCE_PROVENANCE" \
-  --source-root "$SOURCE_ROOT"
+  --source-root "$SOURCE_ROOT" --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
-  "$SOURCE_PROVENANCE"
+  "$SOURCE_PROVENANCE" --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
 "$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" \
   --lock "$CANDIDATE_LOCK" \
   "${SECURITY_BASELINE_ARGS[@]}"
@@ -120,15 +127,23 @@ export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
   "$RUNTIME_REPORT" \
   "$BUILD_ARGS" \
   "$SOURCE_PROVENANCE" \
-  "$CANDIDATE_LOCK"
+  "$CANDIDATE_LOCK" \
+  "$SOURCE_CONTRACT" \
+  "$SOURCE_PLAN"
 python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
   "$SOURCE_PROVENANCE" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
   "$RUNTIME_REPORT" \
+  --contract "$SOURCE_CONTRACT" \
+  --rebase-plan "$SOURCE_PLAN" \
   --confirm-promote-source-lock
-python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
+if [[ "$(basename "$SOURCE_CONTRACT")" == "chromium-152-source-contract.json" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
+fi
+# Gclient notices are generated and verified from the selected candidate by
+# package-integrated-app.sh; never regenerate them through the legacy defaults.
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \

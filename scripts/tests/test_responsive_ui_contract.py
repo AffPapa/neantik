@@ -348,8 +348,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
         active_filters = text[active_filters_start:active_filters_end]
         self.assertNotIn("profileOperationalFilter", active_filters)
 
+        self.assertIn("isSidebarVisible: columnVisibility != .detailOnly", text)
+        self.assertIn("columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly", text)
+        self.assertNotIn("@State private var isSidebarVisible", text)
         for dead_symbol in (
-            "isSidebarVisible",
             "profileListTitle",
             "private var sidebar:",
             "sidebarHeader",
@@ -358,7 +360,6 @@ class ResponsiveUIContractTests(unittest.TestCase):
             "primaryActions",
             "actionColumns",
             "compactActionLabel",
-            "onToggleSidebar",
         ):
             self.assertNotIn(dead_symbol, text)
 

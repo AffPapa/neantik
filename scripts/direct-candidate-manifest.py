@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.util
+import json
 import os
 import plistlib
 import stat
@@ -237,6 +238,12 @@ def manifest_payload(
     runtime_executable_relative = runtime_executable.relative_to(app).as_posix()
     runtime_framework_relative = runtime_framework.relative_to(app).as_posix()
     evidence_root = "Contents/Resources/NeAntikRuntimeEvidence"
+    from runtime_contract_selection import select_contract
+    try:
+        report = json.loads(regular_bundle_file(app, f"{evidence_root}/runtime-verification.json").read_bytes())
+        source_contract = select_contract(app / evidence_root, report.get("sourceContractSHA256"))
+    except (OSError, ValueError, AttributeError) as error:
+        raise CandidateManifestError(f"Cannot select candidate source contract: {error}") from error
 
     return {
         "schemaVersion": 3,
@@ -272,7 +279,7 @@ def manifest_payload(
             ),
             "sourceContract": hashed_entry(
                 app,
-                f"{evidence_root}/chromium-152-source-contract.json",
+                source_contract.relative_to(app).as_posix(),
             ),
             "sourceProvenance": hashed_entry(
                 app,

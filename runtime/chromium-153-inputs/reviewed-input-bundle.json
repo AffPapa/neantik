@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "scope": "gclient-reviewed-inputs",
+  "chromiumVersion": "153.0.8010.36",
+  "gitRecipe": {
+    "path": "reviewed-gclient-git-recipe.json",
+    "sha256": "0397d86815b6309f82c54c32ee59ab6361527d6e1b6d6901a72ec71d497be2f4"
+  },
+  "payloadRecipes": [
+    {
+      "path": "reviewed-cipd-payload-recipe.json",
+      "sha256": "16ccd4b349e4fd357c625e9c8326d60c3f43c38b9699760d08aebc5a5bd1e783"
+    },
+    {
+      "path": "reviewed-gcs-payload-recipe.json",
+      "sha256": "9a64916bbfd5815e729651f185252a43e70ec074788d9ec90161401ce617d74a"
+    }
+  ],
+  "rawRecipe": {
+    "path": "gcs-raw-output-recipe.json",
+    "sha256": "426a9db30c6d6e79a5c6074999ec4f5789fd120374c22d635122ecdcc7d8385e"
+  }
+}

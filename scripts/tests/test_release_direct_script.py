@@ -27,6 +27,13 @@ RELEASE_ENTRYPOINTS = (
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_manager_packaging_limits_swift_parallelism(self) -> None:
+        text = PACKAGE_APP.read_text(encoding="utf-8")
+        builds = text.split("swift build")[1:]
+        self.assertEqual(len(builds), 2)
+        for build in builds:
+            self.assertIn("--jobs 2", build.split("-c release", 1)[0])
+
     def test_release_entrypoints_use_private_umask_and_reviewed_path(self) -> None:
         expected_path = (
             'export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"'

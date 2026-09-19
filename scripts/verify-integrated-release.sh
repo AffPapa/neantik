@@ -125,8 +125,9 @@ if ! cmp -s \
   exit 65
 fi
 
+PATCH_MANIFEST="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$EVIDENCE/fingerprint-chromium.lock.json" --field patch-manifest)"
 if ! cmp -s \
-  "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+  "$PATCH_MANIFEST" \
   "$EVIDENCE/neantik-patch-series.json"; then
   echo "Integrated NeAntik patch series does not match the project manifest." >&2
   exit 65
@@ -139,18 +140,28 @@ if ! cmp -s \
   exit 65
 fi
 
+SOURCE_CONTRACT="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$EVIDENCE/fingerprint-chromium.lock.json" --field contract)"
+SOURCE_PLAN="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$EVIDENCE/fingerprint-chromium.lock.json" --field plan)"
 if ! cmp -s \
-  "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
-  "$EVIDENCE/chromium-152-source-contract.json"; then
+  "$SOURCE_CONTRACT" \
+  "$EVIDENCE/$(basename "$SOURCE_CONTRACT")"; then
   echo "Integrated Chromium source contract does not match the project contract." >&2
   exit 65
 fi
 
 "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
-  "$EVIDENCE/source-provenance.json"
+  "$EVIDENCE/source-provenance.json" --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$EVIDENCE/fingerprint-chromium.lock.json" \
-  "$EVIDENCE/source-provenance.json"
+  "$EVIDENCE/source-provenance.json" --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
+
+if [[ "$(basename "$SOURCE_CONTRACT")" == "chromium-153-source-contract.json" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check \
+    --candidate "$EVIDENCE/fingerprint-chromium.lock.json" \
+    --provenance "$EVIDENCE/source-provenance.json" \
+    --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN" \
+    --output "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md"
+fi
 
 if ! cmp -s \
   "$PROJECT_DIR/Resources/NeAntik.icns" \
@@ -164,7 +175,7 @@ for required in \
   "$EVIDENCE/runtime-verification.json" \
   "$EVIDENCE/neantik-patch-series.json" \
   "$EVIDENCE/apple-device-tuples.json" \
-  "$EVIDENCE/chromium-152-source-contract.json" \
+  "$EVIDENCE/$(basename "$SOURCE_CONTRACT")" \
   "$EVIDENCE/source-provenance.json" \
   "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md" \
   "$LICENSES/Chromium-LICENSE" \

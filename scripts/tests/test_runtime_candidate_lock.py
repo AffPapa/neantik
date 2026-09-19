@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -25,6 +26,80 @@ PROMOTION_SPEC.loader.exec_module(PROMOTION)
 
 
 class RuntimeCandidateLockTests(unittest.TestCase):
+    def test_promotion_routes_selected_pair_through_both_checks(self) -> None:
+        # Orchestration-only test: synthetic binary reports, no public lock write.
+        class StopBeforeWrite(Exception):
+            pass
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            candidate_path, provenance, candidate = self.write_candidate(root)
+            contract, plan = root / 'selected-contract.json', root / 'selected-plan.json'
+            contract.write_bytes((PROJECT_ROOT / 'runtime/chromium-152-source-contract.json').read_bytes())
+            plan.write_bytes((PROJECT_ROOT / 'runtime/chromium-152-rebase-plan.json').read_bytes())
+            args = root / 'src/out/Default/args.gn'
+            args.parent.mkdir(parents=True)
+            args.write_text('target_cpu = "arm64"\nangle_enable_metal = true\n')
+            app = root / 'Fixture.app'
+            app.mkdir()
+            report_path = root / 'report.json'
+            report = {
+                'schemaVersion': 3, 'gpuMode': 'metal',
+                'candidateLockSHA256': SOURCE.sha256_file(candidate_path),
+                'sourceLockSHA256': SOURCE.sha256_file(candidate_path),
+                'sourceContractSHA256': candidate['sourceContractSHA256'],
+                'sourceProvenanceSHA256': SOURCE.sha256_file(provenance),
+                'chromiumVersion': candidate['fingerprintChromium']['chromiumVersion'],
+                'buildArguments': {'sha256': SOURCE.sha256_file(args)},
+                'executable': {'sha256': 'a' * 64}, 'framework': {'sha256': 'b' * 64},
+            }
+            SOURCE.atomic_write_json(report_path, report)
+            commands = []
+            def run(command, **kwargs):
+                commands.append(command)
+                self.assertTrue(kwargs['check'])
+                if command[0].endswith('verify-built-runtime.sh'):
+                    self.assertEqual(command[-2:], [str(contract), str(plan)])
+                    Path(command[2]).write_bytes(report_path.read_bytes())
+                else:
+                    self.assertTrue(command[1].endswith('verify-runtime-report-consistency.py'))
+                    self.assertEqual(Path(command[2]).read_bytes(), Path(command[3]).read_bytes())
+            with mock.patch.object(PROMOTION.subprocess, 'run', side_effect=run), \
+                 mock.patch.object(PROMOTION, 'validate_report_binding', wraps=PROMOTION.validate_report_binding) as binding, \
+                 mock.patch.object(PROMOTION, 'atomic_write_json', side_effect=StopBeforeWrite) as write:
+                with self.assertRaises(StopBeforeWrite):
+                    PROMOTION.promote(candidate_path, provenance, app, args, report_path,
+                                      contract_path=contract, rebase_plan_path=plan)
+                self.assertEqual(binding.call_count, 2)
+                for call in binding.call_args_list:
+                    self.assertEqual(call.kwargs['contract_path'], contract)
+                    self.assertEqual(call.kwargs['rebase_plan_path'], plan)
+                write.assert_called_once()
+                self.assertEqual(len(commands), 2)
+
+    def test_explicit_contract_and_plan_are_used_without_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            provenance = self.write_provenance(root)
+            contract = root / 'selected-contract.json'
+            plan = root / 'selected-plan.json'
+            contract.write_bytes((PROJECT_ROOT / 'runtime/chromium-152-source-contract.json').read_bytes())
+            plan.write_bytes((PROJECT_ROOT / 'runtime/chromium-152-rebase-plan.json').read_bytes())
+            expected = CANDIDATE.expected_candidate_lock(provenance)
+            actual = CANDIDATE.expected_candidate_lock(
+                provenance, contract_path=contract, rebase_plan_path=plan)
+            self.assertEqual(actual, expected)
+            candidate = root / 'candidate.json'
+            SOURCE.atomic_write_json(candidate, actual)
+            CANDIDATE.verify_candidate_lock(candidate, provenance,
+                contract_path=contract, rebase_plan_path=plan)
+            plan.write_text('{}')
+            with self.assertRaises(SOURCE.SourceProvenanceError):
+                CANDIDATE.expected_candidate_lock(provenance,
+                    contract_path=contract, rebase_plan_path=plan)
+            with self.assertRaises(SOURCE.SourceProvenanceError):
+                CANDIDATE.verify_candidate_lock(candidate, provenance,
+                    contract_path=contract, rebase_plan_path=plan)
+
     def write_provenance(self, root: Path) -> Path:
         document = SOURCE.expected_static_document(
             project_root=PROJECT_ROOT,

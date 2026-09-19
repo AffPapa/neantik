@@ -417,6 +417,7 @@ struct MemoryProcessSnapshot: Equatable, Sendable {
     let residentBytes: UInt64
     let lastActivity: Date
     let isFocused: Bool
+    var isSuspended: Bool = false
 }
 
 enum MemorySavingAction: Equatable, Sendable {
@@ -441,19 +442,22 @@ enum AutomaticMemorySavingPolicy {
                        now: Date = Date(),
                        residentThreshold: UInt64 = defaultResidentThreshold,
                        inactiveInterval: TimeInterval = defaultInactiveInterval) -> [MemorySavingDecision] {
-        let total = snapshots.reduce(UInt64(0)) { $0 &+ $1.residentBytes }
+        let total = snapshots.reduce(UInt64(0)) {
+            let sum = $0.addingReportingOverflow($1.residentBytes)
+            return sum.overflow ? UInt64.max : sum.partialValue
+        }
         let pressure = total >= residentThreshold || snapshots.count >= 8
         return snapshots.map { snapshot in
             if snapshot.isFocused || !pressure {
-                return MemorySavingDecision(profileID: snapshot.profileID, action: .keepRunning,
+                return MemorySavingDecision(profileID: snapshot.profileID, action: snapshot.isSuspended ? .resume : .keepRunning,
                                             explanation: snapshot.isFocused ? "Текущее рабочее место остаётся активным." : "Памяти достаточно.")
             }
             let inactive = now.timeIntervalSince(snapshot.lastActivity)
             if inactive >= inactiveInterval {
-                return MemorySavingDecision(profileID: snapshot.profileID, action: .suspend,
-                                            explanation: "Неактивное рабочее место временно приостановлено для экономии памяти.")
+                return MemorySavingDecision(profileID: snapshot.profileID, action: snapshot.isSuspended ? .keepRunning : .suspend,
+                                            explanation: "Неактивное рабочее место временно приостановлено. Его память пока не освобождена.")
             }
-            return MemorySavingDecision(profileID: snapshot.profileID, action: .keepRunning,
+            return MemorySavingDecision(profileID: snapshot.profileID, action: snapshot.isSuspended ? .resume : .keepRunning,
                                         explanation: "Рабочее место недавно использовалось.")
         }
     }

@@ -8,12 +8,13 @@ PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
 DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
 SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
+REBASE_PLAN_FILE="$SCRIPT_DIR/../runtime/chromium-152-rebase-plan.json"
 
 usage() {
-  echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
+  echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json] [source-contract.json] [rebase-plan.json]" >&2
 }
 
-if [[ $# -lt 1 || $# -gt 5 || -z "${1:-}" ]]; then
+if [[ $# -lt 1 || $# -gt 7 || -z "${1:-}" ]]; then
   usage
   exit 64
 fi
@@ -23,6 +24,14 @@ REPORT_PATH="${2:-}"
 BUILD_ARGS_PATH="${3:-}"
 SOURCE_PROVENANCE_PATH="${4:-}"
 CANDIDATE_LOCK_PATH="${5:-}"
+SOURCE_CONTRACT_FILE="${6:-$SOURCE_CONTRACT_FILE}"
+REBASE_PLAN_FILE="${7:-$REBASE_PLAN_FILE}"
+for selected_source_file in "$SOURCE_CONTRACT_FILE" "$REBASE_PLAN_FILE"; do
+  if [[ "$selected_source_file" != /* || ! -f "$selected_source_file" || -L "$selected_source_file" ]]; then
+    echo "Source contract and plan must be absolute regular non-symlink files." >&2
+    exit 66
+  fi
+done
 
 if [[ "$APP_PATH" != /* || ! -d "$APP_PATH" ]]; then
   echo "Chromium.app must be an existing absolute path." >&2
@@ -97,7 +106,7 @@ if [[ -n "$REPORT_PATH" && -z "$SOURCE_PROVENANCE_PATH" ]]; then
   exit 66
 fi
 if [[ -n "$REPORT_PATH" && -z "$CANDIDATE_LOCK_PATH" ]]; then
-  echo "A new runtime report requires an explicit schema 4 candidate lock." >&2
+  echo "A new runtime report requires an explicit source-verified candidate lock." >&2
   exit 66
 fi
 if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
@@ -107,14 +116,15 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
     echo "Source provenance must be an absolute regular non-symlinked JSON file." >&2
     exit 66
   fi
-  PROVENANCE_VERIFY_ARGS=("$SOURCE_PROVENANCE_PATH")
+  PROVENANCE_VERIFY_ARGS=("$SOURCE_PROVENANCE_PATH" --contract "$SOURCE_CONTRACT_FILE" --rebase-plan "$REBASE_PLAN_FILE")
   if [[ -n "$BUILD_ARGS_PATH" ]]; then
     POSSIBLE_SOURCE_ROOT="$(
       cd "$(dirname "$BUILD_ARGS_PATH")/../.." 2>/dev/null && pwd -P || true
     )"
     if [[ -n "$POSSIBLE_SOURCE_ROOT" &&
           -f "$POSSIBLE_SOURCE_ROOT/chrome/VERSION" &&
-          -d "$(dirname "$(dirname "$POSSIBLE_SOURCE_ROOT")")/.git" ]]; then
+          ( -e "$POSSIBLE_SOURCE_ROOT/.git" ||
+            -d "$(dirname "$(dirname "$POSSIBLE_SOURCE_ROOT")")/.git" ) ]]; then
       PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
     fi
   fi
@@ -131,8 +141,10 @@ if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
   fi
   python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
     "$CANDIDATE_LOCK_PATH" \
-    "$SOURCE_PROVENANCE_PATH"
+    "$SOURCE_PROVENANCE_PATH" \
+    --contract "$SOURCE_CONTRACT_FILE" --rebase-plan "$REBASE_PLAN_FILE"
   CANDIDATE_LOCK_SHA256="$SOURCE_LOCK_SHA256"
+  PATCH_SERIES_FILE="$(python3 "$SCRIPT_DIR/runtime_contract_selection.py" "$SCRIPT_DIR/.." "$CANDIDATE_LOCK_PATH" --field patch-manifest)"
 fi
 for provenance_file in \
   "$PATCH_SERIES_FILE" \
@@ -218,9 +230,9 @@ while IFS= read -r binary; do
   string_table_offset="$(
     otool -l "$MACHO_INSPECTION_PATH" |
       awk '
-        $1 == "cmd" && $2 == "LC_SYMTAB" { in_symtab = 1; next }
-        in_symtab && $1 == "cmd" { exit }
-        in_symtab && $1 == "stroff" { print $2; exit }
+        # Drain otool output: early exit can break its pipe under pipefail.
+        $1 == "cmd" { in_symtab = ($2 == "LC_SYMTAB"); next }
+        in_symtab && $1 == "stroff" && !found { print $2; found = 1 }
       '
   )"
   if [[ -n "$string_table_offset" ]] &&

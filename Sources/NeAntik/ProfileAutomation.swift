@@ -294,16 +294,32 @@ private extension Array where Element == ProfileStabilityRecord {
 /// Snapshot copies are written beside the profile, then atomically renamed so
 /// a crash can never expose a half-copied BrowserData directory.
 struct AtomicProfileSnapshotStore: Sendable {
+    struct Metadata: Codable {
+        let profileID: UUID
+        let runtimeVersion: String?
+    }
     let root: URL
     init(rootDirectory: URL) { root = rootDirectory.appendingPathComponent("Snapshots", isDirectory: true) }
 
     @discardableResult
-    func create(profileID: UUID, browserData: URL, now: Date = Date()) throws -> URL {
+    func create(profileID: UUID, browserData: URL, now: Date = Date(), runtimeVersion: String? = nil) throws -> URL {
+        if let runtimeVersion, ChromiumCompatibilityCoordinator.versionParts(runtimeVersion) == nil {
+            throw CocoaError(.validationMissingMandatoryProperty)
+        }
         let folder = root.appendingPathComponent(profileID.uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let final = folder.appendingPathComponent("\(Int(now.timeIntervalSince1970))-\(UUID().uuidString)", isDirectory: true)
         let temporary = folder.appendingPathComponent(".tmp-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
         try FileManager.default.copyItem(at: browserData, to: temporary)
+        let metadata = final.appendingPathExtension("json")
+        do {
+            try JSONEncoder().encode(Metadata(profileID: profileID, runtimeVersion: runtimeVersion))
+                .write(to: metadata, options: .atomic)
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw error
+        }
         try FileManager.default.moveItem(at: temporary, to: final)
         return final
     }
@@ -326,11 +342,32 @@ struct AtomicProfileSnapshotStore: Sendable {
     /// Replaces browser data only after a complete staged copy exists.
     /// The existing directory is retained as a sibling rollback copy until
     /// the replacement is safely moved into place.
-    func restore(snapshot: URL, to browserData: URL) throws {
-        let values = try snapshot.resourceValues(forKeys: [.isDirectoryKey])
+    @discardableResult
+    func restore(snapshot: URL, to browserData: URL, profileID: UUID? = nil) throws -> String? {
+        let values = try snapshot.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         guard values.isDirectory == true,
+              values.isSymbolicLink != true,
               snapshot.path.hasPrefix(root.path + "/") else {
             throw CocoaError(.fileReadNoSuchFile)
+        }
+        if let profileID {
+            let owner = root.appendingPathComponent(profileID.uuidString, isDirectory: true)
+            guard (try owner.resourceValues(forKeys: [.isSymbolicLinkKey])).isSymbolicLink != true,
+                  snapshot.deletingLastPathComponent().standardizedFileURL == owner.standardizedFileURL,
+                  snapshot.resolvingSymlinksInPath().deletingLastPathComponent() == owner.resolvingSymlinksInPath()
+            else { throw CocoaError(.fileReadNoPermission) }
+        }
+        let metadataURL = snapshot.appendingPathExtension("json")
+        var restoredVersion: String?
+        if FileManager.default.fileExists(atPath: metadataURL.path) {
+            guard (try metadataURL.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey])).isSymbolicLink != true,
+                  (try metadataURL.resourceValues(forKeys: [.isRegularFileKey])).isRegularFile == true
+            else { throw CocoaError(.fileReadNoPermission) }
+            let metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: metadataURL))
+            guard metadata.profileID.uuidString == snapshot.deletingLastPathComponent().lastPathComponent,
+                  metadata.runtimeVersion == nil || ChromiumCompatibilityCoordinator.versionParts(metadata.runtimeVersion!) != nil
+            else { throw CocoaError(.fileReadCorruptFile) }
+            restoredVersion = metadata.runtimeVersion
         }
         let parent = browserData.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
@@ -351,6 +388,7 @@ struct AtomicProfileSnapshotStore: Sendable {
             try? FileManager.default.removeItem(at: staged)
             throw error
         }
+        return restoredVersion
     }
 }
 
@@ -377,6 +415,7 @@ struct ChromiumCompatibilityCoordinator: Sendable {
         let profileID: UUID
         let runtimeVersion: String
         let recordedAt: Date
+        var emptyProfileLaunchPending: Bool? = nil
     }
 
     enum Action: Equatable, Sendable {
@@ -394,24 +433,55 @@ struct ChromiumCompatibilityCoordinator: Sendable {
 
     func action(for profileID: UUID, runtimeVersion: String?, profileDataExists: Bool,
                 snapshotAvailable: Bool) -> Action {
-        guard let runtimeVersion, !runtimeVersion.isEmpty else {
-            return profileDataExists ? .compatible : .firstLaunch
+        guard let runtimeVersion, Self.versionParts(runtimeVersion) != nil else {
+            return .rollbackRequired
         }
-        let previous = markers()[profileID]?.runtimeVersion
+        guard let recorded = try? markers() else { return .rollbackRequired }
+        let previous = recorded[profileID]?.runtimeVersion
         guard previous != nil else { return .firstLaunch }
-        guard profileDataExists else { return .rollbackRequired }
+        guard profileDataExists else {
+            // Only a reserved first launch may retry without a data directory.
+            // Existing/legacy profiles with missing data still require recovery.
+            return previous == runtimeVersion && recorded[profileID]?.emptyProfileLaunchPending == true
+                ? .firstLaunch : .rollbackRequired
+        }
         guard previous == runtimeVersion else {
+            // A snapshot of migrated data does not make it safe for an older
+            // runtime. Restore a compatible pre-upgrade snapshot first.
+            guard let previous,
+                  Self.versionParts(previous) != nil,
+                  Self.versionParts(runtimeVersion) != nil,
+                  previous.compare(runtimeVersion, options: .numeric) == .orderedAscending
+            else { return .rollbackRequired }
             return snapshotAvailable ? .migrate : .rollbackRequired
         }
         return .compatible
     }
 
-    /// Commits the marker only after Chromium has started successfully.
-    /// A corrupt marker file is treated as empty and repaired atomically.
-    func record(profileID: UUID, runtimeVersion: String?, now: Date = Date()) throws {
-        guard let runtimeVersion, !runtimeVersion.isEmpty else { return }
-        var values = markers()
-        values[profileID] = Marker(profileID: profileID, runtimeVersion: runtimeVersion, recordedAt: now)
+    fileprivate static func versionParts(_ version: String) -> [UInt]? {
+        let parts = version.split(separator: ".", omittingEmptySubsequences: false)
+        guard !parts.isEmpty, parts.count <= 4,
+              parts.allSatisfy({ !$0.isEmpty && $0.allSatisfy({ $0.isASCII && $0.isNumber }) })
+        else { return nil }
+        let numbers = parts.compactMap { UInt($0) }
+        return numbers.count == parts.count ? numbers : nil
+    }
+
+    func recordedVersion(for profileID: UUID) throws -> String? {
+        try markers()[profileID]?.runtimeVersion
+    }
+
+    /// Reserves the version before Chromium is allowed to mutate profile data.
+    /// A failed launch must not roll it back: the child may have started.
+    /// Preserve corrupt evidence instead of silently discarding other profiles.
+    func record(profileID: UUID, runtimeVersion: String?, now: Date = Date(),
+                emptyProfileLaunchPending: Bool = false) throws {
+        guard let runtimeVersion, Self.versionParts(runtimeVersion) != nil else {
+            throw CocoaError(.validationMissingMandatoryProperty)
+        }
+        var values = try markers()
+        values[profileID] = Marker(profileID: profileID, runtimeVersion: runtimeVersion,
+                                  recordedAt: now, emptyProfileLaunchPending: emptyProfileLaunchPending)
         let data = try JSONEncoder.neantikStable.encode(Array(values.values).sorted { $0.profileID.uuidString < $1.profileID.uuidString })
         try FileManager.default.createDirectory(at: markerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let temporary = markerURL.appendingPathExtension("tmp-\(UUID().uuidString)")
@@ -428,11 +498,18 @@ struct ChromiumCompatibilityCoordinator: Sendable {
         }
     }
 
-    private func markers() -> [UUID: Marker] {
-        guard let data = try? Data(contentsOf: markerURL),
-              let values = try? JSONDecoder.neantikStable.decode([Marker].self, from: data)
-        else { return [:] }
-        return Dictionary(uniqueKeysWithValues: values.map { ($0.profileID, $0) })
+    private func markers() throws -> [UUID: Marker] {
+        guard FileManager.default.fileExists(atPath: markerURL.path) else { return [:] }
+        let data = try Data(contentsOf: markerURL)
+        let values = try JSONDecoder.neantikStable.decode([Marker].self, from: data)
+        var result: [UUID: Marker] = [:]
+        for marker in values {
+            guard Self.versionParts(marker.runtimeVersion) != nil,
+                  result.updateValue(marker, forKey: marker.profileID) == nil else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+        }
+        return result
     }
 }
 

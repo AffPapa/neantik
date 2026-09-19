@@ -11,6 +11,21 @@ SCRIPT = PROJECT_ROOT / "scripts" / "build-runtime.sh"
 
 
 class BuildRuntimeScriptTests(unittest.TestCase):
+    def test_job_limit_fails_before_source_access(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="neantik-job-limit-") as directory:
+            root = Path(directory) / "must-not-be-created"
+            for value in ("0", "9", "12", "18", "-1", "1.5", "08", "abc"):
+                with self.subTest(value=value):
+                    result = subprocess.run(
+                        ["/bin/bash", str(SCRIPT), str(root), "build"],
+                        env={**os.environ, "DEVELOPER_DIR": "/unused-test-developer",
+                             "NEANTIK_NINJA_JOBS": value},
+                        text=True, capture_output=True, timeout=10,
+                    )
+                    self.assertEqual(result.returncode, 64, result.stderr)
+                    self.assertIn("1 through 8", result.stderr)
+                    self.assertFalse(root.exists())
+
     def test_resumed_dawn_go_ensure_requests_integrity_before_using_binary(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
         function = "prepare_owned_dawn_go() {" + script.split(
@@ -220,7 +235,7 @@ chmod 755 "$3/bin/go"
 
         export_index = script.index("export-runtime-source-provenance.py")
         verify_index = script.index("verify-runtime-source-provenance.py")
-        compile_index = script.index("ninja -C out/Default")
+        compile_index = script.index('"$TOOLS_DIR/bin/ninja" -C out/Default')
         self.assertLess(export_index, compile_index)
         self.assertLess(verify_index, compile_index)
         self.assertIn('SOURCE_PROVENANCE="$BUILD_DIR/source-provenance.json"', script)
@@ -237,7 +252,7 @@ chmod 755 "$3/bin/go"
     def test_shipping_build_does_not_compile_unused_chromedriver(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
 
-        self.assertIn('ninja -C out/Default -j"$jobs" chrome', script)
+        self.assertIn('"$TOOLS_DIR/bin/ninja" -C out/Default -j"$jobs" chrome', script)
         self.assertNotIn("chrome chromedriver", script)
 
     def test_build_does_not_consume_an_unpinned_macos_pgo_profile(self) -> None:

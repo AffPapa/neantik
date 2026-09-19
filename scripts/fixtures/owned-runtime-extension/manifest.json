@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "NeAntik owned compatibility probe",
+  "version": "1.0.0",
+  "content_scripts": [{
+    "matches": ["http://127.0.0.1/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
+}

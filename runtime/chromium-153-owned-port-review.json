@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "153.0.8010.36",
+  "status": "owned-postimages-verified-not-full-source-provenance",
+  "sourceMode": "gclient",
+  "officialCommit": "507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c",
+  "officialTree": "becc24dfa729d8a13ece59045248922c53f6c488",
+  "ownedPatchCount": 12,
+  "consolidatedPatchSHA256": "5466c3c3658b5bd9f9534a7a54c0b811c61cb2031d0c96c71db73b8a19fe25e7",
+  "preimageSHA256": {
+    "chrome/app/app-Info.plist": "b9086affccae0673758bbf886e836ad637e4bc9b37849498498a06f69c8edba5",
+    "chrome/app/theme/chromium/BRANDING": "15ac20cb8744ebac0815961059231baefa71fd4ed3023cb2094aaf8a34ae423b",
+    "chrome/browser/history/top_sites_factory.cc": "706d6dd7cb70c92b7cef4706e95c11a557e28e3f1899e0cedc430deef7cc73b1",
+    "chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc": "5405966fcbe97191ac6014411bb175f1ab1b4c851831000886e1012bda48c9ab",
+    "components/embedder_support/BUILD.gn": "355120ca227322e7c2c4a2691c8573c2e7b56a0d4c8f8c34b93286a373e4ee38",
+    "components/embedder_support/user_agent_utils.cc": "93186926980317a98172b4b716432f23472cadbaa40a044a3ae3f3e42c64f111",
+    "components/search_engines/default_search_manager_unittest.cc": "a410c79e09cfb40a4503a57515e96e47f1fb2b229abad1e821be3fa864ee9259",
+    "components/search_engines/template_url_prepopulate_data_resolver.cc": "fa12c8b6d6f241b951cb58f706e11a214b2a2434aa074319a9f36a900d8b1971",
+    "components/ungoogled/BUILD.gn": "83537b1c8254b12dc8c885961935cad9e94bf1f04b2de95573556169e67d0244",
+    "components/ungoogled/neantik_apple_device_tuples.h": null,
+    "components/ungoogled/nevision_fingerprint.cc": null,
+    "components/ungoogled/nevision_fingerprint.h": null,
+    "components/ungoogled/ungoogled_switches.cc": "513204634b7aeecf17fe77d367a4931e80f2ad35fd75eb87f601f414759e063d",
+    "components/ungoogled/ungoogled_switches.h": "b12e0a4886c0676458aad5e9317e42417dd011f6a5c4964e154ea2df3595c3c7",
+    "components/version_info/version_info_with_user_agent.h": "b4c17a5a5db6530ba6a391d0e795da23d79baa5481f55720f5c0975f689c3e8a",
+    "content/browser/renderer_host/render_process_host_impl.cc": "de26e0e43f006702f2eebc22b768d973c3b91dfa6f74951a83848432177a170f",
+    "third_party/blink/renderer/core/BUILD.gn": "299213069a4ecbc18bfde3ffc49a51e3e8c118ce22ed31be37fb0bd119b33351",
+    "third_party/blink/renderer/core/core_initializer.cc": "21c87bed67f4345bfd634099d8615ca83ff1356581bf4b05cf29e2d29923907b",
+    "third_party/blink/renderer/core/css/media_values.cc": "92f60cddfa313d0d334ddc8add812489c26d11d77cd496cb925fb60849c1634a",
+    "third_party/blink/renderer/core/dom/document.cc": "305bf38cdf96d225b350ac1d3f1a6ee7fe324af6cb6de00ad0443581d43f95bf",
+    "third_party/blink/renderer/core/frame/local_dom_window.cc": "b365143f6aa4f2e8af311a9618d8f09ce479704dd2862aee9b0e155df8426f03",
+    "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "7b689c17f7007b7e342412cb27165111fe6b5db8672ac27b8b9fc1ea0f432928",
+    "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "69c4a6d2796ecefbb8ebeab82f866da33b5eda285612f9125d7242ed4a6bc993",
+    "third_party/blink/renderer/core/frame/screen.cc": "7e272d8a476850413211b684b2e6bc25bf54cf42b39544ae9cb3f4716c3e2c70",
+    "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "a83676dd178357688384439a477b05438d051bb59c9a09ee558291e80e872ac3",
+    "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "9a3f187234fa65e608e6ef607a66d264b9e0348a1677dca7cad94f8ba2e1180e",
+    "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "0155c0a34f154bb5c7962f486905a92c24429e5a09a1b24beac6a5c331425a74",
+    "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "e7e36a27270aaee404da60f7a8a475c9968e4537b62d94ee46f8e3fb63d56633",
+    "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "9845dba36799caaa89830230a612b1b771bfab951adcd2d69ff5c339eb79e1fd",
+    "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "53ab322e6fa9b08db101bc553ca51a7568643353d0a7ea6784827df7c5f2f146",
+    "tools/metrics/BUILD.gn": "2ded8e3243ef86a913d4c3bbc21f900442f3945245fd088bcf911722a36aa672"
+  },
+  "postimageSHA256": {
+    "chrome/app/app-Info.plist": "1fab7408680ca4c31a1898e74d701253606fb4cea075e717d924056b4658101a",
+    "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
+    "chrome/browser/history/top_sites_factory.cc": "40d1d2aca0365c191af919b1f7715cb8c9f3e3f0b73c2821b1b3a07999c090e1",
+    "chrome/browser/ntp_tiles/ntp_tiles_browsertest.cc": "2d05ff93fc14975fa0d8338cc945091f4a648607b3b32f830a31df87d1befd4a",
+    "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
+    "components/embedder_support/user_agent_utils.cc": "c3d97522a38a6e284901e712bd0401d02fe1b0775cdbeb992af16035baf63937",
+    "components/search_engines/default_search_manager_unittest.cc": "292a06cc032458854b64d52da986449b6d673cad316949dc88e858b3039ad298",
+    "components/search_engines/template_url_prepopulate_data_resolver.cc": "f2ef591528b56aaa576b3d2869adc95d40ccfd7743dd67e2f320bae41f6ad76c",
+    "components/ungoogled/BUILD.gn": "c5e3eb030b64550d18d4dfa81358041f0d32cfca4a2698d2cfdaf7cebe27d99d",
+    "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
+    "components/ungoogled/nevision_fingerprint.cc": "039b44e03f8230b98ee584c8d089fd2425e5789fbfc0a955249f0785c9d2cf1a",
+    "components/ungoogled/nevision_fingerprint.h": "4bec711a94f76de78760bad36227eee41d9bc5a4a0b0d46600825dc882b604e9",
+    "components/ungoogled/ungoogled_switches.cc": "513204634b7aeecf17fe77d367a4931e80f2ad35fd75eb87f601f414759e063d",
+    "components/ungoogled/ungoogled_switches.h": "b12e0a4886c0676458aad5e9317e42417dd011f6a5c4964e154ea2df3595c3c7",
+    "components/version_info/version_info_with_user_agent.h": "cb28b86d2e228e3c3c97ade6613573853ccc8815f4483c239b66d20346ab10d1",
+    "content/browser/renderer_host/render_process_host_impl.cc": "de26e0e43f006702f2eebc22b768d973c3b91dfa6f74951a83848432177a170f",
+    "third_party/blink/renderer/core/BUILD.gn": "2733efa54b4fe66f33571b1277e139273831a728cb3f119ac17b4385396e95d7",
+    "third_party/blink/renderer/core/core_initializer.cc": "9fb088eae14b54d1b60c039c28d204023f9acab538262ca840ec6a61bc041ae7",
+    "third_party/blink/renderer/core/css/media_values.cc": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629",
+    "third_party/blink/renderer/core/dom/document.cc": "f1a8c7f2539b2c3e98b5969f9814ba881736671fcf0808ca8702aa5b6aadc88d",
+    "third_party/blink/renderer/core/frame/local_dom_window.cc": "033c2a076a5d4225c6428fbca0bcd7f172c0acca2c0fb803e258c9e3b591613a",
+    "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
+    "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
+    "third_party/blink/renderer/core/frame/screen.cc": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
+    "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc": "45bde3054c54d14ddd446677704777124d05d6fdeb5ffcc36ce16c890e0bdb07",
+    "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc": "c0cc9bc85bc581079da0ea764507af5a23f8c9db1a6e87bf36f1010691cce58b",
+    "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "34f4961cb49b1a7e0cacbd482c650e1f7f5b796cd232c5b1e0afcaeb71d9d584",
+    "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc": "58f846d44280ec820474b82a5c26504a470541b7de6b614ec07304431937c0ca",
+    "third_party/blink/renderer/platform/graphics/static_bitmap_image.h": "b342916b037965d07cfee4f0d0a7f432236f657777010052c5bd7efdeb32d64f",
+    "third_party/blink/renderer/platform/image-encoders/image_encoder.cc": "573be42d23cd944e62750078c8854bc02ee4f2002db03b5563616c72b8074477",
+    "tools/metrics/BUILD.gn": "51686b2f8dd10abd61c490d81666e575eb700a77ca3f28f3d9725310076242ad"
+  },
+  "generatorTransforms": {
+    "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": {
+      "preimage": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
+      "postimage": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa"
+    },
+    "third_party/blink/renderer/core/frame/navigator_device_memory.cc": {
+      "preimage": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
+      "postimage": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a"
+    },
+    "third_party/blink/renderer/core/frame/screen.cc": {
+      "preimage": "98b03954aeecf4373e0920999651e85c763a6b160d3eaf43b3cb1a1e08bad921",
+      "postimage": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48"
+    },
+    "third_party/blink/renderer/core/frame/local_dom_window.cc": {
+      "preimage": "baec34b2a32375160cf0f9bddb4086b6a052f55ada9f1d7700673551b51445dd",
+      "postimage": "033c2a076a5d4225c6428fbca0bcd7f172c0acca2c0fb803e258c9e3b591613a"
+    },
+    "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": {
+      "preimage": "3e5c802fe02c2262e804eb1018f44a8b346b7106ab67cce897770cd50628556b",
+      "postimage": "34f4961cb49b1a7e0cacbd482c650e1f7f5b796cd232c5b1e0afcaeb71d9d584"
+    },
+    "components/embedder_support/user_agent_utils.cc": {
+      "preimage": "93186926980317a98172b4b716432f23472cadbaa40a044a3ae3f3e42c64f111",
+      "postimage": "c3d97522a38a6e284901e712bd0401d02fe1b0775cdbeb992af16035baf63937"
+    },
+    "components/embedder_support/BUILD.gn": {
+      "preimage": "355120ca227322e7c2c4a2691c8573c2e7b56a0d4c8f8c34b93286a373e4ee38",
+      "postimage": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac"
+    }
+  },
+  "remainingRequirements": [
+    "review-and-bind-full-upstream-patch-recipe",
+    "git-dependency-pins-and-effective-changes",
+    "cipd-and-gcs-contents",
+    "toolchain-and-sdk-identity",
+    "binary-binding-and-candidate-lock"
+  ]
+}

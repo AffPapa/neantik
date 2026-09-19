@@ -404,9 +404,12 @@ final class BrowserProcessManager: ObservableObject {
         Set<BrowserLaunchPreparationConsumptionKey>()
     private var managerSessionStore: ManagerSessionEvidenceStore?
     private var managerSessionToken: UUID?
+    private var launchIsBlockedByMemoryPressure: () -> Bool = { false }
 
     init(paths: AppPaths) {
         self.paths = paths
+        let memoryGuard = BrowserLaunchMemoryGuard.shared
+        self.launchIsBlockedByMemoryPressure = { memoryGuard.isLaunchBlocked }
         self.processIdentityInspector = {
             BrowserProcessManager.inspectProcess($0)
         }
@@ -464,6 +467,7 @@ final class BrowserProcessManager: ObservableObject {
             },
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
+        launchIsBlockedByMemoryPressure: @escaping () -> Bool = { false },
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
@@ -482,6 +486,7 @@ final class BrowserProcessManager: ObservableObject {
         self.observationIntervalNanoseconds =
             observationIntervalNanoseconds
         self.startingLeaseTimeout = max(0, startingLeaseTimeout)
+        self.launchIsBlockedByMemoryPressure = launchIsBlockedByMemoryPressure
         self.now = now
     }
 
@@ -506,6 +511,7 @@ final class BrowserProcessManager: ObservableObject {
             (@Sendable () -> BrowserProcessInventory)? = nil,
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
+        launchIsBlockedByMemoryPressure: @escaping () -> Bool = { false },
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
@@ -532,6 +538,7 @@ final class BrowserProcessManager: ObservableObject {
         self.observationIntervalNanoseconds =
             observationIntervalNanoseconds
         self.startingLeaseTimeout = max(0, startingLeaseTimeout)
+        self.launchIsBlockedByMemoryPressure = launchIsBlockedByMemoryPressure
         self.now = now
     }
 
@@ -1410,6 +1417,12 @@ final class BrowserProcessManager: ObservableObject {
         }
     }
 
+    func validateMemoryForLaunch() throws {
+        if launchIsBlockedByMemoryPressure() {
+            throw NeAntikError.criticalMemoryPressure
+        }
+    }
+
     func launch(
         profile: BrowserProfile,
         runtime: BrowserRuntime,
@@ -1421,6 +1434,7 @@ final class BrowserProcessManager: ObservableObject {
             FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
+        try validateMemoryForLaunch()
         let concurrentProfileCount = Self.confirmedConcurrentProfileCount(
             runningProfileIDs.map { processState(for: $0) }
         )
@@ -1586,6 +1600,7 @@ final class BrowserProcessManager: ObservableObject {
 
         do {
             try prepareDiagnosticLog(logURL)
+            try validateMemoryForLaunch()
             try process.run()
             managed[profile.id]?.process = process
             managed[profile.id]?.startedAt = createdAt
@@ -1763,8 +1778,8 @@ final class BrowserProcessManager: ObservableObject {
         handleTermination(profileID: profileID, process: nil)
     }
 
-    /// Pause one manager-owned Chromium process to reduce background CPU and
-    /// memory pressure. External or unverified processes are never signalled.
+    /// Pause one manager-owned Chromium process. This does not release its RAM
+    /// or suspend all Chromium child processes. External processes are untouched.
     /// The operation is intentionally explicit; policy decisions are made by
     /// `AutomaticMemorySavingPolicy` and applied by the manager only after the
     /// caller has a current, verified snapshot.
@@ -1774,6 +1789,9 @@ final class BrowserProcessManager: ObservableObject {
               process.isRunning,
               stopPhase(for: profileID) == .idle
         else { return false }
+        // Foundation counts nested suspensions. Reapplying a policy must not
+        // require multiple resumes or leave a browser permanently paused.
+        if memorySavingSuspendedProfileIDs.contains(profileID) { return true }
         guard process.suspend() else {
             lastError = "Не удалось временно приостановить рабочее место."
             return false

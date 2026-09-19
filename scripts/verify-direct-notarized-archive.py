@@ -237,6 +237,15 @@ def find_single_app(root: Path) -> Path:
 
 
 def extract_archive(archive: Path, destination: Path, runner=default_runner) -> Path:
+    # Share the transaction boundary: one app only, no traversal or escaping
+    # symlinks, and no writes through framework symlinks during extraction.
+    from notarize_direct_transaction import (
+        assert_safe_archive_members, DirectNotaryTransactionError,
+    )
+    try:
+        assert_safe_archive_members(archive)
+    except DirectNotaryTransactionError as error:
+        raise DirectNotarizedArchiveError(str(error)) from error
     run_checked(["ditto", "-x", "-k", str(archive), str(destination)], runner=runner)
     return find_single_app(destination)
 

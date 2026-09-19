@@ -104,4 +104,92 @@ final class ProfileAutomationTests: XCTestCase {
         XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: true, snapshotAvailable: true), .migrate)
         XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: false, snapshotAvailable: true), .rollbackRequired)
     }
+
+    func testReservedEmptyLaunchRetriesOnlySameRuntime() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        let id = UUID()
+        try coordinator.record(profileID: id, runtimeVersion: "153", emptyProfileLaunchPending: true)
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "153", profileDataExists: false, snapshotAvailable: false), .firstLaunch)
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "152", profileDataExists: false, snapshotAvailable: true), .rollbackRequired)
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "154", profileDataExists: false, snapshotAvailable: true), .rollbackRequired)
+        try coordinator.record(profileID: id, runtimeVersion: "153")
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "153", profileDataExists: false, snapshotAvailable: true), .rollbackRequired)
+    }
+
+    func testSnapshotRestoreRejectsAnotherProfileBeforeChangingData() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source")
+        let destination = root.appendingPathComponent("destination")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try Data("keep".utf8).write(to: destination.appendingPathComponent("Preferences"))
+        let snapshots = AtomicProfileSnapshotStore(rootDirectory: root)
+        let owner = UUID()
+        let other = UUID()
+        try FileManager.default.createDirectory(at: snapshots.root.appendingPathComponent(other.uuidString), withIntermediateDirectories: true)
+        let snapshot = try snapshots.create(profileID: owner, browserData: source)
+        XCTAssertThrowsError(try snapshots.restore(snapshot: snapshot, to: destination, profileID: other))
+        XCTAssertEqual(try Data(contentsOf: destination.appendingPathComponent("Preferences")), Data("keep".utf8))
+    }
+
+    func testSnapshotVersionRoundTripAndCorruptMetadataFailClosed() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source")
+        let destination = root.appendingPathComponent("destination")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        let owner = UUID()
+        let snapshots = AtomicProfileSnapshotStore(rootDirectory: root)
+        let snapshot = try snapshots.create(profileID: owner, browserData: source, runtimeVersion: "152.0.7977.82")
+        XCTAssertEqual(try snapshots.restore(snapshot: snapshot, to: destination, profileID: owner), "152.0.7977.82")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.appendingPathExtension("json").path))
+        try Data("keep".utf8).write(to: destination.appendingPathComponent("Preferences"))
+        try Data("corrupt".utf8).write(to: snapshot.appendingPathExtension("json"))
+        XCTAssertThrowsError(try snapshots.restore(snapshot: snapshot, to: destination, profileID: owner))
+        XCTAssertEqual(try Data(contentsOf: destination.appendingPathComponent("Preferences")), Data("keep".utf8))
+    }
+
+    func testChromiumCompatibilityRequiresKnownRuntimeVersion() {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        for version: String? in [nil, "", "unknown", "153..36"] {
+            XCTAssertThrowsError(try coordinator.record(profileID: UUID(), runtimeVersion: version))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: coordinator.markerURL.path))
+            for exists in [true, false] {
+                XCTAssertEqual(coordinator.action(for: UUID(), runtimeVersion: version, profileDataExists: exists, snapshotAvailable: true), .rollbackRequired)
+            }
+        }
+    }
+
+    func testChromiumCompatibilityPreservesCorruptAndDuplicateMarkers() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        let id = UUID()
+        let marker = ChromiumCompatibilityCoordinator.Marker(profileID: id, runtimeVersion: "153", recordedAt: Date())
+        let duplicate = try JSONEncoder.neantikStable.encode([marker, marker])
+        for evidence in [Data("invalid-json".utf8), duplicate] {
+            try evidence.write(to: coordinator.markerURL)
+            XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "153", profileDataExists: true, snapshotAvailable: true), .rollbackRequired)
+            XCTAssertThrowsError(try coordinator.record(profileID: id, runtimeVersion: "153"))
+            XCTAssertEqual(try Data(contentsOf: coordinator.markerURL), evidence)
+        }
+    }
+
+    func testChromiumCompatibilityRejectsDowngradeEvenWithSnapshot() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        let id = UUID()
+        try coordinator.record(profileID: id, runtimeVersion: "153.0.8010.36")
+        for older in ["152.0.7977.82", "153.0.8010.9"] {
+            XCTAssertEqual(coordinator.action(for: id, runtimeVersion: older, profileDataExists: true, snapshotAvailable: true), .rollbackRequired)
+        }
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "153.0.8010.100", profileDataExists: true, snapshotAvailable: true), .migrate)
+        XCTAssertEqual(coordinator.action(for: id, runtimeVersion: "unknown", profileDataExists: true, snapshotAvailable: true), .rollbackRequired)
+    }
 }

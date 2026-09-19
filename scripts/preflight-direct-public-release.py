@@ -206,6 +206,20 @@ def verify_direct_public_release_plan(
         runtime_plist = read_plist(runtime_app / "Contents" / "Info.plist")
         runtime_version = str(runtime_plist["CFBundleShortVersionString"])
         if not version_at_least(runtime_version, minimum):
+            if env.get("NEANTIK_ACCEPT_REVIEWED_153_36") == "1":
+                if runtime_version != "153.0.8010.36":
+                    raise ValueError("Reviewed exception does not cover this runtime")
+                spec = importlib.util.spec_from_file_location(
+                    'reviewed_runtime_security', PROJECT_ROOT / 'scripts/verify-runtime-security-baseline.py')
+                assert spec and spec.loader
+                verifier = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(verifier)
+                try:
+                    return verifier.verify(runtime_lock, project_root / 'runtime/security-baseline.json',
+                        verifier.date.today(), accept_reviewed_153_36=True,
+                        allow_public_alpha_tuples=effective_release_channel == 'public-alpha')
+                except SystemExit as error:
+                    raise ValueError(str(error)) from error
             raise ValueError(f"runtime {runtime_version} is below public baseline {minimum}")
         return f"{runtime_version} >= {minimum}"
 
@@ -237,8 +251,9 @@ def verify_direct_public_release_plan(
                 "",
             )
         )
-        if candidate_lock.get("schemaVersion") != 4:
-            raise ValueError("runtime candidate lock must use schema 4")
+        expected_schema = 5 if candidate_lock.get("sourceMode") == "gclient" else 4
+        if candidate_lock.get("schemaVersion") != expected_schema:
+            raise ValueError("runtime candidate lock schema differs from source mode")
         if runtime_version != lock_version:
             raise ValueError(
                 "runtime app version does not match runtime lock: "
@@ -263,12 +278,11 @@ def verify_direct_public_release_plan(
         embedded_candidate_path = (
             evidence_root / "fingerprint-chromium.lock.json"
         )
-        embedded_contract_path = (
-            evidence_root / "chromium-152-source-contract.json"
-        )
-        project_contract_path = (
-            project_root / "runtime" / "chromium-152-source-contract.json"
-        )
+        from runtime_contract_selection import select_contract
+        preliminary_report = read_json(report_path)
+        contract_hash = preliminary_report.get("sourceContractSHA256")
+        embedded_contract_path = select_contract(evidence_root, contract_hash)
+        project_contract_path = select_contract(project_root / "runtime", contract_hash)
         for path, label in (
             (report_path, "runtime verification report"),
             (provenance_path, "source provenance"),
@@ -335,10 +349,16 @@ def verify_direct_public_release_plan(
             raise ValueError(
                 "new-candidate runtime lock is not bound to source provenance"
             )
-        if candidate_lock.get("schemaVersion") != 4:
+        expected_schema = 5 if contract.get("sourceMode") == "gclient" else 4
+        if candidate_lock.get("schemaVersion") != expected_schema:
             raise ValueError(
-                "new-candidate runtime lock must use source-contract schema 4"
+                "new-candidate runtime lock schema differs from source contract"
             )
+        if expected_schema == 5:
+            from runtime_candidate_lock import verify_candidate_lock
+            verify_candidate_lock(embedded_candidate_path, provenance_path,
+                project_root=project_root, contract_path=project_contract_path,
+                rebase_plan_path=project_root / "runtime/chromium-153-gclient-plan.json")
         stale_text = json.dumps(
             {
                 "contract": contract,

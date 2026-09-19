@@ -83,11 +83,8 @@ remote() {
 
 upload_file() {
     local path="$1"
-    [[ -f "$path" ]] || fail "файл не найден: $path"
-    [[ -s "$path" ]] || fail "пустой файл: $path"
-    local name
-    name=$(basename "$path")
-    remote "neantik-upload $name" <"$path"
+    python3 "$PROJECT_ROOT/scripts/upload_regular_release_file.py" \
+        "$path" ssh "${SSH_OPTIONS[@]}" "$HOST"
 }
 
 release_files() {
@@ -119,7 +116,7 @@ root = Path(sys.argv[2])
 manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 print(root / next(item["filename"] for item in manifest["artifacts"] if item["format"] == "dmg"))
 PY
-)
+) || return 1
     zip=$(python3 - "$manifest_path" "$directory" <<'PY'
 import json
 import sys
@@ -128,8 +125,8 @@ root = Path(sys.argv[2])
 manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 print(root / next(item["filename"] for item in manifest["artifacts"] if item["format"] == "zip"))
 PY
-)
-    "$PROJECT_ROOT/scripts/verify-direct-notarized-dmg.sh" "$dmg"
+) || return 1
+    "$PROJECT_ROOT/scripts/verify-direct-notarized-dmg.sh" "$dmg" || return 1
     python3 "$PROJECT_ROOT/scripts/verify-direct-notarized-archive.py" \
         --project-root "$PROJECT_ROOT" \
         --archive "$zip"
@@ -324,7 +321,7 @@ PY
     echo "PASS: GitHub tag, commit и скачанные release assets совпадают."
 }
 
-prepare_release() {
+validate_local_candidate() {
     local directory="$1"
     [[ -d "$directory" ]] || fail "каталог кандидата не найден: $directory"
     directory=$(cd "$directory" && pwd)
@@ -332,9 +329,12 @@ prepare_release() {
     live_manifest=$(mktemp /tmp/neantik-live-release.XXXXXX)
     local cache_bust
     cache_bust=$(date +%s)
-    curl -fsS --max-time 30 \
+    if ! curl -fsS --max-time 30 \
         "https://affpapa.org/neantik/release.json?release_gate=$cache_bust" \
-        -o "$live_manifest"
+        -o "$live_manifest"; then
+        rm -f "$live_manifest"
+        return 1
+    fi
     if ! python3 "$VALIDATOR" "$directory" "$live_manifest"; then
         rm -f "$live_manifest"
         return 1
@@ -343,6 +343,12 @@ prepare_release() {
     verify_release_artifacts_with_policy_fallback \
         "$directory/release.json" \
         "$directory"
+}
+
+prepare_release() {
+    local directory="$1"
+    validate_local_candidate "$directory" || return 1
+    directory=$(cd "$directory" && pwd)
 
     remote neantik-release-abort
     local uploaded=0
@@ -616,6 +622,7 @@ main() {
             ;;
         upload)
             [[ $# -eq 2 ]] || fail "использование: upload <file>"
+            validate_local_candidate "$(dirname "$2")" || return 1
             upload_file "$2"
             ;;
         rollback-check)

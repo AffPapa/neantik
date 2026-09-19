@@ -98,8 +98,59 @@ def verified_license(
     return actual
 
 
-def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
+def render_gclient_notices(project_root, candidate_path, provenance_path, contract_path, plan_path):
+    from runtime_candidate_lock import verify_candidate_lock
+    from gclient_source_contract import verify_gclient_contract
+    from gclient_source_evidence import verify_files
+    try:
+        candidate = verify_candidate_lock(candidate_path, provenance_path, project_root=project_root,
+            contract_path=contract_path, rebase_plan_path=plan_path)
+        contract = verify_gclient_contract(project_root, contract_path, plan_path)
+        relative = 'runtime/chromium-153-upstream-attribution.json'
+        if relative not in contract['ownedInputs']:
+            raise ValueError('Upstream attribution must be bound to the source contract')
+        attribution = load_json(project_root / relative)
+        if attribution.get('scope') != 'upstream-source-license-attribution-only' or attribution.get('targetChromiumVersion') != contract['targetChromiumVersion']:
+            raise ValueError('Upstream attribution scope/version mismatch')
+        sources = attribution.get('sources')
+        if not isinstance(sources, list) or len(sources) != 2:
+            raise ValueError('Two reviewed upstream attributions required')
+        chromium = candidate['fingerprintChromium']
+        baseline = load_json(project_root / 'runtime/security-baseline.json')
+        minimum = required_text(baseline.get('minimumPublicChromiumVersion'), 'minimumPublicChromiumVersion')
+        verify_files(project_root, {'runtime/licenses/Chromium-LICENSE': chromium['licenseSHA256']})
+        lines = ['# NeAntik Chromium runtime notices', '',
+            'Source mode: gclient. This document is source-only, not binary or publication evidence.',
+            '', '## Chromium', '', f"- Version: `{chromium['chromiumVersion']}`",
+            f"- Source: `{chromium['repository']}`", f"- Commit: `{chromium['commit']}`",
+            f"- License SHA-256: `{chromium['licenseSHA256']}`", '']
+        if tuple(map(int, chromium['chromiumVersion'].split('.'))) < tuple(map(int, minimum.split('.'))):
+            lines.extend(['## Security limitation', '',
+                f"This build uses Chromium {chromium['chromiumVersion']}, older than the reviewed security baseline {minimum}.",
+                'It is NOT security-current. Backport coverage has not been established.',
+                'Signing and notarization do not remove this security gap.', ''])
+        for source in sources:
+            verify_files(project_root, {source['licenseFile']: source['licenseSHA256']})
+            lines.extend([f"## {source['name']}", '', f"- Source: `{source['repository']}`",
+                f"- Commit: `{source['commit']}`", f"- License file: `NeAntikRuntimeLicenses/{Path(source['licenseFile']).name}`",
+                f"- License SHA-256: `{source['licenseSHA256']}`", ''])
+        lines.extend(['## Distribution boundary', '',
+            'Chromium-generated third-party notices and SPDX SBOM are separately required.',
+            'Upstream attribution does not claim that every upstream patch was applied.',
+            'Runtime testing, Developer ID signing, notarization, stapling and Gatekeeper remain separate gates.', ''])
+        return '\n'.join(lines)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise RuntimeNoticesError(str(error)) from error
+
+
+def render_notices(*, project_root: Path = PROJECT_ROOT, candidate_path=None,
+                   provenance_path=None, contract_path=None, plan_path=None) -> str:
     project_root = project_root.resolve()
+    selection = (candidate_path, provenance_path, contract_path, plan_path)
+    if any(value is not None for value in selection):
+        if not all(value is not None for value in selection):
+            raise RuntimeNoticesError('Candidate notices require candidate, provenance, contract and plan together')
+        return render_gclient_notices(project_root, *selection)
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
     source_contract = load_json(
         project_root / "runtime" / "chromium-152-source-contract.json"
@@ -291,6 +342,10 @@ def main() -> int:
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--candidate", type=Path)
+    parser.add_argument("--provenance", type=Path)
+    parser.add_argument("--contract", type=Path)
+    parser.add_argument("--rebase-plan", type=Path)
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -298,7 +353,8 @@ def main() -> int:
     if not output.is_absolute():
         output = project_root / output
     try:
-        rendered = render_notices(project_root=project_root)
+        rendered = render_notices(project_root=project_root, candidate_path=args.candidate,
+            provenance_path=args.provenance, contract_path=args.contract, plan_path=args.rebase_plan)
         if args.stdout:
             print(rendered, end="")
             return 0

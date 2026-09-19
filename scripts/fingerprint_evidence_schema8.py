@@ -726,6 +726,14 @@ def _validate_hashed_entry(value: Any, label: str) -> dict[str, str]:
 
 
 def _validate_critical_bundle_path(key: str, path: str) -> None:
+    if key == "sourceContract":
+        allowed = {
+            "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
+            "Contents/Resources/NeAntikRuntimeEvidence/chromium-153-source-contract.json",
+        }
+        if path not in allowed:
+            raise FingerprintEvidenceVerificationError("Candidate source contract bundlePath is invalid.")
+        return
     expected = EXACT_CRITICAL_FILE_PATHS.get(key)
     if expected is not None:
         if path != expected:

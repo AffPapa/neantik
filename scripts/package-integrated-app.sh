@@ -55,12 +55,14 @@ if [[ "$CANDIDATE_LOCK" != /* ||
   echo "Chromium candidate lock must be an absolute regular file." >&2
   exit 66
 fi
+SOURCE_CONTRACT="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field contract)"
+SOURCE_PLAN="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field plan)"
 "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
-  "$SOURCE_PROVENANCE" \
-  --source-root "$SOURCE_ROOT"
+  "$SOURCE_PROVENANCE" --source-root "$SOURCE_ROOT" \
+  --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
-  "$SOURCE_PROVENANCE"
+  "$SOURCE_PROVENANCE" --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN"
 
 RUNTIME_PLIST="$RUNTIME_APP/Contents/Info.plist"
 RUNTIME_BUNDLE_ID="$(
@@ -74,7 +76,9 @@ if [[ "$RUNTIME_BUNDLE_ID" != "app.neantik.runtime" ||
   echo "Runtime is not a declared NeAntik fingerprint runtime." >&2
   exit 65
 fi
-python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
+if [[ "$(basename "$SOURCE_CONTRACT")" == "chromium-152-source-contract.json" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
+fi
 
 VERIFY_REPORT="$(mktemp -t nevision-integrated-runtime)"
 COMPLIANCE_DIR="$(mktemp -d -t nevision-runtime-compliance)"
@@ -86,18 +90,27 @@ cleanup() {
   rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"
 }
 trap cleanup EXIT
+NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md"
+if [[ "$(basename "$SOURCE_CONTRACT")" == "chromium-153-source-contract.json" ]]; then
+  NOTICES_FILE="$SNAPSHOT_ROOT/NeAntikRuntimeNotices.md"
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
+    --candidate "$CANDIDATE_LOCK" --provenance "$SOURCE_PROVENANCE" \
+    --contract "$SOURCE_CONTRACT" --rebase-plan "$SOURCE_PLAN" --output "$NOTICES_FILE"
+fi
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$VERIFY_REPORT" \
   "$BUILD_ARGS" \
   "$SOURCE_PROVENANCE" \
-  "$CANDIDATE_LOCK"
+  "$CANDIDATE_LOCK" "$SOURCE_CONTRACT" "$SOURCE_PLAN"
 "$PROJECT_DIR/scripts/generate-runtime-compliance.sh" \
   "$SOURCE_ROOT" \
   "$COMPLIANCE_DIR" \
   "$CANDIDATE_LOCK"
 ditto "$RUNTIME_APP" "$SNAPSHOT_RUNTIME"
+python3 "$PROJECT_DIR/scripts/verify_app_payload_privacy.py" "$SNAPSHOT_RUNTIME"
 cp "$BUILD_ARGS" "$SNAPSHOT_ARGS"
+python3 "$PROJECT_DIR/scripts/verify_public_build_args.py" "$SNAPSHOT_ARGS"
 
 NEANTIK_SIGNING_IDENTITY=- "$PROJECT_DIR/scripts/package-app.sh"
 
@@ -115,17 +128,17 @@ cp "$CANDIDATE_LOCK" \
   "$EVIDENCE/fingerprint-chromium.lock.json"
 cp "$PROJECT_DIR/runtime/security-baseline.json" \
   "$EVIDENCE/security-baseline.json"
-cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
+PATCH_MANIFEST="$(python3 "$PROJECT_DIR/scripts/runtime_contract_selection.py" "$PROJECT_DIR" "$CANDIDATE_LOCK" --field patch-manifest)"
+cp "$PATCH_MANIFEST" \
   "$EVIDENCE/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
-  "$EVIDENCE/chromium-152-source-contract.json"
+cp "$SOURCE_CONTRACT" "$EVIDENCE/$(basename "$SOURCE_CONTRACT")"
 cp "$SOURCE_PROVENANCE" \
   "$EVIDENCE/source-provenance.json"
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
-cp "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md" \
+cp "$NOTICES_FILE" \
   "$RESOURCES/NeAntikRuntimeNotices.md"
 ditto "$COMPLIANCE_DIR" "$COMPLIANCE"
 
@@ -136,6 +149,7 @@ cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" \
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
   "$LICENSES/ungoogled-chromium-macos-LICENSE"
 
+python3 "$PROJECT_DIR/scripts/verify_app_payload_privacy.py" "$OUTPUT_APP"
 codesign --force --sign - "$OUTPUT_APP"
 codesign --verify --deep --strict --verbose=2 "$OUTPUT_APP"
 

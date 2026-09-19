@@ -1037,6 +1037,7 @@ enum NeAntikError: LocalizedError {
     case invalidProxy
     case profileArchived
     case concurrentLaunchLimitReached(Int)
+    case criticalMemoryPressure
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -1060,6 +1061,8 @@ enum NeAntikError: LocalizedError {
             "Сначала верни профиль из архива."
         case let .concurrentLaunchLimitReached(limit):
             "Одновременно можно запускать не больше \(limit) профилей. Останови ненужный браузер и повтори запуск."
+        case .criticalMemoryPressure:
+            "macOS сообщает о критической нехватке оперативной памяти. Закрой ненужные приложения или профили, подожди и повтори запуск. Уже открытые профили не остановлены."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case let .processLaunchFailed(message):

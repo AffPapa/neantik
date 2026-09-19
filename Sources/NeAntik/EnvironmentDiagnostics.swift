@@ -280,7 +280,7 @@ enum ProfileEnvironmentInspector {
                 title: "Режим",
                 value: routeValue,
                 state: .configured,
-                severity: .success
+                severity: .neutral
             )
         ]
         if let attempt = proxyHealth?.latestAttempt {
@@ -380,7 +380,7 @@ enum ProfileEnvironmentInspector {
                         : "Обычный Chromium" +
                             versionSuffix,
                     state: .configured,
-                    severity: .success
+                    severity: .neutral
                 )
             )
             let signatureValue: String
@@ -442,7 +442,7 @@ enum ProfileEnvironmentInspector {
                     title: "Стабильная конфигурация",
                     value: "Назначена этому профилю",
                     state: .configured,
-                    severity: .success
+                    severity: .neutral
                 )
             )
             fields.append(
@@ -454,7 +454,7 @@ enum ProfileEnvironmentInspector {
                             "профиля устройства"
                         : "NeAntik не меняет настройку",
                     state: .configured,
-                    severity: .success
+                    severity: .neutral
                 )
             )
         } else {
@@ -543,7 +543,7 @@ enum ProfileEnvironmentInspector {
                 title: "Политика",
                 value: policyValue,
                 state: .configured,
-                severity: .success
+                severity: .neutral
             )
         ]
         if let observation {
@@ -641,7 +641,7 @@ enum ProfileEnvironmentInspector {
                     title: "QUIC",
                     value: quicValue,
                     state: .configured,
-                    severity: .success
+                    severity: .neutral
                 ),
                 EnvironmentDiagnosticField(
                     id: "transport.dns-policy",

@@ -1238,10 +1238,23 @@ struct ContentView: View {
             return
         }
         do {
-            try AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory).restore(
+            let snapshots = AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
+            let browserData = store.paths.browserDataDirectory(for: profile.id)
+            let compatibility = ChromiumCompatibilityCoordinator(rootDirectory: store.paths.rootDirectory)
+            // Preserve a visible recovery point before replacing current data.
+            // Unlike launch-time snapshots, failure here must block restoration.
+            if FileManager.default.fileExists(atPath: browserData.path) {
+                try snapshots.create(profileID: profile.id, browserData: browserData,
+                                     runtimeVersion: compatibility.recordedVersion(for: profile.id))
+            }
+            let restoredVersion = try snapshots.restore(
                 snapshot: snapshot,
-                to: store.paths.browserDataDirectory(for: profile.id)
+                to: browserData,
+                profileID: profile.id
             )
+            if let restoredVersion {
+                try compatibility.record(profileID: profile.id, runtimeVersion: restoredVersion)
+            }
             localError = "Снимок профиля восстановлен."
         } catch {
             localError = "Не удалось восстановить снимок: \(error.localizedDescription)"
@@ -2868,6 +2881,7 @@ struct ContentView: View {
         let launchRuntime = try BrowserRuntimeLaunchTrustPolicy
             .validatedRuntime(resolved: runtime)
         try validateLaunchPreflight(profile, runtime: launchRuntime)
+        try processes.validateMemoryForLaunch()
         // Capture a local rollback point before the browser mutates its data.
         // This is best-effort so a first launch with no data directory is
         // never blocked by recovery storage.
@@ -2879,7 +2893,8 @@ struct ContentView: View {
         if FileManager.default.fileExists(atPath: browserData.path) {
             rollbackSnapshot = try? AtomicProfileSnapshotStore(
                 rootDirectory: store.paths.rootDirectory
-            ).create(profileID: profile.id, browserData: browserData)
+            ).create(profileID: profile.id, browserData: browserData,
+                     runtimeVersion: compatibility.recordedVersion(for: profile.id))
         }
         switch compatibility.action(
             for: profile.id,
@@ -2895,12 +2910,35 @@ struct ContentView: View {
         case .firstLaunch, .compatible, .migrate:
             break
         }
+        // Reserve the version before Chromium can mutate profile data. Keep
+        // this conservative marker even when launch throws: the child might
+        // already have started, so rolling it back would permit a downgrade.
+        do {
+            try compatibility.record(
+                profileID: profile.id,
+                runtimeVersion: launchRuntime.inspection.version,
+                emptyProfileLaunchPending: !FileManager.default.fileExists(atPath: browserData.path)
+            )
+        } catch {
+            throw NeAntikError.runtimeValidationFailed(
+                "Не удалось сохранить версию Chromium для рабочего места. " +
+                    "Браузер не запущен. Проверь доступ к папке данных и свободное место."
+            )
+        }
         try processes.launch(
             profile: profile,
             runtime: launchRuntime,
             preparationReceipt: preparationReceipt,
             purpose: purpose
         )
+        do {
+            try compatibility.record(profileID: profile.id, runtimeVersion: launchRuntime.inspection.version)
+        } catch {
+            processes.stop(profileID: profile.id)
+            throw NeAntikError.runtimeValidationFailed(
+                "Не удалось завершить запись состояния запуска. Браузер остановлен. Проверь доступ к папке данных."
+            )
+        }
         telemetry.record(.browserLaunched, profileCount: store.profiles.count, proxyProfileCount: telemetryProxyCount)
         // Keep the operational journal local and privacy-bounded. Logging is
         // best-effort so a damaged journal can never prevent a valid launch.
@@ -2915,12 +2953,6 @@ struct ContentView: View {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
-        // The marker advances only after both Chromium and the profile state
-        // were accepted, so a failed launch never claims compatibility.
-        try? compatibility.record(
-            profileID: profile.id,
-            runtimeVersion: launchRuntime.inspection.version
-        )
     }
     private func validateLaunchPreflight(
         _ profile: BrowserProfile,

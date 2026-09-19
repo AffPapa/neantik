@@ -14,6 +14,31 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ProfileStorageIsolationAuditTests(unittest.TestCase):
+    def test_rejects_pending_script_only_duplicate_and_incomplete_results(self):
+        valid = '<pre id="result">NV_RESULT:{"cookie":"x","storage":"x"}</pre>'
+        for output in (
+            '<pre id="result">pending</pre>',
+            '<script>const sample = \'NV_RESULT:{"cookie":"x","storage":"x"}\';</script>',
+            valid + valid,
+            '<pre id="result">NV_RESULT:{"cookie":"x"}</pre>',
+            '<pre id="result">NV_RESULT:invalid</pre>',
+        ):
+            with self.subTest(output=output), self.assertRaises(MODULE.IsolationAuditError):
+                MODULE.parse_dumped_result(output)
+
+    def test_browser_mode_preserves_sandbox_and_multiprocess(self):
+        for name in ("NeAntik Browser", "Chromium"):
+            args = MODULE.capture_arguments(Path('/fixture') / name, Path('/temporary/Profile A'), 'http://127.0.0.1/')
+            self.assertIn('--headless=new', args)
+            self.assertNotIn('--no-sandbox', args)
+            self.assertNotIn('--single-process', args)
+            self.assertIn('--user-data-dir=/temporary/Profile A', args)
+
+    def test_legacy_shell_mode_is_explicit_and_unknown_binary_rejected(self):
+        self.assertEqual(MODULE.runtime_mode(Path('/fixture/headless_shell')), 'headless-single-process-storage-diagnostic')
+        with self.assertRaises(MODULE.IsolationAuditError):
+            MODULE.runtime_mode(Path('/fixture/unrelated-program'))
+
     def test_parses_dumped_browser_result(self):
         result = MODULE.parse_dumped_result(
             '<pre id="result">NV_RESULT:'
