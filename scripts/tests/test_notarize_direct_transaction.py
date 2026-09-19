@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import plistlib
+import platform
 import stat
 import subprocess
 import sys
@@ -700,7 +701,8 @@ class DirectNotaryTransactionTests(unittest.TestCase):
                 command[:3],
                 [sys.executable, "-I", "-B"],
             )
-            self.assertEqual(command[3], str(gate))
+            self.assertEqual(command[3], str(root / "scripts" / "run-isolated-release-python.py"))
+            self.assertEqual(command[4], str(gate))
             self.assertEqual(
                 environment["PYTHONDONTWRITEBYTECODE"],
                 "1",
@@ -708,6 +710,29 @@ class DirectNotaryTransactionTests(unittest.TestCase):
             self.assertEqual(environment["PYTHONNOUSERSITE"], "1")
             self.assertNotIn("PYTHONPATH", environment)
             self.assertEqual(result.output, "PASS")
+
+    @unittest.skipUnless(platform.machine() == "arm64", "release bootstrap requires ARM64")
+    def test_real_isolated_gate_imports_sibling_without_shadowing_stdlib(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (root / "dist").mkdir(mode=0o700)
+            subprocess.run(["git", "init", "--quiet", str(root)], check=True)
+            bootstrap = scripts / "run-isolated-release-python.py"
+            bootstrap.write_bytes((SCRIPTS / bootstrap.name).read_bytes())
+            (scripts / "owned_sibling.py").write_text("VALUE = 'PASS'\n")
+            (scripts / "json.py").write_text("raise RuntimeError('stdlib shadowed')\n")
+            gate = scripts / "release_gate.py"
+            gate.write_text(
+                "import sys, json\nfrom owned_sibling import VALUE\n"
+                "assert sys.flags.isolated and sys.dont_write_bytecode\n"
+                "assert json.loads('{}') == {}\nprint(VALUE)\n"
+            )
+            result = MODULE.default_runner([str(gate)], root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.output, "PASS")
+            self.assertFalse(list(root.rglob('*.pyc')))
 
     def test_rejected_notary_or_final_gate_never_publishes(self) -> None:
         for runner in (

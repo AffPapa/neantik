@@ -427,7 +427,21 @@ final class BrowserProcessManager: ObservableObject {
             coordinator.capture()
         }
         self.processSignaler = { Darwin.kill($0, $1) }
-        self.managedProcessTerminator = { $0.terminate() }
+        self.managedProcessTerminator = { process in
+            // SIGTERM can discard Chromium's recently acknowledged localStorage
+            // writes. Ask the exact owned macOS application to quit so its
+            // normal shutdown path can flush storage. If it cannot accept the
+            // request, retain the process/lease; the existing bounded wait
+            // exposes an explicit force-stop action without silently signaling.
+            guard process.isRunning,
+                  let expected = process.executableURL?.resolvingSymlinksInPath(),
+                  let application = NSRunningApplication(
+                    processIdentifier: process.processIdentifier
+                  ),
+                  application.executableURL?.resolvingSymlinksInPath() == expected
+            else { return }
+            _ = application.terminate()
+        }
         self.managedStopGracePeriodNanoseconds = 3_000_000_000
         self.allowsExternalProcessSignaling = false
         self.observationIntervalNanoseconds = 1_000_000_000

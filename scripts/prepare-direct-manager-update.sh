@@ -201,6 +201,7 @@ export SWIFTPM_MODULECACHE_OVERRIDE="$BUILD_SUPPORT_DIR/swiftpm"
 
 cd "$PROJECT_DIR"
 swift build \
+  --jobs 2 \
   -c release \
   --arch arm64 \
   --disable-sandbox \

@@ -168,6 +168,7 @@ def default_runner(command: list[str], cwd: Path) -> CommandResult:
             sys.executable,
             "-I",
             "-B",
+            str(cwd / "scripts" / "run-isolated-release-python.py"),
             *command,
         ]
     environment = os.environ.copy()
