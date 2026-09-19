@@ -9,6 +9,13 @@ OPEN_SOURCE_VERIFIER = ROOT / "scripts" / "verify-open-source-tree.py"
 
 
 class LocalManagerScriptTests(unittest.TestCase):
+    def test_every_swift_build_is_bounded_to_two_jobs(self) -> None:
+        text = SCRIPT.read_text(encoding="utf-8")
+        builds = text.split("swift build \\\n")[1:]
+        self.assertEqual(len(builds), 2)
+        for build in builds:
+            self.assertTrue(build.lstrip().startswith("--jobs 2 \\\n"))
+
     def test_fast_path_is_isolated_from_release(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("app.neantik.desktop.dev", text)
