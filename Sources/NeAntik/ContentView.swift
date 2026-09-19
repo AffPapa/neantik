@@ -1241,19 +1241,40 @@ struct ContentView: View {
             let snapshots = AtomicProfileSnapshotStore(rootDirectory: store.paths.rootDirectory)
             let browserData = store.paths.browserDataDirectory(for: profile.id)
             let compatibility = ChromiumCompatibilityCoordinator(rootDirectory: store.paths.rootDirectory)
+            guard let targetVersion = try snapshots.validatedRuntimeVersion(
+                snapshot: snapshot, profileID: profile.id
+            ) else {
+                throw NeAntikError.runtimeValidationFailed(
+                    "У снимка нет подтверждённой версии Chromium. Текущие данные не изменены. Выбери снимок с известной версией."
+                )
+            }
             // Preserve a visible recovery point before replacing current data.
             // Unlike launch-time snapshots, failure here must block restoration.
             if FileManager.default.fileExists(atPath: browserData.path) {
                 try snapshots.create(profileID: profile.id, browserData: browserData,
                                      runtimeVersion: compatibility.recordedVersion(for: profile.id))
             }
+            // Persist a fail-closed reservation before any data replacement.
+            // If restore or the final marker write fails (or the app exits),
+            // no runtime may open data whose version is now uncertain.
+            try compatibility.record(
+                profileID: profile.id,
+                runtimeVersion: try compatibility.recordedVersion(for: profile.id)
+                    ?? targetVersion,
+                restorationPending: true
+            )
             let restoredVersion = try snapshots.restore(
                 snapshot: snapshot,
                 to: browserData,
-                profileID: profile.id
+                profileID: profile.id,
+                requireKnownVersion: true
             )
             if let restoredVersion {
                 try compatibility.record(profileID: profile.id, runtimeVersion: restoredVersion)
+            } else {
+                throw NeAntikError.runtimeValidationFailed(
+                    "У снимка нет подтверждённой версии Chromium. Данные восстановлены, но запуск заблокирован. Выбери снимок с известной версией."
+                )
             }
             localError = "Снимок профиля восстановлен."
         } catch {

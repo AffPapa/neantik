@@ -342,8 +342,7 @@ struct AtomicProfileSnapshotStore: Sendable {
     /// Replaces browser data only after a complete staged copy exists.
     /// The existing directory is retained as a sibling rollback copy until
     /// the replacement is safely moved into place.
-    @discardableResult
-    func restore(snapshot: URL, to browserData: URL, profileID: UUID? = nil) throws -> String? {
+    func validatedRuntimeVersion(snapshot: URL, profileID: UUID? = nil) throws -> String? {
         let values = try snapshot.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         guard values.isDirectory == true,
               values.isSymbolicLink != true,
@@ -368,6 +367,16 @@ struct AtomicProfileSnapshotStore: Sendable {
                   metadata.runtimeVersion == nil || ChromiumCompatibilityCoordinator.versionParts(metadata.runtimeVersion!) != nil
             else { throw CocoaError(.fileReadCorruptFile) }
             restoredVersion = metadata.runtimeVersion
+        }
+        return restoredVersion
+    }
+
+    @discardableResult
+    func restore(snapshot: URL, to browserData: URL, profileID: UUID? = nil,
+                 requireKnownVersion: Bool = false) throws -> String? {
+        let restoredVersion = try validatedRuntimeVersion(snapshot: snapshot, profileID: profileID)
+        if requireKnownVersion && restoredVersion == nil {
+            throw CocoaError(.fileReadCorruptFile)
         }
         let parent = browserData.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
@@ -416,6 +425,7 @@ struct ChromiumCompatibilityCoordinator: Sendable {
         let runtimeVersion: String
         let recordedAt: Date
         var emptyProfileLaunchPending: Bool? = nil
+        var restorationPending: Bool? = nil
     }
 
     enum Action: Equatable, Sendable {
@@ -437,6 +447,7 @@ struct ChromiumCompatibilityCoordinator: Sendable {
             return .rollbackRequired
         }
         guard let recorded = try? markers() else { return .rollbackRequired }
+        guard recorded[profileID]?.restorationPending != true else { return .rollbackRequired }
         let previous = recorded[profileID]?.runtimeVersion
         guard previous != nil else { return .firstLaunch }
         guard profileDataExists else {
@@ -468,20 +479,25 @@ struct ChromiumCompatibilityCoordinator: Sendable {
     }
 
     func recordedVersion(for profileID: UUID) throws -> String? {
-        try markers()[profileID]?.runtimeVersion
+        let marker = try markers()[profileID]
+        // Interrupted restoration may have replaced the data, so its previous
+        // version must not label a newly captured recovery snapshot.
+        return marker?.restorationPending == true ? nil : marker?.runtimeVersion
     }
 
     /// Reserves the version before Chromium is allowed to mutate profile data.
     /// A failed launch must not roll it back: the child may have started.
     /// Preserve corrupt evidence instead of silently discarding other profiles.
     func record(profileID: UUID, runtimeVersion: String?, now: Date = Date(),
-                emptyProfileLaunchPending: Bool = false) throws {
+                emptyProfileLaunchPending: Bool = false,
+                restorationPending: Bool = false) throws {
         guard let runtimeVersion, Self.versionParts(runtimeVersion) != nil else {
             throw CocoaError(.validationMissingMandatoryProperty)
         }
         var values = try markers()
         values[profileID] = Marker(profileID: profileID, runtimeVersion: runtimeVersion,
-                                  recordedAt: now, emptyProfileLaunchPending: emptyProfileLaunchPending)
+                                  recordedAt: now, emptyProfileLaunchPending: emptyProfileLaunchPending,
+                                  restorationPending: restorationPending)
         let data = try JSONEncoder.neantikStable.encode(Array(values.values).sorted { $0.profileID.uuidString < $1.profileID.uuidString })
         try FileManager.default.createDirectory(at: markerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let temporary = markerURL.appendingPathExtension("tmp-\(UUID().uuidString)")

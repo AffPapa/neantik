@@ -2,6 +2,93 @@ import XCTest
 @testable import NeAntik
 
 final class ProfileAutomationTests: XCTestCase {
+    func testVersionlessSnapshotStrictRestorePreservesExistingData() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source")
+        let destination = root.appendingPathComponent("destination")
+        for url in [source, destination] {
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+        let keep = Data("keep-current-data".utf8)
+        try keep.write(to: destination.appendingPathComponent("Preferences"))
+        let id = UUID()
+        let snapshots = AtomicProfileSnapshotStore(rootDirectory: root)
+        let snapshot = try snapshots.create(profileID: id, browserData: source)
+        XCTAssertNil(try snapshots.validatedRuntimeVersion(snapshot: snapshot, profileID: id))
+        XCTAssertThrowsError(try snapshots.restore(snapshot: snapshot, to: destination,
+            profileID: id, requireKnownVersion: true))
+        XCTAssertEqual(try Data(contentsOf: destination.appendingPathComponent("Preferences")), keep)
+    }
+
+    func testRestoredDataRemainsBlockedAcrossInterruptionAndRetry() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("SnapshotSource")
+        let data = root.appendingPathComponent("BrowserData")
+        for folder in [source, data] {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        let oldBytes = Data("synthetic-152-state".utf8)
+        let newBytes = Data("synthetic-153-state".utf8)
+        try newBytes.write(to: source.appendingPathComponent("Preferences"))
+        try oldBytes.write(to: data.appendingPathComponent("Preferences"))
+        let id = UUID()
+        let snapshots = AtomicProfileSnapshotStore(rootDirectory: root)
+        let target = try snapshots.create(profileID: id, browserData: source, runtimeVersion: "153.0.8010.36")
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        try coordinator.record(profileID: id, runtimeVersion: "152.0.7977.82")
+        let recovery = try snapshots.create(profileID: id, browserData: data,
+            runtimeVersion: coordinator.recordedVersion(for: id))
+        try coordinator.record(profileID: id, runtimeVersion: "152.0.7977.82", restorationPending: true)
+        XCTAssertEqual(try snapshots.restore(snapshot: target, to: data, profileID: id), "153.0.8010.36")
+        // Simulate interruption at the exact boundary: replacement happened,
+        // but final version commit did not. Do not fabricate a process crash.
+        let restarted = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        XCTAssertEqual(try Data(contentsOf: data.appendingPathComponent("Preferences")), newBytes)
+        XCTAssertEqual(try Data(contentsOf: recovery.appendingPathComponent("Preferences")), oldBytes)
+        XCTAssertNil(try restarted.recordedVersion(for: id))
+        for version in ["152.0.7977.82", "153.0.8010.36"] {
+            XCTAssertEqual(restarted.action(for: id, runtimeVersion: version,
+                profileDataExists: true, snapshotAvailable: true), .rollbackRequired)
+        }
+        // A retry must not falsely assign the old version to uncertain data.
+        let uncertain = try snapshots.create(profileID: id, browserData: data,
+            runtimeVersion: restarted.recordedVersion(for: id))
+        let metadata = try JSONDecoder().decode(AtomicProfileSnapshotStore.Metadata.self,
+            from: Data(contentsOf: uncertain.appendingPathExtension("json")))
+        XCTAssertNil(metadata.runtimeVersion)
+        let version = try snapshots.restore(snapshot: target, to: data, profileID: id)
+        try restarted.record(profileID: id, runtimeVersion: version)
+        XCTAssertEqual(restarted.action(for: id, runtimeVersion: "153.0.8010.36",
+            profileDataExists: true, snapshotAvailable: true), .compatible)
+        XCTAssertEqual(restarted.action(for: id, runtimeVersion: "152.0.7977.82",
+            profileDataExists: true, snapshotAvailable: true), .rollbackRequired)
+    }
+
+    func testInterruptedSnapshotRestorationBlocksEveryRuntimeUntilVersionCommit() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let id = UUID()
+        let coordinator = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        try coordinator.record(profileID: id, runtimeVersion: "152.0.7977.82")
+        try coordinator.record(profileID: id, runtimeVersion: "152.0.7977.82", restorationPending: true)
+        // Recreate the reader as after process restart, before final metadata commit.
+        let reloaded = ChromiumCompatibilityCoordinator(rootDirectory: root)
+        XCTAssertNil(try reloaded.recordedVersion(for: id))
+        for version in ["152.0.7977.82", "153.0.8010.36", "154"] {
+            for exists in [true, false] {
+                XCTAssertEqual(reloaded.action(for: id, runtimeVersion: version,
+                    profileDataExists: exists, snapshotAvailable: true), .rollbackRequired)
+            }
+        }
+        try reloaded.record(profileID: id, runtimeVersion: "153.0.8010.36")
+        XCTAssertEqual(reloaded.action(for: id, runtimeVersion: "152.0.7977.82",
+            profileDataExists: true, snapshotAvailable: true), .rollbackRequired)
+        XCTAssertEqual(reloaded.action(for: id, runtimeVersion: "153.0.8010.36",
+            profileDataExists: true, snapshotAvailable: true), .compatible)
+    }
+
     func testWizardCreatesPurposeTagAndKeepsIsolationDefaults() throws {
         let profile = try ProfileCreationWizard.makeProfile(
             from: ProfileCreationRequest(name: "Студия", purpose: .work),
