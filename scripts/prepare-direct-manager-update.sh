@@ -228,6 +228,8 @@ fi
 rm -rf "$CANDIDATE_APP"
 ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"
 cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
+# The copied manager is signed later as part of the candidate transaction.
+xcrun strip -S "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
 cp "$PROJECT_DIR/Resources/NeAntik.icns" \

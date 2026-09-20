@@ -51,6 +51,9 @@ fi
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp "$MANAGER_BINARY" "$MACOS_DIR/NeAntik"
+# Remove Swift's object/source-path debug map before the final code signature.
+# Never strip an already published signed archive in place.
+xcrun strip -S "$MACOS_DIR/NeAntik"
 
 cp "$PROJECT_DIR/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
 printf 'APPLNANT' >"$CONTENTS_DIR/PkgInfo"
