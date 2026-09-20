@@ -61,6 +61,6 @@ These refinements are published in
 from source commit `a7ce19238bbd03f146e95aa215707e7db19ed31d`.
 GitHub Releases is authoritative for downloadable files, SHA-256 and release
 validation. The 0.5.0 downloads remain unchanged.
-The [standalone landing](https://nevision-stats.iryadom.chatgpt.site/) provides
+The [official site](https://browser.free/) provides
 product and installation information. AffPapa updates are handled separately
 by the owner; no portal deployment is part of this release.
