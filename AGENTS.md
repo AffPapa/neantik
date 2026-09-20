@@ -5,13 +5,16 @@
 - For Swift/UI iteration use `./Develop-NeAntik.command`; it is isolated from
   production profiles and release state. Use `./Release-NeAntik.command` only
   for one exact final candidate after local tests are green.
-- Public release truth is GitHub `AffPapa/neantik` plus
-  `https://affpapa.org/neantik`.
+- Public release channels are GitHub `AffPapa/neantik`, `https://browser.free`
+  through the existing OpenAI Sites project (including its
+  `https://neantik-browser.iryadom.chatgpt.site` origin), and
+  `https://affpapa.org/neantik`. Use Sites for browser.free; the affpapa
+  server-specific commands below apply only to affpapa.org publication.
 - Local build retention: follow `docs/LOCAL_BUILD_RETENTION.md` after each
   verified release. Reuse one active Dev checkout; retain current plus one
   explicit rollback. Inventory first; never blindly purge release attempts,
   profiles, runtime sources or Trash on build success.
-- Before release or site work run:
+- Before affpapa.org release or site work run:
 
   ```bash
   ./scripts/neantik-affpapa-release doctor
