@@ -358,3 +358,10 @@
   pass (`5,240` objects / `2,904` unique blobs). The Chromium baseline gate
   still intentionally blocks the pinned `152.0.7977.64` runtime, so no
   signing, notarization, upload, or public mutation was attempted.
+- Post-commit release audit at `2026-09-21T15:00:00Z`: worktree is clean;
+  reachable-history scanning remains free of credential files and recognized
+  secret formats (`5,252` objects / `2,909` unique blobs), and source-tree
+  hygiene passes across `452` files. Read-only Direct preflight reports `13`
+  gates with `11` blocked, including the public `0.3.20 < 0.7.3` floor,
+  absent exact runtime evidence, and unavailable signing/notary environment.
+  No signing, notarization, upload, or public mutation was attempted.
