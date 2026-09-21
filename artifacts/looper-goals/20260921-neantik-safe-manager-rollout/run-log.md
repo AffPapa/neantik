@@ -95,3 +95,7 @@
   with 16 security fixes; NeAntik public `v0.7.3` is `153.0.8010.36`. Added
   `docs/RUNTIME_SECURITY_REBASE_153.md` as a source-only preparation boundary;
   no runtime lock or Chromium source was changed.
+- Source-only prebuild checks: the NeAntik patchset manifest verifies all 11
+  release-required groups as ported, and the official baseline reference
+  verifier confirms `153.0.8010.52` / `.53` with 16 fixes. No binary or source
+  checkout claim is made from these checks.
