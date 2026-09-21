@@ -27,8 +27,8 @@ The public runtime `153.0.8010.36` is below this repository's current checked
 security baseline `153.0.8010.52`; signing and notarization do not replace
 missing security updates. New branch changes are not a binary release until
 separately signed and notarized DMG/ZIP assets appear in GitHub Releases. The
-local `0.3.20 (23)` candidate is a development preview and does not replace
-the published `0.7.3` release.
+`0.7.4 (67)` candidate is still in source-pair, runtime, and release
+verification and does not replace the published `0.7.3` release.
 
 Product website: <https://affpapa.org/neantik>.
 
