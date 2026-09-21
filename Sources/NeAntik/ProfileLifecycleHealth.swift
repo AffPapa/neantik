@@ -140,25 +140,28 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
                 return .unavailable
             }
 
-            var bytes: Int64 = 0
-            var entries = 0
+            var budget = ProfileManagerScanBudget(
+                maximumEntries:
+                    ProfileManagerPerformanceBudgets
+                        .maximumLifecycleScanEntries,
+                maximumBytes:
+                    ProfileManagerPerformanceBudgets
+                        .maximumSynchronousScanBytes
+            )
             for case let entry as URL in enumerator {
-                entries += 1
                 let values = try entry.resourceValues(forKeys: keys)
                 guard values.isSymbolicLink != true,
                       values.isDirectory == true || values.isRegularFile == true
                 else {
                     return .unavailable
                 }
-                if values.isRegularFile == true {
-                    let fileBytes = Int64(values.fileSize ?? 0)
-                    guard fileBytes >= 0, fileBytes <= Int64.max - bytes else {
-                        return .unavailable
-                    }
-                    bytes += fileBytes
-                }
+                let fileBytes = Int64(values.fileSize ?? 0)
+                guard budget.consume(entryBytes: values.isRegularFile == true
+                    ? fileBytes
+                    : 0)
+                else { return .unavailable }
             }
-            return .available(bytes: bytes, entries: entries)
+            return .available(bytes: budget.bytes, entries: budget.entries)
         } catch {
             return .unavailable
         }

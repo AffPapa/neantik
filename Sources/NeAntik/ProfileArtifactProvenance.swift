@@ -102,8 +102,14 @@ struct ProfileArtifactProvenanceSnapshot: Equatable, Sendable {
             ) else {
                 return .unavailable
             }
+            var budget = ProfileManagerScanBudget(
+                maximumEntries:
+                    ProfileManagerPerformanceBudgets.maximumArtifactScanEntries,
+                maximumBytes:
+                    ProfileManagerPerformanceBudgets
+                        .maximumSynchronousScanBytes
+            )
             var count = 0
-            var bytes: Int64 = 0
             for case let entry as URL in enumerator {
                 let values = try entry.resourceValues(forKeys: keys)
                 guard values.isSymbolicLink != true,
@@ -111,16 +117,18 @@ struct ProfileArtifactProvenanceSnapshot: Equatable, Sendable {
                 else {
                     return .unavailable
                 }
+                let fileBytes = Int64(values.fileSize ?? 0)
+                guard budget.consume(entryBytes: values.isRegularFile == true
+                    ? fileBytes
+                    : 0)
+                else { return .unavailable }
                 if values.isRegularFile == true {
                     count += 1
-                    let fileBytes = Int64(values.fileSize ?? 0)
-                    guard fileBytes >= 0, fileBytes <= Int64.max - bytes else {
-                        return .unavailable
-                    }
-                    bytes += fileBytes
                 }
             }
-            return count == 0 ? .empty : .available(count: count, bytes: bytes)
+            return count == 0
+                ? .empty
+                : .available(count: count, bytes: budget.bytes)
         } catch {
             return .unavailable
         }

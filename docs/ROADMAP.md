@@ -72,6 +72,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   Для Downloads/Extensions добавлены bounded provenance-статусы и explicit-only
   quarantine: файлы не запускаются автоматически, Safe Browsing не ослабляется,
   а перенос допускается только из профиля и с проверкой symlink-дерева.
+  Manager filesystem scans ограничены явными entry/byte budgets и при
+  превышении становятся unavailable вместо блокировки интерфейса.
 
 ## P2: production quality
 

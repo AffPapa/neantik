@@ -53,5 +53,6 @@ and rollback gates pass.
 - Completed slices: stage 1, UI file dialogs; stage 2, atomic import with
   folder mapping; stage 3, lifecycle health center; stage 4, bounded
   media/permissions privacy panel; stage 5, route-confirmed presentation;
-  stage 6, extension/download provenance and quarantine policy.
-- Current slice: stage 7, manager performance budgets.
+  stage 6, extension/download provenance and quarantine policy; stage 7,
+  manager performance budgets.
+- Current slice: stage 8, runtime provenance card.

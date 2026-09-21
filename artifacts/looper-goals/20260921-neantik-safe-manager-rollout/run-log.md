@@ -51,3 +51,10 @@
   outside-root, opaque-destination, and quarantine metadata rollback tests.
 - Stage 7 started: measure and enforce manager-only performance budgets without
   changing Chromium runtime behavior.
+- Stage 7 delivered: added explicit profile-list, lifecycle-scan, artifact-scan,
+  and synchronous-byte budgets; both filesystem inspectors fail closed to an
+  unavailable status when limits are exceeded.
+- Stage 7 evidence: full Swift gate passed 565 tests in 60 suites, including
+  direct budget boundary tests and existing 10k manager benchmarks.
+- Stage 8 started: add a read-only runtime provenance card bound to current
+  runtime inspection and evidence freshness; no runtime mutation is in scope.
