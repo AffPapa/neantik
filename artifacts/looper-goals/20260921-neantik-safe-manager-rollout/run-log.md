@@ -2,6 +2,8 @@
 
 ## 2026-09-21
 
+- Goal resumed by the user after the previous blocked audit; a fresh blocked
+  audit starts while the Chromium rebuild remains excluded.
 - Goal system resumed under the existing active NeAntik goal.
 - Plan gate created for stages 1–10.
 - Stage 1 started: wire existing metadata-only transfer codec to macOS UI.
