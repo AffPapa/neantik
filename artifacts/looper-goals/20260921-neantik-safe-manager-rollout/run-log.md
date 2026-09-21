@@ -157,3 +157,9 @@
   `152.0.7977.64`. Local aggregate audit is still partial with runtime
   security/rebase blocked, and the Direct deployment credential is unavailable.
   No rebuild, signing, upload, or live release mutation was performed.
+- Manager security follow-up: restricted the future signed-update manifest and
+  download host policy to the three authorized public hosts and made malformed
+  URL parsing fail closed. The channel remains disabled and automatic download
+  remains disabled. Full Swift gate passed `568` tests in `61` suites; Python
+  scripts passed `631` tests with one expected skip; AffPapa passed `42` tests;
+  source/workflow/notices checks passed. Commit: `b7cd27e`.
