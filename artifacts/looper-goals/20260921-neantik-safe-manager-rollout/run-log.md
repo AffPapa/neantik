@@ -117,3 +117,7 @@
 - Manager-only Release build verification passed outside sandbox via
   `scripts/verify-native-swift-release.sh`; this builds Swift manager code
   only and does not rebuild or replace Chromium.
+- Fresh release gate recheck at `2026-09-21T13:23:13Z`: runtime baseline still
+  rejects pinned Chromium `152.0.7977.64` below required `153.0.8010.52`, and
+  Direct doctor still cannot access the configured deployment credential. No
+  release preparation, upload, or live mutation was attempted.
