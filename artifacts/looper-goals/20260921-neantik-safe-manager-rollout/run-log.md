@@ -326,3 +326,8 @@
   and `2,893` unique blobs. The standalone floor gate still blocks the current
   candidate before signing, as required. Working tree is clean and no public
   release mutation was attempted.
+- Added the public version/build floor to read-only Direct preflight at
+  `2026-09-21T14:51:33Z`, reusing the same verifier as the release scripts.
+  The real preflight now reports `11` blocked gates, including the explicit
+  `0.3.20` versus `0.7.3` floor failure; the complete fixture plan remains
+  green. Full Python regression passed `640` tests with `1` expected skip.

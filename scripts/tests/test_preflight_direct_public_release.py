@@ -59,6 +59,7 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         blocked = {result.name for result in results if not result.passed}
         self.assertIn("Developer ID signing environment", blocked)
         self.assertIn("Notary profile environment", blocked)
+        self.assertIn("Public version/build floor", blocked)
         if not (
             Path(__file__).resolve().parents[2] / "dist" / "fingerprint-audit.json"
         ).is_file():
@@ -372,6 +373,19 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
     baseline.parent.mkdir(parents=True)
     baseline.write_text(
         json.dumps({"minimumPublicChromiumVersion": "150.0.7871.186"}),
+        encoding="utf-8",
+    )
+    releases = root / "releases"
+    releases.mkdir(parents=True)
+    (releases / "v1.2.2.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "tag": "v1.2.2",
+                "version": "1.2.2",
+                "build": 6,
+            }
+        ),
         encoding="utf-8",
     )
     integrated = root / "dist" / "NeAntik-Integrated.app"

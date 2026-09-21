@@ -51,6 +51,15 @@ NOTARY_INSPECTOR = importlib.util.module_from_spec(
 )
 sys.modules[NOTARY_INSPECTOR_SPEC.name] = NOTARY_INSPECTOR
 NOTARY_INSPECTOR_SPEC.loader.exec_module(NOTARY_INSPECTOR)
+VERSION_BUMP_PATH = PROJECT_ROOT / "scripts" / "verify-direct-version-bump.py"
+VERSION_BUMP_SPEC = importlib.util.spec_from_file_location(
+    "verify_direct_version_bump_for_preflight",
+    VERSION_BUMP_PATH,
+)
+assert VERSION_BUMP_SPEC and VERSION_BUMP_SPEC.loader
+VERSION_BUMP = importlib.util.module_from_spec(VERSION_BUMP_SPEC)
+sys.modules[VERSION_BUMP_SPEC.name] = VERSION_BUMP
+VERSION_BUMP_SPEC.loader.exec_module(VERSION_BUMP)
 
 
 VERSION_RE = re.compile(r"^(?P<parts>[0-9]+(?:\.[0-9]+){1,3})")
@@ -189,6 +198,13 @@ def verify_direct_public_release_plan(
                 "NEANTIK_RELEASE_CHANNEL must be public-alpha or production"
             )
         return effective_release_channel
+
+    def public_version_floor() -> str:
+        result = VERSION_BUMP.verify_public_version_floor(project_root)
+        return (
+            f"candidate {result['candidateVersion']} ({result['candidateBuild']}) "
+            f"> public {result['publishedVersion']} ({result['publishedBuild']})"
+        )
 
     def integrated_bundle() -> str:
         if not integrated_app.is_dir():
@@ -478,6 +494,7 @@ def verify_direct_public_release_plan(
 
     return [
         gate("Explicit Direct release channel", release_channel_contract),
+        gate("Public version/build floor", public_version_floor),
         gate("Integrated Direct bundle", integrated_bundle),
         gate("Source-branded fingerprint runtime", runtime_identity),
         gate("Runtime app matches runtime lock", runtime_lock_contract),
