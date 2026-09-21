@@ -206,3 +206,14 @@
   Swift gate passed `575` tests in `61` suites; manager Release, Python `631`,
   AffPapa `42`, update/telemetry policy and source hygiene checks passed. The
   current 152 lock remains historical source evidence and was not promoted.
+- Fresh official-version recheck at `2026-09-21T14:06:50Z`: Chrome Stable for
+  macOS remains `153.0.8010.52/.53`; ungoogled common lists `153.0.8010.52-1`,
+  while ungoogled macOS packaging still lists `152.0.7977.82-1.1`. The
+  source-only NeAntik candidate remains `152.0.7977.64`; no version string was
+  substituted and no Chromium rebuild was performed.
+- Added `docs/NETWORK_REQUEST_INVENTORY.md`: manager proxy probe, disabled
+  Direct telemetry, offline update verification, release-only downloads and
+  Chromium launch-policy surfaces are now explicitly separated. The remaining
+  Chromium background-request inventory is honestly `unverified` until exact
+  runtime/source evidence exists. Aggregate audit remains partial with the
+  same runtime security/rebase blockers.

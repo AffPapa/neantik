@@ -43,7 +43,7 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - provenance/quarantine для Downloads/Extensions с explicit-only политикой и
   Safe Browsing без ослабления;
 - manager performance budgets и read-only runtime provenance card;
-- полный Swift gate: 572 теста в 61 suite, включая manager, privacy,
+- полный Swift gate: 575 тестов в 61 suite, включая manager, privacy,
   isolation, lifecycle, provenance и performance проверки.
 
 ## P1: public beta
@@ -56,8 +56,10 @@ P1 ниже содержит только долгосрочные улучше�
 - immutable workspace snapshot как внутренний контракт будущих локальных
   адаптеров, при сохранении allowlist DTO без browser paths, credentials, IP и
   fingerprint evidence;
-- отдельная инвентаризация фоновых Chromium-запросов и решение вопроса
-  защиты от фишинга и опасных загрузок;
+- инвентаризация фоновых Chromium-запросов и решение вопроса защиты от
+  фишинга и опасных загрузок; manager-поверхности уже описаны в
+  `docs/NETWORK_REQUEST_INVENTORY.md`, а Chromium остаётся `unverified` до
+  runtime evidence;
 - подписанные инкрементальные обновления runtime с provenance, атомарным
   rollback и полным архивом восстановления.
 
@@ -67,8 +69,9 @@ P1 ниже содержит только долгосрочные улучше�
   проверенными наборами, без независимой случайности между API;
 - подтвердить строгую согласованность Canvas, WebGL, Audio, ClientRects,
   Client Hints, locale, timezone, WebRTC и параметров устройства;
-- инвентаризировать фоновые обращения Chromium и отдельно решить вопрос
-  защиты от фишинга и опасных загрузок;
+- закрыть `unverified` инвентаризацию фоновых обращений Chromium и отдельно
+  решить вопрос защиты от фишинга и опасных загрузок после точного runtime
+  evidence cycle;
 - рассмотреть подписанные инкрементальные обновления runtime только вместе с
   provenance, атомарным rollback и полным архивом для восстановления.
 
