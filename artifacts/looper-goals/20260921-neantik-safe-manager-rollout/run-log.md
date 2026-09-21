@@ -180,3 +180,5 @@
   Keychain. Full Swift gate passed `572` tests in `61` suites; manager-only
   Release build, Python `631` tests, AffPapa `42` tests, and source hygiene
   checks passed. No Chromium rebuild or public release mutation occurred.
+- Final manager-only Release build rerun after the transfer UX wording patch:
+  passed. The build contains no Chromium rebuild or runtime replacement.
