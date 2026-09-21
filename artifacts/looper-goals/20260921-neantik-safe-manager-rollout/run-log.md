@@ -292,3 +292,8 @@
   references), and signed-update policy passes. The only failing check is the
   intentional Chromium floor gate for the pinned `152.0.7977.64` runtime;
   Chromium was not rebuilt and no release-side mutation was attempted.
+- Final-HEAD manager build verification at `2026-09-21T14:45:24Z`: the
+  production Swift Release build passed after the release-floor audit changes.
+  Those changes touch only Python audit tooling, tests, changelog and goal
+  evidence; no Swift or Chromium source was changed. Signing, notarization,
+  upload and public release remain intentionally unattempted.
