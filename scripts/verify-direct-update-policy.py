@@ -109,6 +109,7 @@ def verify(
         'payload.architecture == "arm64"',
         'payload.artifactKind == "public-notarized"',
         'payload.publicReleaseState == "public-ready"',
+        "minimumPublicChromiumVersion",
         "maximumLifetime",
         "components.scheme == \"https\"",
         "NeAntikPublicHostPolicy.allows",

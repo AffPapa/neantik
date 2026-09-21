@@ -200,3 +200,9 @@
   disabled with an empty endpoint. Full Swift gate passed `574` tests in
   `61` suites; manager Release, Python `631`, AffPapa `42`, and source hygiene
   checks passed. No Chromium or public release state changed.
+- Signed-update follow-up: the offline Ed25519 verifier now rejects any future
+  signed artifact whose declared Chromium runtime is below the repository
+  security baseline `153.0.8010.52`, with a regression test for 152. Full
+  Swift gate passed `575` tests in `61` suites; manager Release, Python `631`,
+  AffPapa `42`, update/telemetry policy and source hygiene checks passed. The
+  current 152 lock remains historical source evidence and was not promoted.
