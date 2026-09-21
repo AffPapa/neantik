@@ -314,3 +314,10 @@
   `5,179` objects and `2,886` unique blobs. The version bump gate continues to
   fail closed because candidate `0.3.20` is below the immutable public `0.7.3`
   floor. No signing, notarization, upload or public mutation was attempted.
+- Hardened the standalone DMG path at `2026-09-21T14:49:33Z`:
+  `release-direct-dmg.sh` now invokes the reusable public version/build floor
+  check before validating the ZIP or reaching any Apple signing/notarization
+  action. The floor-only path intentionally rejects the current `0.3.20 (23)`
+  candidate against public `0.7.3 (66)`, while its focused tests pass. Full
+  Python regression passed `640` tests with `1` expected skip; no artifacts or
+  public state were changed.

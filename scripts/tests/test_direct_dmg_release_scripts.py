@@ -20,6 +20,14 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
             'verify-direct-notarized-archive.py',
             text,
         )
+        self.assertIn(
+            'verify-direct-version-bump.py" --floor-only',
+            text,
+        )
+        self.assertLess(
+            text.index('verify-direct-version-bump.py" --floor-only'),
+            text.index('notarytool submit'),
+        )
         self.assertIn('ditto -x -k "$ZIP_PATH" "$ARCHIVE_ROOT"', text)
         self.assertIn('APP_PATH="$ARCHIVE_ROOT/NeAntik.app"', text)
         self.assertIn('RUNTIME_APP="$APP_PATH/Contents/Resources/NeAntik Browser.app"', text)

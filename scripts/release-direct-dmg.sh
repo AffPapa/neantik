@@ -33,6 +33,9 @@ BUILD="$(
 ZIP_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"
 DMG_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.dmg"
 CHECKSUM_PATH="$DMG_PATH.sha256"
+
+python3 "$PROJECT_DIR/scripts/verify-direct-version-bump.py" --floor-only
+
 [[ -f "$ZIP_PATH" ]] ||
   fail "notarized ZIP is required before DMG creation: $ZIP_PATH"
 [[ ! -e "$DMG_PATH" ]] ||

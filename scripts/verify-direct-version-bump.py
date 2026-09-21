@@ -157,7 +157,7 @@ def read_published(project_root: Path) -> tuple[str, int]:
     return latest.version, latest.build
 
 
-def verify(project_root: Path = PROJECT_ROOT) -> dict[str, object]:
+def verify_public_version_floor(project_root: Path = PROJECT_ROOT) -> dict[str, object]:
     candidate_version, candidate_build = read_candidate(project_root)
     published_version, published_build = read_published(project_root)
     if version_tuple(candidate_version) <= version_tuple(published_version):
@@ -170,6 +170,17 @@ def verify(project_root: Path = PROJECT_ROOT) -> dict[str, object]:
             f"candidate build {candidate_build} must be greater than "
             f"published {published_build}"
         )
+    return {
+        "candidateVersion": candidate_version,
+        "candidateBuild": candidate_build,
+        "publishedVersion": published_version,
+        "publishedBuild": published_build,
+    }
+
+
+def verify(project_root: Path = PROJECT_ROOT) -> dict[str, object]:
+    result = verify_public_version_floor(project_root)
+    candidate_version = str(result["candidateVersion"])
     archive = (
         project_root
         / "dist"
@@ -181,17 +192,29 @@ def verify(project_root: Path = PROJECT_ROOT) -> dict[str, object]:
             "candidate archive or checksum already exists; release output "
             "will not be overwritten"
         )
-    return {
-        "candidateVersion": candidate_version,
-        "candidateBuild": candidate_build,
-        "publishedVersion": published_version,
-        "publishedBuild": published_build,
-    }
+    return result
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Verify that the current candidate is newer than the immutable "
+            "public release floor."
+        )
+    )
+    parser.add_argument(
+        "--floor-only",
+        action="store_true",
+        help=(
+            "verify only version/build ordering; intended for a later release "
+            "phase after the exact archive already exists"
+        ),
+    )
+    args = parser.parse_args()
     try:
-        result = verify()
+        result = verify_public_version_floor() if args.floor_only else verify()
     except (OSError, VersionBumpError) as error:
         print(f"Direct version bump verification failed: {error}", file=sys.stderr)
         return 1

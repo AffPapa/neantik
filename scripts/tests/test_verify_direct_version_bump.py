@@ -46,6 +46,19 @@ class DirectVersionBumpTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.VersionBumpError, "will not be overwritten"):
                 MODULE.verify(root)
 
+    def test_floor_only_allows_existing_archive_for_later_release_phase(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_project(root, candidate=("0.3.12", "15"), published=("0.3.11", "14"))
+            archive = root / "dist" / "NeAntik-0.3.12-arm64-notarized.zip"
+            archive.parent.mkdir()
+            archive.write_bytes(b"already sealed")
+
+            result = MODULE.verify_public_version_floor(root)
+
+            self.assertEqual(result["candidateVersion"], "0.3.12")
+            self.assertEqual(result["publishedVersion"], "0.3.11")
+
     def test_rejects_missing_release_contracts(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
