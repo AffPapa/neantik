@@ -350,3 +350,26 @@ Latest continuation audit — 2026-09-21:
 - The source-tree hygiene gate now passes after removing personal absolute
   paths from this handoff. Chromium was not rebuilt, and no public release was
   created or uploaded.
+
+Latest manager completion audit — 2026-09-21:
+
+- The current native Swift gate passes `575` tests in `61` suites. The
+  manager-only production build also passes; the loopback permission needed by
+  the STUN test was granted only for verification and did not change source or
+  runtime artifacts.
+- Python scripts pass `631` tests with one expected skip. Open-source tree,
+  public workflow references, generated runtime notices, signed-update policy
+  and disabled Direct telemetry checks pass.
+- `docs/NETWORK_REQUEST_INVENTORY.md` records the confirmed manager network
+  surfaces and keeps Chromium background requests `unverified` until an exact
+  runtime/source evidence cycle exists.
+- The official Stable baseline was rechecked on 21 September: macOS
+  `153.0.8010.52/.53`; ungoogled common has `153.0.8010.52-1`, while the
+  public ungoogled macOS packaging release list still ends at
+  `152.0.7977.82-1.1`. The checked NeAntik source candidate remains Chromium
+  `152.0.7977.64`; no version substitution or rebuild was performed.
+- Aggregate audit remains `partial`: profile isolation is `partial`, network
+  reality is `unverified`, and runtime security/rebase are `blocked`. Direct
+  publication remains stopped until a reviewed macOS 153 source/packaging
+  pair, exact runtime evidence, and the configured deployment credential are
+  available.
