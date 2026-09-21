@@ -69,6 +69,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   bounded count, без device IDs, названий устройств и сырых значений.
   Успешная проверка прокси в редакторе сообщает только «Маршрут подтверждён»
   и coarse location; реальный IP не показывается пользователю.
+  Для Downloads/Extensions добавлены bounded provenance-статусы и explicit-only
+  quarantine: файлы не запускаются автоматически, Safe Browsing не ослабляется,
+  а перенос допускается только из профиля и с проверкой symlink-дерева.
 
 ## P2: production quality
 

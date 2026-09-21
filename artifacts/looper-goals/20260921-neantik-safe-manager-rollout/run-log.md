@@ -43,3 +43,11 @@
 - Stage 5 evidence: full Swift gate passed 560 tests in 58 suites.
 - Stage 6 started: inventory the existing Chromium download/extension surface
   before adding provenance and quarantine without weakening Safe Browsing.
+- Stage 6 delivered: added bounded Downloads/Extensions/Quarantine inventory,
+  explicit-only quarantine policy, provenance metadata, source-root checks,
+  symlink-tree rejection, and a user-facing aggregate card without raw IDs or
+  paths.
+- Stage 6 evidence: full Swift gate passed 563 tests in 59 suites, including
+  outside-root, opaque-destination, and quarantine metadata rollback tests.
+- Stage 7 started: measure and enforce manager-only performance budgets without
+  changing Chromium runtime behavior.

@@ -181,6 +181,8 @@ struct ContentView: View {
     @State private var fingerprintAuditRequest: FingerprintAuditRequest?
     @State private var privacyPanelByProfileID:
         [UUID: ProfilePrivacyPanelSnapshot] = [:]
+    @State private var artifactProvenanceByProfileID:
+        [UUID: ProfileArtifactProvenanceSnapshot] = [:]
     @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
@@ -812,6 +814,14 @@ struct ContentView: View {
         }
         .task {
             await loadProxyHealth()
+        }
+        .task(id: selectedProfile?.id) {
+            guard let profile = selectedProfile else { return }
+            artifactProvenanceByProfileID[profile.id] =
+                ProfileArtifactProvenanceSnapshot.inspect(
+                    profileID: profile.id,
+                    paths: store.paths
+                )
         }
         .onDisappear {
             cancelProxyTests()
@@ -2226,6 +2236,8 @@ struct ContentView: View {
                 ),
                 privacyPanel: privacyPanelByProfileID[profile.id]
                     ?? .empty,
+                artifactProvenance: artifactProvenanceByProfileID[profile.id]
+                    ?? .empty,
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
@@ -3271,6 +3283,7 @@ struct ProfileDetailView: View {
     let browserDataPath: String
     var lifecycleHealth: ProfileLifecycleHealthSnapshot = .empty
     var privacyPanel: ProfilePrivacyPanelSnapshot = .empty
+    var artifactProvenance: ProfileArtifactProvenanceSnapshot = .empty
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var isTestingProxy: Bool = false
@@ -3396,6 +3409,7 @@ struct ProfileDetailView: View {
 
             ProfileLifecycleHealthView(snapshot: lifecycleHealth)
             ProfilePrivacyPanelView(snapshot: privacyPanel)
+            ProfileArtifactProvenanceView(snapshot: artifactProvenance)
 
             Button {
                 technicalDetailsExpanded.toggle()
