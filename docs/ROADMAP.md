@@ -55,6 +55,13 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - развивать единый immutable workspace snapshot как внутренний контракт UI и
   будущих локальных адаптеров; публичная DTO остаётся явным allowlist без
   browser paths, proxy endpoints, credentials, IP и fingerprint evidence.
+- ядро переноса только конфигурации профиля уже реализовано в
+  `ProfileConfigurationTransferDocument`: версионированный JSON содержит имя,
+  внешний вид, теги, стартовый URL, настройки прокси без пароля и имя папки;
+  импорт создаёт новый UUID и новый identity seed, а заметки, cookies,
+  BrowserData, last-launch state, fingerprint evidence и Keychain не покидают
+  локальное хранилище. UI-файл-диалог и атомарное распределение по папкам —
+  следующий вертикальный срез.
 
 ## P2: production quality
 
