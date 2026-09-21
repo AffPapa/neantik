@@ -43,6 +43,10 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - provenance/quarantine для Downloads/Extensions с explicit-only политикой и
   Safe Browsing без ослабления;
 - manager performance budgets и read-only runtime provenance card;
+- immutable `WorkspaceSnapshot` и allowlisted `WorkspacePublicSnapshotDTO`
+  как безопасный внутренний контракт для будущих локальных read-only
+  адаптеров; browser paths, credentials, IP и raw fingerprint evidence в DTO
+  отсутствуют;
 - полный Swift gate: 575 тестов в 61 suite, включая manager, privacy,
   isolation, lifecycle, provenance и performance проверки.
 
@@ -53,9 +57,9 @@ P1 ниже содержит только долгосрочные улучше�
 
 - воспроизводимые budgets для cold/warm start именно Chromium runtime, idle
   CPU/RAM и browser launch;
-- immutable workspace snapshot как внутренний контракт будущих локальных
-  адаптеров, при сохранении allowlist DTO без browser paths, credentials, IP и
-  fingerprint evidence;
+- подключение будущего read-only локального адаптера к уже проверенному
+  snapshot-контракту; сам сетевой API по-прежнему выключен и не входит в
+  текущий Direct product surface;
 - инвентаризация фоновых Chromium-запросов и решение вопроса защиты от
   фишинга и опасных загрузок; manager-поверхности уже описаны в
   `docs/NETWORK_REQUEST_INVENTORY.md`, а Chromium остаётся `unverified` до
