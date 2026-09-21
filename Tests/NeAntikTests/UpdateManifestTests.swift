@@ -38,6 +38,20 @@ struct UpdateManifestTests {
     }
 
     @Test
+    func rejectsUnapprovedManifestHost() {
+        let configuration = UpdateChannelConfiguration.fromInfoDictionary([
+            UpdateChannelConfiguration.enabledKey: true,
+            UpdateChannelConfiguration.manifestURLKey:
+                "https://updates.example.net/update.json",
+            UpdateChannelConfiguration.publicKeyIDKey: "release-2026",
+            UpdateChannelConfiguration.publicKeyKey:
+                Data(repeating: 1, count: 32).base64EncodedString()
+        ])
+
+        #expect(!configuration.isEnabled)
+    }
+
+    @Test
     func verifiesSignedPublicNotarizedArm64Update() throws {
         let key = Curve25519.Signing.PrivateKey()
         let configuration = configuredChannel(publicKey: key.publicKey)

@@ -88,6 +88,45 @@ class DirectUpdatePolicyTests(unittest.TestCase):
             with self.assertRaises(MODULE.UpdatePolicyError):
                 MODULE.verify(info_plist=plist_path)
 
+    def test_rejects_unapproved_manifest_host(self) -> None:
+        info = self.base_info()
+        info.update(
+            {
+                "NeAntikUpdateChannelEnabled": True,
+                "NeAntikUpdateManifestURL":
+                    "https://updates.example.net/update.json",
+                "NeAntikUpdatePublicKeyID": "release-2026",
+                "NeAntikUpdatePublicKeyBase64":
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            plist_path = Path(temporary) / "Info.plist"
+            with plist_path.open("wb") as handle:
+                plistlib.dump(info, handle)
+            with self.assertRaises(MODULE.UpdatePolicyError):
+                MODULE.verify(info_plist=plist_path)
+
+    def test_rejects_malformed_manifest_url_without_crashing(self) -> None:
+        info = self.base_info()
+        info.update(
+            {
+                "NeAntikUpdateChannelEnabled": True,
+                "NeAntikUpdateManifestURL": "https://[broken/update.json",
+                "NeAntikUpdatePublicKeyID": "release-2026",
+                "NeAntikUpdatePublicKeyBase64":
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            plist_path = Path(temporary) / "Info.plist"
+            with plist_path.open("wb") as handle:
+                plistlib.dump(info, handle)
+            with self.assertRaises(MODULE.UpdatePolicyError):
+                MODULE.verify(info_plist=plist_path)
+
     @staticmethod
     def base_info() -> dict[str, object]:
         return {

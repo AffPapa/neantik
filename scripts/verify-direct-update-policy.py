@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 INFO_PLIST = PROJECT_ROOT / "Resources" / "Info.plist"
 SWIFT_SOURCE = PROJECT_ROOT / "Sources" / "NeAntik" / "UpdateManifest.swift"
+APPROVED_PUBLIC_HOSTS = {"affpapa.org", "browser.free", "github.com"}
 
 
 class UpdatePolicyError(ValueError):
@@ -21,11 +22,17 @@ class UpdatePolicyError(ValueError):
 
 
 def validate_https_manifest_url(value: str) -> None:
-    parsed = urlsplit(value)
-    host = (parsed.hostname or "").lower()
+    try:
+        parsed = urlsplit(value)
+        host = (parsed.hostname or "").lower()
+    except ValueError as error:
+        raise UpdatePolicyError(
+            "enabled update manifest URL must be credential-free HTTPS JSON"
+        ) from error
     if (
         parsed.scheme != "https"
         or not host
+        or host not in APPROVED_PUBLIC_HOSTS
         or parsed.username is not None
         or parsed.password is not None
         or parsed.query
@@ -104,6 +111,7 @@ def verify(
         'payload.publicReleaseState == "public-ready"',
         "maximumLifetime",
         "components.scheme == \"https\"",
+        "NeAntikPublicHostPolicy.allows",
     )
     missing = [item for item in required_contracts if item not in source]
     if missing:

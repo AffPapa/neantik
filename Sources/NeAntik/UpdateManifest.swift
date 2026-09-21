@@ -1,6 +1,18 @@
 import CryptoKit
 import Foundation
 
+enum NeAntikPublicHostPolicy {
+    static let approvedHosts: Set<String> = [
+        "affpapa.org",
+        "browser.free",
+        "github.com"
+    ]
+
+    static func allows(_ value: String) -> Bool {
+        approvedHosts.contains(value.lowercased())
+    }
+}
+
 struct UpdateChannelConfiguration: Equatable, Sendable {
     static let enabledKey = "NeAntikUpdateChannelEnabled"
     static let manifestURLKey = "NeAntikUpdateManifestURL"
@@ -63,14 +75,7 @@ struct UpdateChannelConfiguration: Equatable, Sendable {
     }
 
     private static func isPublicManifestHost(_ value: String) -> Bool {
-        let host = value.lowercased()
-        return host != "localhost" &&
-            host != "::1" &&
-            !host.hasPrefix("127.") &&
-            !host.hasSuffix(".local") &&
-            !host.hasSuffix(".test") &&
-            !host.hasSuffix(".invalid") &&
-            !host.hasSuffix(".example")
+        NeAntikPublicHostPolicy.allows(value)
     }
 
     private static func validatedKeyID(_ value: String) -> String? {
@@ -280,14 +285,7 @@ enum UpdateManifestVerifier {
     }
 
     private static func isPublicReleaseHost(_ value: String) -> Bool {
-        let host = value.lowercased()
-        return host != "localhost" &&
-            host != "::1" &&
-            !host.hasPrefix("127.") &&
-            !host.hasSuffix(".local") &&
-            !host.hasSuffix(".test") &&
-            !host.hasSuffix(".invalid") &&
-            !host.hasSuffix(".example")
+        NeAntikPublicHostPolicy.allows(value)
     }
 
     private static func versionComponents(
