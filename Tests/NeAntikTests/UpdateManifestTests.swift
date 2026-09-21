@@ -155,6 +155,26 @@ struct UpdateManifestTests {
     }
 
     @Test
+    func rejectsSignedArchiveWithUnapprovedDownloadHost() throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let configuration = configuredChannel(publicKey: key.publicKey)
+        let payload = validPayload(
+            downloadURL:
+                "https://updates.example.net/NeAntik-0.3.13-arm64-notarized.zip"
+        )
+
+        #expect(throws: UpdateManifestError.invalidReleaseContract) {
+            try UpdateManifestVerifier.verify(
+                signedEnvelope(payload: payload, key: key),
+                configuration: configuration,
+                installedVersion: "0.3.12",
+                installedBuild: 15,
+                now: now
+            )
+        }
+    }
+
+    @Test
     func currentReleaseCanBeVerifiedWithoutBeingReportedAsNewer() throws {
         let key = Curve25519.Signing.PrivateKey()
         let configuration = configuredChannel(publicKey: key.publicKey)
@@ -204,7 +224,8 @@ struct UpdateManifestTests {
 
     private func validPayload(
         issuedAt: Date? = nil,
-        expiresAt: Date? = nil
+        expiresAt: Date? = nil,
+        downloadURL: String? = nil
     ) -> UpdateManifestPayload {
         UpdateManifestPayload(
             schemaVersion: 1,
@@ -215,7 +236,7 @@ struct UpdateManifestTests {
             issuedAt: issuedAt ?? now.addingTimeInterval(-60),
             expiresAt: expiresAt ?? now.addingTimeInterval(7 * 24 * 60 * 60),
             archiveName: "NeAntik-0.3.13-arm64-notarized.zip",
-            downloadURL:
+            downloadURL: downloadURL ??
                 "https://affpapa.org/neantik/downloads/NeAntik-0.3.13-arm64-notarized.zip",
             sha256: String(repeating: "a", count: 64),
             minimumOS: "14.0",

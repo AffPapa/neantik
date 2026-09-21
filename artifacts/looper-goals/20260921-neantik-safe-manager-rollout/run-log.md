@@ -169,3 +169,6 @@
   security/rebase are blocked. Release decision remains
   `blocked-until-exact-runtime-and-live-gates`; no Chromium rebuild or Direct
   publication was attempted.
+- Added an explicit signed-download-host regression test. The full Swift gate
+  now passes `569` tests in `61` suites, including both manifest and artifact
+  host allowlist cases. Chromium was not rebuilt.
