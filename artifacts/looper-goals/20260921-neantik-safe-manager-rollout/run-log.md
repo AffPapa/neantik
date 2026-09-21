@@ -217,3 +217,9 @@
   Chromium background-request inventory is honestly `unverified` until exact
   runtime/source evidence exists. Aggregate audit remains partial with the
   same runtime security/rebase blockers.
+- Runtime provenance follow-up: the manager card now separates ordinary local
+  launch readiness from Direct-release eligibility. A fingerprint runtime below
+  Chromium `153.0.8010.52`, or one without a verified version, is visibly marked
+  as blocked for Direct publication while remaining honest about the separate
+  launch preflight result. Focused tests and the full Swift gate passed `576`
+  tests in `61` suites; manager Release build passed. Chromium was not rebuilt.

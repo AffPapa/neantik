@@ -15,6 +15,10 @@ struct RuntimeProvenanceCardView: View {
                 LabeledContent("Исполняемый файл", value: snapshot.executableDigest)
                 LabeledContent("Framework", value: snapshot.frameworkDigest)
                 LabeledContent("Проверка запуска", value: snapshot.preflight)
+                LabeledContent(
+                    "Статус Direct-релиза",
+                    value: snapshot.publicReleaseStatus
+                )
                 Text(
                     "Показывается только безопасное резюме текущей локальной проверки; пути и полные хэши не выводятся."
                 )

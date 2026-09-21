@@ -47,7 +47,7 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   как безопасный внутренний контракт для будущих локальных read-only
   адаптеров; browser paths, credentials, IP и raw fingerprint evidence в DTO
   отсутствуют;
-- полный Swift gate: 575 тестов в 61 suite, включая manager, privacy,
+- полный Swift gate: 576 тестов в 61 suite, включая manager, privacy,
   isolation, lifecycle, provenance и performance проверки.
 
 ## P1: public beta

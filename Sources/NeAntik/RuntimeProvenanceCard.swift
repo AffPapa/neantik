@@ -10,7 +10,8 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
         signature: "Не проверена",
         executableDigest: "Не измерен",
         frameworkDigest: "Не измерен",
-        preflight: "Проверка не завершена"
+        preflight: "Проверка не завершена",
+        publicReleaseStatus: "Не определён"
     )
 
     let name: String
@@ -22,6 +23,7 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
     let executableDigest: String
     let frameworkDigest: String
     let preflight: String
+    let publicReleaseStatus: String
 
     static func inspect(
         runtime: BrowserRuntime?,
@@ -42,6 +44,20 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
         case .some(false): "Невалидна"
         case .none: "Не проверена"
         }
+        let publicReleaseStatus: String
+        if runtime.flavor != .fingerprintChromium {
+            publicReleaseStatus = "Не применяется к обычному движку"
+        } else if let version = inspection.version,
+                  Self.meetsPublicChromiumBaseline(version)
+        {
+            publicReleaseStatus = "Соответствует baseline"
+        } else if inspection.version == nil {
+            publicReleaseStatus =
+                "Версия не проверена — Direct-релиз заблокирован"
+        } else {
+            publicReleaseStatus =
+                "Ниже baseline 153.0.8010.52 — Direct-релиз заблокирован"
+        }
         return Self(
             name: runtime.name,
             version: inspection.version ?? "Неизвестна",
@@ -57,7 +73,28 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
                 : "Измерен локально",
             preflight: preflight?.isReady == true
                 ? "Готов к запуску"
-                : (preflight == nil ? "Проверка не завершена" : "Требует внимания")
+                : (preflight == nil ? "Проверка не завершена" : "Требует внимания"),
+            publicReleaseStatus: publicReleaseStatus
         )
+    }
+
+    private static func meetsPublicChromiumBaseline(
+        _ value: String
+    ) -> Bool {
+        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 4,
+              parts.allSatisfy({
+                  !$0.isEmpty &&
+                      $0.allSatisfy(\.isNumber) &&
+                      ($0.count == 1 || $0.first != "0")
+              }),
+              parts.compactMap({ Int($0) }).count == 4
+        else {
+            return false
+        }
+        let components = parts.compactMap { Int($0) }
+        return components.lexicographicallyPrecedes(
+            [153, 0, 8010, 52]
+        ) == false
     }
 }
