@@ -29,3 +29,11 @@
   missing-data, active-lock, recovery-marker, and aggregate-presentation tests.
 - Stage 4 started: expose only bounded media/permission status and never device
   IDs, raw media labels, or unredacted browser diagnostics.
+- Stage 4 delivered: local audit results now feed a session-only privacy panel
+  with availability, a count capped at 256, and camera/microphone permission
+  states. The panel deliberately discards labels, IDs, identity codes, and raw
+  surface values.
+- Stage 4 evidence: full Swift gate passed 559 tests in 58 suites, including
+  malformed/unbounded privacy input tests and UI render compatibility.
+- Stage 5 started: replace any user-facing detected-IP success text with the
+  bounded route-confirmed wording while retaining only coarse context.

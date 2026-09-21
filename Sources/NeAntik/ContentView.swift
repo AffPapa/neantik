@@ -179,6 +179,8 @@ struct ContentView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingReleaseFingerprintAudit = false
     @State private var fingerprintAuditRequest: FingerprintAuditRequest?
+    @State private var privacyPanelByProfileID:
+        [UUID: ProfilePrivacyPanelSnapshot] = [:]
     @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
@@ -584,6 +586,10 @@ struct ContentView: View {
                 processes: processes,
                 paths: store.paths,
                 onReport: { report in
+                    privacyPanelByProfileID[report.firstInitial.profileID] =
+                        ProfilePrivacyPanelSnapshot.from(
+                            capture: report.firstInitial
+                        )
                     for observation in
                         report.revisionBoundFingerprintObservations(
                             auditedProfiles: request.auditedProfiles,
@@ -2218,6 +2224,8 @@ struct ContentView: View {
                     processState: presentedProcessState(for: profile),
                     paths: store.paths
                 ),
+                privacyPanel: privacyPanelByProfileID[profile.id]
+                    ?? .empty,
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
@@ -3262,6 +3270,7 @@ struct ProfileDetailView: View {
     let processState: BrowserProfileProcessState
     let browserDataPath: String
     var lifecycleHealth: ProfileLifecycleHealthSnapshot = .empty
+    var privacyPanel: ProfilePrivacyPanelSnapshot = .empty
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var isTestingProxy: Bool = false
@@ -3386,6 +3395,7 @@ struct ProfileDetailView: View {
             }
 
             ProfileLifecycleHealthView(snapshot: lifecycleHealth)
+            ProfilePrivacyPanelView(snapshot: privacyPanel)
 
             Button {
                 technicalDetailsExpanded.toggle()

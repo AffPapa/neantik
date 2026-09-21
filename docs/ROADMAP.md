@@ -64,7 +64,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   профили, переиспользует совпадающие папки и откатывает профили, папки и
   BrowserData при ошибке. Профильная карточка также показывает агрегированный
   lifecycle health center: lock, размер BrowserData, recovery и последний
-  запуск без raw path/PID/служебных аргументов.
+  запуск без raw path/PID/служебных аргументов. После локального fingerprint
+  audit доступна отдельная privacy-панель media/permissions: только статусы и
+  bounded count, без device IDs, названий устройств и сырых значений.
 
 ## P2: production quality
 
