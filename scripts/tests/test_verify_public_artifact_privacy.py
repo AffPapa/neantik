@@ -481,6 +481,21 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                             artifact=archive
                         )
 
+    def test_opaque_packaged_resources_ignore_ui_key_value_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "public.zip"
+            resource = (
+                "public/App.app/Contents/Frameworks/Test.framework/"
+                "Versions/1/Resources/en.lproj/locale.pak"
+            )
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr(
+                    resource,
+                    b"cookies: enabled\\x00credentials: managed\\x00",
+                )
+
+            MODULE.verify_public_artifact_privacy(artifact=archive)
+
     def test_rejects_normalized_sensitive_json_classes_without_echoing_values(self) -> None:
         sensitive = {
             "cookies": ["cookie-secret"],
@@ -739,6 +754,47 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 MODULE.PublicArtifactPrivacyError,
                 "ZIP symlink",
+            ):
+                MODULE.verify_public_artifact_privacy(artifact=archive)
+
+    def test_accepts_self_contained_macos_framework_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "public.zip"
+            framework = "public/App.app/Contents/Frameworks/Test.framework"
+            current = zipfile.ZipInfo(f"{framework}/Versions/Current")
+            current.create_system = 3
+            current.external_attr = (stat.S_IFLNK | 0o777) << 16
+            resources = zipfile.ZipInfo(f"{framework}/Resources")
+            resources.create_system = 3
+            resources.external_attr = (stat.S_IFLNK | 0o777) << 16
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr("public/release.json", '{"version":"0.7.3"}')
+                output.writestr(
+                    f"{framework}/Versions/1/Resources/readme.txt",
+                    "clean",
+                )
+                output.writestr(current, "1")
+                output.writestr(resources, "Versions/Current/Resources")
+
+            result = MODULE.verify_public_artifact_privacy(artifact=archive)
+
+            self.assertEqual(result.scanned_entries, 2)
+
+    def test_rejects_framework_symlink_with_external_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "public.zip"
+            link = zipfile.ZipInfo(
+                "public/App.app/Contents/Frameworks/Test.framework/Resources"
+            )
+            link.create_system = 3
+            link.external_attr = (stat.S_IFLNK | 0o777) << 16
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr("public/release.json", '{"version":"0.7.3"}')
+                output.writestr(link, "/Users/alice/private")
+
+            with self.assertRaisesRegex(
+                MODULE.PublicArtifactPrivacyError,
+                "ZIP symlink target is unsafe",
             ):
                 MODULE.verify_public_artifact_privacy(artifact=archive)
 

@@ -143,3 +143,11 @@
   public version `0.7.3/66`, Chromium `153.0.8010.36`, repository baseline
   `153.0.8010.52`, local candidate `0.3.20 (23)`, and the no-anonymity/no-bypass
   safety boundary. Older runtime versions remain only in historical snapshots.
+- Public v0.7.3 artifact privacy audit: re-downloaded GitHub ZIP sidecar hashes
+  match (`c380a1a4...`); the verifier now accepts only self-contained macOS
+  framework symlinks and scans signed app payloads as bounded binaries. Generic
+  key/value labels in opaque Chromium resources are intentionally ignored as
+  low-confidence UI/localization strings, while the historical public ZIP still
+  fails on two high-confidence framework findings: an absolute `/Users` build
+  path and a credentialed proxy URI. No public artifact was rewritten or
+  republished; a new exact-runtime build must pass this gate before release.

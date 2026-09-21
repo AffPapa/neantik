@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import posixpath
 import re
 import stat
 import sys
@@ -147,8 +148,9 @@ SAFE_SECRET_MARKERS = {
 }
 MAX_TEXT_FILE_BYTES = 16 * 1024 * 1024
 MAX_BINARY_FILE_BYTES = 64 * 1024 * 1024
+MAX_PACKAGED_BINARY_FILE_BYTES = 512 * 1024 * 1024
 MAX_TOTAL_TEXT_BYTES = 128 * 1024 * 1024
-MAX_TOTAL_ARTIFACT_BYTES = 256 * 1024 * 1024
+MAX_TOTAL_ARTIFACT_BYTES = 512 * 1024 * 1024
 PUBLIC_ATTESTATION_KEYS = {
     "auditSchemaVersion",
     "changedCriticalKeys",
@@ -267,6 +269,20 @@ def is_text_entry(name: str) -> bool:
     return suffix in TEXT_SUFFIXES or suffix in SOURCE_SUFFIXES
 
 
+def is_apple_code_resources_entry(name: str) -> bool:
+    path = PurePosixPath(name)
+    return path.name == "CodeResources" and (
+        "_CodeSignature" in path.parts or "Contents" in path.parts
+    )
+
+
+def is_packaged_app_entry(name: str) -> bool:
+    parts = PurePosixPath(name).parts
+    return "Contents" in parts and any(
+        part.endswith(".app") for part in parts
+    )
+
+
 def validate_safe_binary(name: str, payload: bytes) -> None:
     suffix = PurePosixPath(name).suffix.lower()
     signatures = SAFE_BINARY_SIGNATURES.get(suffix)
@@ -290,6 +306,19 @@ def validate_binary_size(name: str, size: int) -> None:
             "Binary entry is too large for deterministic privacy verification: "
             + name
         )
+
+
+def validate_apple_code_resources(name: str, payload: bytes) -> None:
+    """Validate the two signed CodeResources encodings emitted by macOS."""
+
+    stripped = payload.lstrip()
+    if payload.startswith((b"s8ch", b"bplist00")) or stripped.startswith(
+        (b"<?xml", b"<!DOCTYPE plist", b"<plist")
+    ):
+        return
+    raise PublicArtifactPrivacyError(
+        f"Apple CodeResources entry has an invalid signature: {name}"
+    )
 
 
 def read_bounded_payload(
@@ -363,12 +392,121 @@ def validate_zip_members(infos: list[zipfile.ZipInfo]) -> None:
         if info.is_dir():
             continue
         if stat.S_ISLNK(mode):
-            raise PublicArtifactPrivacyError(
-                f"Public artifact contains a ZIP symlink: {name}"
-            )
+            if ".framework/" not in name:
+                raise PublicArtifactPrivacyError(
+                    f"Public artifact contains a ZIP symlink: {name}"
+                )
+            continue
         if not zip_member_is_regular(info):
             raise PublicArtifactPrivacyError(
                 f"Public artifact contains a non-regular ZIP entry: {name}"
+            )
+
+
+def zip_member_is_symlink(info: zipfile.ZipInfo) -> bool:
+    mode = info.external_attr >> 16
+    return stat.S_ISLNK(mode)
+
+
+def validate_zip_symlinks(
+    archive: zipfile.ZipFile,
+    infos: list[zipfile.ZipInfo],
+) -> None:
+    """Allow only self-contained relative symlinks used by macOS frameworks."""
+
+    info_by_name = {info.filename: info for info in infos}
+    symlink_targets: dict[str, str] = {}
+    for info in infos:
+        if not zip_member_is_symlink(info):
+            continue
+        name = info.filename
+        if info.file_size > 4096:
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target is too large: {name}"
+            )
+        try:
+            target = archive.read(info).decode("utf-8")
+        except (UnicodeDecodeError, OSError, zipfile.BadZipFile) as error:
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target is not valid UTF-8: {name}"
+            ) from error
+        if (
+            not target
+            or "\x00" in target
+            or "\\" in target
+            or PurePosixPath(target).is_absolute()
+        ):
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target is unsafe: {name}"
+            )
+        target_parts = PurePosixPath(target).parts
+        if any(part in {"", ".", ".."} for part in target_parts):
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target escapes its framework: {name}"
+            )
+        symlink_targets[name] = target
+
+    for name, target in symlink_targets.items():
+        framework_root = name.split(".framework/", 1)[0] + ".framework"
+        current = PurePosixPath(
+            posixpath.normpath(
+                (PurePosixPath(name).parent / target).as_posix()
+            )
+        )
+        visited = {current.as_posix()}
+        for _ in range(16):
+            current_text = current.as_posix()
+            if not (
+                current_text == framework_root
+                or current_text.startswith(framework_root + "/")
+            ):
+                raise PublicArtifactPrivacyError(
+                    f"ZIP symlink target escapes its framework: {name}"
+                )
+            current_parts = current.parts
+            linked_prefix: str | None = None
+            linked_target: str | None = None
+            for index in range(1, len(current_parts) + 1):
+                prefix = PurePosixPath(*current_parts[:index]).as_posix()
+                if prefix in symlink_targets:
+                    linked_prefix = prefix
+                    linked_target = symlink_targets[prefix]
+                    break
+            if linked_target is None or linked_prefix is None:
+                has_entry = current_text in info_by_name
+                has_descendant = any(
+                    member.startswith(current_text + "/")
+                    for member in info_by_name
+                )
+                if not has_entry and not has_descendant:
+                    raise PublicArtifactPrivacyError(
+                        f"ZIP symlink target is missing: {name}"
+                    )
+                break
+            if linked_prefix in visited:
+                raise PublicArtifactPrivacyError(
+                    f"ZIP symlink target cycle: {name}"
+                )
+            visited.add(linked_prefix)
+            linked_parts = PurePosixPath(linked_target).parts
+            if any(part in {"", ".", ".."} for part in linked_parts):
+                raise PublicArtifactPrivacyError(
+                    f"ZIP symlink target escapes its framework: {name}"
+                )
+            prefix_parts = PurePosixPath(linked_prefix).parts
+            suffix_parts = current_parts[len(prefix_parts) :]
+            current = PurePosixPath(
+                posixpath.normpath(
+                    (
+                        PurePosixPath(*prefix_parts[:-1])
+                        / linked_target
+                        / PurePosixPath(*suffix_parts)
+                    ).as_posix()
+                )
+            )
+        else:
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target chain is too deep: {name}"
             )
 
 
@@ -449,11 +587,49 @@ def iter_zip_entries(archive_path: Path) -> Iterator[ArtifactEntry]:
     with zipfile.ZipFile(archive_path) as archive:
         infos = archive.infolist()
         validate_zip_members(infos)
+        validate_zip_symlinks(archive, infos)
         for info in sorted(infos, key=lambda item: item.filename):
-            if info.is_dir():
+            if info.is_dir() or zip_member_is_symlink(info):
                 continue
             name = info.filename
-            if is_text_entry(name):
+            if is_apple_code_resources_entry(name):
+                validate_binary_size(name, info.file_size)
+                with archive.open(info) as file:
+                    payload = read_bounded_payload(
+                        file,
+                        limit=MAX_BINARY_FILE_BYTES,
+                        name=name,
+                        kind="Binary",
+                    )
+                validate_apple_code_resources(name, payload)
+                yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+            elif is_packaged_app_entry(name):
+                # A signed macOS application contains extensionless Mach-O
+                # files and opaque resources such as Assets.car and .pak.
+                # Read them as bounded binary payloads and scan metadata; do
+                # not apply source/archive UTF-8 or image-signature rules.
+                if info.file_size > MAX_PACKAGED_BINARY_FILE_BYTES:
+                    raise PublicArtifactPrivacyError(
+                        "Packaged application binary is too large for deterministic "
+                        f"privacy verification: {name}"
+                    )
+                with archive.open(info) as file:
+                    payload = read_bounded_payload(
+                        file,
+                        limit=MAX_PACKAGED_BINARY_FILE_BYTES,
+                        name=name,
+                        kind="Binary",
+                    )
+                if is_text_entry(name):
+                    try:
+                        payload.decode("utf-8")
+                    except UnicodeDecodeError:
+                        pass
+                    else:
+                        yield ArtifactEntry(name=name, payload=payload)
+                        continue
+                yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+            elif is_text_entry(name):
                 if info.file_size > MAX_TEXT_FILE_BYTES:
                     raise PublicArtifactPrivacyError(
                         "Text entry is too large for deterministic privacy "
@@ -486,6 +662,19 @@ def iter_zip_entries(archive_path: Path) -> Iterator[ArtifactEntry]:
 
 def iter_regular_file_entry(path: Path) -> Iterator[ArtifactEntry]:
     name = path.name
+    if is_apple_code_resources_entry(name):
+        size = path.stat().st_size
+        validate_binary_size(name, size)
+        with path.open("rb") as file:
+            payload = read_bounded_payload(
+                file,
+                limit=MAX_BINARY_FILE_BYTES,
+                name=name,
+                kind="Binary",
+            )
+        validate_apple_code_resources(name, payload)
+        yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+        return
     if is_text_entry(name):
         if path.stat().st_size > MAX_TEXT_FILE_BYTES:
             raise PublicArtifactPrivacyError(
@@ -626,15 +815,16 @@ def inspect_text(
 
 def inspect_binary(entry: ArtifactEntry) -> list[Finding]:
     findings: list[Finding] = []
-    # Scan the complete bounded payload. Removing NUL bytes also exposes common
-    # UTF-16 metadata without trusting image/PDF metadata parsers.
-    candidates = (
-        entry.payload.decode("latin-1", errors="ignore"),
-        entry.payload.replace(b"\x00", b"").decode(
-            "latin-1",
-            errors="ignore",
-        ),
-    )
+    # Scan printable runs rather than decoding arbitrary binary bytes as
+    # latin-1. Otherwise unrelated bytes can bridge a regex across a Mach-O or
+    # PAK payload and create false credential/path findings. Removing NUL bytes
+    # still exposes common UTF-16 metadata without trusting binary parsers.
+    candidates: list[str] = []
+    for payload in (entry.payload, entry.payload.replace(b"\x00", b"")):
+        candidates.extend(
+            match.group(0).decode("latin-1", errors="ignore")
+            for match in re.finditer(rb"[\x20-\x7e]{4,}", payload)
+        )
     for text in candidates:
         if ABSOLUTE_USER_PATH_RE.search(text):
             add_finding(
@@ -656,14 +846,12 @@ def inspect_binary(entry: ArtifactEntry) -> list[Finding]:
                     kind="proxy credentials in binary metadata",
                 )
                 break
-        for match in BINARY_SENSITIVE_ASSIGNMENT_RE.finditer(text):
-            if not safe_secret(match.group(1)):
-                add_finding(
-                    findings,
-                    entry=entry.name,
-                    kind="credentials in binary metadata",
-                )
-                break
+        # Opaque Mach-O/PAK payloads contain UI and localization strings such
+        # as ``cookies: ...`` and ``credentials: ...``.  Treating every
+        # printable key/value label as a secret creates false positives in
+        # Chromium's compiled resources.  Structured text entries are still
+        # checked by inspect_text/inspect_json; opaque binaries retain only
+        # high-confidence path, identity-code, and credentialed-URI checks.
         for match in PROXY_PASSWORD_ASSIGNMENT_RE.finditer(text):
             if not safe_secret(match.group(1)):
                 add_finding(
