@@ -55,6 +55,9 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             [ProfileConfigurationTransferEntry].self,
             forKey: .profiles
         )
+        guard !profiles.isEmpty else {
+            throw ProfileConfigurationTransferError.emptyDocument
+        }
         guard profiles.count <= Self.maximumProfileCount else {
             throw ProfileConfigurationTransferError.tooManyProfiles
         }
@@ -109,16 +112,11 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
     private static func validateFolderNames(
         in profiles: [ProfileConfigurationTransferEntry]
     ) throws {
-        var seen = Set<String>()
         for profile in profiles {
             guard let folderName = profile.folderName else { continue }
             guard let normalized = ProfileFolder.normalizedName(folderName),
                   normalized == folderName else {
                 throw ProfileConfigurationTransferError.invalidFolderName
-            }
-            let key = ProfileFolder.comparisonKey(normalized)
-            guard seen.insert(key).inserted else {
-                throw ProfileConfigurationTransferError.duplicateFolderName
             }
         }
     }
@@ -205,10 +203,10 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
 enum ProfileConfigurationTransferError: LocalizedError, Equatable, Sendable {
     case unsupportedSchema
     case invalidDate
+    case emptyDocument
     case tooManyProfiles
     case invalidProfile
     case invalidFolderName
-    case duplicateFolderName
 
     var errorDescription: String? {
         switch self {
@@ -216,14 +214,14 @@ enum ProfileConfigurationTransferError: LocalizedError, Equatable, Sendable {
             "Файл конфигурации создан другой версией NeAntik."
         case .invalidDate:
             "Файл конфигурации содержит некорректную дату."
+        case .emptyDocument:
+            "Файл конфигурации не содержит профилей."
         case .tooManyProfiles:
             "Файл конфигурации содержит слишком много профилей."
         case .invalidProfile:
             "Файл конфигурации содержит некорректные параметры профиля."
         case .invalidFolderName:
             "Файл конфигурации содержит некорректное имя папки."
-        case .duplicateFolderName:
-            "Файл конфигурации содержит повторяющиеся папки."
         }
     }
 }

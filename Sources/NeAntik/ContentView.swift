@@ -257,6 +257,8 @@ struct ContentView: View {
             selectedFolderName: selectedFolder?.name,
             createProfile: beginCreatingProfile,
             createFolder: beginCreatingFolder,
+            exportProfiles: exportProfileConfigurations,
+            importProfiles: importProfileConfigurations,
             focusProfileSearch: { profileSearchIsFocused = true },
             renameSelectedFolder: {
                 guard let selectedFolder else { return }
@@ -1103,6 +1105,59 @@ struct ContentView: View {
     private func beginCreatingFolder() {
         guard !isWorkspaceModalPresented else { return }
         folderNameRequest = FolderNameRequest(folder: nil)
+    }
+
+    private func exportProfileConfigurations() {
+        let stoppedProfiles = store.profiles.filter {
+            processes.processState(for: $0.id) == .stopped
+        }
+        let folderNames: [UUID: String] = Dictionary(
+            uniqueKeysWithValues: stoppedProfiles.compactMap {
+                profile in
+                guard let folderID = store.folderID(forProfileID: profile.id),
+                      let folder = store.folder(withID: folderID)
+                else {
+                    return nil
+                }
+                return (profile.id, folder.name)
+            }
+        )
+        do {
+            guard let count = try ProfileConfigurationTransferFileCoordinator.export(
+                profiles: stoppedProfiles,
+                folderNameByProfileID: folderNames
+            ) else {
+                return
+            }
+            announceWorkspaceStatus(
+                "Экспортировано " + String(count) + " " +
+                    profileCountWord(count) +
+                    " без данных браузера и секретов."
+            )
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func importProfileConfigurations() {
+        do {
+            guard let document = try ProfileConfigurationTransferFileCoordinator.import()
+            else {
+                return
+            }
+            let imported = try document.makeProfiles()
+            let saved = try store.insertNewProfiles(imported) { _ in }
+            if let first = saved.first {
+                revealSavedProfile(first)
+            }
+            announceWorkspaceStatus(
+                "Импортировано " + String(saved.count) + " " +
+                    profileCountWord(saved.count) +
+                    ". Папки будут распределены на следующем шаге."
+            )
+        } catch {
+            localError = error.localizedDescription
+        }
     }
 
     private func createAndOpenFirstProfile() {

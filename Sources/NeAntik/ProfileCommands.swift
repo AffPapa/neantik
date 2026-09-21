@@ -158,6 +158,8 @@ struct WorkspaceCommandSet {
     let selectedFolderName: String?
     let createProfile: () -> Void
     let createFolder: () -> Void
+    let exportProfiles: () -> Void
+    let importProfiles: () -> Void
     let focusProfileSearch: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
@@ -167,6 +169,8 @@ struct WorkspaceCommandSet {
         selectedFolderName: nil,
         createProfile: {},
         createFolder: {},
+        exportProfiles: {},
+        importProfiles: {},
         focusProfileSearch: {},
         renameSelectedFolder: {},
         deleteSelectedFolder: {}
@@ -216,6 +220,22 @@ struct WorkspaceCommandMenu: Commands {
             Button("Найти профиль", action: resolved.focusProfileSearch)
                 .keyboardShortcut("f")
                 .disabled(!resolved.isEnabled)
+        }
+
+        CommandMenu("Профили") {
+            Button(
+                "Экспортировать конфигурацию…",
+                systemImage: "square.and.arrow.up",
+                action: resolved.exportProfiles
+            )
+            .disabled(!resolved.isEnabled)
+
+            Button(
+                "Импортировать конфигурацию…",
+                systemImage: "square.and.arrow.down",
+                action: resolved.importProfiles
+            )
+            .disabled(!resolved.isEnabled)
         }
 
         CommandMenu("Папка") {

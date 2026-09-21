@@ -58,7 +58,7 @@ struct ProfileConfigurationTransferTests {
     }
 
     @Test
-    func decoderRejectsDuplicateFoldersAndUnsupportedSchema() throws {
+    func decoderAcceptsSharedFoldersAndRejectsUnsupportedSchema() throws {
         let first = ProfileConfigurationTransferEntry(
             name: "Первый",
             colorHex: "#FF3B4D",
@@ -97,12 +97,11 @@ struct ProfileConfigurationTransferTests {
                 profiles: [first, second]
             )
         )
-        #expect(throws: ProfileConfigurationTransferError.duplicateFolderName) {
-            _ = try JSONDecoder().decode(
-                ProfileConfigurationTransferDocument.self,
-                from: duplicateData
-            )
-        }
+        let decoded = try JSONDecoder().decode(
+            ProfileConfigurationTransferDocument.self,
+            from: duplicateData
+        )
+        #expect(decoded.profiles.count == 2)
 
         let unsupportedData = try encoder.encode(
             Fixture(
