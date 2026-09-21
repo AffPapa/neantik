@@ -53,6 +53,13 @@ SECRET_PATTERNS = {
     "GitHub token": re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
 }
+RELEASE_MARKDOWN_FILENAME = re.compile(
+    r"^v(?P<version>\d+(?:\.\d+){2})\.md$"
+)
+RELEASE_MARKDOWN_HEADER = re.compile(
+    r"^#\s+NeAntik\s+(?P<version>\d+(?:\.\d+){2})\s+"
+    r"\((?P<build>\d+)\)\s*$"
+)
 TEXT_SUFFIXES = {
     "",
     ".command",
@@ -266,6 +273,74 @@ def verify_files(files: list[Path]) -> None:
             fail(f"{violation} found in {relative}")
 
 
+def read_markdown_release(path: Path) -> tuple[tuple[int, ...], int]:
+    match = RELEASE_MARKDOWN_FILENAME.fullmatch(path.name)
+    if match is None:
+        fail(f"invalid release record filename: {path.name}")
+    try:
+        first_line = path.read_text(encoding="utf-8").splitlines()[0]
+    except (OSError, UnicodeError, IndexError):
+        fail(f"release record {path.name} is empty or unreadable")
+    header = RELEASE_MARKDOWN_HEADER.fullmatch(first_line)
+    if header is None:
+        fail(f"release record {path.name} has no canonical version/build header")
+    version = header.group("version")
+    if version != match.group("version"):
+        fail(f"release record {path.name} version does not match its filename")
+    return tuple(int(part) for part in version.split(".")), int(header.group("build"))
+
+
+def read_public_release_floor(
+    metadata_files: list[Path],
+) -> tuple[tuple[int, ...], int]:
+    def version_key(metadata: dict[str, object]) -> tuple[int, ...]:
+        version = str(metadata.get("version", ""))
+        if not re.fullmatch(r"\d+(?:\.\d+)+", version):
+            fail(f"invalid release version in releases/v{version}.json")
+        return tuple(int(part) for part in version.split("."))
+
+    json_releases = [
+        (version_key(metadata), int(metadata["build"]))
+        for metadata in [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in metadata_files
+        ]
+    ]
+    markdown_releases = [
+        read_markdown_release(path)
+        for path in sorted((PROJECT_ROOT / "releases").glob("v*.md"))
+    ]
+    candidates = json_releases + markdown_releases
+    if not candidates:
+        fail("no checked-in release records found")
+    floor = max(candidates, key=lambda release: release[0])
+    same_version_builds = {
+        build for version, build in candidates if version == floor[0]
+    }
+    if len(same_version_builds) != 1:
+        fail("release records have conflicting builds for the latest version")
+    return floor
+
+
+def has_explicit_development_preview_marker(
+    app_version: str,
+    app_build: str,
+) -> bool:
+    token = f"`{app_version} ({app_build})`"
+    for name in ("README.md", "README.en.md"):
+        try:
+            text = (PROJECT_ROOT / name).read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return False
+        position = text.find(token)
+        if position < 0:
+            return False
+        context = text[max(0, position - 100) : position + 180].lower()
+        if "development preview" not in context and "предпросмотр" not in context:
+            return False
+    return True
+
+
 def verify_release_metadata() -> None:
     metadata_files = sorted((PROJECT_ROOT / "releases").glob("v*.json"))
     if not metadata_files:
@@ -302,12 +377,18 @@ def verify_release_metadata() -> None:
     if not app_build.isdigit():
         fail("Resources/Info.plist contains an invalid build number")
 
-    published_version = str(metadata["version"])
-    published_build = str(metadata["build"])
+    published_key, published_build_number = read_public_release_floor(
+        metadata_files
+    )
+    published_version = ".".join(str(part) for part in published_key)
+    published_build = str(published_build_number)
     app_key = tuple(int(part) for part in app_version.split("."))
-    published_key = version_key(metadata)
     if app_key < published_key:
-        fail("manager version is older than the latest public release metadata")
+        if not has_explicit_development_preview_marker(app_version, app_build):
+            fail(
+                "manager version is older than the latest public release "
+                "record without an explicit development-preview marker"
+            )
     if app_key == published_key and app_build != published_build:
         fail("release build does not match Resources/Info.plist")
     if app_key > published_key:

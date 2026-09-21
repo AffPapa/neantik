@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import tempfile
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -17,6 +18,38 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_markdown_public_release_record_is_parsed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "v0.7.3.md"
+            path.write_text("# NeAntik 0.7.3 (66)\n", encoding="utf-8")
+            self.assertEqual(
+                MODULE.read_markdown_release(path),
+                ((0, 7, 3), 66),
+            )
+
+    def test_older_development_preview_requires_bilingual_markers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").write_text(
+                "Локальный кандидат `0.3.20 (23)` — это development preview.\n",
+                encoding="utf-8",
+            )
+            (root / "README.en.md").write_text(
+                "The local `0.3.20 (23)` candidate is a development preview.\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(MODULE, "PROJECT_ROOT", root):
+                self.assertTrue(
+                    MODULE.has_explicit_development_preview_marker("0.3.20", "23")
+                )
+                (root / "README.en.md").write_text(
+                    "The local `0.3.20 (23)` candidate is current.\n",
+                    encoding="utf-8",
+                )
+                self.assertFalse(
+                    MODULE.has_explicit_development_preview_marker("0.3.20", "23")
+                )
+
     def test_personal_absolute_user_path_is_rejected(self) -> None:
         leaked = "/" + "Users/" + "release-operator/private/report.json"
         self.assertEqual(
