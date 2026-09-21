@@ -139,3 +139,7 @@
   markers in historical commits, not credential material. Local tags stop at
   the historical `v0.6.17` line, so this checkout is not treated as the public
   `v0.7.3` release source.
+- Public documentation parity audit: Russian and English README agree on
+  public version `0.7.3/66`, Chromium `153.0.8010.36`, repository baseline
+  `153.0.8010.52`, local candidate `0.3.20 (23)`, and the no-anonymity/no-bypass
+  safety boundary. Older runtime versions remain only in historical snapshots.
