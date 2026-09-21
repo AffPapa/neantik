@@ -321,3 +321,8 @@
   candidate against public `0.7.3 (66)`, while its focused tests pass. Full
   Python regression passed `640` tests with `1` expected skip; no artifacts or
   public state were changed.
+- Post-floor-gate audit at `2026-09-21T14:50:01Z`: source hygiene and public
+  workflow closure pass; history scanning remains clean across `5,198` objects
+  and `2,893` unique blobs. The standalone floor gate still blocks the current
+  candidate before signing, as required. Working tree is clean and no public
+  release mutation was attempted.
