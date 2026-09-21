@@ -110,3 +110,10 @@
 - Fresh post-audit checks at `2026-09-21T13:17:58Z`: local aggregate audit is
   still partial/blocked only at runtime security, runtime rebase, and live
   network evidence; 42 AffPapa tests and the focused runtime/tree tests pass.
+- Native verification rerun: the first sandboxed Swift run exposed only
+  loopback `Operation not permitted`; the exact test and then the full suite
+  passed outside sandbox with `567 tests in 61 suites`. No source or Chromium
+  runtime files changed during the verification.
+- Manager-only Release build verification passed outside sandbox via
+  `scripts/verify-native-swift-release.sh`; this builds Swift manager code
+  only and does not rebuild or replace Chromium.
