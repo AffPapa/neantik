@@ -3,6 +3,14 @@
 This directory is the source of truth for the least-privilege hosted release
 channel at `https://affpapa.org/neantik`.
 
+The tracked `bootstrap/content.json` and the Blade template fallback values
+are a historical source snapshot for this checkout (currently `0.3.19`), not
+the live public release contract. Live `release.json` is authoritative when
+it exists. Do not hand-edit the fallback to copy a newer public release: the
+six-file snapshot must be generated from the exact verified candidate with
+`prepare-affpapa-release-snapshot.py`, then published only through the guarded
+release client.
+
 ## Operator command
 
 Both local Claude and Codex use the same wrapper:
