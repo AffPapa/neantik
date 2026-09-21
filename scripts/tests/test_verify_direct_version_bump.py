@@ -129,6 +129,34 @@ class DirectVersionBumpTests(unittest.TestCase):
             self.assertEqual(result["publishedVersion"], "0.3.12")
             self.assertEqual(result["publishedBuild"], 16)
 
+    def test_markdown_only_public_release_forms_version_floor(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_candidate(root, ("0.8.0", "67"))
+            write_release(root, ("0.3.19", "22"))
+            (root / "releases" / "v0.7.3.md").write_text(
+                "# NeAntik 0.7.3 (66)\n\nPublic immutable release.\n",
+                encoding="utf-8",
+            )
+
+            result = MODULE.verify(root)
+
+            self.assertEqual(result["publishedVersion"], "0.7.3")
+            self.assertEqual(result["publishedBuild"], 66)
+
+    def test_rejects_candidate_below_markdown_only_public_release(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_candidate(root, ("0.3.20", "23"))
+            write_release(root, ("0.3.19", "22"))
+            (root / "releases" / "v0.7.3.md").write_text(
+                "# NeAntik 0.7.3 (66)\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(MODULE.VersionBumpError, "must be newer"):
+                MODULE.verify(root)
+
 
 def write_project(
     root: Path,

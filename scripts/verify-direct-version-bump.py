@@ -11,6 +11,10 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RELEASE_FILENAME = re.compile(r"^v(?P<version>\d+(?:\.\d+){2})\.json$")
+RELEASE_MARKDOWN_FILENAME = re.compile(r"^v(?P<version>\d+(?:\.\d+){2})\.md$")
+RELEASE_MARKDOWN_HEADER = re.compile(
+    r"^#\s+NeAntik\s+(?P<version>\d+(?:\.\d+){2})\s+\((?P<build>\d+)\)\s*$"
+)
 
 
 class VersionBumpError(ValueError):
@@ -81,27 +85,64 @@ def read_release_contract(path: Path) -> PublishedRelease:
     return PublishedRelease(version=version, build=build, source=path)
 
 
+def read_release_markdown_contract(path: Path) -> PublishedRelease:
+    filename_match = RELEASE_MARKDOWN_FILENAME.fullmatch(path.name)
+    if not filename_match:
+        raise VersionBumpError(f"invalid release record filename: {path.name}")
+    try:
+        first_line = path.read_text(encoding="utf-8").splitlines()[0]
+    except (OSError, UnicodeError, IndexError) as error:
+        raise VersionBumpError(
+            f"release record {path.name} is empty or unreadable"
+        ) from error
+    header_match = RELEASE_MARKDOWN_HEADER.fullmatch(first_line)
+    if not header_match:
+        raise VersionBumpError(
+            f"release record {path.name} has no canonical version/build header"
+        )
+    filename_version = filename_match.group("version")
+    version = header_match.group("version")
+    if version != filename_version:
+        raise VersionBumpError(
+            f"release record {path.name} version does not match its filename"
+        )
+    return PublishedRelease(
+        version=version,
+        build=int(header_match.group("build")),
+        source=path,
+    )
+
+
 def read_published(project_root: Path) -> tuple[str, int]:
     releases_root = project_root / "releases"
     if not releases_root.is_dir():
         raise VersionBumpError("releases directory is missing")
 
     contract_paths = sorted(releases_root.glob("v*.json"))
-    if not contract_paths:
+    markdown_paths = sorted(releases_root.glob("v*.md"))
+    if not contract_paths and not markdown_paths:
         raise VersionBumpError("no checked-in release contracts found")
 
+    releases_by_version: dict[tuple[int, ...], PublishedRelease] = {}
     releases = [read_release_contract(path) for path in contract_paths]
-    versions: set[tuple[int, ...]] = set()
-    builds: set[int] = set()
+    releases.extend(read_release_markdown_contract(path) for path in markdown_paths)
     for release in releases:
         parsed_version = version_tuple(release.version)
-        if parsed_version in versions:
-            raise VersionBumpError(
-                f"duplicate release version: {release.version}"
-            )
+        previous = releases_by_version.get(parsed_version)
+        if previous is not None:
+            if previous.build != release.build:
+                raise VersionBumpError(
+                    "duplicate release version with conflicting builds: "
+                    f"{release.version}"
+                )
+            continue
+        releases_by_version[parsed_version] = release
+
+    releases = list(releases_by_version.values())
+    builds: set[int] = set()
+    for release in releases:
         if release.build in builds:
             raise VersionBumpError(f"duplicate release build: {release.build}")
-        versions.add(parsed_version)
         builds.add(release.build)
 
     ordered = sorted(releases, key=lambda release: version_tuple(release.version))

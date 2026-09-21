@@ -265,3 +265,9 @@
   `14/14`, DMG script tests `3/3`, privacy tests `28/28`, and the full Python
   regression passed `634` tests with `1` expected skip. No Chromium rebuild or
   public artifact mutation was performed.
+- Hardened `verify-direct-version-bump.py` to include canonical markdown-only
+  public release records alongside JSON contracts. The current development
+  preview now fails closed against the real public floor with
+  `candidate version 0.3.20 must be newer than published 0.7.3`; it can no
+  longer be mistaken for a successor to local `0.3.19` metadata. Version
+  guard tests passed `10/10`.
