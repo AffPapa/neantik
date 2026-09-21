@@ -223,3 +223,8 @@
   as blocked for Direct publication while remaining honest about the separate
   launch preflight result. Focused tests and the full Swift gate passed `576`
   tests in `61` suites; manager Release build passed. Chromium was not rebuilt.
+- Fresh upstream recheck at `2026-09-21T14:18:03Z`: official Chrome Stable
+  remains macOS `153.0.8010.52/.53`; ungoogled common remains
+  `153.0.8010.52-1`, and ungoogled macOS release packaging still has no 153
+  release beyond `152.0.7977.82-1.1`. Repository version facts remain aligned;
+  no runtime lock, public artifact or release channel was changed.
