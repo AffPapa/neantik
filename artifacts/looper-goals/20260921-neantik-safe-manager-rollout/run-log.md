@@ -99,3 +99,8 @@
   release-required groups as ported, and the official baseline reference
   verifier confirms `153.0.8010.52` / `.53` with 16 fixes. No binary or source
   checkout claim is made from these checks.
+- Upstream availability check: ungoogled common publishes
+  `153.0.8010.52-1`, while public ungoogled macOS packaging releases still
+  stop at `152.0.7977.82-1.1`; the macOS 153 update remains an upstream work
+  item. The NeAntik 153 source contract therefore remains uncreated until an
+  exact macOS packaging pair is available.

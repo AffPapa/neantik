@@ -23,6 +23,26 @@ The currently published NeAntik `v0.7.3` release uses Chromium
 the `.52/.53` security boundary. This is a public-alpha limitation, not a
 qualification for a new Direct release.
 
+## Upstream source availability
+
+The upstream pieces are not equally ready for a NeAntik source contract:
+
+- ungoogled common has a public `153.0.8010.52-1` release;
+- public ungoogled macOS packaging releases currently reach only
+  `152.0.7977.82-1.1`, not a 153 macOS packaging tag;
+- the upstream macOS 153 update discussion is still a work item, not evidence
+  of a reviewed packaging commit.
+
+References:
+
+- <https://github.com/ungoogled-software/ungoogled-chromium/releases>
+- <https://github.com/ungoogled-software/ungoogled-chromium-macos/releases>
+- <https://github.com/ungoogled-software/ungoogled-chromium/issues/3949>
+
+Until exact macOS packaging source is available, do not invent a 153 packaging
+commit, reuse the 152 packaging layer, or treat the common release as a
+shippable macOS runtime.
+
 ## Current NeAntik source state
 
 The checked source-only contract still targets Chromium `152.0.7977.64`:
@@ -57,4 +77,3 @@ Only after explicit rebuild permission may the exact 153 candidate proceed
 through ARM64/Metal build, runtime inspection, profile isolation, GUI A → B → A,
 network reality, signing, notarization, stapling, Gatekeeper, GitHub asset
 verification, AffPapa staging, live download checks, and rollback evidence.
-
