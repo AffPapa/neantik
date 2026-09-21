@@ -49,7 +49,7 @@ and rollback gates pass.
 
 - Goal is active in the native Codex goal system.
 - Current NeAntik branch: `codex/neantik-workplaces`.
-- Last manager commit: `af1f2f2`.
+- Last manager commit: `d7ba9e7`.
 - Completed slices: stage 1, UI file dialogs; stage 2, atomic import with
   folder mapping; stage 3, lifecycle health center; stage 4, bounded
   media/permissions privacy panel; stage 5, route-confirmed presentation;
