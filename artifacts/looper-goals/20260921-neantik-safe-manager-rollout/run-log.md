@@ -331,3 +331,9 @@
   The real preflight now reports `11` blocked gates, including the explicit
   `0.3.20` versus `0.7.3` floor failure; the complete fixture plan remains
   green. Full Python regression passed `640` tests with `1` expected skip.
+- Final preflight JSON recheck at `2026-09-21T14:51:53Z`: the report has `13`
+  gates, `11` blocked and only transaction continuity plus archive-name
+  formatting passing; the version floor is now visible as its own blocker.
+  Source hygiene and workflow closure pass, and history scanning remains clean
+  across `5,215` objects and `2,898` unique blobs. No signing, notarization,
+  upload or public mutation was attempted.
