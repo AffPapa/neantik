@@ -62,7 +62,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   BrowserData, last-launch state, fingerprint evidence и Keychain не покидают
   локальное хранилище. UI-файл-диалоги подключены, а импорт атомарно создаёт
   профили, переиспользует совпадающие папки и откатывает профили, папки и
-  BrowserData при ошибке.
+  BrowserData при ошибке. Профильная карточка также показывает агрегированный
+  lifecycle health center: lock, размер BrowserData, recovery и последний
+  запуск без raw path/PID/служебных аргументов.
 
 ## P2: production quality
 

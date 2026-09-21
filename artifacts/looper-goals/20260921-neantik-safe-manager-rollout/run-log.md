@@ -22,3 +22,10 @@
 - Stage 3 started: add an aggregate lifecycle health center for locks,
   BrowserData size, recovery state, and last launch without exposing raw paths,
   PIDs, arguments, or secrets.
+- Stage 3 delivered: added lock, BrowserData size/count, recovery, and last
+  launch snapshot plus a profile detail health card. Raw paths, PIDs, and
+  process arguments are intentionally absent from the card.
+- Stage 3 evidence: full Swift gate passed 557 tests in 57 suites, including
+  missing-data, active-lock, recovery-marker, and aggregate-presentation tests.
+- Stage 4 started: expose only bounded media/permission status and never device
+  IDs, raw media labels, or unredacted browser diagnostics.

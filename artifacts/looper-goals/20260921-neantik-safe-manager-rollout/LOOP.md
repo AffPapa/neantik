@@ -51,5 +51,5 @@ and rollback gates pass.
 - Current NeAntik branch: `codex/neantik-workplaces`.
 - Last manager commit: `65fe40d`.
 - Completed slices: stage 1, UI file dialogs; stage 2, atomic import with
-  folder mapping.
-- Current slice: stage 3, lifecycle health center.
+  folder mapping; stage 3, lifecycle health center.
+- Current slice: stage 4, bounded media/permissions privacy panel.

@@ -2212,6 +2212,12 @@ struct ContentView: View {
                 profile: profile,
                 processState: presentedProcessState(for: profile),
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
+                lifecycleHealth: ProfileLifecycleHealthSnapshot.inspect(
+                    profileID: profile.id,
+                    lastLaunchedAt: profile.lastLaunchedAt,
+                    processState: presentedProcessState(for: profile),
+                    paths: store.paths
+                ),
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
@@ -3255,6 +3261,7 @@ struct ProfileDetailView: View {
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let browserDataPath: String
+    var lifecycleHealth: ProfileLifecycleHealthSnapshot = .empty
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var isTestingProxy: Bool = false
@@ -3377,6 +3384,8 @@ struct ProfileDetailView: View {
                         .padding(.vertical, 4)
                 }
             }
+
+            ProfileLifecycleHealthView(snapshot: lifecycleHealth)
 
             Button {
                 technicalDetailsExpanded.toggle()
