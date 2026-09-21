@@ -309,3 +309,8 @@
   to the version-neutral entrypoints. Shell syntax, wrapper tests and public
   workflow closure passed; full Python regression passed `639` tests with `1`
   expected skip. No historical artifact or public release was modified.
+- Post-wrapper source audit at `2026-09-21T14:47:56Z`: source hygiene and
+  workflow closure still pass; reachable-history scanning remains clean across
+  `5,179` objects and `2,886` unique blobs. The version bump gate continues to
+  fail closed because candidate `0.3.20` is below the immutable public `0.7.3`
+  floor. No signing, notarization, upload or public mutation was attempted.
