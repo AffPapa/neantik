@@ -68,5 +68,6 @@
   the Direct deploy key is also unavailable, so no release work is claimed.
 - Stage 9 gate evidence: `verify-runtime-security-baseline.py --today
   2026-09-21` reports pinned `152.0.7977.64` below required
-  `153.0.8010.52`; `neantik-affpapa-release doctor` reports the missing deploy
-  key at `/Users/dumay/rumors-wtf/.secrets/ssh/neantik_affpapa_ed25519`.
+  `153.0.8010.52`; `neantik-affpapa-release doctor` reports that the
+  configured Direct deploy key is unavailable. The private key location is
+  intentionally omitted from the public Goal log.
