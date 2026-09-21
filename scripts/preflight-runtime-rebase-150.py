@@ -20,6 +20,7 @@ class RebasePlan:
     minimum_prepare_free_gib: int
     preserved_evidence_build_root: Path
     mac_commit: str
+    mac_packaged_version: str | None
     mac_repository: str
     common_tag: str
     common_commit: str
@@ -73,11 +74,17 @@ def parse_plan(path: Path) -> RebasePlan:
             raise RebasePreflightError(f"{label} must be a non-empty string")
 
     version_tuple(raw["targetChromiumVersion"], "targetChromiumVersion")
+    packaged_version = mac.get("packagedChromiumVersion")
+    if packaged_version is not None:
+        version_tuple(packaged_version, "macPackaging.packagedChromiumVersion")
     return RebasePlan(
         target_version=str(raw["targetChromiumVersion"]),
         minimum_prepare_free_gib=minimum,
         preserved_evidence_build_root=Path(preserved),
         mac_commit=str(mac["commit"]),
+        mac_packaged_version=(
+            str(packaged_version) if packaged_version is not None else None
+        ),
         mac_repository=str(mac["repository"]),
         common_tag=str(common["tag"]),
         common_commit=str(common["commit"]),
@@ -272,6 +279,12 @@ def verify_report(
         raise RebasePreflightError(
             f"Chromium rebase target {plan.target_version} is below security baseline {minimum_public}"
         )
+    if plan.mac_packaged_version is not None and plan.mac_packaged_version != plan.target_version:
+        raise RebasePreflightError(
+            "macOS packaging version "
+            f"{plan.mac_packaged_version} does not match Chromium rebase target "
+            f"{plan.target_version}"
+        )
 
     assert_safe_build_root(build_root, plan.preserved_evidence_build_root)
     actual_free = free_gib if free_gib is not None else free_gib_for(build_root)
@@ -313,6 +326,7 @@ def verify_report(
         "macPackaging": {
             "repository": plan.mac_repository,
             "commit": plan.mac_commit,
+            "packagedChromiumVersion": plan.mac_packaged_version,
         },
         "commonChromium": {
             "repository": plan.common_repository,

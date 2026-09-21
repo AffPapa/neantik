@@ -9,6 +9,10 @@ struct BrowserProcessManagerTests {
     func proxiedNormalLaunchRequiresPreparationReceipt() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
         defer { try? FileManager.default.removeItem(at: root) }
         let manager = BrowserProcessManager(
             paths: AppPaths(rootDirectory: root),
@@ -508,6 +512,79 @@ struct BrowserProcessManagerTests {
         }
         #expect(!restoredManager.runningProfileIDs.contains(profile.id))
         #expect(restoredManager.processState(for: profile.id) == .stopped)
+    }
+
+    @Test
+    func recoversLeaseAfterAbruptBrowserProcessTermination() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 30\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let profile = BrowserProfile(name: "Abrupt termination")
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "SIGKILL recovery test"
+        )
+        let pid: pid_t
+        do {
+            let manager = BrowserProcessManager(
+                paths: paths,
+                processIdentityValidator: { _ in false },
+                browserDataProcessInspector: { _ in .absent }
+            )
+            try manager.launch(profile: profile, runtime: runtime)
+            let lockData = try Data(contentsOf: paths.lockFile(for: profile.id))
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            pid = try decoder.decode(BrowserProcessLock.self, from: lockData).pid
+            #expect(pid > 0)
+        }
+
+        #expect(Darwin.kill(pid, SIGKILL) == 0)
+        for _ in 0..<40 {
+            if Darwin.kill(pid, 0) != 0 {
+                break
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+
+        let restoredManager = BrowserProcessManager(
+            paths: paths,
+            processIdentityValidator: { lock in
+                DarwinBrowserProcessInventoryProvider.isProcessAlive(lock.pid) &&
+                    lock.pid == pid &&
+                    lock.executablePath == fakeBrowser.path &&
+                    lock.browserDataPath ==
+                        paths.browserDataDirectory(for: profile.id).path
+            },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        restoredManager.reconcile(profiles: [profile])
+        for _ in 0..<20 {
+            if restoredManager.processState(for: profile.id) == .stopped {
+                break
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        #expect(restoredManager.processState(for: profile.id) == .stopped)
+        #expect(!restoredManager.runningProfileIDs.contains(profile.id))
+        #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
     }
 
     @Test

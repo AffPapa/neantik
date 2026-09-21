@@ -160,8 +160,6 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
 {
     private static let reservationService =
         "app.neantik.fingerprint-evidence.enrollment.v1"
-    private static let fallbackKeyService =
-        "app.neantik.fingerprint-evidence.keychain-p256.v1"
 
     func reserveEnrollment(applicationTag: Data) throws {
         var query = enrollmentReservationQuery(
@@ -182,11 +180,6 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
     }
 
     func publicKeyX963(applicationTag: Data) throws -> Data? {
-        if let fallback = try fallbackPrivateKey(
-            applicationTag: applicationTag
-        ) {
-            return fallback.publicKey.x963Representation
-        }
         guard let privateKey = try secureEnclavePrivateKey(
             applicationTag: applicationTag
         ) else {
@@ -221,14 +214,7 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
             attributes as CFDictionary,
             &createError
         ) else {
-            let error = operationError(createError?.takeRetainedValue())
-            if case let .operationFailed(code) = error,
-               code == Int(errSecMissingEntitlement) {
-                return try createFallbackPrivateKey(
-                    applicationTag: applicationTag
-                )
-            }
-            throw error
+            throw operationError(createError?.takeRetainedValue())
         }
         do {
             return try publicKeyX963(privateKey: privateKey)
@@ -253,15 +239,6 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
         for message: Data,
         applicationTag: Data
     ) throws -> SecureEnclaveFingerprintEvidenceSignature {
-        if let fallback = try fallbackPrivateKey(
-            applicationTag: applicationTag
-        ) {
-            let signature = try fallback.signature(for: message)
-            return SecureEnclaveFingerprintEvidenceSignature(
-                publicKeyX963: fallback.publicKey.x963Representation,
-                signatureDER: signature.derRepresentation
-            )
-        }
         guard let privateKey = try secureEnclavePrivateKey(
             applicationTag: applicationTag
         ) else {
@@ -291,16 +268,6 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
     }
 
     func deletePrivateKey(applicationTag: Data) throws {
-        let fallbackStatus = SecItemDelete(
-            fallbackPrivateKeyQuery(applicationTag: applicationTag)
-                as CFDictionary
-        )
-        guard fallbackStatus == errSecSuccess ||
-                fallbackStatus == errSecItemNotFound
-        else {
-            throw SecureEnclaveFingerprintEvidenceAuthorityError
-                .operationFailed(Int(fallbackStatus))
-        }
         let status = SecItemDelete(
             privateKeyQuery(applicationTag: applicationTag)
                 as CFDictionary
@@ -375,60 +342,6 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: Self.reservationService,
-            kSecAttrAccount as String:
-                applicationTag.base64EncodedString()
-        ]
-    }
-
-    private func createFallbackPrivateKey(
-        applicationTag: Data
-    ) throws -> Data {
-        let privateKey = P256.Signing.PrivateKey()
-        var query = fallbackPrivateKeyQuery(applicationTag: applicationTag)
-        query[kSecAttrAccessible as String] =
-            kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        query[kSecValueData as String] = privateKey.rawRepresentation
-        let status = SecItemAdd(query as CFDictionary, nil)
-        if status == errSecDuplicateItem {
-            throw SecureEnclaveFingerprintEvidenceAuthorityError
-                .alreadyEnrolled
-        }
-        guard status == errSecSuccess else {
-            throw SecureEnclaveFingerprintEvidenceAuthorityError
-                .operationFailed(Int(status))
-        }
-        return privateKey.publicKey.x963Representation
-    }
-
-    private func fallbackPrivateKey(
-        applicationTag: Data
-    ) throws -> P256.Signing.PrivateKey? {
-        var query = fallbackPrivateKeyQuery(applicationTag: applicationTag)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        if status == errSecItemNotFound {
-            return nil
-        }
-        guard status == errSecSuccess, let data = result as? Data else {
-            throw SecureEnclaveFingerprintEvidenceAuthorityError
-                .operationFailed(Int(status))
-        }
-        do {
-            return try P256.Signing.PrivateKey(rawRepresentation: data)
-        } catch {
-            throw SecureEnclaveFingerprintEvidenceAuthorityError
-                .invalidPublicKey
-        }
-    }
-
-    private func fallbackPrivateKeyQuery(
-        applicationTag: Data
-    ) -> [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: Self.fallbackKeyService,
             kSecAttrAccount as String:
                 applicationTag.base64EncodedString()
         ]

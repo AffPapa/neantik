@@ -154,6 +154,19 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "css_screen_match",
         "worker_webgl_shader_precision"
     ]
+    /// Optional privacy-safe diagnostics. Missing values remain compatible
+    /// with older reports and never become release qualification requirements.
+    static let optionalPrivacyDiagnosticKeys = [
+        "media_devices",
+        "media_device_count",
+        "permissions_api",
+        "permission_camera",
+        "permission_microphone",
+        "speech_synthesis",
+        "speech_voice_count",
+        "worker_audio",
+        "worker_client_rects"
+    ]
 
     let id: UUID
     let createdAt: Date
@@ -444,6 +457,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             )
         }
         issues.append(contentsOf: strictContextConsistencyIssues)
+        issues.append(contentsOf: privacyDiagnosticIssues)
         return issues
     }
 
@@ -523,6 +537,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         }
         issues.append(contentsOf: crossRealmConsistencyIssues)
         issues.append(contentsOf: deviceTupleConsistencyIssues)
+        issues.append(contentsOf: privacyDiagnosticIssues)
         if let webrtcDirectControl {
             issues.append(
                 contentsOf: Self.networkPrivacyIssues(
@@ -598,6 +613,19 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("profile A, repeat capture", firstRepeat)
         ].flatMap { label, capture in
             Self.networkPrivacyIssues(for: capture, label: label)
+        }
+    }
+
+    /// Validates only the bounded diagnostic vocabulary. Missing values are
+    /// accepted for reports written before these diagnostics existed;
+    /// malformed present values are never promoted to PASS.
+    var privacyDiagnosticIssues: [String] {
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
+            Self.privacyDiagnosticIssues(for: capture, label: label)
         }
     }
 
@@ -1176,7 +1204,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("canvas", "canvas_repeat"),
             ("client_rects", "client_rects_repeat"),
             ("webgl_pixels", "webgl_pixels_repeat"),
-            ("webgl_shader_precision", "worker_webgl_shader_precision")
+            ("webgl_shader_precision", "worker_webgl_shader_precision"),
+            ("audio", "worker_audio")
         ] where isAvailable(values[pair.0]) &&
             isAvailable(values[pair.1]) &&
             values[pair.0] != values[pair.1]
@@ -1193,6 +1222,64 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 "The \(label) CSS media queries disagree with the Screen API."
             )
         }
+        return issues
+    }
+
+    private static func privacyDiagnosticIssues(
+        for capture: FingerprintCapture,
+        label: String
+    ) -> [String] {
+        let values = capture.values
+        var issues: [String] = []
+        let stateValues = Set([
+            "granted", "denied", "prompt", "unavailable", "unknown"
+        ])
+        let availabilityValues = Set(["available", "unavailable"])
+
+        func checkEnum(_ key: String, allowed: Set<String>) {
+            guard let value = values[key] else { return }
+            if !allowed.contains(value) {
+                issues.append(
+                    "The \(label) \(key) diagnostic has an unsupported state."
+                )
+            }
+        }
+
+        func checkCount(_ key: String) {
+            guard let value = values[key] else { return }
+            if let count = Int(value), (0...256).contains(count) {
+                return
+            } else {
+                issues.append(
+                    "The \(label) \(key) diagnostic is not a bounded count."
+                )
+            }
+        }
+
+        func checkHash(_ key: String) {
+            guard let value = values[key], value != "unavailable" else {
+                return
+            }
+            if value.count == 8 && value.utf8.allSatisfy({
+                (48...57).contains($0) || (97...102).contains($0)
+            }) {
+                return
+            } else {
+                issues.append(
+                    "The \(label) \(key) diagnostic is not a bounded hash."
+                )
+            }
+        }
+
+        checkEnum("media_devices", allowed: availabilityValues)
+        checkCount("media_device_count")
+        checkEnum("permissions_api", allowed: availabilityValues)
+        checkEnum("permission_camera", allowed: stateValues)
+        checkEnum("permission_microphone", allowed: stateValues)
+        checkEnum("speech_synthesis", allowed: availabilityValues)
+        checkCount("speech_voice_count")
+        checkHash("worker_audio")
+        checkHash("worker_client_rects")
         return issues
     }
 
@@ -2268,6 +2355,46 @@ final class FingerprintAuditCoordinator: ObservableObject {
         audioRepeatHash = await renderAudioHash();
       } catch (_) {}
 
+      const permissionState = async name => {
+        if (!navigator.permissions ||
+            typeof navigator.permissions.query !== 'function') {
+          return 'unavailable';
+        }
+        try {
+          const result = await navigator.permissions.query({ name });
+          return ['granted', 'denied', 'prompt'].includes(result.state) ?
+            result.state : 'unknown';
+        } catch (_) {
+          return 'unavailable';
+        }
+      };
+      let mediaDevices = 'unavailable';
+      let mediaDeviceCount = 'unavailable';
+      try {
+        if (navigator.mediaDevices &&
+            typeof navigator.mediaDevices.enumerateDevices === 'function') {
+          mediaDevices = 'available';
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          mediaDeviceCount = String(Math.min(devices.length, 256));
+        }
+      } catch (_) {}
+      const permissionsAPI = navigator.permissions &&
+        typeof navigator.permissions.query === 'function' ?
+        'available' : 'unavailable';
+      const permissionCamera = await permissionState('camera');
+      const permissionMicrophone = await permissionState('microphone');
+      let speechSynthesis = 'unavailable';
+      let speechVoiceCount = 'unavailable';
+      try {
+        if (window.speechSynthesis &&
+            typeof window.speechSynthesis.getVoices === 'function') {
+          speechSynthesis = 'available';
+          speechVoiceCount = String(
+            Math.min(window.speechSynthesis.getVoices().length, 256)
+          );
+        }
+      } catch (_) {}
+
       const rectHost = document.createElement('div');
       rectHost.style.cssText =
         'position:absolute;left:-9999px;width:240.25px;font:15.5px Arial;letter-spacing:.17px';
@@ -2335,6 +2462,31 @@ final class FingerprintAuditCoordinator: ObservableObject {
             };
             const hashText = value =>
               fnv(new TextEncoder().encode(String(value)));
+            const renderAudioHash = async () => {
+              const Audio = self.OfflineAudioContext ||
+                self.webkitOfflineAudioContext;
+              if (!Audio) throw new Error('OfflineAudioContext unavailable');
+              const audio = new Audio(1, 6000, 44100);
+              const oscillator = audio.createOscillator();
+              oscillator.type = 'triangle';
+              oscillator.frequency.value = 10000;
+              const compressor = audio.createDynamicsCompressor();
+              compressor.threshold.value = -50;
+              compressor.knee.value = 40;
+              compressor.ratio.value = 12;
+              compressor.attack.value = 0;
+              compressor.release.value = 0.25;
+              oscillator.connect(compressor);
+              compressor.connect(audio.destination);
+              oscillator.start(0);
+              const rendered = await audio.startRendering();
+              return fnv(new Uint8Array(rendered.getChannelData(0).buffer));
+            };
+            let workerAudio = 'unavailable';
+            try { workerAudio = await renderAudioHash(); } catch (_) {}
+            // ClientRects is a DOM API and is intentionally unavailable in a
+            // Worker; record that fact rather than comparing unlike probes.
+            const workerClientRects = 'unavailable';
             const localeCore = value => {
               try {
                 const locale = new Intl.Locale(
@@ -2483,6 +2635,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
               webgl_renderer: webglRenderer,
               webgl_extensions: webglExtensions,
               webgl_shader_precision: webglShaderPrecision,
+              worker_audio: workerAudio,
+              worker_client_rects: workerClientRects,
               user_agent: navigator.userAgent,
               platform: navigator.platform,
               languages: (navigator.languages || []).join(','),
@@ -2597,6 +2751,13 @@ final class FingerprintAuditCoordinator: ObservableObject {
         webgpu_policy: webgpuPolicy,
         audio: audioHash,
         audio_repeat: audioRepeatHash,
+        media_devices: mediaDevices,
+        media_device_count: mediaDeviceCount,
+        permissions_api: permissionsAPI,
+        permission_camera: permissionCamera,
+        permission_microphone: permissionMicrophone,
+        speech_synthesis: speechSynthesis,
+        speech_voice_count: speechVoiceCount,
         client_rects: hashText(rectValues),
         client_rects_repeat: hashText(rectRepeatValues),
         user_agent: navigator.userAgent,
@@ -2640,6 +2801,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
           workerValue('hardware_concurrency'),
         worker_device_memory: workerValue('device_memory'),
         worker_client_hints: workerValue('client_hints'),
+        worker_audio: workerValue('worker_audio'),
+        worker_client_rects: workerValue('worker_client_rects'),
         webrtc_probe: 'loopback-stun-v1',
         webrtc_complete: rtcComplete,
         webrtc_candidate_summary: rtcSummaryValue

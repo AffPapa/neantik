@@ -76,16 +76,9 @@ inside the exact Chromium runtime and proven by the three-pass check. A
 tag-specific GPU table cannot safely be assumed for an arbitrary compatible
 runtime.
 
-## Runtime modes
+## Runtime mode
 
-### Stock Chrome or Chromium
-
-- Separate cookies, cache, local storage, and sessions.
-- Separate proxy configuration.
-- No claim that Canvas, Audio, WebGL, fonts, or hardware values differ.
-- NeAntik does not send unsupported fingerprint flags.
-
-### Explicitly compatible Chromium
+### Bundled compatible Chromium
 
 - Receives the persistent profile seed through the private child-process
   environment contract. The runtime is ARM64-only and its macOS platform is
@@ -93,23 +86,19 @@ runtime.
 - The runtime, not NeAntik, is responsible for coherent Canvas, Audio, WebGL,
   font, ClientRects, WebRTC, language, timezone, and Client Hints behavior.
 
+The production app resolves only the signed runtime bundled with NeAntik. It
+does not select, fall back to, or redistribute an independently installed
+Chrome, Chromium, or Cloak binary. The locator retains an external-runtime
+path for isolated tests and future work; that path is disabled in production
+and is not a supported distribution mode.
+
 ## Selection
 
-1. Install the runtime independently from its official source.
-2. Use the folder button in the NeAntik sidebar to choose the `.app` bundle or
-   its Chromium executable.
-3. Enable **Fingerprint-compatible runtime** only if the runtime documents the
-   command-line protocol above.
-4. The sidebar must show **Fingerprint protocol configured** before launch.
-5. Run **Fingerprint Check** before treating the selected binary as verified.
-
-NeAntik also detects externally installed Cloak Chromium builds under:
-
-```text
-~/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium
-```
-
-NeAntik does not bundle or redistribute Cloak binaries.
+1. Launch the signed NeAntik application.
+2. The app verifies the bundled ARM64 runtime before offering profile launch.
+3. Run **Fingerprint Check** when diagnostic evidence is needed; it does not
+   turn an unverified runtime or an unmeasured network route into a release
+   qualification.
 
 ## Privacy boundary
 
@@ -235,6 +224,19 @@ Context values:
 - the declared direct/proxied route and aggregate WebRTC candidate-type
   counts. Candidate strings, addresses, hostnames, and hashes derived from
   them are never stored.
+
+Optional privacy diagnostics:
+
+- `media_devices` and a bounded device count (never device IDs, labels, or
+  names);
+- Permissions API availability plus camera/microphone state enums;
+- speech-synthesis availability plus a bounded voice count (never voice names);
+- worker Audio hash and an explicit `unavailable` ClientRects marker because
+  ClientRects is a DOM API and is not available in a Worker.
+
+These fields are backward-compatible and diagnostic-only. Missing or
+unavailable optional values remain `partial`/`unverified`; they cannot create a
+production qualification. Malformed present values invalidate the report.
 
 Verdicts:
 

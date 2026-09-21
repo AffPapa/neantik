@@ -1,5 +1,10 @@
 # NeAntik Chromium integration build
 
+> **Historical integration record.** The 144.x artifact names in this
+> document are preserved build-history references and are not a current or
+> release-qualified runtime. The present candidate is separately governed by
+> the Chromium security baseline and exact source-lock gates.
+
 Verified on 25 July 2026.
 
 This is an Apple Silicon integration artifact, not a public production
@@ -190,8 +195,10 @@ the `com.openai.codex` coalition and abort inside Apple's
 - final regression and user-context GUI QA.
 
 Это историческое доказательство Chromium 144 сохранено только для
-воспроизводимости. Текущий продукт имеет единственный Direct release path;
-новая публикация должна использовать Chromium 152 source contract и полный
+воспроизводимости. Текущий локальный кандидат зафиксирован контрактом
+Chromium 152, но он ниже обновлённого security baseline 153 и поэтому не
+является допустимым публичным runtime. Новая публикация возможна только после
+появления reviewed macOS packaging chain для baseline и прохождения полного
 Direct release gate.
 
 ## Integration branding

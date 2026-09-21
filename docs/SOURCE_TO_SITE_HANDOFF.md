@@ -1,13 +1,19 @@
 # NeAntik source-to-site handoff
 
+> This handoff is a release procedure, not a statement that the current
+> checkout is ready to publish. Public GitHub state was refreshed separately;
+> do not copy version numbers from an older handoff snapshot into a release.
+
 This document is for the operator or AI that performs the separate Direct
 binary release and AffPapa website publication after the source PR is merged.
 
 ## Current source state
 
-- Branch prepared by this audit: `codex/neantik-zero-config-workspace`.
-- Public binary truth remains `0.3.19 (22)` until a new signed and notarized
-  GitHub Release exists.
+- The original handoff branch name is historical; the release source must be
+  the exact reviewed commit from the current checkout, never a stale branch
+  label copied from this document.
+- Public GitHub binary truth is currently `0.7.3 (66)`; a new release must not
+  replace it until every exact-candidate gate passes.
 - `CHANGELOG.md` uses `Unreleased`; no version/build bump, tag, GitHub Release,
   Developer ID signature, notarization, stapling or site deploy belongs to the
   source-only PR.
@@ -57,13 +63,13 @@ those claims.
 8. Never use raw SSH/SCP/SFTP/rsync or hand-edit the live server. Require the
    client's staging validation, atomic switch and live hosted-download check.
 9. Re-download public artifacts, compare SHA-256, verify Gatekeeper and confirm
-   the site still presents `0.3.19` if the new binary publication did not
+   the site still presents `0.7.3` if the new binary publication did not
    complete atomically.
 
 ## Stop rules
 
 - No signed/notarized exact artifacts: development news may be published, but
-  download links and the public version must remain `0.3.19 (22)`.
+  download links and the public version must remain `0.7.3 (66)`.
 - Any mismatch between the merged commit, candidate manifest, evidence,
   notarization receipt, checksums, GitHub assets or AffPapa assets: stop and
   preserve the previous public release.

@@ -25,6 +25,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - показывать пользователю состояние маршрута, fingerprint, WebRTC, QUIC/DNS и
   геолокации с раздельными метками «настроено», «рассчитано», «измерено» и
   «не подтверждено»;
+- сохранять effective-network evidence только через минимизированный
+  allowlist-verifier; configured route не считать измеренным egress;
 - выпускать только ARM64/Metal runtime с проверяемым source provenance;
 - оставить строгую release-проверку A -> B -> A отдельным gate, но дать
   обычному пользователю запускать локальное сравнение тех же поверхностей без
@@ -45,6 +47,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   разрешение на запуск;
 - добавить воспроизводимые бюджеты для cold/warm start менеджера, проекции
   100 профилей, idle CPU/RAM и запуска Chromium;
+- расширить диагностический fingerprint report bounded-полями media devices,
+  Permissions API, speech voices и Worker Audio без ослабления production gate;
 - показывать обычному пользователю только понятные состояния: готов,
   запущен, остановлен или конкретная ошибка. Технический JSON остаётся в
   диагностике и release evidence.

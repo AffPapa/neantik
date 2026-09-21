@@ -53,4 +53,36 @@ struct BrowserRuntimePreflightTests {
         #expect(!result.isReady)
         #expect(result.errors.count == 3)
     }
+
+    @Test
+    func rejectsRuntimeWhenSignatureCannotBeVerified() throws {
+        let executable = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: executable) }
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data()
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let runtime = BrowserRuntime(
+            name: "Unverified Chromium",
+            executableURL: executable,
+            source: "Test",
+            inspection: BrowserRuntimeInspection(
+                version: "145.0",
+                architectures: ["arm64"],
+                codeSignatureValid: nil
+            )
+        )
+
+        let result = BrowserRuntimePreflightValidator.validate(runtime)
+
+        #expect(!result.isReady)
+        #expect(result.errors.contains("Подпись браузера не удалось проверить."))
+        #expect(result.warnings.isEmpty)
+    }
 }

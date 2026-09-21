@@ -36,7 +36,7 @@ def plan(root: Path, preserved: str | None = None, target: str = "150.0.7871.186
             "macPackaging": {
                 "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
                 "commit": MAC_COMMIT,
-                "packagedChromiumVersion": "150.0.7871.181",
+                "packagedChromiumVersion": target,
             },
             "commonChromium": {
                 "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
@@ -101,6 +101,21 @@ def write_source_version(source_root: Path, version: str) -> None:
 
 
 class RuntimeRebase150PreflightTests(unittest.TestCase):
+    def test_blocks_mismatched_mac_packaging_version(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = plan(root, target="153.0.8010.36")
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["macPackaging"]["packagedChromiumVersion"] = "152.0.7977.82"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(MODULE.RebasePreflightError, "does not match"):
+                MODULE.verify(
+                    plan_path=path,
+                    baseline_path=baseline(root, minimum="153.0.8010.36"),
+                    build_root=root / "build-153",
+                    free_gib=80,
+                )
+
     def test_blocks_when_free_space_is_too_low(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

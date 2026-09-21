@@ -16,22 +16,24 @@ archive contains source code, not `NeAntik.app`.
 
 Current published public-alpha release:
 
-- NeAntik `0.3.19` build `22`;
+- NeAntik `0.7.3` build `66`;
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `151.0.7922.108`, ARM64, Metal;
-- ZIP: `NeAntik-0.3.19-arm64-notarized.zip`;
-- DMG: `NeAntik-0.3.19-arm64-notarized.dmg`;
+- Chromium `153.0.8010.36`, ARM64, Metal;
+- ZIP: `NeAntik-0.7.3-arm64-notarized.zip`;
+- DMG: `NeAntik-0.7.3-arm64-notarized.dmg`;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
-New branch changes are not a binary release until separately signed and
-notarized DMG/ZIP assets appear in GitHub Releases.
-The Direct candidate being prepared is version `0.3.20`, build `23`, but it
-remains a development preview until those artifacts are published.
+The public runtime `153.0.8010.36` is below this repository's current checked
+security baseline `153.0.8010.52`; signing and notarization do not replace
+missing security updates. New branch changes are not a binary release until
+separately signed and notarized DMG/ZIP assets appear in GitHub Releases. The
+local `0.3.20 (23)` candidate is a development preview and does not replace
+the published `0.7.3` release.
 
 Product website: <https://affpapa.org/neantik>.
 
-The capabilities below are included in the published, signed, and notarized
-`0.3.19 (22)` release.
+The description below reflects the manager contract and this source branch;
+the exact public binary contents are defined by its release notes and assets.
 
 ## Quick start
 
@@ -76,7 +78,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Version `0.3.19` is published for public-alpha profile isolation. Strict
+Public `0.7.3` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 

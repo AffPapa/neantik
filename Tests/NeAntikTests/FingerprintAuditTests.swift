@@ -159,6 +159,130 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func privacyDiagnosticsRejectMalformedPresentValuesWithoutRequiringNewKeys() {
+        var firstValues = baseValues(canvas: "canvas-a")
+        firstValues["media_devices"] = "available"
+        firstValues["media_device_count"] = "device-ids-must-not-be-here"
+        firstValues["permissions_api"] = "available"
+        firstValues["permission_camera"] = "granted"
+        firstValues["permission_microphone"] = "prompt"
+        firstValues["speech_synthesis"] = "available"
+        firstValues["speech_voice_count"] = "999"
+        firstValues["worker_audio"] = "raw-audio-value"
+        let result = report(
+            first: capture(name: "First", values: firstValues),
+            second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+            repeatCapture: capture(
+                name: "First repeat",
+                values: firstValues
+            )
+        )
+
+        #expect(result.privacyDiagnosticIssues.count == 6)
+        #expect(!result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func missingOptionalPrivacyDiagnosticsRemainBackwardCompatible() {
+        let first = capture(
+            name: "First",
+            identityCode: "NA-00000002",
+            values: coherentM2Values(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-00000008",
+                values: coherentM4Values(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: "First repeat",
+                values: first.values
+            )
+        )
+
+        #expect(result.privacyDiagnosticIssues.isEmpty)
+        #expect(!result.productionReleaseIssues.contains {
+            $0.contains("diagnostic") || $0.contains("worker_audio")
+        })
+    }
+
+    @Test
+    func privacyDiagnosticsRoundTripWithoutPersistingSensitiveMediaData() throws {
+        var values = baseValues(canvas: "canvas-a")
+        values["media_devices"] = "available"
+        values["media_device_count"] = "2"
+        values["permissions_api"] = "available"
+        values["permission_camera"] = "prompt"
+        values["permission_microphone"] = "denied"
+        values["speech_synthesis"] = "available"
+        values["speech_voice_count"] = "18"
+        values["worker_audio"] = "deadbeef"
+        values["worker_client_rects"] = "unavailable"
+        let first = capture(name: "First", values: values)
+        let current = report(
+            first: first,
+            second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: "First repeat",
+                values: values
+            )
+        )
+
+        let data = try JSONEncoder().encode(current)
+        let decoded = try JSONDecoder().decode(
+            FingerprintAuditReport.self,
+            from: data
+        )
+        #expect(decoded.firstInitial.values["media_device_count"] == "2")
+        #expect(decoded.firstInitial.values["permission_microphone"] == "denied")
+        #expect(decoded.firstInitial.values["speech_voice_count"] == "18")
+        #expect(decoded.firstInitial.values["worker_client_rects"] == "unavailable")
+        #expect(!String(decoding: data, as: UTF8.self).contains("device-ids"))
+    }
+
+    @Test
+    func workerAudioMismatchIsDiagnosticOnlyButFailsStrictQualification() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["worker_audio"] = "deadbeef"
+        let result = report(
+            first: capture(name: "First", values: firstValues),
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                name: "First repeat",
+                values: firstValues
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(result.productionReleaseIssues.contains {
+            $0.contains("audio value disagrees with worker_audio")
+        })
+        #expect(!result.isPublicAlphaReleaseQualified)
+    }
+
+    @Test
     func verifiesStableDistinctCriticalSurfaces() {
         let first = capture(
             name: "First",
