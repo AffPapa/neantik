@@ -1696,7 +1696,12 @@ private struct ProfileSaveRollbackError: LocalizedError {
     let rollbackError: Error
 
     var errorDescription: String? {
-        "Не удалось сохранить профиль, а откат старых метаданных тоже не прошёл. Ошибка сохранения: \(operationError.localizedDescription) Ошибка отката: \(rollbackError.localizedDescription)"
+        // Both nested file-system errors can disclose private paths. The
+        // detailed values remain available to the private debugger while the
+        // user-facing error stays safe and actionable.
+        "Не удалось сохранить профиль, а откат старых метаданных тоже не " +
+            "прошёл. Повтори операцию позже или проверь доступ к данным " +
+            "приложения."
     }
 }
 

@@ -89,8 +89,10 @@ struct ProxyHealthCancellationRollbackError: LocalizedError, Sendable {
     let rollbackDescription: String
 
     var errorDescription: String? {
+        // The underlying persistence error may contain a private file path or
+        // other implementation detail. Keep it out of UI/log surfaces.
         "Проверка прокси отменена, но предыдущее состояние не удалось " +
-            "восстановить: \(rollbackDescription)"
+            "восстановить. Повтори проверку позже."
     }
 }
 

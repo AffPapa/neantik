@@ -348,3 +348,13 @@
   workflow closure still pass, the worktree is clean, and reachable-history
   scanning remains secret-free across `5,234` objects and `2,903` unique
   blobs. No deploy client command contacted the remote release channel.
+- Hardened user-facing and private diagnostic error surfaces at
+  `2026-09-21T14:59:14Z`: browser-launch, proxy-recovery, and profile-save
+  rollback errors no longer echo filesystem paths or raw system details;
+  launch logs retain only `process-launch-error`. Full Swift verification
+  passed `576` tests in `61` suites after the loopback network test was
+  repeated outside the sandbox; full Python regression passed `640` tests
+  with `1` expected skip. Source hygiene and reachable-history secret scans
+  pass (`5,240` objects / `2,904` unique blobs). The Chromium baseline gate
+  still intentionally blocks the pinned `152.0.7977.64` runtime, so no
+  signing, notarization, upload, or public mutation was attempted.

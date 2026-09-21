@@ -1545,14 +1545,16 @@ final class BrowserProcessManager: ObservableObject {
                 reconcileProfile(profileID: profile.id)
                 throw NeAntikError.profileAlreadyRunning
             } catch {
-                throw NeAntikError.processLaunchFailed(
-                    error.localizedDescription
-                )
+                // File-system errors can contain absolute paths or other
+                // implementation details. Keep them out of the user-facing
+                // error channel; the private diagnostic log records only the
+                // bounded event below.
+                throw NeAntikError.processLaunchFailed("")
             }
         } catch let error as NeAntikError {
             throw error
         } catch {
-            throw NeAntikError.processLaunchFailed(error.localizedDescription)
+            throw NeAntikError.processLaunchFailed("")
         }
         managedLeaseOwners[profile.id] = ownerToken
         managedBrowserDataDirectories[profile.id] = browserDataDirectory
@@ -1587,18 +1589,13 @@ final class BrowserProcessManager: ObservableObject {
                 at: lockURL
             )
         } catch {
-            let diagnosticDetail = error.localizedDescription
-                .replacingOccurrences(of: "\n", with: " ")
-                .prefix(512)
             if process.isRunning {
                 managedProcessTerminator(process)
             }
             if process.isRunning {
                 processes[profile.id] = process
                 runningProfileIDs.insert(profile.id)
-                throw NeAntikError.processLaunchFailed(
-                    error.localizedDescription
-                )
+                throw NeAntikError.processLaunchFailed("")
             }
             processes.removeValue(forKey: profile.id)
             runningProfileIDs.remove(profile.id)
@@ -1610,10 +1607,10 @@ final class BrowserProcessManager: ObservableObject {
             )
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
             try? appendDiagnostic(
-                "browser_launch_failed reason=\(diagnosticDetail)",
+                "browser_launch_failed reason=process-launch-error",
                 to: logURL
             )
-            throw NeAntikError.processLaunchFailed(error.localizedDescription)
+            throw NeAntikError.processLaunchFailed("")
         }
     }
 
