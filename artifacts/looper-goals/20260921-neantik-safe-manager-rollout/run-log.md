@@ -84,3 +84,8 @@
   Chromium 151 binary. Historical AffPapa fallback content was not replaced
   with the public `0.7.3` snapshot because this checkout is a separate
   `0.3.20` candidate and is not that release source commit.
+- Fresh gate recheck at `2026-09-21T13:09:22Z`: the runtime security baseline,
+  Direct doctor, and local aggregate audit reproduce the same external
+  blockers. Manager-only work is complete through stage 8; stage 9/10 cannot
+  proceed without an explicitly permitted Chromium rebuild and the configured
+  Direct deploy credential.
