@@ -278,3 +278,11 @@
   to the security floor `153.0.8010.52`, its network behavior is evidenced,
   and the configured Direct deployment credential becomes available; no
   signing, notarization, upload, or public mutation was attempted.
+- Fixed a source/release synchronization blind spot in
+  `verify-open-source-tree.py`: canonical `releases/v*.md` records now
+  participate in the public version/build floor, with conflict detection. A
+  lower local development candidate is accepted only when both README files
+  explicitly identify the exact version/build as a development preview. The
+  target suite and source audit passed, and the full Python regression passed
+  `638` tests with `1` expected skip. The real bump gate continues to reject
+  candidate `0.3.20 (23)` against public `0.7.3 (66)`.
