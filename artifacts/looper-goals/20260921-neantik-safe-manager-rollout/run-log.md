@@ -104,3 +104,9 @@
   stop at `152.0.7977.82-1.1`; the macOS 153 update remains an upstream work
   item. The NeAntik 153 source contract therefore remains uncreated until an
   exact macOS packaging pair is available.
+- Stale-documentation audit: removed the obsolete Chromium 151 version
+  reference from `docs/FINGERPRINT_RUNTIME.md`; the statement is now
+  version-neutral and remains accurate across the source/runtime boundary.
+- Fresh post-audit checks at `2026-09-21T13:17:58Z`: local aggregate audit is
+  still partial/blocked only at runtime security, runtime rebase, and live
+  network evidence; 42 AffPapa tests and the focused runtime/tree tests pass.
