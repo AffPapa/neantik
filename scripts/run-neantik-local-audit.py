@@ -137,7 +137,7 @@ def run_audit() -> dict[str, object]:
             "runtime-rebase-preflight",
             [
                 sys.executable,
-                "scripts/preflight-runtime-rebase-150.py",
+                "scripts/preflight-runtime-rebase.py",
                 "/private/tmp/neantik-local-audit-rebase",
                 "--plan",
                 "runtime/chromium-152-rebase-plan.json",

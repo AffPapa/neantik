@@ -83,7 +83,7 @@ performed only with a complete rebuild and new binary evidence.
 Prepare and build in a separate disposable directory with ample free space:
 
 ```bash
-./scripts/preflight-runtime-rebase-150.py \
+./scripts/preflight-runtime-rebase.py \
   --plan runtime/chromium-152-rebase-plan.json \
   /absolute/path/to/build-root
 ./scripts/build-runtime.sh /absolute/path/to/build-root prepare

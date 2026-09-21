@@ -183,7 +183,7 @@ python3 -m unittest discover -s scripts/tests -p 'test_benchmark_profile_workspa
 python3 scripts/benchmark-profile-workspace.py --counts 1 50 100 --iterations 3
 python3 scripts/run-neantik-local-audit.py --json
 python3 scripts/verify-runtime-security-baseline.py --today 2026-09-19
-python3 scripts/preflight-runtime-rebase-150.py /private/tmp/neantik-rebase-check \
+python3 scripts/preflight-runtime-rebase.py /private/tmp/neantik-rebase-check \
   --plan runtime/chromium-152-rebase-plan.json --free-gib 100 --json
 ```
 

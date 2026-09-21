@@ -365,3 +365,12 @@
   gates with `11` blocked, including the public `0.3.20 < 0.7.3` floor,
   absent exact runtime evidence, and unavailable signing/notary environment.
   No signing, notarization, upload, or public mutation was attempted.
+- Removed an active tooling/version-name mismatch at `2026-09-21T15:03:27Z`:
+  current 152-plan callers now use the version-neutral
+  `scripts/preflight-runtime-rebase.py` entrypoint, while the historical
+  `-150` implementation remains available only for compatibility fixtures.
+  The current source contract pins hashes for both the build script and new
+  entrypoint. Alias, rebase, direct-preflight and provenance tests pass; full
+  Python regression passed `641` tests with `1` expected skip. The neutral
+  preflight still correctly blocks the unrebuilt 152 candidate below the 153
+  security baseline; no Chromium build or release mutation was attempted.

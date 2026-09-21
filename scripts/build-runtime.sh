@@ -66,7 +66,7 @@ if [[ "$ACTUAL_MAC_COMMIT" == "$REBASE_MAC_COMMIT" ||
     exit 65
   fi
   SOURCE_MODE="owned-rebase"
-  python3 "$SCRIPT_DIR/preflight-runtime-rebase-150.py" \
+  python3 "$SCRIPT_DIR/preflight-runtime-rebase.py" \
     "$BUILD_ROOT" \
     --plan "$REBASE_PLAN"
   python3 "$SCRIPT_DIR/verify-nevision-patchset-manifest.py" \
