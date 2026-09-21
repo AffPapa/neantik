@@ -103,6 +103,7 @@ ACTUAL_BUILD="$(
   fail "mounted app version/build is $ACTUAL_VERSION ($ACTUAL_BUILD), expected $EXPECTED_VERSION ($EXPECTED_BUILD)"
 
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/verify-public-artifact-privacy.py" "$APP_PATH"
 xcrun stapler validate "$APP_PATH"
 spctl --assess --type execute --verbose=4 "$APP_PATH"
 

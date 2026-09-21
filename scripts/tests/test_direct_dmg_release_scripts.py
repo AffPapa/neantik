@@ -40,6 +40,13 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
             text.index("notarytool submit"),
         )
         self.assertIn("Applications shortcut", text)
+        verification_text = (
+            ROOT / "scripts" / "verify-direct-notarized-dmg.sh"
+        ).read_text()
+        self.assertIn(
+            'python3 "$PROJECT_DIR/scripts/verify-public-artifact-privacy.py" "$APP_PATH"',
+            verification_text,
+        )
 
     def test_release_script_requires_accepted_and_all_outer_gates(self) -> None:
         text = (ROOT / "scripts" / "release-direct-dmg.sh").read_text()

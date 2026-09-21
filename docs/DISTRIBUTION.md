@@ -40,7 +40,8 @@ A public release must:
 2. build the manager in Release mode for ARM64;
 3. embed the source-pinned Chromium runtime;
 4. preserve all third-party notices;
-5. pass the Swift, privacy, localization, runtime, and A → B → A gates;
+5. pass the Swift, full-app public-artifact privacy, localization, runtime,
+   and A → B → A gates;
 6. sign every nested Mach-O with Developer ID Application;
 7. use Hardened Runtime and a trusted timestamp;
 8. be accepted by Apple notarization;

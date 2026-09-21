@@ -296,6 +296,23 @@ def verify_app(
     )
 
 
+def verify_public_artifact_privacy(
+    app: Path,
+    *,
+    project_root: Path,
+    runner=default_runner,
+) -> None:
+    verifier = project_root / "scripts" / "verify-public-artifact-privacy.py"
+    if not verifier.is_file() or verifier.is_symlink():
+        raise DirectNotarizedArchiveError(
+            "public artifact privacy verifier is missing or unsafe"
+        )
+    run_checked(
+        [sys.executable, str(verifier), str(app)],
+        runner=runner,
+    )
+
+
 def verify_archive(
     *,
     archive: Path,
@@ -316,6 +333,11 @@ def verify_archive(
     assert_zip_has_no_finder_metadata(archive)
     with tempfile.TemporaryDirectory(prefix="nevision-notarized-verify-") as temporary:
         app = extract_archive(archive, Path(temporary), runner=runner)
+        verify_public_artifact_privacy(
+            app,
+            project_root=project_root,
+            runner=runner,
+        )
         verify_app(
             app,
             expected=expected,

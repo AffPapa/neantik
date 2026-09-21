@@ -258,3 +258,10 @@
   documentation line, while the latest release points at `v0.7.3`; this
   source/release drift is recorded as an external synchronization blocker and
   was not fixed by mixing branches or rewriting public history.
+- Hardened the notarized ZIP and DMG gates to run the full-app
+  `verify-public-artifact-privacy.py` scan before accepting either artifact.
+  This closes the path that allowed binary `/Users` paths and credentialed
+  proxy metadata to escape the older release pipeline. Archive tests passed
+  `14/14`, DMG script tests `3/3`, privacy tests `28/28`, and the full Python
+  regression passed `634` tests with `1` expected skip. No Chromium rebuild or
+  public artifact mutation was performed.

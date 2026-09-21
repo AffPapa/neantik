@@ -235,6 +235,45 @@ class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
                     for command in commands
                 )
             )
+            self.assertTrue(
+                any(
+                    command[1].endswith(
+                        "scripts/verify-public-artifact-privacy.py"
+                    )
+                    for command in commands
+                    if len(command) > 1
+                )
+            )
+
+    def test_archive_fails_when_public_privacy_gate_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_info(root, version="1.2.3")
+            archive = write_archive(root)
+
+            def runner(command):
+                if command[:4] == ["ditto", "-x", "-k", str(archive)]:
+                    write_app_info(Path(command[4]) / "NeAntik.app")
+                if len(command) > 1 and command[1].endswith(
+                    "scripts/verify-public-artifact-privacy.py"
+                ):
+                    return MODULE.CommandResult(
+                        65,
+                        "Public artifact privacy verification failed",
+                    )
+                if command[:2] == ["codesign", "--display"]:
+                    return MODULE.CommandResult(0, signed_display())
+                return MODULE.CommandResult(0, "ok")
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotarizedArchiveError,
+                "Public artifact privacy verification failed",
+            ):
+                MODULE.verify_archive(
+                    archive=archive,
+                    project_root=root,
+                    runner=runner,
+                )
 
     def test_rejects_stale_or_missing_runtime_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -335,6 +374,12 @@ def write_app_info(
 
 
 def write_archive(root: Path) -> Path:
+    scripts = root / "scripts"
+    scripts.mkdir(parents=True, exist_ok=True)
+    (scripts / "verify-public-artifact-privacy.py").write_text(
+        "# test privacy verifier\n",
+        encoding="utf-8",
+    )
     archive = root / "dist" / "NeAntik-1.2.3-arm64-notarized.zip"
     archive.parent.mkdir(parents=True)
     with zipfile.ZipFile(archive, "w") as zip_file:
