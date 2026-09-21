@@ -11,75 +11,52 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## P0: следующий Direct release
 
-- обновить встроенный Chromium до текущего официального security baseline;
-  на 21 сентября 2026 это Chromium 153.0.8010.52/.53 для macOS; публичный
-  0.7.3 использует 153.0.8010.36 и остаётся ниже этого boundary;
-- сохранить отдельные BrowserData, Keychain-only секреты и блокировку
-  повторного запуска одного профиля;
-- добавить одноуровневые папки поверх поиска, тегов, закрепления, архива и
-  клонирования без изменения legacy `profiles.json`;
-- добавить добровольную одиночную и массовую проверку прокси с явным временем
-  проверки, типизированным результатом и ограничением до трёх одновременных
-  запросов;
-- автоматически готовить свежий прокси-контекст перед каждой браузерной
-  сессией; ручная проверка показывает состояние, но не заменяет подготовку
-  запуска, а ошибка блокирует старт без скрытого перехода на прямой маршрут;
-- показывать пользователю состояние маршрута, fingerprint, WebRTC, QUIC/DNS и
-  геолокации с раздельными метками «настроено», «рассчитано», «измерено» и
-  «не подтверждено»;
-- сохранять effective-network evidence только через минимизированный
-  allowlist-verifier; configured route не считать измеренным egress;
-- выпускать только ARM64/Metal runtime с проверяемым source provenance;
-- оставить строгую release-проверку A -> B -> A отдельным gate, но дать
-  обычному пользователю запускать локальное сравнение тех же поверхностей без
-  права создавать release evidence;
-- не переключать GitHub и AffPapa до совпадения подписей, checksums и hosted
-  verification.
+- получить проверенную пару исходников Chromium 153 и macOS packaging. Общий
+  ungoogled-релиз уже содержит `153.0.8010.52`, но публичный macOS packaging
+  пока не поднялся выше `152.0.7977.82-1.1`;
+- создать новый source contract только из точных upstream commit/tag и
+  перенести все release-required NeAntik patch groups с нулевым fuzz;
+- после отдельного разрешения пересборки выполнить ARM64/Metal build,
+  source/binary provenance, runtime, profile-isolation, network-reality и
+  GUI A -> B -> A gates;
+- только после этого подписать, notarize, staple, проверить Gatekeeper,
+  подготовить GitHub/AffPapa Direct artifacts и доказать повторную загрузку,
+  checksums, live-переключение и rollback.
+
+До появления точного macOS Chromium 153 source pair и разрешения пересборки
+эти пункты остаются единственными незавершёнными P0-гейтами. См.
+`docs/RUNTIME_SECURITY_REBASE_153.md`.
+
+## Выполнено в текущем manager pass
+
+- UI-файлы Save/Open для metadata-only export/import и атомарное распределение
+  импортированных профилей по папкам;
+- lifecycle health center с lock/recovery/BrowserData size/last launch без
+  raw path, PID и process arguments;
+- privacy-панель aggregate media/permissions без device IDs и сырых значений;
+- безопасная презентация прокси как «Маршрут подтверждён» без реального IP;
+- provenance/quarantine для Downloads/Extensions с explicit-only политикой и
+  Safe Browsing без ослабления;
+- manager performance budgets и read-only runtime provenance card;
+- полный Swift gate: 567 тестов в 61 suite, включая manager, privacy,
+  isolation, lifecycle, provenance и performance проверки.
 
 ## P1: public beta
 
-- удерживать создание профиля на одном простом экране;
-- развивать поиск, теги, закрепление, архив, одноуровневые папки и
-  дублирование настроек в новый профиль без дерева и облачной синхронизации;
-  прокси при дублировании копируется явно, а BrowserData, UUID и fingerprint
-  seed остаются отдельными;
-- поддерживать локальный разбор распространённых форматов прокси; ручная и
-  массовая проверки остаются диагностикой, а обычный Start заново проверяет
-  маршрут перед каждой прокси-сессией и не переиспользует ручную проверку как
-  разрешение на запуск;
-- добавить воспроизводимые бюджеты для cold/warm start менеджера, проекции
-  100 профилей, idle CPU/RAM и запуска Chromium;
-- расширить диагностический fingerprint report bounded-полями media devices,
-  Permissions API, speech voices и Worker Audio без ослабления production gate;
-- показывать обычному пользователю только понятные состояния: готов,
-  запущен, остановлен или конкретная ошибка. Технический JSON остаётся в
-  диагностике и release evidence.
-- развивать единый immutable workspace snapshot как внутренний контракт UI и
-  будущих локальных адаптеров; публичная DTO остаётся явным allowlist без
-  browser paths, proxy endpoints, credentials, IP и fingerprint evidence.
-- ядро переноса только конфигурации профиля уже реализовано в
-  `ProfileConfigurationTransferDocument`: версионированный JSON содержит имя,
-  внешний вид, теги, стартовый URL, настройки прокси без пароля и имя папки;
-  импорт создаёт новый UUID и новый identity seed, а заметки, cookies,
-  BrowserData, last-launch state, fingerprint evidence и Keychain не покидают
-  локальное хранилище. UI-файл-диалоги подключены, а импорт атомарно создаёт
-  профили, переиспользует совпадающие папки и откатывает профили, папки и
-  BrowserData при ошибке. Профильная карточка также показывает агрегированный
-  lifecycle health center: lock, размер BrowserData, recovery и последний
-  запуск без raw path/PID/служебных аргументов. После локального fingerprint
-  audit доступна отдельная privacy-панель media/permissions: только статусы и
-  bounded count, без device IDs, названий устройств и сырых значений.
-  Успешная проверка прокси в редакторе сообщает только «Маршрут подтверждён»
-  и coarse location; реальный IP не показывается пользователю.
-  Для Downloads/Extensions добавлены bounded provenance-статусы и explicit-only
-  quarantine: файлы не запускаются автоматически, Safe Browsing не ослабляется,
-  а перенос допускается только из профиля и с проверкой symlink-дерева.
-  Manager filesystem scans ограничены явными entry/byte budgets и при
-  превышении становятся unavailable вместо блокировки интерфейса. Карточка
-  происхождения движка показывает только контролируемые сведения о текущем
-  runtime: имя/версию, источник, flavor, архитектуру, состояние подписи,
-  наличие локальных digest-измерений и результат preflight; полные хэши и
-  пути не выводятся.
+P1 ниже содержит только долгосрочные улучшения после разблокировки runtime;
+перечисленные выше manager-функции больше не считаются незавершёнными.
+
+- воспроизводимые budgets для cold/warm start именно Chromium runtime, idle
+  CPU/RAM и browser launch;
+- immutable workspace snapshot как внутренний контракт будущих локальных
+  адаптеров, при сохранении allowlist DTO без browser paths, credentials, IP и
+  fingerprint evidence;
+- отдельная инвентаризация фоновых Chromium-запросов и решение вопроса
+  защиты от фишинга и опасных загрузок;
+- зашифрованный экспорт только конфигурации профиля без Cookies, BrowserData и
+  Keychain-секретов;
+- подписанные инкрементальные обновления runtime с provenance, атомарным
+  rollback и полным архивом восстановления.
 
 ## P2: production quality
 
