@@ -189,3 +189,8 @@
   `61` suites and the native Swift Release build passed again. This validates
   the current manager tree only; Chromium, signing, notarization, upload and
   live release state remain unchanged.
+- Fresh upstream availability recheck at `2026-09-21T13:59:42Z`: public
+  ungoogled common has the 153.0.8010.52-1 release, while ungoogled macOS
+  packaging still lists `152.0.7977.82-1.1` as latest. The exact macOS 153
+  source/packaging pair remains unavailable; no source contract or runtime lock
+  was altered.
