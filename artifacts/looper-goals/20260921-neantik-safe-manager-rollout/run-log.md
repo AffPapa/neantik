@@ -303,3 +303,9 @@
   the network harness remains honestly `unverified` because no effective HTTP,
   DNS, TLS or WebRTC route was observed. Aggregate status remains `partial`
   with only the exact-runtime security/rebase gates blocked.
+- Removed an operational stale-release hazard at `2026-09-21T14:47:35Z`:
+  the two historical `0.3.12` DMG command wrappers now fail closed with exit
+  code `64` before any network, signing or release action and point operators
+  to the version-neutral entrypoints. Shell syntax, wrapper tests and public
+  workflow closure passed; full Python regression passed `639` tests with `1`
+  expected skip. No historical artifact or public release was modified.
