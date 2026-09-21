@@ -194,3 +194,9 @@
   packaging still lists `152.0.7977.82-1.1` as latest. The exact macOS 153
   source/packaging pair remains unavailable; no source contract or runtime lock
   was altered.
+- Network inventory follow-up: future telemetry and public-stats URLs now use
+  the same exact authorized-host policy as signed updates, rejecting arbitrary
+  HTTPS hosts, credentials and nonstandard ports. Direct telemetry remains
+  disabled with an empty endpoint. Full Swift gate passed `574` tests in
+  `61` suites; manager Release, Python `631`, AffPapa `42`, and source hygiene
+  checks passed. No Chromium or public release state changed.

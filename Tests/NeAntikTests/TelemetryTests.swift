@@ -4,6 +4,32 @@ import Testing
 
 struct TelemetryTests {
     @Test
+    func configurationRejectsUnapprovedOrCredentialedHosts() {
+        let configuration = TelemetryConfiguration.fromInfoDictionary([
+            "NeAntikTelemetryEndpoint":
+                "https://telemetry.example.net/collect",
+            "NeAntikPublicStatsURL":
+                "https://user:password@affpapa.org/stats"
+        ])
+
+        #expect(configuration.endpoint == nil)
+        #expect(configuration.publicStatsURL == nil)
+    }
+
+    @Test
+    func configurationAcceptsAuthorizedHttpsHosts() {
+        let configuration = TelemetryConfiguration.fromInfoDictionary([
+            "NeAntikTelemetryEndpoint":
+                "https://affpapa.org/neantik/telemetry",
+            "NeAntikPublicStatsURL":
+                "https://browser.free/neantik/stats"
+        ])
+
+        #expect(configuration.endpoint?.host == "affpapa.org")
+        #expect(configuration.publicStatsURL?.host == "browser.free")
+    }
+
+    @Test
     func payloadContainsOnlyDocumentedAggregateFields() throws {
         let payload = TelemetryPayload(
             eventID: "2b79ac84-6d66-4868-9764-cda62b1f1ea9",

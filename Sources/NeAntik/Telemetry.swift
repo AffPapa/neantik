@@ -48,16 +48,16 @@ struct TelemetryConfiguration: Equatable, Sendable {
     let publicStatsURL: URL?
 
     static func fromBundle(_ bundle: Bundle = .main) -> Self {
+        fromInfoDictionary(bundle.infoDictionary ?? [:])
+    }
+
+    static func fromInfoDictionary(_ dictionary: [String: Any]) -> Self {
         Self(
             endpoint: validatedURL(
-                bundle.object(
-                    forInfoDictionaryKey: "NeAntikTelemetryEndpoint"
-                ) as? String
+                dictionary["NeAntikTelemetryEndpoint"] as? String
             ),
             publicStatsURL: validatedURL(
-                bundle.object(
-                    forInfoDictionaryKey: "NeAntikPublicStatsURL"
-                ) as? String
+                dictionary["NeAntikPublicStatsURL"] as? String
             )
         )
     }
@@ -66,6 +66,9 @@ struct TelemetryConfiguration: Equatable, Sendable {
         guard let rawValue,
               let url = URL(string: rawValue),
               url.scheme == "https",
+              let host = url.host,
+              NeAntikPublicHostPolicy.allows(host),
+              url.port == nil || url.port == 443,
               url.user == nil,
               url.password == nil,
               url.query == nil,
