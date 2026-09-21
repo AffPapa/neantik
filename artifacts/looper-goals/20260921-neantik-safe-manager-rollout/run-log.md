@@ -182,3 +182,6 @@
   checks passed. No Chromium rebuild or public release mutation occurred.
 - Final manager-only Release build rerun after the transfer UX wording patch:
   passed. The build contains no Chromium rebuild or runtime replacement.
+- Encrypted transfer sheet hardening: passphrase and confirmation state are
+  cleared on submit, cancel, Escape and disappearance of the sheet. The
+  focused transfer tests pass after this change.

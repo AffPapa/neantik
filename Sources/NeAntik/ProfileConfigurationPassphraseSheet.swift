@@ -93,7 +93,7 @@ struct ProfileConfigurationPassphraseSheet: View {
 
             HStack {
                 Spacer()
-                Button("Отмена", role: .cancel, action: onCancel)
+                Button("Отмена", role: .cancel, action: cancel)
                 Button(mode == .export ? "Зашифровать" : "Открыть") {
                     submit()
                 }
@@ -106,13 +106,25 @@ struct ProfileConfigurationPassphraseSheet: View {
         .onAppear {
             focusedField = .passphrase
         }
-        .onExitCommand(perform: onCancel)
+        .onDisappear {
+            clearFields()
+        }
+        .onExitCommand(perform: cancel)
     }
 
     private func submit() {
         let value = passphrase
+        clearFields()
+        onSubmit(value)
+    }
+
+    private func cancel() {
+        clearFields()
+        onCancel()
+    }
+
+    private func clearFields() {
         passphrase.removeAll(keepingCapacity: false)
         confirmation.removeAll(keepingCapacity: false)
-        onSubmit(value)
     }
 }
