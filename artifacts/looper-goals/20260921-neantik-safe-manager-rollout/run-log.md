@@ -163,3 +163,9 @@
   remains disabled. Full Swift gate passed `568` tests in `61` suites; Python
   scripts passed `631` tests with one expected skip; AffPapa passed `42` tests;
   source/workflow/notices checks passed. Commit: `b7cd27e`.
+- Fresh manager-only Release build and aggregate audit at `2026-09-21T13:47:40Z`:
+  the native Swift Release build passed. Aggregate status remains `partial`:
+  profile isolation is partial, network reality is unverified, and runtime
+  security/rebase are blocked. Release decision remains
+  `blocked-until-exact-runtime-and-live-gates`; no Chromium rebuild or Direct
+  publication was attempted.
