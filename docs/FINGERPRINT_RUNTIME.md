@@ -176,9 +176,8 @@ NEANTIK_PROFILE_TIMEZONE=<IANA timezone>
 ```
 
 Timezone is intentionally transported only through NeAntik's private
-environment contract. Chromium 151 does not expose a supported
-`--timezone` command-line switch, so the manager never emits that no-op
-argument.
+environment contract. Chromium does not expose a supported `--timezone`
+command-line switch, so the manager never emits that no-op argument.
 
 The custom `--fingerprint*` argv family is intentionally unsupported and the
 release verifier rejects those legacy NUL-terminated markers in the packaged
