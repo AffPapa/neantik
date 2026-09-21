@@ -228,3 +228,12 @@
   `153.0.8010.52-1`, and ungoogled macOS release packaging still has no 153
   release beyond `152.0.7977.82-1.1`. Repository version facts remain aligned;
   no runtime lock, public artifact or release channel was changed.
+- Centralized the public Chromium security baseline in
+  `RuntimeSecurityBaseline.swift`; update verification and the runtime
+  provenance card now share the same strict four-part `153.0.8010.52`
+  contract. Focused suites passed `3` and `10` tests; the full Swift gate passed
+  `576` tests in `61` suites; manager Release build passed. Python checks passed
+  `631` tests with `1` expected skip, and source/update/telemetry policy checks
+  passed. Aggregate audit remains partial because the owned runtime is still
+  `152.0.7977.64` and live Chromium network evidence is unverified; no
+  Chromium rebuild or public release was performed.

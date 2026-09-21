@@ -154,9 +154,8 @@ enum UpdateManifestError: LocalizedError, Equatable {
 enum UpdateManifestVerifier {
     private static let maximumLifetime: TimeInterval = 14 * 24 * 60 * 60
     private static let clockSkew: TimeInterval = 5 * 60
-    private static let minimumPublicChromiumVersion = [
-        153, 0, 8010, 52
-    ]
+    private static let minimumPublicChromiumVersion =
+        NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersion
 
     static func verify(
         _ data: Data,

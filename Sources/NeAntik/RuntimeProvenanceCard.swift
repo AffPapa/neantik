@@ -48,7 +48,9 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
         if runtime.flavor != .fingerprintChromium {
             publicReleaseStatus = "Не применяется к обычному движку"
         } else if let version = inspection.version,
-                  Self.meetsPublicChromiumBaseline(version)
+                  NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(
+                      version
+                  )
         {
             publicReleaseStatus = "Соответствует baseline"
         } else if inspection.version == nil {
@@ -56,7 +58,9 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
                 "Версия не проверена — Direct-релиз заблокирован"
         } else {
             publicReleaseStatus =
-                "Ниже baseline 153.0.8010.52 — Direct-релиз заблокирован"
+                "Ниже baseline " +
+                    NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText +
+                    " — Direct-релиз заблокирован"
         }
         return Self(
             name: runtime.name,
@@ -78,23 +82,4 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
         )
     }
 
-    private static func meetsPublicChromiumBaseline(
-        _ value: String
-    ) -> Bool {
-        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
-        guard parts.count == 4,
-              parts.allSatisfy({
-                  !$0.isEmpty &&
-                      $0.allSatisfy(\.isNumber) &&
-                      ($0.count == 1 || $0.first != "0")
-              }),
-              parts.compactMap({ Int($0) }).count == 4
-        else {
-            return false
-        }
-        let components = parts.compactMap { Int($0) }
-        return components.lexicographicallyPrecedes(
-            [153, 0, 8010, 52]
-        ) == false
-    }
 }
