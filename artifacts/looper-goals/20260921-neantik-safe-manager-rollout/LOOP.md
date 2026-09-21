@@ -49,10 +49,11 @@ and rollback gates pass.
 
 - Goal is active in the native Codex goal system.
 - Current NeAntik branch: `codex/neantik-workplaces`.
-- Last manager commit: `65fe40d`.
+- Last manager commit: `af1f2f2`.
 - Completed slices: stage 1, UI file dialogs; stage 2, atomic import with
   folder mapping; stage 3, lifecycle health center; stage 4, bounded
   media/permissions privacy panel; stage 5, route-confirmed presentation;
   stage 6, extension/download provenance and quarantine policy; stage 7,
-  manager performance budgets.
-- Current slice: stage 8, runtime provenance card.
+  manager performance budgets; stage 8, runtime provenance card.
+- Current slice: stage 9, runtime rebase/rebuild and full runtime/security
+  cycle, pending explicit permission to rebuild Chromium.

@@ -2238,6 +2238,10 @@ struct ContentView: View {
                     ?? .empty,
                 artifactProvenance: artifactProvenanceByProfileID[profile.id]
                     ?? .empty,
+                runtimeProvenance: RuntimeProvenanceSnapshot.inspect(
+                    runtime: runtime,
+                    preflight: runtimePreflight
+                ),
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
@@ -3284,6 +3288,7 @@ struct ProfileDetailView: View {
     var lifecycleHealth: ProfileLifecycleHealthSnapshot = .empty
     var privacyPanel: ProfilePrivacyPanelSnapshot = .empty
     var artifactProvenance: ProfileArtifactProvenanceSnapshot = .empty
+    var runtimeProvenance: RuntimeProvenanceSnapshot = .empty
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var isTestingProxy: Bool = false
@@ -3410,6 +3415,7 @@ struct ProfileDetailView: View {
             ProfileLifecycleHealthView(snapshot: lifecycleHealth)
             ProfilePrivacyPanelView(snapshot: privacyPanel)
             ProfileArtifactProvenanceView(snapshot: artifactProvenance)
+            RuntimeProvenanceCardView(snapshot: runtimeProvenance)
 
             Button {
                 technicalDetailsExpanded.toggle()

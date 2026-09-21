@@ -58,3 +58,11 @@
   direct budget boundary tests and existing 10k manager benchmarks.
 - Stage 8 started: add a read-only runtime provenance card bound to current
   runtime inspection and evidence freshness; no runtime mutation is in scope.
+- Stage 8 delivered: added a bounded runtime provenance card for name, version,
+  source, flavor, architecture, signature state, digest presence, and preflight
+  state. Full hashes, paths, and raw runtime arguments remain outside the UI.
+- Stage 8 evidence: full Swift gate passed 567 tests in 61 suites; open-source
+  tree, runtime notices, public workflow references, and diff checks passed.
+- Stage 9 opened but remains blocked: the pinned Chromium runtime is below the
+  current security baseline and the rebuild has not been explicitly allowed;
+  the Direct deploy key is also unavailable, so no release work is claimed.
