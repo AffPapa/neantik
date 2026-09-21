@@ -271,3 +271,10 @@
   `candidate version 0.3.20 must be newer than published 0.7.3`; it can no
   longer be mistaken for a successor to local `0.3.19` metadata. Version
   guard tests passed `10/10`.
+- Current-HEAD verification at `2026-09-21T14:39:33Z`: the complete native
+  Swift gate passed `576` tests in `61` suites, and the production manager
+  Release build passed. No Chromium rebuild was run. The aggregate release
+  decision remains blocked until the exact owned Chromium runtime is rebased
+  to the security floor `153.0.8010.52`, its network behavior is evidenced,
+  and the configured Direct deployment credential becomes available; no
+  signing, notarization, upload, or public mutation was attempted.
