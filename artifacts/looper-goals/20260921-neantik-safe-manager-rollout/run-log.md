@@ -134,3 +134,8 @@
   the CI suite matrix/runner omitted six completed manager suites. After the
   fix, all `626` script tests pass with one expected skip, the 12 suite
   contract tests pass, and all 42 AffPapa tests pass. Fix commit: `ea19da2`.
+- Git-history secret audit: current-tree verification passes; read-only `git
+  log --all -G` matches only verifier regexes and synthetic test/documentation
+  markers in historical commits, not credential material. Local tags stop at
+  the historical `v0.6.17` line, so this checkout is not treated as the public
+  `v0.7.3` release source.
