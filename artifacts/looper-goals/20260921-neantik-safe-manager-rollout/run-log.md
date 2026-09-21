@@ -71,3 +71,6 @@
   `153.0.8010.52`; `neantik-affpapa-release doctor` reports that the
   configured Direct deploy key is unavailable. The private key location is
   intentionally omitted from the public Goal log.
+- Audit hygiene evidence: the public-tree verifier, dist-clean verifier,
+  generated runtime notices check, and public workflow closure all pass after
+  removing only Finder `.DS_Store` metadata from ignored `dist/` artifacts.
