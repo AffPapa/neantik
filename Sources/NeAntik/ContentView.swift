@@ -1146,14 +1146,17 @@ struct ContentView: View {
                 return
             }
             let imported = try document.makeProfiles()
-            let saved = try store.insertNewProfiles(imported) { _ in }
+            let saved = try store.insertImportedProfiles(
+                imported,
+                folderNames: document.profiles.map(\.folderName)
+            )
             if let first = saved.first {
                 revealSavedProfile(first)
             }
             announceWorkspaceStatus(
                 "Импортировано " + String(saved.count) + " " +
                     profileCountWord(saved.count) +
-                    ". Папки будут распределены на следующем шаге."
+                    " с распределением по папкам."
             )
         } catch {
             localError = error.localizedDescription

@@ -405,6 +405,182 @@ final class ProfileStore: ObservableObject {
         )
     }
 
+    /// Imports new profiles and their folder assignments as one recoverable
+    /// metadata operation. Folder names are matched case- and
+    /// diacritic-insensitively; repeated names in the input share one folder.
+    /// The operation never writes credentials or browser data.
+    @discardableResult
+    func insertImportedProfiles(
+        _ requestedProfiles: [BrowserProfile],
+        folderNames: [String?],
+        afterPersist: ([BrowserProfile]) throws -> Void = { _ in }
+    ) throws -> [BrowserProfile] {
+        guard !requestedProfiles.isEmpty,
+              requestedProfiles.count == folderNames.count
+        else {
+            throw NeAntikError.invalidProfile
+        }
+        guard folderNames.contains(where: { $0 != nil }) else {
+            return try insertNewProfiles(
+                requestedProfiles,
+                afterPersist: afterPersist
+            )
+        }
+
+        return try paths.withProfilesMetadataGuard {
+            try reloadLatestProfilesForMutation()
+            try requireStorage()
+            try requireOrganizationStorage()
+            do {
+                try reloadLatestOrganizationForMutation()
+            } catch {
+                organizationStorageIsAvailable = false
+                organization = .empty
+                lastError = Self.joinWarnings(
+                    lastError,
+                    "Папки временно недоступны. Профили и данные браузеров не изменены. " +
+                        error.localizedDescription
+                )
+                throw ProfileOrganizationError.storageUnavailable
+            }
+
+            let previousProfiles = profiles
+            let previousOrganization = organization
+            try Self.requireInsertionCapacity(
+                existingCount: previousProfiles.count,
+                additionalCount: requestedProfiles.count
+            )
+
+            let operationDate = Date()
+            var nextOrganization = previousOrganization
+            var folderIDByComparisonKey: [String: UUID] = [:]
+            for folder in previousOrganization.folders {
+                folderIDByComparisonKey[ProfileFolder.comparisonKey(folder.name)] =
+                    folder.id
+            }
+            var folderIDsByProfileIndex: [UUID?] = []
+            for requestedName in folderNames {
+                guard let requestedName else {
+                    folderIDsByProfileIndex.append(nil)
+                    continue
+                }
+                guard let normalizedName = ProfileFolder.normalizedName(
+                    requestedName
+                ) else {
+                    throw ProfileOrganizationError.invalidFolderName
+                }
+                let key = ProfileFolder.comparisonKey(normalizedName)
+                if let existingID = folderIDByComparisonKey[key] {
+                    folderIDsByProfileIndex.append(existingID)
+                    continue
+                }
+                var folderID = UUID()
+                while nextOrganization.folder(withID: folderID) != nil {
+                    folderID = UUID()
+                }
+                let folder = ProfileFolder(
+                    id: folderID,
+                    name: normalizedName,
+                    createdAt: operationDate,
+                    updatedAt: operationDate
+                )
+                nextOrganization.addFolder(folder)
+                folderIDByComparisonKey[key] = folderID
+                folderIDsByProfileIndex.append(folderID)
+            }
+
+            let existingIDs = Set(previousProfiles.map(\.id))
+            var requestedIDs = Set<UUID>()
+            var prepared = requestedProfiles
+            for index in prepared.indices {
+                guard let normalizedProfile = prepared[index]
+                    .normalizedForPersistence(),
+                      !existingIDs.contains(prepared[index].id),
+                      requestedIDs.insert(prepared[index].id).inserted,
+                      prepared[index].revision == 0,
+                      try paths.privateFileEntryKind(
+                          paths.profileDeletionTombstone(
+                              for: prepared[index].id
+                          )
+                      ) == .missing
+                else {
+                    throw NeAntikError.invalidProfile
+                }
+                prepared[index] = normalizedProfile
+                prepared[index].updatedAt = operationDate
+                prepared[index].revision = 1
+            }
+
+            let normalized = try Self.normalizedForIsolation(
+                previousProfiles + prepared
+            ).profiles
+            let inserted = Array(normalized.suffix(prepared.count))
+            for (profile, folderID) in zip(inserted, folderIDsByProfileIndex) {
+                if let folderID {
+                    nextOrganization.assign(
+                        profileIDs: Set([profile.id]),
+                        toFolderID: folderID
+                    )
+                }
+            }
+
+            var createdDirectories: [URL] = []
+            do {
+                for profile in inserted {
+                    let directory = paths.profileDirectory(for: profile.id)
+                    guard !FileManager.default.fileExists(
+                        atPath: directory.path
+                    ) else {
+                        throw NeAntikError.invalidProfile
+                    }
+                    try paths.prepareProfileDirectories(for: profile.id)
+                    createdDirectories.append(directory)
+                }
+
+                profiles = normalized
+                sortProfiles()
+                try persist()
+
+                let committedProfiles = profiles
+                var committedOrganization = previousOrganization
+                do {
+                    if nextOrganization != previousOrganization {
+                        organization = nextOrganization
+                        try persistOrganization()
+                        committedOrganization = nextOrganization
+                    }
+                    try afterPersist(inserted)
+                } catch {
+                    let operationError = error
+                    do {
+                        try rollbackCompoundMutation(
+                            previousProfiles: previousProfiles,
+                            committedProfiles: committedProfiles,
+                            previousOrganization: previousOrganization,
+                            committedOrganization: committedOrganization,
+                            createdDirectories: createdDirectories,
+                            credentialCleanupRecovery: operationError as?
+                                any ProfileCredentialCleanupRecoveryProviding
+                        )
+                    } catch {
+                        throw ProfileSaveRollbackError(
+                            operationError: operationError,
+                            rollbackError: error
+                        )
+                    }
+                    throw operationError
+                }
+            } catch {
+                profiles = previousProfiles
+                for directory in createdDirectories.reversed() {
+                    try? FileManager.default.removeItem(at: directory)
+                }
+                throw error
+            }
+            return inserted
+        }
+    }
+
     private func insertNewProfiles(
         _ requestedProfiles: [BrowserProfile],
         targetFolderID: UUID?,

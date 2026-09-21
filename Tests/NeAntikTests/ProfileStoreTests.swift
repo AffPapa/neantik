@@ -64,6 +64,82 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func importedProfilesShareFolderNamesAndReloadAtomically() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let first = BrowserProfile(name: "Импорт первый")
+        let second = BrowserProfile(name: "Импорт второй")
+        let third = BrowserProfile(name: "Без папки")
+
+        let saved = try store.insertImportedProfiles(
+            [first, second, third],
+            folderNames: ["Работа", "работа", nil]
+        )
+
+        #expect(saved.count == 3)
+        #expect(store.organization.folders.count == 1)
+        let folder = try #require(store.organization.folders.first)
+        #expect(folder.name == "Работа")
+        #expect(store.folderID(forProfileID: saved[0].id) == folder.id)
+        #expect(store.folderID(forProfileID: saved[1].id) == folder.id)
+        #expect(store.folderID(forProfileID: saved[2].id) == nil)
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(
+            Set(reloaded.profiles.map(\.id)) == Set(saved.map(\.id))
+        )
+        #expect(reloaded.organization.folders.map(\.name) == ["Работа"])
+        for profile in saved {
+            #expect(
+                reloaded.folderID(forProfileID: profile.id) ==
+                    store.folderID(forProfileID: profile.id)
+            )
+        }
+    }
+
+    @Test
+    func importedProfilesRollBackWhenFolderPersistenceFails() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        var failNextOrganizationPersist = true
+        let store = ProfileStore(
+            paths: paths,
+            beforeOrganizationPersist: {
+                if failNextOrganizationPersist {
+                    failNextOrganizationPersist = false
+                    throw ProfileStoreTestError()
+                }
+            }
+        )
+        let profile = BrowserProfile(name: "Откат импорта")
+
+        #expect(throws: ProfileStoreTestError.self) {
+            try store.insertImportedProfiles(
+                [profile],
+                folderNames: ["Новая папка"]
+            )
+        }
+        #expect(store.profiles.isEmpty)
+        #expect(store.organization == .empty)
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
+        )
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.isEmpty)
+        #expect(reloaded.organization == .empty)
+    }
+
+    @Test
     func legacyZWJMetadataReloadsAndSurvivesSubsequentUpdate() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
