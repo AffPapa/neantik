@@ -129,3 +129,8 @@
   its GitHub data was last checked on 20 September. No public content was
   changed because the release doctor remains blocked and the current binary is
   below the security baseline.
+- Python regression audit found and fixed two release/CI drift issues: the
+  reconciled roadmap had dropped a required proxy-launch contract phrase, and
+  the CI suite matrix/runner omitted six completed manager suites. After the
+  fix, all `626` script tests pass with one expected skip, the 12 suite
+  contract tests pass, and all 42 AffPapa tests pass. Fix commit: `ea19da2`.
