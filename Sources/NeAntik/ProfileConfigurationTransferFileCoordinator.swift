@@ -38,6 +38,38 @@ enum ProfileConfigurationTransferFileCoordinator {
         return profiles.count
     }
 
+    static func exportEncrypted(
+        profiles: [BrowserProfile],
+        folderNameByProfileID: [UUID: String],
+        passphrase: String
+    ) throws -> Int? {
+        guard !profiles.isEmpty else {
+            throw ProfileConfigurationTransferFileError.noStoppedProfiles
+        }
+        let document = try ProfileConfigurationTransferDocument(
+            profiles: profiles,
+            folderNameByProfileID: folderNameByProfileID
+        )
+        let data = try ProfileConfigurationEncryption.seal(
+            document: document,
+            passphrase: passphrase
+        )
+
+        let panel = NSSavePanel()
+        panel.title = "Зашифрованный экспорт профилей"
+        panel.message =
+            "Сохраняются только настройки профилей. Пароль не записывается в файл и не сохраняется в Keychain."
+        panel.nameFieldStringValue =
+            "neantik-profile-config.encrypted.json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else {
+            return nil
+        }
+        try data.write(to: url, options: [.atomic])
+        return profiles.count
+    }
+
     static func `import`() throws -> ProfileConfigurationTransferDocument? {
         let panel = NSOpenPanel()
         panel.title = "Импорт конфигурации профилей"
@@ -69,6 +101,32 @@ enum ProfileConfigurationTransferFileCoordinator {
         } catch {
             throw ProfileConfigurationTransferFileError.invalidFile
         }
+    }
+
+    static func importEncrypted(
+        passphrase: String
+    ) throws -> ProfileConfigurationTransferDocument? {
+        let panel = NSOpenPanel()
+        panel.title = "Импорт зашифрованной конфигурации"
+        panel.message =
+            "Будут созданы новые профили. Cookies, BrowserData и Keychain-секреты не импортируются."
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        guard panel.runModal() == .OK, let url = panel.url else {
+            return nil
+        }
+        let values = try url.resourceValues(forKeys: [.fileSizeKey])
+        if let fileSize = values.fileSize,
+           fileSize > ProfileConfigurationEncryption.maximumEnvelopeBytes {
+            throw ProfileConfigurationEncryptionError.fileTooLarge
+        }
+        let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+        return try ProfileConfigurationEncryption.open(
+            data,
+            passphrase: passphrase
+        )
     }
 }
 

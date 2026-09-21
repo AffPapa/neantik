@@ -31,6 +31,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 - UI-файлы Save/Open для metadata-only export/import и атомарное распределение
   импортированных профилей по папкам;
+- зашифрованный экспорт/импорт только конфигурации профиля через
+  AES-256-GCM и PBKDF2-HMAC-SHA256; Cookies, BrowserData и Keychain-секреты
+  не экспортируются;
 - lifecycle health center с lock/recovery/BrowserData size/last launch без
   raw path, PID и process arguments;
 - privacy-панель aggregate media/permissions без device IDs и сырых значений;
@@ -40,7 +43,7 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - provenance/quarantine для Downloads/Extensions с explicit-only политикой и
   Safe Browsing без ослабления;
 - manager performance budgets и read-only runtime provenance card;
-- полный Swift gate: 567 тестов в 61 suite, включая manager, privacy,
+- полный Swift gate: 569 тестов в 61 suite, включая manager, privacy,
   isolation, lifecycle, provenance и performance проверки.
 
 ## P1: public beta
@@ -55,8 +58,6 @@ P1 ниже содержит только долгосрочные улучше�
   fingerprint evidence;
 - отдельная инвентаризация фоновых Chromium-запросов и решение вопроса
   защиты от фишинга и опасных загрузок;
-- зашифрованный экспорт только конфигурации профиля без Cookies, BrowserData и
-  Keychain-секретов;
 - подписанные инкрементальные обновления runtime с provenance, атомарным
   rollback и полным архивом восстановления.
 
@@ -68,8 +69,6 @@ P1 ниже содержит только долгосрочные улучше�
   Client Hints, locale, timezone, WebRTC и параметров устройства;
 - инвентаризировать фоновые обращения Chromium и отдельно решить вопрос
   защиты от фишинга и опасных загрузок;
-- рассмотреть зашифрованный экспорт только конфигурации профиля. Cookies,
-  BrowserData и Keychain-секреты не экспортируются по умолчанию;
 - рассмотреть подписанные инкрементальные обновления runtime только вместе с
   provenance, атомарным rollback и полным архивом для восстановления.
 

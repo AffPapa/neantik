@@ -160,6 +160,8 @@ struct WorkspaceCommandSet {
     let createFolder: () -> Void
     let exportProfiles: () -> Void
     let importProfiles: () -> Void
+    let exportEncryptedProfiles: () -> Void
+    let importEncryptedProfiles: () -> Void
     let focusProfileSearch: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
@@ -171,6 +173,8 @@ struct WorkspaceCommandSet {
         createFolder: {},
         exportProfiles: {},
         importProfiles: {},
+        exportEncryptedProfiles: {},
+        importEncryptedProfiles: {},
         focusProfileSearch: {},
         renameSelectedFolder: {},
         deleteSelectedFolder: {}
@@ -234,6 +238,22 @@ struct WorkspaceCommandMenu: Commands {
                 "Импортировать конфигурацию…",
                 systemImage: "square.and.arrow.down",
                 action: resolved.importProfiles
+            )
+            .disabled(!resolved.isEnabled)
+
+            Divider()
+
+            Button(
+                "Зашифровать конфигурацию…",
+                systemImage: "lock.doc",
+                action: resolved.exportEncryptedProfiles
+            )
+            .disabled(!resolved.isEnabled)
+
+            Button(
+                "Открыть зашифрованную конфигурацию…",
+                systemImage: "lock.open",
+                action: resolved.importEncryptedProfiles
             )
             .disabled(!resolved.isEnabled)
         }

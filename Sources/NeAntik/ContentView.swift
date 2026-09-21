@@ -184,6 +184,8 @@ struct ContentView: View {
     @State private var artifactProvenanceByProfileID:
         [UUID: ProfileArtifactProvenanceSnapshot] = [:]
     @State private var bulkProxyImportRequest: BulkProxyImportRequest?
+    @State private var transferPassphraseMode:
+        ProfileConfigurationPassphraseMode?
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var resolvedRuntime: BrowserRuntime?
@@ -246,6 +248,7 @@ struct ContentView: View {
             folderNameRequest != nil ||
             profileFolderPickerRequest != nil ||
             bulkProxyImportRequest != nil ||
+            transferPassphraseMode != nil ||
             showingReleaseFingerprintAudit ||
             fingerprintAuditRequest != nil ||
             showingDeleteConfirmation ||
@@ -263,6 +266,12 @@ struct ContentView: View {
             createFolder: beginCreatingFolder,
             exportProfiles: exportProfileConfigurations,
             importProfiles: importProfileConfigurations,
+            exportEncryptedProfiles: {
+                transferPassphraseMode = .export
+            },
+            importEncryptedProfiles: {
+                transferPassphraseMode = .import
+            },
             focusProfileSearch: { profileSearchIsFocused = true },
             renameSelectedFolder: {
                 guard let selectedFolder else { return }
@@ -555,6 +564,27 @@ struct ContentView: View {
                     targetFolderID: request.targetFolderID
                 )
             }
+        }
+        .sheet(item: $transferPassphraseMode) { mode in
+            ProfileConfigurationPassphraseSheet(
+                mode: mode,
+                onSubmit: { passphrase in
+                    transferPassphraseMode = nil
+                    switch mode {
+                    case .export:
+                        exportEncryptedProfileConfigurations(
+                            passphrase: passphrase
+                        )
+                    case .import:
+                        importEncryptedProfileConfigurations(
+                            passphrase: passphrase
+                        )
+                    }
+                },
+                onCancel: {
+                    transferPassphraseMode = nil
+                }
+            )
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -1173,6 +1203,69 @@ struct ContentView: View {
                 "Импортировано " + String(saved.count) + " " +
                     profileCountWord(saved.count) +
                     " с распределением по папкам."
+            )
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func exportEncryptedProfileConfigurations(
+        passphrase: String
+    ) {
+        let stoppedProfiles = store.profiles.filter {
+            processes.processState(for: $0.id) == .stopped
+        }
+        let folderNames: [UUID: String] = Dictionary(
+            uniqueKeysWithValues: stoppedProfiles.compactMap { profile in
+                guard let folderID = store.folderID(forProfileID: profile.id),
+                      let folder = store.folder(withID: folderID)
+                else {
+                    return nil
+                }
+                return (profile.id, folder.name)
+            }
+        )
+        do {
+            guard let count = try ProfileConfigurationTransferFileCoordinator
+                .exportEncrypted(
+                    profiles: stoppedProfiles,
+                    folderNameByProfileID: folderNames,
+                    passphrase: passphrase
+                )
+            else {
+                return
+            }
+            announceWorkspaceStatus(
+                "Зашифровано " + String(count) + " " +
+                    profileCountWord(count) +
+                    ". Cookies, BrowserData и Keychain не включены."
+            )
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func importEncryptedProfileConfigurations(
+        passphrase: String
+    ) {
+        do {
+            guard let document = try ProfileConfigurationTransferFileCoordinator
+                .importEncrypted(passphrase: passphrase)
+            else {
+                return
+            }
+            let imported = try document.makeProfiles()
+            let saved = try store.insertImportedProfiles(
+                imported,
+                folderNames: document.profiles.map(\.folderName)
+            )
+            if let first = saved.first {
+                revealSavedProfile(first)
+            }
+            announceWorkspaceStatus(
+                "Импортировано " + String(saved.count) + " " +
+                    profileCountWord(saved.count) +
+                    " из зашифрованной конфигурации."
             )
         } catch {
             localError = error.localizedDescription

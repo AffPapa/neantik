@@ -4,6 +4,106 @@ import Testing
 
 struct ProfileConfigurationTransferTests {
     @Test
+    func encryptedTransferRoundTripsWithoutPlaintextOrSecrets() throws {
+        let profile = BrowserProfile(
+            name: "Зашифрованный профиль",
+            tags: ["Тест"],
+            startURL: "https://example.com",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: "proxy-user"
+            ),
+            identity: BrowserIdentity(seed: 12345)
+        )
+        let document = try ProfileConfigurationTransferDocument(
+            profiles: [profile],
+            exportedAt: Date(timeIntervalSince1970: 1_800_000_100)
+        )
+        let passphrase = "correct horse battery staple"
+
+        let encrypted = try ProfileConfigurationEncryption.seal(
+            document: document,
+            passphrase: passphrase
+        )
+
+        #expect(!encrypted.contains(Data("Зашифрованный профиль".utf8)))
+        let opened = try ProfileConfigurationEncryption.open(
+            encrypted,
+            passphrase: passphrase
+        )
+        #expect(opened == document)
+        #expect(try opened.makeProfiles().first?.note == "")
+    }
+
+    @Test
+    func encryptedTransferRejectsWrongPasswordAndTampering() throws {
+        let document = try ProfileConfigurationTransferDocument(
+            profiles: [BrowserProfile(name: "Профиль")],
+            exportedAt: Date(timeIntervalSince1970: 1_800_000_100)
+        )
+        let encrypted = try ProfileConfigurationEncryption.seal(
+            document: document,
+            passphrase: "correct horse battery staple"
+        )
+
+        #expect(throws: ProfileConfigurationEncryptionError.decryptionFailed) {
+            try ProfileConfigurationEncryption.open(
+                encrypted,
+                passphrase: "wrong horse battery staple"
+            )
+        }
+
+        let envelope = try JSONDecoder().decode(
+            EncryptedProfileConfigurationEnvelope.self,
+            from: encrypted
+        )
+        var ciphertext = try #require(
+            Data(base64Encoded: envelope.ciphertext)
+        )
+        ciphertext[ciphertext.startIndex] ^= 1
+        let tampered = try JSONEncoder().encode(
+            EncryptedProfileConfigurationEnvelope(
+                schemaVersion: envelope.schemaVersion,
+                cipher: envelope.cipher,
+                kdf: envelope.kdf,
+                iterations: envelope.iterations,
+                salt: envelope.salt,
+                nonce: envelope.nonce,
+                ciphertext: ciphertext.base64EncodedString()
+            )
+        )
+        #expect(throws: ProfileConfigurationEncryptionError.decryptionFailed) {
+            try ProfileConfigurationEncryption.open(
+                tampered,
+                passphrase: "correct horse battery staple"
+            )
+        }
+    }
+
+    @Test
+    func encryptedTransferRejectsWeakPassphrasesAndUnsupportedEnvelope() throws {
+        let document = try ProfileConfigurationTransferDocument(
+            profiles: [BrowserProfile(name: "Профиль")]
+        )
+
+        #expect(throws: ProfileConfigurationEncryptionError.weakPassphrase) {
+            try ProfileConfigurationEncryption.seal(
+                document: document,
+                passphrase: "short"
+            )
+        }
+
+        #expect(throws: ProfileConfigurationEncryptionError.invalidEnvelope) {
+            try ProfileConfigurationEncryption.open(
+                Data("not-json".utf8),
+                passphrase: "correct horse battery staple"
+            )
+        }
+    }
+
+    @Test
     func exportIsMetadataOnlyAndImportCreatesFreshIdentity() throws {
         let profile = BrowserProfile(
             name: "Рабочий профиль",

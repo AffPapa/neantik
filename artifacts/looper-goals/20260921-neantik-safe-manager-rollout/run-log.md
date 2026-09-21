@@ -172,3 +172,11 @@
 - Added an explicit signed-download-host regression test. The full Swift gate
   now passes `569` tests in `61` suites, including both manifest and artifact
   host allowlist cases. Chromium was not rebuilt.
+- Implemented the remaining manager-only encrypted configuration transfer:
+  separate Save/Open commands, password confirmation sheet, AES-256-GCM
+  envelope, PBKDF2-HMAC-SHA256 with 600,000 iterations, strict size/schema
+  validation, and wrong-password/tamper/weak-password tests. The format still
+  excludes Cookies, BrowserData, identity, notes, fingerprint evidence and
+  Keychain. Full Swift gate passed `572` tests in `61` suites; manager-only
+  Release build, Python `631` tests, AffPapa `42` tests, and source hygiene
+  checks passed. No Chromium rebuild or public release mutation occurred.
