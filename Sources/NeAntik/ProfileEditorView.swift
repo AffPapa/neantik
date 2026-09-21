@@ -97,6 +97,17 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
   }
 }
 
+enum ProfileProxyTestPresentation {
+  static func successMessage(location: String) -> String {
+    let cleanLocation = location.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    return cleanLocation.isEmpty
+      ? "Маршрут подтверждён"
+      : "Маршрут подтверждён · " + cleanLocation
+  }
+}
+
 struct ProfileEditorView: View {
   let original: BrowserProfile?
   let keychain: KeychainStore
@@ -1166,10 +1177,9 @@ struct ProfileEditorView: View {
           try Task.checkCancellation()
           await MainActor.run {
             let location = result.locationSummary
-            testMessage =
-              location.isEmpty
-              ? "Прокси отвечает · \(result.ipAddress)"
-              : "Прокси отвечает · \(result.ipAddress) · \(location)"
+            testMessage = ProfileProxyTestPresentation.successMessage(
+              location: location
+            )
             detectedProxy = proxy
             detectedTimezone = result.timezoneIdentifier
             detectedLocale = result.localeIdentifier

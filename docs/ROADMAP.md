@@ -67,6 +67,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   запуск без raw path/PID/служебных аргументов. После локального fingerprint
   audit доступна отдельная privacy-панель media/permissions: только статусы и
   bounded count, без device IDs, названий устройств и сырых значений.
+  Успешная проверка прокси в редакторе сообщает только «Маршрут подтверждён»
+  и coarse location; реальный IP не показывается пользователю.
 
 ## P2: production quality
 

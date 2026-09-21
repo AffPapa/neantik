@@ -52,5 +52,5 @@ and rollback gates pass.
 - Last manager commit: `65fe40d`.
 - Completed slices: stage 1, UI file dialogs; stage 2, atomic import with
   folder mapping; stage 3, lifecycle health center; stage 4, bounded
-  media/permissions privacy panel.
-- Current slice: stage 5, route-confirmed presentation without raw IP.
+  media/permissions privacy panel; stage 5, route-confirmed presentation.
+- Current slice: stage 6, extension/download provenance and quarantine policy.

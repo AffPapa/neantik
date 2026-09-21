@@ -37,3 +37,9 @@
   malformed/unbounded privacy input tests and UI render compatibility.
 - Stage 5 started: replace any user-facing detected-IP success text with the
   bounded route-confirmed wording while retaining only coarse context.
+- Stage 5 delivered: proxy editor success presentation now uses only
+  «Маршрут подтверждён» plus optional coarse location; raw IP remains outside
+  user-facing text. Presentation tests cover the redaction boundary.
+- Stage 5 evidence: full Swift gate passed 560 tests in 58 suites.
+- Stage 6 started: inventory the existing Chromium download/extension surface
+  before adding provenance and quarantine without weakening Safe Browsing.

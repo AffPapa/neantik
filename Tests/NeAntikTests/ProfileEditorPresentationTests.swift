@@ -101,4 +101,20 @@ struct ProfileEditorPresentationTests {
         #expect(stale.requiresAttention)
         #expect(stale.detail.contains("Перед следующим запуском"))
     }
+
+    @Test
+    func proxySuccessPresentationNeverIncludesDetectedIPAddress() {
+        let withoutLocation = ProfileProxyTestPresentation.successMessage(
+            location: ""
+        )
+        let withLocation = ProfileProxyTestPresentation.successMessage(
+            location: "Нидерланды · Europe/Amsterdam"
+        )
+
+        #expect(withoutLocation == "Маршрут подтверждён")
+        #expect(withLocation.contains("Маршрут подтверждён"))
+        #expect(!withoutLocation.contains("203.0.113.77"))
+        #expect(!withLocation.contains("203.0.113.77"))
+        #expect(!withLocation.contains("ipAddress"))
+    }
 }

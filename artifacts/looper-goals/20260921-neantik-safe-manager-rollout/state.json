@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "goal": "neantik-safe-manager-rollout",
   "status": "active",
-  "currentStage": 5,
-  "completedStages": [1, 2, 3, 4],
-  "lastCommit": "5209b03",
+  "currentStage": 6,
+  "completedStages": [1, 2, 3, 4, 5],
+  "lastCommit": "141aeea",
   "releaseStatus": "blocked-runtime-baseline-and-deploy-key",
   "chromiumRebuildAllowed": false
 }
