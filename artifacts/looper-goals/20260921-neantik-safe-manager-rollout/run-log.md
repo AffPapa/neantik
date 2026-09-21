@@ -297,3 +297,9 @@
   Those changes touch only Python audit tooling, tests, changelog and goal
   evidence; no Swift or Chromium source was changed. Signing, notarization,
   upload and public release remain intentionally unattempted.
+- Fresh runtime evidence at `2026-09-21T14:46:09Z`: profile isolation is
+  `partial` with 3 distinct BrowserData directories and identity seeds, zero
+  shared cookie/lock stores, concurrent-launch blocking and clean recovery;
+  the network harness remains honestly `unverified` because no effective HTTP,
+  DNS, TLS or WebRTC route was observed. Aggregate status remains `partial`
+  with only the exact-runtime security/rebase gates blocked.
