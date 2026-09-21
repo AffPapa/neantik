@@ -185,3 +185,7 @@
 - Encrypted transfer sheet hardening: passphrase and confirmation state are
   cleared on submit, cancel, Escape and disappearance of the sheet. The
   focused transfer tests pass after this change.
+- Final post-hardening verification: full Swift gate passed `572` tests in
+  `61` suites and the native Swift Release build passed again. This validates
+  the current manager tree only; Chromium, signing, notarization, upload and
+  live release state remain unchanged.
