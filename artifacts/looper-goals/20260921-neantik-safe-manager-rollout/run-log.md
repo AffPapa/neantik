@@ -251,3 +251,10 @@
   scanner did not print the values. This historical public artifact cannot be
   safely rewritten; a fix requires a new Chromium build/repackaging, so no
   public mutation was attempted.
+- Fresh live HTTP verification at `2026-09-21`: `browser.free` and
+  `affpapa.org/neantik` both resolve to the public `v0.7.3` download links and
+  disclose Chromium `153.0.8010.36` with the public-alpha security limitation.
+  The raw public `main` README remains on the separate `0.3.23`/Chromium 152
+  documentation line, while the latest release points at `v0.7.3`; this
+  source/release drift is recorded as an external synchronization blocker and
+  was not fixed by mixing branches or rewriting public history.
