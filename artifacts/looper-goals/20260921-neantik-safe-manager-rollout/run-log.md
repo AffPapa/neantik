@@ -74,3 +74,13 @@
 - Audit hygiene evidence: the public-tree verifier, dist-clean verifier,
   generated runtime notices check, and public workflow closure all pass after
   removing only Finder `.DS_Store` metadata from ignored `dist/` artifacts.
+- Follow-up code audit: no user-facing SwiftUI view prints the proxy IP,
+  device IDs, raw media values, or diagnostic JSON. The local BrowserData path
+  remains available only inside the explicitly expandable technical-details
+  block; lifecycle, privacy, artifact, and runtime-provenance cards stay
+  aggregate-only. The 42 AffPapa release tests pass.
+- Runtime documentation hygiene: corrected `runtime/README.md` so the
+  source-qualified Chromium 152 lock is not described as an already-verified
+  Chromium 151 binary. Historical AffPapa fallback content was not replaced
+  with the public `0.7.3` snapshot because this checkout is a separate
+  `0.3.20` candidate and is not that release source commit.
