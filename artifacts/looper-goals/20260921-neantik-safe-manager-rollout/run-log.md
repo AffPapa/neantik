@@ -344,3 +344,7 @@
   (`43`) pass; full Python regression passed `640` tests with `1` expected
   skip. Source hygiene, workflow closure and reachable-history secret audit
   pass (`5,221` objects / `2,899` unique blobs).
+- Post-commit privacy recheck at `2026-09-21T14:53:34Z`: source hygiene and
+  workflow closure still pass, the worktree is clean, and reachable-history
+  scanning remains secret-free across `5,234` objects and `2,903` unique
+  blobs. No deploy client command contacted the remote release channel.
