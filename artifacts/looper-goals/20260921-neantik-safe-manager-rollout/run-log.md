@@ -237,3 +237,17 @@
   passed. Aggregate audit remains partial because the owned runtime is still
   `152.0.7977.64` and live Chromium network evidence is unverified; no
   Chromium rebuild or public release was performed.
+- Added `scripts/audit-git-history-secrets.py` and its regression tests, and
+  wired the scanner into the public CI release-contract job. The fresh audit
+  checked `5,088` reachable Git objects and `2,860` unique blobs without
+  printing secret values; no credential-bearing paths or recognized secret
+  formats were found. Full Python regression now passes `633` tests with `1`
+  expected skip.
+- Fresh GitHub Releases API verification at `2026-09-21`: immutable `v0.7.3`
+  remains the latest public release. Its downloaded ZIP matched the published
+  SHA-256 `c380a1a4...b916b`, but the public-artifact privacy gate found two
+  high-confidence findings in the embedded Chromium Framework: an absolute
+  `/Users` build path and a credentialed proxy URI in binary metadata. The
+  scanner did not print the values. This historical public artifact cannot be
+  safely rewritten; a fix requires a new Chromium build/repackaging, so no
+  public mutation was attempted.
