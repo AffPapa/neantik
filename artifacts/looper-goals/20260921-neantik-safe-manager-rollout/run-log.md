@@ -286,3 +286,9 @@
   target suite and source audit passed, and the full Python regression passed
   `638` tests with `1` expected skip. The real bump gate continues to reject
   candidate `0.3.20 (23)` against public `0.7.3 (66)`.
+- Post-commit re-audit at `2026-09-21T14:44:21Z`: reachable Git history
+  remains clean across `5,149` objects and `2,878` unique blobs; source-tree
+  hygiene and public workflow dependency closure pass (`97` files / `121`
+  references), and signed-update policy passes. The only failing check is the
+  intentional Chromium floor gate for the pinned `152.0.7977.64` runtime;
+  Chromium was not rebuilt and no release-side mutation was attempted.
