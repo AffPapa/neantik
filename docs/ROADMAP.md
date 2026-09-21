@@ -43,7 +43,7 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - provenance/quarantine для Downloads/Extensions с explicit-only политикой и
   Safe Browsing без ослабления;
 - manager performance budgets и read-only runtime provenance card;
-- полный Swift gate: 569 тестов в 61 suite, включая manager, privacy,
+- полный Swift gate: 572 теста в 61 suite, включая manager, privacy,
   isolation, lifecycle, provenance и performance проверки.
 
 ## P1: public beta
