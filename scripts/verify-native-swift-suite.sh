@@ -32,21 +32,26 @@ case "$SUITE" in
   FingerprintEvidenceEnvelopeTests|\
   FingerprintEvidenceReleaseContextTests|\
   FirstProfileBootstrapTests|\
+  ProfileArtifactProvenanceTests|\
   SecureEnclaveFingerprintEvidenceSignerTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
   NativeMenuLocalizationTests|\
   ProfileCommandPresentationTests|\
+  ProfileConfigurationTransferTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
   ProfileEditorValidationTests|\
   ProfileEnvironmentInspectorTests|\
   ProfileEnvironmentPresentationTests|\
   ProfileEnvironmentAccessibilityTests|\
+  ProfileLifecycleHealthTests|\
   ProfileListProjectionTests|\
+  ProfileManagerPerformanceBudgetTests|\
   ProfileOrganizationTests|\
   ProfileOrganizationPersistenceTests|\
   ProfilePostSaveRevealPolicyTests|\
+  ProfilePrivacyPanelTests|\
   ProfileRevisionAndTransactionTests|\
   ProfileTagAppearanceTests|\
   ProfileTagEditorTests|\
@@ -56,6 +61,7 @@ case "$SUITE" in
   ProxyTestOperationRegistryTests|\
   ProxyTesterTests|\
   ResponsiveLayoutRenderTests|\
+  RuntimeProvenanceCardTests|\
   WorkspaceDomainTests|\
   WorkspaceLayoutTests|\
   WorkspaceQueryStateTests|\

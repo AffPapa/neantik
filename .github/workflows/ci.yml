@@ -41,21 +41,26 @@ jobs:
           - FingerprintEvidenceEnvelopeTests
           - FingerprintEvidenceReleaseContextTests
           - FirstProfileBootstrapTests
+          - ProfileArtifactProvenanceTests
           - SecureEnclaveFingerprintEvidenceSignerTests
           - KeychainStoreTests
           - LaunchIntentTests
           - NativeMenuLocalizationTests
           - ProfileCommandPresentationTests
+          - ProfileConfigurationTransferTests
           - ProfileEditorPasswordTests
           - ProfileEditorPresentationTests
           - ProfileEditorValidationTests
           - ProfileEnvironmentAccessibilityTests
           - ProfileEnvironmentInspectorTests
           - ProfileEnvironmentPresentationTests
+          - ProfileLifecycleHealthTests
           - ProfileListProjectionTests
+          - ProfileManagerPerformanceBudgetTests
           - ProfileOrganizationTests
           - ProfileOrganizationPersistenceTests
           - ProfilePostSaveRevealPolicyTests
+          - ProfilePrivacyPanelTests
           - ProfileRevisionAndTransactionTests
           - ProfileTagAppearanceTests
           - ProfileTagEditorTests
@@ -65,6 +70,7 @@ jobs:
           - ProxyTestOperationRegistryTests
           - ProxyTesterTests
           - ResponsiveLayoutRenderTests
+          - RuntimeProvenanceCardTests
           - WorkspaceDomainTests
           - WorkspaceLayoutTests
           - WorkspaceQueryStateTests

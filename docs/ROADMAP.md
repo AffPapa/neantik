@@ -34,6 +34,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - lifecycle health center с lock/recovery/BrowserData size/last launch без
   raw path, PID и process arguments;
 - privacy-панель aggregate media/permissions без device IDs и сырых значений;
+- свежая подготовка маршрута перед каждой прокси-сессией без скрытого Direct
+  fallback; запуск не переиспользует ручную проверку как разрешение;
 - безопасная презентация прокси как «Маршрут подтверждён» без реального IP;
 - provenance/quarantine для Downloads/Extensions с explicit-only политикой и
   Safe Browsing без ослабления;
