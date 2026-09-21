@@ -151,3 +151,9 @@
   fails on two high-confidence framework findings: an absolute `/Users` build
   path and a credentialed proxy URI. No public artifact was rewritten or
   republished; a new exact-runtime build must pass this gate before release.
+- Fresh version/release recheck at `2026-09-21T13:42:56Z`: official macOS
+  Stable is `153.0.8010.52/.53`; public NeAntik remains `0.7.3` with
+  `153.0.8010.36`; this checkout remains pinned to source-qualified
+  `152.0.7977.64`. Local aggregate audit is still partial with runtime
+  security/rebase blocked, and the Direct deployment credential is unavailable.
+  No rebuild, signing, upload, or live release mutation was performed.
