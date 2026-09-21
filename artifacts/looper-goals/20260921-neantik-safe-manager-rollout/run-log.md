@@ -121,3 +121,11 @@
   rejects pinned Chromium `152.0.7977.64` below required `153.0.8010.52`, and
   Direct doctor still cannot access the configured deployment credential. No
   release preparation, upload, or live mutation was attempted.
+- Roadmap reconciliation: moved the completed manager stages out of future P0/P1
+  work and left only the exact Chromium 153 source/runtime and Direct release
+  gates as current P0 blockers. Source hygiene and AffPapa content tests pass.
+- Public-site audit: the live AffPapa page still presents the published
+  `0.7.3` build `66` with Chromium `153.0.8010.36` and explicitly warns that
+  its GitHub data was last checked on 20 September. No public content was
+  changed because the release doctor remains blocked and the current binary is
+  below the security baseline.
