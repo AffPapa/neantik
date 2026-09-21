@@ -9,6 +9,14 @@ SUDOERS = ROOT / "ops" / "affpapa" / "neantik-deploy.sudoers"
 
 
 class ReleaseClientTests(unittest.TestCase):
+    def test_deploy_credential_errors_redact_private_paths(self) -> None:
+        text = CLIENT.read_text(encoding="utf-8")
+        self.assertIn("private path redacted", text)
+        self.assertNotIn('deploy key: $KEY', text)
+        self.assertNotIn('known_hosts: $KNOWN_HOSTS', text)
+        self.assertNotIn('файл не найден: $path', text)
+        self.assertNotIn('пустой файл: $path', text)
+
     def test_publish_verifies_bytes_before_metadata_activation(self) -> None:
         text = CLIENT.read_text(encoding="utf-8")
         publish = text[

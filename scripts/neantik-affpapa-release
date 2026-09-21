@@ -58,9 +58,11 @@ fail() {
 }
 
 preflight_access() {
-    [[ -f "$KEY" ]] || fail "не найден deploy key: $KEY"
-    [[ -f "$KNOWN_HOSTS" ]] || fail "не найден pinned known_hosts: $KNOWN_HOSTS"
-    [[ -x "$VALIDATOR" ]] || fail "не найден validator: $VALIDATOR"
+    [[ -f "$KEY" ]] ||
+        fail "deploy credential is unavailable (private path redacted)"
+    [[ -f "$KNOWN_HOSTS" ]] ||
+        fail "pinned host-key file is unavailable (private path redacted)"
+    [[ -x "$VALIDATOR" ]] || fail "release validator is unavailable"
     local key_fp host_fp
     local key_mode known_hosts_mode
     key_fp=$(ssh-keygen -lf "$KEY" | awk '{print $2}')
@@ -82,8 +84,8 @@ remote() {
 
 upload_file() {
     local path="$1"
-    [[ -f "$path" ]] || fail "файл не найден: $path"
-    [[ -s "$path" ]] || fail "пустой файл: $path"
+    [[ -f "$path" ]] || fail "release input file is missing"
+    [[ -s "$path" ]] || fail "release input file is empty"
     local name
     name=$(basename "$path")
     remote "neantik-upload $name" <"$path"

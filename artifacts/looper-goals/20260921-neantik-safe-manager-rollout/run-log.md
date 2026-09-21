@@ -337,3 +337,10 @@
   Source hygiene and workflow closure pass, and history scanning remains clean
   across `5,215` objects and `2,898` unique blobs. No signing, notarization,
   upload or public mutation was attempted.
+- Redacted private deployment paths at `2026-09-21T14:53:10Z`: the AffPapa
+  release client now reports unavailable deploy credentials and pinned host-key
+  files without printing their absolute paths, and missing release inputs are
+  similarly path-free. Shell syntax, client tests (`8`) and all AffPapa tests
+  (`43`) pass; full Python regression passed `640` tests with `1` expected
+  skip. Source hygiene, workflow closure and reachable-history secret audit
+  pass (`5,221` objects / `2,899` unique blobs).
