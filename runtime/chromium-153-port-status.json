@@ -39,7 +39,7 @@
     "trackedDiffSHA256": "8f3a980ee580ac61a105141fd89df436d70d23ab161f79147661721c4a882ad2",
     "untrackedInventorySHA256": "74554692a27105c0f7c95c9b7491b34fe33e27f475fffda440a66ae56236d090",
     "untrackedInputCount": 26,
-    "argsGNSHA256": "fa48c5179ca446d22a5948211c66f3e36dc5b31dbf622a73e0c5771fdb6a00f5",
+    "argsGNSHA256": "89d09cc5e0958c7cdf0219935520c9aad48145c3fabc711a8be28cad85e54b85",
     "candidateExecutableSHA256": "46947069f9545a9b7a0b5b12ea9fff643c5b9c004d099ab45d9da120a017e7f0",
     "candidateVersionOutput": "NeAntik Browser 153.0.8010.52",
     "architecture": "arm64",
