@@ -1853,7 +1853,16 @@ final class FingerprintAuditCoordinator: ObservableObject {
             values["webrtc_stun_requests"] =
                 String(stunServer.acceptedRequestCount)
             await requestBrowserClose(port: port)
-            processes.stop(profileID: processProfile.id)
+            // Browser.close is asynchronous on Chromium's multi-process
+            // runtime. Give the browser a bounded grace period to reap its
+            // renderer/GPU helpers before falling back to SIGTERM. Sending
+            // SIGTERM after the 200 ms websocket grace window can leave
+            // BrowserData temporarily owned by helpers and turn a healthy
+            // audit into a recovery timeout.
+            await waitForNaturalStop(profileID: processProfile.id)
+            if processes.processState(for: processProfile.id) != .stopped {
+                processes.stop(profileID: processProfile.id)
+            }
             try await waitUntilStopped(profileID: processProfile.id)
             activeProfileID = nil
             try? FileManager.default.removeItem(at: dataDirectory)
@@ -2137,6 +2146,17 @@ final class FingerprintAuditCoordinator: ObservableObject {
         throw NeAntikError.fingerprintAuditFailed(
             "Chromium не завершился после проверки отпечатка."
         )
+    }
+
+    private func waitForNaturalStop(profileID: UUID) async {
+        // Five seconds is long enough for Chromium's normal browser-close
+        // path, while keeping a bounded fallback for a hung or broken runtime.
+        for _ in 0..<40 {
+            if processes.processState(for: profileID) == .stopped {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 125_000_000)
+        }
     }
 
     nonisolated static func pageTargetWebSocketURL(
