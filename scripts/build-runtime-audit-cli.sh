@@ -14,6 +14,17 @@ OUTPUT="$1"
 BUILD_DIR="$(dirname "$OUTPUT")"
 MODULE_CACHE="$BUILD_DIR/module-cache"
 
+# Keep the audit CLI in lockstep with the executable target.  The audit uses
+# the same process/profile/runtime policies as the app, and a hand-maintained
+# partial source list silently goes stale whenever a new policy type is added.
+SOURCE_FILES=()
+while IFS= read -r source_file; do
+  SOURCE_FILES+=("$source_file")
+done < <(
+  find "$PROJECT_ROOT/Sources/NeAntik" -maxdepth 1 -type f \
+    -name '*.swift' ! -name 'NeAntikApp.swift' -print | sort
+)
+
 mkdir -p "$MODULE_CACHE"
 
 swiftc \
@@ -21,14 +32,11 @@ swiftc \
   -parse-as-library \
   -target arm64-apple-macos14.0 \
   -module-cache-path "$MODULE_CACHE" \
-  "$PROJECT_ROOT/Sources/NeAntik/AppPaths.swift" \
-  "$PROJECT_ROOT/Sources/NeAntik/Models.swift" \
-  "$PROJECT_ROOT/Sources/NeAntik/BrowserProcessManager.swift" \
-  "$PROJECT_ROOT/Sources/NeAntik/BrowserRuntimeInspector.swift" \
-  "$PROJECT_ROOT/Sources/NeAntik/BrowserRuntimePreflight.swift" \
-  "$PROJECT_ROOT/Sources/NeAntik/FingerprintAudit.swift" \
+  "${SOURCE_FILES[@]}" \
   "$PROJECT_ROOT/Tools/RuntimeAuditCLI.swift" \
+  -framework AppKit \
   -framework Security \
+  -framework SwiftUI \
   -framework Network \
   -o "$OUTPUT"
 
