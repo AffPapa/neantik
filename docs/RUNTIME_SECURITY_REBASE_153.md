@@ -154,6 +154,14 @@ signing metadata only; it does not recover the private key or the notary
 credentials. The current candidate therefore remains intentionally unsigned
 and unpublished until the credentials are restored into this Mac's keychain.
 
+The local shell history independently confirms that `neantik-notary` was used
+by earlier release attempts with Team ID `H6VGU2M6JD`, and that the historical
+NeAntik signing fingerprint was selected by the release wrapper. The history
+contains no usable notary secret: the profile setup was interactive and no
+credential value is retained in the repository evidence. A history entry is
+therefore provenance that the profile once existed, not a recoverable keychain
+profile or authorization to guess/reuse another product's credential.
+
 ## Public rollback baseline — 2026-09-22
 
 The current public GitHub Direct release `v0.7.3` was checked read-only before
