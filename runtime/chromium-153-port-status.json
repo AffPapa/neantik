@@ -46,7 +46,9 @@
     "angleEnableMetal": true,
     "binaryBindingStatus": "bound-to-built-candidate",
     "signatureStatus": "ad-hoc-or-unqualified",
-    "sourceEvidenceManifest": "generated outside the repository; reproduce with scripts/export-chromium-153-port-input-manifest.py"
+    "sourceEvidenceManifest": "generated outside the repository; reproduce with scripts/export-chromium-153-port-input-manifest.py",
+    "latestCandidateEvidenceSHA256": "980866f6bade18ec5304956d3754c0ec8b49418e8815acf2bddeafbf4860b469",
+    "latestSourceReplayEvidenceSHA256": "44aca3ce917df3e9338d9649ad940ab2bd65a4061e790317933d5fcdcd730087"
   },
   "nextGates": [
     "replay the source port from pinned inputs with zero rejected artifacts",
