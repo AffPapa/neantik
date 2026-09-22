@@ -11,20 +11,22 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## P0: следующий Direct release
 
-- получить проверенную пару исходников Chromium 153 и macOS packaging. Общий
-  ungoogled-релиз уже содержит `153.0.8010.52`, но публичный macOS packaging
-  пока не поднялся выше `152.0.7977.82-1.1`;
-- создать новый source contract только из точных upstream commit/tag и
-  перенести все release-required NeAntik patch groups с нулевым fuzz;
-- после отдельного разрешения пересборки выполнить ARM64/Metal build,
+- зафиксировать решение об отдельном NeAntik macOS packaging port: общий
+  ungoogled-релиз содержит `153.0.8010.52`, а публичный macOS packaging
+  пока не поднялся выше `152.0.7977.82-1.1`; решение и хэши сохранены в
+  `runtime/chromium-153-port-status.json`;
+- завершить source contract для портированной пары и воспроизводимо повторить
+  все release-required NeAntik patch groups с нулевым fuzz; локальный ARM64/
+  Metal-кандидат уже собран, но его provenance пока только candidate-bound;
+- выполнить полный ARM64/Metal build,
   source/binary provenance, runtime, profile-isolation, network-reality и
   GUI A -> B -> A gates;
 - только после этого подписать, notarize, staple, проверить Gatekeeper,
   подготовить GitHub/AffPapa Direct artifacts и доказать повторную загрузку,
   checksums, live-переключение и rollback.
 
-До появления точного macOS Chromium 153 source pair и разрешения пересборки
-эти пункты остаются единственными незавершёнными P0-гейтами. См.
+До завершения source/runtime evidence и восстановления signing/notary
+credentials эти пункты остаются незавершёнными P0-гейтами. См.
 `docs/RUNTIME_SECURITY_REBASE_153.md`.
 
 ## Выполнено в текущем manager pass

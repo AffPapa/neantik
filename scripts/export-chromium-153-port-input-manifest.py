@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -45,6 +46,101 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def require_absolute_directory(path: Path, label: str) -> Path:
+    resolved = path.resolve()
+    if not path.is_absolute() or path.is_symlink() or not resolved.is_dir():
+        raise ManifestError(f"{label} must be an absolute non-symlink directory")
+    return resolved
+
+
+def bind_built_candidate(app_path: Path, args_gn_path: Path) -> dict[str, object]:
+    """Bind source-input evidence to one freshly built, unsigned candidate.
+
+    This intentionally proves only the relationship between the exported
+    source tree and a local build candidate. It does not attest signing,
+    notarization, Gatekeeper, runtime behavior, or release readiness.
+    """
+    app_path = require_absolute_directory(app_path, "binary app")
+    args_gn_path = args_gn_path.resolve()
+    if not args_gn_path.is_absolute() or not args_gn_path.is_file():
+        raise ManifestError("args.gn must be an absolute regular file")
+
+    executable = app_path / "Contents" / "MacOS" / "NeAntik Browser"
+    if not executable.is_file():
+        raise ManifestError(f"built candidate executable is missing: {executable}")
+
+    version_result = subprocess.run(
+        [str(executable), "--version"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    if version_result.returncode != 0:
+        detail = version_result.stderr.strip() or version_result.stdout.strip()
+        raise ManifestError(f"candidate --version failed: {detail}")
+    observed_version = version_result.stdout.strip()
+    if not observed_version:
+        raise ManifestError("candidate --version returned no version")
+
+    version_file = app_path.parents[2] / "chrome" / "VERSION"
+    if not version_file.is_file():
+        raise ManifestError(f"candidate source VERSION is missing: {version_file}")
+    source_pairs = dict(
+        line.split("=", 1)
+        for line in version_file.read_text(encoding="utf-8").splitlines()
+        if "=" in line
+    )
+    source_version = ".".join(
+        source_pairs[key] for key in ("MAJOR", "MINOR", "BUILD", "PATCH")
+    )
+    if source_version not in observed_version:
+        raise ManifestError(
+            f"candidate version {observed_version!r} does not contain source "
+            f"version {source_version}"
+        )
+
+    file_result = subprocess.run(
+        ["/usr/bin/file", str(executable)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if file_result.returncode != 0 or "arm64" not in file_result.stdout:
+        raise ManifestError(
+            "candidate executable is not proven arm64: "
+            + file_result.stdout.strip()
+        )
+
+    args_text = args_gn_path.read_text(encoding="utf-8")
+    if not re.search(r"(?m)^\s*target_cpu\s*=\s*\"arm64\"\s*$", args_text):
+        raise ManifestError("args.gn does not pin target_cpu=arm64")
+    if not re.search(
+        r"(?m)^\s*angle_enable_metal\s*=\s*true\s*$", args_text
+    ):
+        raise ManifestError("args.gn does not enable angle_enable_metal=true")
+
+    return {
+        "status": "bound-to-built-candidate",
+        "candidateAppPath": str(app_path),
+        "candidateExecutableSHA256": sha256_file(executable),
+        "candidateExecutableSize": executable.stat().st_size,
+        "candidateVersionOutput": observed_version,
+        "sourceVersion": source_version,
+        "architecture": "arm64",
+        "angleEnableMetal": True,
+        "argsGNPath": str(args_gn_path),
+        "argsGNSHA256": sha256_file(args_gn_path),
+        "policy": (
+            "Local unsigned build-candidate binding only. This does not attest "
+            "signing, notarization, Gatekeeper, runtime behavior, publication, "
+            "or release readiness."
+        ),
+    }
 
 
 def safe_relative(value: str) -> str:
@@ -116,7 +212,12 @@ def inventory(root: Path, prefixes: tuple[str, ...]) -> list[dict[str, object]]:
     return entries
 
 
-def build_manifest(root: Path, prefixes: tuple[str, ...]) -> dict[str, object]:
+def build_manifest(
+    root: Path,
+    prefixes: tuple[str, ...],
+    binary_app: Path | None = None,
+    args_gn: Path | None = None,
+) -> dict[str, object]:
     if not root.is_absolute() or root.is_symlink() or not root.is_dir():
         raise ManifestError("source root must be an absolute non-symlink directory")
     top = Path(str(git(root, "rev-parse", "--show-toplevel"))).resolve()
@@ -142,10 +243,19 @@ def build_manifest(root: Path, prefixes: tuple[str, ...]) -> dict[str, object]:
     inventory_bytes = json.dumps(
         files, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
+    if (binary_app is None) != (args_gn is None):
+        raise ManifestError("--binary-app and --args-gn must be supplied together")
+    binary_binding = (
+        bind_built_candidate(binary_app, args_gn)
+        if binary_app is not None and args_gn is not None
+        else None
+    )
     return {
         "schemaVersion": 1,
         "sourceMode": "owned-macos-packaging-port",
-        "binaryBindingStatus": "pending-new-build",
+        "binaryBindingStatus": (
+            binary_binding["status"] if binary_binding else "pending-new-build"
+        ),
         "sourceRoot": str(root),
         "git": {
             "commit": str(git(root, "rev-parse", "HEAD")),
@@ -157,6 +267,7 @@ def build_manifest(root: Path, prefixes: tuple[str, ...]) -> dict[str, object]:
         "untrackedInventorySHA256": sha256_bytes(inventory_bytes),
         "untrackedFileCount": len(files),
         "untrackedInputs": files,
+        **({"binaryBinding": binary_binding} if binary_binding else {}),
         "policy": (
             "Source-input evidence only. This document makes no claim about "
             "runtime behavior, security qualification, signing, notarization, "
@@ -175,6 +286,16 @@ def main() -> int:
         default=[],
         help="Relative source prefix to omit from the untracked inventory.",
     )
+    parser.add_argument(
+        "--binary-app",
+        type=Path,
+        help="Absolute unsigned .app candidate to bind to the source evidence.",
+    )
+    parser.add_argument(
+        "--args-gn",
+        type=Path,
+        help="Absolute args.gn used for the candidate build.",
+    )
     args = parser.parse_args()
     try:
         root = args.source_root.resolve()
@@ -182,7 +303,7 @@ def main() -> int:
         if not output.is_absolute():
             raise ManifestError("output must be absolute")
         prefixes = tuple(safe_relative(value.rstrip("/")) for value in args.exclude_prefix)
-        manifest = build_manifest(root, prefixes)
+        manifest = build_manifest(root, prefixes, args.binary_app, args.args_gn)
         output.parent.mkdir(parents=True, exist_ok=True)
         temporary = output.with_name(output.name + ".tmp")
         temporary.write_text(
@@ -196,7 +317,7 @@ def main() -> int:
     print(f"Chromium 153 port input manifest: {output}")
     print(f"Untracked inputs: {manifest['untrackedFileCount']}")
     print(f"Inventory SHA-256: {manifest['untrackedInventorySHA256']}")
-    print("Binary binding: pending-new-build")
+    print(f"Binary binding: {manifest['binaryBindingStatus']}")
     return 0
 
 

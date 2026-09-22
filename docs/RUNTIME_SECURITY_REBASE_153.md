@@ -2,9 +2,9 @@
 
 ## Status
 
-This is a source-only preparation document. It does not claim a Chromium 153
-binary, does not modify the checked runtime lock, and does not authorize a
-build or public release.
+This document tracks the Chromium 153 source-port decision and release gates.
+It does not authorize publication and does not treat an unsigned local build
+candidate as a release artifact.
 
 ## Verified version boundary — 2026-09-21
 
@@ -39,9 +39,11 @@ References:
 - <https://github.com/ungoogled-software/ungoogled-chromium-macos/releases>
 - <https://github.com/ungoogled-software/ungoogled-chromium/issues/3949>
 
-Until exact macOS packaging source is available, do not invent a 153 packaging
-commit, reuse the 152 packaging layer, or treat the common release as a
-shippable macOS runtime.
+The project therefore selected an explicit NeAntik-owned macOS packaging port,
+rather than inventing an official 153 macOS packaging release. The exact
+decision, source commits, candidate hashes, and open gates are recorded in
+`runtime/chromium-153-port-status.json`. The 152 packaging checkout remains a
+reference input only; it is not silently relabeled as 153.
 
 ## Current NeAntik source state
 
@@ -57,19 +59,24 @@ changed to `153` by replacing version strings: the owned patchset must first be
 ported and reviewed against the real Chromium 153 source and macOS packaging
 inputs.
 
-## Work that can proceed without a build
+## Remaining source and release sequence
 
-1. Resolve the official Chromium 153 source tag/commit and the matching
-   ungoogled macOS/common packaging commits.
-2. Create a new source contract and toolchain lock from those exact inputs,
-   retaining the current 152 files as historical evidence until the new pair
-   is independently verified.
+1. Reproduce the owned macOS packaging port from the pinned Chromium/common
+   inputs and retain a clean source-input manifest with no rejection artifacts.
+2. Create the 153 source contract and toolchain lock from those exact inputs,
+   retaining the current 152 files as historical evidence.
 3. Port every `releaseRequired` NeAntik patch group against the real 153 source
    tree with zero fuzz and record exact postimage hashes.
 4. Re-run the source, patchset, launch-flag, WebRTC-policy, license, notices,
    privacy, and public-workflow verifiers.
-5. Stop before runtime compilation, promotion, signing, notarization, upload,
-   or live release work until the rebuild is explicitly permitted.
+5. Bind the candidate to runtime provenance, then run runtime, profile,
+   network, privacy, GUI, signing, notarization, and live-release gates.
+
+The first local ARM64/Metal candidate has compiled successfully from the
+official `153.0.8010.52` source with the NeAntik port. Its executable is
+ad-hoc/unsigned and is therefore not a public release. Source binding,
+runtime evidence, signing, notarization, Gatekeeper, and live publication
+remain separate gates.
 
 ## Required post-permission gates
 

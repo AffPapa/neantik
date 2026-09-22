@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "status": "source-port-and-local-candidate-only",
+  "releaseReady": false,
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "153.0.8010.52",
+  "packagingDecision": {
+    "mode": "owned-macos-packaging-port",
+    "reason": "The public ungoogled macOS packaging line has no reviewed 153 release; NeAntik uses an explicitly reviewed port from the official Chromium source and the public ungoogled input layer.",
+    "publicMacPackagingCeilingObserved": "152.0.7977.82-1.1",
+    "doNotClaim": [
+      "official ungoogled macOS Chromium 153 packaging",
+      "reproducible release build",
+      "signed or notarized artifact",
+      "runtime or anti-fraud qualification"
+    ]
+  },
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "153.0.8010.52",
+    "commit": "78e5e45d4bb41035e17ea4da2cc257f496416ac9",
+    "tree": "b314413854fdaa31aac4ad3daa225a6bf41cff0d"
+  },
+  "commonUngoogledInput": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "153.0.8010.52-1",
+    "commit": "a638756eb14c8b6ce64b4b2a067afea5d4207bf4",
+    "tree": "ed1c3ce62d975b83c3354e0e6915818860d71836"
+  },
+  "macPackagingInput": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "latestPublicReviewedCommit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "latestPublicReviewedReleaseLine": "152.0.7977.82-1.1",
+    "relationship": "reference-packaging-input-only; 153 NeAntik port is maintained separately"
+  },
+  "localCandidateEvidence": {
+    "sourceCommit": "78e5e45d4bb41035e17ea4da2cc257f496416ac9",
+    "sourceTree": "b314413854fdaa31aac4ad3daa225a6bf41cff0d",
+    "trackedDiffSHA256": "8f3a980ee580ac61a105141fd89df436d70d23ab161f79147661721c4a882ad2",
+    "untrackedInventorySHA256": "74554692a27105c0f7c95c9b7491b34fe33e27f475fffda440a66ae56236d090",
+    "untrackedInputCount": 26,
+    "argsGNSHA256": "fa48c5179ca446d22a5948211c66f3e36dc5b31dbf622a73e0c5771fdb6a00f5",
+    "candidateExecutableSHA256": "46947069f9545a9b7a0b5b12ea9fff643c5b9c004d099ab45d9da120a017e7f0",
+    "candidateVersionOutput": "NeAntik Browser 153.0.8010.52",
+    "architecture": "arm64",
+    "angleEnableMetal": true,
+    "binaryBindingStatus": "bound-to-built-candidate",
+    "signatureStatus": "ad-hoc-or-unqualified",
+    "sourceEvidenceManifest": "generated outside the repository; reproduce with scripts/export-chromium-153-port-input-manifest.py"
+  },
+  "nextGates": [
+    "replay the source port from pinned inputs with zero rejected artifacts",
+    "bind the resulting candidate to the runtime provenance report",
+    "run runtime, profile-isolation, network, privacy, and GUI gates",
+    "restore a Developer ID Application certificate and private key",
+    "restore the neantik-notary Keychain profile",
+    "sign, notarize, staple, Gatekeeper-check, and only then publish"
+  ],
+  "policy": "This record is source and local-candidate evidence. It is not a release approval and does not claim that anti-fraud controls can be bypassed."
+}
