@@ -127,6 +127,37 @@ outside the app-launch path aborts in macOS LaunchServices and is not treated
 as a Chromium runtime failure. This smoke is not GUI A → B → A evidence and
 does not qualify the candidate for signing or publication.
 
+## Canonical 153 tuple overlay candidate — 2026-09-23
+
+The previously forbidden tuple marker was not removed by a textual workaround.
+Instead, the current Chromium 153 source was rebuilt with a reviewed, exact
+owned overlay that adds the NeAntik Apple tuple header and binds the supported
+profile surfaces to that single tuple source. The overlay is recorded as
+`runtime/nevision-patches/patches/canonical-apple-device-tuples-153.patch`
+with SHA-256
+`93dd686b8b8e67cc6398da28c926e309d0fd20fa464d41345561f06242464ce1`.
+
+`scripts/apply-owned-runtime-device-tuples-153.py` verifies the official
+Chromium commit/tree, the `153.0.8010.52` version file, the patch hash, and
+eight exact postimage hashes. The script was replayed against the official
+153 checkout and then checked again after application. Its unit tests,
+Python compilation, `git diff --check`, and the open-source tree verifier all
+pass. This is source-integrity evidence, not a claim of anti-fraud bypass.
+
+The canonical overlay candidate compiled incrementally with `30/30` Ninja
+actions and passed the static runtime verifier with `16` ARM64 Mach-O files,
+Metal GPU mode, verified fingerprint protocol strings, and a verified
+ad-hoc signature. The candidate report remains `releaseReady: false`; the
+fresh executable SHA-256 is
+`9365e2015f9d0f604ed6b5268647540319cb0d5a870586df44f7c862021bc899b`.
+
+The normal app-path smoke for this exact signed copy is not a GUI pass:
+LaunchServices returned `kLSNoExecutableErr` and direct process execution was
+blocked by the host with `operation not permitted`. Therefore GUI A → B → A,
+profile isolation, real network-route behavior, Developer ID signing,
+notarization, Gatekeeper, and publication remain open gates. The candidate is
+not a release artifact.
+
 ## Historical packaging chain reconciliation — 2026-09-22
 
 The previously published `v0.7.3` ZIP was inspected as a historical rollback
@@ -145,10 +176,10 @@ longer match. This confirms that the old chain is valuable provenance and
 review input, not a releasable `.52` port. Reusing it requires a source-level
 rebase, exact postimage review, and a fresh binary binding.
 
-The local signing search was also repeated. The login keychain is the only
-user keychain currently configured; it contains zero valid code-signing
-identities, no `Developer ID Application` certificate/private key, and no
-generic-password item for the `neantik-notary` profile. The old Team ID found
+The local signing search was also repeated. The available keychain search
+returns zero valid code-signing identities, and the targeted lookup for a
+`Developer ID Application` certificate and the `neantik-notary` generic
+password does not produce a usable credential. The old Team ID found
 inside the published rollback artifact (`H6VGU2M6JD`) proves historical
 signing metadata only; it does not recover the private key or the notary
 credentials. The current candidate therefore remains intentionally unsigned
@@ -181,7 +212,7 @@ the new candidate.
 
 ## Required post-permission gates
 
-Only after explicit rebuild permission may the exact 153 candidate proceed
-through ARM64/Metal build, runtime inspection, profile isolation, GUI A → B → A,
-network reality, signing, notarization, stapling, Gatekeeper, GitHub asset
+With rebuild permission now present, the remaining gates are the runtime and
+release checks listed above: profile isolation, GUI A → B → A, network reality,
+Developer ID signing, notarization, stapling, Gatekeeper, GitHub asset
 verification, AffPapa staging, live download checks, and rollback evidence.
