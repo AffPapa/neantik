@@ -158,6 +158,25 @@ profile isolation, real network-route behavior, Developer ID signing,
 notarization, Gatekeeper, and publication remain open gates. The candidate is
 not a release artifact.
 
+## Runtime lifecycle recheck — 2026-09-23
+
+The production audit coordinator was hardened in commit `330fe64`: after
+`Browser.close`, it now gives Chromium up to five seconds to exit naturally
+before using the existing SIGTERM fallback. This prevents the coordinator
+from interrupting Chromium's own helper-process cleanup after the previous
+200 ms websocket grace period. The change preserves the fail-closed lease and
+BrowserData checks; it does not force-delete a profile directory.
+
+The full Swift package suite passed after the change: `576` tests in `61`
+suites, including browser-process lifecycle, profile isolation, privacy, and
+fingerprint policy tests. The system-built audit CLI also compiled and was
+able to launch the `153.0.8010.52` candidate. A normal macOS GUI smoke opened
+the candidate window, but the real A → B → A coordinator still ended with
+`Chromium не завершился после проверки отпечатка`; its bounded fallback logged
+`browser_exit reason=2 status=15`. This is a lifecycle/runtime qualification
+failure for the current host context, not a successful production fingerprint
+report. The candidate remains unsigned and release-ineligible.
+
 ## Historical packaging chain reconciliation — 2026-09-22
 
 The previously published `v0.7.3` ZIP was inspected as a historical rollback
