@@ -127,6 +127,33 @@ outside the app-launch path aborts in macOS LaunchServices and is not treated
 as a Chromium runtime failure. This smoke is not GUI A → B → A evidence and
 does not qualify the candidate for signing or publication.
 
+## Historical packaging chain reconciliation — 2026-09-22
+
+The previously published `v0.7.3` ZIP was inspected as a historical rollback
+artifact. It contains the earlier Chromium `153.0.8010.36` source contract,
+the historical `series-153.json`, and the consolidated
+`chromium-153-owned-port.patch`. That is the packaging chain remembered from
+the earlier build, but it is bound to `.36` and its review explicitly stopped
+at source-patch qualification; it did not prove a current `.52` binary,
+Developer ID signature, notarization, or publication.
+
+The historical consolidated patch was checked against a clean official
+`153.0.8010.52` worktree. It does not apply cleanly: the current tree lacks
+the historical `components/ungoogled/BUILD.gn` input until the owned input
+layer is restored, and several Blink/WebGL/canvas/image-encoder contexts no
+longer match. This confirms that the old chain is valuable provenance and
+review input, not a releasable `.52` port. Reusing it requires a source-level
+rebase, exact postimage review, and a fresh binary binding.
+
+The local signing search was also repeated. The login keychain is the only
+user keychain currently configured; it contains zero valid code-signing
+identities, no `Developer ID Application` certificate/private key, and no
+generic-password item for the `neantik-notary` profile. The old Team ID found
+inside the published rollback artifact (`H6VGU2M6JD`) proves historical
+signing metadata only; it does not recover the private key or the notary
+credentials. The current candidate therefore remains intentionally unsigned
+and unpublished until the credentials are restored into this Mac's keychain.
+
 ## Public rollback baseline — 2026-09-22
 
 The current public GitHub Direct release `v0.7.3` was checked read-only before
