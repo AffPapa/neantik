@@ -102,6 +102,16 @@ the release policy need reconciliation before a signed candidate can be
 accepted. The bundle is linker/ad-hoc signed only. Current Keychain evidence
 has zero Developer ID identities and no `neantik-notary` profile.
 
+The source replay gate was then run from a clean worktree at the pinned
+official Chromium commit. The tracked NeAntik/ungoogled diff applied with
+`git apply --check` and the same 26 untracked source inputs were restored;
+both the tracked-diff SHA-256
+`8f3a980ee580ac61a105141fd89df436d70d23ab161f79147661721c4a882ad2` and the
+untracked-inventory SHA-256
+`74554692a27105c0f7c95c9b7491b34fe33e27f475fffda440a66ae56236d090` match the
+built source tree. This proves source-input replay, but not a second binary,
+runtime qualification, signing, notarization, or release readiness.
+
 ## Required post-permission gates
 
 Only after explicit rebuild permission may the exact 153 candidate proceed
