@@ -127,6 +127,23 @@ outside the app-launch path aborts in macOS LaunchServices and is not treated
 as a Chromium runtime failure. This smoke is not GUI A → B → A evidence and
 does not qualify the candidate for signing or publication.
 
+## Public rollback baseline — 2026-09-22
+
+The current public GitHub Direct release `v0.7.3` was checked read-only before
+any new publication. The ZIP asset hash is
+`c380a1a4f998f96758380287b0725d7013ebcb33cfed36ee5ba0ccaf058b916b` and the
+DMG asset hash is
+`b86e6834135db1593fbc37fab09e56d7b24fa6043287500eb387472f1e2b6264`; both
+match the GitHub release API. The DMG mounts read-only and its app metadata
+reports Team ID `H6VGU2M6JD` and a stapled ticket. The published baseline
+contains Chromium `153.0.8010.36`, not the new `153.0.8010.52` candidate.
+
+On this host's macOS 27 beta, `codesign --verify`, `spctl`, and `stapler
+validate` return signature/internal errors for the downloaded baseline even
+though its embedded signature metadata and ticket are present. This local
+Gatekeeper result is therefore inconclusive and is not reused as evidence for
+the new candidate.
+
 ## Required post-permission gates
 
 Only after explicit rebuild permission may the exact 153 candidate proceed
