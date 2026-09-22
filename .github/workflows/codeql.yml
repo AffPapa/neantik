@@ -33,7 +33,7 @@ jobs:
       - name: Build full Apple Silicon source graph for analysis
         run: swift build --disable-sandbox --arch arm64
       - name: Analyze Swift
-        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
 
   python:
     name: Python
@@ -50,4 +50,4 @@ jobs:
           languages: python
           build-mode: none
       - name: Analyze Python
-        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
