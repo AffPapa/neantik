@@ -112,6 +112,13 @@ untracked-inventory SHA-256
 built source tree. This proves source-input replay, but not a second binary,
 runtime qualification, signing, notarization, or release readiness.
 
+As a diagnostic smoke, the temporary ad-hoc-signed bundle was launched through
+the normal macOS `open -W -n` app path and remained alive for more than 90
+seconds; it was then stopped explicitly. Directly executing the nested binary
+outside the app-launch path aborts in macOS LaunchServices and is not treated
+as a Chromium runtime failure. This smoke is not GUI A → B → A evidence and
+does not qualify the candidate for signing or publication.
+
 ## Required post-permission gates
 
 Only after explicit rebuild permission may the exact 153 candidate proceed
