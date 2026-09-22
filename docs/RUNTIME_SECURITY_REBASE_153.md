@@ -87,7 +87,7 @@ candidate executable SHA-256
 current build-arguments SHA-256
 `89d09cc5e0958c7cdf0219935520c9aad48145c3fabc711a8be28cad85e54b85`, and
 source-evidence SHA-256
-`689809db888a4ec97cca5e6b5c4134b854b889175c65b5e186641039a8ddfb9e`.
+`980866f6bade18ec5304956d3754c0ec8b49418e8815acf2bddeafbf4860b469`.
 
 The 153 launch-flags and WebRTC policy checks pass. The existing reviewed
 Chromium 152 patch-series verifier does not pass against the 153 tree:
@@ -106,7 +106,7 @@ The source replay gate was then run from a clean worktree at the pinned
 official Chromium commit. The tracked NeAntik/ungoogled diff applied with
 `git apply --check` and the same 26 untracked source inputs were restored;
 both the tracked-diff SHA-256
-`8f3a980ee580ac61a105141fd89df436d70d23ab161f79147661721c4a882ad2` and the
+`c603f87f734fd2e6d4a8d1b16f095b1e80c1dfe0d7f23f55009b453b1b2462c3` and the
 untracked-inventory SHA-256
 `74554692a27105c0f7c95c9b7491b34fe33e27f475fffda440a66ae56236d090` match the
 built source tree. This proves source-input replay, but not a second binary,
