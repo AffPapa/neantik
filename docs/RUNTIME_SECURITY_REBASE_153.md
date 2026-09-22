@@ -95,6 +95,14 @@ several patch hunks no longer apply and multiple reviewed postimage hashes
 are different. This is evidence that the patch series still requires a real
 153 rebase; it is not permission to relabel the 152 contract.
 
+The durable Chromium 153 patch-matrix gate classifies six release-required
+groups as exact reverse-apply matches and five as `rebase-required`:
+`profile-seed-contract`, `deterministic-webgl-pixels`,
+`timezone-locale-network-context`, `minimal-apple-device-tuple`, and
+`private-runtime-config-environment`. The matrix therefore reports
+`releaseReady: false`; its evidence is classification only and cannot qualify
+signing, notarization, or publication.
+
 The runtime gate also remains closed because the built framework contains the
 intentional `apple-device-tuple` marker from the current tuple patch. The
 release verifier treats that marker as forbidden, so the implementation and
