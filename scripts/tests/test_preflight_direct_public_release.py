@@ -59,7 +59,9 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         blocked = {result.name for result in results if not result.passed}
         self.assertIn("Developer ID signing environment", blocked)
         self.assertIn("Notary profile environment", blocked)
-        self.assertIn("Public version/build floor", blocked)
+        # The current candidate must already clear the public release floor;
+        # missing external signing/notary inputs are the intended blockers.
+        self.assertNotIn("Public version/build floor", blocked)
         if not (
             Path(__file__).resolve().parents[2] / "dist" / "fingerprint-audit.json"
         ).is_file():
