@@ -78,6 +78,30 @@ ad-hoc/unsigned and is therefore not a public release. Source binding,
 runtime evidence, signing, notarization, Gatekeeper, and live publication
 remain separate gates.
 
+## Fresh candidate audit — 2026-09-22
+
+The clean ARM64/Metal build completed all `52,252` Ninja actions and reports
+`NeAntik Browser 153.0.8010.52`. The path-free port verifier passed with the
+candidate executable SHA-256
+`46947069f9545a9b7a0b5b12ea9fff643c5b9c004d099ab45d9da120a017e7f0`, the
+current build-arguments SHA-256
+`89d09cc5e0958c7cdf0219935520c9aad48145c3fabc711a8be28cad85e54b85`, and
+source-evidence SHA-256
+`689809db888a4ec97cca5e6b5c4134b854b889175c65b5e186641039a8ddfb9e`.
+
+The 153 launch-flags and WebRTC policy checks pass. The existing reviewed
+Chromium 152 patch-series verifier does not pass against the 153 tree:
+several patch hunks no longer apply and multiple reviewed postimage hashes
+are different. This is evidence that the patch series still requires a real
+153 rebase; it is not permission to relabel the 152 contract.
+
+The runtime gate also remains closed because the built framework contains the
+intentional `apple-device-tuple` marker from the current tuple patch. The
+release verifier treats that marker as forbidden, so the implementation and
+the release policy need reconciliation before a signed candidate can be
+accepted. The bundle is linker/ad-hoc signed only. Current Keychain evidence
+has zero Developer ID identities and no `neantik-notary` profile.
+
 ## Required post-permission gates
 
 Only after explicit rebuild permission may the exact 153 candidate proceed
