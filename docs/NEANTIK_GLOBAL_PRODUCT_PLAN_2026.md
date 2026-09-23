@@ -162,7 +162,7 @@ MoreLogin повторяют устойчивый набор функций:
 | ID | Работа | Статус | Критерий готовности |
 |---|---|---|---|
 | P0-01 | Единая карточка Diagnostics | done | Один aggregate status вместо дублирующих секций |
-| P0-02 | Понятное следующее действие для attention/unavailable | in-progress | UI объясняет, что сделать, без raw paths/PIDs |
+| P0-02 | Понятное следующее действие для attention/unavailable | done | UI объясняет, что сделать, без raw paths/PIDs |
 | P0-03 | Crash-safe launch/recovery/locks | done | Неполный launch не выглядит успешным |
 | P0-04 | Atomic import + folder assignment | done | Нет частичного смешанного состояния |
 | P0-05 | Fresh proxy preparation | done | Старый route verdict не переиспользуется бессрочно |
@@ -178,7 +178,7 @@ MoreLogin повторяют устойчивый набор функций:
 
 | ID | Работа | Статус | Критерий готовности |
 |---|---|---|---|
-| P1-01 | Diagnostics next-step UX | current | Attention state даёт короткое действие |
+| P1-01 | Diagnostics next-step UX | done | Attention state даёт короткое действие |
 | P1-02 | Proxy test result history summary | next | Только last state/freshness/verdict, без IP |
 | P1-03 | Profile quick-start templates | next | 2–3 safe templates, никаких самолётных настроек |
 | P1-04 | Snapshot retention/restore clarity | done | Last 3, fresh identity, corruption gate |
@@ -218,10 +218,10 @@ MoreLogin повторяют устойчивый набор функций:
 - mandatory accounts, subscription gates or proxy marketplace;
 - claims of anonymity, universal undetectability or guaranteed anti-fraud pass.
 
-## 7. Ближайшая новая версия: manager 0.7.6
+## 7. Доставленный срез: manager 0.7.6
 
-Первый вертикальный срез этого цикла — небольшой, но заметный: Diagnostics
-получает `next step`.
+Первый вертикальный срез этого цикла доставлен в Direct 0.7.6: Diagnostics
+получил `next step`.
 
 ### Пользовательский результат
 
@@ -266,7 +266,7 @@ MoreLogin повторяют устойчивый набор функций:
 
 ### Фаза 2 — release candidate
 
-- поднять только manager version/build;
+- поднять только manager version/build — выполнено для 0.7.6/69;
 - собрать Direct candidate на существующем Chromium;
 - повторить source binding, runtime integrity, privacy, isolation и manager
   checks;
