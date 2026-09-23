@@ -241,6 +241,26 @@ credential value is retained in the repository evidence. A history entry is
 therefore provenance that the profile once existed, not a recoverable keychain
 profile or authorization to guess/reuse another product's credential.
 
+## Historical release assets rediscovered — 2026-09-23
+
+The earlier publication claim is real. Local history contains the old
+`NeAntikBuilds/runtime-153-36` packaging checkout and the project `dist/`
+directory retains notarized ZIP/DMG artifacts and Accepted transaction receipts
+for releases `0.3.14` through `0.3.20`. The old packaging script explicitly
+expected a Developer ID certificate name and Apple notarization credentials;
+those are configuration inputs, not embedded secrets.
+
+The historical app copy available on this host still carries the old Team ID
+in its signature metadata, but the current Keychain cannot resolve its
+certificate authority (`Authority unavailable`) and has no matching private
+key. The retained receipts contain archive hashes, candidate provenance and
+Apple status/submission metadata only. A search of the historical build trees,
+transaction inputs, old archives, mounted volumes, private temporary areas and
+the user's credential-like files found no `.p12`, `.pfx`, `.cer`, `.p8` or
+private-key artifact. These findings confirm that previous releases were
+signed and notarized, while also proving that the signing private key and
+notary secret are no longer present in the current environment.
+
 ## Public rollback baseline — 2026-09-22
 
 The current public GitHub Direct release `v0.7.3` was checked read-only before
