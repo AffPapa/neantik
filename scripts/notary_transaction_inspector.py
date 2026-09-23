@@ -1000,11 +1000,12 @@ def _read_reconciliation_marker(
         )
     checked_at = payload.get("checkedAtUnixNs")
     submission_name = state_context.get("submission")
+    result = payload.get("result")
     if (
         payload.get("schemaVersion") != 1
         or payload.get("markerType")
         != "neantik-notary-reconciliation"
-        or payload.get("result") != "submission-absent"
+        or result not in {"submission-absent", "accepted-not-published"}
         or payload.get("transactionId") != transaction_id
         or payload.get("archiveName") != state_context.get("archive")
         or not isinstance(checked_at, int)
@@ -1021,6 +1022,13 @@ def _read_reconciliation_marker(
         payload.get("historySHA256"),
         code="invalid-reconciliation-schema",
     )
+    if result == "accepted-not-published" and (
+        state_context.get("appleSubmissionId") is None
+        or state_context.get("submittedSHA256") is None
+    ):
+        raise NotaryTransactionInspectionError(
+            "invalid-reconciliation-schema"
+        )
     return payload
 
 
@@ -1662,9 +1670,27 @@ def _classify_transaction(
             "invalid-retired-name"
         )
     if reconciliation is not None:
-        if stage != "submit-intent":
+        result = reconciliation.get("result")
+        if result == "submission-absent" and stage != "submit-intent":
             raise NotaryTransactionInspectionError(
                 "reconciliation-stage-mismatch"
+            )
+        if result == "accepted-not-published" and stage != "accepted":
+            raise NotaryTransactionInspectionError(
+                "reconciliation-stage-mismatch"
+            )
+        if result == "accepted-not-published":
+            return _record(
+                category=category,
+                name=name,
+                status="retired-reconciled-accepted-not-published",
+                stage=stage,
+                external_effect="known",
+                structurally_safe=True,
+                release_blocking=False,
+                operator_action=False,
+                live_lease=live_lease,
+                reason_code="apple-accepted-artifact-retained-private",
             )
         return _record(
             category=category,

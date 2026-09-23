@@ -120,6 +120,14 @@ permission for automatic deletion. The report contains only bounded counts
 and stage/status enums—no paths, per-entry identifiers, UUIDs, archive names,
 hashes or Apple identifiers.
 
+An owner-reviewed retired transaction that reached Apple `accepted` but failed
+before public publication may carry a canonical
+`notary-reconciliation.json` marker with result `accepted-not-published`.
+The marker is valid only for that exact transaction's known Accepted state;
+the accepted archive remains retained privately and is not treated as a public
+release. This is distinct from `submission-absent`, which is reserved for a
+pre-effect submit intent proven absent from Apple's history.
+
 ```bash
 python3 scripts/notary_transaction_inspector.py \
   --project-root . \
