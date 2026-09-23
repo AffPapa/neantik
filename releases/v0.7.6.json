@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.6",
+  "version": "0.7.6",
+  "build": 69,
+  "releasedAt": "2026-09-24",
+  "channel": "public-alpha",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "153.0.8010.52",
+    "gpuMode": "metal"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.6-arm64-notarized.zip",
+    "sizeBytes": 191772247,
+    "sha256": "7c75920a8e11dbebd2687539cc5cb883237c4eebadbb4c9f5725d35563fb02af"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.6-arm64-notarized.dmg",
+    "sizeBytes": 218068482,
+    "sha256": "0f697b4b5e67ea6082af34f722ec5148911e546f963ce81074a1535600357e8c"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "pending",
+    "fingerprint": "public-alpha-qualified",
+    "strictProductionFingerprintCoherence": "incomplete"
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.6"
+}
