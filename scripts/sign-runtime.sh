@@ -167,6 +167,11 @@ manual_public_alpha_sign() {
   fi
 
   ditto "$INPUT_APP" "$OUTPUT_APP"
+  # Finder metadata is not runtime content and would make the Direct ZIP
+  # fail its deterministic archive gate. Remove it before any CodeResources
+  # seal is created; the source runtime remains untouched.
+  find "$OUTPUT_APP" -type f \
+    \( -name '.DS_Store' -o -name '._*' \) -delete
   apply_public_runtime_icon "$OUTPUT_APP"
 
   find "$OUTPUT_APP/Contents" -type f -print0 |
