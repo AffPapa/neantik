@@ -75,6 +75,21 @@ PUBLIC_ALPHA_REQUIRED_KEYS = (
     + PUBLIC_ALPHA_COHERENCE_CONTEXT_KEYS
 )
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
+# These fields are privacy-safe, bounded diagnostics emitted by the current
+# Swift coordinator. They are optional for qualification so older reports
+# remain valid, but a current report must not be rejected merely because the
+# coordinator recorded them.
+OPTIONAL_PRIVACY_DIAGNOSTIC_KEYS = [
+    "media_devices",
+    "media_device_count",
+    "permissions_api",
+    "permission_camera",
+    "permission_microphone",
+    "speech_synthesis",
+    "speech_voice_count",
+    "worker_audio",
+    "worker_client_rects",
+]
 CURRENT_AUDIT_SCHEMA_VERSION = 7
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -104,7 +119,7 @@ CAPTURE_KEYS = {
     "identityCode",
     "values",
 }
-VALUE_KEYS = set(PRODUCTION_REQUIRED_KEYS)
+VALUE_KEYS = set(PRODUCTION_REQUIRED_KEYS + OPTIONAL_PRIVACY_DIAGNOSTIC_KEYS)
 
 
 @dataclass(frozen=True)

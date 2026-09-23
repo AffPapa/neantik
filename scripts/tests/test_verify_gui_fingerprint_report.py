@@ -718,6 +718,35 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             summary["issues"],
         )
 
+    def test_accepts_optional_privacy_diagnostics(self) -> None:
+        report = production_report()
+        privacy_values = {
+            "media_devices": "available",
+            "media_device_count": "3",
+            "permissions_api": "available",
+            "permission_camera": "prompt",
+            "permission_microphone": "prompt",
+            "speech_synthesis": "available",
+            "speech_voice_count": "0",
+            "worker_audio": "unavailable",
+            "worker_client_rects": "unavailable",
+        }
+        for capture_key in (
+            "webrtcDirectControl",
+            "firstInitial",
+            "second",
+            "firstRepeat",
+        ):
+            report[capture_key]["values"].update(privacy_values)
+
+        summary = MODULE.verification_summary(report)
+
+        self.assertTrue(summary["qualified"])
+        self.assertTrue(summary["productionQualified"])
+        self.assertFalse(
+            any("unsupported fields" in issue for issue in summary["issues"])
+        )
+
     def test_rejects_extra_top_level_key(self) -> None:
         report = production_report()
         report["cookies"] = "secret"
