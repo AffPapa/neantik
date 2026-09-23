@@ -148,8 +148,12 @@ def verify(args: argparse.Namespace) -> dict[str, object]:
         "chromiumVersion": VERSION,
         "architecture": "arm64",
         "gpuMode": "metal",
-        "sourceLockSHA256": sha256(status_path),
-        "candidateLockSHA256": sha256(candidate_path),
+        # The packaged report distinguishes the reviewed source-qualified
+        # lock from the port status contract. Both sourceLock and
+        # candidateLock bind the exact lock copied into the app; the status
+        # contract remains sourceContractSHA256.
+        "sourceLockSHA256": sha256(root / "runtime/fingerprint-chromium-153.lock.json"),
+        "candidateLockSHA256": sha256(root / "runtime/fingerprint-chromium-153.lock.json"),
         "sourceContractSHA256": sha256(status_path),
         "sourceProvenanceSHA256": sha256(candidate_path),
         "neantikPatchManifestSHA256": sha256(patch_path),

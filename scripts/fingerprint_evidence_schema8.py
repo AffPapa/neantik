@@ -113,7 +113,9 @@ EXACT_CRITICAL_FILE_PATHS = {
     ),
     "sourceContract": (
         "Contents/Resources/NeAntikRuntimeEvidence/"
-        "chromium-152-source-contract.json"
+        "chromium-152-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-153-port-status.json",
     ),
     "sourceProvenance": (
         "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json"
@@ -710,7 +712,8 @@ def _validate_hashed_entry(value: Any, label: str) -> dict[str, str]:
 def _validate_critical_bundle_path(key: str, path: str) -> None:
     expected = EXACT_CRITICAL_FILE_PATHS.get(key)
     if expected is not None:
-        if path != expected:
+        expected_paths = (expected,) if isinstance(expected, str) else expected
+        if path not in expected_paths:
             raise FingerprintEvidenceVerificationError(
                 f"Candidate manifest {key} bundlePath is invalid."
             )
