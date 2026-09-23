@@ -17,6 +17,7 @@ struct ProfileDiagnosticsSummaryTests {
 
         #expect(summary.status == .ready)
         #expect(summary.detail.contains("первому запуску"))
+        #expect(summary.nextStep == .none)
     }
 
     @Test
@@ -32,6 +33,7 @@ struct ProfileDiagnosticsSummaryTests {
 
         #expect(summary.status == .attention)
         #expect(summary.detail.contains("восстановление"))
+        #expect(summary.nextStep == .recoverProfile)
     }
 
     @Test
@@ -47,6 +49,7 @@ struct ProfileDiagnosticsSummaryTests {
 
         #expect(summary.status == .unavailable)
         #expect(summary.status != .ready)
+        #expect(summary.nextStep == .retryInspection)
     }
 
     @Test
@@ -62,6 +65,7 @@ struct ProfileDiagnosticsSummaryTests {
         )
 
         #expect(summary.status == .attention)
+        #expect(summary.nextStep == .inspectDetails)
     }
 
     @Test
@@ -138,6 +142,7 @@ struct ProfileDiagnosticsSummaryTests {
 
         #expect(summary.status == .attention)
         #expect(summary.detail.contains("Direct baseline"))
+        #expect(summary.nextStep == .runtimeNeedsAttention)
     }
 
     @Test
@@ -162,6 +167,7 @@ struct ProfileDiagnosticsSummaryTests {
         )
 
         #expect(summary.status == .unavailable)
+        #expect(summary.nextStep == .retryInspection)
     }
 
     @Test

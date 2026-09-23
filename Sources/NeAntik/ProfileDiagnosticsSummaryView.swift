@@ -57,6 +57,14 @@ struct ProfileDiagnosticsSummaryView: View {
                         : "Показывает подробные локальные проверки"
                 )
 
+                if let nextStep = summary.nextStep.title {
+                    Label(nextStep, systemImage: "arrow.turn.down.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel("Следующий шаг: (nextStep)")
+                }
+
                 if isExpanded {
                     Divider()
                     Text(summary.detail)

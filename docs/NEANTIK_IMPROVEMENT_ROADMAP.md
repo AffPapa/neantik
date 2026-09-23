@@ -1,6 +1,6 @@
 # NeAntik: roadmap улучшений
 
-Дата ревизии: 23 сентября 2026 года.
+Дата ревизии: 24 сентября 2026 года.
 
 Цель roadmap — сделать NeAntik быстрым и понятным локальным браузером для
 профилей, сохранив defensive-границы: тестируем только собственные стенды и
@@ -49,10 +49,12 @@
 | 28 | Read-only локальный diagnostics adapter | P2 | defer | Возможен только явно включаемый loopback с auth и тем же allowlisted snapshot; API запуска/изменения профилей не добавляется. |
 | 29 | Background-request inventory Chromium | P1 | runtime-gate | Сначала измерение точного runtime, затем отдельное решение по phishing/safe-download policy. |
 | 30 | Командная автоматизация, облачная синхронизация и RPA | P2 | defer | Сознательно не добавлять: они раздувают продукт и расширяют privacy/security surface. |
+| 31 | Next-step UX для карточки «Диагностика» | P1 | done | Для attention/unavailable показывается одно короткое следующее действие; ready остаётся тихим, raw значения не раскрываются. |
 
 ## Что делать следующим без пересборки Chromium
 
-1. Повторять Swift gate, privacy/public-artifact audit,
+1. Поддерживать next-step UX в Swift/presentation regression tests.
+2. Повторять Swift gate, privacy/public-artifact audit,
    `git diff --check` и локальный audit; partial runtime report не становится
    release evidence.
 

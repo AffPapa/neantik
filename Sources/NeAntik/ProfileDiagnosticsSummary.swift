@@ -17,9 +17,36 @@ enum ProfileDiagnosticsStatus: Equatable, Sendable {
     }
 }
 
+enum ProfileDiagnosticsNextStep: Equatable, Sendable {
+    case none
+    case recoverProfile
+    case waitForProfile
+    case retryInspection
+    case runtimeNeedsAttention
+    case inspectDetails
+
+    var title: String? {
+        switch self {
+        case .none:
+            nil
+        case .recoverProfile:
+            "Закрой профиль и повтори запуск, чтобы завершить восстановление."
+        case .waitForProfile:
+            "Дождись завершения текущей операции и проверь профиль снова."
+        case .retryInspection:
+            "Повтори проверку после того, как приложение закончит текущую операцию."
+        case .runtimeNeedsAttention:
+            "Проверь встроенный движок перед следующим запуском."
+        case .inspectDetails:
+            "Открой подробности диагностики перед следующим запуском."
+        }
+    }
+}
+
 struct ProfileDiagnosticsSummary: Equatable, Sendable {
     let status: ProfileDiagnosticsStatus
     let detail: String
+    let nextStep: ProfileDiagnosticsNextStep
 
     static func resolve(
         lifecycle: ProfileLifecycleHealthSnapshot,
@@ -31,12 +58,14 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         case .required:
             return Self(
                 status: .attention,
-                detail: "Профилю требуется восстановление перед запуском."
+                detail: "Профилю требуется восстановление перед запуском.",
+                nextStep: .recoverProfile
             )
         case .unavailable:
             return Self(
                 status: .unavailable,
-                detail: "Состояние восстановления пока нельзя проверить."
+                detail: "Состояние восстановления пока нельзя проверить.",
+                nextStep: .retryInspection
             )
         case .clear:
             break
@@ -46,12 +75,14 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         case .active:
             return Self(
                 status: .attention,
-                detail: "Профиль занят другим процессом или ещё завершается."
+                detail: "Профиль занят другим процессом или ещё завершается.",
+                nextStep: .waitForProfile
             )
         case .unavailable:
             return Self(
                 status: .unavailable,
-                detail: "Состояние блокировки пока нельзя проверить."
+                detail: "Состояние блокировки пока нельзя проверить.",
+                nextStep: .retryInspection
             )
         case .clear:
             break
@@ -61,12 +92,14 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         case .unavailable:
             return Self(
                 status: .unavailable,
-                detail: "Размер локальных данных пока нельзя проверить."
+                detail: "Размер локальных данных пока нельзя проверить.",
+                nextStep: .retryInspection
             )
         case .missing where lifecycle.lastLaunchedAt != nil:
             return Self(
                 status: .attention,
-                detail: "После предыдущего запуска данные профиля не найдены."
+                detail: "После предыдущего запуска данные профиля не найдены.",
+                nextStep: .inspectDetails
             )
         case .missing, .available:
             break
@@ -77,7 +110,8 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         {
             return Self(
                 status: .unavailable,
-                detail: "Панель приватности пока нельзя полностью проверить."
+                detail: "Панель приватности пока нельзя полностью проверить.",
+                nextStep: .retryInspection
             )
         }
 
@@ -87,7 +121,8 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         {
             return Self(
                 status: .unavailable,
-                detail: "Состояние файлов профиля пока нельзя проверить."
+                detail: "Состояние файлов профиля пока нельзя проверить.",
+                nextStep: .retryInspection
             )
         }
 
@@ -96,14 +131,16 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         {
             return Self(
                 status: .unavailable,
-                detail: "Встроенный движок ещё не прошёл проверку запуска."
+                detail: "Встроенный движок ещё не прошёл проверку запуска.",
+                nextStep: .retryInspection
             )
         }
 
         if runtimeProvenance.publicReleaseStatus == "Не определён" {
             return Self(
                 status: .unavailable,
-                detail: "Статус версии встроенного движка пока нельзя проверить."
+                detail: "Статус версии встроенного движка пока нельзя проверить.",
+                nextStep: .retryInspection
             )
         }
 
@@ -114,14 +151,16 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         {
             return Self(
                 status: .unavailable,
-                detail: "Происхождение встроенного движка проверено не полностью."
+                detail: "Происхождение встроенного движка проверено не полностью.",
+                nextStep: .retryInspection
             )
         }
 
         if runtimeProvenance.publicReleaseStatus.contains("заблокирован") {
             return Self(
                 status: .attention,
-                detail: "Версия встроенного движка ниже принятого Direct baseline."
+                detail: "Версия встроенного движка ниже принятого Direct baseline.",
+                nextStep: .runtimeNeedsAttention
             )
         }
 
@@ -131,20 +170,23 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         {
             return Self(
                 status: .attention,
-                detail: "Встроенный движок требует проверки перед запуском."
+                detail: "Встроенный движок требует проверки перед запуском.",
+                nextStep: .runtimeNeedsAttention
             )
         }
 
         if lifecycle.lastLaunchedAt == nil {
             return Self(
                 status: .ready,
-                detail: "Профиль готов к первому запуску."
+                detail: "Профиль готов к первому запуску.",
+                nextStep: .none
             )
         }
 
         return Self(
             status: .ready,
-            detail: "Профиль готов; подробности доступны по запросу."
+            detail: "Профиль готов; подробности доступны по запросу.",
+            nextStep: .none
         )
     }
 }

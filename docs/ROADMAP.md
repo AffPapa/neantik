@@ -9,13 +9,15 @@ Silicon. Главный сценарий продукта:
 публичный релиз только после тестов, Developer ID, Apple notarization,
 stapling, Gatekeeper и проверки заново скачанных файлов.
 
-## P0: следующий Direct release
+## P0: текущий Direct release cycle
 
-- выпустить manager-only candidate `0.7.5 (68)` на уже опубликованной и
-  проверенной runtime-цепочке Chromium `153.0.8010.52` без пересборки Chromium;
-- повторить для нового exact candidate profile-isolation, network-reality и
-  GUI A -> B -> A gates, затем подписать, notarize, staple, проверить
-  Gatekeeper, GitHub/AffPapa artifacts и повторную загрузку;
+- manager-only candidate `0.7.5 (68)` уже опубликован и проверен на
+  Chromium `153.0.8010.52` без пересборки Chromium;
+- следующий candidate `0.7.6` содержит только безопасные manager/UX-изменения,
+  начиная с понятного next-step в карточке «Диагностика»;
+- для нового exact candidate повторяются profile-isolation, network-reality и
+  GUI A -> B -> A gates, затем signing, notarization, stapling, Gatekeeper,
+  GitHub/AffPapa artifacts и fresh-download verification;
 - отдельный Chromium rebuild остаётся за пределами этого manager-релиза и
   требует собственного source/binary provenance cycle.
 
@@ -85,11 +87,18 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - metadata-only local snapshots: explicit save/restore commands, last-three
   retention, fresh identities on restore, protected local files, and corruption
   tests; BrowserData, cookies, notes, identity seeds and Keychain stay out.
+- diagnostics next-step UX: attention/unavailable states now explain one
+  concise safe next action while the healthy state remains quiet; no raw paths,
+  PIDs, IPs, device IDs or fingerprint values are shown.
 
 ## P1: public beta
 
 P1 ниже содержит только долгосрочные улучшения после разблокировки runtime;
 перечисленные выше manager-функции больше не считаются незавершёнными.
+
+Следующие manager-only slices: summary истории proxy-проверки, 2–3 безопасных
+quick-start templates, read-only release evidence dashboard и explicit profile
+integrity repair assistant.
 
 - воспроизводимые budgets для cold/warm start именно Chromium runtime, idle
   CPU/RAM и browser launch — manager-only ceilings выше уже закрыты отдельно,

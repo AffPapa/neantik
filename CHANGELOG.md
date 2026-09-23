@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Диагностика профиля теперь сразу объясняет следующее безопасное действие
+  для состояний «Требует внимания» и «Проверка недоступна», а готовый профиль
+  остаётся без лишнего текста. В UI не добавляются raw paths, PID, IP, device
+  IDs или fingerprint values.
+- Добавлен глобальный продуктовый план 2026 с актуальной матрицей done/next/
+  runtime-gate/defer и отдельными границами для Chromium rebuild, cloud,
+  automation и anti-fraud bypass.
+
+## Direct 0.7.6 (69) — release candidate
+
+- Manager-only обновление diagnostics next-step UX на проверенном Chromium
+  `153.0.8010.52`; ядро браузера не пересобиралось и не заменялось.
+- Release candidate не считается публичным до прохождения Developer ID,
+  notarization, stapling, Gatekeeper и fresh-download gates.
+
 ## Direct 0.7.5 (68) — release candidate
 
 - Менеджер получил завершённый pass по lifecycle health, безопасному импорту
