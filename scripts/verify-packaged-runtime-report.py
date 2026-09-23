@@ -237,11 +237,14 @@ def verify(
         report,
     )
 
+    source_contract = evidence / "chromium-153-port-status.json"
+    if not source_contract.is_file():
+        source_contract = evidence / "chromium-152-source-contract.json"
     evidence_files = {
         "sourceLockSHA256": project_root
         / "runtime/fingerprint-chromium.lock.json",
         "candidateLockSHA256": evidence / "fingerprint-chromium.lock.json",
-        "sourceContractSHA256": evidence / "chromium-152-source-contract.json",
+        "sourceContractSHA256": source_contract,
         "sourceProvenanceSHA256": evidence / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence / "neantik-patch-series.json",
         "appleDeviceTuplesManifestSHA256": evidence / "apple-device-tuples.json",

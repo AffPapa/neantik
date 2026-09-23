@@ -10,6 +10,7 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:--}"
+DIRECT_ENTITLEMENTS="$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/nevision-package-direct}"
 
 mkdir -p \
@@ -67,9 +68,9 @@ if [[ "$SIGNING_IDENTITY" == "-" ]]; then
 else
   codesign \
     --force \
-    --deep \
     --options runtime \
     --timestamp \
+    --entitlements "$DIRECT_ENTITLEMENTS" \
     --sign "$SIGNING_IDENTITY" \
     "$APP_DIR"
 fi

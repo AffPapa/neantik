@@ -322,12 +322,14 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must use provenance schema 3"
         )
+    source_contract = evidence_root / "chromium-153-port-status.json"
+    if not source_contract.is_file():
+        source_contract = evidence_root / "chromium-152-source-contract.json"
     provenance_files = {
         "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
         "candidateLockSHA256":
             evidence_root / "fingerprint-chromium.lock.json",
-        "sourceContractSHA256":
-            evidence_root / "chromium-152-source-contract.json",
+        "sourceContractSHA256": source_contract,
         "sourceProvenanceSHA256":
             evidence_root / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",

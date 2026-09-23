@@ -237,6 +237,12 @@ def manifest_payload(
     runtime_executable_relative = runtime_executable.relative_to(app).as_posix()
     runtime_framework_relative = runtime_framework.relative_to(app).as_posix()
     evidence_root = "Contents/Resources/NeAntikRuntimeEvidence"
+    runtime_version = str(runtime_info.get("CFBundleShortVersionString", ""))
+    source_contract_name = (
+        "chromium-153-port-status.json"
+        if runtime_version.startswith("153.")
+        else "chromium-152-source-contract.json"
+    )
 
     return {
         "schemaVersion": 3,
@@ -272,7 +278,7 @@ def manifest_payload(
             ),
             "sourceContract": hashed_entry(
                 app,
-                f"{evidence_root}/chromium-152-source-contract.json",
+                f"{evidence_root}/{source_contract_name}",
             ),
             "sourceProvenance": hashed_entry(
                 app,

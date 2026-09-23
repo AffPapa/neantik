@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 4,
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "fingerprintChromium": {
+    "chromiumVersion": "153.0.8010.52",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "153.0.8010.52",
+    "commit": "78e5e45d4bb41035e17ea4da2cc257f496416ac9",
+    "tree": "b314413854fdaa31aac4ad3daa225a6bf41cff0d",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+  },
+  "commonChromium": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "153.0.8010.52-1",
+    "commit": "a638756eb14c8b6ce64b4b2a067afea5d4207bf4",
+    "tree": "ed1c3ce62d975b83c3354e0e6915818860d71836"
+  },
+  "macPackaging": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "commit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "packagedChromiumVersion": "153.0.8010.52",
+    "relationship": "reference input only; NeAntik maintains an owned 153 macOS packaging port"
+  },
+  "binaryBinding": {
+    "status": "bound-by-chromium-153-port-candidate-and-runtime-report",
+    "requiredEvidence": "runtime/chromium-153-port-candidate.json"
+  },
+  "sourceContract": "runtime/chromium-153-port-status.json",
+  "sourceProvenance": "runtime/chromium-153-port-candidate.json",
+  "ownedManifests": {
+    "securityBaselineSHA256": "6d5e05f351dd6ab5780a3bc19c2c3752cf3f741af698f7359d9c47e717cf899b"
+  },
+  "policy": "Chromium 153 source-qualified lock for the owned macOS packaging port. It is not by itself signing, notarization, Gatekeeper, runtime or publication approval."
+}

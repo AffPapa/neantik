@@ -36,26 +36,24 @@
   "localCandidateEvidence": {
     "sourceCommit": "78e5e45d4bb41035e17ea4da2cc257f496416ac9",
     "sourceTree": "b314413854fdaa31aac4ad3daa225a6bf41cff0d",
-    "trackedDiffSHA256": "c603f87f734fd2e6d4a8d1b16f095b1e80c1dfe0d7f23f55009b453b1b2462c3",
+    "trackedDiffSHA256": "91ab61b3949477bdd475c64a152523276ca72d7e9cfaf674f37d74692f2f18ea",
     "untrackedInventorySHA256": "74554692a27105c0f7c95c9b7491b34fe33e27f475fffda440a66ae56236d090",
     "untrackedInputCount": 26,
     "argsGNSHA256": "89d09cc5e0958c7cdf0219935520c9aad48145c3fabc711a8be28cad85e54b85",
-    "candidateExecutableSHA256": "46947069f9545a9b7a0b5b12ea9fff643c5b9c004d099ab45d9da120a017e7f0",
+    "candidateExecutableSHA256": "9365e2015f9d0f604d6b5268647540319cb0d5a870586df44f7c862021bc899b",
     "candidateVersionOutput": "NeAntik Browser 153.0.8010.52",
     "architecture": "arm64",
     "angleEnableMetal": true,
     "binaryBindingStatus": "bound-to-built-candidate",
     "signatureStatus": "ad-hoc-or-unqualified",
     "sourceEvidenceManifest": "generated outside the repository; reproduce with scripts/export-chromium-153-port-input-manifest.py",
-    "latestCandidateEvidenceSHA256": "980866f6bade18ec5304956d3754c0ec8b49418e8815acf2bddeafbf4860b469",
+    "latestCandidateEvidenceSHA256": "89c35c27651587f0c87ed043df66fdd86be74b0da565cea4eb8add80ee61cf47",
     "latestSourceReplayEvidenceSHA256": "44aca3ce917df3e9338d9649ad940ab2bd65a4061e790317933d5fcdcd730087"
   },
   "nextGates": [
     "replay the source port from pinned inputs with zero rejected artifacts",
     "bind the resulting candidate to the runtime provenance report",
     "run runtime, profile-isolation, network, privacy, and GUI gates",
-    "restore a Developer ID Application certificate and private key",
-    "restore the neantik-notary Keychain profile",
     "sign, notarize, staple, Gatekeeper-check, and only then publish"
   ],
   "policy": "This record is source and local-candidate evidence. It is not a release approval and does not claim that anti-fraud controls can be bypassed."
