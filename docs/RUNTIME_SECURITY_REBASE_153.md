@@ -151,12 +151,13 @@ ad-hoc signature. The candidate report remains `releaseReady: false`; the
 fresh executable SHA-256 is
 `9365e2015f9d0f604ed6b5268647540319cb0d5a870586df44f7c862021bc899b`.
 
-The normal app-path smoke for this exact signed copy is not a GUI pass:
+The first direct app-path smoke for this exact signed copy was not a GUI pass:
 LaunchServices returned `kLSNoExecutableErr` and direct process execution was
-blocked by the host with `operation not permitted`. Therefore GUI A → B → A,
-profile isolation, real network-route behavior, Developer ID signing,
-notarization, Gatekeeper, and publication remain open gates. The candidate is
-not a release artifact.
+blocked by the host with `operation not permitted`. At that point GUI A → B →
+A, profile isolation, real network-route behavior, Developer ID signing,
+notarization, Gatekeeper, and publication remained open gates. A later
+user-context GUI pass is recorded below; the candidate is still not a release
+artifact because signing and publication gates remain open.
 
 ## Runtime lifecycle recheck — 2026-09-23
 
@@ -171,11 +172,39 @@ The full Swift package suite passed after the change: `576` tests in `61`
 suites, including browser-process lifecycle, profile isolation, privacy, and
 fingerprint policy tests. The system-built audit CLI also compiled and was
 able to launch the `153.0.8010.52` candidate. A normal macOS GUI smoke opened
-the candidate window, but the real A → B → A coordinator still ended with
-`Chromium не завершился после проверки отпечатка`; its bounded fallback logged
-`browser_exit reason=2 status=15`. This is a lifecycle/runtime qualification
-failure for the current host context, not a successful production fingerprint
-report. The candidate remains unsigned and release-ineligible.
+the candidate window, but the first direct coordinator attempt still ended
+with `Chromium не завершился после проверки отпечатка`; its bounded fallback
+logged `browser_exit reason=2 status=15`. This was a lifecycle/runtime
+qualification failure for the direct host context, not a successful production
+fingerprint report. A later user-context pass is recorded below. The candidate
+remains unsigned and release-ineligible.
+
+## User-context GUI fingerprint gate — 2026-09-23
+
+The exact `153.0.8010.52` candidate was launched through the normal macOS
+user context and completed the production A → B → A audit. The owner-only
+schema-7 report was kept outside the repository at
+`/private/tmp/neantik-runtime-audit-153-user-report.json`; its SHA-256 is
+`d50afdee844a9488105ea83b919bc5cedaf81a8d83ea26b84e95e8603b371bd7`.
+
+After verifier commit `7e3a5c2`, the strict report check with
+`--require-production` and an exact candidate runtime lock passed with
+`qualified: true`, `productionQualified: true`, and no issues. The report
+bound to runtime `153.0.8010.52`, the candidate executable hash
+`9365e2015f9d0f604ed6b5268647540319cb0d5a870586df44f7c862021bc899b`, and
+the matching framework hash recorded by the canonical runtime gate.
+
+The report proves profile isolation and repeatability for A → B → A, stable
+changes across all four critical fingerprint surfaces, and stable WebGL/Metal
+availability. WebRTC evidence is limited to the configured-route control and
+sanitized candidate summary; no HTTP exit-IP claim is made. Media and
+permissions diagnostics were accepted only in privacy-safe aggregate form,
+without device IDs or raw values.
+
+This closes the user-context GUI, lifecycle, provenance, privacy, and profile
+isolation gates for the candidate. Developer ID signing, notarization,
+stapling, Gatekeeper, GitHub publication, live download/install, and rollback
+remain open because the required credentials are not present on this Mac.
 
 ## Historical packaging chain reconciliation — 2026-09-22
 
@@ -231,7 +260,8 @@ the new candidate.
 
 ## Required post-permission gates
 
-With rebuild permission now present, the remaining gates are the runtime and
-release checks listed above: profile isolation, GUI A → B → A, network reality,
-Developer ID signing, notarization, stapling, Gatekeeper, GitHub asset
+With rebuild permission now present, the remaining gates are the release
+checks: Developer ID signing, notarization, stapling, Gatekeeper, GitHub asset
 verification, AffPapa staging, live download checks, and rollback evidence.
+Network evidence remains intentionally scoped to configured-route/WebRTC
+controls; no direct HTTP exit-IP proof is claimed.
