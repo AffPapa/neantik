@@ -28,7 +28,7 @@
     "notarization": "accepted",
     "stapling": "passed",
     "gatekeeper": "passed",
-    "hostedDownload": "pending",
+    "hostedDownload": "passed",
     "fingerprint": "public-alpha-qualified",
     "strictProductionFingerprintCoherence": "incomplete"
   },
