@@ -131,9 +131,14 @@ def verify(args: argparse.Namespace) -> dict[str, object]:
         if run("lipo", "-archs", str(binary)).strip() != "arm64":
             raise ValueError(f"non-ARM64 nested Mach-O: {binary.relative_to(app)}")
 
-    framework = next(app.joinpath("Contents/Frameworks").rglob("* Framework"), None)
-    if framework is None or not framework.is_file():
-        raise ValueError("Chromium framework binary is missing")
+    framework_candidates = sorted(
+        path
+        for path in app.joinpath("Contents/Frameworks").rglob("* Framework")
+        if path.is_file() and not path.is_symlink()
+    )
+    if len(framework_candidates) != 1:
+        raise ValueError("Chromium framework binary is missing or ambiguous")
+    framework = framework_candidates[0]
     framework_bytes = framework.read_bytes()
     for marker in (b"NEANTIK_PROFILE_SEED", b"NEANTIK_PROFILE_TIMEZONE", b"default_public_interface_only", b"disable_non_proxied_udp", b"DnsOverHttpsUpgrade", b"AsyncDns", b"WebGPUService"):
         if marker not in framework_bytes:
