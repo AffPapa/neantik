@@ -150,7 +150,10 @@ MAX_TEXT_FILE_BYTES = 16 * 1024 * 1024
 MAX_BINARY_FILE_BYTES = 64 * 1024 * 1024
 MAX_PACKAGED_BINARY_FILE_BYTES = 512 * 1024 * 1024
 MAX_TOTAL_TEXT_BYTES = 128 * 1024 * 1024
-MAX_TOTAL_ARTIFACT_BYTES = 512 * 1024 * 1024
+# A signed ARM64 Chromium runtime plus its SPDX/notice bundle is currently
+# larger than 512 MiB uncompressed. Keep a deterministic ceiling while
+# allowing the supported Direct artifact to be scanned in full.
+MAX_TOTAL_ARTIFACT_BYTES = 768 * 1024 * 1024
 PUBLIC_ATTESTATION_KEYS = {
     "auditSchemaVersion",
     "changedCriticalKeys",
@@ -206,7 +209,7 @@ AUTHENTICATED_PUBLIC_ATTESTATION_KEYS = {
 
 ABSOLUTE_USER_PATH_RE = re.compile(
     r"/Users/(?![<$\\{])"
-    r"[A-Za-z0-9._-]+(?:/[^\s\"'<>]*)?"
+    r"[A-Za-z0-9._-]+/[^\s\"'<>]*"
 )
 IDENTITY_CODE_RE = re.compile(r"\bNA-[0-9A-Fa-f]{8}\b")
 PROXY_URI_RE = re.compile(
@@ -228,6 +231,11 @@ BINARY_SENSITIVE_ASSIGNMENT_RE = re.compile(
     )
     ["']?\s*[:=]\s*["']?([^,;\s"'}]+)
     """
+)
+EXAMPLE_PROXY_URI_RE = re.compile(
+    r"(?:https?|socks5h?)://"
+    r"(?:user|username):(?:pass|password)@host(?:/[^\s]*)?",
+    re.IGNORECASE,
 )
 
 
@@ -453,7 +461,7 @@ def validate_zip_symlinks(
                 (PurePosixPath(name).parent / target).as_posix()
             )
         )
-        visited = {current.as_posix()}
+        visited: set[str] = set()
         for _ in range(16):
             current_text = current.as_posix()
             if not (
@@ -523,6 +531,77 @@ def safe_secret(value: object) -> bool:
     )
 
 
+def validate_directory_symlinks(root: Path) -> None:
+    """Allow only self-contained relative symlinks used by macOS frameworks."""
+
+    symlinks: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_symlink():
+            continue
+        relative = path.relative_to(root).as_posix()
+        if ".framework/" not in relative:
+            raise PublicArtifactPrivacyError(
+                "Public artifact contains a symlink outside a framework: "
+                + relative
+            )
+        target = path.readlink().as_posix()
+        target_parts = PurePosixPath(target).parts
+        if (
+            not target
+            or "\x00" in target
+            or "\\" in target
+            or PurePosixPath(target).is_absolute()
+            or any(part in {"", ".", ".."} for part in target_parts)
+        ):
+            raise PublicArtifactPrivacyError(
+                "Public artifact contains an unsafe framework symlink: "
+                + relative
+            )
+        symlinks[relative] = target
+
+    for name, target in symlinks.items():
+        framework_root = name.split(".framework/", 1)[0] + ".framework"
+        current = PurePosixPath(
+            posixpath.normpath(
+                (PurePosixPath(name).parent / target).as_posix()
+            )
+        )
+        visited = {current.as_posix()}
+        for _ in range(16):
+            current_text = current.as_posix()
+            if not (
+                current_text == framework_root
+                or current_text.startswith(framework_root + "/")
+            ):
+                raise PublicArtifactPrivacyError(
+                    "Framework symlink escapes its framework: " + name
+                )
+            linked_target = symlinks.get(current_text)
+            if linked_target is None:
+                if not (root / current_text).exists():
+                    raise PublicArtifactPrivacyError(
+                        "Framework symlink target is missing: " + name
+                    )
+                break
+            if current_text in visited:
+                raise PublicArtifactPrivacyError(
+                    "Framework symlink target cycle: " + name
+                )
+            visited.add(current_text)
+            current = PurePosixPath(
+                posixpath.normpath(
+                    (
+                        PurePosixPath(current_text).parent
+                        / linked_target
+                    ).as_posix()
+                )
+            )
+        else:
+            raise PublicArtifactPrivacyError(
+                "Framework symlink target chain is too deep: " + name
+            )
+
+
 def sensitive_value_present(value: object) -> bool:
     if value is None or value is False:
         return False
@@ -535,17 +614,66 @@ def sensitive_value_present(value: object) -> bool:
     return True
 
 
+def is_example_proxy_uri(match: re.Match[str]) -> bool:
+    return EXAMPLE_PROXY_URI_RE.fullmatch(match.group(0)) is not None
+
+
 def iter_directory_entries(root: Path) -> Iterator[ArtifactEntry]:
+    validate_directory_symlinks(root)
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
-            raise PublicArtifactPrivacyError(
-                "Public artifact contains a symlink that cannot be privacy-verified: "
-                + path.relative_to(root).as_posix()
-            )
+            continue
         if not path.is_file():
             continue
         relative = path.relative_to(root).as_posix()
-        if is_text_entry(relative):
+        if is_apple_code_resources_entry(relative):
+            size = path.stat().st_size
+            validate_binary_size(relative, size)
+            with path.open("rb") as file:
+                payload = read_bounded_payload(
+                    file,
+                    limit=MAX_BINARY_FILE_BYTES,
+                    name=relative,
+                    kind="Binary",
+                )
+            validate_apple_code_resources(relative, payload)
+            yield ArtifactEntry(
+                name=relative,
+                payload=payload,
+                is_binary=True,
+            )
+        elif root.name.endswith(".app") or is_packaged_app_entry(relative):
+            # A directory-form macOS app has the outer `.app` component as
+            # the verifier root, so relative Mach-O paths do not contain an
+            # app suffix. Mirror the ZIP path: decode recognizable text, but
+            # treat opaque/extensionless bundle payloads as bounded binaries.
+            size = path.stat().st_size
+            if size > MAX_PACKAGED_BINARY_FILE_BYTES:
+                raise PublicArtifactPrivacyError(
+                    "Packaged application binary is too large for deterministic "
+                    f"privacy verification: {relative}"
+                )
+            with path.open("rb") as file:
+                payload = read_bounded_payload(
+                    file,
+                    limit=MAX_PACKAGED_BINARY_FILE_BYTES,
+                    name=relative,
+                    kind="Binary",
+                )
+            if is_text_entry(relative):
+                try:
+                    payload.decode("utf-8")
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    yield ArtifactEntry(name=relative, payload=payload)
+                    continue
+            yield ArtifactEntry(
+                name=relative,
+                payload=payload,
+                is_binary=True,
+            )
+        elif is_text_entry(relative):
             if path.stat().st_size > MAX_TEXT_FILE_BYTES:
                 raise PublicArtifactPrivacyError(
                     "Text entry is too large for deterministic privacy verification: "
@@ -797,7 +925,11 @@ def inspect_text(
 
     if not test_source_entry:
         for match in PROXY_URI_RE.finditer(text):
-            if not safe_secret(match.group(1)) and not safe_secret(match.group(2)):
+            if (
+                not is_example_proxy_uri(match)
+                and not safe_secret(match.group(1))
+                and not safe_secret(match.group(2))
+            ):
                 add_finding(
                     findings,
                     entry=entry,
@@ -839,7 +971,11 @@ def inspect_binary(entry: ArtifactEntry) -> list[Finding]:
                 kind="fingerprint identity code in binary metadata",
             )
         for match in PROXY_URI_RE.finditer(text):
-            if not safe_secret(match.group(1)) and not safe_secret(match.group(2)):
+            if (
+                not is_example_proxy_uri(match)
+                and not safe_secret(match.group(1))
+                and not safe_secret(match.group(2))
+            ):
                 add_finding(
                     findings,
                     entry=entry.name,
