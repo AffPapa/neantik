@@ -22,6 +22,23 @@ SUPPORTED_COUNTS = (1, 50, 100)
 DEFAULT_ITERATIONS = 3
 MAX_ITERATIONS = 100
 
+# Initial development ceilings for the stdlib-only manager benchmark. They
+# are intentionally explicit and separate from Chromium launch budgets.
+MANAGER_PERFORMANCE_BUDGETS_MS = {
+    1: {
+        "cold_setup": {"p50": 5.0, "p95": 10.0},
+        "warm_projection": {"p50": 2.0, "p95": 5.0},
+    },
+    50: {
+        "cold_setup": {"p50": 100.0, "p95": 200.0},
+        "warm_projection": {"p50": 50.0, "p95": 100.0},
+    },
+    100: {
+        "cold_setup": {"p50": 250.0, "p95": 500.0},
+        "warm_projection": {"p50": 125.0, "p95": 250.0},
+    },
+}
+
 
 def percentile(values: list[float], percentile_value: float) -> float:
     """Return the nearest-rank percentile in milliseconds."""
@@ -80,6 +97,32 @@ def warm_projection(root: Path) -> list[dict[str, object]]:
 
 def _duration_ms(start_ns: int, end_ns: int) -> float:
     return (end_ns - start_ns) / 1_000_000
+
+
+def evaluate_budgets(
+    counts: list[int],
+    durations: dict[str, dict[str, dict[str, float]]],
+) -> tuple[dict[str, dict[str, dict[str, object]]], str]:
+    """Compare measured manager timings with explicit synthetic ceilings."""
+    results: dict[str, dict[str, dict[str, object]]] = {}
+    passed = True
+    for metric in durations:
+        for percentile_name in durations[metric]:
+            for count in counts:
+                measured = durations[metric][percentile_name][str(count)]
+                limit = MANAGER_PERFORMANCE_BUDGETS_MS[count][metric][
+                    percentile_name
+                ]
+                is_within_budget = measured <= limit
+                passed = passed and is_within_budget
+                results.setdefault(metric, {}).setdefault(
+                    percentile_name, {}
+                )[str(count)] = {
+                    "measuredMs": measured,
+                    "budgetMs": limit,
+                    "status": "pass" if is_within_budget else "fail",
+                }
+    return results, "passed" if passed else "failed"
 
 
 def benchmark_count(
@@ -159,6 +202,8 @@ def run(argv: Iterable[str] | None = None) -> dict[str, object]:
                 ] = value
         byte_sizes[str(count)] = metadata_bytes
 
+    budget_results, budget_status = evaluate_budgets(args.counts, durations)
+
     return {
         "counts": args.counts,
         "durations_ms": durations,
@@ -166,6 +211,9 @@ def run(argv: Iterable[str] | None = None) -> dict[str, object]:
         "platform": platform.system(),
         "arch": platform.machine() or os.uname().machine,
         "status": "synthetic-manager-level",
+        "budget_status": budget_status,
+        "budget_results": budget_results,
+        "runtime_status": "unverified",
     }
 
 

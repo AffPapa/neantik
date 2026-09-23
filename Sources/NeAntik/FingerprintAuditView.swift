@@ -48,6 +48,20 @@ struct ManualFingerprintReportDeliveryGate: Equatable {
     }
 }
 
+enum FingerprintAuditReportPresentationPolicy {
+    static func showsManualReportAction(
+        isReleaseAudit: Bool,
+        technicalDetailsAreExpanded: Bool,
+        hasReportURL: Bool
+    ) -> Bool {
+        !isReleaseAudit && technicalDetailsAreExpanded && hasReportURL
+    }
+
+    static let manualReportLabel = "Открыть локальный отчёт для отладки"
+    static let manualReportCaption =
+        "Файл остаётся на этом Mac и предназначен только для инженерной диагностики."
+}
+
 struct FingerprintAuditView: View {
     let profiles: [BrowserProfile]
     let runtime: BrowserRuntime
@@ -479,15 +493,27 @@ struct FingerprintAuditView: View {
             if technicalDetailsAreExpanded {
                 detailedResult(report)
                     .padding(.top, 12)
-                if let reportURL = coordinator.reportURL {
+                if FingerprintAuditReportPresentationPolicy.showsManualReportAction(
+                    isReleaseAudit: isReleaseAudit,
+                    technicalDetailsAreExpanded: technicalDetailsAreExpanded,
+                    hasReportURL: coordinator.reportURL != nil
+                ), let reportURL = coordinator.reportURL {
                     Button {
                         NSWorkspace.shared.activateFileViewerSelecting([
                             reportURL
                         ])
                     } label: {
-                        Label("Показать JSON-отчёт", systemImage: "doc.text")
+                        Label(
+                            FingerprintAuditReportPresentationPolicy.manualReportLabel,
+                            systemImage: "doc.text"
+                        )
                     }
                     .padding(.top, 8)
+                    Text(
+                        FingerprintAuditReportPresentationPolicy.manualReportCaption
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
         }

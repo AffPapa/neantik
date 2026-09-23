@@ -204,9 +204,12 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
     "$EVIDENCE/source-provenance.json"
     "$EVIDENCE/fingerprint-chromium.lock.json"
   )
-fi
+  "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
+    "${VERIFY_BUILT_RUNTIME_ARGS[@]}"
+else
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
-  "${VERIFY_BUILT_RUNTIME_ARGS[@]}"
+  "$RUNTIME_APP"
+fi
 python3 "$PROJECT_DIR/scripts/verify-packaged-runtime-report.py" \
   --report "$EVIDENCE/runtime-verification.json" \
   --runtime-app "$RUNTIME_APP" \

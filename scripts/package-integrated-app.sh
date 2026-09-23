@@ -28,11 +28,9 @@ RUNTIME_VERSION="$(
 if [[ "$RUNTIME_VERSION" == 153.* ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-153-port-status.json"
   SOURCE_CONTRACT_NAME="chromium-153-port-status.json"
-  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_153.md"
 else
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
-  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md"
 fi
 
 if [[ "$RUNTIME_APP" != /* || ! -d "$RUNTIME_APP" ]]; then
@@ -89,6 +87,11 @@ if [[ "$RUNTIME_BUNDLE_ID" != "app.neantik.runtime" ||
   exit 65
 fi
 python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
+if [[ "$RUNTIME_VERSION" == 153.* ]]; then
+  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_153.md"
+else
+  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md"
+fi
 
 VERIFY_REPORT="$(mktemp -t nevision-integrated-runtime)"
 COMPLIANCE_DIR="$(mktemp -d -t nevision-runtime-compliance)"

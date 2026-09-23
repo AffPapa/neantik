@@ -27,6 +27,12 @@ class ProfileIsolationHarnessTests(unittest.TestCase):
         self.assertEqual(report["sharedLockFiles"], 0)
         self.assertTrue(report["concurrentLaunchBlocked"])
         self.assertEqual(report["recoveryState"], "clean")
+        self.assertEqual(report["storageIsolation"], "verified")
+
+    def test_synthetic_storage_leak_fails_closed(self):
+        report = MODULE.run(2, inject_storage_leak=True)
+        self.assertEqual(report["status"], "failed")
+        self.assertEqual(report["storageIsolation"], "failed")
 
     def test_cli_report_is_accepted_by_contract_verifier(self):
         produced = subprocess.run(
@@ -38,6 +44,7 @@ class ProfileIsolationHarnessTests(unittest.TestCase):
         self.assertEqual(produced.returncode, 0, produced.stderr)
         report = json.loads(produced.stdout)
         self.assertEqual(report["profileCount"], 2)
+        self.assertEqual(report["storageIsolation"], "verified")
         verified = subprocess.run(
             [sys.executable, str(VERIFY), "-"],
             input=produced.stdout,

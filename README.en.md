@@ -14,21 +14,20 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Current published public-alpha release:
+Current source candidate for the next public-alpha release:
 
-- NeAntik `0.7.3` build `66`;
+- NeAntik `0.7.5` build `68`;
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `153.0.8010.36`, ARM64, Metal;
-- ZIP: `NeAntik-0.7.3-arm64-notarized.zip`;
-- DMG: `NeAntik-0.7.3-arm64-notarized.dmg`;
-- SHA-256 sidecars are published with both GitHub Release assets.
+- Chromium `153.0.8010.52`, ARM64, Metal;
+- ZIP: `NeAntik-0.7.5-arm64-notarized.zip`;
+- DMG: `NeAntik-0.7.5-arm64-notarized.dmg`;
+- SHA-256 sidecars will be published with the assets after all release gates pass.
 
-The public runtime `153.0.8010.36` is below this repository's current checked
-security baseline `153.0.8010.52`; signing and notarization do not replace
-missing security updates. New branch changes are not a binary release until
-separately signed and notarized DMG/ZIP assets appear in GitHub Releases. The
-`0.7.4 (67)` candidate is still in source-pair, runtime, and release
-verification and does not replace the published `0.7.3` release.
+The published rollback release is `0.7.4 (67)`. Candidate `0.7.5 (68)` carries
+the manager/UI and verifier improvements while retaining the already qualified
+Chromium 153 runtime without rebuilding Chromium. It is not a public binary
+release until signing, notarization, Gatekeeper and fresh GitHub download
+verification complete.
 
 Product website: <https://affpapa.org/neantik>.
 
@@ -78,7 +77,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Public `0.7.3` is published for public-alpha profile isolation. Strict
+Public `0.7.4` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 

@@ -5,7 +5,7 @@ The harness uses temporary directories and short-lived Python child processes;
 it does not launch Chromium, inspect user profiles, read Keychain, or emit
 paths, profile names, seeds, cookies, or credentials. Its minimized report is
 validated by verify-profile-isolation-report.py and is evidence for the
-filesystem/process harness only, not for a browser runtime.
+filesystem/process/storage harness only, not for a browser runtime.
 """
 
 from __future__ import annotations
@@ -22,6 +22,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+STORAGE_SENTINEL_KINDS = (
+    "LocalStorage",
+    "IndexedDB",
+    "CacheStorage",
+    "ServiceWorkers",
+)
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
         "+00:00", "Z"
@@ -35,7 +43,32 @@ def _bounded_count(raw: str) -> int:
     return value
 
 
-def run(count: int) -> dict[str, object]:
+def _verify_storage_sentinels(
+    sentinels: list[list[tuple[Path, bytes]]],
+) -> str:
+    """Return only a bounded verdict; never return sentinel contents."""
+    try:
+        for profile_sentinels in sentinels:
+            for path, expected in profile_sentinels:
+                if path.read_bytes() != expected:
+                    return "failed"
+
+        for index, profile_sentinels in enumerate(sentinels):
+            for _, expected in profile_sentinels:
+                for other_index, other_sentinels in enumerate(sentinels):
+                    if other_index == index:
+                        continue
+                    if any(
+                        other_path.read_bytes() == expected
+                        for other_path, _ in other_sentinels
+                    ):
+                        return "failed"
+    except OSError:
+        return "unknown"
+    return "verified"
+
+
+def run(count: int, inject_storage_leak: bool = False) -> dict[str, object]:
     with tempfile.TemporaryDirectory(prefix="neantik-profile-harness-") as root:
         root_path = Path(root)
         processes: list[tuple[subprocess.Popen[bytes], Path]] = []
@@ -43,6 +76,7 @@ def run(count: int) -> dict[str, object]:
         cookie_store_paths: set[tuple[int, int]] = set()
         lock_paths: set[tuple[int, int]] = set()
         identity_tokens: set[str] = set()
+        storage_sentinels: list[list[tuple[Path, bytes]]] = []
 
         try:
             for index in range(count):
@@ -51,6 +85,17 @@ def run(count: int) -> dict[str, object]:
                 browser_data.mkdir(parents=True)
                 cookies = browser_data / "Cookies"
                 cookies.write_bytes(b"harness-cookie-store-marker\n")
+                profile_sentinels: list[tuple[Path, bytes]] = []
+                for kind in STORAGE_SENTINEL_KINDS:
+                    storage_root = browser_data / kind
+                    storage_root.mkdir()
+                    sentinel = hashlib.sha256(
+                        secrets.token_bytes(32)
+                    ).hexdigest().encode("ascii")
+                    sentinel_path = storage_root / "synthetic-sentinel"
+                    sentinel_path.write_bytes(sentinel)
+                    profile_sentinels.append((sentinel_path, sentinel))
+                storage_sentinels.append(profile_sentinels)
                 lock_path = profile_root / "browser.lock"
                 lock_path.touch()
 
@@ -86,6 +131,15 @@ def run(count: int) -> dict[str, object]:
                 if process.stdout is not None:
                     process.stdout.close()
 
+            if inject_storage_leak:
+                if count < 2:
+                    raise RuntimeError(
+                        "storage leak injection requires at least two profiles"
+                    )
+                source_path, _ = storage_sentinels[0][0]
+                target_path, _ = storage_sentinels[1][0]
+                target_path.write_bytes(source_path.read_bytes())
+
             concurrent_launch_blocked = False
             probe_handle = (root_path / "profile-0" / "browser.lock").open("r+")
             try:
@@ -114,6 +168,7 @@ def run(count: int) -> dict[str, object]:
             recovery_state = "clean" if all(
                 not lock_path.exists() for _, lock_path in processes
             ) else "required"
+            storage_isolation = _verify_storage_sentinels(storage_sentinels)
             report = {
                 "status": "partial",
                 "profileCount": count,
@@ -123,9 +178,14 @@ def run(count: int) -> dict[str, object]:
                 "sharedLockFiles": count - len(lock_paths),
                 "concurrentLaunchBlocked": concurrent_launch_blocked,
                 "recoveryState": recovery_state,
+                "storageIsolation": storage_isolation,
                 "generatedAt": _utc_now(),
             }
-            if recovery_state != "clean" or not concurrent_launch_blocked:
+            if (
+                recovery_state != "clean"
+                or not concurrent_launch_blocked
+                or storage_isolation != "verified"
+            ):
                 report["status"] = "failed"
             return report
         finally:
@@ -149,9 +209,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--count", type=_bounded_count, default=3)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument(
+        "--inject-storage-leak",
+        action="store_true",
+        help="negative test only: copy one synthetic sentinel across profiles",
+    )
     args = parser.parse_args(argv)
     try:
-        report = run(args.count)
+        report = run(
+            args.count,
+            inject_storage_leak=args.inject_storage_leak,
+        )
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"profile isolation harness failed: {error}", file=sys.stderr)
         return 1

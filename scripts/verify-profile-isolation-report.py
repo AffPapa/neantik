@@ -27,12 +27,14 @@ ALLOWED_KEYS = {
     "sharedLockFiles",
     "concurrentLaunchBlocked",
     "recoveryState",
+    "storageIsolation",
     "generatedAt",
     "runtimeHash",
 }
 REQUIRED_KEYS = ALLOWED_KEYS - {"runtimeHash"}
 STATUSES = {"verified", "partial", "failed", "blocked", "unverified"}
 RECOVERY_STATES = {"clean", "recovered", "required", "failed", "unknown"}
+STORAGE_ISOLATION_STATES = {"verified", "failed", "unknown"}
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
 
@@ -144,6 +146,11 @@ def validate_report(report: dict[str, Any]) -> dict[str, Any]:
     shared_lock_files = _require_count(report, "sharedLockFiles")
     concurrent_launch_blocked = _require_bool(report, "concurrentLaunchBlocked")
     recovery_state = _require_string(report, "recoveryState", RECOVERY_STATES)
+    storage_isolation = _require_string(
+        report,
+        "storageIsolation",
+        STORAGE_ISOLATION_STATES,
+    )
     _require_timestamp(report)
 
     if profile_count < 1:
@@ -174,11 +181,12 @@ def validate_report(report: dict[str, Any]) -> dict[str, Any]:
         or shared_lock_files != 0
         or not concurrent_launch_blocked
         or recovery_state != "clean"
+        or storage_isolation != "verified"
     ):
         raise ProfileIsolationReportError(
             "verified requires one distinct directory and identity seed per "
             "profile, zero shared stores/locks, blocked concurrent launch, "
-            "and recoveryState=clean"
+            "recoveryState=clean, and storageIsolation=verified"
         )
     if status == "failed" and (
         distinct_directories == profile_count
@@ -187,6 +195,7 @@ def validate_report(report: dict[str, Any]) -> dict[str, Any]:
         and shared_lock_files == 0
         and concurrent_launch_blocked
         and recovery_state == "clean"
+        and storage_isolation == "verified"
     ):
         raise ProfileIsolationReportError(
             "failed must identify at least one failed isolation condition"

@@ -219,6 +219,35 @@ struct ProfileEnvironmentPresentationTests {
     }
 
     @Test
+    func fingerprintAuditNeverEscalatesIntoCompactOverview() {
+        let resolution = DiagnosticResolution(
+            key: .fingerprintAudit,
+            mode: .actionRequired,
+            action: .runFingerprintAudit
+        )
+        let snapshot = makeSnapshot(
+            sections: [
+                EnvironmentDiagnosticSection(
+                    id: "fingerprint",
+                    title: "Fingerprint",
+                    fields: [
+                        field(
+                            id: "fingerprint.observation",
+                            severity: .failure,
+                            resolution: resolution
+                        )
+                    ]
+                )
+            ]
+        )
+
+        #expect(
+            ProfileEnvironmentPresentation.recommendedAction(in: snapshot) ==
+                .runFingerprintAudit
+        )
+    }
+
+    @Test
     func mixedSeverityRootCauseCountsOnlyItsHighestSeverity() {
         let attentionResolution = DiagnosticResolution(
             key: .proxyContext,

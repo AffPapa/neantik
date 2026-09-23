@@ -1453,6 +1453,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
 struct FingerprintAuditReportStore: Sendable {
     static let maximumStoredReports = 3
+    static let maximumStoredReportBytes = 512 * 1_024
 
     let paths: AppPaths
 
@@ -1468,7 +1469,13 @@ struct FingerprintAuditReportStore: Sendable {
             .withoutEscapingSlashes
         ]
         encoder.dateEncodingStrategy = .iso8601
-        try paths.writePrivateFile(encoder.encode(report), to: url)
+        let encoded = try encoder.encode(report)
+        guard encoded.count <= Self.maximumStoredReportBytes else {
+            throw NeAntikError.fingerprintAuditFailed(
+                "Локальный отчёт отпечатка превысил безопасный размер."
+            )
+        }
+        try paths.writePrivateFile(encoded, to: url)
         try pruneReports(preserving: url)
         return url
     }
@@ -1623,9 +1630,9 @@ final class FingerprintAuditCoordinator: ObservableObject {
             return
         }
         for profile in [first, second] {
-            if processes.runningProfileIDs.contains(profile.id) {
+            if processes.processState(for: profile.id) != .stopped {
                 errorMessage =
-                    "Останови «\(profile.name)» перед проверкой."
+                    "Останови выбранные профили и дождись завершения восстановления перед проверкой."
                 return
             }
         }

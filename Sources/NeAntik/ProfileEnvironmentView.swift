@@ -278,27 +278,32 @@ struct ProfileEnvironmentView: View {
         ProfileEnvironmentPresentation.recommendedAction(in: snapshot)
     }
 
-    private var hasOverviewAction: Bool {
+    private var overviewAction: DiagnosticAction? {
         switch recommendedAction {
+        case .testProxy, .editProxy:
+            recommendedAction
+        case .runFingerprintAudit, .none:
+            nil
+        }
+    }
+
+    private var hasOverviewAction: Bool {
+        switch overviewAction {
         case .testProxy:
             hasProxy && (canTestProxy || isTestingProxy)
         case .editProxy:
             hasProxy && canTestProxy
-        case .runFingerprintAudit:
-            canRunFingerprintAudit
-        case .none:
+        case .runFingerprintAudit, .none:
             false
         }
     }
 
     @ViewBuilder
     private var environmentActions: some View {
-        if recommendedAction == .testProxy {
+        if overviewAction == .testProxy {
             proxyTestButton
-        } else if recommendedAction == .editProxy {
+        } else if overviewAction == .editProxy {
             editProxyButton
-        } else if recommendedAction == .runFingerprintAudit {
-            fingerprintAuditButton
         }
     }
 

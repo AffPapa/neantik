@@ -4,6 +4,42 @@ import Testing
 
 struct FingerprintAuditObservationTests {
     @Test
+    func manualReportActionRequiresExplicitTechnicalDetails() {
+        #expect(
+            !FingerprintAuditReportPresentationPolicy.showsManualReportAction(
+                isReleaseAudit: false,
+                technicalDetailsAreExpanded: false,
+                hasReportURL: true
+            )
+        )
+        #expect(
+            FingerprintAuditReportPresentationPolicy.showsManualReportAction(
+                isReleaseAudit: false,
+                technicalDetailsAreExpanded: true,
+                hasReportURL: true
+            )
+        )
+        #expect(
+            !FingerprintAuditReportPresentationPolicy.showsManualReportAction(
+                isReleaseAudit: true,
+                technicalDetailsAreExpanded: true,
+                hasReportURL: true
+            )
+        )
+        #expect(
+            !FingerprintAuditReportPresentationPolicy.showsManualReportAction(
+                isReleaseAudit: false,
+                technicalDetailsAreExpanded: true,
+                hasReportURL: false
+            )
+        )
+        #expect(
+            FingerprintAuditReportPresentationPolicy.manualReportLabel
+                .contains("отладки")
+        )
+    }
+
+    @Test
     func validBrowserReportMapsOnlyStableAWithoutRawSurfaces() {
         let firstID = UUID()
         let secondID = UUID()

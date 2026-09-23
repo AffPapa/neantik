@@ -39,10 +39,23 @@ class BenchmarkProfileWorkspaceTests(unittest.TestCase):
         )
         result = json.loads(completed.stdout)
         self.assertEqual(
-            set(result), {"counts", "durations_ms", "bytes", "platform", "arch", "status"}
+            set(result),
+            {
+                "counts",
+                "durations_ms",
+                "bytes",
+                "platform",
+                "arch",
+                "status",
+                "budget_status",
+                "budget_results",
+                "runtime_status",
+            },
         )
         self.assertEqual(result["counts"], [1, 50])
         self.assertEqual(result["status"], "synthetic-manager-level")
+        self.assertEqual(result["budget_status"], "passed")
+        self.assertEqual(result["runtime_status"], "unverified")
         self.assertEqual(set(result["bytes"]), {"1", "50"})
         for metric in ("cold_setup", "warm_projection"):
             for percentile_name in ("p50", "p95"):
@@ -50,6 +63,30 @@ class BenchmarkProfileWorkspaceTests(unittest.TestCase):
                     set(result["durations_ms"][metric][percentile_name]),
                     {"1", "50"},
                 )
+                for count in ("1", "50"):
+                    self.assertEqual(
+                        result["budget_results"][metric][percentile_name][count][
+                            "status"
+                        ],
+                        "pass",
+                    )
+
+    def test_budget_evaluation_reports_a_regression(self) -> None:
+        durations = {
+            "cold_setup": {
+                "p50": {"1": 5.001},
+                "p95": {"1": 10.001},
+            },
+            "warm_projection": {
+                "p50": {"1": 2.001},
+                "p95": {"1": 5.001},
+            },
+        }
+
+        results, status = MODULE.evaluate_budgets([1], durations)
+
+        self.assertEqual(status, "failed")
+        self.assertEqual(results["cold_setup"]["p95"]["1"]["status"], "fail")
 
     def test_cli_rejects_invalid_iterations(self) -> None:
         completed = subprocess.run(

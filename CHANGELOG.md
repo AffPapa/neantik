@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## Direct 0.7.5 (68) — release candidate
+
+- Менеджер получил завершённый pass по lifecycle health, безопасному импорту
+  и экспорту, metadata-only snapshots, privacy-safe diagnostics/support bundle,
+  quarantine/provenance и manager performance budgets.
+- Обычный UI сохраняет короткий сценарий профиля; A → B → A остаётся явной
+  release-only проверкой и не запускается скрыто при обычном старте.
+- Исправлена release-проверка source contract: она теперь выбирает контракт
+  Chromium 153 по фактическому runtime lock, а не ошибочно требует старый
+  Chromium 152.
+- Runtime Chromium `153.0.8010.52` не пересобирался и не заменялся.
+
 - Release hygiene теперь учитывает канонические markdown-записи публичных
   релизов и разрешает версию исходников ниже публичного floor только при
   явной bilingual-пометке development preview; это не меняет бинарный
@@ -22,13 +34,13 @@
   больше не выводят абсолютные пути или системные детали; в приватной
   диагностике сохраняются только ограниченные категории событий.
 
-## Direct 0.7.4 (67) — release candidate, not published
+## Direct 0.7.4 (67) — September 23, 2026
 
-- Кандидат переведён на monotonic version/build floor после публичного
-  `0.7.3 (66)`.
-- Локальная инженерная сборка проверяет Chromium `153.0.8010.52`, ARM64 и
-  Metal; source-pair provenance, подпись, notarization и публикация остаются
-  отдельными незакрытыми gate до финальной проверки.
+- Публичный Direct public-alpha релиз с Chromium `153.0.8010.52`, ARM64 и
+  Metal; manager и runtime прошли подпись, notarization, stapling, Gatekeeper
+  и повторную проверку опубликованного ZIP.
+- Manager/UI pass и последующие verifier-изменения переходят в кандидата
+  `0.7.5 (68)` и не смешиваются с уже опубликованным бинарным архивом.
 
 ## Direct 0.3.20 (23) — August 29, 2026
 

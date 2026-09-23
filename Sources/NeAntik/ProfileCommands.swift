@@ -159,6 +159,9 @@ struct WorkspaceCommandSet {
     let createProfile: () -> Void
     let createFolder: () -> Void
     let exportProfiles: () -> Void
+    let exportSupportBundle: () -> Void
+    let saveSnapshot: () -> Void
+    let restoreSnapshot: () -> Void
     let importProfiles: () -> Void
     let exportEncryptedProfiles: () -> Void
     let importEncryptedProfiles: () -> Void
@@ -172,6 +175,9 @@ struct WorkspaceCommandSet {
         createProfile: {},
         createFolder: {},
         exportProfiles: {},
+        exportSupportBundle: {},
+        saveSnapshot: {},
+        restoreSnapshot: {},
         importProfiles: {},
         exportEncryptedProfiles: {},
         importEncryptedProfiles: {},
@@ -231,6 +237,27 @@ struct WorkspaceCommandMenu: Commands {
                 "Экспортировать конфигурацию…",
                 systemImage: "square.and.arrow.up",
                 action: resolved.exportProfiles
+            )
+            .disabled(!resolved.isEnabled)
+
+            Button(
+                "Экспортировать безопасную диагностику…",
+                systemImage: "stethoscope",
+                action: resolved.exportSupportBundle
+            )
+            .disabled(!resolved.isEnabled)
+
+            Button(
+                "Сохранить локальный snapshot",
+                systemImage: "clock.arrow.circlepath",
+                action: resolved.saveSnapshot
+            )
+            .disabled(!resolved.isEnabled)
+
+            Button(
+                "Восстановить локальный snapshot…",
+                systemImage: "arrow.counterclockwise",
+                action: resolved.restoreSnapshot
             )
             .disabled(!resolved.isEnabled)
 

@@ -265,6 +265,9 @@ struct ContentView: View {
             createProfile: beginCreatingProfile,
             createFolder: beginCreatingFolder,
             exportProfiles: exportProfileConfigurations,
+            exportSupportBundle: exportRedactedSupportBundle,
+            saveSnapshot: saveLocalSnapshot,
+            restoreSnapshot: restoreLocalSnapshot,
             importProfiles: importProfileConfigurations,
             exportEncryptedProfiles: {
                 transferPassphraseMode = .export
@@ -363,6 +366,18 @@ struct ContentView: View {
 
     private var fingerprintAuditProfiles: [BrowserProfile] {
         store.profiles.filter { !$0.isArchived }
+    }
+
+    private var canRunFingerprintAudit: Bool {
+        FingerprintAuditReadinessPolicy.canOffer(
+            runtimeReady: runtimePreflight?.isReady == true,
+            supportsFingerprintIdentity:
+                runtime?.supportsFingerprintIdentity == true,
+            activeProfileCount: fingerprintAuditProfiles.count,
+            profileStates: fingerprintAuditProfiles.map {
+                processes.processState(for: $0.id)
+            }
+        )
     }
 
     private var runtime: BrowserRuntime? {
@@ -1204,6 +1219,95 @@ struct ContentView: View {
                     profileCountWord(saved.count) +
                     " с распределением по папкам."
             )
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func saveLocalSnapshot() {
+        let stoppedProfiles = store.profiles.filter {
+            processes.processState(for: $0.id) == .stopped
+        }
+        guard !stoppedProfiles.isEmpty else {
+            localError = "Нет остановленных профилей для snapshot."
+            return
+        }
+        let folderNames: [UUID: String] = Dictionary(
+            uniqueKeysWithValues: stoppedProfiles.compactMap { profile in
+                guard let folderID = store.folderID(forProfileID: profile.id),
+                      let folder = store.folder(withID: folderID)
+                else { return nil }
+                return (profile.id, folder.name)
+            }
+        )
+        do {
+            _ = try ProfileSnapshotStore.save(
+                profiles: stoppedProfiles,
+                folderNameByProfileID: folderNames,
+                paths: store.paths
+            )
+            announceWorkspaceStatus(
+                "Локальный snapshot сохранён. Хранятся последние 3 версии."
+            )
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func restoreLocalSnapshot() {
+        guard processes.runningProfileIDs.isEmpty else {
+            localError = "Сначала останови все профили, потом восстанавливай snapshot."
+            return
+        }
+        do {
+            guard let url = try ProfileSnapshotFileCoordinator.chooseSnapshot(
+                paths: store.paths
+            ) else { return }
+            let document = try ProfileSnapshotStore.document(
+                from: url,
+                paths: store.paths
+            )
+            let imported = try document.makeProfiles()
+            let saved = try store.insertImportedProfiles(
+                imported,
+                folderNames: document.configuration.profiles.map(\.folderName)
+            )
+            if let first = saved.first {
+                revealSavedProfile(first)
+            }
+            announceWorkspaceStatus(
+                "Восстановлено " + String(saved.count) + " " +
+                    profileCountWord(saved.count) +
+                    " с новыми identity и без данных браузера."
+            )
+        } catch {
+            localError = error.localizedDescription
+        }
+    }
+
+    private func exportRedactedSupportBundle() {
+        do {
+            let bundle = try RedactedSupportBundle(
+                managerVersion: Bundle.main.object(
+                    forInfoDictionaryKey: "CFBundleShortVersionString"
+                ) as? String,
+                managerBuild: Bundle.main.object(
+                    forInfoDictionaryKey: "CFBundleVersion"
+                ) as? String,
+                runtime: runtime,
+                runtimeAvailability: runtimeAvailability,
+                profiles: store.profiles,
+                folderCount: store.organization.folders.count,
+                processStates: store.profiles.map {
+                    processes.processState(for: $0.id)
+                }
+            )
+            guard (try RedactedSupportBundleFileCoordinator.export(
+                bundle: bundle
+            )) != nil else {
+                return
+            }
+            announceWorkspaceStatus("Безопасная диагностика сохранена.")
         } catch {
             localError = error.localizedDescription
         }
@@ -2343,11 +2447,7 @@ struct ContentView: View {
                 canCancelProxyTest:
                     proxyTestingProfileIDs.contains(profile.id) ||
                     launchPreparingProfileIDs.contains(profile.id),
-                canRunFingerprintAudit:
-                    runtimePreflight?.isReady == true &&
-                    runtime?.supportsFingerprintIdentity == true &&
-                    fingerprintAuditProfiles.count >= 2 &&
-                    processes.runningProfileIDs.isEmpty,
+                canRunFingerprintAudit: canRunFingerprintAudit,
                 clipboardNotice:
                     clipboardNotice?.profileID == profile.id
                         ? clipboardNotice?.message
@@ -2733,9 +2833,7 @@ struct ContentView: View {
     }
 
     private func beginFingerprintAudit() {
-        guard let runtime,
-              runtimePreflight?.isReady == true,
-              fingerprintAuditProfiles.count >= 2
+        guard let runtime, canRunFingerprintAudit
         else {
             localError =
                 "Нужны два активных профиля и готовый встроенный браузерный движок."
@@ -3045,7 +3143,12 @@ struct ContentView: View {
     }
 
     private func presentReleaseFingerprintAuditIfNeeded() {
-        guard launchIntent.opensFingerprintAudit,
+        guard launchIntent.opensFingerprintAudit else { return }
+        let trigger: FingerprintAuditTrigger =
+            .explicitReleaseGate
+        guard FingerprintAuditTriggerPolicy.shouldAutomaticallyStart(
+            trigger: trigger
+        ),
               !handledReleaseAuditIntent,
               !isResolvingRuntime
         else {
@@ -3374,6 +3477,7 @@ private struct ProfileRow: View {
 struct ProfileDetailView: View {
     @State private var technicalDetailsExpanded = false
     @State private var noteExpanded = false
+    @State private var diagnosticsExpanded = false
 
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
@@ -3505,10 +3609,24 @@ struct ProfileDetailView: View {
                 }
             }
 
-            ProfileLifecycleHealthView(snapshot: lifecycleHealth)
-            ProfilePrivacyPanelView(snapshot: privacyPanel)
-            ProfileArtifactProvenanceView(snapshot: artifactProvenance)
-            RuntimeProvenanceCardView(snapshot: runtimeProvenance)
+            ProfileDiagnosticsSummaryView(
+                lifecycle: lifecycleHealth,
+                privacyPanel: privacyPanel,
+                artifactProvenance: artifactProvenance,
+                runtimeProvenance: runtimeProvenance,
+                isExpanded: $diagnosticsExpanded
+            )
+
+            if diagnosticsExpanded {
+                VStack(alignment: .leading, spacing: 12) {
+                    ProfileLifecycleHealthView(snapshot: lifecycleHealth)
+                    ProfilePrivacyPanelView(snapshot: privacyPanel)
+                    ProfileArtifactProvenanceView(
+                        snapshot: artifactProvenance
+                    )
+                    RuntimeProvenanceCardView(snapshot: runtimeProvenance)
+                }
+            }
 
             Button {
                 technicalDetailsExpanded.toggle()
@@ -3551,13 +3669,6 @@ struct ProfileDetailView: View {
                 .padding(.top, 10)
             }
 
-            if let lastLaunchedAt = profile.lastLaunchedAt {
-                Text(
-                    "Последний запуск: \(lastLaunchedAt.neAntikDisplayDateTime)"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
         }
     }
 

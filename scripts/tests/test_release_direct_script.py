@@ -96,6 +96,23 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         )
         self.assertNotIn("rebind_runtime_compliance", text)
 
+    def test_manager_only_update_selects_contract_for_packaged_runtime(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'runtime_version="$(plutil -extract fingerprintChromium.chromiumVersion',
+            text,
+        )
+        self.assertIn(
+            'source_contract="$PROJECT_DIR/runtime/chromium-153-port-status.json"',
+            text,
+        )
+        self.assertIn(
+            'source_contract="$PROJECT_DIR/runtime/chromium-152-source-contract.json"',
+            text,
+        )
+        self.assertIn('"$source_contract:$evidence/$(basename "$source_contract")"', text)
+
     def test_manager_only_update_preserves_russian_bundle_contract(self) -> None:
         prepare = PREPARE_MANAGER.read_text(encoding="utf-8")
         verifier = INTEGRATED_VERIFIER.read_text(encoding="utf-8")

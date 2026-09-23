@@ -33,15 +33,19 @@ jobs:
           - BulkProxyImportTests
           - DisplayDateFormattingTests
           - EnvironmentDiagnosticAssessmentTests
+          - FingerprintAuditReadinessPolicyTests
           - FingerprintAuditLoopbackSTUNServerTests
           - FingerprintAuditAutomationPolicyTests
           - FingerprintAuditObservationTests
+          - FingerprintAuditTriggerPolicyTests
           - FingerprintAuditTests
           - FingerprintEvidenceEnrollmentTests
           - FingerprintEvidenceEnvelopeTests
           - FingerprintEvidenceReleaseContextTests
           - FirstProfileBootstrapTests
           - ProfileArtifactProvenanceTests
+          - ProfileDiagnosticsSummaryTests
+          - RedactedSupportBundleTests
           - SecureEnclaveFingerprintEvidenceSignerTests
           - KeychainStoreTests
           - LaunchIntentTests
@@ -61,6 +65,7 @@ jobs:
           - ProfileOrganizationPersistenceTests
           - ProfilePostSaveRevealPolicyTests
           - ProfilePrivacyPanelTests
+          - ProfileSnapshotTests
           - ProfileRevisionAndTransactionTests
           - ProfileTagAppearanceTests
           - ProfileTagEditorTests

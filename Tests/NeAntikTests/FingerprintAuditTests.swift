@@ -511,6 +511,45 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func rejectsOversizedRawReportBeforeWriting() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        var values = baseValues(canvas: "a")
+        values["oversized_surface"] = String(
+            repeating: "x",
+            count: FingerprintAuditReportStore.maximumStoredReportBytes
+        )
+        let first = capture(name: "First", values: values)
+        let oversized = report(
+            first: first,
+            second: capture(name: "Second", values: values),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: values
+            )
+        )
+        let store = FingerprintAuditReportStore(
+            paths: AppPaths(rootDirectory: root)
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try store.save(oversized)
+        }
+
+        let directory = AppPaths(rootDirectory: root).fingerprintAuditsDirectory
+        let entries = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(entries?.isEmpty == true)
+    }
+
+    @Test
     func keepsOnlyThreePrivateReportsWithoutTouchingOtherEntries() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

@@ -24,15 +24,19 @@ case "$SUITE" in
   BulkProxyImportTests|\
   DisplayDateFormattingTests|\
   EnvironmentDiagnosticAssessmentTests|\
+  FingerprintAuditReadinessPolicyTests|\
   FingerprintAuditAutomationPolicyTests|\
   FingerprintAuditLoopbackSTUNServerTests|\
   FingerprintAuditObservationTests|\
+  FingerprintAuditTriggerPolicyTests|\
   FingerprintAuditTests|\
   FingerprintEvidenceEnrollmentTests|\
   FingerprintEvidenceEnvelopeTests|\
   FingerprintEvidenceReleaseContextTests|\
   FirstProfileBootstrapTests|\
   ProfileArtifactProvenanceTests|\
+  ProfileDiagnosticsSummaryTests|\
+  RedactedSupportBundleTests|\
   SecureEnclaveFingerprintEvidenceSignerTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
@@ -52,6 +56,7 @@ case "$SUITE" in
   ProfileOrganizationPersistenceTests|\
   ProfilePostSaveRevealPolicyTests|\
   ProfilePrivacyPanelTests|\
+  ProfileSnapshotTests|\
   ProfileRevisionAndTransactionTests|\
   ProfileTagAppearanceTests|\
   ProfileTagEditorTests|\

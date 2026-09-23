@@ -108,6 +108,10 @@ struct AppPaths: Sendable {
         rootDirectory.appendingPathComponent("Recovery", isDirectory: true)
     }
 
+    var profileSnapshotsDirectory: URL {
+        rootDirectory.appendingPathComponent("Snapshots", isDirectory: true)
+    }
+
     var runtimePreferenceFile: URL {
         rootDirectory.appendingPathComponent("runtime.json")
     }
@@ -292,6 +296,7 @@ struct AppPaths: Sendable {
         try createPrivateDirectory(logsDirectory)
         try createPrivateDirectory(fingerprintAuditsDirectory)
         try createPrivateDirectory(profilesRecoveryDirectory)
+        try createPrivateDirectory(profileSnapshotsDirectory)
         try hardenExistingLogs()
     }
 

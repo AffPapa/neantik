@@ -25,6 +25,7 @@ def valid_report(**overrides):
         "sharedLockFiles": 0,
         "concurrentLaunchBlocked": True,
         "recoveryState": "clean",
+        "storageIsolation": "verified",
         "generatedAt": "2026-09-19T12:34:56Z",
         "runtimeHash": "a" * 64,
     }
@@ -98,6 +99,7 @@ class VerifyProfileIsolationReportTests(unittest.TestCase):
             {"sharedLockFiles": 100001},
             {"concurrentLaunchBlocked": "true"},
             {"recoveryState": "recovered-with-profile-names"},
+            {"storageIsolation": "leaked"},
             {"generatedAt": "2026-09-19T12:34:56+07:00"},
         ]
         for overrides in invalid:
@@ -125,6 +127,7 @@ class VerifyProfileIsolationReportTests(unittest.TestCase):
             {"sharedLockFiles": 1},
             {"concurrentLaunchBlocked": False},
             {"recoveryState": "recovered"},
+            {"storageIsolation": "failed"},
         ]
         for overrides in cases:
             with self.subTest(overrides=overrides):

@@ -60,8 +60,17 @@ verify_reviewed_runtime_evidence() {
   local compliance="$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeCompliance"
   local source_provenance
   local runtime_candidate_lock
+  local runtime_version
+  local source_contract
   source_provenance="$(resolve_source_provenance)"
   runtime_candidate_lock="$(resolve_runtime_candidate_lock)"
+  runtime_version="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$evidence/fingerprint-chromium.lock.json" 2>/dev/null || true)"
+  if [[ "$runtime_version" == 153.* ]]; then
+    source_contract="$PROJECT_DIR/runtime/chromium-153-port-status.json"
+  else
+    source_contract="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
+  fi
 
   local comparisons=(
     "$source_provenance:$evidence/source-provenance.json"
@@ -69,7 +78,7 @@ verify_reviewed_runtime_evidence() {
     "$PROJECT_DIR/runtime/security-baseline.json:$evidence/security-baseline.json"
     "$PROJECT_DIR/runtime/nevision-patches/series.json:$evidence/neantik-patch-series.json"
     "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
-    "$PROJECT_DIR/runtime/chromium-152-source-contract.json:$evidence/chromium-152-source-contract.json"
+    "$source_contract:$evidence/$(basename "$source_contract")"
   )
   local comparison
   for comparison in "${comparisons[@]}"; do
