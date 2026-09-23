@@ -94,6 +94,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text,
         )
         self.assertIn('-Xswiftc -debug-prefix-map', text)
+        self.assertIn('-Xswiftc -file-prefix-map', text)
         self.assertIn('-Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource"', text)
         self.assertIn("cmp -s", text)
         self.assertNotIn(

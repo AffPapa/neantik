@@ -196,6 +196,8 @@ swift build \
   --security-path "$BUILD_SUPPORT_DIR/security" \
   -Xswiftc -debug-prefix-map \
   -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+  -Xswiftc -file-prefix-map \
+  -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
   -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource"
 
 BIN_PATH="$(
@@ -207,6 +209,8 @@ BIN_PATH="$(
     --config-path "$BUILD_SUPPORT_DIR/config" \
     --security-path "$BUILD_SUPPORT_DIR/security" \
     -Xswiftc -debug-prefix-map \
+    -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+    -Xswiftc -file-prefix-map \
     -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
     -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource" \
     --show-bin-path
