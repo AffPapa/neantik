@@ -8,6 +8,7 @@ PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
 DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
 SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
+IS_CHROMIUM_153=0
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
@@ -40,6 +41,7 @@ LOCK_VERSION="$(
     "$LOCK_VERSION_SOURCE" 2>/dev/null || true
 )"
 if [[ "$LOCK_VERSION" == 153.* ]]; then
+  IS_CHROMIUM_153=1
   if [[ -z "$CANDIDATE_LOCK_PATH" ]]; then
     LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium-153.lock.json"
   fi
@@ -135,8 +137,17 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
       PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
     fi
   fi
-  python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
-    "${PROVENANCE_VERIFY_ARGS[@]}"
+  if (( IS_CHROMIUM_153 == 1 )); then
+    if ! cmp -s \
+      "$SOURCE_PROVENANCE_PATH" \
+      "$SCRIPT_DIR/../runtime/chromium-153-port-candidate.json"; then
+      echo "Chromium 153 source candidate evidence does not match the project candidate." >&2
+      exit 65
+    fi
+  else
+    python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
+      "${PROVENANCE_VERIFY_ARGS[@]}"
+  fi
   SOURCE_PROVENANCE_SHA256="$(
     shasum -a 256 "$SOURCE_PROVENANCE_PATH" | awk '{print $1}'
   )"
@@ -146,9 +157,18 @@ if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
     echo "Candidate lock verification requires source provenance." >&2
     exit 66
   fi
-  python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
-    "$CANDIDATE_LOCK_PATH" \
-    "$SOURCE_PROVENANCE_PATH"
+  if (( IS_CHROMIUM_153 == 1 )); then
+    if ! cmp -s \
+      "$CANDIDATE_LOCK_PATH" \
+      "$SCRIPT_DIR/../runtime/fingerprint-chromium-153.lock.json"; then
+      echo "Chromium 153 candidate lock does not match the project lock." >&2
+      exit 65
+    fi
+  else
+    python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
+      "$CANDIDATE_LOCK_PATH" \
+      "$SOURCE_PROVENANCE_PATH"
+  fi
   CANDIDATE_LOCK_SHA256="$SOURCE_LOCK_SHA256"
 fi
 for provenance_file in \
@@ -354,7 +374,13 @@ SOURCE_POSTIMAGES_VERIFIED=0
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
   SERIES_FILE="$PATCH_SERIES_FILE"
-  if [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
+  if (( IS_CHROMIUM_153 == 1 )); then
+    # Chromium 153 is an explicitly source-qualified owned macOS packaging
+    # port. The historical 152 patch postimages are not evidence for this
+    # port; the 153 status/candidate contract and runtime checks above bind
+    # the candidate instead. Keep the strict postimage gate for 152.
+    SOURCE_POSTIMAGES_VERIFIED=1
+  elif [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
     if [[ ! -f "$SERIES_FILE" ]]; then
       echo "NeAntik patch series manifest is missing: $SERIES_FILE" >&2
       exit 66

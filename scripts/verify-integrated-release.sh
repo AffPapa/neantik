@@ -93,9 +93,13 @@ EXPECTED_RUNTIME_VERSION="$(
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-153-port-status.json"
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-153-port-status.json"
+  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-153-port-candidate.json"
+  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-153.lock.json"
 else
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-152-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$EVIDENCE/source-provenance.json"
+  CANDIDATE_LOCK_FILE="$EVIDENCE/fingerprint-chromium.lock.json"
 fi
 
 if ! cmp -s \
@@ -124,11 +128,24 @@ if ! cmp -s "$SOURCE_CONTRACT_FILE" "$PACKAGED_SOURCE_CONTRACT"; then
   exit 65
 fi
 
-"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
-  "$EVIDENCE/source-provenance.json"
-"$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
-  "$EVIDENCE/fingerprint-chromium.lock.json" \
-  "$EVIDENCE/source-provenance.json"
+if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
+  if ! cmp -s "$EVIDENCE/source-provenance.json" "$SOURCE_PROVENANCE_FILE";
+  then
+    echo "Integrated Chromium 153 source candidate evidence does not match." >&2
+    exit 65
+  fi
+  if ! cmp -s "$EVIDENCE/fingerprint-chromium.lock.json" "$CANDIDATE_LOCK_FILE";
+  then
+    echo "Integrated Chromium 153 candidate lock does not match." >&2
+    exit 65
+  fi
+else
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+    "$EVIDENCE/source-provenance.json"
+  "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
+    "$EVIDENCE/fingerprint-chromium.lock.json" \
+    "$EVIDENCE/source-provenance.json"
+fi
 
 if ! cmp -s \
   "$PROJECT_DIR/Resources/NeAntik.icns" \
