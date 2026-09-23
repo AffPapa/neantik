@@ -21,6 +21,20 @@ SOURCE_ROOT="$3"
 CANDIDATE_LOCK="$4"
 SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
 
+RUNTIME_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$CANDIDATE_LOCK" 2>/dev/null || true
+)"
+if [[ "$RUNTIME_VERSION" == 153.* ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-153-port-status.json"
+  SOURCE_CONTRACT_NAME="chromium-153-port-status.json"
+  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_153.md"
+else
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
+  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md"
+fi
+
 if [[ "$RUNTIME_APP" != /* || ! -d "$RUNTIME_APP" ]]; then
   echo "NeAntik Browser.app must be an existing absolute path." >&2
   exit 66
@@ -119,13 +133,13 @@ cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
   "$EVIDENCE/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
-  "$EVIDENCE/chromium-152-source-contract.json"
+cp "$SOURCE_CONTRACT_FILE" \
+  "$EVIDENCE/$SOURCE_CONTRACT_NAME"
 cp "$SOURCE_PROVENANCE" \
   "$EVIDENCE/source-provenance.json"
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
-cp "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md" \
+cp "$RUNTIME_NOTICES_FILE" \
   "$RESOURCES/NeAntikRuntimeNotices.md"
 ditto "$COMPLIANCE_DIR" "$COMPLIANCE"
 

@@ -29,6 +29,23 @@ if [[ "$APP_PATH" != /* || ! -d "$APP_PATH" ]]; then
   exit 66
 fi
 
+# Chromium 153 uses the owned source-qualified port contract. Keep the
+# historical 152 contract as the default for older candidates and fixtures.
+LOCK_VERSION_SOURCE="$LOCK_FILE"
+if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
+  LOCK_VERSION_SOURCE="$CANDIDATE_LOCK_PATH"
+fi
+LOCK_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$LOCK_VERSION_SOURCE" 2>/dev/null || true
+)"
+if [[ "$LOCK_VERSION" == 153.* ]]; then
+  if [[ -z "$CANDIDATE_LOCK_PATH" ]]; then
+    LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium-153.lock.json"
+  fi
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-153-port-status.json"
+fi
+
 INFO_PLIST="$APP_PATH/Contents/Info.plist"
 if [[ ! -f "$INFO_PLIST" ]]; then
   echo "Chromium bundle has no Info.plist." >&2

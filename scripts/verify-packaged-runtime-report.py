@@ -240,9 +240,13 @@ def verify(
     source_contract = evidence / "chromium-153-port-status.json"
     if not source_contract.is_file():
         source_contract = evidence / "chromium-152-source-contract.json"
+    runtime_version = field(report, "chromiumVersion")
+    if runtime_version == "153.0.8010.52":
+        source_lock = project_root / "runtime/fingerprint-chromium-153.lock.json"
+    else:
+        source_lock = project_root / "runtime/fingerprint-chromium.lock.json"
     evidence_files = {
-        "sourceLockSHA256": project_root
-        / "runtime/fingerprint-chromium.lock.json",
+        "sourceLockSHA256": source_lock,
         "candidateLockSHA256": evidence / "fingerprint-chromium.lock.json",
         "sourceContractSHA256": source_contract,
         "sourceProvenanceSHA256": evidence / "source-provenance.json",

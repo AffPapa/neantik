@@ -90,6 +90,13 @@ EXPECTED_RUNTIME_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$EVIDENCE/fingerprint-chromium.lock.json"
 )"
+if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-153-port-status.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-153-port-status.json"
+else
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-152-source-contract.json"
+fi
 
 if ! cmp -s \
   "$PROJECT_DIR/runtime/security-baseline.json" \
@@ -112,9 +119,7 @@ if ! cmp -s \
   exit 65
 fi
 
-if ! cmp -s \
-  "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
-  "$EVIDENCE/chromium-152-source-contract.json"; then
+if ! cmp -s "$SOURCE_CONTRACT_FILE" "$PACKAGED_SOURCE_CONTRACT"; then
   echo "Integrated Chromium source contract does not match the project contract." >&2
   exit 65
 fi
@@ -137,7 +142,7 @@ for required in \
   "$EVIDENCE/runtime-verification.json" \
   "$EVIDENCE/neantik-patch-series.json" \
   "$EVIDENCE/apple-device-tuples.json" \
-  "$EVIDENCE/chromium-152-source-contract.json" \
+  "$PACKAGED_SOURCE_CONTRACT" \
   "$EVIDENCE/source-provenance.json" \
   "$APP_PATH/Contents/Resources/NeAntikRuntimeNotices.md" \
   "$LICENSES/Chromium-LICENSE" \
