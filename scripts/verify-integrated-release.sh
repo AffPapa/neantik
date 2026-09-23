@@ -196,8 +196,17 @@ for expectation in "${license_hashes[@]}"; do
   fi
 done
 
+VERIFY_BUILT_RUNTIME_ARGS=("$RUNTIME_APP")
+if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
+  VERIFY_BUILT_RUNTIME_ARGS+=(
+    ""
+    "$EVIDENCE/args.gn"
+    "$EVIDENCE/source-provenance.json"
+    "$EVIDENCE/fingerprint-chromium.lock.json"
+  )
+fi
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
-  "$RUNTIME_APP"
+  "${VERIFY_BUILT_RUNTIME_ARGS[@]}"
 python3 "$PROJECT_DIR/scripts/verify-packaged-runtime-report.py" \
   --report "$EVIDENCE/runtime-verification.json" \
   --runtime-app "$RUNTIME_APP" \
