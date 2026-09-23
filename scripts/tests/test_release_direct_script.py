@@ -95,7 +95,11 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         )
         self.assertIn('-Xswiftc -debug-prefix-map', text)
         self.assertIn('-Xswiftc -file-prefix-map', text)
+        self.assertIn('--scratch-path "$BUILD_SUPPORT_DIR/swift-build"', text)
         self.assertIn('-Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource"', text)
+        self.assertIn('SOURCE_PARENT="$(dirname "$PROJECT_DIR")"', text)
+        self.assertIn('-Xswiftc "$SOURCE_PARENT=/NeAntikWorkspace"', text)
+        self.assertIn('-Xcc "-fdebug-prefix-map=$SOURCE_PARENT=/NeAntikWorkspace"', text)
         self.assertIn("cmp -s", text)
         self.assertNotIn(
             '"$PROJECT_DIR/scripts/verify-built-runtime.sh" \\\n'

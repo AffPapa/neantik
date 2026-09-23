@@ -3,6 +3,7 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SOURCE_PARENT="$(dirname "$PROJECT_DIR")"
 export DEVELOPER_DIR="$(
   "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
 )"
@@ -191,28 +192,40 @@ swift build \
   -c release \
   --arch arm64 \
   --disable-sandbox \
+  --scratch-path "$BUILD_SUPPORT_DIR/swift-build" \
   --cache-path "$BUILD_SUPPORT_DIR/cache" \
   --config-path "$BUILD_SUPPORT_DIR/config" \
   --security-path "$BUILD_SUPPORT_DIR/security" \
   -Xswiftc -debug-prefix-map \
   -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+  -Xswiftc -debug-prefix-map \
+  -Xswiftc "$SOURCE_PARENT=/NeAntikWorkspace" \
   -Xswiftc -file-prefix-map \
   -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
-  -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource"
+  -Xswiftc -file-prefix-map \
+  -Xswiftc "$SOURCE_PARENT=/NeAntikWorkspace" \
+  -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource" \
+  -Xcc "-fdebug-prefix-map=$SOURCE_PARENT=/NeAntikWorkspace"
 
 BIN_PATH="$(
   swift build \
     -c release \
     --arch arm64 \
     --disable-sandbox \
+    --scratch-path "$BUILD_SUPPORT_DIR/swift-build" \
     --cache-path "$BUILD_SUPPORT_DIR/cache" \
     --config-path "$BUILD_SUPPORT_DIR/config" \
     --security-path "$BUILD_SUPPORT_DIR/security" \
     -Xswiftc -debug-prefix-map \
     -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+    -Xswiftc -debug-prefix-map \
+    -Xswiftc "$SOURCE_PARENT=/NeAntikWorkspace" \
     -Xswiftc -file-prefix-map \
     -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+    -Xswiftc -file-prefix-map \
+    -Xswiftc "$SOURCE_PARENT=/NeAntikWorkspace" \
     -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource" \
+    -Xcc "-fdebug-prefix-map=$SOURCE_PARENT=/NeAntikWorkspace" \
     --show-bin-path
 )"
 MANAGER_BINARY="$BIN_PATH/NeAntik"
