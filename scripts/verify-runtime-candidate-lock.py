@@ -29,7 +29,7 @@ def main() -> int:
     except (OSError, SourceProvenanceError) as error:
         print(f"Candidate lock verification failed: {error}", file=sys.stderr)
         return 1
-    print("PASS: candidate lock matches source contract and provenance.")
+    print("PASS: candidate lock matches the selected source contract and provenance.")
     print(f"SHA-256: {sha256_file(args.candidate_lock)}")
     print("Binary binding is outside this source-only document.")
     return 0

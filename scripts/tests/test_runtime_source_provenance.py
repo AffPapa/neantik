@@ -85,6 +85,11 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             "59657a38437d11520a68618008eb825721319b9e",
         )
 
+    def test_chromium_153_candidate_uses_its_explicit_port_contract(self) -> None:
+        path = PROJECT_ROOT / "runtime" / "chromium-153-port-candidate.json"
+        document = json.loads(path.read_text(encoding="utf-8"))
+        MODULE.verify_document(document, project_root=PROJECT_ROOT)
+
     def test_rejects_stale_chromium_144_mac_commit(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "contract.json"

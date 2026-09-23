@@ -8,11 +8,14 @@ from pathlib import Path
 from typing import Any
 
 from runtime_source_provenance import (
+    CHROMIUM_153_LOCK,
+    CHROMIUM_153_VERSION,
     PROJECT_ROOT,
     SourceProvenanceError,
     ensure_no_stale_markers,
     load_object,
     sha256_file,
+    verify_chromium_153_candidate_document,
     verify_contract,
     verify_document,
 )
@@ -136,6 +139,22 @@ def verify_candidate_lock(
     actual = load_object(candidate_path, "new-candidate runtime lock")
     ensure_no_stale_markers(actual, "new-candidate runtime lock")
     _reject_local_paths(actual)
+    provenance = load_object(
+        provenance_path,
+        "emitted Chromium source provenance",
+    )
+    if provenance.get("targetChromiumVersion") == CHROMIUM_153_VERSION:
+        verify_chromium_153_candidate_document(
+            provenance,
+            project_root=project_root,
+        )
+        expected_path = project_root / "runtime" / CHROMIUM_153_LOCK
+        expected = load_object(expected_path, "Chromium 153 source lock")
+        if actual != expected:
+            raise SourceProvenanceError(
+                "Chromium 153 candidate lock differs from the checked project lock"
+            )
+        return actual
     expected = expected_candidate_lock(
         provenance_path,
         project_root=project_root,

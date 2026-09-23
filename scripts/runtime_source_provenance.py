@@ -22,6 +22,10 @@ from typing import Any, Callable
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-152-source-contract.json"
 DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
+CHROMIUM_153_VERSION = "153.0.8010.52"
+CHROMIUM_153_STATUS = "chromium-153-port-status.json"
+CHROMIUM_153_CANDIDATE = "chromium-153-port-candidate.json"
+CHROMIUM_153_LOCK = "fingerprint-chromium-153.lock.json"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_OBJECT_RE = re.compile(r"^[0-9a-f]{40}$")
 STALE_PROVENANCE_MARKERS = (
@@ -633,6 +637,150 @@ def expected_static_document(
     }
 
 
+def verify_chromium_153_candidate_document(
+    document: dict[str, Any],
+    *,
+    project_root: Path = PROJECT_ROOT,
+) -> None:
+    """Verify the separately governed Chromium 153 port evidence.
+
+    Chromium 153 is not represented by the historical Chromium 152 source
+    contract. Its reviewed evidence is intentionally a path-free, checked-in
+    candidate record bound to the 153 port status and lock. Keep this branch
+    explicit so a 153 candidate can never pass by being relabeled as 152.
+    """
+    project_root = project_root.resolve()
+    status_path = project_root / "runtime" / CHROMIUM_153_STATUS
+    candidate_path = project_root / "runtime" / CHROMIUM_153_CANDIDATE
+    lock_path = project_root / "runtime" / CHROMIUM_153_LOCK
+    baseline_path = project_root / "runtime" / "security-baseline.json"
+    for path, label in (
+        (status_path, "Chromium 153 port status"),
+        (candidate_path, "Chromium 153 port candidate"),
+        (lock_path, "Chromium 153 source lock"),
+        (baseline_path, "security baseline"),
+    ):
+        if not path.is_file() or path.is_symlink():
+            raise SourceProvenanceError(f"{label} is missing or symlinked")
+
+    status = load_object(status_path, "Chromium 153 port status")
+    canonical = load_object(candidate_path, "Chromium 153 port candidate")
+    lock = load_object(lock_path, "Chromium 153 source lock")
+    ensure_no_stale_markers(status, "Chromium 153 port status")
+    ensure_no_stale_markers(canonical, "Chromium 153 port candidate")
+    ensure_no_stale_markers(lock, "Chromium 153 source lock")
+
+    if document != canonical:
+        differing = next(
+            (
+                key
+                for key in sorted({*document, *canonical})
+                if document.get(key) != canonical.get(key)
+            ),
+            "<unknown>",
+        )
+        raise SourceProvenanceError(
+            "Chromium 153 source candidate differs from the checked project "
+            f"candidate: {differing}"
+        )
+    if document.get("schemaVersion") != 1:
+        raise SourceProvenanceError("Unexpected Chromium 153 candidate schema")
+    if document.get("status") != "candidate-bound":
+        raise SourceProvenanceError(
+            "Chromium 153 candidate must remain status=candidate-bound"
+        )
+    if document.get("releaseReady") is not False:
+        raise SourceProvenanceError(
+            "Chromium 153 candidate must remain releaseReady=false"
+        )
+    if document.get("targetChromiumVersion") != CHROMIUM_153_VERSION:
+        raise SourceProvenanceError(
+            "Chromium 153 candidate targets an unexpected Chromium version"
+        )
+    if document.get("targetArchitecture") != "arm64":
+        raise SourceProvenanceError(
+            "Chromium 153 candidate must target arm64"
+        )
+    status_evidence = status.get("localCandidateEvidence")
+    if not isinstance(status_evidence, dict):
+        raise SourceProvenanceError(
+            "Chromium 153 port status is missing local candidate evidence"
+        )
+    source_evidence_sha = require_sha256(
+        document.get("sourceEvidenceSHA256"),
+        "Chromium 153 sourceEvidenceSHA256",
+    )
+    if source_evidence_sha != status_evidence.get(
+        "latestCandidateEvidenceSHA256"
+    ):
+        raise SourceProvenanceError(
+            "Chromium 153 candidate is not the status-bound candidate"
+        )
+    if document.get("sourceEvidence", {}).get("sourceMode") != (
+        "owned-macos-packaging-port"
+    ):
+        raise SourceProvenanceError(
+            "Chromium 153 candidate must declare the owned macOS packaging port"
+        )
+    if document.get("binaryBinding", {}).get("status") != (
+        "bound-to-built-candidate"
+    ):
+        raise SourceProvenanceError(
+            "Chromium 153 candidate is missing its built-candidate binding"
+        )
+
+    if lock.get("schemaVersion") != 4:
+        raise SourceProvenanceError("Chromium 153 source lock must use schema 4")
+    if lock.get("status") != "source-qualified":
+        raise SourceProvenanceError(
+            "Chromium 153 source lock must remain source-qualified"
+        )
+    if lock.get("targetArchitecture") != "arm64":
+        raise SourceProvenanceError("Chromium 153 source lock must target arm64")
+    fingerprint = lock.get("fingerprintChromium")
+    if not isinstance(fingerprint, dict) or fingerprint.get(
+        "chromiumVersion"
+    ) != CHROMIUM_153_VERSION:
+        raise SourceProvenanceError(
+            "Chromium 153 source lock targets an unexpected Chromium version"
+        )
+    if lock.get("sourceContract") != f"runtime/{CHROMIUM_153_STATUS}":
+        raise SourceProvenanceError(
+            "Chromium 153 source lock is not bound to the port status"
+        )
+    if lock.get("sourceProvenance") != f"runtime/{CHROMIUM_153_CANDIDATE}":
+        raise SourceProvenanceError(
+            "Chromium 153 source lock is not bound to the port candidate"
+        )
+    manifests = lock.get("ownedManifests")
+    if not isinstance(manifests, dict) or manifests.get(
+        "securityBaselineSHA256"
+    ) != sha256_file(baseline_path):
+        raise SourceProvenanceError(
+            "Chromium 153 source lock security baseline hash is stale"
+        )
+    _reject_local_paths_for_provenance(lock)
+
+
+def _reject_local_paths_for_provenance(value: Any, label: str = "provenance") -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            _reject_local_paths_for_provenance(child, f"{label}.{key}")
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            _reject_local_paths_for_provenance(child, f"{label}[{index}]")
+        return
+    if isinstance(value, str) and (
+        value.startswith("/")
+        or value.startswith("file:")
+        or "/Users/" in value
+        or "/private/tmp/" in value
+        or "/var/folders/" in value
+    ):
+        raise SourceProvenanceError(f"{label} contains a local absolute path")
+
+
 def verify_document(
     document: dict[str, Any],
     *,
@@ -641,6 +789,12 @@ def verify_document(
     rebase_plan_path: Path = DEFAULT_REBASE_PLAN,
 ) -> None:
     ensure_no_stale_markers(document, "emitted source provenance")
+    if document.get("targetChromiumVersion") == CHROMIUM_153_VERSION:
+        verify_chromium_153_candidate_document(
+            document,
+            project_root=project_root,
+        )
+        return
     expected = expected_static_document(
         project_root=project_root,
         contract_path=contract_path,

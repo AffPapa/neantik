@@ -65,7 +65,10 @@ def main() -> int:
     except (OSError, SourceProvenanceError) as error:
         print(f"Source provenance verification failed: {error}", file=sys.stderr)
         return 1
-    print("PASS: Chromium source provenance matches contract and rebase plan.")
+    if document.get("targetChromiumVersion") == "153.0.8010.52":
+        print("PASS: Chromium 153 source provenance matches the owned port evidence.")
+    else:
+        print("PASS: Chromium source provenance matches contract and rebase plan.")
     print(f"SHA-256: {sha256_file(args.provenance)}")
     print("Binary binding remains pending until a new runtime report records this SHA-256.")
     return 0

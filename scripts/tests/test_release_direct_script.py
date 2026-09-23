@@ -85,8 +85,14 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         text = PREPARE_MANAGER.read_text(encoding="utf-8")
 
         self.assertIn("verify_reviewed_runtime_evidence", text)
+        self.assertIn('--lock "$runtime_candidate_lock"', text)
+        self.assertIn('runtime_candidate_lock="$(resolve_runtime_candidate_lock)"', text)
         self.assertIn("verify-packaged-runtime-report.py", text)
         self.assertIn("verify-runtime-compliance.sh", text)
+        self.assertIn(
+            '--entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"',
+            text,
+        )
         self.assertIn("cmp -s", text)
         self.assertNotIn(
             '"$PROJECT_DIR/scripts/verify-built-runtime.sh" \\\n'

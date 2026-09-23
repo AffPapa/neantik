@@ -29,7 +29,7 @@
   "sourceContract": "runtime/chromium-153-port-status.json",
   "sourceProvenance": "runtime/chromium-153-port-candidate.json",
   "ownedManifests": {
-    "securityBaselineSHA256": "6d5e05f351dd6ab5780a3bc19c2c3752cf3f741af698f7359d9c47e717cf899b"
+    "securityBaselineSHA256": "ab51e6b6f4b1d90cd63352df7181148be9819b251db51dc2b4c85d628a8680fa"
   },
   "policy": "Chromium 153 source-qualified lock for the owned macOS packaging port. It is not by itself signing, notarization, Gatekeeper, runtime or publication approval."
 }

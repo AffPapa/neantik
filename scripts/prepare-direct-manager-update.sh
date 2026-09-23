@@ -164,8 +164,10 @@ esac
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
 fi
+runtime_candidate_lock="$(resolve_runtime_candidate_lock)"
 
 "$PROJECT_DIR/scripts/verify-runtime-security-baseline.py" \
+  --lock "$runtime_candidate_lock" \
   "${SECURITY_BASELINE_ARGS[@]}"
 "$PROJECT_DIR/scripts/verify-runtime-security-reference.py"
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
@@ -241,6 +243,7 @@ else
     --force \
     --options runtime \
     --timestamp \
+    --entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist" \
     --sign "$NEANTIK_SIGNING_IDENTITY" \
     "$CANDIDATE_APP"
 fi

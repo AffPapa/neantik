@@ -81,6 +81,15 @@ class RuntimeCandidateLockTests(unittest.TestCase):
         self.assertNotIn("144.0.7559", text)
         self.assertNotIn("6bbb0dbdeae887af207c75c9e5173cceddbd381b", text)
 
+    def test_chromium_153_lock_matches_its_explicit_port_evidence(self) -> None:
+        provenance = PROJECT_ROOT / "runtime" / "chromium-153-port-candidate.json"
+        candidate = PROJECT_ROOT / "runtime" / "fingerprint-chromium-153.lock.json"
+        CANDIDATE.verify_candidate_lock(
+            candidate,
+            provenance,
+            project_root=PROJECT_ROOT,
+        )
+
     def test_candidate_hash_has_no_provenance_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
