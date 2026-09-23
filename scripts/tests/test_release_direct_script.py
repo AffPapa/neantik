@@ -93,6 +93,8 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             '--entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"',
             text,
         )
+        self.assertIn('-Xswiftc -debug-prefix-map', text)
+        self.assertIn('-Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource"', text)
         self.assertIn("cmp -s", text)
         self.assertNotIn(
             '"$PROJECT_DIR/scripts/verify-built-runtime.sh" \\\n'

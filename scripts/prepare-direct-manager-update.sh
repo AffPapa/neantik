@@ -193,7 +193,10 @@ swift build \
   --disable-sandbox \
   --cache-path "$BUILD_SUPPORT_DIR/cache" \
   --config-path "$BUILD_SUPPORT_DIR/config" \
-  --security-path "$BUILD_SUPPORT_DIR/security"
+  --security-path "$BUILD_SUPPORT_DIR/security" \
+  -Xswiftc -debug-prefix-map \
+  -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+  -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource"
 
 BIN_PATH="$(
   swift build \
@@ -203,6 +206,9 @@ BIN_PATH="$(
     --cache-path "$BUILD_SUPPORT_DIR/cache" \
     --config-path "$BUILD_SUPPORT_DIR/config" \
     --security-path "$BUILD_SUPPORT_DIR/security" \
+    -Xswiftc -debug-prefix-map \
+    -Xswiftc "$PROJECT_DIR=/NeAntikSource" \
+    -Xcc "-fdebug-prefix-map=$PROJECT_DIR=/NeAntikSource" \
     --show-bin-path
 )"
 MANAGER_BINARY="$BIN_PATH/NeAntik"
