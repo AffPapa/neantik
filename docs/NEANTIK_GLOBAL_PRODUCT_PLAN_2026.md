@@ -252,9 +252,11 @@ MoreLogin повторяют устойчивый набор функций:
 
 ## 7.5 Manager-only срез 0.7.8 / build 71
 
-Подготовлены три пользовательских изменения и два defensive input-hardening
-пункта. Это source candidate; статус выпуска появится только после
-подписания, Apple notarization, Gatekeeper и fresh-download проверок.
+Срез опубликован как v0.7.8 / build 71 через Direct Distribution; source и
+артефакты привязаны к коммиту `a687702ed5d0176bb41126a2d4d6cf06f391e68f`.
+ZIP/DMG прошли Developer ID, notarization, stapling и Gatekeeper; hosted ZIP
+прошёл повторную проверку байтов, кандидата и evidence; опубликованный DMG
+повторно скачан и совпал по SHA-256. Chromium не пересобирался.
 
 - BrowserData обходится в отменяемой utility task. При смене выбранного
   профиля или состояния запуска предыдущий результат не может перезаписать
@@ -304,17 +306,17 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 - stapling;
 - Gatekeeper;
 - ZIP/DMG byte/hash verification;
-- GitHub Release;
-- browser.free manifest/page update;
-- fresh hosted ZIP/DMG download and live smoke;
-- сохранить current/previous rollback artifacts.
+- GitHub Release — выполнено для v0.7.8;
+- browser.free manifest/page update — production version 89, `/api/release` и `/api/download` live-проверены;
+- fresh hosted ZIP/DMG download — SHA-256 совпал;
+- current/previous rollback сохранены: v0.7.8 / v0.7.7.
 
 ## 9. Release acceptance gates
 
 Публикация разрешена только если все пункты подтверждены свежими отчётами:
 
 1. exact source commit and clean intended diff;
-2. manager version/build greater than public 0.7.7/70;
+2. manager version/build greater than public 0.7.7/70 — выполнено (0.7.8/71);
 3. runtime version/hash remains exactly pinned and unchanged;
 4. package contains no secrets or local source paths;
 5. Swift tests and targeted tests pass;
@@ -326,8 +328,9 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 11. a clean-machine or fresh-download smoke can launch and create a profile;
 12. previous public artifact remains available for rollback.
 
-Если хотя бы один пункт не подтверждён, остаёмся на source/test candidate и
-не называем его новой публичной версией.
+Для v0.7.8 подтверждены пункты 1–10 и rollback-пункт 12. Отдельный запуск
+на чистом Mac не выполнялся; этот пункт остаётся открытым для следующего
+нативного acceptance-прогона.
 
 ## 10. Источники нового исследования
 
