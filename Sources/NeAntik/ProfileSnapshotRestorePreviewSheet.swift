@@ -39,7 +39,7 @@ struct ProfileSnapshotRestorePreviewSheet: View {
             .accessibilityElement(children: .combine)
 
             Text("Будут добавлены новые профили. Существующие профили и данные браузера не изменятся. Для новых профилей создаются новые identity.")
-            Text("Заметки, cookies, данные браузера, identity seeds и пароли из Keychain не восстанавливаются.")
+            Text("Заметки, cookies, данные браузера, identity seeds и пароли из Связки ключей macOS не восстанавливаются.")
                 .foregroundStyle(.secondary)
 
             HStack {
