@@ -195,7 +195,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
 | P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
 | P1-13 | Snapshot restore preview | shipped in 0.7.10 | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
-| P1-14 | Restore preview VoiceOver context | candidate 0.7.11 | One aggregate summary and action-specific labels/hints; no private profile data enters announcements |
+| P1-14 | Restore preview VoiceOver context | shipped in 0.7.11 | One aggregate summary and action-specific labels/hints; no private profile data enters announcements |
 
 ### P2 — зрелость продукта после P0/P1
 

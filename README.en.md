@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The latest published Direct release is NeAntik `0.7.10` (build `73`).
+The latest published Direct release is NeAntik `0.7.11` (build `74`).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `153.0.8010.52`, ARM64, Metal;
-- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.10](https://github.com/AffPapa/neantik/releases/tag/v0.7.10).
+- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.11](https://github.com/AffPapa/neantik/releases/tag/v0.7.11).
 
-`0.7.10` retains Chromium without rebuilding it. Public `0.7.9` remains the rollback point.
+`0.7.11` improves VoiceOver context in the restore preview and retains Chromium without rebuilding it. Public `0.7.10` remains the rollback point.
 
 Product website: <https://affpapa.org/neantik>.
 

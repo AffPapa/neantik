@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.11",
+  "version": "0.7.11",
+  "build": 74,
+  "releasedAt": "2026-09-24",
+  "channel": "public-alpha",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "153.0.8010.52",
+    "gpuMode": "metal",
+    "rebuilt": false,
+    "securityCurrent": false,
+    "qualifiedBaseline": "153.0.8010.52",
+    "baselineSource": "Chrome Releases",
+    "strictProductionFingerprintCoherence": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.11-arm64-notarized.zip",
+    "sizeBytes": 191921946,
+    "sha256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.11-arm64-notarized.dmg",
+    "sizeBytes": 218376823,
+    "sha256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "passed: fresh GitHub ZIP SHA-256 and notarized archive verifier",
+    "hostedDmg": "passed: fresh GitHub DMG SHA-256, notarization, stapling and Gatekeeper verifier",
+    "fingerprint": "public-alpha-qualified",
+    "strictProductionFingerprintCoherence": "incomplete",
+    "physicalVoiceOver": "not independently verified",
+    "guiEvidence": "passed for exact candidate; GUI exceeded timeout after writing fresh valid evidence",
+    "tests": {
+      "swift": 630,
+      "swiftSuites": 70,
+      "python": 684,
+      "pythonSkipped": 1,
+      "site": 23
+    }
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.11",
+  "siteUrl": "https://browser.free",
+  "siteVersion": 92,
+  "siteSourceCommit": "6fa411a653bd72886b9da074c6315bea8f774bf7",
+  "siteDeploymentStatus": "succeeded",
+  "siteApiLive": "0.7.11/74; canDownload=true; ZIP SHA-256 matches",
+  "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+  "candidateManifestSHA256": "28e5ec12bb6bb3dc75a047b2f0975f40778ead756be6e9bf9b3b9c9fd3e87f20",
+  "candidateSourceBindingSHA256": "fb4c325084be6b10adb6b3ad62a31686adc8c5ad4a7a52350d6fd5c7c16ae379",
+  "rollbackRelease": "v0.7.10"
+}
