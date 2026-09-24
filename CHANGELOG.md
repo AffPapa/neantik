@@ -1,6 +1,6 @@
 # NeAntik changelog
 
-## Direct 0.7.7 (70) — release candidate
+## Direct 0.7.7 (70) — 24 сентября 2026
 
 - Исправлены ложные предупреждения диагностики: собственный запущенный
   профиль не считается занятым другим процессом, архив успешного
@@ -10,7 +10,7 @@
 - Chromium 153.0.8010.52 сохранён без пересборки. Это manager-only обновление,
   не обновление безопасности Chromium.
 
-## Unreleased
+## Direct 0.7.6 (69) — 24 сентября 2026
 
 - Диагностика профиля теперь сразу объясняет следующее безопасное действие
   для состояний «Требует внимания» и «Проверка недоступна», а готовый профиль
@@ -20,12 +20,10 @@
   runtime-gate/defer и отдельными границами для Chromium rebuild, cloud,
   automation и anti-fraud bypass.
 
-## Direct 0.7.6 (69) — release candidate
-
 - Manager-only обновление diagnostics next-step UX на проверенном Chromium
   `153.0.8010.52`; ядро браузера не пересобиралось и не заменялось.
-- Release candidate не считается публичным до прохождения Developer ID,
-  notarization, stapling, Gatekeeper и fresh-download gates.
+- Публичные ZIP и DMG прошли Developer ID, notarization, stapling,
+  Gatekeeper и fresh-download gates.
 
 ## Direct 0.7.5 (68) — release candidate
 
