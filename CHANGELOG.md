@@ -1,5 +1,19 @@
 # NeAntik changelog
 
+## Direct 0.7.10 (73) — candidate, 24 сентября 2026
+
+- Перед восстановлением snapshot показывается его дата, количество профилей и
+  aggregate-сводка папок. В preview нет имён профилей, заметок, proxy-данных
+  или identity values.
+- Восстановление выполняется только после явного подтверждения; отмена не
+  меняет хранилище. Подготовленный и проверенный payload используется для
+  commit без повторного чтения snapshot, а guard работающих профилей
+  перепроверяется непосредственно перед транзакцией.
+- Preview поддерживает Return/Escape, VoiceOver labels и подсказки; добавлены
+  privacy/unit и responsive-render regression tests. Физический VoiceOver
+  acceptance отдельно не подтверждён автоматическими тестами.
+- Chromium 153.0.8010.52 / Metal сохраняется; Chromium не пересобирается.
+
 ## Direct 0.7.9 (72) — 24 сентября 2026
 
 - New-profile quick-start offers editable «Работа» and «Тестирование» templates;

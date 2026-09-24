@@ -42,7 +42,7 @@
 | 21 | Readiness gate для A → B → A | P0 | done | Проверка запускается только для двух разных реально остановленных профилей. |
 | 22 | Ограничение и privacy-cap raw reports | P0 | done | Не более трёх owner-only файлов и не более 512 KiB каждый до записи. |
 | 23 | Безопасная сводка вместо raw evidence в UI | P0 | done | В обычном результате только verdict; raw JSON доступен лишь в явном engineering-контексте. |
-| 24 | Клавиатурная и VoiceOver-навигация | P1 | done | Основные workspace/profile/folder/import/proxy actions имеют labels, hints, announcements и отдельные presentation tests. |
+| 24 | Клавиатурная и VoiceOver-навигация | P1 | done (automated); physical QA pending | Основные действия и restore preview имеют keyboard shortcuts, labels/hints и presentation tests. Проход реального VoiceOver и физической клавиатуры на рабочем Mac не подтверждён автоматическими тестами. |
 | 25 | Redacted crash/support bundle | P1 | done | Экспорт содержит только allowlisted enums/версии/хэши, ограничен 64 KiB, проходит независимый fail-closed verifier и доступен через системный Save dialog. |
 | 26 | Signed runtime update с rollback | P1 | runtime-gate | Проверяются подпись, provenance, атомарная замена и восстановление предыдущего runtime. |
 | 27 | Полный release evidence bundle | P0 | runtime-gate | Source lock, binary hash, signing, notarization, stapling, Gatekeeper, fresh download и live smoke согласованы. |
@@ -53,15 +53,16 @@
 | 32 | Компактные шаблоны нового профиля | P1 | done | Шаблоны предлагают только редактируемые имя и тег в существующей форме; остальные runtime defaults не меняются. |
 | 33 | Локальная сводка browser-feature availability | P1 | done | Отчёт привязан к свежему точному профилю/runtime, session-only, скрывает raw values и не утверждает совместимость конкретного сайта. |
 | 34 | Локальная read-only release-gate summary | P1 | done | CLI разделяет source binding, текущий candidate gate и исторические release claims; не читает credentials и raw evidence. |
-| 35 | Rehearsal retained Direct artifacts | P2 | done in working tree | ZIP/DMG v0.7.8 проверяются по release evidence, копируются во временный каталог и повторно хешируются; публичный current и исходные bytes не меняются. Это не install/launch или hosted rollback smoke. |
-| 36 | Локальное руководство профилей и recovery | P2 | done in working tree | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
+| 35 | Rehearsal retained Direct artifacts | P2 | shipped in 0.7.9 | ZIP/DMG v0.7.8 проверены по release evidence и повторным SHA-256 в staging; это не install/launch или hosted rollback smoke. |
+| 36 | Локальное руководство профилей и recovery | P2 | shipped in 0.7.9 | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
+| 37 | Предварительный просмотр snapshot restore | P1 | implemented, release pending | До commit показываются безопасные aggregate counts и дата; явное подтверждение, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
 
 ## Что делать следующим без пересборки Chromium
 
-1. Держать quick-start, feature report и rollback rehearsal покрытыми
-   regression tests.
-2. Подготовить короткое локальное руководство по snapshot/export/recovery,
-   без нового отдельного раздела настроек.
+1. Выпустить manager-only preview после exact-source Direct gates; Chromium
+   остаётся неизменным.
+2. Проверить клавиатуру и VoiceOver на реальном Mac после automated UI gates;
+   не выдавать presentation tests за физическую проверку.
 3. Рассмотреть explicit profile-integrity repair assistant только после
    отдельного threat review; любые исправления должны быть opt-in, атомарными
    и с проверяемым rollback.

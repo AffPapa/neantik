@@ -14,15 +14,15 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The latest published Direct release is NeAntik `0.7.8` (build `71`).
-This working tree prepares a manager-only `0.7.9` (build `72`) candidate; it
+The latest published Direct release is NeAntik `0.7.9` (build `72`).
+This working tree prepares a manager-only `0.7.10` (build `73`) candidate; it
 is not a public binary release until every release gate passes.
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `153.0.8010.52`, ARM64, Metal;
-- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.8](https://github.com/AffPapa/neantik/releases/tag/v0.7.8).
+- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.9](https://github.com/AffPapa/neantik/releases/tag/v0.7.9).
 
-Candidate `0.7.9` retains Chromium without rebuilding it. Public `0.7.8`
+Candidate `0.7.10` retains Chromium without rebuilding it. Public `0.7.9`
 remains the rollback point. The new binary will be published only after signing,
 notarization, Gatekeeper and downloaded-asset checks pass.
 

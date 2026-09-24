@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import NeAntik
 
@@ -173,5 +174,59 @@ struct AccessibilityPresentationTests {
                 String(repeating: "Длинный контекст ", count: 14)
             ).shouldOfferExpansion
         )
+    }
+
+    @Test
+    func snapshotRestorePreviewCountsFoldersWithoutExposingProfileData() {
+        let profile = BrowserProfile(
+            name: "private-profile-name",
+            note: "private-note",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "private-proxy.example",
+                port: 443,
+                username: "private-user"
+            ),
+            identity: BrowserIdentity(seed: 87654321)
+        )
+        let payload = ProfileSnapshotRestorePayload(
+            profiles: [profile, profile],
+            folderNames: ["Work", "New"],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+
+        let preview = ProfileSnapshotRestorePreview(
+            payload: payload,
+            existingFolderNames: ["wórk"]
+        )
+
+        #expect(preview.profileCount == 2)
+        #expect(preview.folderCount == 2)
+        #expect(preview.reusedFolderCount == 1)
+        #expect(preview.newFolderCount == 1)
+        let presentation = String(describing: preview)
+        #expect(!presentation.contains("private-profile-name"))
+        #expect(!presentation.contains("private-note"))
+        #expect(!presentation.contains("private-proxy.example"))
+        #expect(!presentation.contains("private-user"))
+        #expect(!presentation.contains("87654321"))
+    }
+
+    @Test
+    func snapshotRestorePreviewIgnoresProfilesWithoutFolders() {
+        let payload = ProfileSnapshotRestorePayload(
+            profiles: [BrowserProfile(name: "Local")],
+            folderNames: [nil],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        let preview = ProfileSnapshotRestorePreview(
+            payload: payload,
+            existingFolderNames: ["Work"]
+        )
+
+        #expect(preview.profileCount == 1)
+        #expect(preview.folderCount == 0)
+        #expect(preview.reusedFolderCount == 0)
+        #expect(preview.newFolderCount == 0)
     }
 }

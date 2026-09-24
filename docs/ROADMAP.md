@@ -11,7 +11,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## Текущий Direct release cycle
 
-- Последний публичный релиз по локальной release evidence: `0.7.8 (71)`;
+- Последний публичный релиз по локальной и live release evidence: `0.7.9 (72)`;
+- следующий manager-only кандидат: `0.7.10 (73)`, preview snapshot restore;
 - Chromium `153.0.8010.52` ARM64/Metal остаётся неизменным в manager-only
   срезах;
 - следующий релиз требует нового exact-source кандидата, полного набора
@@ -80,9 +81,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   evidence cycle; локальный ad-hoc кандидат не считается релизным доказательством;
 - verifier получил отдельный `--require-verified` release mode: partial и
   unverified candidate reports нельзя случайно повысить до release evidence;
-- для релиза 0.7.8 зафиксированы 616 Swift-тестов в 68 suite; текущий
-  manager-only checkout прошёл 628 Swift-тестов в 70 suite и 684 Python-тестов
-  (1 skipped). Эти цифры не являются release gate нового candidate.
+- для 0.7.9 зафиксированы 628 Swift-тестов в 70 suite и 684 Python-тестов
+  (1 skipped); текущий кандидат прошёл 630 Swift-тестов в 70 suite и 684
+  Python-тестов (1 skipped). Эти цифры не заменяют artifact/runtime/release gates.
 - typed redacted support-bundle export: UI constructs only allowlisted aggregate
   data, writes a <=64 KiB JSON through the system Save dialog, and the independent
   verifier rejects unknown or sensitive fields.
@@ -98,21 +99,21 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 В 0.7.8 уже есть summary свежести proxy-проверки. Он показывает состояние и
 возраст результата, но не раскрывает IP или сетевые адреса.
 
-В текущем незапубликованном рабочем срезе реализованы два компактных quick-start
-шаблона («Работа», «Тестирование») в существующем редакторе, session-only отчёт
-о доступности browser-функций с привязкой к свежему аудиту точного профиля и
-runtime, а также локальная read-only release-evidence summary CLI. Отчёт не
-проверяет отдельный сайт, его вход или бизнес-сценарии. Эти изменения не
-являются частью публичного 0.7.8 и не меняют Chromium.
+В публичный 0.7.9 вошли два компактных quick-start шаблона («Работа»,
+«Тестирование»), session-only отчёт о доступности browser-функций с привязкой к
+свежему аудиту точного профиля/runtime и локальная read-only release-evidence
+summary CLI. Отчёт не проверяет отдельный сайт, вход или бизнес-сценарии.
+Текущий manager-only кандидат 0.7.10 показывает safe preview snapshot restore
+до commit и не меняет Chromium.
 
 Explicit profile integrity repair assistant остаётся исследовательским
 кандидатом: до реализации нужен отдельный UX и recovery threat review.
 
-Текущий локальный цикл переносит snapshot save/restore и подготовку
-plain/encrypted export из UI-потока. В текущем процессе после автоматического
-восстановления метаданных остаётся краткая read-only сводка в «Диагностике».
-Изменения ещё не являются публичным релизом; смотрите
-`docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md` и артефакты цикла.
+Snapshot save/restore и подготовка plain/encrypted export выполняются вне
+UI-потока. После восстановления метаданных краткая read-only сводка остаётся в
+«Диагностике». Preview 0.7.10 добавляет только дату и aggregate counts;
+автоматические tests не подтверждают физический VoiceOver pass. См.
+`docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md` и артефакты текущего цикла.
 
 - воспроизводимые budgets для cold/warm start именно Chromium runtime, idle
   CPU/RAM и browser launch — manager-only ceilings выше уже закрыты отдельно,

@@ -24,6 +24,24 @@ struct ResponsiveLayoutRenderTests {
             tags: ["Личный"]
         )
 
+        let restorePayload = ProfileSnapshotRestorePayload(
+            profiles: [profileA, profileB],
+            folderNames: ["Работа", "Личное"],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        try render(
+            ProfileSnapshotRestorePreviewSheet(
+                preview: ProfileSnapshotRestorePreview(
+                    payload: restorePayload,
+                    existingFolderNames: ["Работа"]
+                ),
+                onCancel: {},
+                onRestore: {}
+            ),
+            name: "snapshot-restore-preview",
+            size: CGSize(width: 520, height: 460)
+        )
+
         try render(
             ProfileDetailView(
                 profile: profileA,

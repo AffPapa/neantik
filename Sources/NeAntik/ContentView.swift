@@ -28,6 +28,11 @@ private struct ProfileFolderPickerRequest: Identifiable {
     let profileID: UUID
 }
 
+private struct SnapshotRestoreRequest: Identifiable {
+    let id = UUID()
+    let payload: ProfileSnapshotRestorePayload
+}
+
 struct BulkProxyImportRequest: Identifiable {
     let id = UUID()
     let targetFolderID: UUID?
@@ -201,6 +206,7 @@ struct ContentView: View {
     @State private var isPreparingProfileExport = false
     @State private var isSavingLocalSnapshot = false
     @State private var isRestoringLocalSnapshot = false
+    @State private var pendingSnapshotRestore: SnapshotRestoreRequest?
     @State private var backgroundFileOperationTasks:
         [UUID: Task<Void, Never>] = [:]
     @State private var localError: String?
@@ -280,6 +286,7 @@ struct ContentView: View {
             isPreparingProfileExport ||
             isSavingLocalSnapshot ||
             isRestoringLocalSnapshot ||
+            pendingSnapshotRestore != nil ||
             showingReleaseFingerprintAudit ||
             fingerprintAuditRequest != nil ||
             showingDeleteConfirmation ||
@@ -649,6 +656,16 @@ struct ContentView: View {
                 onCancel: {
                     transferPassphraseMode = nil
                 }
+            )
+        }
+        .sheet(item: $pendingSnapshotRestore) { request in
+            ProfileSnapshotRestorePreviewSheet(
+                preview: ProfileSnapshotRestorePreview(
+                    payload: request.payload,
+                    existingFolderNames: store.organization.folders.map(\.name)
+                ),
+                onCancel: { pendingSnapshotRestore = nil },
+                onRestore: { confirmLocalSnapshotRestore(request.payload) }
             )
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
@@ -1417,23 +1434,40 @@ struct ContentView: View {
                         "Восстановление отменено: сначала закрой все профили."
                     return
                 }
-                let saved = try store.insertImportedProfiles(
-                    prepared.profiles,
-                    folderNames: prepared.folderNames
-                )
-                if let first = saved.first {
-                    revealSavedProfile(first)
-                }
-                announceWorkspaceStatus(
-                    "Восстановлено " + String(saved.count) + " " +
-                        profileCountWord(saved.count) +
-                        " с новыми identity и без данных браузера."
-                )
+                pendingSnapshotRestore = SnapshotRestoreRequest(payload: prepared)
             } catch is CancellationError {
                 return
             } catch {
                 localError = error.localizedDescription
             }
+        }
+    }
+
+    private func confirmLocalSnapshotRestore(
+        _ prepared: ProfileSnapshotRestorePayload
+    ) {
+        guard processes.runningProfileIDs.isEmpty else {
+            pendingSnapshotRestore = nil
+            localError = "Восстановление отменено: сначала закрой все профили."
+            return
+        }
+        do {
+            let saved = try store.insertImportedProfiles(
+                prepared.profiles,
+                folderNames: prepared.folderNames
+            )
+            pendingSnapshotRestore = nil
+            if let first = saved.first {
+                revealSavedProfile(first)
+            }
+            announceWorkspaceStatus(
+                "Восстановлено " + String(saved.count) + " " +
+                    profileCountWord(saved.count) +
+                    " с новыми identity и без данных браузера."
+            )
+        } catch {
+            pendingSnapshotRestore = nil
+            localError = error.localizedDescription
         }
     }
 

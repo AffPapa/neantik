@@ -30,7 +30,7 @@ NeAntik — локальный macOS-браузер с независимыми 
 
 Публичный baseline текущего цикла:
 
-- NeAntik 0.7.8, build 71 (опубликован 24 сентября 2026);
+- NeAntik 0.7.9, build 72 (опубликован 24 сентября 2026);
 - Direct Distribution для Apple Silicon;
 - встроенный Chromium 153.0.8010.52 ARM64 Metal;
 - локальные профили, папки, поиск, теги, snapshots, безопасное копирование;
@@ -58,7 +58,7 @@ request inventory, usability-polish и release automation.
 
 Входит:
 
-- manager-only улучшения после 0.7.8 без изменения Chromium;
+- manager-only улучшения после 0.7.9 без изменения Chromium;
 - перенос оставшихся тяжёлых profile-file операций с UI-потока;
 - benchmark-first аудит поиска, папок, тегов и accessibility;
 - исправление только доказанных пробелов, не добавляя лишних панели и настроек;
@@ -176,7 +176,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P0-09 | Secret/history audit | done | Нет credential-like files/values в reachable history |
 | P0-10 | Manager perf budgets | done | p50/p95 отдельно от Chromium metrics |
 | P0-11 | Accessible primary actions | done | Keyboard/VoiceOver labels and hints |
-| P0-12 | Release version floor | done | Новый manager build строго выше public floor; проверено v0.7.8/71 |
+| P0-12 | Release version floor | done | Новый manager build строго выше public floor; проверено v0.7.9/72 |
 
 ### P1 — следующий функциональный слой без изменения ядра
 
@@ -184,16 +184,17 @@ MoreLogin повторяют устойчивый набор функций:
 |---|---|---|---|
 | P1-01 | Diagnostics next-step UX | done | Attention state даёт короткое действие |
 | P1-02 | Proxy test result history summary | done in 0.7.8 | Только last state/freshness/verdict, без IP |
-| P1-03 | Profile quick-start templates | done in working tree | 2–3 safe templates, только имя/тег; ещё не выпущено |
+| P1-03 | Profile quick-start templates | shipped in 0.7.9 | 2–3 safe templates, только имя/тег; runtime defaults не меняются |
 | P1-04 | Snapshot retention/restore clarity | done | Last 3, fresh identity, corruption gate |
 | P1-05 | Read-only support bundle | done | Allowlist-only, <=64 KiB |
 | P1-06 | Local diagnostics adapter design | defer | Только read-only, authenticated loopback |
 | P1-07 | Signed runtime update + rollback | runtime-gate | Signed manifest, atomic swap, rollback proof |
 | P1-08 | Chromium background-request inventory | runtime-gate | Exact runtime capture and policy decision |
 | P1-09 | Runtime cold/warm/idle metrics | runtime-gate | Qualified producer + exact hash + GUI smoke |
-| P1-10 | Site compatibility report | done in working tree | Показывает локальную доступность API; stale через 24 часа; не доказывает успех сайта |
+| P1-10 | Site compatibility report | shipped in 0.7.9 | Показывает локальную доступность API; stale через 24 часа; не доказывает успех сайта |
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
-| P1-12 | Release evidence dashboard | done in working tree | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
+| P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
+| P1-13 | Snapshot restore preview | implemented, release pending | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -206,11 +207,11 @@ MoreLogin повторяют устойчивый набор функций:
 | P2-05 | Download policy inventory | runtime-gate | Chromium requests classified before policy change |
 | P2-06 | Visual responsive polish | done | Narrow-width view snapshots и flexible columns покрыты render tests |
 | P2-07 | Onboarding first-run copy | done | Один основной create/open action, понятный retry и VoiceOver hints |
-| P2-08 | Documentation/tutorials | done in working tree | Bilingual profile privacy, snapshot/restore and configuration-transfer guide; not yet published |
+| P2-08 | Documentation/tutorials | shipped in 0.7.9 | Bilingual profile privacy, snapshot/restore and configuration-transfer guide |
 | P2-09 | Reproducible manager build metadata | done in 0.7.8 | Candidate provenance и privacy verifier; нет build-machine paths |
 | P2-10 | Fuzz malformed imports | done in 0.7.8 | Decoder fail-closed, bounded size/count, malformed corpus |
 | P2-11 | Fuzz provenance/quarantine records | done in 0.7.8 | Unknown fields, symlink ancestor и path traversal отклоняются |
-| P2-12 | Release rollback rehearsal | done in working tree | Retained ZIP/DMG v0.7.8 скопированы во временный staging и повторно сверены по байтам; public current и исходные файлы не менялись. Не является install/launch или hosted rollback smoke. |
+| P2-12 | Release rollback rehearsal | shipped in 0.7.9 | Retained ZIP/DMG v0.7.8 скопированы во временный staging и повторно сверены по байтам. Это не install/launch или hosted rollback smoke. |
 
 ### Defer permanently unless product direction changes
 
@@ -279,35 +280,30 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 
 ## 8. План выполнения текущего цикла
 
-### Фаза 0 — verified baseline
+### Фаза 0 — verified baseline (проверено 24 сентября 2026)
 
-- текущий публичный floor: v0.7.8 / build 71, Chromium 153.0.8010.52;
-- source branch: `codex/neantik-workplaces`, незакоммиченный manager-only diff;
-- заново подтвердить public GitHub release и browser.free deployment/API;
-- проверить signing identity и notary profile, не раскрывая credential values.
+- текущий публичный floor: v0.7.9 / build 72, Chromium 153.0.8010.52;
+- source branch: `codex/neantik-workplaces`; новый preview diff локальный;
+- GitHub Latest и `browser.free/api/release` сообщают 0.7.9/72 и ZIP SHA
+  `39304ddfeabcb43d054fd7bf5444ea8886a3d29874cb4a4dd0c5aa7ff6bff66f`;
+- signing identity и notary profile требуют preflight в разрешённом
+  macOS-контексте, credential values не читаются.
 
 ### Фаза 1 — manager-only vertical slice
 
-- сериализовать snapshot save/restore и plain/encrypted export вне UI-потока;
-- после успешного восстановления оставить компактное allowlisted уведомление в
-  Diagnostics на время текущего запуска; если профиль не выбран, показать его
-  на уровне workspace, включая пустой список;
-- отменять незавершённые профильные file operations при закрытии workspace и
-  проверять отмену до commit восстановления;
-- записывать plain/encrypted export files атомарно в фоновом потоке;
-- сообщать точное число сохранённых остановленных профилей и пропущенных
-  работающих профилей после snapshot;
-- перед restore commit повторно проверить активные профили и использовать
-  существующую атомарную транзакцию;
-- явно описать поля proxy-login в экспорте; не включать proxy passwords,
-  BrowserData, cookies, notes, identity seeds или Keychain;
-- покрыть профильные файлы на границах/ошибках, metadata-only contract,
-  VoiceOver progress, privacy copy и performance regressions;
-- зафиксировать stale roadmap cleanup и следующий recovery-UX candidate.
+Большая часть lifecycle, background file work, metadata-only transfer,
+privacy-safe status и release evidence summary вошла в 0.7.9. Текущий
+неопубликованный срез добавляет preview snapshot до commit: он использует тот
+же заранее проверенный payload, показывает только дату и aggregate counts,
+не меняет store при отмене и повторно проверяет работающие профили при commit.
+
+Автоматические presentation/render проверки не подтверждают физическую
+клавиатуру и VoiceOver. Перед закрытием этой части goal требуется отдельная
+ручная проверка основных сценариев на macOS.
 
 ### Фаза 2 — exact manager candidate
 
-- назначить следующую версию/build выше v0.7.8/71 только после прохождения
+- назначить следующую версию/build выше v0.7.9/72 только после прохождения
   полного набора source, manager и privacy checks;
 - собрать manager-only Direct candidate с тем же exact Chromium/runtime;
 - связать candidate manifest, source commit, runtime hashes и UI evidence;
@@ -320,14 +316,14 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 - обновить GitHub Release и browser.free contract/page только для exact
   проверенного candidate;
 - проверить production deployment и публичный `/api/release` contract;
-- сохранить v0.7.8 и v0.7.7 как rollback releases.
+- сохранить v0.7.9 и v0.7.8 как rollback releases.
 
 ## 9. Release acceptance gates
 
 Публикация разрешена только если все пункты подтверждены свежими отчётами:
 
 1. exact source commit and clean intended diff;
-2. manager version/build greater than public v0.7.8/71;
+2. manager version/build greater than public v0.7.9/72;
 3. runtime version/hash remains exactly pinned and unchanged;
 4. package contains no secrets or local source paths;
 5. Swift tests and targeted tests pass;
@@ -339,9 +335,9 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 11. a clean-machine or fresh-download smoke can launch and create a profile;
 12. previous public artifact remains available for rollback.
 
-Для v0.7.8 подтверждены пункты 1–10 и rollback-пункт 12. Отдельный запуск
-на чистом Mac не выполнялся; этот пункт остаётся открытым для следующего
-нативного acceptance-прогона.
+Для v0.7.9 release evidence подтверждает пункты 1–10 и rollback-пункт 12;
+отдельный запуск на чистом Mac не выполнялся. Это historical evidence, а не
+автоматическое подтверждение будущего кандидата.
 
 ## 10. Источники нового исследования
 
@@ -362,7 +358,7 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 
 ## 11. Definition of done текущего manager-only goal
 
-- roadmap отражает реальный код 0.7.8 и следующие неготовые пункты;
+- roadmap отражает реальный код 0.7.9 и следующие неготовые пункты;
 - snapshot save/restore и plain/encrypted export не сериализуют большие
   документы на UI-потоке;
 - повторное изменение состояния профилей не может привести к частичному

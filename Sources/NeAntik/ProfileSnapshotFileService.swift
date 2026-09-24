@@ -3,6 +3,7 @@ import Foundation
 struct ProfileSnapshotRestorePayload: Sendable {
     let profiles: [BrowserProfile]
     let folderNames: [String?]
+    let createdAt: Date
 }
 
 /// Snapshot operations are bounded local metadata, but serializing, reading,
@@ -44,7 +45,8 @@ enum ProfileSnapshotFileService {
             try Task.checkCancellation()
             return ProfileSnapshotRestorePayload(
                 profiles: profiles,
-                folderNames: document.configuration.profiles.map(\.folderName)
+                folderNames: document.configuration.profiles.map(\.folderName),
+                createdAt: document.createdAt
             )
         }
         return try await withTaskCancellationHandler {
