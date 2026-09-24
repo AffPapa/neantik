@@ -30,7 +30,7 @@ NeAntik — локальный macOS-браузер с независимыми 
 
 Публичный baseline текущего цикла:
 
-- NeAntik 0.7.9, build 72 (опубликован 24 сентября 2026);
+- NeAntik 0.7.10, build 73 (опубликован 24 сентября 2026);
 - Direct Distribution для Apple Silicon;
 - встроенный Chromium 153.0.8010.52 ARM64 Metal;
 - локальные профили, папки, поиск, теги, snapshots, безопасное копирование;
@@ -176,7 +176,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P0-09 | Secret/history audit | done | Нет credential-like files/values в reachable history |
 | P0-10 | Manager perf budgets | done | p50/p95 отдельно от Chromium metrics |
 | P0-11 | Accessible primary actions | done | Keyboard/VoiceOver labels and hints |
-| P0-12 | Release version floor | done | Новый manager build строго выше public floor; проверено v0.7.9/72 |
+| P0-12 | Release version floor | done | Новый manager build строго выше public floor; проверено v0.7.10/73 |
 
 ### P1 — следующий функциональный слой без изменения ядра
 
@@ -194,7 +194,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P1-10 | Site compatibility report | shipped in 0.7.9 | Показывает локальную доступность API; stale через 24 часа; не доказывает успех сайта |
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
 | P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
-| P1-13 | Snapshot restore preview | implemented, release pending | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
+| P1-13 | Snapshot restore preview | shipped in 0.7.10 | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -274,42 +274,42 @@ ZIP/DMG прошли Developer ID, notarization, stapling и Gatekeeper; hosted 
 - Bounded corpus malformed imports расширен вариантами версии и формы JSON.
 
 Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Chrome Stable 154
-вышел 22 сентября и содержит security fixes; текущий candidate не закрывает
-эту разницу и не называется обновлением безопасности ядра. Подготовка релиза
-должна применить существующие Direct-гейты без Chromium rebuild.
+вышел 22 сентября и содержит security fixes; релиз 0.7.10 не закрывает эту
+разницу и не является обновлением безопасности ядра.
 
-## 8. План выполнения текущего цикла
+## 8. Итог цикла 0.7.10 и gates следующего релиза
 
 ### Фаза 0 — verified baseline (проверено 24 сентября 2026)
 
-- текущий публичный floor: v0.7.9 / build 72, Chromium 153.0.8010.52;
-- source branch: `codex/neantik-workplaces`; новый preview diff локальный;
-- GitHub Latest и `browser.free/api/release` сообщают 0.7.9/72 и ZIP SHA
-  `39304ddfeabcb43d054fd7bf5444ea8886a3d29874cb4a4dd0c5aa7ff6bff66f`;
-- signing identity и notary profile требуют preflight в разрешённом
-  macOS-контексте, credential values не читаются.
+- текущий публичный floor: v0.7.10 / build 73, Chromium 153.0.8010.52;
+- binary source commit: `1ab08efa286888245a43c4fd4f328c7e9e277600`;
+  app branch дополнен release evidence после публикации;
+- GitHub Release и `browser.free/api/release` сообщают 0.7.10/73 и ZIP SHA
+  `d2188a9f445e9a945a6d9b6cb77fed4fd26b5efbd8b2948a830403489e4ff439`;
+- Developer ID, notary profile, signing, notarization, stapling и Gatekeeper
+  повторно прошли в разрешённом macOS-контексте; credential values не читались.
 
 ### Фаза 1 — manager-only vertical slice
 
 Большая часть lifecycle, background file work, metadata-only transfer,
-privacy-safe status и release evidence summary вошла в 0.7.9. Текущий
-неопубликованный срез добавляет preview snapshot до commit: он использует тот
-же заранее проверенный payload, показывает только дату и aggregate counts,
+privacy-safe status и release evidence summary вошла в 0.7.9. Релиз 0.7.10
+добавляет preview snapshot до commit: он использует тот же заранее
+проверенный payload, показывает только дату и aggregate counts,
 не меняет store при отмене и повторно проверяет работающие профили при commit.
 
-Автоматические presentation/render проверки не подтверждают физическую
-клавиатуру и VoiceOver. Перед закрытием этой части goal требуется отдельная
-ручная проверка основных сценариев на macOS.
+Автоматические presentation/render проверки прошли, но не подтверждают физическую
+клавиатуру и VoiceOver. Ручной проход основных сценариев на macOS остаётся
+отдельным пользовательским QA пунктом.
 
-### Фаза 2 — exact manager candidate
+### Фаза 2 — критерии следующего exact manager candidate
 
-- назначить следующую версию/build выше v0.7.9/72 только после прохождения
-  полного набора source, manager и privacy checks;
+- следующая версия/build должна быть выше v0.7.10/73 и пройти полный набор
+  source, manager и privacy checks;
 - собрать manager-only Direct candidate с тем же exact Chromium/runtime;
 - связать candidate manifest, source commit, runtime hashes и UI evidence;
 - не считать Swift test build локальным release artifact.
 
-### Фаза 3 — публикация только при зелёных gates
+### Фаза 3 — повторяемые gates будущей публикации
 
 - Developer ID, Apple notarization, stapling и Gatekeeper;
 - заново скачать ZIP и DMG и сверить точные SHA-256;
@@ -323,7 +323,7 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Текущ�
 Публикация разрешена только если все пункты подтверждены свежими отчётами:
 
 1. exact source commit and clean intended diff;
-2. manager version/build greater than public v0.7.9/72;
+2. manager version/build greater than public v0.7.10/73;
 3. runtime version/hash remains exactly pinned and unchanged;
 4. package contains no secrets or local source paths;
 5. Swift tests and targeted tests pass;
@@ -335,9 +335,10 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Текущ�
 11. a clean-machine or fresh-download smoke can launch and create a profile;
 12. previous public artifact remains available for rollback.
 
-Для v0.7.9 release evidence подтверждает пункты 1–10 и rollback-пункт 12;
-отдельный запуск на чистом Mac не выполнялся. Это historical evidence, а не
-автоматическое подтверждение будущего кандидата.
+Для v0.7.10 подтверждены точный source/candidate, тесты, подпись, notarization,
+Gatekeeper, свежая загрузка ZIP и live page/API. Отдельный запуск на чистом Mac
+и физический VoiceOver проход не выполнялись; strict production fingerprint
+coherence остаётся неполным.
 
 ## 10. Источники нового исследования
 
@@ -358,7 +359,7 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Текущ�
 
 ## 11. Definition of done текущего manager-only goal
 
-- roadmap отражает реальный код 0.7.9 и следующие неготовые пункты;
+- roadmap отражает реальный код 0.7.10 и следующие неготовые пункты;
 - snapshot save/restore и plain/encrypted export не сериализуют большие
   документы на UI-потоке;
 - повторное изменение состояния профилей не может привести к частичному

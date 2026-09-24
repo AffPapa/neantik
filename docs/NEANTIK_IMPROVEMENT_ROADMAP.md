@@ -55,7 +55,7 @@
 | 34 | Локальная read-only release-gate summary | P1 | done | CLI разделяет source binding, текущий candidate gate и исторические release claims; не читает credentials и raw evidence. |
 | 35 | Rehearsal retained Direct artifacts | P2 | shipped in 0.7.9 | ZIP/DMG v0.7.8 проверены по release evidence и повторным SHA-256 в staging; это не install/launch или hosted rollback smoke. |
 | 36 | Локальное руководство профилей и recovery | P2 | shipped in 0.7.9 | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
-| 37 | Предварительный просмотр snapshot restore | P1 | implemented, release pending | До commit показываются безопасные aggregate counts и дата; явное подтверждение, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
+| 37 | Предварительный просмотр snapshot restore | P1 | shipped in 0.7.10 | До commit показываются безопасные aggregate counts и дата; явное подтверждение, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
 
 ## Что делать следующим без пересборки Chromium
 

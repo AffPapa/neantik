@@ -11,8 +11,8 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## Текущий Direct release cycle
 
-- Последний публичный релиз по локальной и live release evidence: `0.7.9 (72)`;
-- следующий manager-only кандидат: `0.7.10 (73)`, preview snapshot restore;
+- Последний публичный релиз по локальной и live release evidence: `0.7.10 (73)`;
+- предыдущий релиз `0.7.9` сохранён как rollback;
 - Chromium `153.0.8010.52` ARM64/Metal остаётся неизменным в manager-only
   срезах;
 - следующий релиз требует нового exact-source кандидата, полного набора
@@ -103,7 +103,7 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 «Тестирование»), session-only отчёт о доступности browser-функций с привязкой к
 свежему аудиту точного профиля/runtime и локальная read-only release-evidence
 summary CLI. Отчёт не проверяет отдельный сайт, вход или бизнес-сценарии.
-Текущий manager-only кандидат 0.7.10 показывает safe preview snapshot restore
+Опубликованный manager-only релиз 0.7.10 показывает safe preview snapshot restore
 до commit и не меняет Chromium.
 
 Explicit profile integrity repair assistant остаётся исследовательским
