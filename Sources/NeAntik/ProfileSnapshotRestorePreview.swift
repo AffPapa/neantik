@@ -7,6 +7,13 @@ struct ProfileSnapshotRestorePreview: Equatable, Sendable {
     let reusedFolderCount: Int
     let newFolderCount: Int
 
+    var accessibilitySummary: String {
+        "Профилей будет добавлено: \(profileCount.formatted()). " +
+            "Папок будет использовано: \(folderCount.formatted()). " +
+            "Существующих папок совпадёт: \(reusedFolderCount.formatted()). " +
+            "Новых папок будет создано: \(newFolderCount.formatted())."
+    }
+
     init(
         payload: ProfileSnapshotRestorePayload,
         existingFolderNames: [String]

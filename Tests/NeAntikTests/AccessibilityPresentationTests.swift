@@ -204,6 +204,11 @@ struct AccessibilityPresentationTests {
         #expect(preview.folderCount == 2)
         #expect(preview.reusedFolderCount == 1)
         #expect(preview.newFolderCount == 1)
+        #expect(
+            preview.accessibilitySummary ==
+                "Профилей будет добавлено: 2. Папок будет использовано: 2. " +
+                "Существующих папок совпадёт: 1. Новых папок будет создано: 1."
+        )
         let presentation = String(describing: preview)
         #expect(!presentation.contains("private-profile-name"))
         #expect(!presentation.contains("private-note"))
@@ -228,5 +233,10 @@ struct AccessibilityPresentationTests {
         #expect(preview.folderCount == 0)
         #expect(preview.reusedFolderCount == 0)
         #expect(preview.newFolderCount == 0)
+        #expect(
+            preview.accessibilitySummary ==
+                "Профилей будет добавлено: 1. Папок будет использовано: 0. " +
+                "Существующих папок совпадёт: 0. Новых папок будет создано: 0."
+        )
     }
 }

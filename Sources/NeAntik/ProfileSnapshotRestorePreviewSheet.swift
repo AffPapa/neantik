@@ -37,6 +37,8 @@ struct ProfileSnapshotRestorePreviewSheet: View {
                 }
             }
             .accessibilityElement(children: .combine)
+            .accessibilityLabel("Сводка восстановления профиля")
+            .accessibilityValue(preview.accessibilitySummary)
 
             Text("Будут добавлены новые профили. Существующие профили и данные браузера не изменятся. Для новых профилей создаются новые identity.")
             Text("Заметки, cookies, данные браузера, identity seeds и пароли из Связки ключей macOS не восстанавливаются.")
@@ -45,10 +47,15 @@ struct ProfileSnapshotRestorePreviewSheet: View {
             HStack {
                 Button("Отмена", action: onCancel)
                     .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel("Отменить восстановление профиля")
+                    .accessibilityHint(
+                        "Закроет просмотр. Профили и папки не изменятся."
+                    )
                 Spacer()
                 Button("Восстановить", action: onRestore)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
+                    .accessibilityLabel("Восстановить профили из снимка")
                     .accessibilityHint("Добавит профили из snapshot в текущий список")
             }
         }

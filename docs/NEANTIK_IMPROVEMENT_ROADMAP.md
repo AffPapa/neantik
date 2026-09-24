@@ -42,7 +42,7 @@
 | 21 | Readiness gate для A → B → A | P0 | done | Проверка запускается только для двух разных реально остановленных профилей. |
 | 22 | Ограничение и privacy-cap raw reports | P0 | done | Не более трёх owner-only файлов и не более 512 KiB каждый до записи. |
 | 23 | Безопасная сводка вместо raw evidence в UI | P0 | done | В обычном результате только verdict; raw JSON доступен лишь в явном engineering-контексте. |
-| 24 | Клавиатурная и VoiceOver-навигация | P1 | done (automated); physical QA pending | Основные действия и restore preview имеют keyboard shortcuts, labels/hints и presentation tests. Проход реального VoiceOver и физической клавиатуры на рабочем Mac не подтверждён автоматическими тестами. |
+| 24 | Клавиатурная и VoiceOver-навигация | P1 | shipped in 0.7.11 (automated); physical QA pending | Restore preview объявляет контекст действий и агрегированную сводку; keyboard shortcuts, labels/hints покрыты тестами. Проход VoiceOver и физической клавиатуры на рабочем Mac автоматикой не подтверждён. |
 | 25 | Redacted crash/support bundle | P1 | done | Экспорт содержит только allowlisted enums/версии/хэши, ограничен 64 KiB, проходит независимый fail-closed verifier и доступен через системный Save dialog. |
 | 26 | Signed runtime update с rollback | P1 | runtime-gate | Проверяются подпись, provenance, атомарная замена и восстановление предыдущего runtime. |
 | 27 | Полный release evidence bundle | P0 | runtime-gate | Source lock, binary hash, signing, notarization, stapling, Gatekeeper, fresh download и live smoke согласованы. |
@@ -55,7 +55,7 @@
 | 34 | Локальная read-only release-gate summary | P1 | done | CLI разделяет source binding, текущий candidate gate и исторические release claims; не читает credentials и raw evidence. |
 | 35 | Rehearsal retained Direct artifacts | P2 | shipped in 0.7.9 | ZIP/DMG v0.7.8 проверены по release evidence и повторным SHA-256 в staging; это не install/launch или hosted rollback smoke. |
 | 36 | Локальное руководство профилей и recovery | P2 | shipped in 0.7.9 | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
-| 37 | Предварительный просмотр snapshot restore | P1 | shipped in 0.7.10 | До commit показываются безопасные aggregate counts и дата; явное подтверждение, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
+| 37 | Предварительный просмотр snapshot restore | P1 | shipped in 0.7.10; a11y refinement in 0.7.11 | До commit показываются безопасные aggregate counts и дата; VoiceOver получает контекстную сводку, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
 
 ## Следующие незакрытые действия
 
