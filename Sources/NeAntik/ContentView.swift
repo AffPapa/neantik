@@ -59,6 +59,13 @@ private struct BulkProxyProgress: Equatable {
     let total: Int
 }
 
+private struct ProfileLifecycleScanID: Hashable {
+    let profileID: UUID
+    let profileRevision: UInt64
+    let lastLaunchedAt: Date?
+    let isRunning: Bool
+}
+
 private struct LaunchPreparationFailure: Identifiable, Equatable {
     let profileID: UUID
     let message: String
@@ -181,11 +188,14 @@ struct ContentView: View {
     @State private var fingerprintAuditRequest: FingerprintAuditRequest?
     @State private var privacyPanelByProfileID:
         [UUID: ProfilePrivacyPanelSnapshot] = [:]
+    @State private var lifecycleHealthByProfileID:
+        [UUID: ProfileLifecycleHealthSnapshot] = [:]
     @State private var artifactProvenanceByProfileID:
         [UUID: ProfileArtifactProvenanceSnapshot] = [:]
     @State private var bulkProxyImportRequest: BulkProxyImportRequest?
     @State private var transferPassphraseMode:
         ProfileConfigurationPassphraseMode?
+    @State private var isImportingProfileConfigurations = false
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var resolvedRuntime: BrowserRuntime?
@@ -234,6 +244,16 @@ struct ContentView: View {
         store.profile(withID: selection)
     }
 
+    private var selectedLifecycleScanID: ProfileLifecycleScanID? {
+        guard let profile = selectedProfile else { return nil }
+        return ProfileLifecycleScanID(
+            profileID: profile.id,
+            profileRevision: profile.revision,
+            lastLaunchedAt: profile.lastLaunchedAt,
+            isRunning: processes.runningProfileIDs.contains(profile.id)
+        )
+    }
+
     private var selectedProfileCommandSet: ProfileCommandSet {
         guard !isWorkspaceModalPresented,
               let selectedProfile
@@ -249,6 +269,7 @@ struct ContentView: View {
             profileFolderPickerRequest != nil ||
             bulkProxyImportRequest != nil ||
             transferPassphraseMode != nil ||
+            isImportingProfileConfigurations ||
             showingReleaseFingerprintAudit ||
             fingerprintAuditRequest != nil ||
             showingDeleteConfirmation ||
@@ -416,6 +437,16 @@ struct ContentView: View {
                 fingerprintObservationStore.observation(
                     for: selectedProfile.id
                 )
+        )
+    }
+
+    private var selectedProxyCheckSummary: ProxyCheckSummary? {
+        guard let profile = selectedProfile, profile.proxy != nil else {
+            return nil
+        }
+        return ProxyCheckSummary(
+            record: proxyHealthCoordinator.healthByProfileID[profile.id],
+            currentIdentity: ProxyHealthIdentity(profile: profile)
         )
     }
 
@@ -860,13 +891,39 @@ struct ContentView: View {
         .task {
             await loadProxyHealth()
         }
-        .task(id: selectedProfile?.id) {
+        .task(id: selectedLifecycleScanID) {
             guard let profile = selectedProfile else { return }
             artifactProvenanceByProfileID[profile.id] =
                 ProfileArtifactProvenanceSnapshot.inspect(
                     profileID: profile.id,
                     paths: store.paths
                 )
+            do {
+                let snapshot = try await ProfileLifecycleHealthSnapshot
+                    .inspectAsync(
+                        profileID: profile.id,
+                        lastLaunchedAt: profile.lastLaunchedAt,
+                        processState: presentedProcessState(for: profile),
+                        paths: store.paths
+                    )
+                guard !Task.isCancelled,
+                      selectedProfile?.id == profile.id
+                else { return }
+                lifecycleHealthByProfileID[profile.id] = snapshot
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled,
+                      selectedProfile?.id == profile.id
+                else { return }
+                lifecycleHealthByProfileID[profile.id] =
+                    ProfileLifecycleHealthSnapshot.inspect(
+                        profileID: profile.id,
+                        lastLaunchedAt: profile.lastLaunchedAt,
+                        processState: presentedProcessState(for: profile),
+                        paths: store.paths
+                    )
+            }
         }
         .onDisappear {
             cancelProxyTests()
@@ -1201,26 +1258,35 @@ struct ContentView: View {
     }
 
     private func importProfileConfigurations() {
-        do {
-            guard let document = try ProfileConfigurationTransferFileCoordinator.import()
-            else {
+        guard !isImportingProfileConfigurations else { return }
+        isImportingProfileConfigurations = true
+        Task {
+            defer { isImportingProfileConfigurations = false }
+            do {
+                guard let document = try await
+                    ProfileConfigurationTransferFileCoordinator.import()
+                else { return }
+                let imported = try await Task.detached(priority: .userInitiated) {
+                    try document.makeProfiles()
+                }.value
+                try Task.checkCancellation()
+                let saved = try store.insertImportedProfiles(
+                    imported,
+                    folderNames: document.profiles.map(\.folderName)
+                )
+                if let first = saved.first {
+                    revealSavedProfile(first)
+                }
+                announceWorkspaceStatus(
+                    "Импортировано " + String(saved.count) + " " +
+                        profileCountWord(saved.count) +
+                        " с распределением по папкам."
+                )
+            } catch is CancellationError {
                 return
+            } catch {
+                localError = error.localizedDescription
             }
-            let imported = try document.makeProfiles()
-            let saved = try store.insertImportedProfiles(
-                imported,
-                folderNames: document.profiles.map(\.folderName)
-            )
-            if let first = saved.first {
-                revealSavedProfile(first)
-            }
-            announceWorkspaceStatus(
-                "Импортировано " + String(saved.count) + " " +
-                    profileCountWord(saved.count) +
-                    " с распределением по папкам."
-            )
-        } catch {
-            localError = error.localizedDescription
         }
     }
 
@@ -1352,27 +1418,36 @@ struct ContentView: View {
     private func importEncryptedProfileConfigurations(
         passphrase: String
     ) {
-        do {
-            guard let document = try ProfileConfigurationTransferFileCoordinator
-                .importEncrypted(passphrase: passphrase)
-            else {
+        guard !isImportingProfileConfigurations else { return }
+        isImportingProfileConfigurations = true
+        Task {
+            defer { isImportingProfileConfigurations = false }
+            do {
+                guard let document = try await
+                    ProfileConfigurationTransferFileCoordinator
+                        .importEncrypted(passphrase: passphrase)
+                else { return }
+                let imported = try await Task.detached(priority: .userInitiated) {
+                    try document.makeProfiles()
+                }.value
+                try Task.checkCancellation()
+                let saved = try store.insertImportedProfiles(
+                    imported,
+                    folderNames: document.profiles.map(\.folderName)
+                )
+                if let first = saved.first {
+                    revealSavedProfile(first)
+                }
+                announceWorkspaceStatus(
+                    "Импортировано " + String(saved.count) + " " +
+                        profileCountWord(saved.count) +
+                        " из зашифрованной конфигурации."
+                )
+            } catch is CancellationError {
                 return
+            } catch {
+                localError = error.localizedDescription
             }
-            let imported = try document.makeProfiles()
-            let saved = try store.insertImportedProfiles(
-                imported,
-                folderNames: document.profiles.map(\.folderName)
-            )
-            if let first = saved.first {
-                revealSavedProfile(first)
-            }
-            announceWorkspaceStatus(
-                "Импортировано " + String(saved.count) + " " +
-                    profileCountWord(saved.count) +
-                    " из зашифрованной конфигурации."
-            )
-        } catch {
-            localError = error.localizedDescription
         }
     }
 
@@ -1840,9 +1915,10 @@ struct ContentView: View {
                             profile: profile,
                             processState: processState,
                             launchAction: launchAction,
-                            proxyHealth: proxyHealthCoordinator.state(
-                                for: profile
-                            ),
+                            proxyHealth:
+                                proxyHealthCoordinator.healthByProfileID[
+                                    profile.id
+                                ],
                             isTestingProxy:
                                 isProxyTestInFlight(profileID: profile.id),
                             folderName: store.folderID(forProfileID: profile.id)
@@ -2425,12 +2501,13 @@ struct ContentView: View {
                 profile: profile,
                 processState: presentedProcessState(for: profile),
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
-                lifecycleHealth: ProfileLifecycleHealthSnapshot.inspect(
-                    profileID: profile.id,
-                    lastLaunchedAt: profile.lastLaunchedAt,
-                    processState: presentedProcessState(for: profile),
-                    paths: store.paths
-                ),
+                lifecycleHealth: lifecycleHealthByProfileID[profile.id]
+                    ?? ProfileLifecycleHealthSnapshot.inspect(
+                        profileID: profile.id,
+                        lastLaunchedAt: profile.lastLaunchedAt,
+                        processState: presentedProcessState(for: profile),
+                        paths: store.paths
+                    ),
                 privacyPanel: privacyPanelByProfileID[profile.id]
                     ?? .empty,
                 artifactProvenance: artifactProvenanceByProfileID[profile.id]
@@ -2443,6 +2520,7 @@ struct ContentView: View {
                     store.folder(withID: $0)?.name
                 },
                 environmentSnapshot: selectedEnvironmentSnapshot,
+                proxyCheckSummary: selectedProxyCheckSummary,
                 isTestingProxy: isProxyTestInFlight(profileID: profile.id),
                 canCancelProxyTest:
                     proxyTestingProfileIDs.contains(profile.id) ||
@@ -3317,7 +3395,7 @@ private struct ProfileRow: View {
     let profile: BrowserProfile
     let processState: BrowserProfileProcessState
     let launchAction: BrowserLaunchActionPresentation
-    let proxyHealth: ProxyHealthState?
+    let proxyHealth: ProxyHealthRecord?
     let isTestingProxy: Bool
     let folderName: String?
     var onToggleRunning: () -> Void = {}
@@ -3367,11 +3445,14 @@ private struct ProfileRow: View {
                             .help("Есть заметка")
                             .accessibilityLabel("Есть заметка")
                     }
-                    if !isTestingProxy,
-                       let attempt = proxyHealth?.latestAttempt
-                    {
+                    if !isTestingProxy, profile.proxy != nil {
+                        let summary = ProxyCheckSummary(
+                            record: proxyHealth,
+                            currentIdentity: ProxyHealthIdentity(profile: profile)
+                        )
                         let routeContextIsComplete =
-                            proxyHealth?.hasCompleteRouteContext == true
+                            summary.status == .currentSuccess &&
+                            proxyHealth?.state.hasCompleteRouteContext == true
                         Image(
                             systemName:
                                 routeContextIsComplete
@@ -3385,10 +3466,14 @@ private struct ProfileRow: View {
                                 : Color.orange
                         )
                         .help(
-                            "Прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.") \(attempt.checkedAt.neAntikDisplayDateTime)"
+                            summary.title + (summary.checkedAt.map {
+                                " Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
+                            } ?? "")
                         )
                         .accessibilityLabel(
-                            "Проверка прокси: \(routeContextIsComplete ? attempt.outcome.userSummary : "Маршрут требует повторной подготовки.")"
+                            summary.title + (summary.checkedAt.map {
+                                ". Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
+                            } ?? "")
                         )
                     }
                 }
@@ -3488,6 +3573,7 @@ struct ProfileDetailView: View {
     var runtimeProvenance: RuntimeProvenanceSnapshot = .empty
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
+    var proxyCheckSummary: ProxyCheckSummary? = nil
     var isTestingProxy: Bool = false
     var canCancelProxyTest: Bool = false
     var canRunFingerprintAudit: Bool = false
@@ -3591,6 +3677,7 @@ struct ProfileDetailView: View {
             if let environmentSnapshot {
                 ProfileEnvironmentView(
                     snapshot: environmentSnapshot,
+                    proxyCheckSummary: proxyCheckSummary,
                     hasProxy: profile.proxy != nil,
                     isTestingProxy: isTestingProxy,
                     canTestProxy: processState == .stopped,

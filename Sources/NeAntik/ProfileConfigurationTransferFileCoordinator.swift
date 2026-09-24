@@ -70,7 +70,7 @@ enum ProfileConfigurationTransferFileCoordinator {
         return profiles.count
     }
 
-    static func `import`() throws -> ProfileConfigurationTransferDocument? {
+    static func `import`() async throws -> ProfileConfigurationTransferDocument? {
         let panel = NSOpenPanel()
         panel.title = "Импорт конфигурации профилей"
         panel.message =
@@ -82,30 +82,19 @@ enum ProfileConfigurationTransferFileCoordinator {
         guard panel.runModal() == .OK, let url = panel.url else {
             return nil
         }
-        let values = try url.resourceValues(forKeys: [.fileSizeKey])
-        if let fileSize = values.fileSize,
-           fileSize > maximumFileBytes {
-            throw ProfileConfigurationTransferFileError.fileTooLarge
+        let hasSecurityScope = url.startAccessingSecurityScopedResource()
+        defer {
+            if hasSecurityScope {
+                url.stopAccessingSecurityScopedResource()
+            }
         }
-        let data = try Data(contentsOf: url, options: [.mappedIfSafe])
-        guard data.count <= maximumFileBytes else {
-            throw ProfileConfigurationTransferFileError.fileTooLarge
-        }
-        do {
-            return try JSONDecoder().decode(
-                ProfileConfigurationTransferDocument.self,
-                from: data
-            )
-        } catch let error as ProfileConfigurationTransferError {
-            throw error
-        } catch {
-            throw ProfileConfigurationTransferFileError.invalidFile
-        }
+        return try await ProfileConfigurationTransferFileImportService
+            .readDocument(from: url, maximumBytes: maximumFileBytes)
     }
 
     static func importEncrypted(
         passphrase: String
-    ) throws -> ProfileConfigurationTransferDocument? {
+    ) async throws -> ProfileConfigurationTransferDocument? {
         let panel = NSOpenPanel()
         panel.title = "Импорт зашифрованной конфигурации"
         panel.message =
@@ -117,16 +106,18 @@ enum ProfileConfigurationTransferFileCoordinator {
         guard panel.runModal() == .OK, let url = panel.url else {
             return nil
         }
-        let values = try url.resourceValues(forKeys: [.fileSizeKey])
-        if let fileSize = values.fileSize,
-           fileSize > ProfileConfigurationEncryption.maximumEnvelopeBytes {
-            throw ProfileConfigurationEncryptionError.fileTooLarge
+        let hasSecurityScope = url.startAccessingSecurityScopedResource()
+        defer {
+            if hasSecurityScope {
+                url.stopAccessingSecurityScopedResource()
+            }
         }
-        let data = try Data(contentsOf: url, options: [.mappedIfSafe])
-        return try ProfileConfigurationEncryption.open(
-            data,
-            passphrase: passphrase
-        )
+        return try await ProfileConfigurationTransferFileImportService
+            .readEncryptedDocument(
+                from: url,
+                maximumBytes: ProfileConfigurationEncryption.maximumEnvelopeBytes,
+                passphrase: passphrase
+            )
     }
 }
 

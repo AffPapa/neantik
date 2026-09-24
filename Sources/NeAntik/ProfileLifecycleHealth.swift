@@ -22,6 +22,7 @@ enum ProfileLifecycleLockStatus: Equatable, Sendable {
 
 enum ProfileLifecycleBrowserDataStatus: Equatable, Sendable {
     case missing
+    case checking
     case available(bytes: Int64, entries: Int)
     case unavailable
 
@@ -29,6 +30,8 @@ enum ProfileLifecycleBrowserDataStatus: Equatable, Sendable {
         switch self {
         case .missing:
             "Не создан"
+        case .checking:
+            "Считаю размер…"
         case let .available(bytes, entries):
             ByteCountFormatter.string(
                 fromByteCount: bytes,
@@ -70,6 +73,17 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
     let recovery: ProfileLifecycleRecoveryStatus
     let lastLaunchedAt: Date?
 
+    func replacingBrowserData(
+        with browserData: ProfileLifecycleBrowserDataStatus
+    ) -> Self {
+        Self(
+            lock: lock,
+            browserData: browserData,
+            recovery: recovery,
+            lastLaunchedAt: lastLaunchedAt
+        )
+    }
+
     static func inspect(
         profileID: UUID,
         lastLaunchedAt: Date?,
@@ -83,7 +97,10 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
                 processState: processState,
                 paths: paths
             ),
-            browserData: inspectBrowserData(
+            // Directory enumeration can touch tens of thousands of files.
+            // Keep this synchronous projection cheap; callers that need the
+            // size use inspectAsync below.
+            browserData: inspectBrowserDataPresence(
                 profileID: profileID,
                 paths: paths,
                 fileManager: fileManager
@@ -96,6 +113,29 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
             ),
             lastLaunchedAt: lastLaunchedAt
         )
+    }
+
+    static func inspectAsync(
+        profileID: UUID,
+        lastLaunchedAt: Date?,
+        processState: BrowserProfileProcessState,
+        paths: AppPaths
+    ) async throws -> Self {
+        let base = inspect(
+            profileID: profileID,
+            lastLaunchedAt: lastLaunchedAt,
+            processState: processState,
+            paths: paths
+        )
+        let scan = Task.detached(priority: .utility) {
+            try Self.scanBrowserData(profileID: profileID, paths: paths)
+        }
+        let browserData = try await withTaskCancellationHandler {
+            try await scan.value
+        } onCancel: {
+            scan.cancel()
+        }
+        return base.replacingBrowserData(with: browserData)
     }
 
     private static func inspectLock(
@@ -117,7 +157,7 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
         }
     }
 
-    private static func inspectBrowserData(
+    private static func inspectBrowserDataPresence(
         profileID: UUID,
         paths: AppPaths,
         fileManager: FileManager
@@ -129,45 +169,58 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
 
         do {
             try paths.validatePrivateDirectory(directory)
-            let keys: Set<URLResourceKey> = [
-                .isDirectoryKey,
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-                .fileSizeKey
-            ]
-            guard let enumerator = fileManager.enumerator(
-                at: directory,
-                includingPropertiesForKeys: Array(keys),
-                options: []
-            ) else {
-                return .unavailable
-            }
-
-            var budget = ProfileManagerScanBudget(
-                maximumEntries:
-                    ProfileManagerPerformanceBudgets
-                        .maximumLifecycleScanEntries,
-                maximumBytes:
-                    ProfileManagerPerformanceBudgets
-                        .maximumSynchronousScanBytes
-            )
-            for case let entry as URL in enumerator {
-                let values = try entry.resourceValues(forKeys: keys)
-                guard values.isSymbolicLink != true,
-                      values.isDirectory == true || values.isRegularFile == true
-                else {
-                    return .unavailable
-                }
-                let fileBytes = Int64(values.fileSize ?? 0)
-                guard budget.consume(entryBytes: values.isRegularFile == true
-                    ? fileBytes
-                    : 0)
-                else { return .unavailable }
-            }
-            return .available(bytes: budget.bytes, entries: budget.entries)
+            return .checking
         } catch {
             return .unavailable
         }
+    }
+
+    private static func scanBrowserData(
+        profileID: UUID,
+        paths: AppPaths
+    ) throws -> ProfileLifecycleBrowserDataStatus {
+        let fileManager = FileManager.default
+        let directory = paths.browserDataDirectory(for: profileID)
+        guard fileManager.fileExists(atPath: directory.path) else {
+            return .missing
+        }
+        try paths.validatePrivateDirectory(directory)
+        let keys: Set<URLResourceKey> = [
+            .isDirectoryKey,
+            .isRegularFileKey,
+            .isSymbolicLinkKey,
+            .fileSizeKey
+        ]
+        guard let enumerator = fileManager.enumerator(
+            at: directory,
+            includingPropertiesForKeys: Array(keys),
+            options: []
+        ) else {
+            return .unavailable
+        }
+
+        var budget = ProfileManagerScanBudget(
+            maximumEntries:
+                ProfileManagerPerformanceBudgets.maximumLifecycleScanEntries,
+            maximumBytes:
+                ProfileManagerPerformanceBudgets.maximumSynchronousScanBytes
+        )
+        for case let entry as URL in enumerator {
+            try Task.checkCancellation()
+            let values = try entry.resourceValues(forKeys: keys)
+            guard values.isSymbolicLink != true,
+                  values.isDirectory == true || values.isRegularFile == true
+            else {
+                return .unavailable
+            }
+            let fileBytes = Int64(values.fileSize ?? 0)
+            guard budget.consume(entryBytes: values.isRegularFile == true
+                ? fileBytes
+                : 0)
+            else { return .unavailable }
+        }
+        try Task.checkCancellation()
+        return .available(bytes: budget.bytes, entries: budget.entries)
     }
 
     private static func inspectRecovery(

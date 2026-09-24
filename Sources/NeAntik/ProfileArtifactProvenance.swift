@@ -156,6 +156,10 @@ enum ProfileArtifactQuarantine {
             : browserData.path + "/"
         guard source.path.hasPrefix(prefix),
               source.path != browserData.path,
+              try ProfileArtifactPathSafety.hasNoSymlinkAncestors(
+                  of: source,
+                  inside: browserData
+              ),
               try safeArtifactTree(source, fileManager: fileManager)
         else {
             throw ProfileArtifactQuarantineError.unsafeSource
@@ -242,6 +246,23 @@ enum ProfileArtifactQuarantine {
 }
 
 private enum ProfileArtifactPathSafety {
+    static func hasNoSymlinkAncestors(
+        of source: URL,
+        inside root: URL
+    ) throws -> Bool {
+        guard try isDirectoryWithoutSymlink(root) else { return false }
+        var parent = source.deletingLastPathComponent()
+        while parent.path != root.path {
+            guard parent.path.hasPrefix(root.path + "/"),
+                  try isDirectoryWithoutSymlink(parent)
+            else {
+                return false
+            }
+            parent.deleteLastPathComponent()
+        }
+        return true
+    }
+
     static func isDirectoryWithoutSymlink(_ url: URL) throws -> Bool {
         var status = stat()
         let result = url.path.withCString { lstat($0, &status) }

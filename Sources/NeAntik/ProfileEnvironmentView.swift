@@ -8,6 +8,7 @@ struct ProfileEnvironmentView: View {
     @State private var showingDetails = false
 
     let snapshot: ProfileEnvironmentSnapshot
+    var proxyCheckSummary: ProxyCheckSummary? = nil
     let hasProxy: Bool
     let isTestingProxy: Bool
     let canTestProxy: Bool
@@ -271,6 +272,10 @@ struct ProfileEnvironmentView: View {
             }
 
             EnvironmentSeverityRollup(snapshot: snapshot)
+            if hasProxy, let proxyCheckSummary {
+                ProxyCheckSummaryView(summary: proxyCheckSummary)
+                    .padding(.top, 2)
+            }
         }
     }
 

@@ -42,6 +42,7 @@ case "$SUITE" in
   LaunchIntentTests|\
   NativeMenuLocalizationTests|\
   ProfileCommandPresentationTests|\
+  ProfileConfigurationTransferFileImportTests|\
   ProfileConfigurationTransferTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
@@ -56,6 +57,7 @@ case "$SUITE" in
   ProfileOrganizationPersistenceTests|\
   ProfilePostSaveRevealPolicyTests|\
   ProfilePrivacyPanelTests|\
+  ProxyCheckSummaryTests|\
   ProfileSnapshotTests|\
   ProfileRevisionAndTransactionTests|\
   ProfileTagAppearanceTests|\

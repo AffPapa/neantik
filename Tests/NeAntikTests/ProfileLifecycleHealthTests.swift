@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct ProfileLifecycleHealthTests {
     @Test
-    func healthyStoppedProfileReportsBoundedLifecycleFacts() throws {
+    func healthyStoppedProfileReportsBoundedLifecycleFacts() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -20,7 +20,7 @@ struct ProfileLifecycleHealthTests {
         )
         let launchedAt = Date(timeIntervalSince1970: 1_700_000_000)
 
-        let snapshot = ProfileLifecycleHealthSnapshot.inspect(
+        let snapshot = try await ProfileLifecycleHealthSnapshot.inspectAsync(
             profileID: profileID,
             lastLaunchedAt: launchedAt,
             processState: .stopped,
@@ -58,7 +58,7 @@ struct ProfileLifecycleHealthTests {
 
         #expect(snapshot.lock == .managed)
         #expect(snapshot.recovery == .required)
-        #expect(snapshot.browserData != .unavailable)
+        #expect(snapshot.browserData == .checking)
         #expect(!snapshot.lock.title.contains(profileID.uuidString))
         #expect(!snapshot.recovery.title.contains("recovery"))
     }
@@ -128,5 +128,63 @@ struct ProfileLifecycleHealthTests {
 
         #expect(snapshot.browserData == .missing)
         #expect(snapshot.lock == .clear)
+    }
+
+    @Test
+    func asyncBrowserDataScanRejectsSymlinks() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+        try paths.prepareBaseDirectories()
+        try paths.prepareProfileDirectories(for: profileID)
+        let dataDirectory = paths.browserDataDirectory(for: profileID)
+        let external = root.appendingPathComponent("outside", isDirectory: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        try Data(repeating: 1, count: 8).write(
+            to: external.appendingPathComponent("secret")
+        )
+        try FileManager.default.createSymbolicLink(
+            at: dataDirectory.appendingPathComponent("linked"),
+            withDestinationURL: external
+        )
+
+        let snapshot = try await ProfileLifecycleHealthSnapshot.inspectAsync(
+            profileID: profileID,
+            lastLaunchedAt: nil,
+            processState: .stopped,
+            paths: paths
+        )
+
+        #expect(snapshot.browserData == .unavailable)
+    }
+
+    @Test
+    func synchronousLifecycleProjectionDoesNotEnumerateBrowserData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+        try paths.prepareBaseDirectories()
+        try paths.prepareProfileDirectories(for: profileID)
+        try Data(repeating: 9, count: 16).write(
+            to: paths.browserDataDirectory(for: profileID)
+                .appendingPathComponent("Preferences")
+        )
+
+        let snapshot = ProfileLifecycleHealthSnapshot.inspect(
+            profileID: profileID,
+            lastLaunchedAt: nil,
+            processState: .stopped,
+            paths: paths
+        )
+
+        #expect(snapshot.browserData == .checking)
+        #expect(snapshot.lock == .clear)
+        #expect(snapshot.recovery == .clear)
     }
 }

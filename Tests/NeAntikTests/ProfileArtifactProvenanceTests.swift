@@ -114,4 +114,41 @@ struct ProfileArtifactProvenanceTests {
         }
         #expect(FileManager.default.fileExists(atPath: outside.path))
     }
+
+    @Test
+    func quarantineRejectsFilesReachedThroughSymlinkedProfileFolders() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+        try paths.prepareBaseDirectories()
+        try paths.prepareProfileDirectories(for: profileID)
+        let external = root.appendingPathComponent("external", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: external,
+            withIntermediateDirectories: true
+        )
+        let target = external.appendingPathComponent("important.bin")
+        try Data("keep".utf8).write(to: target)
+
+        let downloads = paths.browserDataDirectory(for: profileID)
+            .appendingPathComponent("Downloads", isDirectory: true)
+        try FileManager.default.createSymbolicLink(
+            at: downloads,
+            withDestinationURL: external
+        )
+        let source = downloads.appendingPathComponent("important.bin")
+
+        #expect(throws: ProfileArtifactQuarantineError.unsafeSource) {
+            try ProfileArtifactQuarantine.moveToQuarantine(
+                source: source,
+                profileID: profileID,
+                paths: paths,
+                reason: "Проверка пользователем"
+            )
+        }
+        #expect(try Data(contentsOf: target) == Data("keep".utf8))
+    }
 }

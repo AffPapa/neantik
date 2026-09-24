@@ -3,6 +3,7 @@ import Foundation
 enum ProfileDiagnosticsStatus: Equatable, Sendable {
     case ready
     case attention
+    case checking
     case unavailable
 
     var title: String {
@@ -11,6 +12,8 @@ enum ProfileDiagnosticsStatus: Equatable, Sendable {
             "В порядке"
         case .attention:
             "Требует внимания"
+        case .checking:
+            "Считается размер…"
         case .unavailable:
             "Проверка недоступна"
         }
@@ -93,6 +96,12 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
         }
 
         switch lifecycle.browserData {
+        case .checking:
+            return Self(
+                status: .checking,
+                detail: "Подсчитывается размер локальных данных профиля.",
+                nextStep: .none
+            )
         case .unavailable:
             return Self(
                 status: .unavailable,

@@ -28,13 +28,14 @@ NeAntik — локальный macOS-браузер с независимыми 
 
 ## 2. Что уже есть на исходной точке
 
-Публичный baseline перед этой итерацией:
+Публичный baseline перед этим срезом:
 
-- NeAntik 0.7.5, build 68;
+- NeAntik 0.7.7, build 70;
 - Direct Distribution для Apple Silicon;
 - встроенный Chromium 153.0.8010.52 ARM64 Metal;
 - локальные профили, папки, поиск, теги, snapshots, безопасное копирование;
 - metadata-only import/export через системные диалоги;
+- 0.7.7 исправляет ложные статусы lock/recovery и диагностику VoiceOver;
 - atomic folder distribution для импорта;
 - lifecycle health center: locks, recovery, BrowserData size, last launch;
 - aggregate privacy panel без device IDs и raw values;
@@ -76,9 +77,10 @@ request inventory, usability-polish и release automation.
 
 ### 4.1 Chromium и web-platform
 
-- Актуальные Chrome 153 release notes фиксируют изменения Privacy Sandbox и
-  удаления ряда API; нельзя навечно зашивать старую карту возможностей и
-  выдавать её за стабильный контракт.
+- Официальное Stable-объявление Chrome 154 от 22 сентября 2026 указывает
+  154.0.8037.57/.58 для Windows/Mac и 108 security fixes. Встроенный runtime
+  NeAntik 153.0.8010.52 отстаёт; этот manager-only срез не обновляет ядро.
+  [Chrome Releases](https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0856730748.html).
 - Storage partitioning применяется к storage, service workers и communication
   API в third-party contexts; профильный storage нужно тестировать не только
   на cookies, но и на IndexedDB, Cache Storage, service workers и Broadcast/
@@ -204,8 +206,8 @@ MoreLogin повторяют устойчивый набор функций:
 | P2-07 | Onboarding first-run copy | next | One primary action and no technical noise |
 | P2-08 | Documentation/tutorials | next | Local-first profiles, privacy and recovery explained |
 | P2-09 | Reproducible manager build metadata | next | No local absolute source paths in binary |
-| P2-10 | Fuzz malformed imports | next | Decoder fail-closed, bounded CPU/memory |
-| P2-11 | Fuzz provenance/quarantine records | next | Unknown fields and path traversal rejected |
+| P2-10 | Fuzz malformed imports | candidate 0.7.8 | Decoder fail-closed, bounded CPU/memory |
+| P2-11 | Fuzz provenance/quarantine records | candidate 0.7.8 | Unknown fields and path traversal rejected |
 | P2-12 | Release rollback rehearsal | next | Public candidate can be restored from retained bytes |
 
 ### Defer permanently unless product direction changes
@@ -248,6 +250,29 @@ MoreLogin повторяют устойчивый набор функций:
 нового runtime и даёт измеримый результат. После него следующий безопасный
 срез — короткий proxy-result summary и profile integrity repair assistant.
 
+## 7.5 Manager-only срез 0.7.8 / build 71
+
+Подготовлены три пользовательских изменения и два defensive input-hardening
+пункта. Это source candidate; статус выпуска появится только после
+подписания, Apple notarization, Gatekeeper и fresh-download проверок.
+
+- BrowserData обходится в отменяемой utility task. При смене выбранного
+  профиля или состояния запуска предыдущий результат не может перезаписать
+  текущий; до результата интерфейс показывает «Считаю размер…».
+- Чтение, ограниченная проверка размера, JSON decode и расшифровка импорта
+  выполняются вне main actor. Новые профили сохраняются существующей
+  атомарной транзакцией ProfileStore.
+- Сводка proxy показывает время проверки и различает свежий успех, устаревший
+  результат, последний сбой, неизвестное время и смену конфигурации. IP,
+  endpoint и raw error в проекцию не включены; сетевой тест сам не запускается.
+- Карантин отклоняет файл, достигнутый через symlink-предок внутри BrowserData.
+- Bounded corpus malformed imports расширен вариантами версии и формы JSON.
+
+Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Chrome Stable 154
+вышел 22 сентября и содержит security fixes; текущий candidate не закрывает
+эту разницу и не называется обновлением безопасности ядра. Подготовка релиза
+должна применить существующие Direct-гейты без Chromium rebuild.
+
 ## 8. План выполнения по фазам
 
 ### Фаза 0 — контроль исходной точки
@@ -289,7 +314,7 @@ MoreLogin повторяют устойчивый набор функций:
 Публикация разрешена только если все пункты подтверждены свежими отчётами:
 
 1. exact source commit and clean intended diff;
-2. manager version/build greater than public 0.7.5/68;
+2. manager version/build greater than public 0.7.7/70;
 3. runtime version/hash remains exactly pinned and unchanged;
 4. package contains no secrets or local source paths;
 5. Swift tests and targeted tests pass;
