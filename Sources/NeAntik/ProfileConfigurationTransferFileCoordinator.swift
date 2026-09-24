@@ -4,25 +4,21 @@ import UniformTypeIdentifiers
 
 @MainActor
 enum ProfileConfigurationTransferFileCoordinator {
-    static let maximumFileBytes = 16 * 1_024 * 1_024
+    static let maximumFileBytes = ProfileConfigurationTransferLimits.maximumFileBytes
 
     static func export(
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String]
-    ) throws -> Int? {
+    ) async throws -> Int? {
         guard !profiles.isEmpty else {
             throw ProfileConfigurationTransferFileError.noStoppedProfiles
         }
-        let document = try ProfileConfigurationTransferDocument(
+        let data = try await ProfileConfigurationTransferFileImportService
+            .prepareExport(
             profiles: profiles,
             folderNameByProfileID: folderNameByProfileID
         )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let data = try encoder.encode(document)
-        guard data.count <= maximumFileBytes else {
-            throw ProfileConfigurationTransferFileError.fileTooLarge
-        }
+        try Task.checkCancellation()
 
         let panel = NSSavePanel()
         panel.title = "Экспорт конфигурации профилей"
@@ -34,7 +30,8 @@ enum ProfileConfigurationTransferFileCoordinator {
         guard panel.runModal() == .OK, let url = panel.url else {
             return nil
         }
-        try data.write(to: url, options: [.atomic])
+        try await ProfileConfigurationTransferFileImportService
+            .writeExport(data, to: url)
         return profiles.count
     }
 
@@ -42,18 +39,17 @@ enum ProfileConfigurationTransferFileCoordinator {
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String],
         passphrase: String
-    ) throws -> Int? {
+    ) async throws -> Int? {
         guard !profiles.isEmpty else {
             throw ProfileConfigurationTransferFileError.noStoppedProfiles
         }
-        let document = try ProfileConfigurationTransferDocument(
+        let data = try await ProfileConfigurationTransferFileImportService
+            .prepareEncryptedExport(
             profiles: profiles,
-            folderNameByProfileID: folderNameByProfileID
-        )
-        let data = try ProfileConfigurationEncryption.seal(
-            document: document,
+            folderNameByProfileID: folderNameByProfileID,
             passphrase: passphrase
         )
+        try Task.checkCancellation()
 
         let panel = NSSavePanel()
         panel.title = "Зашифрованный экспорт профилей"
@@ -66,7 +62,8 @@ enum ProfileConfigurationTransferFileCoordinator {
         guard panel.runModal() == .OK, let url = panel.url else {
             return nil
         }
-        try data.write(to: url, options: [.atomic])
+        try await ProfileConfigurationTransferFileImportService
+            .writeExport(data, to: url)
         return profiles.count
     }
 
@@ -74,7 +71,7 @@ enum ProfileConfigurationTransferFileCoordinator {
         let panel = NSOpenPanel()
         panel.title = "Импорт конфигурации профилей"
         panel.message =
-            "Будут созданы новые профили без cookies, BrowserData, заметок, identity и Keychain-секретов."
+            "Будут созданы новые профили. Proxy-login входит в файл; пароли, cookies, BrowserData, заметки, identity и Keychain-секреты — нет."
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -98,7 +95,7 @@ enum ProfileConfigurationTransferFileCoordinator {
         let panel = NSOpenPanel()
         panel.title = "Импорт зашифрованной конфигурации"
         panel.message =
-            "Будут созданы новые профили. Cookies, BrowserData и Keychain-секреты не импортируются."
+            "Будут созданы новые профили. Proxy-login находится в зашифрованном файле; пароли, cookies, BrowserData, заметки, identity и Keychain-секреты не импортируются."
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -121,7 +118,11 @@ enum ProfileConfigurationTransferFileCoordinator {
     }
 }
 
-enum ProfileConfigurationTransferFileError: LocalizedError, Equatable {
+enum ProfileConfigurationTransferLimits {
+    static let maximumFileBytes = 16 * 1_024 * 1_024
+}
+
+enum ProfileConfigurationTransferFileError: LocalizedError, Equatable, Sendable {
     case noStoppedProfiles
     case fileTooLarge
     case invalidFile

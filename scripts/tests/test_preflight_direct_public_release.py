@@ -59,9 +59,21 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         blocked = {result.name for result in results if not result.passed}
         self.assertIn("Developer ID signing environment", blocked)
         self.assertIn("Notary profile environment", blocked)
-        # The current candidate must already clear the public release floor;
-        # missing external signing/notary inputs are the intended blockers.
-        self.assertNotIn("Public version/build floor", blocked)
+        # The checked-in source can itself be the latest public release
+        # baseline. In that case preflight must reject it as a release
+        # candidate until Resources/Info.plist is deliberately version-bumped.
+        version, build = MODULE.VERSION_BUMP.read_candidate(
+            Path(__file__).resolve().parents[2]
+        )
+        published_version, published_build = MODULE.VERSION_BUMP.read_published(
+            Path(__file__).resolve().parents[2]
+        )
+        if MODULE.VERSION_BUMP.version_tuple(version) <= MODULE.VERSION_BUMP.version_tuple(
+            published_version
+        ) or build <= published_build:
+            self.assertIn("Public version/build floor", blocked)
+        else:
+            self.assertNotIn("Public version/build floor", blocked)
         if not (
             Path(__file__).resolve().parents[2] / "dist" / "fingerprint-audit.json"
         ).is_file():

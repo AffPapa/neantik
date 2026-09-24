@@ -105,6 +105,7 @@ enum WorkspaceDomain {
         proxyHealth: ProxyHealthState?,
         fingerprintObservation:
             ValidatedProfileFingerprintObservation? = nil,
+        siteCompatibility: SiteCompatibilityAssessment? = nil,
         now: Date = Date()
     ) -> ProfileEnvironmentSnapshot {
         ProfileEnvironmentInspector.snapshot(
@@ -112,6 +113,7 @@ enum WorkspaceDomain {
             runtime: runtime,
             proxyHealth: proxyHealth,
             fingerprintObservation: fingerprintObservation,
+            siteCompatibility: siteCompatibility,
             now: now
         )
     }

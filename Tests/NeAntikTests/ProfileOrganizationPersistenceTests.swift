@@ -234,6 +234,14 @@ struct ProfileOrganizationPersistenceTests {
         #expect(recovered.hasTrustedOrganization)
         #expect(recovered.organization.folders.map(\.name) == ["Первая"])
         #expect(recovered.lastError?.contains("восстановил") == true)
+        #expect(
+            recovered.recoveryNotice == ProfileRecoveryNotice(
+                profileMetadataRecovered: false,
+                folderMetadataRecovered: true
+            )
+        )
+        recovered.lastError = nil
+        #expect(recovered.recoveryNotice?.folderMetadataRecovered == true)
         #expect(try Data(contentsOf: fixture.paths.profilesFile) == profilesData)
         let rejected = try FileManager.default.contentsOfDirectory(
             at: fixture.paths.profilesRecoveryDirectory,

@@ -4,6 +4,52 @@ import Testing
 
 struct ProfileEditorPresentationTests {
     @Test
+    func quickStartTemplatesOnlySuggestEditableNameAndTag() {
+        let blank = ProfileQuickStartTemplate.blank.draft(
+            name: "", tags: []
+        )
+        #expect(blank.name.isEmpty)
+        #expect(blank.tags.isEmpty)
+
+        let work = ProfileQuickStartTemplate.work.draft(
+            name: "", tags: ["личное"]
+        )
+        #expect(work.name == "Работа")
+        #expect(work.tags == ["личное", "работа"])
+
+        let customized = ProfileQuickStartTemplate.testing.draft(
+            name: "Мой стенд", tags: ["тест"]
+        )
+        #expect(customized.name == "Мой стенд")
+        #expect(customized.tags == ["тест"])
+
+        let switched = ProfileQuickStartTemplate.testing.draft(
+            name: "Работа",
+            tags: ["работа", "важно"],
+            replacing: .work,
+            replacingGeneratedName: true,
+            replacingGeneratedTag: true
+        )
+        #expect(switched.name == "Тестирование")
+        #expect(switched.tags == ["важно", "тест"])
+
+        let userOwned = ProfileQuickStartTemplate.blank.draft(
+            name: "Работа", tags: ["работа"], replacing: .work
+        )
+        #expect(userOwned.name == "Работа")
+        #expect(userOwned.tags == ["работа"])
+
+        let generated = ProfileQuickStartTemplate.blank.draft(
+            name: "Работа",
+            tags: ["работа"],
+            replacing: .work,
+            replacingGeneratedName: true,
+            replacingGeneratedTag: true
+        )
+        #expect(generated.name.isEmpty)
+        #expect(generated.tags.isEmpty)
+    }
+    @Test
     func compactFolderControlCoversZeroAndOneFolder() {
         let empty = ProfileEditorFolderPresentation.resolve(
             folders: [],

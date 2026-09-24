@@ -9,17 +9,15 @@ Silicon. Главный сценарий продукта:
 публичный релиз только после тестов, Developer ID, Apple notarization,
 stapling, Gatekeeper и проверки заново скачанных файлов.
 
-## P0: текущий Direct release cycle
+## Текущий Direct release cycle
 
-- manager-only candidate `0.7.5 (68)` уже опубликован и проверен на
-  Chromium `153.0.8010.52` без пересборки Chromium;
-- следующий candidate `0.7.6` содержит только безопасные manager/UX-изменения,
-  начиная с понятного next-step в карточке «Диагностика»;
-- для нового exact candidate повторяются profile-isolation, network-reality и
-  GUI A -> B -> A gates, затем signing, notarization, stapling, Gatekeeper,
-  GitHub/AffPapa artifacts и fresh-download verification;
-- отдельный Chromium rebuild остаётся за пределами этого manager-релиза и
-  требует собственного source/binary provenance cycle.
+- Последний публичный релиз по локальной release evidence: `0.7.8 (71)`;
+- Chromium `153.0.8010.52` ARM64/Metal остаётся неизменным в manager-only
+  срезах;
+- следующий релиз требует нового exact-source кандидата, полного набора
+  release gates и проверки заново скачанных GitHub/site artifacts;
+- незакоммиченные изменения или тестовый результат сами по себе не означают,
+  что версия опубликована.
 
 Если signing/notary credentials недоступны в текущем macOS-сеансе, исходник и
 тесты можно подготовить, но публикация должна остановиться до запуска
@@ -41,6 +39,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - provenance/quarantine для Downloads/Extensions с explicit-only политикой и
   Safe Browsing без ослабления;
 - manager performance budgets и read-only runtime provenance card;
+- фоновые snapshot/import/export с отменой при закрытии workspace;
+- snapshot receipt показывает число сохранённых и пропущенных профилей;
+- recovery notice доступен из Diagnostics и при пустом/unselected workspace;
 - immutable `WorkspaceSnapshot` и allowlisted `WorkspacePublicSnapshotDTO`
   как безопасный внутренний контракт для будущих локальных read-only
   адаптеров; browser paths, credentials, IP и raw fingerprint evidence в DTO
@@ -79,8 +80,9 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   evidence cycle; локальный ad-hoc кандидат не считается релизным доказательством;
 - verifier получил отдельный `--require-verified` release mode: partial и
   unverified candidate reports нельзя случайно повысить до release evidence;
-- полный Swift gate: 598 тестов в 65 suite, включая manager, privacy,
-  isolation, lifecycle, provenance, responsive layout и performance проверки.
+- для релиза 0.7.8 зафиксированы 616 Swift-тестов в 68 suite; текущий
+  manager-only checkout прошёл 628 Swift-тестов в 70 suite и 684 Python-тестов
+  (1 skipped). Эти цифры не являются release gate нового candidate.
 - typed redacted support-bundle export: UI constructs only allowlisted aggregate
   data, writes a <=64 KiB JSON through the system Save dialog, and the independent
   verifier rejects unknown or sensitive fields.
@@ -93,12 +95,24 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## P1: public beta
 
-P1 ниже содержит только долгосрочные улучшения после разблокировки runtime;
-перечисленные выше manager-функции больше не считаются незавершёнными.
+В 0.7.8 уже есть summary свежести proxy-проверки. Он показывает состояние и
+возраст результата, но не раскрывает IP или сетевые адреса.
 
-Следующие manager-only slices: summary истории proxy-проверки, 2–3 безопасных
-quick-start templates, read-only release evidence dashboard и explicit profile
-integrity repair assistant.
+В текущем незапубликованном рабочем срезе реализованы два компактных quick-start
+шаблона («Работа», «Тестирование») в существующем редакторе, session-only отчёт
+о доступности browser-функций с привязкой к свежему аудиту точного профиля и
+runtime, а также локальная read-only release-evidence summary CLI. Отчёт не
+проверяет отдельный сайт, его вход или бизнес-сценарии. Эти изменения не
+являются частью публичного 0.7.8 и не меняют Chromium.
+
+Explicit profile integrity repair assistant остаётся исследовательским
+кандидатом: до реализации нужен отдельный UX и recovery threat review.
+
+Текущий локальный цикл переносит snapshot save/restore и подготовку
+plain/encrypted export из UI-потока. В текущем процессе после автоматического
+восстановления метаданных остаётся краткая read-only сводка в «Диагностике».
+Изменения ещё не являются публичным релизом; смотрите
+`docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md` и артефакты цикла.
 
 - воспроизводимые budgets для cold/warm start именно Chromium runtime, idle
   CPU/RAM и browser launch — manager-only ceilings выше уже закрыты отдельно,

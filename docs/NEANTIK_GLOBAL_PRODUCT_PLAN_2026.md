@@ -28,14 +28,16 @@ NeAntik — локальный macOS-браузер с независимыми 
 
 ## 2. Что уже есть на исходной точке
 
-Публичный baseline перед этим срезом:
+Публичный baseline текущего цикла:
 
-- NeAntik 0.7.7, build 70;
+- NeAntik 0.7.8, build 71 (опубликован 24 сентября 2026);
 - Direct Distribution для Apple Silicon;
 - встроенный Chromium 153.0.8010.52 ARM64 Metal;
 - локальные профили, папки, поиск, теги, snapshots, безопасное копирование;
 - metadata-only import/export через системные диалоги;
 - 0.7.7 исправляет ложные статусы lock/recovery и диагностику VoiceOver;
+- 0.7.8 считает размер BrowserData, импортирует конфигурации и показывает
+  proxy-check freshness вне ложного состояния «свежо»;
 - atomic folder distribution для импорта;
 - lifecycle health center: locks, recovery, BrowserData size, last launch;
 - aggregate privacy panel без device IDs и raw values;
@@ -56,12 +58,12 @@ request inventory, usability-polish и release automation.
 
 Входит:
 
-- новый большой план и явная матрица статусов;
-- manager-only улучшения, не требующие пересборки Chromium;
-- единая модель понятного следующего действия в диагностике профиля;
-- тесты, release notes, version bump и полный release gate при наличии всех
-  подтверждённых артефактов;
-- повторная проверка секретов/лишних файлов в Git history перед публикацией.
+- manager-only улучшения после 0.7.8 без изменения Chromium;
+- перенос оставшихся тяжёлых profile-file операций с UI-потока;
+- benchmark-first аудит поиска, папок, тегов и accessibility;
+- исправление только доказанных пробелов, не добавляя лишних панели и настроек;
+- тесты, version bump и Direct release gates, если exact candidate проходит
+  все подтверждённые проверки.
 
 Не входит в эту итерацию:
 
@@ -174,24 +176,24 @@ MoreLogin повторяют устойчивый набор функций:
 | P0-09 | Secret/history audit | done | Нет credential-like files/values в reachable history |
 | P0-10 | Manager perf budgets | done | p50/p95 отдельно от Chromium metrics |
 | P0-11 | Accessible primary actions | done | Keyboard/VoiceOver labels and hints |
-| P0-12 | Release version floor | next | Новый manager build строго выше public floor |
+| P0-12 | Release version floor | done | Новый manager build строго выше public floor; проверено v0.7.8/71 |
 
 ### P1 — следующий функциональный слой без изменения ядра
 
 | ID | Работа | Статус | Критерий готовности |
 |---|---|---|---|
 | P1-01 | Diagnostics next-step UX | done | Attention state даёт короткое действие |
-| P1-02 | Proxy test result history summary | next | Только last state/freshness/verdict, без IP |
-| P1-03 | Profile quick-start templates | next | 2–3 safe templates, никаких самолётных настроек |
+| P1-02 | Proxy test result history summary | done in 0.7.8 | Только last state/freshness/verdict, без IP |
+| P1-03 | Profile quick-start templates | done in working tree | 2–3 safe templates, только имя/тег; ещё не выпущено |
 | P1-04 | Snapshot retention/restore clarity | done | Last 3, fresh identity, corruption gate |
 | P1-05 | Read-only support bundle | done | Allowlist-only, <=64 KiB |
 | P1-06 | Local diagnostics adapter design | defer | Только read-only, authenticated loopback |
 | P1-07 | Signed runtime update + rollback | runtime-gate | Signed manifest, atomic swap, rollback proof |
 | P1-08 | Chromium background-request inventory | runtime-gate | Exact runtime capture and policy decision |
 | P1-09 | Runtime cold/warm/idle metrics | runtime-gate | Qualified producer + exact hash + GUI smoke |
-| P1-10 | Site compatibility report | next | User sees compatibility category, not spoof raw values |
-| P1-11 | Profile integrity repair assistant | next | Explicit repair actions, backup first, no silent mutation |
-| P1-12 | Release evidence dashboard | next | Read-only local summary of gate state |
+| P1-10 | Site compatibility report | done in working tree | Показывает локальную доступность API; stale через 24 часа; не доказывает успех сайта |
+| P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
+| P1-12 | Release evidence dashboard | done in working tree | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -202,13 +204,13 @@ MoreLogin повторяют устойчивый набор функций:
 | P2-03 | Media capability cohort audit | runtime-gate | No raw device IDs, only approved classes |
 | P2-04 | WebRTC route policy matrix | runtime-gate | direct/proxied/relay cases measured |
 | P2-05 | Download policy inventory | runtime-gate | Chromium requests classified before policy change |
-| P2-06 | Visual responsive polish | next | Detail/sidebar remain usable at narrow widths |
-| P2-07 | Onboarding first-run copy | next | One primary action and no technical noise |
-| P2-08 | Documentation/tutorials | next | Local-first profiles, privacy and recovery explained |
-| P2-09 | Reproducible manager build metadata | next | No local absolute source paths in binary |
-| P2-10 | Fuzz malformed imports | candidate 0.7.8 | Decoder fail-closed, bounded CPU/memory |
-| P2-11 | Fuzz provenance/quarantine records | candidate 0.7.8 | Unknown fields and path traversal rejected |
-| P2-12 | Release rollback rehearsal | next | Public candidate can be restored from retained bytes |
+| P2-06 | Visual responsive polish | done | Narrow-width view snapshots и flexible columns покрыты render tests |
+| P2-07 | Onboarding first-run copy | done | Один основной create/open action, понятный retry и VoiceOver hints |
+| P2-08 | Documentation/tutorials | done in working tree | Bilingual profile privacy, snapshot/restore and configuration-transfer guide; not yet published |
+| P2-09 | Reproducible manager build metadata | done in 0.7.8 | Candidate provenance и privacy verifier; нет build-machine paths |
+| P2-10 | Fuzz malformed imports | done in 0.7.8 | Decoder fail-closed, bounded size/count, malformed corpus |
+| P2-11 | Fuzz provenance/quarantine records | done in 0.7.8 | Unknown fields, symlink ancestor и path traversal отклоняются |
+| P2-12 | Release rollback rehearsal | done in working tree | Retained ZIP/DMG v0.7.8 скопированы во временный staging и повторно сверены по байтам; public current и исходные файлы не менялись. Не является install/launch или hosted rollback smoke. |
 
 ### Defer permanently unless product direction changes
 
@@ -275,48 +277,57 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 эту разницу и не называется обновлением безопасности ядра. Подготовка релиза
 должна применить существующие Direct-гейты без Chromium rebuild.
 
-## 8. План выполнения по фазам
+## 8. План выполнения текущего цикла
 
-### Фаза 0 — контроль исходной точки
+### Фаза 0 — verified baseline
 
-- проверить branch/status/HEAD;
-- проверить version/build/runtime lock;
-- проверить reachable Git history на секреты и лишние release artifacts;
-- зафиксировать текущие test counts и baseline.
+- текущий публичный floor: v0.7.8 / build 71, Chromium 153.0.8010.52;
+- source branch: `codex/neantik-workplaces`, незакоммиченный manager-only diff;
+- заново подтвердить public GitHub release и browser.free deployment/API;
+- проверить signing identity и notary profile, не раскрывая credential values.
 
-### Фаза 1 — новая функция
+### Фаза 1 — manager-only vertical slice
 
-- реализовать P1-01;
-- добавить unit tests и UI/presentation tests;
-- обновить ROADMAP и CHANGELOG;
-- прогнать Swift test suite, lint/build и targeted verifiers.
+- сериализовать snapshot save/restore и plain/encrypted export вне UI-потока;
+- после успешного восстановления оставить компактное allowlisted уведомление в
+  Diagnostics на время текущего запуска; если профиль не выбран, показать его
+  на уровне workspace, включая пустой список;
+- отменять незавершённые профильные file operations при закрытии workspace и
+  проверять отмену до commit восстановления;
+- записывать plain/encrypted export files атомарно в фоновом потоке;
+- сообщать точное число сохранённых остановленных профилей и пропущенных
+  работающих профилей после snapshot;
+- перед restore commit повторно проверить активные профили и использовать
+  существующую атомарную транзакцию;
+- явно описать поля proxy-login в экспорте; не включать proxy passwords,
+  BrowserData, cookies, notes, identity seeds или Keychain;
+- покрыть профильные файлы на границах/ошибках, metadata-only contract,
+  VoiceOver progress, privacy copy и performance regressions;
+- зафиксировать stale roadmap cleanup и следующий recovery-UX candidate.
 
-### Фаза 2 — release candidate
+### Фаза 2 — exact manager candidate
 
-- поднять только manager version/build — выполнено для 0.7.6/69;
-- собрать Direct candidate на существующем Chromium;
-- повторить source binding, runtime integrity, privacy, isolation и manager
-  checks;
-- не считать локальный unsigned build публичным релизом.
+- назначить следующую версию/build выше v0.7.8/71 только после прохождения
+  полного набора source, manager и privacy checks;
+- собрать manager-only Direct candidate с тем же exact Chromium/runtime;
+- связать candidate manifest, source commit, runtime hashes и UI evidence;
+- не считать Swift test build локальным release artifact.
 
-### Фаза 3 — публикация, только если gates зелёные
+### Фаза 3 — публикация только при зелёных gates
 
-- Developer ID signing;
-- Apple notarization через Keychain profile;
-- stapling;
-- Gatekeeper;
-- ZIP/DMG byte/hash verification;
-- GitHub Release — выполнено для v0.7.8;
-- browser.free manifest/page update — production version 89, `/api/release` и `/api/download` live-проверены;
-- fresh hosted ZIP/DMG download — SHA-256 совпал;
-- current/previous rollback сохранены: v0.7.8 / v0.7.7.
+- Developer ID, Apple notarization, stapling и Gatekeeper;
+- заново скачать ZIP и DMG и сверить точные SHA-256;
+- обновить GitHub Release и browser.free contract/page только для exact
+  проверенного candidate;
+- проверить production deployment и публичный `/api/release` contract;
+- сохранить v0.7.8 и v0.7.7 как rollback releases.
 
 ## 9. Release acceptance gates
 
 Публикация разрешена только если все пункты подтверждены свежими отчётами:
 
 1. exact source commit and clean intended diff;
-2. manager version/build greater than public 0.7.7/70 — выполнено (0.7.8/71);
+2. manager version/build greater than public v0.7.8/71;
 3. runtime version/hash remains exactly pinned and unchanged;
 4. package contains no secrets or local source paths;
 5. Swift tests and targeted tests pass;
@@ -349,13 +360,19 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 - Incogniton developer/API model: https://api-docs.incogniton.com/getting-started/introduction
 - MoreLogin browser profile API model: https://guide.morelogin.com/api-reference/browser
 
-## 11. Definition of done для этого goal
+## 11. Definition of done текущего manager-only goal
 
-- этот документ добавлен в Git и отражает реальное состояние, а не старый
-  список;
-- P1-01 реализован без Chromium rebuild;
-- targeted tests и полный Swift gate пройдены;
-- новая версия либо опубликована после всех release gates, либо честно
-  остановлена на конкретном доказуемом внешнем gate с сохранённым candidate;
-- в handoff перечислены commit, version/build, тесты, артефакты, live-check и
-  оставшиеся runtime-gate пункты.
+- roadmap отражает реальный код 0.7.8 и следующие неготовые пункты;
+- snapshot save/restore и plain/encrypted export не сериализуют большие
+  документы на UI-потоке;
+- повторное изменение состояния профилей не может привести к частичному
+  восстановлению или записи;
+- восстановление profiles/folders остаётся read-only evidence в Diagnostics;
+  повреждённый JSON, пути и BrowserData не показываются и не меняются;
+- search/folder/tag performance измерены, существующая семантика сохранена;
+- targeted tests, accessibility/render checks и полный Swift gate проходят;
+- runtime Chromium и fingerprint/network semantics не изменены;
+- новая версия опубликована после всех Direct gates, либо кандидат остановлен
+  на конкретном непрохождении gate без ложного объявления релиза;
+- handoff содержит source commit, version/build, тесты, SHA-256, live checks,
+  rollback и оставшиеся runtime-gate пункты.

@@ -50,11 +50,22 @@
 | 29 | Background-request inventory Chromium | P1 | runtime-gate | Сначала измерение точного runtime, затем отдельное решение по phishing/safe-download policy. |
 | 30 | Командная автоматизация, облачная синхронизация и RPA | P2 | defer | Сознательно не добавлять: они раздувают продукт и расширяют privacy/security surface. |
 | 31 | Next-step UX для карточки «Диагностика» | P1 | done | Для attention/unavailable показывается одно короткое следующее действие; ready остаётся тихим, raw значения не раскрываются. |
+| 32 | Компактные шаблоны нового профиля | P1 | done | Шаблоны предлагают только редактируемые имя и тег в существующей форме; остальные runtime defaults не меняются. |
+| 33 | Локальная сводка browser-feature availability | P1 | done | Отчёт привязан к свежему точному профилю/runtime, session-only, скрывает raw values и не утверждает совместимость конкретного сайта. |
+| 34 | Локальная read-only release-gate summary | P1 | done | CLI разделяет source binding, текущий candidate gate и исторические release claims; не читает credentials и raw evidence. |
+| 35 | Rehearsal retained Direct artifacts | P2 | done in working tree | ZIP/DMG v0.7.8 проверяются по release evidence, копируются во временный каталог и повторно хешируются; публичный current и исходные bytes не меняются. Это не install/launch или hosted rollback smoke. |
+| 36 | Локальное руководство профилей и recovery | P2 | done in working tree | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
 
 ## Что делать следующим без пересборки Chromium
 
-1. Поддерживать next-step UX в Swift/presentation regression tests.
-2. Повторять Swift gate, privacy/public-artifact audit,
+1. Держать quick-start, feature report и rollback rehearsal покрытыми
+   regression tests.
+2. Подготовить короткое локальное руководство по snapshot/export/recovery,
+   без нового отдельного раздела настроек.
+3. Рассмотреть explicit profile-integrity repair assistant только после
+   отдельного threat review; любые исправления должны быть opt-in, атомарными
+   и с проверяемым rollback.
+4. Повторять Swift gate, privacy/public-artifact audit,
    `git diff --check` и локальный audit; partial runtime report не становится
    release evidence.
 

@@ -46,6 +46,7 @@ case "$SUITE" in
   ProfileConfigurationTransferTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
+  ProfileSnapshotSaveSummaryTests|\
   ProfileEditorValidationTests|\
   ProfileEnvironmentInspectorTests|\
   ProfileEnvironmentPresentationTests|\
@@ -59,6 +60,7 @@ case "$SUITE" in
   ProfilePrivacyPanelTests|\
   ProxyCheckSummaryTests|\
   ProfileSnapshotTests|\
+  SiteCompatibilityAssessmentTests|\
   ProfileRevisionAndTransactionTests|\
   ProfileTagAppearanceTests|\
   ProfileTagEditorTests|\

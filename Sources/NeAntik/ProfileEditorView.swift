@@ -125,6 +125,9 @@ struct ProfileEditorView: View {
 
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
+  @State private var quickStartTemplate: ProfileQuickStartTemplate = .blank
+  @State private var generatedTemplateName: String?
+  @State private var generatedTemplateTag: String?
   @State private var colorHex: String
   @State private var symbolName: String
   @State private var tags: [String]
@@ -266,6 +269,59 @@ struct ProfileEditorView: View {
     VStack(spacing: 0) {
       ScrollViewReader { scrollProxy in
         Form {
+        if original == nil {
+          Section("Быстрый старт") {
+            Picker("Шаблон", selection: $quickStartTemplate) {
+              ForEach(ProfileQuickStartTemplate.allCases) { template in
+                Text(template.title).tag(template)
+              }
+            }
+            .accessibilityLabel("Шаблон нового профиля")
+            .onChange(of: quickStartTemplate) { previous, template in
+              let replacingGeneratedName = generatedTemplateName == name
+              let templateNameWasAlreadyPresent =
+                template.suggestedName == name
+              let templateTagWasAlreadyPresent = template.suggestedTag.map {
+                suggestedTag in tags.contains(where: {
+                  $0.localizedCaseInsensitiveCompare(suggestedTag) == .orderedSame
+                })
+              } ?? true
+              let replacingGeneratedTag = previous.suggestedTag.map { tag in
+                generatedTemplateTag == tag && tags.contains(where: {
+                  $0.localizedCaseInsensitiveCompare(tag) == .orderedSame
+                })
+              } ?? false
+              let draft = template.draft(
+                name: name,
+                tags: tags,
+                replacing: previous,
+                replacingGeneratedName: replacingGeneratedName,
+                replacingGeneratedTag: replacingGeneratedTag
+              )
+              let changed = draft.name != name || draft.tags != tags
+              generatedTemplateName =
+                changed && !templateNameWasAlreadyPresent &&
+                    draft.name == template.suggestedName
+                  ? template.suggestedName
+                  : nil
+              generatedTemplateTag =
+                changed && !templateTagWasAlreadyPresent &&
+                    template.suggestedTag.map({ tag in
+                  draft.tags.contains(where: {
+                    $0.localizedCaseInsensitiveCompare(tag) == .orderedSame
+                  })
+                }) == true
+                  ? template.suggestedTag
+                  : nil
+              name = draft.name
+              tags = draft.tags
+              if changed { hasUnsavedChanges = true }
+            }
+            Text("Заполняются только название и тег. Остальные параметры можно изменить перед сохранением.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+        }
         Section("Профиль") {
           TextField("Название", text: $name)
             .accessibilityLabel("Название профиля")
@@ -275,6 +331,9 @@ struct ProfileEditorView: View {
               focusedField = nil
             }
             .onChange(of: name) { _, value in
+              if value != generatedTemplateName {
+                generatedTemplateName = nil
+              }
               hasUnsavedChanges = true
               clearValidation(for: .name)
               if value.count > BrowserProfile.maximumNameLength {
@@ -301,6 +360,15 @@ struct ProfileEditorView: View {
             suggestions: suggestedTags
           )
           .id(ProfileEditorField.tags)
+          .onChange(of: tags) { _, value in
+            if let generatedTemplateTag,
+               !value.contains(where: {
+                 $0.localizedCaseInsensitiveCompare(generatedTemplateTag) == .orderedSame
+               })
+            {
+              self.generatedTemplateTag = nil
+            }
+          }
           validationLabel(for: .tags)
 
           noteEditor

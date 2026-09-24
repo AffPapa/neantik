@@ -24,6 +24,16 @@ struct ProfileEnvironmentView: View {
             VStack(alignment: .leading, spacing: 0) {
                 overview
 
+                if let compatibility = snapshot.siteCompatibility {
+                    Divider().padding(.vertical, 8)
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        compatibilitySummary(
+                            compatibility,
+                            now: context.date
+                        )
+                    }
+                }
+
                 Divider()
                     .padding(.vertical, 8)
 
@@ -123,6 +133,36 @@ struct ProfileEnvironmentView: View {
         .onChange(of: snapshot.profileID) { _, _ in
             resetExpansion(for: snapshot)
         }
+    }
+
+    @ViewBuilder
+    private func compatibilitySummary(
+        _ assessment: SiteCompatibilityAssessment,
+        now: Date
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Совместимость среды браузера")
+                .font(.subheadline.weight(.semibold))
+            if assessment.isFresh(at: now) {
+                Text("Canvas · \(assessment.canvas.title)")
+                Text("WebGL · \(assessment.webGL.title)")
+                Text("Audio · \(assessment.audio.title)")
+                Text("Медиаустройства · \(assessment.mediaDevices.title)")
+                Text("Проверено: \(assessment.observedAt.neAntikDisplayDateTime)")
+                Text(assessment.limitations)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Label("Отчёт устарел · проверь среду заново", systemImage: "clock.badge.exclamationmark")
+                    .foregroundStyle(.secondary)
+                Text("Последняя проверка: \(assessment.observedAt.neAntikDisplayDateTime)")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Отчёт о совместимости среды браузера")
     }
 
     @ViewBuilder

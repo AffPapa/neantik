@@ -4,6 +4,42 @@ import Testing
 
 struct ProfileConfigurationTransferFileImportTests {
     @Test
+    func writesExportsOffMainActorAndReplacesDestinationAtomically() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try Data("old".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        try await ProfileConfigurationTransferFileImportService.writeExport(
+            Data("new export".utf8),
+            to: url
+        )
+
+        #expect(try Data(contentsOf: url) == Data("new export".utf8))
+    }
+
+    @Test
+    func exportWriteFailureLeavesExistingDestinationUntouched() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: false
+        )
+        let url = directory.appendingPathComponent("existing.json")
+        try Data("preserve".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        await #expect(throws: (any Error).self) {
+            try await ProfileConfigurationTransferFileImportService.writeExport(
+                Data("replacement".utf8),
+                to: directory
+            )
+        }
+        #expect(try Data(contentsOf: url) == Data("preserve".utf8))
+    }
+
+    @Test
     func readsAndValidatesConfigurationOnImportService() async throws {
         let document = try ProfileConfigurationTransferDocument(
             profiles: [BrowserProfile(name: "Импорт")]

@@ -1,5 +1,35 @@
 # NeAntik changelog
 
+## Direct 0.7.9 (72) — 24 сентября 2026
+
+- New-profile quick-start offers editable «Работа» and «Тестирование» templates;
+  they prefill only a suggested name and tag and leave runtime settings alone.
+- Profile diagnostics can show a 24-hour, exact-profile/runtime-bound summary
+  of observed browser feature availability. It explicitly does not claim that a
+  particular site works or that its login/business flows were tested.
+- `scripts/neantik-release-evidence-summary.py` prints a local read-only release
+  gate summary, separating historical release records from current candidate
+  evidence without reading credentials or raw fingerprint reports.
+- Snapshot save/restore and plain/encrypted profile export prepare data off the
+  UI thread; restore rechecks running profiles before its atomic commit.
+- Diagnostics retains a compact, read-only recovery notice for the current
+  app session after profile or folder metadata is recovered. It remains
+  visible with no selected profile, including an empty workspace.
+- Closing the workspace cancels in-flight profile import, export, and snapshot
+  tasks before any pending restore commit.
+- Plain and encrypted export files are written atomically off the UI thread.
+- Cancelling import validation remains a cancellation state, not a corrupt-file
+  error.
+- Snapshot completion says how many stopped profiles were saved and how many
+  running profiles were skipped.
+- Export/import copy explicitly states that proxy login is included, while
+  proxy passwords, BrowserData, cookies, notes, identity seeds and Keychain
+  secrets are not.
+- Snapshot read failures do not expose local paths in the UI.
+- Chromium 153.0.8010.52 is retained unchanged; this is a manager-only release,
+  not a Chromium security update. Publication still requires exact-candidate
+  Developer ID, notarization, Gatekeeper, hosted-asset and live-site gates.
+
 ## Direct 0.7.8 (71) — 24 сентября 2026
 
 - Подсчёт объёма BrowserData выполняется отменяемой фоновой задачей; интерфейс

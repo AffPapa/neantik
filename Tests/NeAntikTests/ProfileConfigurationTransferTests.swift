@@ -158,6 +158,50 @@ struct ProfileConfigurationTransferTests {
     }
 
     @Test
+    func backgroundExportPreservesMetadataOnlyContractForPlainAndEncryptedFiles() async throws {
+        let profile = BrowserProfile(
+            name: "Профиль экспорта",
+            note: "private note must not be exported",
+            startURL: "https://example.com",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: "proxy-user"
+            ),
+            identity: BrowserIdentity(seed: 17)
+        )
+        let folders = [profile.id: "Работа"]
+        let plain = try await ProfileConfigurationTransferFileImportService
+            .prepareExport(
+                profiles: [profile],
+                folderNameByProfileID: folders
+            )
+        let plainText = try #require(String(data: plain, encoding: .utf8))
+        #expect(plainText.contains("proxy.example"))
+        #expect(plainText.contains("proxy-user"))
+        #expect(plainText.contains("Работа"))
+        #expect(!plainText.contains("private note"))
+        #expect(!plainText.contains("runtimeSeed"))
+
+        let encrypted = try await ProfileConfigurationTransferFileImportService
+            .prepareEncryptedExport(
+                profiles: [profile],
+                folderNameByProfileID: folders,
+                passphrase: "correct horse battery staple"
+            )
+        #expect(!encrypted.contains(Data("Профиль экспорта".utf8)))
+        #expect(!encrypted.contains(Data("proxy-user".utf8)))
+        let opened = try ProfileConfigurationEncryption.open(
+            encrypted,
+            passphrase: "correct horse battery staple"
+        )
+        #expect(opened.folderName(at: 0) == "Работа")
+        #expect(try opened.makeProfiles().first?.note == "")
+        #expect(try opened.makeProfiles().first?.proxy?.username == "proxy-user")
+    }
+
+    @Test
     func decoderAcceptsSharedFoldersAndRejectsUnsupportedSchema() throws {
         let first = ProfileConfigurationTransferEntry(
             name: "Первый",

@@ -14,20 +14,17 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Current source candidate for the next public-alpha release:
+The latest published Direct release is NeAntik `0.7.8` (build `71`).
+This working tree prepares a manager-only `0.7.9` (build `72`) candidate; it
+is not a public binary release until every release gate passes.
 
-- NeAntik `0.7.5` build `68`;
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `153.0.8010.52`, ARM64, Metal;
-- ZIP: `NeAntik-0.7.5-arm64-notarized.zip`;
-- DMG: `NeAntik-0.7.5-arm64-notarized.dmg`;
-- SHA-256 sidecars will be published with the assets after all release gates pass.
+- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.8](https://github.com/AffPapa/neantik/releases/tag/v0.7.8).
 
-The published rollback release is `0.7.4 (67)`. Candidate `0.7.5 (68)` carries
-the manager/UI and verifier improvements while retaining the already qualified
-Chromium 153 runtime without rebuilding Chromium. It is not a public binary
-release until signing, notarization, Gatekeeper and fresh GitHub download
-verification complete.
+Candidate `0.7.9` retains Chromium without rebuilding it. Public `0.7.8`
+remains the rollback point. The new binary will be published only after signing,
+notarization, Gatekeeper and downloaded-asset checks pass.
 
 Product website: <https://affpapa.org/neantik>.
 
@@ -77,7 +74,7 @@ NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Public `0.7.4` is published for public-alpha profile isolation. Strict
+Public `0.7.8` is published for public-alpha profile isolation. Strict
 production fingerprint coherence across every browser and network surface
 remains incomplete and is tracked as a limitation.
 
@@ -106,6 +103,9 @@ identical across different users.
 The full Chromium checkout and build output are intentionally not committed.
 The runtime is reconstructed from the pinned upstream Chromium source plus the
 checked-in patchset. See [Building from source](docs/BUILDING.md).
+
+For profile data boundaries, snapshots, recovery and configuration transfer,
+see [Profiles, privacy, and recovery](docs/PROFILE_PRIVACY_AND_RECOVERY.md).
 
 ## Build the manager
 

@@ -100,6 +100,7 @@ struct ProfileEnvironmentSnapshot: Equatable, Sendable {
     let generatedAt: Date
     let sections: [EnvironmentDiagnosticSection]
     let limitations: [String]
+    var siteCompatibility: SiteCompatibilityAssessment? = nil
 }
 
 enum FingerprintObservedRoute: Equatable, Sendable {
@@ -202,6 +203,7 @@ enum ProfileEnvironmentInspector {
         proxyHealth: ProxyHealthState?,
         fingerprintObservation:
             ValidatedProfileFingerprintObservation? = nil,
+        siteCompatibility: SiteCompatibilityAssessment? = nil,
         now: Date = Date()
     ) -> ProfileEnvironmentSnapshot {
         let capabilities = runtime?.capabilities ?? []
@@ -259,7 +261,10 @@ enum ProfileEnvironmentInspector {
                     "маршрут запущенного Chromium.",
                 "Фактические HTTP, DNS, QUIC и публичный " +
                     "WebRTC-маршруты не измеряются."
-            ]
+            ],
+            siteCompatibility: siteCompatibility?.isUsable(
+                for: profile, runtime: runtime, now: now
+            ) == true ? siteCompatibility : nil
         )
     }
 

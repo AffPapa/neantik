@@ -14,6 +14,7 @@ final class ProfileStore: ObservableObject {
     @Published private(set) var organization = ProfileOrganizationState.empty {
         didSet { profileListRevision &+= 1 }
     }
+    @Published private(set) var recoveryNotice: ProfileRecoveryNotice?
     @Published var lastError: String?
 
     /// Monotonic cache key for derived profile-list indexes.
@@ -59,6 +60,9 @@ final class ProfileStore: ObservableObject {
                     load.profiles
                 )
                 profiles = normalized.profiles
+                if load.recovered {
+                    recordRecoveryNotice(profileMetadataRecovered: true)
+                }
                 if FileManager.default.fileExists(
                     atPath: paths.profilesFile.path
                 ) {
@@ -82,6 +86,9 @@ final class ProfileStore: ObservableObject {
                             knownProfileIDs: Set(profiles.map(\.id))
                         )
                     organization = organizationLoad.state
+                    if organizationLoad.recovered {
+                        recordRecoveryNotice(folderMetadataRecovered: true)
+                    }
                     if FileManager.default.fileExists(
                         atPath: paths.profileOrganizationFile.path
                     ) {
@@ -1174,6 +1181,9 @@ final class ProfileStore: ObservableObject {
 
     private func reloadLatestProfilesForMutation() throws {
         let load = try Self.readProfilesWithRecovery(paths: paths)
+        if load.recovered {
+            recordRecoveryNotice(profileMetadataRecovered: true)
+        }
         let normalized = try Self.normalizedForIsolation(load.profiles)
         profiles = normalized.profiles
         sortProfiles()
@@ -1227,12 +1237,33 @@ final class ProfileStore: ObservableObject {
             knownProfileIDs: Set(profiles.map(\.id))
         )
         organization = load.state
+        if load.recovered {
+            recordRecoveryNotice(folderMetadataRecovered: true)
+        }
         if load.changed {
             try persistOrganization()
         }
         if let warning = load.warning {
             lastError = Self.joinWarnings(lastError, warning)
         }
+    }
+
+    private func recordRecoveryNotice(
+        profileMetadataRecovered: Bool = false,
+        folderMetadataRecovered: Bool = false
+    ) {
+        let current = recoveryNotice
+        let profilesRecovered =
+            (current?.profileMetadataRecovered ?? false) ||
+            profileMetadataRecovered
+        let foldersRecovered =
+            (current?.folderMetadataRecovered ?? false) ||
+            folderMetadataRecovered
+        guard profilesRecovered || foldersRecovered else { return }
+        recoveryNotice = ProfileRecoveryNotice(
+            profileMetadataRecovered: profilesRecovered,
+            folderMetadataRecovered: foldersRecovered
+        )
     }
 
     private static func moveDirectoryToTrash(_ directory: URL) throws -> URL {
@@ -1427,7 +1458,11 @@ final class ProfileStore: ObservableObject {
 
     private static func readProfilesWithRecovery(
         paths: AppPaths
-    ) throws -> (profiles: [BrowserProfile], warning: String?) {
+    ) throws -> (
+        profiles: [BrowserProfile],
+        warning: String?,
+        recovered: Bool
+    ) {
         // Every caller, including mutation reloads, must fail before reading if
         // another process replaced metadata with a symlink or non-regular
         // entry. The metadata guard coordinates NeAntik instances; this check
@@ -1436,7 +1471,8 @@ final class ProfileStore: ObservableObject {
         do {
             return (
                 try readProfiles(from: paths.profilesFile),
-                nil
+                nil,
+                false
             )
         } catch is DecodingError {
             try paths.validatePrivateFile(paths.profilesFile)
@@ -1457,7 +1493,8 @@ final class ProfileStore: ObservableObject {
             try paths.writePrivateFile(backupData, to: paths.profilesFile)
             return (
                 recovered,
-                "Повреждённый файл профилей сохранён в папке Recovery. NeAntik восстановил предыдущую локальную версию; данные браузеров не изменялись."
+                "Повреждённый файл профилей сохранён в папке Recovery. NeAntik восстановил предыдущую локальную версию; данные браузеров не изменялись.",
+                true
             )
         }
     }
@@ -1473,7 +1510,8 @@ final class ProfileStore: ObservableObject {
             return ProfileOrganizationLoad(
                 state: .empty,
                 changed: false,
-                warning: nil
+                warning: nil,
+                recovered: false
             )
         case .unsafe:
             throw POSIXError(.EFTYPE)
@@ -1492,7 +1530,8 @@ final class ProfileStore: ObservableObject {
             return ProfileOrganizationLoad(
                 state: decoded.state,
                 changed: decoded.changed,
-                warning: nil
+                warning: nil,
+                recovered: false
             )
         } catch let currentError {
             switch try paths.privateFileEntryKind(
@@ -1526,7 +1565,8 @@ final class ProfileStore: ObservableObject {
                 state: recovered.state,
                 changed: recovered.changed,
                 warning:
-                    "Повреждённый файл папок сохранён в Recovery. NeAntik восстановил предыдущую организацию; профили и данные браузеров не изменялись."
+                    "Повреждённый файл папок сохранён в Recovery. NeAntik восстановил предыдущую организацию; профили и данные браузеров не изменялись.",
+                recovered: true
             )
         }
     }
@@ -1669,6 +1709,7 @@ private struct ProfileOrganizationLoad {
     let state: ProfileOrganizationState
     let changed: Bool
     let warning: String?
+    let recovered: Bool
 }
 
 private struct BrowserIdentityAllocationError: LocalizedError {

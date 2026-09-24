@@ -44,6 +44,30 @@ struct ResponsiveLayoutRenderTests {
         )
 
         try render(
+            ProfileLifecycleHealthView(
+                snapshot: .empty,
+                recoveryNotice: ProfileRecoveryNotice(
+                    profileMetadataRecovered: true,
+                    folderMetadataRecovered: true
+                )
+            ),
+            name: "profile-recovery-notice",
+            size: CGSize(width: 520, height: 300)
+        )
+
+        try render(
+            ProfileRecoveryWorkspaceNoticeView(
+                notice: ProfileRecoveryNotice(
+                    profileMetadataRecovered: true,
+                    folderMetadataRecovered: false
+                )
+            ),
+            name: "workspace-recovery-notice",
+            size: CGSize(width: 480, height: 96),
+            minimumPNGBytes: 1_000
+        )
+
+        try render(
             ProfileEditorView(
                 original: profileA,
                 keychain: KeychainStore(
@@ -55,6 +79,68 @@ struct ResponsiveLayoutRenderTests {
             ) { _, _ in },
             name: "profile-editor-minimum",
             size: CGSize(width: 460, height: 380)
+        )
+
+        try render(
+            ProfileEditorView(
+                original: nil,
+                keychain: KeychainStore(
+                    backend: LayoutRenderKeychainBackend(),
+                    service: "layout.render.new-profile",
+                    legacyService: nil
+                ),
+                folders: [],
+                initialFolderID: nil,
+                suggestedTags: []
+            ) { _, _, _ in },
+            name: "profile-editor-new-profile-minimum",
+            size: CGSize(width: 460, height: 420)
+        )
+
+        let compatibilityRuntime = BrowserRuntime(
+            name: "Layout Runtime",
+            executableURL: URL(fileURLWithPath: "/tmp/layout-runtime"),
+            source: "test",
+            inspection: BrowserRuntimeInspection(
+                version: "153.0.8010.52",
+                architectures: ["arm64"],
+                codeSignatureValid: true
+            )
+        )
+        let compatibilityProfile = BrowserProfile(name: "Совместимость")
+        let compatibility = SiteCompatibilityAssessment(
+            profileID: compatibilityProfile.id,
+            observedAt: Date(),
+            configurationRevision: ProfileFingerprintConfigurationRevision(
+                profile: compatibilityProfile,
+                runtime: compatibilityRuntime
+            ),
+            canvas: .observed,
+            webGL: .observed,
+            audio: .unavailable,
+            mediaDevices: .notChecked,
+            limitations: "Проверяет доступность API, не выбранный сайт."
+        )
+        try render(
+            ProfileEnvironmentView(
+                snapshot: ProfileEnvironmentSnapshot(
+                    schemaVersion: ProfileEnvironmentSnapshot.currentSchemaVersion,
+                    profileID: compatibilityProfile.id,
+                    generatedAt: Date(),
+                    sections: [],
+                    limitations: [],
+                    siteCompatibility: compatibility
+                ),
+                hasProxy: false,
+                isTestingProxy: false,
+                canTestProxy: false,
+                canCancelProxyTest: false,
+                canRunFingerprintAudit: false,
+                onTestProxy: {},
+                onRunFingerprintAudit: {}
+            ),
+            name: "site-compatibility-report",
+            size: CGSize(width: 520, height: 360)
         )
 
         for (appearanceName, colorScheme) in [
@@ -538,7 +624,8 @@ struct ResponsiveLayoutRenderTests {
         name: String,
         size: CGSize,
         styleMask: NSWindow.StyleMask = [.borderless],
-        colorScheme: ColorScheme = .dark
+        colorScheme: ColorScheme = .dark,
+        minimumPNGBytes: Int = 10_000
     ) throws {
         let hostingView = NSHostingView(
             rootView:
@@ -595,7 +682,7 @@ struct ResponsiveLayoutRenderTests {
                   using: .png,
                   properties: [:]
               ),
-              data.count > 10_000
+              data.count > minimumPNGBytes
         else {
             throw LayoutRenderError.invalidImage(name)
         }

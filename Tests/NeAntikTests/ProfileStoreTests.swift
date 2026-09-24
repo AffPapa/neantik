@@ -960,6 +960,14 @@ struct ProfileStoreTests {
                 "Previous revision"
         )
         #expect(recovered.lastError?.contains("Recovery") == true)
+        #expect(
+            recovered.recoveryNotice == ProfileRecoveryNotice(
+                profileMetadataRecovered: true,
+                folderMetadataRecovered: false
+            )
+        )
+        recovered.lastError = nil
+        #expect(recovered.recoveryNotice?.profileMetadataRecovered == true)
         #expect(FileManager.default.fileExists(atPath: marker.path))
         let recoveryFiles = try FileManager.default.contentsOfDirectory(
             at: paths.profilesRecoveryDirectory,

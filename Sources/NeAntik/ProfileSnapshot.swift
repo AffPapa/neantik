@@ -145,12 +145,25 @@ enum ProfileSnapshotStore {
         guard isInsideSnapshots(url, paths: paths) else {
             throw ProfileSnapshotError.unsafeLocation
         }
-        try paths.validatePrivateFile(url)
-        let values = try url.resourceValues(forKeys: [.fileSizeKey])
-        if let fileSize = values.fileSize, fileSize > maximumFileBytes {
-            throw ProfileSnapshotError.fileTooLarge
+        do {
+            try paths.validatePrivateFile(url)
+            let values = try url.resourceValues(forKeys: [.fileSizeKey])
+            if let fileSize = values.fileSize, fileSize > maximumFileBytes {
+                throw ProfileSnapshotError.fileTooLarge
+            }
+        } catch let error as ProfileSnapshotError {
+            throw error
+        } catch {
+            // Keep filesystem paths and low-level errors out of the UI. An
+            // unsafe or unreadable snapshot is simply not a valid snapshot.
+            throw ProfileSnapshotError.invalidFile
         }
-        let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: [.mappedIfSafe])
+        } catch {
+            throw ProfileSnapshotError.invalidFile
+        }
         guard data.count <= maximumFileBytes else {
             throw ProfileSnapshotError.fileTooLarge
         }

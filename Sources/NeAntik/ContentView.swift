@@ -188,6 +188,8 @@ struct ContentView: View {
     @State private var fingerprintAuditRequest: FingerprintAuditRequest?
     @State private var privacyPanelByProfileID:
         [UUID: ProfilePrivacyPanelSnapshot] = [:]
+    @State private var siteCompatibilityByProfileID:
+        [UUID: SiteCompatibilityAssessment] = [:]
     @State private var lifecycleHealthByProfileID:
         [UUID: ProfileLifecycleHealthSnapshot] = [:]
     @State private var artifactProvenanceByProfileID:
@@ -196,6 +198,11 @@ struct ContentView: View {
     @State private var transferPassphraseMode:
         ProfileConfigurationPassphraseMode?
     @State private var isImportingProfileConfigurations = false
+    @State private var isPreparingProfileExport = false
+    @State private var isSavingLocalSnapshot = false
+    @State private var isRestoringLocalSnapshot = false
+    @State private var backgroundFileOperationTasks:
+        [UUID: Task<Void, Never>] = [:]
     @State private var localError: String?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var resolvedRuntime: BrowserRuntime?
@@ -270,6 +277,9 @@ struct ContentView: View {
             bulkProxyImportRequest != nil ||
             transferPassphraseMode != nil ||
             isImportingProfileConfigurations ||
+            isPreparingProfileExport ||
+            isSavingLocalSnapshot ||
+            isRestoringLocalSnapshot ||
             showingReleaseFingerprintAudit ||
             fingerprintAuditRequest != nil ||
             showingDeleteConfirmation ||
@@ -436,7 +446,10 @@ struct ContentView: View {
             fingerprintObservation:
                 fingerprintObservationStore.observation(
                     for: selectedProfile.id
-                )
+                ),
+            siteCompatibility: siteCompatibilityByProfileID[
+                selectedProfile.id
+            ]
         )
     }
 
@@ -504,14 +517,20 @@ struct ContentView: View {
     }
 
     private var workspaceBase: some View {
-        GeometryReader { proxy in
-            workspaceNavigation
-                .onAppear {
-                    updateWorkspaceColumns(for: proxy.size.width)
-                }
-                .onChange(of: proxy.size.width) { _, width in
-                    updateWorkspaceColumns(for: width)
-                }
+        VStack(spacing: 0) {
+            if selection == nil, let recoveryNotice = store.recoveryNotice {
+                ProfileRecoveryWorkspaceNoticeView(notice: recoveryNotice)
+            }
+            GeometryReader { proxy in
+                workspaceNavigation
+                    .onAppear {
+                        updateWorkspaceColumns(for: proxy.size.width)
+                    }
+                    .onChange(of: proxy.size.width) { _, width in
+                        updateWorkspaceColumns(for: width)
+                    }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -668,6 +687,15 @@ struct ContentView: View {
                         ProfilePrivacyPanelSnapshot.from(
                             capture: report.firstInitial
                         )
+                    if let profile = request.auditedProfiles.first(where: {
+                        $0.id == report.firstInitial.profileID
+                    }), let assessment = SiteCompatibilityAssessment.resolve(
+                        report: report,
+                        profile: profile,
+                        runtime: request.runtime
+                    ) {
+                        siteCompatibilityByProfileID[profile.id] = assessment
+                    }
                     for observation in
                         report.revisionBoundFingerprintObservations(
                             auditedProfiles: request.auditedProfiles,
@@ -927,6 +955,7 @@ struct ContentView: View {
         }
         .onDisappear {
             cancelProxyTests()
+            cancelBackgroundFileOperations()
         }
     }
 
@@ -1225,7 +1254,27 @@ struct ContentView: View {
         folderNameRequest = FolderNameRequest(folder: nil)
     }
 
+    private func runBackgroundFileOperation(
+        _ operation: @escaping @MainActor () async -> Void
+    ) {
+        let id = UUID()
+        let task = Task { @MainActor in
+            await operation()
+            backgroundFileOperationTasks[id] = nil
+        }
+        backgroundFileOperationTasks[id] = task
+    }
+
+    private func cancelBackgroundFileOperations() {
+        for task in backgroundFileOperationTasks.values {
+            task.cancel()
+        }
+        backgroundFileOperationTasks.removeAll()
+    }
+
     private func exportProfileConfigurations() {
+        guard !isPreparingProfileExport else { return }
+        isPreparingProfileExport = true
         let stoppedProfiles = store.profiles.filter {
             processes.processState(for: $0.id) == .stopped
         }
@@ -1240,29 +1289,39 @@ struct ContentView: View {
                 return (profile.id, folder.name)
             }
         )
-        do {
-            guard let count = try ProfileConfigurationTransferFileCoordinator.export(
-                profiles: stoppedProfiles,
-                folderNameByProfileID: folderNames
-            ) else {
+        runBackgroundFileOperation {
+            defer { isPreparingProfileExport = false }
+            do {
+                try Task.checkCancellation()
+                announceWorkspaceStatus("Подготавливаю безопасный экспорт…")
+                guard let count = try await
+                    ProfileConfigurationTransferFileCoordinator.export(
+                        profiles: stoppedProfiles,
+                        folderNameByProfileID: folderNames
+                    ) else {
+                    return
+                }
+                try Task.checkCancellation()
+                announceWorkspaceStatus(
+                    "Экспортировано " + String(count) + " " +
+                        profileCountWord(count) +
+                        ". Proxy-login включён; пароли, cookies, BrowserData и Keychain-секреты — нет."
+                )
+            } catch is CancellationError {
                 return
+            } catch {
+                localError = error.localizedDescription
             }
-            announceWorkspaceStatus(
-                "Экспортировано " + String(count) + " " +
-                    profileCountWord(count) +
-                    " без данных браузера и секретов."
-            )
-        } catch {
-            localError = error.localizedDescription
         }
     }
 
     private func importProfileConfigurations() {
         guard !isImportingProfileConfigurations else { return }
         isImportingProfileConfigurations = true
-        Task {
+        runBackgroundFileOperation {
             defer { isImportingProfileConfigurations = false }
             do {
+                try Task.checkCancellation()
                 guard let document = try await
                     ProfileConfigurationTransferFileCoordinator.import()
                 else { return }
@@ -1291,6 +1350,8 @@ struct ContentView: View {
     }
 
     private func saveLocalSnapshot() {
+        guard !isSavingLocalSnapshot else { return }
+        let totalProfileCount = store.profiles.count
         let stoppedProfiles = store.profiles.filter {
             processes.processState(for: $0.id) == .stopped
         }
@@ -1306,48 +1367,73 @@ struct ContentView: View {
                 return (profile.id, folder.name)
             }
         )
-        do {
-            _ = try ProfileSnapshotStore.save(
-                profiles: stoppedProfiles,
-                folderNameByProfileID: folderNames,
-                paths: store.paths
-            )
-            announceWorkspaceStatus(
-                "Локальный snapshot сохранён. Хранятся последние 3 версии."
-            )
-        } catch {
-            localError = error.localizedDescription
+        isSavingLocalSnapshot = true
+        runBackgroundFileOperation {
+            defer { isSavingLocalSnapshot = false }
+            do {
+                try Task.checkCancellation()
+                announceWorkspaceStatus("Сохраняю локальный snapshot…")
+                _ = try await ProfileSnapshotFileService.save(
+                    profiles: stoppedProfiles,
+                    folderNameByProfileID: folderNames,
+                    paths: store.paths
+                )
+                try Task.checkCancellation()
+                announceWorkspaceStatus(
+                    ProfileSnapshotSaveSummary(
+                        savedProfileCount: stoppedProfiles.count,
+                        skippedRunningProfileCount:
+                            totalProfileCount - stoppedProfiles.count
+                    ).announcement
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                localError = error.localizedDescription
+            }
         }
     }
 
     private func restoreLocalSnapshot() {
+        guard !isRestoringLocalSnapshot else { return }
         guard processes.runningProfileIDs.isEmpty else {
             localError = "Сначала останови все профили, потом восстанавливай snapshot."
             return
         }
-        do {
-            guard let url = try ProfileSnapshotFileCoordinator.chooseSnapshot(
-                paths: store.paths
-            ) else { return }
-            let document = try ProfileSnapshotStore.document(
-                from: url,
-                paths: store.paths
-            )
-            let imported = try document.makeProfiles()
-            let saved = try store.insertImportedProfiles(
-                imported,
-                folderNames: document.configuration.profiles.map(\.folderName)
-            )
-            if let first = saved.first {
-                revealSavedProfile(first)
+        isRestoringLocalSnapshot = true
+        runBackgroundFileOperation {
+            defer { isRestoringLocalSnapshot = false }
+            do {
+                try Task.checkCancellation()
+                guard let url = try ProfileSnapshotFileCoordinator.chooseSnapshot(
+                    paths: store.paths
+                ) else { return }
+                announceWorkspaceStatus("Проверяю локальный snapshot…")
+                let prepared = try await ProfileSnapshotFileService
+                    .prepareRestore(from: url, paths: store.paths)
+                try Task.checkCancellation()
+                guard processes.runningProfileIDs.isEmpty else {
+                    localError =
+                        "Восстановление отменено: сначала закрой все профили."
+                    return
+                }
+                let saved = try store.insertImportedProfiles(
+                    prepared.profiles,
+                    folderNames: prepared.folderNames
+                )
+                if let first = saved.first {
+                    revealSavedProfile(first)
+                }
+                announceWorkspaceStatus(
+                    "Восстановлено " + String(saved.count) + " " +
+                        profileCountWord(saved.count) +
+                        " с новыми identity и без данных браузера."
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                localError = error.localizedDescription
             }
-            announceWorkspaceStatus(
-                "Восстановлено " + String(saved.count) + " " +
-                    profileCountWord(saved.count) +
-                    " с новыми identity и без данных браузера."
-            )
-        } catch {
-            localError = error.localizedDescription
         }
     }
 
@@ -1382,6 +1468,8 @@ struct ContentView: View {
     private func exportEncryptedProfileConfigurations(
         passphrase: String
     ) {
+        guard !isPreparingProfileExport else { return }
+        isPreparingProfileExport = true
         let stoppedProfiles = store.profiles.filter {
             processes.processState(for: $0.id) == .stopped
         }
@@ -1395,23 +1483,31 @@ struct ContentView: View {
                 return (profile.id, folder.name)
             }
         )
-        do {
-            guard let count = try ProfileConfigurationTransferFileCoordinator
-                .exportEncrypted(
-                    profiles: stoppedProfiles,
-                    folderNameByProfileID: folderNames,
-                    passphrase: passphrase
+        runBackgroundFileOperation {
+            defer { isPreparingProfileExport = false }
+            do {
+                try Task.checkCancellation()
+                announceWorkspaceStatus("Готовлю зашифрованный экспорт…")
+                guard let count = try await
+                    ProfileConfigurationTransferFileCoordinator
+                        .exportEncrypted(
+                            profiles: stoppedProfiles,
+                            folderNameByProfileID: folderNames,
+                            passphrase: passphrase
+                        ) else {
+                    return
+                }
+                try Task.checkCancellation()
+                announceWorkspaceStatus(
+                    "Зашифровано " + String(count) + " " +
+                        profileCountWord(count) +
+                        ". Proxy-login зашифрован; пароли, cookies, BrowserData и Keychain-секреты не включены."
                 )
-            else {
+            } catch is CancellationError {
                 return
+            } catch {
+                localError = error.localizedDescription
             }
-            announceWorkspaceStatus(
-                "Зашифровано " + String(count) + " " +
-                    profileCountWord(count) +
-                    ". Cookies, BrowserData и Keychain не включены."
-            )
-        } catch {
-            localError = error.localizedDescription
         }
     }
 
@@ -1420,9 +1516,10 @@ struct ContentView: View {
     ) {
         guard !isImportingProfileConfigurations else { return }
         isImportingProfileConfigurations = true
-        Task {
+        runBackgroundFileOperation {
             defer { isImportingProfileConfigurations = false }
             do {
+                try Task.checkCancellation()
                 guard let document = try await
                     ProfileConfigurationTransferFileCoordinator
                         .importEncrypted(passphrase: passphrase)
@@ -1869,6 +1966,33 @@ struct ContentView: View {
             profileListHeader(listState)
             Divider()
             runtimeReadinessBanner
+            if isRestoringLocalSnapshot {
+                Label("Проверяю snapshot…", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .accessibilityLabel("Проверяю локальный snapshot")
+            }
+            if isSavingLocalSnapshot {
+                Label("Сохраняю snapshot…", systemImage: "externaldrive")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .accessibilityLabel("Сохраняю локальный snapshot")
+            }
+            if isPreparingProfileExport {
+                Label("Подготавливаю экспорт…", systemImage: "square.and.arrow.up")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .accessibilityLabel("Подготавливаю экспорт профилей")
+            }
             activeFiltersBar
 
             if store.profiles.isEmpty {
@@ -2516,6 +2640,7 @@ struct ContentView: View {
                     runtime: runtime,
                     preflight: runtimePreflight
                 ),
+                recoveryNotice: store.recoveryNotice,
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
@@ -3571,6 +3696,7 @@ struct ProfileDetailView: View {
     var privacyPanel: ProfilePrivacyPanelSnapshot = .empty
     var artifactProvenance: ProfileArtifactProvenanceSnapshot = .empty
     var runtimeProvenance: RuntimeProvenanceSnapshot = .empty
+    var recoveryNotice: ProfileRecoveryNotice? = nil
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var proxyCheckSummary: ProxyCheckSummary? = nil
@@ -3706,7 +3832,10 @@ struct ProfileDetailView: View {
 
             if diagnosticsExpanded {
                 VStack(alignment: .leading, spacing: 12) {
-                    ProfileLifecycleHealthView(snapshot: lifecycleHealth)
+                    ProfileLifecycleHealthView(
+                        snapshot: lifecycleHealth,
+                        recoveryNotice: recoveryNotice
+                    )
                     ProfilePrivacyPanelView(snapshot: privacyPanel)
                     ProfileArtifactProvenanceView(
                         snapshot: artifactProvenance

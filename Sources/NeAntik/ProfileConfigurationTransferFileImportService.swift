@@ -5,6 +5,78 @@ import Foundation
 /// main actor. The caller must keep any security-scoped URL access active until
 /// this async operation returns.
 enum ProfileConfigurationTransferFileImportService {
+    static func prepareExport(
+        profiles: [BrowserProfile],
+        folderNameByProfileID: [UUID: String]
+    ) async throws -> Data {
+        let task = Task.detached(priority: .userInitiated) {
+            try Task.checkCancellation()
+            guard !profiles.isEmpty else {
+                throw ProfileConfigurationTransferFileError.noStoppedProfiles
+            }
+            let document = try ProfileConfigurationTransferDocument(
+                profiles: profiles,
+                folderNameByProfileID: folderNameByProfileID
+            )
+            try Task.checkCancellation()
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(document)
+            try Task.checkCancellation()
+            guard data.count <= ProfileConfigurationTransferLimits.maximumFileBytes
+            else {
+                throw ProfileConfigurationTransferFileError.fileTooLarge
+            }
+            return data
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    static func prepareEncryptedExport(
+        profiles: [BrowserProfile],
+        folderNameByProfileID: [UUID: String],
+        passphrase: String
+    ) async throws -> Data {
+        let task = Task.detached(priority: .userInitiated) {
+            try Task.checkCancellation()
+            guard !profiles.isEmpty else {
+                throw ProfileConfigurationTransferFileError.noStoppedProfiles
+            }
+            let document = try ProfileConfigurationTransferDocument(
+                profiles: profiles,
+                folderNameByProfileID: folderNameByProfileID
+            )
+            try Task.checkCancellation()
+            let data = try ProfileConfigurationEncryption.seal(
+                document: document,
+                passphrase: passphrase
+            )
+            try Task.checkCancellation()
+            return data
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    static func writeExport(_ data: Data, to url: URL) async throws {
+        let task = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            try data.write(to: url, options: [.atomic])
+        }
+        try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
     static func readDocument(
         from url: URL,
         maximumBytes: Int
@@ -25,6 +97,8 @@ enum ProfileConfigurationTransferFileImportService {
                 return document
             } catch let error as ProfileConfigurationTransferError {
                 throw error
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 throw ProfileConfigurationTransferFileError.invalidFile
             }
@@ -102,7 +176,17 @@ enum ProfileConfigurationTransferFileImportService {
             throw operationError
         }
         if coordinationError != nil {
-            throw ProfileConfigurationTransferFileError.invalidFile
+            // Some local temporary/user files do not participate in file
+            // coordination in constrained hosts. A descriptor-based read
+            // remains bounded and refuses symlinks; keep coordination
+            // mandatory for non-local providers.
+            guard (try? url.resourceValues(forKeys: [.volumeIsLocalKey]).volumeIsLocal) == true else {
+                throw ProfileConfigurationTransferFileError.invalidFile
+            }
+            return try readRegularFileDescriptor(
+                at: url,
+                maximumBytes: maximumBytes
+            )
         }
         guard let coordinatedData else {
             throw ProfileConfigurationTransferFileError.invalidFile

@@ -55,6 +55,7 @@ jobs:
           - ProfileConfigurationTransferTests
           - ProfileEditorPasswordTests
           - ProfileEditorPresentationTests
+          - ProfileSnapshotSaveSummaryTests
           - ProfileEditorValidationTests
           - ProfileEnvironmentAccessibilityTests
           - ProfileEnvironmentInspectorTests
@@ -68,6 +69,7 @@ jobs:
           - ProfilePrivacyPanelTests
           - ProxyCheckSummaryTests
           - ProfileSnapshotTests
+          - SiteCompatibilityAssessmentTests
           - ProfileRevisionAndTransactionTests
           - ProfileTagAppearanceTests
           - ProfileTagEditorTests
