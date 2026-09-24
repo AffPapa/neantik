@@ -57,18 +57,25 @@
 | 36 | Локальное руководство профилей и recovery | P2 | shipped in 0.7.9 | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
 | 37 | Предварительный просмотр snapshot restore | P1 | shipped in 0.7.10 | До commit показываются безопасные aggregate counts и дата; явное подтверждение, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
 
-## Что делать следующим без пересборки Chromium
+## Следующие незакрытые действия
 
-1. Выпустить manager-only preview после exact-source Direct gates; Chromium
-   остаётся неизменным.
-2. Проверить клавиатуру и VoiceOver на реальном Mac после automated UI gates;
-   не выдавать presentation tests за физическую проверку.
-3. Рассмотреть explicit profile-integrity repair assistant только после
-   отдельного threat review; любые исправления должны быть opt-in, атомарными
-   и с проверяемым rollback.
-4. Повторять Swift gate, privacy/public-artifact audit,
-   `git diff --check` и локальный audit; partial runtime report не становится
-   release evidence.
+1. Провести ручной проход клавиатуры и VoiceOver на рабочем Mac. Автоматические
+   presentation/render тесты этого не доказывают; системный VoiceOver не
+   включался в ходе аудита.
+2. До любых изменений профилей выполнить отдельный threat review repair
+   assistant. Сейчас безопасная автоматическая recovery и read-only notice уже
+   реализованы; новая функция может затронуть пользовательские metadata и
+   поэтому не считается готовым manager-only quick win.
+3. Закрыть runtime-gated evidence только на точном Chromium/runtime candidate.
+   Этот аудит не менял и не пересобирал Chromium.
+4. Перед будущим бинарным выпуском восстановить credential для
+   `neantik-affpapa-release doctor`; текущая проверка завершилась ошибкой
+   `deploy credential is unavailable`. Это отдельный AffPapa publishing gate,
+   не отказ GitHub Release или browser.free.
+
+После v0.7.10 все перечисленные здесь manager-only roadmap features уже
+реализованы. Не создавать новую версию без следующего проверяемого изменения;
+partial runtime report не считать доказательством runtime readiness.
 
 ## Что не является целью
 
