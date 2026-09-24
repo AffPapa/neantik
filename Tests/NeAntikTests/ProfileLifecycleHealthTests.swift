@@ -56,11 +56,59 @@ struct ProfileLifecycleHealthTests {
             paths: paths
         )
 
-        #expect(snapshot.lock == .active)
+        #expect(snapshot.lock == .managed)
         #expect(snapshot.recovery == .required)
         #expect(snapshot.browserData != .unavailable)
         #expect(!snapshot.lock.title.contains(profileID.uuidString))
         #expect(!snapshot.recovery.title.contains("recovery"))
+    }
+
+    @Test
+    func recoveryHistoryDoesNotRequireRecoveryForHealthyProfiles() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let archive = paths.profilesRecoveryDirectory
+            .appendingPathComponent("profiles-rejected.json")
+        try paths.writePrivateFile(Data("preserved".utf8), to: archive)
+        for state: BrowserProfileProcessState in [.stopped, .managed, .recoveryRequired] {
+            let snapshot = ProfileLifecycleHealthSnapshot.inspect(
+                profileID: UUID(), lastLaunchedAt: nil,
+                processState: state, paths: paths
+            )
+            #expect(snapshot.recovery == (state == .recoveryRequired ? .required : .clear))
+        }
+        #expect(try Data(contentsOf: archive) == Data("preserved".utf8))
+    }
+
+    @Test
+    func foreignLocksAndUnsafeRecoveryMarkersStillNeedAttention() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+        try paths.prepareBaseDirectories()
+        try paths.prepareProfileDirectories(for: profileID)
+        try paths.writePrivateFile(Data("lock".utf8), to: paths.lockFile(for: profileID))
+        for state: BrowserProfileProcessState in [.stopped, .externalManualOnly, .externalUnverified] {
+            let snapshot = ProfileLifecycleHealthSnapshot.inspect(
+                profileID: profileID, lastLaunchedAt: nil,
+                processState: state, paths: paths
+            )
+            #expect(snapshot.lock == .active)
+        }
+        try FileManager.default.createSymbolicLink(
+            at: paths.profileCredentialCleanupMarker(for: profileID),
+            withDestinationURL: paths.lockFile(for: profileID)
+        )
+        let snapshot = ProfileLifecycleHealthSnapshot.inspect(
+            profileID: profileID, lastLaunchedAt: nil,
+            processState: .stopped, paths: paths
+        )
+        #expect(snapshot.recovery == .unavailable)
     }
 
     @Test

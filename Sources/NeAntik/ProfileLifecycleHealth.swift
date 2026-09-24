@@ -2,6 +2,7 @@ import Foundation
 
 enum ProfileLifecycleLockStatus: Equatable, Sendable {
     case clear
+    case managed
     case active
     case unavailable
 
@@ -9,6 +10,8 @@ enum ProfileLifecycleLockStatus: Equatable, Sendable {
         switch self {
         case .clear:
             "Свободен"
+        case .managed:
+            "Запущен здесь"
         case .active:
             "Занят"
         case .unavailable:
@@ -105,7 +108,7 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
             case .missing:
                 return processState.isRunning ? .unavailable : .clear
             case .regular:
-                return .active
+                return processState == .managed ? .managed : .active
             case .unsafe:
                 return .unavailable
             }
@@ -177,10 +180,15 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
             return .required
         }
         do {
-            if try paths.privateFileEntryKind(
+            switch try paths.privateFileEntryKind(
                 paths.profileCredentialCleanupMarker(for: profileID)
-            ) == .regular {
+            ) {
+            case .regular:
                 return .required
+            case .unsafe:
+                return .unavailable
+            case .missing:
+                break
             }
             try paths.validatePrivateDirectory(paths.profilesRecoveryDirectory)
             let entries = try fileManager.contentsOfDirectory(
@@ -195,7 +203,10 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
                     return .unavailable
                 }
             }
-            return entries.isEmpty ? .clear : .required
+            // Preserved rejected metadata is workspace recovery history.
+            // Active profile recovery is represented by process state or the
+            // profile-specific credential cleanup marker above.
+            return .clear
         } catch {
             return .unavailable
         }

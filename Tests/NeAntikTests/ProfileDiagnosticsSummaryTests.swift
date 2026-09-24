@@ -4,6 +4,20 @@ import Testing
 
 struct ProfileDiagnosticsSummaryTests {
     @Test
+    func ownRunningProfileDoesNotProduceForeignLockWarning() {
+        for lock: ProfileLifecycleLockStatus in [.managed, .active] {
+            let summary = ProfileDiagnosticsSummary.resolve(
+                lifecycle: .init(
+                    lock: lock, browserData: .available(bytes: 10, entries: 1),
+                    recovery: .clear, lastLaunchedAt: Date()
+                ), runtimeProvenance: readyRuntime()
+            )
+            #expect(summary.status == (lock == .managed ? .ready : .attention))
+            #expect(summary.nextStep == (lock == .managed ? .none : .waitForProfile))
+        }
+    }
+
+    @Test
     func firstLaunchIsQuietlyReady() {
         let summary = ProfileDiagnosticsSummary.resolve(
             lifecycle: .init(

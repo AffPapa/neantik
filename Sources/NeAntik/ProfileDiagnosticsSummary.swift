@@ -25,6 +25,10 @@ enum ProfileDiagnosticsNextStep: Equatable, Sendable {
     case runtimeNeedsAttention
     case inspectDetails
 
+    var accessibilityLabel: String? {
+        title.map { "Следующий шаг: \($0)" }
+    }
+
     var title: String? {
         switch self {
         case .none:
@@ -84,7 +88,7 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
                 detail: "Состояние блокировки пока нельзя проверить.",
                 nextStep: .retryInspection
             )
-        case .clear:
+        case .clear, .managed:
             break
         }
 

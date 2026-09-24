@@ -3,6 +3,18 @@ import Testing
 
 struct AccessibilityPresentationTests {
     @Test
+    func diagnosticsAnnouncementIncludesTheActualNextStep() {
+        for step: ProfileDiagnosticsNextStep in [
+            .recoverProfile, .waitForProfile, .retryInspection,
+            .runtimeNeedsAttention, .inspectDetails
+        ] {
+            #expect(step.accessibilityLabel == "Следующий шаг: " + (step.title ?? ""))
+            #expect(step.accessibilityLabel?.contains("(nextStep)") == false)
+        }
+        #expect(ProfileDiagnosticsNextStep.none.accessibilityLabel == nil)
+    }
+
+    @Test
     func evidenceStatesUseDistinctNonColorSymbols() {
         let states: [DiagnosticEvidenceState] = [
             .configured,

@@ -62,7 +62,9 @@ struct ProfileDiagnosticsSummaryView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel("Следующий шаг: (nextStep)")
+                        .accessibilityLabel(
+                            summary.nextStep.accessibilityLabel ?? nextStep
+                        )
                 }
 
                 if isExpanded {

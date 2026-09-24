@@ -4,8 +4,12 @@ struct ProfilePrivacyPanelView: View {
     let snapshot: ProfilePrivacyPanelSnapshot
 
     var body: some View {
-        GroupBox("Медиа и разрешения") {
+        GroupBox("Медиа в тестовом окружении") {
             VStack(alignment: .leading, spacing: 8) {
+                Text("Результат временной проверки браузера. Разрешения сайтов рабочего профиля могут отличаться.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 LabeledContent(
                     "MediaDevices API",
                     value: snapshot.mediaDevices.title
@@ -42,6 +46,6 @@ struct ProfilePrivacyPanelView: View {
             .padding(.vertical, 4)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Панель приватности медиа и разрешений")
+        .accessibilityLabel("Медиа и разрешения временного тестового окружения")
     }
 }
