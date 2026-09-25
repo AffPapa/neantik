@@ -436,7 +436,7 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
     executable.write_bytes(b"runtime executable")
     framework.write_bytes(b"runtime framework")
     embedded_report = args_gn.parent / "runtime-verification.json"
-    source_contract = root / "runtime" / "chromium-152-source-contract.json"
+    source_contract = root / "runtime" / "chromium-150-source-contract.json"
     source_contract.write_text(
         json.dumps(
             {
@@ -447,8 +447,15 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
         ),
         encoding="utf-8",
     )
-    embedded_contract = args_gn.parent / "chromium-152-source-contract.json"
+    embedded_contract = args_gn.parent / "chromium-150-source-contract.json"
     embedded_contract.write_bytes(source_contract.read_bytes())
+    # The schema-8 GUI fixture carries a frozen candidate manifest from the
+    # Chromium 152 test corpus. Keep its referenced file available so that
+    # fixture integrity can be checked; release preflight must still select
+    # the source contract that matches this fixture's lock (Chromium 150).
+    (args_gn.parent / "chromium-152-source-contract.json").write_bytes(
+        source_contract.read_bytes()
+    )
     source_provenance = args_gn.parent / "source-provenance.json"
     source_provenance.write_text(
         json.dumps(

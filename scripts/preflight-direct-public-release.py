@@ -279,12 +279,16 @@ def verify_direct_public_release_plan(
         embedded_candidate_path = (
             evidence_root / "fingerprint-chromium.lock.json"
         )
-        embedded_contract_path = (
-            evidence_root / "chromium-152-source-contract.json"
+        runtime_candidate = read_json(runtime_lock)
+        runtime_version = str(
+            runtime_candidate.get("fingerprintChromium", {}).get(
+                "chromiumVersion", ""
+            )
         )
-        project_contract_path = (
-            project_root / "runtime" / "chromium-152-source-contract.json"
-        )
+        runtime_major = parse_version(runtime_version)[0]
+        contract_name = f"chromium-{runtime_major}-source-contract.json"
+        embedded_contract_path = evidence_root / contract_name
+        project_contract_path = project_root / "runtime" / contract_name
         for path, label in (
             (report_path, "runtime verification report"),
             (provenance_path, "source provenance"),

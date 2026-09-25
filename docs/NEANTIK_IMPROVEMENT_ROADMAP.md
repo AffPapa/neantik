@@ -62,16 +62,18 @@
 
 ## Следующие незакрытые действия
 
-1. Перед Direct-релизом повторно проверить физическую клавиатуру на exact
-   candidate: Tab order, focus return, Escape, Return, ⌘N, ⌘⇧N и ⌘F. В текущем
-   diff нет app-issued speech announcements; стандартные элементы остаются
-   нативными macOS controls.
+1. Перед Direct-релизом проверить физическую клавиатуру на exact candidate:
+   Tab order, focus return, Escape, Return, ⌘N, ⌘⇧N и ⌘F. Dev.app не дошёл до
+   UI из-за прежнего предупреждения о неверном формате Development-данных;
+   данные не восстанавливались и не менялись.
 2. До любых изменений профилей выполнить отдельный threat review repair
    assistant. Сейчас безопасная автоматическая recovery и read-only notice уже
    реализованы; новая функция может затронуть пользовательские metadata и
    поэтому не считается готовым manager-only quick win.
 3. Закрыть runtime-gated evidence только на точном Chromium/runtime candidate.
-   Этот аудит не менял и не пересобирал Chromium.
+   Preflight выбирает source contract по major-версии runtime lock; текущему
+   runtime 153 всё ещё не хватает соответствующего contract, а Chromium ниже
+   обязательного baseline 154. Этот аудит не менял и не пересобирал Chromium.
 4. Для публикации через AffPapa восстановить credential для
    `neantik-affpapa-release doctor`; текущая проверка завершилась ошибкой
    `deploy credential is unavailable`. Это блокирует только AffPapa workflow,
