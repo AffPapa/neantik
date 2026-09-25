@@ -1,77 +1,54 @@
-# NeAntik source-to-site handoff
+# NeAntik Direct source-to-site handoff
 
-> This handoff is a release procedure, not a statement that the current
-> checkout is ready to publish. Public GitHub state was refreshed separately;
-> do not copy version numbers from an older handoff snapshot into a release.
+Reviewed against the public GitHub Release and `browser.free/api/release` on
+25 September 2026. This document records the current release boundary; it does
+not make newer local manager changes a public release candidate.
 
-This document is for the operator or AI that performs the separate Direct
-binary release and AffPapa website publication after the source PR is merged.
+## Public release baseline
 
-## Current source state
+- GitHub's latest release is immutable `v0.7.11`, build `74`, bound to source
+  commit `fa3b03cbe122840ea308d2ecf19004a1128a1a06`.
+- ZIP SHA-256:
+  `141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576`.
+- DMG SHA-256:
+  `fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4`.
+- The API reports `published-runtime-gated`, `canDownload=false`, and no
+  download URL. Chromium `153.0.8010.52` is below the minimum
+  `154.0.8037.58`.
+- Release `v0.7.10` remains available as the recorded rollback.
 
-- The original handoff branch name is historical; the release source must be
-  the exact reviewed commit from the current checkout, never a stale branch
-  label copied from this document.
-- Public GitHub binary truth is currently `0.7.3 (66)`; a new release must not
-  replace it until every exact-candidate gate passes.
-- `CHANGELOG.md` uses `Unreleased`; no version/build bump, tag, GitHub Release,
-  Developer ID signature, notarization, stapling or site deploy belongs to the
-  source-only PR.
-- The exact merge commit, not a mutable branch name, must become the release
-  source input.
+## Local manager changes after 0.7.11
 
-## User-visible changes to carry into release copy
+Subsequent source work improves off-main-actor profile import and recovery,
+snapshot-restore progress, and clearer BrowserData scan-limit status. Tests
+cover transaction recovery, entry/byte caps, and fail-closed symlink behavior.
+App-issued speech announcements were removed; keyboard actions and native
+macOS control metadata remain. These changes are not present in the public
+0.7.11 binary or its release evidence.
 
-- One-window native profile workspace with a one-click first profile.
-- One-level folders, colored tags, pin/archive/clone and searchable plaintext
-  profile notes.
-- Paste-first atomic bulk proxy import plus optional bounded proxy health
-  checks and automatic fresh preparation before every proxied launch.
-- Progressive environment details for route, fingerprint, WebRTC, QUIC/DNS
-  and proxy-derived geolocation.
-- More native macOS keyboard behavior and clearly labeled controls.
-- Unified UTF-8 persistence limits, a 10,000-profile scale boundary and
-  crash-recoverable pruning of stale proxy-health metadata.
+The retained local candidate is not a package of the current source: its
+embedded runtime is `153.0.8010.52`, differs from the repository runtime lock
+`152.0.7977.64`, lacks the embedded source contract, and falls below the
+minimum security baseline. Do not package or publish it as a newer release.
 
-Do not claim universal anonymity, undetectability, CAPTCHA/ban bypass or an
-observed Chromium HTTP/DNS route. The product intentionally makes none of
-those claims.
+## Next Direct release gates
 
-## Separate Direct release sequence
+1. Resolve Chromium source, patch, toolchain, and runtime-lock differences in
+   the runtime workstream. Verify source provenance, patch survival, build,
+   isolation, and runtime behavior before preparing a candidate.
+2. Start from one clean exact source commit and create a candidate with a
+   deliberate version/build increment.
+3. Bind source, runtime hashes, manager tests, isolation evidence, and package
+   manifest to that commit. Run Developer ID signing, Apple notarization,
+   stapling, Gatekeeper, and fresh local artifact verification.
+4. Upload ZIP/DMG and checksum sidecars to GitHub Releases; verify uploaded
+   bytes against candidate hashes.
+5. Update browser.free only after artifact gates pass; verify the live page and
+   `/api/release` agree on version, build, archive, and SHA-256.
+6. Confirm `v0.7.10` remains available as rollback and test the public download
+   path before declaring the release complete.
 
-1. Check out the exact merged commit in a clean worktree. Confirm no generated
-   `.build`, `dist`, private evidence or secrets are tracked.
-2. Assign the next version/build deliberately and move the `Unreleased`
-   changelog content to a `Direct VERSION (BUILD)` heading. Update the released
-   README section only when the binary is actually published.
-3. Run the full source gates, explicit ARM64 release build and live manager plus
-   browser-mode fingerprint integrations again.
-4. Run `./scripts/neantik-affpapa-release doctor` before any release or site
-   work. Stop on any failure.
-5. Use `./Release-NeAntik.command` only for the one exact final candidate. It
-   must complete fresh candidate-bound A -> B -> A evidence, Developer ID,
-   Apple notarization, stapling, Gatekeeper and final ZIP/DMG verification.
-6. Publish the immutable ZIP/DMG and required sidecars to GitHub Releases. Do
-   not use GitHub's Code -> Download ZIP as a browser download.
-7. Prepare the exact six-file website release directory documented in
-   `ops/affpapa/README.md`, then publish only through:
-
-   ```bash
-   ./scripts/neantik-affpapa-release publish /absolute/path/to/release-dir
-   ```
-
-8. Never use raw SSH/SCP/SFTP/rsync or hand-edit the live server. Require the
-   client's staging validation, atomic switch and live hosted-download check.
-9. Re-download public artifacts, compare SHA-256, verify Gatekeeper and confirm
-   the site still presents `0.7.3` if the new binary publication did not
-   complete atomically.
-
-## Stop rules
-
-- No signed/notarized exact artifacts: development news may be published, but
-  download links and the public version must remain `0.7.3 (66)`.
-- Any mismatch between the merged commit, candidate manifest, evidence,
-  notarization receipt, checksums, GitHub assets or AffPapa assets: stop and
-  preserve the previous public release.
-- Never place certificate identities, notary profiles, deploy keys, proxy
-  credentials or raw fingerprint evidence in Git, prompts, logs or the site.
+NeAntik is Direct Distribution only; do not use Mac App Store or App Store
+Connect. Never publish a stale candidate to bypass a failed runtime gate. Keep
+certificates, notary credentials, proxy secrets, cookies, raw network evidence,
+and private fingerprint data out of Git and public release metadata.

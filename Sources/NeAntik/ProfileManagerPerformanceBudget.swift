@@ -8,6 +8,23 @@ enum ProfileManagerPerformanceBudgets {
     static let maximumSynchronousScanBytes: Int64 = 4 * 1_024 * 1_024 * 1_024
 }
 
+struct ProfileManagerScanLimits: Equatable, Sendable {
+    let maximumEntries: Int
+    let maximumBytes: Int64
+
+    init(maximumEntries: Int, maximumBytes: Int64) {
+        self.maximumEntries = max(0, maximumEntries)
+        self.maximumBytes = max(0, maximumBytes)
+    }
+
+    static let lifecycle = Self(
+        maximumEntries: ProfileManagerPerformanceBudgets
+            .maximumLifecycleScanEntries,
+        maximumBytes: ProfileManagerPerformanceBudgets
+            .maximumSynchronousScanBytes
+    )
+}
+
 struct ProfileManagerScanBudget: Equatable, Sendable {
     let maximumEntries: Int
     let maximumBytes: Int64

@@ -114,7 +114,7 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
                 detail: "После предыдущего запуска данные профиля не найдены.",
                 nextStep: .inspectDetails
             )
-        case .missing, .available:
+        case .missing, .available, .limitReached:
             break
         }
 

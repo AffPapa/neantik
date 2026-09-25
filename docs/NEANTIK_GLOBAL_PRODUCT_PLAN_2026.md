@@ -196,7 +196,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
 | P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
 | P1-13 | Snapshot restore preview | shipped in 0.7.10 | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
-| P1-14 | Restore preview spoken announcements | app-issued speech removed from current working tree | The public 0.7.11 binary historically announced one aggregate summary; this diff removes those app-issued announcements, retains keyboard actions and native control metadata, and shows transient visible completion status for snapshot/import/export/support-bundle operations |
+| P1-14 | Restore preview spoken announcements | removed in local commit `66c590b` | The public 0.7.11 binary historically announced one aggregate summary; commit `66c590b` removes app-issued announcements, retains keyboard actions and native control metadata, and shows transient visible completion status for snapshot/import/export/support-bundle operations |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -214,6 +214,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P2-10 | Fuzz malformed imports | done in 0.7.8 | Decoder fail-closed, bounded size/count, malformed corpus |
 | P2-11 | Fuzz provenance/quarantine records | done in 0.7.8 | Unknown fields, symlink ancestor и path traversal отклоняются |
 | P2-12 | Release rollback rehearsal | shipped in 0.7.9 | Retained ZIP/DMG v0.7.8 скопированы во временный staging и повторно сверены по байтам. Это не install/launch или hosted rollback smoke. |
+| P2-13 | Distinguish BrowserData scan caps from filesystem errors | implemented/tested locally after `66c590b` | Entry/byte safety-cap hits have their own status; symlink and I/O failures remain unavailable |
 
 ### Defer permanently unless product direction changes
 
@@ -314,14 +315,14 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Релиз 
 добавляет preview snapshot до commit: он использует тот же заранее
 проверенный payload, показывает только дату и aggregate counts,
 не меняет store при отмене и повторно проверяет работающие профили при commit.
-Публичный 0.7.11 исторически включал app-issued VoiceOver announcements для
-preview восстановления. Текущий незакоммиченный diff удаляет эти речевые
-объявления; нативные подписи элементов macOS и клавиатурный фокус сохранены.
-Это изменение ещё не попало в новый бинарный Direct-релиз.
+Публичный 0.7.11 исторически включал app-issued речевые объявления для preview
+восстановления. Локальный commit `66c590b` удаляет их; нативные подписи
+элементов macOS и клавиатурные действия сохранены. Изменение ещё не попало в
+новый бинарный Direct-релиз.
 
-Автоматические presentation/render проверки прошли, но не подтверждают физическую
-клавиатуру. Повторный проход Tab order и shortcuts нужен на exact candidate;
-app-issued speech announcements в текущем diff удалены.
+Автоматические presentation/render проверки прошли, но не подтверждают
+физическую клавиатуру. Повторный проход Tab order и shortcuts нужен на exact
+candidate; app-issued speech announcements удалены в commit `66c590b`.
 
 ### Фаза 2 — критерии следующего exact manager candidate
 

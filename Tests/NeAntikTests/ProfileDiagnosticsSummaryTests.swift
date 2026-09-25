@@ -67,6 +67,23 @@ struct ProfileDiagnosticsSummaryTests {
     }
 
     @Test
+    func lifecycleScanLimitDoesNotMasqueradeAsAnAccessFailure() {
+        let summary = ProfileDiagnosticsSummary.resolve(
+            lifecycle: .init(
+                lock: .clear,
+                browserData: .limitReached,
+                recovery: .clear,
+                lastLaunchedAt: Date()
+            ),
+            runtimeProvenance: readyRuntime()
+        )
+
+        #expect(summary.status == .ready)
+        #expect(summary.status != .unavailable)
+        #expect(summary.nextStep == .none)
+    }
+
+    @Test
     func missingDataAfterLaunchNeedsAttention() {
         let summary = ProfileDiagnosticsSummary.resolve(
             lifecycle: .init(

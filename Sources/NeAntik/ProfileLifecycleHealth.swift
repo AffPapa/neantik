@@ -24,6 +24,7 @@ enum ProfileLifecycleBrowserDataStatus: Equatable, Sendable {
     case missing
     case checking
     case available(bytes: Int64, entries: Int)
+    case limitReached
     case unavailable
 
     var title: String {
@@ -37,6 +38,8 @@ enum ProfileLifecycleBrowserDataStatus: Equatable, Sendable {
                 fromByteCount: bytes,
                 countStyle: .file
             ) + " · " + String(entries) + " объектов"
+        case .limitReached:
+            "Лимит проверки достигнут"
         case .unavailable:
             "Проверка недоступна"
         }
@@ -119,7 +122,8 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
         profileID: UUID,
         lastLaunchedAt: Date?,
         processState: BrowserProfileProcessState,
-        paths: AppPaths
+        paths: AppPaths,
+        scanLimits: ProfileManagerScanLimits = .lifecycle
     ) async throws -> Self {
         let base = inspect(
             profileID: profileID,
@@ -128,7 +132,11 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
             paths: paths
         )
         let scan = Task.detached(priority: .utility) {
-            try Self.scanBrowserData(profileID: profileID, paths: paths)
+            try Self.scanBrowserData(
+                profileID: profileID,
+                paths: paths,
+                limits: scanLimits
+            )
         }
         let browserData = try await withTaskCancellationHandler {
             try await scan.value
@@ -177,7 +185,8 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
 
     private static func scanBrowserData(
         profileID: UUID,
-        paths: AppPaths
+        paths: AppPaths,
+        limits: ProfileManagerScanLimits
     ) throws -> ProfileLifecycleBrowserDataStatus {
         let fileManager = FileManager.default
         let directory = paths.browserDataDirectory(for: profileID)
@@ -200,10 +209,8 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
         }
 
         var budget = ProfileManagerScanBudget(
-            maximumEntries:
-                ProfileManagerPerformanceBudgets.maximumLifecycleScanEntries,
-            maximumBytes:
-                ProfileManagerPerformanceBudgets.maximumSynchronousScanBytes
+            maximumEntries: limits.maximumEntries,
+            maximumBytes: limits.maximumBytes
         )
         for case let entry as URL in enumerator {
             try Task.checkCancellation()
@@ -214,6 +221,11 @@ struct ProfileLifecycleHealthSnapshot: Equatable, Sendable {
                 return .unavailable
             }
             let fileBytes = Int64(values.fileSize ?? 0)
+            guard budget.entries < limits.maximumEntries,
+                  fileBytes <= limits.maximumBytes - budget.bytes
+            else {
+                return .limitReached
+            }
             guard budget.consume(entryBytes: values.isRegularFile == true
                 ? fileBytes
                 : 0)

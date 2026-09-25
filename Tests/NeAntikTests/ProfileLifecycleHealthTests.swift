@@ -34,6 +34,65 @@ struct ProfileLifecycleHealthTests {
     }
 
     @Test
+    func browserDataScanReportsEntryLimitSeparatelyFromUnavailable() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+        try paths.prepareBaseDirectories()
+        try paths.prepareProfileDirectories(for: profileID)
+        let dataDirectory = paths.browserDataDirectory(for: profileID)
+        try Data([1]).write(to: dataDirectory.appendingPathComponent("one"))
+        try Data([2]).write(to: dataDirectory.appendingPathComponent("two"))
+
+        let snapshot = try await ProfileLifecycleHealthSnapshot.inspectAsync(
+            profileID: profileID,
+            lastLaunchedAt: nil,
+            processState: .stopped,
+            paths: paths,
+            scanLimits: ProfileManagerScanLimits(
+                maximumEntries: 1,
+                maximumBytes: .max
+            )
+        )
+
+        #expect(snapshot.browserData == .limitReached)
+        #expect(snapshot.browserData.title == "Лимит проверки достигнут")
+    }
+
+    @Test
+    func browserDataScanReportsByteLimitSeparatelyFromUnavailable() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let profileID = UUID()
+        try paths.prepareBaseDirectories()
+        try paths.prepareProfileDirectories(for: profileID)
+        try Data(repeating: 7, count: 8).write(
+            to: paths.browserDataDirectory(for: profileID)
+                .appendingPathComponent("larger-than-budget")
+        )
+
+        let snapshot = try await ProfileLifecycleHealthSnapshot.inspectAsync(
+            profileID: profileID,
+            lastLaunchedAt: nil,
+            processState: .stopped,
+            paths: paths,
+            scanLimits: ProfileManagerScanLimits(
+                maximumEntries: .max,
+                maximumBytes: 4
+            )
+        )
+
+        #expect(snapshot.browserData == .limitReached)
+        #expect(snapshot.browserData.title != "Проверка недоступна")
+    }
+
+    @Test
     func activeLockAndRecoveryMarkerArePresentedWithoutRawValues() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
