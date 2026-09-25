@@ -360,3 +360,28 @@ verified, the ARM64/Metal candidate passes runtime gates, and the exact
 candidate clears signing, notarization, Gatekeeper, hosting, and rollback
 checks. Network evidence remains scoped to configured-route/WebRTC controls;
 no direct HTTP exit-IP proof is claimed.
+
+### Fresh ordered ungoogled-common replay — 2026-09-25
+
+An isolated ordered-series replay tested the pinned ungoogled Chromium
+`153.0.8010.52-1` common patch series against the clean official Chromium
+`154.0.8037.60` tree (`368ecb10bc157de1a420392d7f664537de2096dc`, tree
+`185d9e0f76de628765c051bc537a752fa9a7df37`). Of 109 listed patches, 61
+applied and 48 failed against moved APIs or paths. Failed entries were skipped
+so later independent patches could be classified. The exact patch names,
+failure output, source commits, and series hash are recorded in
+`runtime/chromium-154-ungoogled-common-replay.json`.
+
+This replay does not include an M154 macOS packaging port and is not a complete
+ungoogled build. Rechecking the owned NeAntik series after the common overlay
+still finds only six of eleven required groups apply; five require a reviewed
+port. No GN generation, compilation, runtime, signing, notarization, or
+publication was performed. Neither this replay nor the broad downstream diff
+is a release candidate. Continue only from pinned source inputs with reviewed
+patches and exact postimage hashes.
+
+Patch applicability is only a context check. In particular, the Apple tuple
+patch applies syntactically but its hard-coded CPU, memory, screen, and DPR
+values are not proven to describe one real device; defer that spoofing and use
+real hardware values. The M154 lite-archive change also appears upstream
+already, so do not carry it forward without a direct build-graph need.

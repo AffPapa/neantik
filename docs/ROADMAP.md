@@ -25,6 +25,10 @@ stapling, Gatekeeper и проверки заново скачанных фай�
   срезах;
 - новый manager-only preview списка прокси реализован локально, но Direct
   релиз блокирует security baseline Chromium `154.0.8037.58`;
+- по решению владельца текущий локальный manager скрывает SwiftUI-контент,
+  sheets и popovers от VoiceOver; `Cmd+N`, `Cmd+Shift+N`, `Cmd+F`, Tab и
+  Escape проверены в Dev.app, системные меню macOS остаются системными; это
+  изменение не входит в `0.7.11` и не включено в публичный релиз;
 - runtime update и Direct-релиз разрешены пользователем; source/rebase, GUI,
   isolation, signing и release gates ещё не пройдены;
 - следующий релиз требует нового exact-source кандидата, полного набора

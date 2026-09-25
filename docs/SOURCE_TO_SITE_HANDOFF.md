@@ -26,8 +26,20 @@ The implementation checkpoints are `66c590b` and `29b4325`; neither is
 represented by the 0.7.11 source binding or binary. Pin the final clean Git HEAD
 before creating any future exact candidate.
 App-issued speech announcements were removed; keyboard actions and native
-macOS control metadata remain. These changes are not present in the public
-0.7.11 binary or its release evidence.
+macOS control metadata remain. The current local HEAD additionally hides the
+main SwiftUI accessibility subtree plus sheets and popovers per owner request.
+On 25 September, the current local Dev.app was manually checked: `Cmd+N`
+opened the profile editor; Tab moved from Name through Folder and Tag to Cancel
+and Create; Escape cancelled without saving; `Cmd+Shift+N` opened the folder
+editor, whose SwiftUI content stayed out of the VoiceOver tree, Tab reached
+Cancel, and Escape cancelled; `Cmd+F` focused profile search. The workspace
+still showed zero profiles afterward. VoiceOver itself was not launched. A
+pre-existing Dev-data format warning appeared at startup and was dismissed
+without changing the Development data directory. This is a focused local
+keyboard check, not a full physical QA of every flow or the eventual release
+candidate. Native macOS menu/titlebar and system-alert behavior remains
+OS-controlled. These local changes are not present in the public 0.7.11 binary
+or its release evidence.
 
 The retained local candidate is not a package of the current source: its
 embedded runtime is `153.0.8010.52`, differs from the repository runtime lock
@@ -39,6 +51,14 @@ embedded source provenance, and the current security baseline. It does not
 sign, notarize, upload, or approve the retained app.
 
 ## Next Direct release gates
+
+The fresh M154 compatibility experiment is recorded in
+`runtime/chromium-154-ungoogled-common-replay.json`: 61/109 pinned M153
+common patches applied to official M154 source, 48 failed, and only 6/11
+NeAntik runtime groups still pass a context check. This is not a build or
+candidate. First pin and review the M154 common/macOS packaging port and
+rebase the failed patches; keep all current public assets unchanged until the
+runtime gates pass.
 
 1. Resolve Chromium source, patch, toolchain, and runtime-lock differences in
    the runtime workstream. Verify source provenance, patch survival, build,

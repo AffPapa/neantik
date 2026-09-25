@@ -1,0 +1,365 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-25",
+  "kind": "source-patch-compatibility-experiment",
+  "status": "not-buildable-not-release-evidence",
+  "officialChromiumSource": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "version": "154.0.8037.60",
+    "commit": "368ecb10bc157de1a420392d7f664537de2096dc",
+    "tree": "185d9e0f76de628765c051bc537a752fa9a7df37"
+  },
+  "upstreamCommonInput": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "153.0.8010.52-1",
+    "commit": "a638756eb14c8b6ce64b4b2a067afea5d4207bf4",
+    "tree": "ed1c3ce62d975b83c3354e0e6915818860d71836",
+    "patchSeriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7"
+  },
+  "replayMode": "ordered-series; successful patches applied in an isolated worktree; failed patches skipped to classify later entries",
+  "counts": {
+    "listed": 109,
+    "applied": 61,
+    "failed": 48
+  },
+  "appliedPatches": [
+    "core/inox-patchset/0001-fix-building-without-safebrowsing.patch",
+    "core/inox-patchset/0003-disable-autofill-download-manager.patch",
+    "core/inox-patchset/0005-disable-default-extensions.patch",
+    "core/inox-patchset/0015-disable-update-pings.patch",
+    "core/inox-patchset/0021-disable-rlz.patch",
+    "core/iridium-browser/safe_browsing-disable-incident-reporting.patch",
+    "core/iridium-browser/safe_browsing-disable-reporting-of-safebrowsing-over.patch",
+    "core/ungoogled-chromium/disable-crash-reporter.patch",
+    "core/ungoogled-chromium/toggle-translation-via-switch.patch",
+    "core/ungoogled-chromium/disable-untraceable-urls.patch",
+    "core/ungoogled-chromium/disable-profile-avatar-downloading.patch",
+    "core/ungoogled-chromium/disable-gcm.patch",
+    "core/ungoogled-chromium/disable-domain-reliability.patch",
+    "core/ungoogled-chromium/block-trk-and-subdomains.patch",
+    "core/ungoogled-chromium/disable-gaia.patch",
+    "core/ungoogled-chromium/disable-fonts-googleapis-references.patch",
+    "core/ungoogled-chromium/disable-webstore-urls.patch",
+    "core/ungoogled-chromium/fix-learn-doubleclick-hsts.patch",
+    "core/ungoogled-chromium/disable-webrtc-log-uploader.patch",
+    "core/ungoogled-chromium/disable-network-time-tracker.patch",
+    "core/ungoogled-chromium/doh-changes.patch",
+    "core/ungoogled-chromium/extensions-manifestv2.patch",
+    "core/ungoogled-chromium/remove-f1-shortcut.patch",
+    "core/ungoogled-chromium/remove-navigation-source-param.patch",
+    "core/ungoogled-chromium/disable-tos-dialog.patch",
+    "core/bromite/disable-fetching-field-trials.patch",
+    "extra/ungoogled-chromium/add-ungoogled-flag-headers.patch",
+    "extra/inox-patchset/0006-modify-default-prefs.patch",
+    "extra/inox-patchset/0008-restore-classic-ntp.patch",
+    "extra/inox-patchset/0013-disable-missing-key-warning.patch",
+    "extra/inox-patchset/0016-chromium-sandbox-pie.patch",
+    "extra/inox-patchset/0019-disable-battery-status-service.patch",
+    "extra/debian/disable/google-api-warning.patch",
+    "extra/iridium-browser/mime_util-force-text-x-suse-ymp-to-be-downloaded.patch",
+    "extra/iridium-browser/prefs-always-prompt-for-download-directory-by-defaul.patch",
+    "extra/iridium-browser/updater-disable-auto-update.patch",
+    "extra/iridium-browser/Remove-EV-certificates.patch",
+    "extra/iridium-browser/browser-disable-profile-auto-import-on-first-run.patch",
+    "extra/ungoogled-chromium/add-components-ungoogled.patch",
+    "extra/ungoogled-chromium/disable-formatting-in-omnibox.patch",
+    "extra/ungoogled-chromium/add-ipv6-probing-option.patch",
+    "extra/ungoogled-chromium/remove-disable-setuid-sandbox-as-bad-flag.patch",
+    "extra/ungoogled-chromium/disable-intranet-redirect-detector.patch",
+    "extra/ungoogled-chromium/disable-download-quarantine.patch",
+    "extra/ungoogled-chromium/fix-building-without-mdns-and-service-discovery.patch",
+    "extra/ungoogled-chromium/add-flag-to-configure-extension-downloading.patch",
+    "extra/ungoogled-chromium/enable-paste-and-go-new-tab-button.patch",
+    "extra/ungoogled-chromium/enable-menu-on-reload-button.patch",
+    "extra/ungoogled-chromium/disable-dial-repeating-discovery.patch",
+    "extra/ungoogled-chromium/add-extra-channel-info.patch",
+    "extra/ungoogled-chromium/prepopulated-search-engines.patch",
+    "extra/ungoogled-chromium/keep-expired-flags.patch",
+    "extra/ungoogled-chromium/default-webrtc-ip-handling-policy.patch",
+    "extra/ungoogled-chromium/add-flags-for-existing-switches.patch",
+    "extra/ungoogled-chromium/first-run-page.patch",
+    "extra/ungoogled-chromium/enable-extra-locales.patch",
+    "extra/ungoogled-chromium/remove-pac-size-limit.patch",
+    "extra/ungoogled-chromium/add-credits.patch",
+    "extra/ungoogled-chromium/disable-ai-search-shortcuts.patch",
+    "extra/ungoogled-chromium/disable-fedcm-by-default.patch",
+    "extra/ungoogled-chromium/bundle-hyphenation-patterns.patch"
+  ],
+  "failedPatches": [
+    {
+      "patch": "upstream-fixes/missing-dependencies.patch",
+      "reason": "error: patch failed: chrome/browser/chrome_content_browser_client.cc:355\nerror: chrome/browser/chrome_content_browser_client.cc: patch does not apply\nerror: patch failed: content/browser/BUILD.gn:158\nerror: content/browser/BUILD.gn: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/disable-google-host-detection.patch",
+      "reason": "error: patch failed: chrome/common/google_url_loader_throttle.cc:25\nerror: chrome/common/google_url_loader_throttle.cc: patch does not apply\nerror: patch failed: components/google/core/common/google_util.cc:33\nerror: components/google/core/common/google_util.cc: patch does not apply\nerror: patch failed: components/page_load_metrics/google/browser/google_url_util.cc:14\nerror: components/page_load_metrics/google/browser/google_url_util.cc: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/replace-google-search-engine-with-nosearch.patch",
+      "reason": "error: third_party/search_engines_data/resources/definitions/prepopulated_engines.json: No such file or directory"
+    },
+    {
+      "patch": "core/ungoogled-chromium/disable-ai.patch",
+      "reason": "error: patch failed: chrome/browser/BUILD.gn:2806\nerror: chrome/browser/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/browser_process_impl.cc:1667\nerror: chrome/browser/browser_process_impl.cc: patch does not apply\nerror: patch failed: chrome/browser/browser_process_impl.h:460\nerror: chrome/browser/browser_process_impl.h: patch does not apply\nerror: patch failed: chrome/browser/page_content_annotations/page_content_annotations_service_factory.cc:118\nerror: chrome/browser/page_content_annotations/page_content_annotations_service_factory.cc: patch does not apply\nerror: patch failed: chrome/browser/profiles/BUILD.gn:908\nerror: chrome/browser/profiles/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc:1575\nerror: chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/BUILD.gn:1449\nerror: chrome/browser/ui/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/ui/tabs/public/tab_features.h:157\nerror: chrome/browser/ui/tabs/public/tab_features.h: patch does not apply\nerror: patch failed: chrome/browser/ui/tabs/tab_features.cc:400\nerror: chrome/browser/ui/tabs/tab_features.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/webui/BUILD.gn:125\nerror: chrome/browser/ui/webui/BUILD.gn: patch does not apply\nerror: patch failed: chrome/test/BUILD.gn:2159\nerror: chrome/test/BUILD.gn: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/fix-building-with-prunned-binaries.patch",
+      "reason": "error: third_party/devtools-frontend/src/front_end/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/front_end/models/trace/lantern/core/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/front_end/models/trace/lantern/metrics/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/front_end/models/trace/lantern/simulation/BUILD.gn: No such file or directory"
+    },
+    {
+      "patch": "core/ungoogled-chromium/disable-mei-preload.patch",
+      "reason": "error: patch failed: chrome/BUILD.gn:1400\nerror: chrome/BUILD.gn: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/fix-building-without-safebrowsing.patch",
+      "reason": "error: patch failed: chrome/browser/BUILD.gn:2229\nerror: chrome/browser/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/enterprise/connectors/connectors_manager.cc:169\nerror: chrome/browser/enterprise/connectors/connectors_manager.cc: patch does not apply\nerror: chrome/browser/enterprise/reporting/realtime_event_upload_helper_desktop.cc: No such file or directory\nerror: chrome/browser/enterprise/reporting/saas_usage/saas_usage_report_scheduler_delegate_desktop.cc: No such file or directory\nerror: patch failed: chrome/test/BUILD.gn:2157\nerror: chrome/test/BUILD.gn: patch does not apply\nerror: patch failed: components/device_signals/core/browser/signals_types.h:12\nerror: components/device_signals/core/browser/signals_types.h: patch does not apply\nerror: components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader_base.cc: No such file or directory\nerror: patch failed: components/safe_browsing/core/browser/safe_browsing_hats_delegate.h:5\nerror: components/safe_browsing/core/browser/safe_browsing_hats_delegate.h: patch does not apply\nerror: patch failed: components/sync_preferences/common_syncable_prefs_database.cc:426\nerror: components/sync_preferences/common_syncable_prefs_database.cc: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/remove-unused-preferences-fields.patch",
+      "reason": "error: patch failed: chrome/browser/chrome_content_browser_client.cc:320\nerror: chrome/browser/chrome_content_browser_client.cc: patch does not apply\nerror: patch failed: chrome/browser/enterprise/profile_management/profile_management_navigation_throttle.cc:25\nerror: chrome/browser/enterprise/profile_management/profile_management_navigation_throttle.cc: patch does not apply\nerror: patch failed: chrome/browser/enterprise/signals/context_info_fetcher.h:43\nerror: chrome/browser/enterprise/signals/context_info_fetcher.h: patch does not apply\nerror: patch failed: chrome/browser/enterprise/signin/token_managed_profile_creation_delegate.cc:7\nerror: chrome/browser/enterprise/signin/token_managed_profile_creation_delegate.cc: patch does not apply\nerror: patch failed: chrome/browser/extensions/api/settings_private/prefs_util.cc:63\nerror: chrome/browser/extensions/api/settings_private/prefs_util.cc: patch does not apply\nerror: patch failed: chrome/browser/policy/configuration_policy_handler_list_factory.cc:3034\nerror: chrome/browser/policy/configuration_policy_handler_list_factory.cc: patch does not apply\nerror: patch failed: chrome/browser/profiles/profile_window.cc:41\nerror: chrome/browser/profiles/profile_window.cc: patch does not apply\nerror: patch failed: chrome/browser/signin/dice_signed_in_profile_creator.cc:20\nerror: chrome/browser/signin/dice_signed_in_profile_creator.cc: patch does not apply\nerror: patch failed: chrome/browser/signin/dice_web_signin_interceptor.cc:428\nerror: chrome/browser/signin/dice_web_signin_interceptor.cc: patch does not apply\nerror: patch failed: chrome/browser/signin/signin_promo_util.cc:646\nerror: chrome/browser/signin/signin_promo_util.cc: patch does not apply\nerror: patch failed: chrome/browser/signin/signin_util.cc:87\nerror: chrome/browser/signin/signin_util.cc: patch does not apply\nerror: patch failed: chrome/browser/signin/signin_util_win_browsertest.cc:45\nerror: chrome/browser/signin/signin_util_win_browsertest.cc: patch does not apply\nerror: chrome/browser/ui/browser_command_controller_unittest.cc: No such file or directory\nerror: patch failed: chrome/browser/ui/views/download/bubble/download_toolbar_ui_controller.cc:48\nerror: chrome/browser/ui/views/download/bubble/download_toolbar_ui_controller.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/views/profiles/profile_picker_utils.cc:14\nerror: chrome/browser/ui/views/profiles/profile_picker_utils.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/views/toolbar/app_menu.cc:444\nerror: chrome/browser/ui/views/toolbar/app_menu.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/webui/signin/signin_utils_desktop.cc:29\nerror: chrome/browser/ui/webui/signin/signin_utils_desktop.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/webui/signin/turn_sync_on_helper.cc:252\nerror: chrome/browser/ui/webui/signin/turn_sync_on_helper.cc: patch does not apply\nerror: patch failed: chrome/browser/ui/webui/signin/turn_sync_on_helper_delegate_impl.cc:256\nerror: chrome/browser/ui/webui/signin/turn_sync_on_helper_delegate_impl.cc: patch does not apply\nerror: patch failed: components/signin/core/browser/account_preview_data_service.cc:23\nerror: components/signin/core/browser/account_preview_data_service.cc: patch does not apply\nerror: patch failed: components/signin/internal/identity_manager/account_tracker_service.cc:35\nerror: components/signin/internal/identity_manager/account_tracker_service.cc: patch does not apply\nerror: patch failed: components/signin/public/identity_manager/identity_utils.cc:74\nerror: components/signin/public/identity_manager/identity_utils.cc: patch does not apply\nerror: patch failed: components/supervised_user/core/browser/supervised_user_pref_store.cc:21\nerror: components/supervised_user/core/browser/supervised_user_pref_store.cc: patch does not apply\nerror: patch failed: components/sync_preferences/common_syncable_prefs_database.cc:25\nerror: components/sync_preferences/common_syncable_prefs_database.cc: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/block-requests.patch",
+      "reason": "error: chrome/browser/new_tab_page/promos/promo_service.cc: No such file or directory\nerror: third_party/devtools-frontend/src/front_end/panels/elements/WebCustomData.ts: No such file or directory"
+    },
+    {
+      "patch": "core/ungoogled-chromium/disable-privacy-sandbox.patch",
+      "reason": "error: patch failed: chrome/BUILD.gn:386\nerror: chrome/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/resources/BUILD.gn:133\nerror: chrome/browser/resources/BUILD.gn: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/move-js-optimizer-unfamiliar-sites.patch",
+      "reason": "error: patch failed: chrome/browser/content_settings/generated_javascript_optimizer_pref.cc:13\nerror: chrome/browser/content_settings/generated_javascript_optimizer_pref.cc: patch does not apply\nerror: patch failed: chrome/browser/site_protection/site_familiarity_utils.cc:10\nerror: chrome/browser/site_protection/site_familiarity_utils.cc: patch does not apply"
+    },
+    {
+      "patch": "core/ungoogled-chromium/build-with-wasm-rollup.patch",
+      "reason": "error: third_party/devtools-frontend/src/front_end/Images/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/front_end/models/live-metrics/web-vitals-injected/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/front_end/panels/recorder/injected/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/inspector_overlay/BUILD.gn: No such file or directory\nerror: third_party/devtools-frontend/src/scripts/build/build_inspector_overlay.py: No such file or directory\nerror: third_party/devtools-frontend/src/scripts/build/ninja/bundle.gni: No such file or directory\nerror: third_party/devtools-frontend/src/scripts/devtools_paths.py: No such file or directory"
+    },
+    {
+      "patch": "extra/bromite/fingerprinting-flags-client-rects-and-measuretext.patch",
+      "reason": "error: patch failed: chrome/browser/BUILD.gn:2584\nerror: chrome/browser/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/about_flags.cc:210\nerror: chrome/browser/about_flags.cc: patch does not apply"
+    },
+    {
+      "patch": "extra/bromite/flag-max-connections-per-host.patch",
+      "reason": "error: patch failed: chrome/browser/BUILD.gn:2425\nerror: chrome/browser/BUILD.gn: patch does not apply\nerror: patch failed: chrome/browser/bromite_flag_entries.h:12\nerror: chrome/browser/bromite_flag_entries.h: patch does not apply\nerror: patch failed: chrome/browser/browser_process_impl.cc:156\nerror: chrome/browser/browser_process_impl.cc: patch does not apply"
+    },
+    {
+      "patch": "extra/bromite/flag-fingerprinting-canvas-image-data-noise.patch",
+      "reason": "error: patch failed: chrome/browser/bromite_flag_entries.h:16\nerror: chrome/browser/bromite_flag_entries.h: patch does not apply\nerror: patch failed: content/browser/renderer_host/render_process_host_impl.cc:3894\nerror: content/browser/renderer_host/render_process_host_impl.cc: patch does not apply\nerror: patch failed: content/child/runtime_features.cc:412\nerror: content/child/runtime_features.cc: patch does not apply\nerror: patch failed: third_party/blink/public/platform/web_runtime_features.h:72\nerror: third_party/blink/public/platform/web_runtime_features.h: patch does not apply\nerror: patch failed: third_party/blink/renderer/platform/exported/web_runtime_features.cc:80\nerror: third_party/blink/renderer/platform/exported/web_runtime_features.cc: patch does not apply\nerror: patch failed: third_party/blink/renderer/platform/runtime_enabled_features.json5:3090\nerror: third_party/blink/renderer/platform/runtime_enabled_features.json5: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-search-engine-collection.patch",
+      "reason": "error: patch failed: components/search_engines/template_url_service.cc:603\nerror: components/search_engines/template_url_service.cc: patch does not apply\nerror: patch failed: components/search_engines/template_url_service.h:972\nerror: components/search_engines/template_url_service.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-disable-beforeunload.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:16\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: patch failed: components/javascript_dialogs/app_modal_dialog_manager.cc:8\nerror: components/javascript_dialogs/app_modal_dialog_manager.cc: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-force-punycode-hostnames.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:20\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-show-avatar-button.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:24\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-suggestions-url-field.patch",
+      "reason": "error: patch failed: components/search_engines/template_url_service.cc:1085\nerror: components/search_engines/template_url_service.cc: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-hide-crashed-bubble.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:28\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-scroll-tabs.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:25\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:32\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-bookmark-bar-ntp.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:34\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:36\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-omnibox-autocomplete-filtering.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:40\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:40\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/remove-uneeded-ui.patch",
+      "reason": "error: patch failed: chrome/browser/resources/settings/privacy_page/privacy_page.html:16\nerror: chrome/browser/resources/settings/privacy_page/privacy_page.html: patch does not apply\nerror: patch failed: chrome/browser/resources/settings/privacy_page/security/security_page.html:172\nerror: chrome/browser/resources/settings/privacy_page/security/security_page.html: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-close-window-with-last-tab.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:55\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:44\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-convert-popups-to-tabs.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:48\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-disable-local-history-expiration.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:52\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-clear-data-on-exit.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:56\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-qr-generator.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:60\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-grab-handle.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:64\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-close-confirmation.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:61\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:68\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-custom-ntp.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:72\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-tab-hover-cards.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:70\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:76\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-hide-tab-close-buttons.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:80\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-disable-tls-grease.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:84\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-change-http-accept-header.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:88\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: patch failed: components/webui/flags/flags_state.cc:247\nerror: components/webui/flags/flags_state.cc: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-disabling-link-drag.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:92\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-hide-extensions-menu.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:96\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-hide-fullscreen-exit-ui.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:100\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-incognito-themes.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:104\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flags-for-referrer-customization.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:108\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-reduce-system-info.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:120\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: patch failed: third_party/blink/common/features.cc:20\nerror: third_party/blink/common/features.cc: patch does not apply\nerror: patch failed: third_party/blink/public/common/features.h:21\nerror: third_party/blink/public/common/features.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-remove-client-hints.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:124\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: patch failed: third_party/blink/common/features.cc:21\nerror: third_party/blink/common/features.cc: patch does not apply\nerror: patch failed: third_party/blink/public/common/features.h:22\nerror: third_party/blink/public/common/features.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/enable-certificate-transparency-and-add-flag.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:128\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-spoof-webgl-renderer-info.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_choices.h:79\nerror: chrome/browser/ungoogled_flag_choices.h: patch does not apply\nerror: patch failed: chrome/browser/ungoogled_flag_entries.h:132\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: patch failed: third_party/blink/common/features.cc:22\nerror: third_party/blink/common/features.cc: patch does not apply\nerror: patch failed: third_party/blink/public/common/features.h:23\nerror: third_party/blink/public/common/features.h: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-to-increase-incognito-storage-quota.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:136\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: patch failed: storage/browser/quota/quota_features.cc:41\nerror: storage/browser/quota/quota_features.cc: patch does not apply"
+    },
+    {
+      "patch": "extra/ungoogled-chromium/add-flag-for-disabling-jit.patch",
+      "reason": "error: patch failed: chrome/browser/ungoogled_flag_entries.h:140\nerror: chrome/browser/ungoogled_flag_entries.h: patch does not apply\nerror: v8/gni/v8.gni: No such file or directory"
+    }
+  ],
+  "limits": [
+    "No macOS packaging layer was ported.",
+    "No NeAntik runtime patches were applied in this experiment.",
+    "No GN generation, compilation, runtime, privacy, GUI, signing, notarization, Gatekeeper, or release gate was run.",
+    "This experiment is not a candidate source tree or product qualification."
+  ],
+  "neantikRequiredPatchMatrixAfterCommonOverlay": {
+    "seriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+    "checkedAgainst": "official Chromium M154 source with the 61 successful ordered ungoogled-common M153 patches applied",
+    "mode": "git apply --check only; no NeAntik patch was applied",
+    "counts": {
+      "required": 11,
+      "applies": 6,
+      "rebaseRequired": 5
+    },
+    "groups": [
+      {
+        "id": "profile-seed-contract",
+        "result": "rebase-required",
+        "reason": "error: patch failed: content/browser/renderer_host/render_process_host_impl.cc:3867"
+      },
+      {
+        "id": "deterministic-rendered-surfaces",
+        "result": "rebase-required",
+        "reason": "error: patch failed: third_party/blink/renderer/core/dom/document.cc:1041"
+      },
+      {
+        "id": "deterministic-offline-audio",
+        "result": "applies",
+        "reason": null
+      },
+      {
+        "id": "deterministic-webgl-pixels",
+        "result": "applies",
+        "reason": null
+      },
+      {
+        "id": "timezone-locale-network-context",
+        "result": "rebase-required",
+        "reason": "error: patch failed: third_party/blink/renderer/core/core_initializer.cc:173"
+      },
+      {
+        "id": "real-browser-version-contract",
+        "result": "applies",
+        "reason": null
+      },
+      {
+        "id": "minimal-apple-device-tuple",
+        "result": "applies",
+        "reason": null
+      },
+      {
+        "id": "neantik-branding-and-source-lock",
+        "result": "applies",
+        "reason": null
+      },
+      {
+        "id": "official-lite-archive-build-contract",
+        "result": "applies",
+        "reason": null
+      },
+      {
+        "id": "private-runtime-config-environment",
+        "result": "rebase-required",
+        "reason": "error: patch failed: components/ungoogled/ungoogled_switches.h:14"
+      },
+      {
+        "id": "cached-runtime-profile-seed",
+        "result": "rebase-required",
+        "reason": "error: components/ungoogled/nevision_fingerprint.cc: No such file or directory"
+      }
+    ]
+  },
+  "semanticReviewFindings": [
+    {
+      "patchGroup": "minimal-apple-device-tuple",
+      "finding": "The patch applies syntactically, but the selected hard-coded screen, CPU, memory, and DPR values are not proven to describe one real Apple device; exclude the patch and keep real values until a coherent source-backed tuple is reviewed."
+    },
+    {
+      "patchGroup": "official-lite-archive-build-contract",
+      "finding": "The change appears already covered upstream in M154; avoid carrying a redundant patch and test the archive build directly."
+    }
+  ]
+}

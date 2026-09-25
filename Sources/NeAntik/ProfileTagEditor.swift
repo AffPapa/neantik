@@ -381,6 +381,7 @@ struct ProfileTagEditor: View {
     }
     .padding(14)
     .frame(width: 330)
+    .accessibilityHidden(true)
     .onAppear {
       Task { @MainActor in
         await Task.yield()
@@ -450,7 +451,7 @@ struct ProfileTagEditor: View {
     tags = result.tags
     input = result.remainingInput
     validationMessage = result.error?.localizedDescription
-    if let error = result.error {
+    if result.error != nil {
       inputIsFocused = true
     }
   }

@@ -874,7 +874,6 @@ struct BulkProxyImportView: View {
             // Publish the busy state before the existing atomic transaction.
             await Task.yield()
             do {
-                let createdCount = drafts.count
                 try await onCreate(drafts, capturedBaseName)
                 dismiss()
             } catch {

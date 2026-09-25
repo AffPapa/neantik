@@ -470,6 +470,7 @@ struct ProfileEnvironmentView: View {
         }
         .padding(14)
         .frame(width: 360, alignment: .leading)
+        .accessibilityHidden(true)
     }
 
     private func setSectionExpanded(

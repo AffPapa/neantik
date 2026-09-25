@@ -755,6 +755,7 @@ struct ProfileEditorView: View {
       ) { folderID in
         selectedFolderID = folderID
       }
+      .accessibilityHidden(true)
     }
     .interactiveDismissDisabled(hasUnsavedChanges)
     .alert(
