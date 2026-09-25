@@ -33,6 +33,10 @@ The retained local candidate is not a package of the current source: its
 embedded runtime is `153.0.8010.52`, differs from the repository runtime lock
 `152.0.7977.64`, lacks the embedded source contract, and falls below the
 minimum security baseline. Do not package or publish it as a newer release.
+The read-only 13-gate preflight with the confirmed signing/notary configuration
+passes 9 gates and blocks 4: public version/build floor, runtime-lock match,
+embedded source provenance, and the current security baseline. It does not
+sign, notarize, upload, or approve the retained app.
 
 ## Next Direct release gates
 
