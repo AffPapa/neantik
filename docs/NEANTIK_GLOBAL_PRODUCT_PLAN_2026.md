@@ -176,7 +176,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P0-08 | Public evidence binding | shipped for 0.7.5 | Hash/version/source/artifact связаны |
 | P0-09 | Secret/history audit | done | Нет credential-like files/values в reachable history |
 | P0-10 | Manager perf budgets | done | p50/p95 отдельно от Chromium metrics |
-| P0-11 | Explicit keyboard actions | done | Keyboard shortcuts and native control labels/hints remain available |
+| P0-11 | Explicit keyboard actions | done | Keyboard shortcuts and Tab navigation remain; by owner request, SwiftUI content is hidden from the VoiceOver tree. Native macOS menus/titlebar/system alerts remain OS-controlled. |
 | P0-12 | Release version floor | done | Новый manager build строго выше recorded public floor; проверено v0.7.11/74 |
 
 ### P1 — следующий функциональный слой без изменения ядра
@@ -196,7 +196,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
 | P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
 | P1-13 | Snapshot restore preview | shipped in 0.7.10 | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
-| P1-14 | Restore preview spoken announcements | removed in local commit `66c590b` | The public 0.7.11 binary historically announced one aggregate summary; commit `66c590b` removes app-issued announcements, retains keyboard actions and native control metadata, and shows transient visible completion status for snapshot/import/export/support-bundle operations |
+| P1-14 | Restore preview spoken announcements and app VoiceOver tree | removed/hidden locally in `66c590b` and `b23b4b9` | Public 0.7.11 historically announced one aggregate summary. Local code removes app-issued announcements and hides main SwiftUI content, sheets, and popovers from the VoiceOver tree; keyboard actions remain and focused flows were manually checked in Dev.app. |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -371,8 +371,11 @@ Chromium 153.0.8010.52 ниже baseline 154.0.8037.58. Обязательный
 `doctor` остановился: AffPapa deploy credential недоступен; это отдельный
 deploy-path gate и не отменяет публичный GitHub/Sites read-only результат.
 Новый exact candidate и его физический keyboard smoke ещё не существуют;
-strict production fingerprint coherence не подтверждена. Системный VoiceOver
-не является отдельной функцией NeAntik и не входит в release QA.
+strict production fingerprint coherence не подтверждена. В локальном Dev.app
+проверен ограниченный набор клавиатурных сценариев; системный VoiceOver не
+запускался. SwiftUI-контент приложения скрывается из его accessibility tree по
+решению владельца, тогда как нативные меню macOS и system alerts остаются под
+управлением ОС.
 
 ## 10. Источники нового исследования
 
