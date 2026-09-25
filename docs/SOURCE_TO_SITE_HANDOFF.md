@@ -1,8 +1,10 @@
 # NeAntik Direct source-to-site handoff
 
-Reviewed against the public GitHub Release and `browser.free/api/release` on
-25 September 2026. This document records the current release boundary; it does
-not make newer local manager changes a public release candidate.
+Snapshot recorded against the public GitHub Release and `browser.free/api/release`
+on 25 September 2026. A later live recheck in this continuation could not reach
+browser.free or GitHub; treat the saved public state as historical until a new
+successful check. This document does not make newer local manager changes a
+public release candidate.
 
 ## Public release baseline
 

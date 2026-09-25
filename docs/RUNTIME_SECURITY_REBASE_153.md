@@ -339,17 +339,20 @@ fresh status below.
 
 ## Fresh Chromium 154 and Direct release status — 2026-09-25
 
-The public GitHub release is `v0.7.11` (build 74); `v0.7.10` remains available
-as rollback. The live `browser.free/api/release` contract reports Chromium
-153.0.8010.52 below the macOS Stable security baseline 154.0.8037.58,
-`canDownload=false`, and no download URL. Chrome's official Stable notice
-records 108 security fixes for the M154 rollout. The upstream ungoogled macOS
-release page still lists M152 as its latest packaged line.
+The last recorded public snapshot lists GitHub release `v0.7.11` (build 74)
+and `v0.7.10` as rollback. Its `browser.free/api/release` response reports
+Chromium 153.0.8010.52 below the macOS Stable security baseline 154.0.8037.58,
+`canDownload=false`, and no download URL. A later fresh live check in this pass
+could not resolve browser.free, so that response is historical until rechecked.
+Chrome's official Stable notice records 108 security fixes for the M154
+rollout. The upstream ungoogled macOS release page at the last recorded check
+still listed M152 as its latest packaged line.
 
-The allowed macOS Keychain check currently finds four valid signing identities,
+The last allowed macOS Keychain check found four valid signing identities,
 including Developer ID Application for team H6VGU2M6JD, and the existing
-`neantik-notary` profile returns accepted historical submissions. These gates
-are available; no new candidate has been signed or notarized.
+`neantik-notary` profile had accepted historical submissions. These are prior
+credential observations, not proof that a new candidate is ready; no new
+candidate has been signed or notarized.
 
 A read-only `git apply --check` of each of the eleven exact groups in
 `runtime/nevision-patches/series.json` against clean official Chromium

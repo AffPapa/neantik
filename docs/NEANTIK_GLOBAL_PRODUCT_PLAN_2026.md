@@ -30,8 +30,9 @@ NeAntik — локальный macOS-браузер с независимыми 
 
 Публичный baseline текущего цикла:
 
-- NeAntik 0.7.11, build 74 (24 сентября 2026; tag, GitHub assets и live
-  browser.free API свежо подтверждены в этом audit pass);
+- NeAntik 0.7.11, build 74 (24 сентября 2026; tag and GitHub assets are
+  recorded in release evidence; a later browser.free API check on 25 September
+  was saved, but a fresh live recheck in this continuation is unavailable);
 - Direct Distribution для Apple Silicon;
 - встроенный Chromium 153.0.8010.52 ARM64 Metal;
 - локальные профили, папки, поиск, теги, snapshots, безопасное копирование;
@@ -295,8 +296,10 @@ Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Ch
 - при публикации запись указывала browser.free Sites version 92, API тогда
   отвечал `canDownload=true`, а remote tag указывал на source commit; это
   исторический ответ, позже заменённый после обновления security baseline;
-- текущая browser.free Sites version 95 показывает ту же историю 0.7.11,
-  но API отвечает `published-runtime-gated`, `canDownload=false` и `downloadUrl=null`;
+- последняя записанная browser.free Sites version 95 показывает историю
+  0.7.11, а сохранённый API ответ — `published-runtime-gated`,
+  `canDownload=false` и `downloadUrl=null`; текущая live-проверка не прошла по
+  DNS/network и требует повторения;
 - GitHub API по-прежнему показывает v0.7.10 как опубликованный rollback release;
 - release record и notary history подтверждают принятые ZIP/DMG submissions;
   этот аудит не скачивал заново payload и не повторял Gatekeeper на свежих
@@ -384,11 +387,13 @@ build: GN сгенерировал 35,105 targets, compile остановилс�
 удалённого patchset’ом Safe Browsing renderer API. Автоматическая проверка
 отклонила попытку убрать hook как ослабление защиты; policy-вопрос не решён,
 runtime candidate отсутствует. Новый exact candidate и его физический keyboard smoke ещё не существуют;
-strict production fingerprint coherence не подтверждена. В локальном Dev.app
-проверен ограниченный набор клавиатурных сценариев; системный VoiceOver не
-запускался. SwiftUI-контент приложения скрывается из его accessibility tree по
-решению владельца, тогда как нативные меню macOS и system alerts остаются под
-управлением ОС.
+strict production fingerprint coherence не подтверждена. Ограниченный набор
+клавиатурных сценариев записан в ранней Dev.app-сессии без exact source
+binding; более поздний повторный запуск не дошёл до UI из-за Development-data
+warning. Повторить физическую проверку нужно на пригодном Dev.app и exact
+candidate. Системный VoiceOver не запускался. SwiftUI-контент приложения
+скрывается из его accessibility tree по решению владельца, тогда как нативные
+меню macOS и system alerts остаются под управлением ОС.
 
 ## 10. Источники нового исследования
 
