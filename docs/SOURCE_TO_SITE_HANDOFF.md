@@ -12,9 +12,12 @@ not make newer local manager changes a public release candidate.
   `141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576`.
 - DMG SHA-256:
   `fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4`.
-- The API reports `published-runtime-gated`, `canDownload=false`, and no
-  download URL. Chromium `153.0.8010.52` is below the minimum
-  `154.0.8037.58`.
+- The last recorded API response reports `published-runtime-gated`,
+  `canDownload=false`, and no download URL. Chromium `153.0.8010.52` is below
+  the minimum `154.0.8037.58`. A fresh recheck in this pass could not reach
+  browser.free (DNS/network failure); web fetch could not reach the site or
+  GitHub API, and `gh auth status` reports invalid configured tokens. Treat
+  this saved response as historical until live access works again.
 - Release `v0.7.10` remains available as the recorded rollback.
 
 ## Local manager changes after 0.7.11
@@ -28,27 +31,29 @@ before creating any future exact candidate.
 App-issued speech announcements were removed; keyboard actions and native
 macOS control metadata remain. The current local HEAD additionally hides the
 main SwiftUI accessibility subtree plus sheets and popovers per owner request.
-On 25 September, the current local Dev.app was manually checked: `Cmd+N`
-opened the profile editor; Tab moved from Name through Folder and Tag to Cancel
-and Create; Escape cancelled without saving; `Cmd+Shift+N` opened the folder
-editor, whose SwiftUI content stayed out of the VoiceOver tree, Tab reached
+An earlier limited local Dev.app session recorded: `Cmd+N` opened the profile
+editor; Tab moved from Name through Folder and Tag to Cancel and Create; Escape
+cancelled without saving; `Cmd+Shift+N` opened the folder editor, Tab reached
 Cancel, and Escape cancelled; `Cmd+F` focused profile search. The workspace
-still showed zero profiles afterward. VoiceOver itself was not launched. A
-pre-existing Dev-data format warning appeared at startup and was dismissed
-without changing the Development data directory. This is a focused local
-keyboard check, not a full physical QA of every flow or the eventual release
-candidate. Native macOS menu/titlebar and system-alert behavior remains
-OS-controlled. These local changes are not present in the public 0.7.11 binary
-or its release evidence.
+still showed zero profiles afterward. VoiceOver itself was not launched. This
+record is not bound to an exact source hash. A later repeat attempt on
+25 September did not reach the UI after a Development-data format warning; the
+warning was dismissed without changing or recovering that data. Treat the
+earlier check as historical and repeat keyboard smoke on a usable Dev.app and
+the exact release candidate. Native macOS menu/titlebar and system-alert
+behavior remains OS-controlled. These local changes are not present in the
+public 0.7.11 binary or its release evidence.
 
 The retained local candidate is not a package of the current source: its
 embedded runtime is `153.0.8010.52`, differs from the repository runtime lock
 `152.0.7977.64`, lacks the embedded source contract, and falls below the
 minimum security baseline. Do not package or publish it as a newer release.
-The read-only 13-gate preflight with the confirmed signing/notary configuration
-passes 9 gates and blocks 4: public version/build floor, runtime-lock match,
-embedded source provenance, and the current security baseline. It does not
-sign, notarize, upload, or approve the retained app.
+The current default-shell read-only 13-gate preflight passes 5 and blocks 8:
+channel, version/build floor, runtime-lock match, embedded source provenance,
+security baseline, GUI channel, and two signing/notary environment values. The
+unset shell variables do not prove that Keychain identity or notary profile are
+absent. The preflight does not sign, notarize, upload, or approve the retained
+app.
 
 ## Next Direct release gates
 
@@ -59,6 +64,21 @@ NeAntik runtime groups still pass a context check. This is not a build or
 candidate. First pin and review the M154 common/macOS packaging port and
 rebase the failed patches; keep all current public assets unchanged until the
 runtime gates pass.
+
+Follow-up execution used the exact official macOS Stable source tag
+`154.0.8037.58`, commit `a654841425914cbb703a2931e07b70a83aedbafd`, with pinned
+DEPS and hooks in a disposable `/private/tmp` build root. GN generated 35,105
+targets. A four-job diagnostic `chrome` compile reached 11,815/14,159 actions,
+then failed because patch replay removed `safe_browsing::ThreatDOMDetails`
+while M154 still calls it from `chrome_content_renderer_client.cc:670`. An
+earlier temporary compile fix restored a blocklist setter but left its request
+URL empty; that was only a compile probe and has no runtime or privacy proof.
+The product repo still contains no M154 source contract, qualified patchset,
+runtime lock, or candidate. An attempted temporary edit to remove the renderer
+hook was rejected by automatic review as weakening Safe Browsing; no bypass was
+used. The intended NeAntik privacy build setting and security tradeoff now need
+an explicit owner decision before this code path is ported. No public artifact
+or product source/runtime contract changed by the probe.
 
 1. Resolve Chromium source, patch, toolchain, and runtime-lock differences in
    the runtime workstream. Verify source provenance, patch survival, build,

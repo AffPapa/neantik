@@ -196,7 +196,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
 | P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
 | P1-13 | Snapshot restore preview | shipped in 0.7.10 | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
-| P1-14 | Restore preview spoken announcements and app VoiceOver tree | removed/hidden locally in `66c590b` and `b23b4b9` | Public 0.7.11 historically announced one aggregate summary. Local code removes app-issued announcements and hides main SwiftUI content, sheets, and popovers from the VoiceOver tree; keyboard actions remain and focused flows were manually checked in Dev.app. |
+| P1-14 | Restore preview spoken announcements and app VoiceOver tree | removed/hidden locally in `66c590b` and `b23b4b9` | Public 0.7.11 historically announced one aggregate summary. Local code removes app-issued announcements and hides main SwiftUI content, sheets, and popovers from the VoiceOver tree; keyboard actions remain. A limited focused smoke was recorded in an earlier Dev.app session, without an exact source binding; a later retry did not reach the UI, so repeat physical keyboard QA on a usable Dev.app and exact candidate. |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -321,12 +321,14 @@ SwiftUI-интерфейс приложения из VoiceOver tree по зап�
 горячие клавиши сохранены; нативные меню и системные alerts остаются под
 управлением macOS. Изменение ещё не попало в новый бинарный Direct-релиз.
 
-Полный локальный набор прошёл: 636 Swift-тестов и 688 Python-тестов (один
+Полный локальный набор прошёл: 636 Swift-тестов и 689 Python-тестов (один
 skip); loopback-тест потребовал разрешённого macOS-контекста после sandbox
-`EPERM`. При новой попытке открыть Dev.app появилось прежнее предупреждение о
-неверном формате Development-данных; я закрыл окно без действий восстановления.
-Ранее проверенный ограниченный клавиатурный набор остаётся зафиксирован в
-roadmap, но точный candidate ещё отсутствует и физически не проверен.
+`EPERM`. Ограниченный keyboard smoke был записан в более ранней Dev.app-сессии,
+но не привязан к source hash. При повторной попытке открыть Dev.app UI не
+появился из-за предупреждения о неверном формате Development-данных; данные
+оставлены без изменений. Точный candidate ещё отсутствует и физически не
+проверен, поэтому keyboard smoke следует повторить на usable Dev.app и exact
+candidate; системный VoiceOver не запускался.
 Release preflight теперь выбирает source contract по major-версии runtime lock,
 но текущему runtime 153 требуется отсутствующий контракт 153; security
 baseline 154 остаётся независимым обязательным gate.
@@ -365,19 +367,23 @@ baseline 154 остаётся независимым обязательным ga
 11. a clean-machine or fresh-download smoke can launch and create a profile;
 12. previous public artifact remains available for rollback.
 
-Свежая read-only GitHub API проверка подтвердила неизменяемый опубликованный
-v0.7.11 и asset metadata: ZIP SHA-256
+Последняя записанная read-only GitHub API проверка подтвердила неизменяемый
+опубликованный v0.7.11 и asset metadata: ZIP SHA-256
 `141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576`, DMG
 SHA-256 `fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4`;
-v0.7.10 rollback release и его assets остаются опубликованными. В этом pass
-артефакты заново не скачивались, поэтому свежая подпись и Gatekeeper на байтах
-не подтверждались. browser.free Sites version 95 развернута, live
-`/api/release` проверен: исторические метаданные 0.7.11 сохранены, но
-`published-runtime-gated`, `canDownload=false`, `downloadUrl=null` из-за
-Chromium 153.0.8010.52 ниже baseline 154.0.8037.58. Обязательный NeAntik
-`doctor` остановился: AffPapa deploy credential недоступен; это отдельный
-deploy-path gate и не отменяет публичный GitHub/Sites read-only результат.
-Новый exact candidate и его физический keyboard smoke ещё не существуют;
+v0.7.10 rollback release и его assets были перечислены. В этом pass артефакты
+заново не скачивались, поэтому свежая подпись и Gatekeeper на байтах не
+подтверждались. Последняя записанная проверка browser.free Sites version 95 и
+live `/api/release` показывала `published-runtime-gated`, `canDownload=false`,
+`downloadUrl=null`; повторная проверка сейчас не удалась из-за DNS/network, а
+GitHub CLI сообщает о недействительных настроенных токенах. Поэтому live
+публичное состояние пока не подтверждено заново. Обязательный NeAntik `doctor`
+ранее останавливался на deploy credential; это отдельный deploy-path gate.
+Для точного официального M154 `.58` выполнен только disposable diagnostic
+build: GN сгенерировал 35,105 targets, compile остановился на 11,815/14,159 из-за
+удалённого patchset’ом Safe Browsing renderer API. Автоматическая проверка
+отклонила попытку убрать hook как ослабление защиты; policy-вопрос не решён,
+runtime candidate отсутствует. Новый exact candidate и его физический keyboard smoke ещё не существуют;
 strict production fingerprint coherence не подтверждена. В локальном Dev.app
 проверен ограниченный набор клавиатурных сценариев; системный VoiceOver не
 запускался. SwiftUI-контент приложения скрывается из его accessibility tree по

@@ -61,7 +61,9 @@ The exact `.60` source is available locally at commit
 `185d9e0f76de628765c051bc537a752fa9a7df37`. A read-only three-way replay check
 of the existing 1.7 MB M153 downstream diff (838 paths) found 33 text conflicts
 and 26 distinct path issues, including private/internal refs and six removed
-paths. This is not a clean M154 port. No M154 patch was applied or built.
+paths. This was not a clean M154 port, and that read-only `.60` replay did not
+apply or build any M154 patch. The later exact-Stable `.58` diagnostic build is
+recorded below.
 
 The public ungoogled common release line observed for this pass is still M153;
 the public macOS packaging line observed is M152. The M154 source therefore
@@ -70,6 +72,28 @@ toolchain lock, and a minimal NeAntik patch rebase with exact postimage hashes
 before GN generation or build. Existing `prepare-runtime-source.sh`,
 `build-runtime.sh`, and `apply-neantik-patchset.py` remain pinned to Chromium
 152 and must not be used as M154 entrypoints.
+
+### Follow-up exact-Stable compile probe — 2026-09-25
+
+A separate disposable build root was created from the exact official macOS
+Stable source tag `154.0.8037.58`, commit
+`a654841425914cbb703a2931e07b70a83aedbafd`; pinned dependencies and official
+hooks synchronized successfully, and GN generated 35,105 targets. The
+four-job diagnostic `chrome` build failed at 11,815/14,159 actions in
+`chrome/renderer/chrome_content_renderer_client.cc:670`: replayed patches
+removed `safe_browsing::ThreatDOMDetails`, but M154 still references it under
+the database build flags. A temporary earlier compile-only fix restored the
+M154 blocklist setter while leaving its endpoint empty; that temporary source
+must not be treated as a functioning or privacy-qualified runtime.
+
+Automatic review rejected a temporary edit that removed the remaining renderer
+hook because it weakens Safe Browsing. No alternate path was used. The product
+tree is unchanged by the build probe, and it has no M154 source contract,
+reviewed patch manifest, exact postimage hashes, qualified runtime lock, or
+candidate. The intended privacy build policy is recorded as
+`safe_browsing_mode=0`, with no built-in substitute; an explicit owner decision
+on that security tradeoff is needed before carrying it into a release port. The
+probe does not pass the source, runtime, GUI, or release gates.
 
 The same source inspection found that `chrome_paks.gni` still consumes
 `platform_pak_locales`; its per-resource `locale_allowlist` does not reduce the

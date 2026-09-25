@@ -11,7 +11,7 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## Текущий Direct release cycle
 
-- Последний GitHub-релиз: `0.7.11 (74)`; browser.free version 95 показывает его как опубликованный, но runtime-gated и не доступный для скачивания;
+- Последний записанный GitHub-релиз: `0.7.11 (74)`; последняя сохранённая browser.free проверка была version 95 и показывала его runtime-gated, без скачивания. Повторная live-проверка в этом pass не прошла из-за DNS/network недоступности; считать сохранённый результат историческим до нового GET;
 - предыдущий релиз `0.7.10` сохранён как rollback;
 - публичный `0.7.11 (74)` исторически уточнял VoiceOver-контекст preview;
   локальный commit `66c590b` удаляет app-issued объявления, оставляя
@@ -26,22 +26,33 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 - новый manager-only preview списка прокси реализован локально, но Direct
   релиз блокирует security baseline Chromium `154.0.8037.58`;
 - по решению владельца текущий локальный manager скрывает SwiftUI-контент,
-  sheets и popovers от VoiceOver; `Cmd+N`, `Cmd+Shift+N`, `Cmd+F`, Tab и
-  Escape проверены в Dev.app, системные меню macOS остаются системными; это
-  изменение не входит в `0.7.11` и не включено в публичный релиз;
-- runtime update и Direct-релиз разрешены пользователем; source/rebase, GUI,
-  isolation, signing и release gates ещё не пройдены;
+  sheets и popovers от VoiceOver; в ранней ограниченной Dev.app-сессии были
+  записаны проверки `Cmd+N`, `Cmd+Shift+N`, `Cmd+F`, Tab и Escape. При более
+  позднем повторном запуске 25 сентября Dev.app не дошёл до UI из-за
+  Development-данных неверного формата; поэтому прежний результат считается
+  историческим и не заменяет повторный smoke на пригодном Dev.app или exact
+  candidate. Системные меню macOS остаются системными; это изменение не входит
+  в `0.7.11` и не включено в публичный релиз;
+- runtime update и Direct-релиз разрешены пользователем; точный Chromium
+  `154.0.8037.58` прошёл GN, но диагностическая компиляция остановилась на
+  `chrome_content_renderer_client.cc:670` из-за конфликта Safe Browsing patch
+  API. Это не runtime candidate. Source/rebase, GUI, isolation, signing и
+  release gates ещё не пройдены;
 - следующий релиз требует нового exact-source кандидата, полного набора
   release gates и проверки заново скачанных GitHub/site artifacts;
 - незакоммиченные изменения или тестовый результат сами по себе не означают,
   что версия опубликована.
 
-Свежая read-only GitHub Release API проверка подтвердила immutable
-`v0.7.11` / build `74`, привязанный к source commit
-`fa3b03cbe122840ea308d2ecf19004a1128a1a06`. Свежий `browser.free/api/release`
-ответил `published-runtime-gated`, `canDownload=false`, `downloadUrl=null`:
-Chromium `153.0.8010.52` ниже baseline `154.0.8037.58`. Эти данные относятся
-к публичному release, не к новому локальному HEAD `66c590b`.
+Последняя записанная read-only GitHub Release API проверка подтвердила
+immutable `v0.7.11` / build `74`, привязанный к source commit
+`fa3b03cbe122840ea308d2ecf19004a1128a1a06`. Последняя записанная проверка
+`browser.free/api/release` отвечала `published-runtime-gated`,
+`canDownload=false`, `downloadUrl=null`: Chromium `153.0.8010.52` ниже
+baseline `154.0.8037.58`. Повторная проверка в текущем pass не удалась:
+browser.free не разрешился через DNS, web fetch также недоступен; GitHub CLI
+сообщил, что настроенные токены не действуют. Поэтому live-состояние не
+подтверждено заново, а сохранённые ответы остаются историческим evidence.
+Они относятся к публичному release, не к локальному HEAD `4af5a67`.
 
 ## Выполнено в текущем manager pass
 

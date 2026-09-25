@@ -46,6 +46,28 @@ class ResponsiveUIContractTests(unittest.TestCase):
             for marker in forbidden:
                 self.assertNotIn(marker, text, f"{marker} remains in {path.name}")
 
+    def test_swiftui_voiceover_tree_is_hidden_for_owner_policy(self) -> None:
+        app = APP.read_text(encoding="utf-8")
+        content = CONTENT.read_text(encoding="utf-8")
+
+        self.assertRegex(
+            app,
+            r"(?s)ContentView\(.*?\n\s{12}\)\n\s{12}\.accessibilityHidden\(true\)",
+        )
+
+        sheets = content.split("private var workspaceSheets", 1)[1].split(
+            "private var workspaceToolbar", 1
+        )[0]
+        sheet_segments = sheets.split(".sheet(")[1:]
+        self.assertGreater(len(sheet_segments), 0)
+        for index, segment in enumerate(sheet_segments, start=1):
+            segment = segment.split(".sheet(", 1)[0]
+            self.assertIn(
+                ".accessibilityHidden(true)",
+                segment,
+                f"workspace sheet {index} is exposed to VoiceOver",
+            )
+
     def test_keyboard_focus_and_shortcuts_remain_available(self) -> None:
         content = CONTENT.read_text(encoding="utf-8")
         editor = EDITOR.read_text(encoding="utf-8")

@@ -42,7 +42,7 @@
 | 21 | Readiness gate для A → B → A | P0 | done | Проверка запускается только для двух разных реально остановленных профилей. |
 | 22 | Ограничение и privacy-cap raw reports | P0 | done | Не более трёх owner-only файлов и не более 512 KiB каждый до записи. |
 | 23 | Безопасная сводка вместо raw evidence в UI | P0 | done | В обычном результате только verdict; raw JSON доступен лишь в явном engineering-контексте. |
-| 24 | Клавиатурная навигация | P1 | limited local Dev.app keyboard QA passed; exact release-candidate QA pending | Локально проверены Tab по форме создания профиля, Escape/cancel, ⌘N, ⌘⇧N и ⌘F; возврат фокуса и Return отдельно не проверены. App-issued speech announcements удалены в `66c590b`; SwiftUI accessibility tree скрыт в `b23b4b9` по решению владельца. Для snapshot/import/export/support bundle остаётся видимый временный статус. Публичный 0.7.11 описывает историческое поведение. |
+| 24 | Клавиатурная навигация | P1 | earlier limited Dev.app keyboard check recorded; repeat and exact-candidate QA pending | Ранее записаны Tab по форме создания профиля, Escape/cancel, ⌘N, ⌘⇧N и ⌘F; возврат фокуса и Return отдельно не проверены. При повторной попытке 25 сентября Dev.app не дошёл до UI из-за Development-данных неверного формата; данные не восстанавливались и не менялись. App-issued speech announcements удалены в `66c590b`; SwiftUI accessibility tree скрыт в `b23b4b9` по решению владельца. Статические source-contract тесты не заменяют физическую клавиатурную проверку. Для snapshot/import/export/support bundle остаётся видимый временный статус. Публичный 0.7.11 описывает историческое поведение. |
 | 25 | Redacted crash/support bundle | P1 | done | Экспорт содержит только allowlisted enums/версии/хэши, ограничен 64 KiB, проходит независимый fail-closed verifier и доступен через системный Save dialog. |
 | 26 | Signed runtime update с rollback | P1 | runtime-gate | Проверяются подпись, provenance, атомарная замена и восстановление предыдущего runtime. |
 | 27 | Полный release evidence bundle | P0 | runtime-gate | Source lock, binary hash, signing, notarization, stapling, Gatekeeper, fresh download и live smoke согласованы. |
@@ -62,10 +62,11 @@
 
 ## Следующие незакрытые действия
 
-1. Перед Direct-релизом проверить физическую клавиатуру на exact candidate:
-   Tab order, focus return, Escape, Return, ⌘N, ⌘⇧N и ⌘F. Dev.app не дошёл до
-   UI из-за прежнего предупреждения о неверном формате Development-данных;
-   данные не восстанавливались и не менялись.
+1. Перед Direct-релизом повторить физическую клавиатурную проверку на пригодном
+   Dev.app, затем на exact candidate: Tab order, focus return, Escape, Return,
+   ⌘N, ⌘⇧N и ⌘F. Ранее записанный ограниченный smoke не привязан к source hash;
+   повторный запуск 25 сентября не дошёл до UI из-за неверного формата
+   Development-данных. Данные не восстанавливались и не менялись.
 2. До любых изменений профилей выполнить отдельный threat review repair
    assistant. Сейчас безопасная автоматическая recovery и read-only notice уже
    реализованы; новая функция может затронуть пользовательские metadata и
