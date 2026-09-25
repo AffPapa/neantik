@@ -188,6 +188,12 @@ struct ProfileOrganizationState: Equatable, Sendable {
         folders.sort(by: ProfileFolder.areInIncreasingOrder)
     }
 
+    mutating func addFolders(_ newFolders: [ProfileFolder]) {
+        guard !newFolders.isEmpty else { return }
+        folders.append(contentsOf: newFolders)
+        folders.sort(by: ProfileFolder.areInIncreasingOrder)
+    }
+
     mutating func replaceFolder(_ folder: ProfileFolder) {
         guard let index = folders.firstIndex(where: { $0.id == folder.id })
         else {

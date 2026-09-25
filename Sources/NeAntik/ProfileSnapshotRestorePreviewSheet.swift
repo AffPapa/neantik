@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileSnapshotRestorePreviewSheet: View {
     let preview: ProfileSnapshotRestorePreview
+    var isRestoring = false
     let onCancel: () -> Void
     let onRestore: () -> Void
 
@@ -52,11 +53,29 @@ struct ProfileSnapshotRestorePreviewSheet: View {
                         "Закроет просмотр. Профили и папки не изменятся."
                     )
                 Spacer()
-                Button("Восстановить", action: onRestore)
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityLabel("Восстановить профили из снимка")
-                    .accessibilityHint("Добавит профили из snapshot в текущий список")
+                Button(action: onRestore) {
+                    if isRestoring {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Восстанавливаем…")
+                        }
+                    } else {
+                        Text("Восстановить")
+                    }
+                }
+                .disabled(isRestoring)
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .accessibilityLabel(
+                    isRestoring
+                        ? "Восстанавливаем профили из снимка"
+                        : "Восстановить профили из снимка"
+                )
+                .accessibilityHint(
+                    isRestoring
+                        ? "Идёт восстановление. Подожди завершения операции."
+                        : "Добавит профили из snapshot в текущий список"
+                )
             }
         }
         .padding(24)

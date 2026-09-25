@@ -33,7 +33,7 @@ class RuntimeRebaseEntrypointTests(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertFalse(report["ok"])
         self.assertIn("152.0.7977.64", report["error"])
-        self.assertIn("153.0.8010.52", report["error"])
+        self.assertIn("154.0.8037.58", report["error"])
 
 
 if __name__ == "__main__":

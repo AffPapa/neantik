@@ -3,6 +3,7 @@ import Testing
 @testable import NeAntik
 
 @MainActor
+@Suite(.serialized)
 struct ProfileStoreTests {
     @Test
     func rejectsUnsafeOrOversizedProfileNames() throws {
@@ -99,6 +100,242 @@ struct ProfileStoreTests {
                     store.folderID(forProfileID: profile.id)
             )
         }
+    }
+
+    @Test
+    func backgroundImportCommitsProfilesFoldersAndPublishesReloadedState() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let profiles = [
+            BrowserProfile(name: "Z background"),
+            BrowserProfile(name: "A background")
+        ]
+        let saved = try await store.insertImportedProfilesOffMainActor(
+            profiles,
+            folderNames: ["Folder Z", "Folder A"]
+        )
+
+        #expect(saved.count == 2)
+        #expect(Set(store.profiles.map(\.id)) == Set(saved.map(\.id)))
+        #expect(store.organization.folders.count == 2)
+        let folderIDByName = Dictionary(
+            uniqueKeysWithValues: store.organization.folders.map {
+                ($0.name, $0.id)
+            }
+        )
+        #expect(
+            store.folderID(forProfileID: saved[0].id) ==
+                folderIDByName["Folder Z"]
+        )
+        #expect(
+            store.folderID(forProfileID: saved[1].id) ==
+                folderIDByName["Folder A"]
+        )
+        let reloaded = ProfileStore(paths: paths)
+        #expect(Set(reloaded.profiles.map(\.id)) == Set(saved.map(\.id)))
+        #expect(reloaded.organization.folders.count == 2)
+    }
+
+    @Test
+    func backgroundImportRollsBackProfilesWhenFolderPersistenceFails() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                throw ProfileStoreTestError()
+            }
+        )
+        let profile = BrowserProfile(name: "Background rollback")
+
+        await #expect(throws: ProfileStoreTestError.self) {
+            try await store.insertImportedProfilesOffMainActor(
+                [profile],
+                folderNames: ["Rollback folder"]
+            )
+        }
+        #expect(store.profiles.isEmpty)
+        #expect(store.organization == .empty)
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileDirectory(for: profile.id)
+            ) == .missing
+        )
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.isEmpty)
+        #expect(reloaded.organization == .empty)
+    }
+
+    @Test
+    func backgroundImportFailurePublishesMetadataRepairedBeforeValidation() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let sharedID = UUID()
+        let persistedProfiles = [
+            BrowserProfile(
+                id: sharedID,
+                name: "First persisted",
+                identity: BrowserIdentity(seed: 100)
+            ),
+            BrowserProfile(
+                id: sharedID,
+                name: "Second persisted",
+                identity: BrowserIdentity(seed: 100)
+            )
+        ]
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.withProfilesMetadataGuard {
+            try paths.writePrivateFile(
+                encoder.encode(persistedProfiles),
+                to: paths.profilesFile
+            )
+        }
+
+        await #expect(throws: ProfileOrganizationError.invalidFolderName) {
+            try await store.insertImportedProfilesOffMainActor(
+                [BrowserProfile(name: "Rejected import")],
+                folderNames: ["  \n  "]
+            )
+        }
+
+        #expect(store.profiles.count == 2)
+        #expect(Set(store.profiles.map(\.id)).count == 2)
+        #expect(Set(store.profiles.map(\.identity.seed)).count == 2)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(store.profiles == reloaded.profiles)
+        #expect(store.organization == reloaded.organization)
+    }
+
+    @Test
+    func synchronousMutationsFailFastWhileBackgroundImportOwnsMetadata() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let enteredOrganizationPersist = DispatchSemaphore(value: 0)
+        let continueOrganizationPersist = DispatchSemaphore(value: 0)
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                enteredOrganizationPersist.signal()
+                continueOrganizationPersist.wait()
+            }
+        )
+        let secondWindowStore = ProfileStore(paths: paths)
+        let importTask = Task {
+            try await store.insertImportedProfilesOffMainActor(
+                [BrowserProfile(name: "Gated background import")],
+                folderNames: ["Gate"]
+            )
+        }
+        await Task.detached {
+            waitForProfileStoreTestSignal(enteredOrganizationPersist)
+        }.value
+
+        #expect(throws: ProfileMetadataMutationInProgressError.self) {
+            try secondWindowStore.createFolder(named: "Concurrent folder")
+        }
+        continueOrganizationPersist.signal()
+        let saved = try await importTask.value
+        #expect(saved.count == 1)
+        #expect(store.profiles.map(\.id) == saved.map(\.id))
+        #expect(store.organization.folders.map(\.name) == ["Gate"])
+    }
+
+    @Test
+    func cancellingCallerStillPublishesCompletedBackgroundImport() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let enteredOrganizationPersist = DispatchSemaphore(value: 0)
+        let continueOrganizationPersist = DispatchSemaphore(value: 0)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                enteredOrganizationPersist.signal()
+                continueOrganizationPersist.wait()
+            }
+        )
+        let profile = BrowserProfile(name: "Cancelled caller import")
+        let importTask = Task {
+            try await store.insertImportedProfilesOffMainActor(
+                [profile],
+                folderNames: ["Durable folder"]
+            )
+        }
+
+        let reachedOrganizationPersist = await Task.detached {
+            waitForProfileStoreTestSignal(enteredOrganizationPersist)
+            return true
+        }.value
+        #expect(reachedOrganizationPersist)
+
+        importTask.cancel()
+        #expect(importTask.isCancelled)
+        continueOrganizationPersist.signal()
+        let saved = try await importTask.value
+
+        #expect(saved.map(\.id) == [profile.id])
+        #expect(store.profiles.map(\.id) == [profile.id])
+        let folderID = try #require(store.folderID(forProfileID: profile.id))
+        #expect(store.folder(withID: folderID)?.name == "Durable folder")
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.map(\.id) == [profile.id])
+        #expect(
+            reloaded.folderID(forProfileID: profile.id) == folderID
+        )
+    }
+
+    @Test
+    func importingThousandsOfDistinctFoldersBatchesOrganizationSorting() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let count = 5_000
+        let profiles = (0..<count).map { index in
+            BrowserProfile(
+                name: "Imported \(index)",
+                identity: BrowserIdentity(seed: UInt32(index + 1))
+            )
+        }
+        let folderNames = (0..<count).map { "Folder \($0)" }
+
+        let startedAt = Date()
+        let saved = try store.insertImportedProfiles(
+            profiles,
+            folderNames: folderNames
+        )
+        let elapsed = Date().timeIntervalSince(startedAt)
+        let budget: TimeInterval = _isDebugAssertConfiguration() ? 5 : 3
+
+        print(
+            "ProfileStore import benchmark: profiles=\(count), " +
+                "distinctFolders=\(count), elapsed=\(elapsed)s"
+        )
+        #expect(elapsed < budget)
+        #expect(saved.count == count)
+        #expect(store.organization.folders.count == count)
+        #expect(
+            store.folderID(forProfileID: saved[0].id) != nil
+        )
+        #expect(
+            store.folderID(forProfileID: saved[count - 1].id) != nil
+        )
     }
 
     @Test
@@ -1376,6 +1613,10 @@ struct ProfileStoreTests {
 }
 
 private struct ProfileStoreTestError: Error {}
+
+private func waitForProfileStoreTestSignal(_ semaphore: DispatchSemaphore) {
+    semaphore.wait()
+}
 
 private final class ProfileDeleteKeychainBackend:
     KeychainBackend,

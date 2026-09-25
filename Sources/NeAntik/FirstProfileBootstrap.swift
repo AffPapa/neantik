@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import SwiftUI
 
@@ -28,7 +27,6 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
     let primaryAccessibilityHint: String
     let statusMessage: String?
     let statusSystemImage: String?
-    let terminalAccessibilityAnnouncement: String?
 
     static func resolve(
         runtimeAvailability: BrowserRuntimeAvailability,
@@ -44,8 +42,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                     "Дождись создания постоянного профиля",
                 statusMessage:
                     "Создаём постоянный локальный профиль.",
-                statusSystemImage: "hourglass",
-                terminalAccessibilityAnnouncement: nil
+                statusSystemImage: "hourglass"
             )
         }
 
@@ -60,8 +57,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                     "Кнопка станет доступна после проверки",
                 statusMessage:
                     "Проверяем встроенный браузерный движок.",
-                statusSystemImage: "hourglass",
-                terminalAccessibilityAnnouncement: nil
+                statusSystemImage: "hourglass"
             )
 
         case .ready:
@@ -74,10 +70,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                     "Создаёт постоянный профиль с прямым подключением " +
                     "и сразу запускает его",
                 statusMessage: nil,
-                statusSystemImage: nil,
-                terminalAccessibilityAnnouncement:
-                    "Браузерный движок готов. " +
-                    "Можно создать и открыть профиль."
+                statusSystemImage: nil
             )
 
         case .missing:
@@ -85,10 +78,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                 message:
                     "Встроенный браузерный движок не найден. " +
                     "Переустанови NeAntik из официального DMG или ZIP, " +
-                    "затем повтори проверку.",
-                announcement:
-                    "Браузерный движок не найден. " +
-                    "Повторная проверка доступна."
+                    "затем повтори проверку."
             )
 
         case let .invalid(message):
@@ -98,18 +88,12 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
             let explanation = detail.isEmpty
                 ? "Браузерный движок не готов. Повтори проверку."
                 : "Браузерный движок не готов: \(detail)"
-            return unavailableRuntime(
-                message: explanation,
-                announcement:
-                    "Браузерный движок не готов. " +
-                    "Повторная проверка доступна."
-            )
+            return unavailableRuntime(message: explanation)
         }
     }
 
     private static func unavailableRuntime(
-        message: String,
-        announcement: String
+        message: String
     ) -> Self {
         Self(
             primaryAction: .retryRuntimeCheck,
@@ -119,8 +103,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
             primaryAccessibilityHint:
                 "Повторно проверяет встроенный браузерный движок",
             statusMessage: message,
-            statusSystemImage: "exclamationmark.triangle.fill",
-            terminalAccessibilityAnnouncement: announcement
+            statusSystemImage: "exclamationmark.triangle.fill"
         )
     }
 }
@@ -186,23 +169,6 @@ struct FirstProfileOnboardingView: View {
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: runtimeAvailability) { previous, current in
-            guard previous == .resolving,
-                  let message = FirstProfileOnboardingPresentation.resolve(
-                      runtimeAvailability: current,
-                      isCreatingProfile: false
-                  ).terminalAccessibilityAnnouncement
-            else { return }
-            NSAccessibility.post(
-                element: NSApp as Any,
-                notification: .announcementRequested,
-                userInfo: [
-                    .announcement: message,
-                    .priority:
-                        NSAccessibilityPriorityLevel.medium.rawValue
-                ]
-            )
-        }
     }
 
     private var createAndOpenButton: some View {

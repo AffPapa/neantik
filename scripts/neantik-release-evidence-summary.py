@@ -30,6 +30,7 @@ def safe_gate_value(key: str, value: object) -> str:
         "stapling": {"passed", "failed", "blocked", "not-run"},
         "gatekeeper": {"passed", "failed", "blocked", "not-run"},
         "hostedDownload": {"passed", "failed", "blocked", "not-run"},
+        "hostedDmg": {"passed", "failed", "blocked", "not-run"},
     }
     return value if isinstance(value, str) and value in allowed[key] else "unknown"
 
@@ -100,7 +101,10 @@ def summary() -> dict[str, object]:
     if isinstance(verification, dict):
         recorded_gates = {
             key: safe_gate_value(key, verification.get(key))
-            for key in ("developerId", "notarization", "stapling", "gatekeeper", "hostedDownload")
+            for key in (
+                "developerId", "notarization", "stapling", "gatekeeper",
+                "hostedDownload", "hostedDmg",
+            )
         }
     rollback = latest.get("rollbackRelease") if latest else None
     if not isinstance(rollback, str) or not re.fullmatch(r"v\d+\.\d+\.\d+", rollback):

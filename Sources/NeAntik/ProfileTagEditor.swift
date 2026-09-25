@@ -19,34 +19,6 @@ enum ProfileTagEditorValidationError: LocalizedError, Equatable {
   }
 }
 
-enum ProfileTagEditorAccessibilityAnnouncement: Equatable {
-  case tooMany
-  case tooLong
-  case invalid
-
-  init(_ error: ProfileTagEditorValidationError) {
-    switch error {
-    case .tooMany:
-      self = .tooMany
-    case .tooLong:
-      self = .tooLong
-    case .invalid:
-      self = .invalid
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .tooMany:
-      "Тег не добавлен. Можно добавить не больше \(BrowserProfile.maximumTagCount) тегов."
-    case .tooLong:
-      "Тег не добавлен. Сократи тег до \(BrowserProfile.maximumTagLength) символов."
-    case .invalid:
-      "Тег не добавлен. Удали переносы строк и управляющие символы."
-    }
-  }
-}
-
 struct ProfileTagEditorInputResult: Equatable {
   let tags: [String]
   let remainingInput: String
@@ -204,10 +176,6 @@ struct ProfileTagEditor: View {
   @State private var suggestionSearch = ""
   @State private var showingSuggestionPicker = false
   @State private var validationMessage: String?
-  @State private var announcementGate =
-    AccessibilityAnnouncementGate<
-      ProfileTagEditorAccessibilityAnnouncement
-    >()
   @FocusState private var inputIsFocused: Bool
   @FocusState private var suggestionSearchIsFocused: Bool
   @Environment(\.colorSchemeContrast) private var contrast
@@ -265,7 +233,6 @@ struct ProfileTagEditor: View {
     .onChange(of: input) { _, value in
       guard value.contains(",") else {
         validationMessage = nil
-        announcementGate.reset()
         return
       }
       apply(
@@ -476,7 +443,6 @@ struct ProfileTagEditor: View {
   private func remove(_ tag: String) {
     tags.removeAll { $0 == tag }
     validationMessage = nil
-    announcementGate.reset()
     inputIsFocused = true
   }
 
@@ -486,25 +452,7 @@ struct ProfileTagEditor: View {
     validationMessage = result.error?.localizedDescription
     if let error = result.error {
       inputIsFocused = true
-      announce(ProfileTagEditorAccessibilityAnnouncement(error))
-    } else {
-      announcementGate.reset()
     }
-  }
-
-  @MainActor
-  private func announce(
-    _ announcement: ProfileTagEditorAccessibilityAnnouncement
-  ) {
-    guard announcementGate.shouldAnnounce(announcement) else { return }
-    NSAccessibility.post(
-      element: NSApp as Any,
-      notification: .announcementRequested,
-      userInfo: [
-        .announcement: announcement.message,
-        .priority: NSAccessibilityPriorityLevel.medium.rawValue
-      ]
-    )
   }
 }
 

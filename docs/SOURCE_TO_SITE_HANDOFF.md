@@ -29,7 +29,7 @@ binary release and AffPapa website publication after the source PR is merged.
   checks and automatic fresh preparation before every proxied launch.
 - Progressive environment details for route, fingerprint, WebRTC, QUIC/DNS
   and proxy-derived geolocation.
-- More native macOS keyboard and VoiceOver behavior.
+- More native macOS keyboard behavior and clearly labeled controls.
 - Unified UTF-8 persistence limits, a 10,000-profile scale boundary and
   crash-recoverable pruning of stale proxy-health metadata.
 

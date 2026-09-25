@@ -108,6 +108,27 @@ class ReleaseEvidenceSummaryTests(unittest.TestCase):
         self.assertEqual(result["latestRecordedRelease"]["state"], "invalid")
         self.assertEqual(result["latestRecordedRelease"]["recordedGates"]["developerId"], "unknown")
 
+    def test_hosted_artifact_gates_are_normalized_but_remain_historical(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "releases").mkdir()
+            (root / "dist").mkdir()
+            (root / "releases" / "v0.7.11.json").write_text(json.dumps({
+                "tag": "v0.7.11", "version": "0.7.11", "build": 74,
+                "runtime": {"chromiumVersion": "153.0.8010.52"},
+                "verification": {
+                    "hostedDownload": "passed", "hostedDmg": "passed",
+                },
+            }))
+            with patch.object(MODULE, "ROOT", root), patch.object(
+                MODULE, "run_git", side_effect=["a" * 40, "audit", ""]
+            ):
+                result = MODULE.summary()
+        gates = result["latestRecordedRelease"]["recordedGates"]
+        self.assertEqual(gates["hostedDownload"], "passed")
+        self.assertEqual(gates["hostedDmg"], "passed")
+        self.assertIn("Историческая", result["latestRecordedRelease"]["note"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,10 @@ protocol ProfileCredentialCleanupRecoveryProviding: Error {
 
 @MainActor
 final class ProfileStore: ObservableObject {
+    /// All ProfileStore instances on the main actor share this admission gate.
+    /// This closes the publication race between the detached writer and a
+    /// second window/store instance that could otherwise mutate the same files.
+    private static var backgroundMetadataImportInProgress = false
     @Published private(set) var profiles: [BrowserProfile] = [] {
         didSet { profileListRevision &+= 1 }
     }
@@ -32,6 +36,8 @@ final class ProfileStore: ObservableObject {
     private let beforeDeleteMetadataPersist: () throws -> Void
     private let afterDeleteMetadataPersist: () throws -> Void
     private let beforeOrganizationPersist: () throws -> Void
+    private let beforeBackgroundImportOrganizationPersist:
+        @Sendable () throws -> Void
 
     init(
         paths: AppPaths = AppPaths(),
@@ -39,7 +45,9 @@ final class ProfileStore: ObservableObject {
         restoreTrashedDirectory: ((URL, URL) throws -> Void)? = nil,
         beforeDeleteMetadataPersist: @escaping () throws -> Void = {},
         afterDeleteMetadataPersist: @escaping () throws -> Void = {},
-        beforeOrganizationPersist: @escaping () throws -> Void = {}
+        beforeOrganizationPersist: @escaping () throws -> Void = {},
+        beforeBackgroundImportOrganizationPersist:
+            @escaping @Sendable () throws -> Void = {}
     ) {
         self.paths = paths
         self.trashDirectory =
@@ -49,6 +57,8 @@ final class ProfileStore: ObservableObject {
         self.beforeDeleteMetadataPersist = beforeDeleteMetadataPersist
         self.afterDeleteMetadataPersist = afterDeleteMetadataPersist
         self.beforeOrganizationPersist = beforeOrganizationPersist
+        self.beforeBackgroundImportOrganizationPersist =
+            beforeBackgroundImportOrganizationPersist
         do {
             try paths.prepareBaseDirectories()
             try paths.withProfilesMetadataGuard {
@@ -148,6 +158,7 @@ final class ProfileStore: ObservableObject {
         named requestedName: String,
         at date: Date = Date()
     ) throws -> ProfileFolder {
+        try requireSynchronousMutationAdmission()
         guard let name = ProfileFolder.normalizedName(requestedName) else {
             throw ProfileOrganizationError.invalidFolderName
         }
@@ -179,6 +190,7 @@ final class ProfileStore: ObservableObject {
         to requestedName: String,
         at date: Date = Date()
     ) throws -> ProfileFolder {
+        try requireSynchronousMutationAdmission()
         guard let name = ProfileFolder.normalizedName(requestedName) else {
             throw ProfileOrganizationError.invalidFolderName
         }
@@ -203,7 +215,8 @@ final class ProfileStore: ObservableObject {
 
     @discardableResult
     func deleteFolder(withID folderID: UUID) throws -> [UUID] {
-        try mutateOrganization { state in
+        try requireSynchronousMutationAdmission()
+        return try mutateOrganization { state in
             guard state.folder(withID: folderID) != nil else {
                 throw ProfileOrganizationError.folderNotFound
             }
@@ -222,6 +235,7 @@ final class ProfileStore: ObservableObject {
         _ requestedProfileIDs: [UUID],
         toFolderID folderID: UUID?
     ) throws {
+        try requireSynchronousMutationAdmission()
         let profileIDs = Set(requestedProfileIDs)
         try mutateOrganization { state in
             let knownProfileIDs = Set(profiles.map(\.id))
@@ -243,6 +257,7 @@ final class ProfileStore: ObservableObject {
     func validateInsertionCapacity(
         forAdditionalProfileCount additionalCount: Int
     ) throws {
+        try requireSynchronousMutationAdmission()
         guard additionalCount > 0 else {
             throw NeAntikError.invalidProfile
         }
@@ -266,7 +281,8 @@ final class ProfileStore: ObservableObject {
         _ profile: BrowserProfile,
         afterPersist: (BrowserProfile) throws -> Void
     ) throws -> BrowserProfile {
-        try paths.withProfilesMetadataGuard {
+        try requireSynchronousMutationAdmission()
+        return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             return try upsertAfterMetadataReload(
                 profile,
@@ -284,7 +300,8 @@ final class ProfileStore: ObservableObject {
         withID profileID: UUID,
         _ mutation: (inout BrowserProfile) throws -> Void
     ) throws -> BrowserProfile {
-        try paths.withProfilesMetadataGuard {
+        try requireSynchronousMutationAdmission()
+        return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             guard var current = profiles.first(where: { $0.id == profileID })
             else {
@@ -316,7 +333,8 @@ final class ProfileStore: ObservableObject {
         toFolderID folderID: UUID?,
         afterPersist: (BrowserProfile) throws -> Void = { _ in }
     ) throws -> BrowserProfile {
-        try paths.withProfilesMetadataGuard {
+        try requireSynchronousMutationAdmission()
+        return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             try requireOrganizationStorage()
             do {
@@ -422,6 +440,7 @@ final class ProfileStore: ObservableObject {
         folderNames: [String?],
         afterPersist: ([BrowserProfile]) throws -> Void = { _ in }
     ) throws -> [BrowserProfile] {
+        try requireSynchronousMutationAdmission()
         guard !requestedProfiles.isEmpty,
               requestedProfiles.count == folderNames.count
         else {
@@ -461,6 +480,8 @@ final class ProfileStore: ObservableObject {
             let operationDate = Date()
             var nextOrganization = previousOrganization
             var folderIDByComparisonKey: [String: UUID] = [:]
+            var folderIDs = Set(previousOrganization.folders.map(\.id))
+            var newFolders: [ProfileFolder] = []
             for folder in previousOrganization.folders {
                 folderIDByComparisonKey[ProfileFolder.comparisonKey(folder.name)] =
                     folder.id
@@ -482,7 +503,7 @@ final class ProfileStore: ObservableObject {
                     continue
                 }
                 var folderID = UUID()
-                while nextOrganization.folder(withID: folderID) != nil {
+                while !folderIDs.insert(folderID).inserted {
                     folderID = UUID()
                 }
                 let folder = ProfileFolder(
@@ -491,10 +512,11 @@ final class ProfileStore: ObservableObject {
                     createdAt: operationDate,
                     updatedAt: operationDate
                 )
-                nextOrganization.addFolder(folder)
+                newFolders.append(folder)
                 folderIDByComparisonKey[key] = folderID
                 folderIDsByProfileIndex.append(folderID)
             }
+            nextOrganization.addFolders(newFolders)
 
             let existingIDs = Set(previousProfiles.map(\.id))
             var requestedIDs = Set<UUID>()
@@ -588,12 +610,96 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    /// Runs the import's complete metadata transaction away from the main
+    /// actor. The synchronous mutation admission gate stays closed until the
+    /// disk transaction finishes and its small in-memory publication occurs.
+    @discardableResult
+    func insertImportedProfilesOffMainActor(
+        _ requestedProfiles: [BrowserProfile],
+        folderNames: [String?]
+    ) async throws -> [BrowserProfile] {
+        guard !Self.backgroundMetadataImportInProgress else {
+            throw ProfileMetadataMutationInProgressError()
+        }
+        guard storageIsAvailable else {
+            throw ProfileStorageUnavailableError()
+        }
+        guard organizationStorageIsAvailable else {
+            throw ProfileOrganizationError.storageUnavailable
+        }
+        Self.backgroundMetadataImportInProgress = true
+        defer { Self.backgroundMetadataImportInProgress = false }
+
+        let paths = self.paths
+        let beforeOrganizationPersist =
+            beforeBackgroundImportOrganizationPersist
+        let worker = Task.detached(priority: .userInitiated) {
+            try ProfileMetadataImportTransaction.run(
+                paths: paths,
+                requestedProfiles: requestedProfiles,
+                folderNames: folderNames,
+                beforeOrganizationPersist: beforeOrganizationPersist
+            )
+        }
+        let result: ProfileMetadataImportResult
+        do {
+            result = try await worker.value
+        } catch {
+            let importError = error
+            let reconciliation = Task.detached(priority: .userInitiated) {
+                try ProfileMetadataImportTransaction.reconcile(paths: paths)
+            }
+            do {
+                let recoveredState = try await reconciliation.value
+                profiles = recoveredState.profiles
+                organization = recoveredState.organization
+                if recoveredState.profileMetadataRecovered {
+                    recordRecoveryNotice(profileMetadataRecovered: true)
+                }
+                if recoveredState.folderMetadataRecovered {
+                    recordRecoveryNotice(folderMetadataRecovered: true)
+                }
+                lastError = Self.joinWarnings(
+                    lastError,
+                    recoveredState.warning
+                )
+            } catch {
+                // A failed reload means the published snapshot can no longer
+                // be trusted. Fail closed instead of leaving stale profiles
+                // visible after recovery or normalization changed disk state.
+                storageIsAvailable = false
+                organizationStorageIsAvailable = false
+                profiles = []
+                organization = .empty
+                lastError = Self.joinWarnings(
+                    lastError,
+                    "Локальные данные профилей требуют проверки. Импорт остановлен. \(error.localizedDescription)"
+                )
+            }
+            throw importError
+        }
+        // No suspension after the worker completes: the gate prevents a
+        // synchronous mutation from publishing a newer in-memory revision
+        // while this transaction owns the on-disk metadata lock.
+        profiles = result.profiles
+        organization = result.organization
+        if result.profileMetadataRecovered {
+            recordRecoveryNotice(profileMetadataRecovered: true)
+        }
+        if result.folderMetadataRecovered {
+            recordRecoveryNotice(folderMetadataRecovered: true)
+        }
+        lastError = Self.joinWarnings(lastError, result.warning)
+        return result.insertedProfiles
+    }
+
     private func insertNewProfiles(
         _ requestedProfiles: [BrowserProfile],
         targetFolderID: UUID?,
         afterPersist: ([BrowserProfile]) throws -> Void
     ) throws -> [BrowserProfile] {
-        try paths.withProfilesMetadataGuard {
+        try requireSynchronousMutationAdmission()
+        return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             try requireStorage()
             var previousOrganization: ProfileOrganizationState?
@@ -859,6 +965,11 @@ final class ProfileStore: ObservableObject {
 
     @discardableResult
     func markLaunched(_ id: UUID) -> Bool {
+        guard !Self.backgroundMetadataImportInProgress else {
+            lastError = ProfileMetadataMutationInProgressError()
+                .localizedDescription
+            return false
+        }
         guard storageIsAvailable else {
             lastError = ProfileStorageUnavailableError().localizedDescription
             return false
@@ -899,6 +1010,7 @@ final class ProfileStore: ObservableObject {
         _ profile: BrowserProfile,
         processManager: BrowserProcessManager
     ) throws {
+        try requireSynchronousMutationAdmission()
         try delete(
             profile,
             processManager: processManager,
@@ -911,6 +1023,7 @@ final class ProfileStore: ObservableObject {
         processManager: BrowserProcessManager,
         afterCommit: (BrowserProfile) throws -> Void
     ) throws {
+        try requireSynchronousMutationAdmission()
         try processManager.withVerifiedProfileDeletion(
             profileID: profile.id
         ) {
@@ -1449,14 +1562,20 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func readProfiles(from url: URL) throws -> [BrowserProfile] {
+    private func requireSynchronousMutationAdmission() throws {
+        guard !Self.backgroundMetadataImportInProgress else {
+            throw ProfileMetadataMutationInProgressError()
+        }
+    }
+
+    nonisolated static func readProfiles(from url: URL) throws -> [BrowserProfile] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [] }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode([BrowserProfile].self, from: Data(contentsOf: url))
     }
 
-    private static func readProfilesWithRecovery(
+    nonisolated static func readProfilesWithRecovery(
         paths: AppPaths
     ) throws -> (
         profiles: [BrowserProfile],
@@ -1499,7 +1618,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func readOrganizationWithRecovery(
+    nonisolated static func readOrganizationWithRecovery(
         paths: AppPaths,
         knownProfileIDs: Set<UUID>
     ) throws -> ProfileOrganizationLoad {
@@ -1571,7 +1690,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func encodeOrganization(
+    nonisolated static func encodeOrganization(
         _ state: ProfileOrganizationState
     ) throws -> Data {
         let encoder = JSONEncoder()
@@ -1584,7 +1703,7 @@ final class ProfileStore: ObservableObject {
         return try encoder.encode(ProfileOrganizationDocument(state: state))
     }
 
-    private static func decodeOrganization(
+    nonisolated static func decodeOrganization(
         _ data: Data,
         knownProfileIDs: Set<UUID>
     ) throws -> (state: ProfileOrganizationState, changed: Bool) {
@@ -1615,7 +1734,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func normalizedForIsolation(
+    nonisolated static func normalizedForIsolation(
         _ profiles: [BrowserProfile]
     ) throws -> (profiles: [BrowserProfile], changed: Bool) {
         guard profiles.count <= ProfileStorageLimits.maximumProfileCount else {
@@ -1659,7 +1778,7 @@ final class ProfileStore: ObservableObject {
         return (values, changed)
     }
 
-    private static func requireInsertionCapacity(
+    nonisolated static func requireInsertionCapacity(
         existingCount: Int,
         additionalCount: Int
     ) throws {
@@ -1673,7 +1792,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func nextAvailableSeed(
+    nonisolated static func nextAvailableSeed(
         after seed: UInt32,
         excluding usedSeeds: Set<UInt32>
     ) throws -> UInt32 {
@@ -1705,7 +1824,7 @@ final class ProfileStore: ObservableObject {
     }
 }
 
-private struct ProfileOrganizationLoad {
+struct ProfileOrganizationLoad: Sendable {
     let state: ProfileOrganizationState
     let changed: Bool
     let warning: String?
@@ -1732,7 +1851,7 @@ private struct BrowserProfileRevisionExhaustedError: LocalizedError {
     }
 }
 
-private struct ProfileSaveRollbackError: LocalizedError {
+struct ProfileSaveRollbackError: LocalizedError {
     let operationError: Error
     let rollbackError: Error
 

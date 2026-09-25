@@ -221,11 +221,6 @@ struct FingerprintAuditView: View {
             firstID = profiles.first(where: { $0.id != selectedID })?.id ??
                 firstID
         }
-        .onChange(of: coordinator.isRunning) { _, isRunning in
-            if isRunning {
-                announce("Проверка профилей началась.")
-            }
-        }
         .onChange(of: coordinator.report?.id) { _, _ in
             guard let report = coordinator.report else { return }
             if manualReportDeliveryGate.shouldDeliver(
@@ -234,11 +229,6 @@ struct FingerprintAuditView: View {
             ) {
                 onReport(report)
             }
-            announce(
-                report.isPublicAlphaReleaseQualified
-                    ? "Проверка завершена: профиль работает правильно."
-                    : "Проверка завершена: требуется внимание."
-            )
         }
         .onChange(of: coordinator.releaseEvidenceIsReady) { _, ready in
             guard ready else { return }
@@ -268,18 +258,6 @@ struct FingerprintAuditView: View {
             await Task.yield()
             NSApplication.shared.terminate(nil)
         }
-    }
-
-    @MainActor
-    private func announce(_ message: String) {
-        NSAccessibility.post(
-            element: NSApp as Any,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.medium.rawValue
-            ]
-        )
     }
 
     private var header: some View {

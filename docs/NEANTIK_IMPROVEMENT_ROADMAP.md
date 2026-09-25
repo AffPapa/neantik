@@ -1,6 +1,6 @@
 # NeAntik: roadmap улучшений
 
-Дата ревизии: 24 сентября 2026 года.
+Дата ревизии: 25 сентября 2026 года.
 
 Цель roadmap — сделать NeAntik быстрым и понятным локальным браузером для
 профилей, сохранив defensive-границы: тестируем только собственные стенды и
@@ -42,7 +42,7 @@
 | 21 | Readiness gate для A → B → A | P0 | done | Проверка запускается только для двух разных реально остановленных профилей. |
 | 22 | Ограничение и privacy-cap raw reports | P0 | done | Не более трёх owner-only файлов и не более 512 KiB каждый до записи. |
 | 23 | Безопасная сводка вместо raw evidence в UI | P0 | done | В обычном результате только verdict; raw JSON доступен лишь в явном engineering-контексте. |
-| 24 | Клавиатурная и VoiceOver-навигация | P1 | shipped in 0.7.11 (automated); physical QA pending | Restore preview объявляет контекст действий и агрегированную сводку; keyboard shortcuts, labels/hints покрыты тестами. Проход VoiceOver и физической клавиатуры на рабочем Mac автоматикой не подтверждён. |
+| 24 | Клавиатурная навигация | P1 | keyboard code retained; focused manual QA pending for next exact candidate | App-issued speech announcements удалены из текущего working diff; Tab/focus и shortcuts остаются. Для snapshot/import/export/support bundle видимый результат показывается в компактном временном статусе. Публичный 0.7.11 описывает историческое поведение. |
 | 25 | Redacted crash/support bundle | P1 | done | Экспорт содержит только allowlisted enums/версии/хэши, ограничен 64 KiB, проходит независимый fail-closed verifier и доступен через системный Save dialog. |
 | 26 | Signed runtime update с rollback | P1 | runtime-gate | Проверяются подпись, provenance, атомарная замена и восстановление предыдущего runtime. |
 | 27 | Полный release evidence bundle | P0 | runtime-gate | Source lock, binary hash, signing, notarization, stapling, Gatekeeper, fresh download и live smoke согласованы. |
@@ -55,27 +55,33 @@
 | 34 | Локальная read-only release-gate summary | P1 | done | CLI разделяет source binding, текущий candidate gate и исторические release claims; не читает credentials и raw evidence. |
 | 35 | Rehearsal retained Direct artifacts | P2 | shipped in 0.7.9 | ZIP/DMG v0.7.8 проверены по release evidence и повторным SHA-256 в staging; это не install/launch или hosted rollback smoke. |
 | 36 | Локальное руководство профилей и recovery | P2 | shipped in 0.7.9 | Bilingual guide объясняет profile data, metadata-only snapshot, новые identity после restore и различие plain/encrypted transfer; ссылка добавлена в оба README. |
-| 37 | Предварительный просмотр snapshot restore | P1 | shipped in 0.7.10; a11y refinement in 0.7.11 | До commit показываются безопасные aggregate counts и дата; VoiceOver получает контекстную сводку, cancel не меняет store, working-profile guard и store transaction остаются обязательными. |
+| 37 | Предварительный просмотр snapshot restore | P1 | shipped in 0.7.10; app-issued speech announcement removed from current working tree | До commit показываются безопасные aggregate counts и дата; cancel не меняет store, working-profile guard и store transaction остаются обязательными. Успешное восстановление даёт видимый короткий статус с числом профилей и новыми identity. Публичный 0.7.11 исторически добавлял речь; текущий diff её удаляет. |
+| 38 | Фоновый preview bulk proxy import | P2 | implemented/tested locally; Direct release blocked by Chromium baseline | Debounced/cancellable parse выполняется вне MainActor, старый preview не может быть отправлен; лимиты и privacy-safe ошибки сохранены. Для публичной версии нужен разрешённый runtime update и полный runtime gate cycle. |
+| 39 | Фоновая транзакция импорта профилей и папок | P1 | implemented/tested locally; Direct release blocked by Chromium baseline | Полный disk reload/recovery/validation, создание каталогов и запись metadata идут вне MainActor под flock; shared fail-fast gate защищает все окна store; commit публикуется в UI после завершения worker без suspension. Ошибка откатывает metadata и каталоги. 5 000 профилей с 5 000 уникальными папками прошли debug benchmark за 1,4 секунды; это измерение store, не гарантия такого же времени на другом устройстве. |
 
 ## Следующие незакрытые действия
 
-1. Провести ручной проход клавиатуры и VoiceOver на рабочем Mac. Автоматические
-   presentation/render тесты этого не доказывают; системный VoiceOver не
-   включался в ходе аудита.
+1. Перед Direct-релизом повторно проверить физическую клавиатуру на exact
+   candidate: Tab order, focus return, Escape, Return, ⌘N, ⌘⇧N и ⌘F. В текущем
+   diff нет app-issued speech announcements; стандартные элементы остаются
+   нативными macOS controls.
 2. До любых изменений профилей выполнить отдельный threat review repair
    assistant. Сейчас безопасная автоматическая recovery и read-only notice уже
    реализованы; новая функция может затронуть пользовательские metadata и
    поэтому не считается готовым manager-only quick win.
 3. Закрыть runtime-gated evidence только на точном Chromium/runtime candidate.
    Этот аудит не менял и не пересобирал Chromium.
-4. Перед будущим бинарным выпуском восстановить credential для
+4. Для публикации через AffPapa восстановить credential для
    `neantik-affpapa-release doctor`; текущая проверка завершилась ошибкой
-   `deploy credential is unavailable`. Это отдельный AffPapa publishing gate,
-   не отказ GitHub Release или browser.free.
+   `deploy credential is unavailable`. Это блокирует только AffPapa workflow,
+   а не GitHub Release или browser.free.
 
-После v0.7.10 все перечисленные здесь manager-only roadmap features уже
-реализованы. Не создавать новую версию без следующего проверяемого изменения;
-partial runtime report не считать доказательством runtime readiness.
+После v0.7.11 все ранее перечисленные manager-only roadmap features
+реализованы. Фоновый preview bulk proxy import реализован и прошёл локальные
+тесты; пакетное создание папок также прошло локальный performance test.
+Изменения не вошли в публичную бинарную версию: Chromium 153 ниже текущей
+security baseline 154.0.8037.58. Не считать partial runtime report
+доказательством runtime readiness.
 
 ## Что не является целью
 

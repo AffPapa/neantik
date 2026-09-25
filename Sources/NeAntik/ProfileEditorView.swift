@@ -1123,7 +1123,6 @@ struct ProfileEditorView: View {
       dismiss()
     } catch {
       errorMessage = error.localizedDescription
-      announce(error.localizedDescription)
     }
   }
 
@@ -1154,7 +1153,6 @@ struct ProfileEditorView: View {
     if issue.field == .note {
       showsNoteEditor = true
     }
-    announce(issue.message)
     Task { @MainActor in
       await Task.yield()
       switch issue.field {
@@ -1191,7 +1189,6 @@ struct ProfileEditorView: View {
     isTesting = false
     proxyTestSucceeded = false
     testMessage = "Проверка отменена"
-    announce("Проверка прокси отменена.")
   }
 
   private func importProxy() {
@@ -1213,7 +1210,6 @@ struct ProfileEditorView: View {
       proxyImportMessage =
         "Прокси распознан: \(draft.redactedSummary). " +
         "Соединение ещё не проверено."
-      announce(proxyImportMessage ?? "Прокси распознан.")
       errorMessage = nil
 
       Task { @MainActor in
@@ -1224,7 +1220,6 @@ struct ProfileEditorView: View {
     } catch {
       isApplyingProxyImport = false
       proxyImportMessage = error.localizedDescription
-      announce(error.localizedDescription)
     }
   }
 
@@ -1256,7 +1251,6 @@ struct ProfileEditorView: View {
             isTesting = false
             proxyTestSucceeded = true
             proxyTestTask = nil
-            announce(testMessage ?? "Прокси подключён.")
           }
         } catch {
           guard !Task.isCancelled else { return }
@@ -1265,7 +1259,6 @@ struct ProfileEditorView: View {
             isTesting = false
             proxyTestSucceeded = false
             proxyTestTask = nil
-            announce(error.localizedDescription)
           }
         }
       }
@@ -1290,17 +1283,6 @@ struct ProfileEditorView: View {
     invalidateProxyEvidence()
   }
 
-  @MainActor
-  private func announce(_ message: String) {
-    NSAccessibility.post(
-      element: NSApp as Any,
-      notification: .announcementRequested,
-      userInfo: [
-        .announcement: message,
-        .priority: NSAccessibilityPriorityLevel.medium.rawValue
-      ]
-    )
-  }
 }
 
 private struct ProfileTagsValidationError: LocalizedError {

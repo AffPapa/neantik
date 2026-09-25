@@ -38,6 +38,33 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_app_does_not_issue_custom_voiceover_announcements(self) -> None:
+        sources = ROOT / "Sources" / "NeAntik"
+        forbidden = ("NSAccessibility.post", ".announcementRequested")
+        for path in sources.glob("*.swift"):
+            text = path.read_text(encoding="utf-8")
+            for marker in forbidden:
+                self.assertNotIn(marker, text, f"{marker} remains in {path.name}")
+
+    def test_keyboard_focus_and_shortcuts_remain_available(self) -> None:
+        content = CONTENT.read_text(encoding="utf-8")
+        editor = EDITOR.read_text(encoding="utf-8")
+        folder = (ROOT / "Sources" / "NeAntik" / "ProfileFolderNameSheet.swift")
+        folder_text = folder.read_text(encoding="utf-8")
+        bulk = BULK_IMPORT.read_text(encoding="utf-8")
+
+        self.assertIn("@FocusState private var profileSearchIsFocused", content)
+        self.assertIn(".focused($profileSearchIsFocused)", content)
+        self.assertIn("@FocusState private var focusedField", editor)
+        self.assertIn(".focused($focusedField, equals: .name)", editor)
+        self.assertIn(".keyboardShortcut(.cancelAction)", editor)
+        self.assertIn(".keyboardShortcut(.defaultAction)", editor)
+        self.assertIn("@FocusState private var nameIsFocused", folder_text)
+        self.assertIn(".keyboardShortcut(.cancelAction)", folder_text)
+        self.assertIn(".keyboardShortcut(.defaultAction)", folder_text)
+        self.assertIn("@FocusState private var proxyInputIsFocused", bulk)
+        self.assertIn(".keyboardShortcut(.cancelAction)", bulk)
+
     def test_workspace_uses_native_three_column_navigation_without_titlebar_hacks(
         self,
     ) -> None:
@@ -253,7 +280,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
             onboarding,
         )
         self.assertIn('primaryTitle: "Повторить проверку"', onboarding)
-        self.assertIn("terminalAccessibilityAnnouncement", onboarding)
+        self.assertIn(".accessibilityHint(presentation.primaryAccessibilityHint)", onboarding)
+        self.assertNotIn("terminalAccessibilityAnnouncement", onboarding)
         self.assertIn("постоянный локальный профиль браузера", onboarding)
 
     def test_fingerprint_audit_separates_manual_reports_from_release_authority(

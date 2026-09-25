@@ -2,44 +2,6 @@ import AppKit
 import Foundation
 import SwiftUI
 
-struct AccessibilityAnnouncementGate<Value: Equatable> {
-    private(set) var lastValue: Value?
-
-    init() {
-        lastValue = nil
-    }
-
-    mutating func shouldAnnounce(_ value: Value) -> Bool {
-        guard lastValue != value else { return false }
-        lastValue = value
-        return true
-    }
-
-    mutating func reset() {
-        lastValue = nil
-    }
-}
-
-enum BulkProxyImportAccessibilityAnnouncement: Equatable {
-    case validationFailed
-    case ready(Int)
-    case created(Int)
-    case creationFailed
-
-    var message: String {
-        switch self {
-        case .validationFailed:
-            "Список прокси не готов. Проверь сообщение под полем."
-        case let .ready(count):
-            "Готово к созданию профилей: \(count)."
-        case let .created(count):
-            "Создано профилей: \(count)."
-        case .creationFailed:
-            "Не удалось создать профили. Проверь сообщение в окне."
-        }
-    }
-}
-
 enum BulkProxyImportRowIssue: Equatable, Sendable {
     case invalid
     case ambiguous
@@ -112,6 +74,62 @@ struct BulkProxyImportPreview: Equatable, Sendable {
     }
 }
 
+struct BulkProxyImportPreviewRequest: Equatable, Sendable {
+    let text: String
+    let kind: ProxyKind
+    let order: ProxyImportOrder
+}
+
+enum BulkProxyImportPreviewComputation {
+    static func run(
+        _ request: BulkProxyImportPreviewRequest
+    ) async -> Result<BulkProxyImportPreview, BulkProxyImportPreviewFailure> {
+        guard !Task.isCancelled else {
+            return .failure(BulkProxyImportPreviewFailure("Отменено"))
+        }
+        let worker: Task<
+            Result<BulkProxyImportPreview, BulkProxyImportPreviewFailure>?,
+            Never
+        > = Task.detached(priority: .userInitiated) {
+            do {
+                return Result<
+                    BulkProxyImportPreview,
+                    BulkProxyImportPreviewFailure
+                >.success(
+                    try BulkProxyImportParser.preview(
+                        request.text,
+                        kind: request.kind,
+                        order: request.order
+                    )
+                )
+            } catch is CancellationError {
+                return nil
+            } catch {
+                return .failure(
+                    BulkProxyImportPreviewFailure(error.localizedDescription)
+                )
+            }
+        }
+        return await withTaskCancellationHandler {
+            let result = await worker.value
+            guard !Task.isCancelled else {
+                return .failure(BulkProxyImportPreviewFailure("Отменено"))
+            }
+            return result ?? .failure(BulkProxyImportPreviewFailure("Отменено"))
+        } onCancel: {
+            worker.cancel()
+        }
+    }
+}
+
+struct BulkProxyImportPreviewFailure: Error, Sendable {
+    let message: String
+
+    init(_ message: String) {
+        self.message = message
+    }
+}
+
 enum BulkProxyImportParser {
     static let maximumEntries = 100
     static let maximumInputBytes = 512 * 1_024
@@ -153,24 +171,29 @@ enum BulkProxyImportParser {
             throw BulkProxyImportError.tooMany
         }
 
-        let rows = nonEmpty.map { lineNumber, line in
+        var rows: [BulkProxyImportPreviewRow] = []
+        rows.reserveCapacity(nonEmpty.count)
+        for (lineNumber, line) in nonEmpty {
+            if withUnsafeCurrentTask(body: { $0?.isCancelled ?? false }) {
+                throw CancellationError()
+            }
             do {
                 let draft = try ProxyImportParser.parse(
                     line,
                     kind: kind,
                     order: order
                 )
-                return BulkProxyImportPreviewRow(
+                rows.append(BulkProxyImportPreviewRow(
                     lineNumber: lineNumber,
                     draft: draft,
                     issue: nil
-                )
+                ))
             } catch {
-                return BulkProxyImportPreviewRow(
+                rows.append(BulkProxyImportPreviewRow(
                     lineNumber: lineNumber,
                     draft: nil,
                     issue: .resolve(error)
-                )
+                ))
             }
         }
         return BulkProxyImportPreview(rows: rows)
@@ -459,15 +482,12 @@ struct BulkProxyImportView: View {
     @State private var kind: ProxyKind = .http
     @State private var order: ProxyImportOrder = .automatic
     @State private var preview = BulkProxyImportPreview.empty
+    @State private var parsedRequest: BulkProxyImportPreviewRequest?
     @State private var inputMessage: String?
     @State private var creationError: String?
     @State private var isCreating = false
     @State private var showsOptions = false
     @FocusState private var proxyInputIsFocused: Bool
-    @State private var announcementGate =
-        AccessibilityAnnouncementGate<
-            BulkProxyImportAccessibilityAnnouncement
-        >()
 
     init(
         targetFolderName: String? = nil,
@@ -645,7 +665,8 @@ struct BulkProxyImportView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(
-                    isCreating || !preview.isReady || !baseNameIsValid
+                    isCreating || !previewIsCurrent || !preview.isReady
+                        || !baseNameIsValid
                 )
                 .keyboardShortcut(.defaultAction)
             }
@@ -653,24 +674,32 @@ struct BulkProxyImportView: View {
         }
         .frame(minWidth: 500, idealWidth: 620, minHeight: 500)
         .onAppear {
-            refreshPreview()
             Task { @MainActor in
                 await Task.yield()
                 proxyInputIsFocused = true
             }
         }
-        .onChange(of: text) { _, _ in refreshPreview() }
-        .onChange(of: kind) { _, _ in refreshPreview() }
-        .onChange(of: order) { _, _ in refreshPreview() }
+        .task(id: previewRequest) { [request = previewRequest] in
+            await refreshPreview(for: request)
+        }
         .onChange(of: baseName) { _, _ in validateBaseName() }
         .onDisappear {
             text = ""
             preview = .empty
+            parsedRequest = nil
         }
     }
 
     private var baseNameIsValid: Bool {
         BulkProxyImportParser.profileName(base: baseName, index: 1) != nil
+    }
+
+    private var previewRequest: BulkProxyImportPreviewRequest {
+        BulkProxyImportPreviewRequest(text: text, kind: kind, order: order)
+    }
+
+    private var previewIsCurrent: Bool {
+        parsedRequest == previewRequest
     }
 
     private var previewName: String {
@@ -695,7 +724,13 @@ struct BulkProxyImportView: View {
 
     @ViewBuilder
     private var previewStatus: some View {
-        if !baseNameIsValid {
+        if !previewIsCurrent {
+            statusLabel(
+                "Проверяю список прокси…",
+                systemImage: "hourglass",
+                color: .secondary
+            )
+        } else if !baseNameIsValid {
             statusLabel(
                 "Проверь основу названия в параметрах.",
                 systemImage: "exclamationmark.triangle.fill",
@@ -725,7 +760,7 @@ struct BulkProxyImportView: View {
 
     @ViewBuilder
     private var previewRows: some View {
-        if !preview.rows.isEmpty {
+        if previewIsCurrent, !preview.rows.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 let validLimit = preview.hasIssues ? 3 : 6
                 ForEach(Array(validPreviewRows.prefix(validLimit))) { row in
@@ -795,47 +830,42 @@ struct BulkProxyImportView: View {
         )
     }
 
-    private func refreshPreview() {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private func refreshPreview(
+        for request: BulkProxyImportPreviewRequest
+    ) async {
+        try? await Task.sleep(for: .milliseconds(150))
+        guard !Task.isCancelled else { return }
+        guard !request.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else {
             preview = .empty
+            parsedRequest = request
             inputMessage = nil
             creationError = nil
-            announcementGate.reset()
             return
         }
-        do {
-            preview = try BulkProxyImportParser.preview(
-                text,
-                kind: kind,
-                order: order
-            )
+        switch await BulkProxyImportPreviewComputation.run(request) {
+        case let .success(result):
+            guard !Task.isCancelled, request == previewRequest else { return }
+            preview = result
+            parsedRequest = request
             inputMessage = nil
             creationError = nil
-            if baseNameIsValid && preview.isReady {
-                announce(.ready(preview.drafts.count))
-            } else {
-                announce(.validationFailed)
-            }
-        } catch {
+        case let .failure(error):
+            guard !Task.isCancelled, request == previewRequest else { return }
             preview = .empty
-            inputMessage = error.localizedDescription
+            parsedRequest = request
+            inputMessage = error.message
             creationError = nil
-            announce(.validationFailed)
         }
     }
 
     private func validateBaseName() {
         creationError = nil
-        if baseNameIsValid && preview.isReady {
-            announce(.ready(preview.drafts.count))
-        } else if !baseNameIsValid {
-            announce(.validationFailed)
-        }
     }
 
     private func create() {
-        guard !isCreating, preview.isReady, baseNameIsValid else { return }
+        guard !isCreating, previewIsCurrent, preview.isReady,
+              baseNameIsValid else { return }
         let drafts = preview.drafts
         let capturedBaseName = baseName
         isCreating = true
@@ -846,14 +876,10 @@ struct BulkProxyImportView: View {
             do {
                 let createdCount = drafts.count
                 try await onCreate(drafts, capturedBaseName)
-                announcementGate.reset()
-                announce(.created(createdCount))
                 dismiss()
             } catch {
                 isCreating = false
                 creationError = error.localizedDescription
-                announcementGate.reset()
-                announce(.creationFailed)
             }
         }
     }
@@ -927,18 +953,4 @@ struct BulkProxyImportView: View {
         .accessibilityLabel(title)
     }
 
-    @MainActor
-    private func announce(
-        _ announcement: BulkProxyImportAccessibilityAnnouncement
-    ) {
-        guard announcementGate.shouldAnnounce(announcement) else { return }
-        NSAccessibility.post(
-            element: NSApp as Any,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: announcement.message,
-                .priority: NSAccessibilityPriorityLevel.medium.rawValue
-            ]
-        )
-    }
 }

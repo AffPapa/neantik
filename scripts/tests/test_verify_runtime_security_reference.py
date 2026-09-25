@@ -15,6 +15,26 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeSecurityReferenceTests(unittest.TestCase):
+    def test_accepts_mac_patch_after_slash_in_official_release_post(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            baseline = write_baseline(Path(temporary))
+            data = json.loads(baseline.read_text(encoding="utf-8"))
+            data["minimumPublicChromiumVersion"] = "154.0.8037.58"
+            data["alsoObservedPublicChromiumVersions"] = ["154.0.8037.57"]
+            data["securityFixCount"] = 108
+            baseline.write_text(json.dumps(data), encoding="utf-8")
+            message = MODULE.verify_reference(
+                baseline_path=baseline,
+                html_text=(
+                    "<title>Stable Channel Update for Desktop</title>"
+                    "Chrome 154.0.8037.57/.58 Windows/Mac; "
+                    "this update includes 108 security fixes."
+                ),
+            )
+
+        self.assertIn("154.0.8037.58", message)
+        self.assertIn("security fixes 108", message)
+
     def test_accepts_official_desktop_security_post_containing_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             baseline = write_baseline(Path(temporary))

@@ -11,11 +11,17 @@ stapling, Gatekeeper и проверки заново скачанных фай�
 
 ## Текущий Direct release cycle
 
-- Последний публичный релиз по локальной и live release evidence: `0.7.11 (74)`;
+- Последний GitHub-релиз: `0.7.11 (74)`; browser.free version 95 показывает его как опубликованный, но runtime-gated и не доступный для скачивания;
 - предыдущий релиз `0.7.10` сохранён как rollback;
-- `0.7.11 (74)` уточняет VoiceOver-контекст preview восстановления;
+- публичный `0.7.11 (74)` исторически уточнял VoiceOver-контекст preview;
+  текущий незакоммиченный diff удаляет app-issued объявления, оставляя
+  клавиатурное управление;
 - Chromium `153.0.8010.52` ARM64/Metal остаётся неизменным в manager-only
   срезах;
+- новый manager-only preview списка прокси реализован локально, но Direct
+  релиз блокирует security baseline Chromium `154.0.8037.58`;
+- runtime update и Direct-релиз разрешены пользователем; source/rebase, GUI,
+  isolation, signing и release gates ещё не пройдены;
 - следующий релиз требует нового exact-source кандидата, полного набора
   release gates и проверки заново скачанных GitHub/site artifacts;
 - незакоммиченные изменения или тестовый результат сами по себе не означают,
@@ -113,8 +119,9 @@ Explicit profile integrity repair assistant остаётся исследова�
 
 Snapshot save/restore и подготовка plain/encrypted export выполняются вне
 UI-потока. После восстановления метаданных краткая read-only сводка остаётся в
-«Диагностике». Preview 0.7.10 добавляет только дату и aggregate counts;
-автоматические tests не подтверждают физический VoiceOver pass. См.
+«Диагностике». Preview snapshot restore выпущен в 0.7.10; публичный 0.7.11
+добавлял речевой контекст, который удаляется в текущем незакоммиченном diff.
+Физическую клавиатуру нужно повторно проверить на exact candidate. См.
 `docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md` и артефакты текущего цикла.
 
 - воспроизводимые budgets для cold/warm start именно Chromium runtime, idle

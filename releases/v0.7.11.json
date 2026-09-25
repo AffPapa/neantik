@@ -33,8 +33,8 @@
     "notarization": "accepted",
     "stapling": "passed",
     "gatekeeper": "passed",
-    "hostedDownload": "passed: fresh GitHub ZIP SHA-256 and notarized archive verifier",
-    "hostedDmg": "passed: fresh GitHub DMG SHA-256, notarization, stapling and Gatekeeper verifier",
+    "hostedDownload": "passed",
+    "hostedDmg": "passed",
     "fingerprint": "public-alpha-qualified",
     "strictProductionFingerprintCoherence": "incomplete",
     "physicalVoiceOver": "not independently verified",
@@ -47,12 +47,18 @@
       "site": 23
     }
   },
+  "verificationDetails": {
+    "hostedDownload": "Recorded at release time: fresh GitHub ZIP SHA-256 and notarized archive verifier",
+    "hostedDmg": "Recorded at release time: fresh GitHub DMG SHA-256, notarization, stapling and Gatekeeper verifier",
+    "siteApiAtRelease": "At publication on 2026-09-24: 0.7.11/74, canDownload=true, ZIP SHA-256 matched",
+    "currentPublicStatus": "Read-only GET of browser.free/api/release on 2026-09-25: published-runtime-gated, canDownload=false, downloadUrl=null because Chromium 153.0.8010.52 is below security baseline 154.0.8037.58"
+  },
   "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.11",
   "siteUrl": "https://browser.free",
   "siteVersion": 92,
   "siteSourceCommit": "6fa411a653bd72886b9da074c6315bea8f774bf7",
   "siteDeploymentStatus": "succeeded",
-  "siteApiLive": "0.7.11/74; canDownload=true; ZIP SHA-256 matches",
+  "siteApiLive": "Historical publication-time response; see verificationDetails.siteApiAtRelease and verificationDetails.currentPublicStatus",
   "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
   "candidateManifestSHA256": "28e5ec12bb6bb3dc75a047b2f0975f40778ead756be6e9bf9b3b9c9fd3e87f20",
   "candidateSourceBindingSHA256": "fb4c325084be6b10adb6b3ad62a31686adc8c5ad4a7a52350d6fd5c7c16ae379",

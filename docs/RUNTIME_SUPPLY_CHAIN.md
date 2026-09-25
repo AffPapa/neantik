@@ -1,6 +1,25 @@
 # Supply chain Chromium runtime
 
-Проверено: 21 сентября 2026 года.
+Проверено: 25 сентября 2026 года.
+
+## Актуальный менеджерский release record (24 сентября 2026)
+
+Свежая read-only проверка GitHub Release и browser.free API подтвердила
+NeAntik 0.7.11/build 74 и Chromium 153.0.8010.52 ARM64/Metal. Source commit —
+`fa3b03cbe122840ea308d2ecf19004a1128a1a06`; записанный ZIP SHA-256 —
+`141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576`.
+GitHub asset metadata matches recorded ZIP/DMG hashes. На момент публикации
+Sites version 92 отвечала `canDownload=true`; текущая Sites version 95 и live
+API на 25 сентября сообщают `published-runtime-gated`, `canDownload=false` и
+`downloadUrl=null` из-за обновлённого Chromium baseline. Runtime остаётся
+`securityCurrent: false`, strict production fingerprint coherence — incomplete.
+
+Официальное обновление Chrome Stable 154 для desktop опубликовано 22 сентября
+2026 года и содержит security fixes: <https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0856730748.html>.
+Поэтому закреплённый Chromium 153 ниже текущего repository security baseline.
+Пользователь разрешил обновить Chromium и выпустить Direct-релиз, но новый
+runtime ещё не собран и не прошёл gates. Поэтому менеджерский preview пока
+нельзя публиковать. Это документальное обновление baseline не меняет Chromium.
 
 ## Решение
 
@@ -27,16 +46,17 @@ NeAntik сохраняет нативный SwiftUI-менеджер и собс
 - <https://github.com/zhom/donutbrowser>
 - <https://www.clearcotelabs.com/>
 
-## Публичный baseline
+## Исторический публичный baseline на 21 сентября
 
-Свежая read-only проверка публичного GitHub-релиза показывает NeAntik
+На дату этого исторического анализа публичный GitHub-релиз NeAntik был
 `0.7.3` build `66` с Chromium `153.0.8010.36`, ARM64, Metal. Его ZIP и DMG
-опубликованы с SHA-256 sidecar-файлами. Локальный release catalog намеренно
+были опубликованы с SHA-256 sidecar-файлами. Локальный release catalog намеренно
 не подменяется этой записью: текущий checkout содержит manager candidate
 `0.3.20 (23)` и не является исходным commit публичного `0.7.3`.
 
-Этот runtime ниже текущего repository security baseline `153.0.8010.52` и
-поэтому не является доказательством актуальности security fixes. Подпись,
+Этот runtime был ниже тогдашнего repository security baseline `153.0.8010.52`
+и сейчас ниже `154.0.8037.58`; он не является доказательством актуальности
+security fixes. Подпись,
 notarization и stapling подтверждают происхождение артефакта, но не заменяют
 обновление Chromium. Эта опубликованная сборка также не является
 доказательством ещё не выпущенных изменений текущей ветки.
@@ -65,8 +85,9 @@ notarization и stapling подтверждают происхождение а�
 ARM64/Metal-сборки и свежей бинарной/GUI-проверки. Опубликованный Chromium
 153.0.8010.36 runtime нельзя повторно использовать для следующего релиза как
 доказательство прохождения baseline: официальный Chrome
-Stable для macOS от 17 сентября 2026 года уже содержит Chromium
-`153.0.8010.52/.53` и 16 исправлений безопасности.
+Stable для macOS от 17 сентября 2026 года содержал Chromium
+`153.0.8010.52/.53` и 16 исправлений безопасности; это историческое значение,
+с 24 сентября superseded версией 154.0.8037.58 и 108 исправлениями.
 
 Privacy-oriented build использует `safe_browsing_mode=0`: обращения к Google
 Safe Browsing не включены, но runtime не предоставляет встроенную замену

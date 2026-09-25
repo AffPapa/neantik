@@ -91,6 +91,59 @@ struct BulkProxyImportTests {
         #expect(preview.isReady)
     }
 
+    @Test func asyncPreviewComputationPreservesSafePreviewContract() async {
+        let secret = "never-echo-this-secret"
+        let request = BulkProxyImportPreviewRequest(
+            text: "one.example:8080\nuser:\(secret)@invalid host:443",
+            kind: .http,
+            order: .automatic
+        )
+
+        let result = await BulkProxyImportPreviewComputation.run(request)
+        switch result {
+        case let .success(preview):
+            #expect(preview.drafts.count == 1)
+            #expect(preview.issueLineNumbers == [2])
+            #expect(
+                preview.rows.compactMap(\.safeSummary).allSatisfy {
+                    !$0.contains(secret) && !$0.contains("user")
+                }
+            )
+        case let .failure(error):
+            Issue.record("Неожиданная ошибка preview: \(error.message)")
+        }
+    }
+
+    @Test func preCancelledAsyncPreviewAlwaysReturnsCancellation() async {
+        let requests = [
+            "proxy.example:8080",
+            "  \n\n  ",
+            String(
+                repeating: "x",
+                count: BulkProxyImportParser.maximumInputBytes + 1
+            )
+        ].map {
+            BulkProxyImportPreviewRequest(
+                text: $0,
+                kind: .http,
+                order: .automatic
+            )
+        }
+
+        for request in requests {
+            let task = Task {
+                withUnsafeCurrentTask { $0?.cancel() }
+                return await BulkProxyImportPreviewComputation.run(request)
+            }
+            let result = await task.value
+            guard case let .failure(error) = result else {
+                Issue.record("Отменённый preview не должен возвращать результат")
+                continue
+            }
+            #expect(error.message == "Отменено")
+        }
+    }
+
     @Test func entryLimitIsFailClosed() {
         let input = (1 ... BulkProxyImportParser.maximumEntries + 1)
             .map { "proxy-\($0).example:8080" }

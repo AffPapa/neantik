@@ -60,10 +60,6 @@ struct FirstProfileBootstrapTests {
         #expect(presentation.primaryTitle == "Создать и открыть")
         #expect(presentation.primaryIsEnabled)
         #expect(presentation.statusMessage == nil)
-        #expect(
-            presentation.terminalAccessibilityAnnouncement?
-                .contains("готов") == true
-        )
     }
 
     @Test
@@ -77,7 +73,6 @@ struct FirstProfileBootstrapTests {
         #expect(!presentation.primaryIsEnabled)
         #expect(!presentation.primaryTitle.contains("открыть"))
         #expect(presentation.statusMessage?.contains("Проверяем") == true)
-        #expect(presentation.terminalAccessibilityAnnouncement == nil)
     }
 
     @Test(arguments: [
@@ -98,10 +93,6 @@ struct FirstProfileBootstrapTests {
         #expect(presentation.primaryIsEnabled)
         #expect(!presentation.primaryTitle.contains("открыть"))
         #expect(presentation.statusMessage?.isEmpty == false)
-        #expect(
-            presentation.terminalAccessibilityAnnouncement?
-                .contains("Повторная проверка") == true
-        )
     }
 
     @Test(arguments: [

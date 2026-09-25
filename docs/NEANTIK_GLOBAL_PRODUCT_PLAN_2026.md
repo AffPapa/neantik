@@ -1,6 +1,6 @@
 # NeAntik — глобальный план продукта и следующего цикла
 
-Дата ревизии: 24 сентября 2026 года.
+Дата ревизии: 25 сентября 2026 года.
 
 Этот документ объединяет предыдущие roadmap, runtime/security handoff,
 исследования по fingerprint/privacy и свежий анализ официальной документации
@@ -30,7 +30,8 @@ NeAntik — локальный macOS-браузер с независимыми 
 
 Публичный baseline текущего цикла:
 
-- NeAntik 0.7.10, build 73 (опубликован 24 сентября 2026);
+- NeAntik 0.7.11, build 74 (24 сентября 2026; tag, GitHub assets и live
+  browser.free API свежо подтверждены в этом audit pass);
 - Direct Distribution для Apple Silicon;
 - встроенный Chromium 153.0.8010.52 ARM64 Metal;
 - локальные профили, папки, поиск, теги, snapshots, безопасное копирование;
@@ -175,8 +176,8 @@ MoreLogin повторяют устойчивый набор функций:
 | P0-08 | Public evidence binding | shipped for 0.7.5 | Hash/version/source/artifact связаны |
 | P0-09 | Secret/history audit | done | Нет credential-like files/values в reachable history |
 | P0-10 | Manager perf budgets | done | p50/p95 отдельно от Chromium metrics |
-| P0-11 | Accessible primary actions | done | Keyboard/VoiceOver labels and hints |
-| P0-12 | Release version floor | done | Новый manager build строго выше public floor; проверено v0.7.10/73 |
+| P0-11 | Explicit keyboard actions | done | Keyboard shortcuts and native control labels/hints remain available |
+| P0-12 | Release version floor | done | Новый manager build строго выше recorded public floor; проверено v0.7.11/74 |
 
 ### P1 — следующий функциональный слой без изменения ядра
 
@@ -195,7 +196,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P1-11 | Profile integrity/recovery UX | done | Read-only notice remains visible in Diagnostics or at workspace level when no profile is selected; repair stays deferred |
 | P1-12 | Release evidence dashboard | shipped in 0.7.9 | Read-only CLI summary; требует чистый источник и не подменяет свежие release gates |
 | P1-13 | Snapshot restore preview | shipped in 0.7.10 | Safe aggregate summary before commit; cancel is mutation-free; transactional store checks remain authoritative |
-| P1-14 | Restore preview VoiceOver context | shipped in 0.7.11 | One aggregate summary and action-specific labels/hints; no private profile data enters announcements |
+| P1-14 | Restore preview spoken announcements | app-issued speech removed from current working tree | The public 0.7.11 binary historically announced one aggregate summary; this diff removes those app-issued announcements, retains keyboard actions and native control metadata, and shows transient visible completion status for snapshot/import/export/support-bundle operations |
 
 ### P2 — зрелость продукта после P0/P1
 
@@ -207,7 +208,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P2-04 | WebRTC route policy matrix | runtime-gate | direct/proxied/relay cases measured |
 | P2-05 | Download policy inventory | runtime-gate | Chromium requests classified before policy change |
 | P2-06 | Visual responsive polish | done | Narrow-width view snapshots и flexible columns покрыты render tests |
-| P2-07 | Onboarding first-run copy | done | Один основной create/open action, понятный retry и VoiceOver hints |
+| P2-07 | Onboarding first-run copy | done | Один основной create/open action, понятный retry и native control hints |
 | P2-08 | Documentation/tutorials | shipped in 0.7.9 | Bilingual profile privacy, snapshot/restore and configuration-transfer guide |
 | P2-09 | Reproducible manager build metadata | done in 0.7.8 | Candidate provenance и privacy verifier; нет build-machine paths |
 | P2-10 | Fuzz malformed imports | done in 0.7.8 | Decoder fail-closed, bounded size/count, malformed corpus |
@@ -275,20 +276,36 @@ ZIP/DMG прошли Developer ID, notarization, stapling и Gatekeeper; hosted 
 - Bounded corpus malformed imports расширен вариантами версии и формы JSON.
 
 Chromium/runtime lock остаётся закреплён на 153.0.8010.52. Chrome Stable 154
-вышел 22 сентября и содержит security fixes; релиз 0.7.10 не закрывает эту
-разницу и не является обновлением безопасности ядра.
+вышел 22 сентября и содержит security fixes; manager-релизы 0.7.10 и 0.7.11
+не закрывают эту разницу и не являются обновлением безопасности ядра.
 
-## 8. Итог цикла 0.7.10 и gates следующего релиза
+## 8. Итог цикла 0.7.11 и gates следующего релиза
 
-### Фаза 0 — verified baseline (проверено 24 сентября 2026)
+### Фаза 0 — release baseline (24 сентября 2026)
 
-- текущий публичный floor: v0.7.10 / build 73, Chromium 153.0.8010.52;
-- binary source commit: `1ab08efa286888245a43c4fd4f328c7e9e277600`;
-  app branch дополнен release evidence после публикации;
-- GitHub Release и `browser.free/api/release` сообщают 0.7.10/73 и ZIP SHA
-  `d2188a9f445e9a945a6d9b6cb77fed4fd26b5efbd8b2948a830403489e4ff439`;
-- Developer ID, notary profile, signing, notarization, stapling и Gatekeeper
-  повторно прошли в разрешённом macOS-контексте; credential values не читались.
+- исторический локальный release record: v0.7.11 / build 74, Chromium
+  153.0.8010.52; GitHub Release API metadata и asset digests свежо совпали
+  с записанными version/build/hash; сами bytes в этом pass не скачивались;
+- binary source commit: `fa3b03cbe122840ea308d2ecf19004a1128a1a06`;
+- recorded ZIP SHA-256:
+  `141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576`;
+- recorded DMG SHA-256:
+  `fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4`;
+- при публикации запись указывала browser.free Sites version 92, API тогда
+  отвечал `canDownload=true`, а remote tag указывал на source commit; это
+  исторический ответ, позже заменённый после обновления security baseline;
+- текущая browser.free Sites version 95 показывает ту же историю 0.7.11,
+  но API отвечает `published-runtime-gated`, `canDownload=false` и `downloadUrl=null`;
+- GitHub API по-прежнему показывает v0.7.10 как опубликованный rollback release;
+- release record и notary history подтверждают принятые ZIP/DMG submissions;
+  этот аудит не скачивал заново payload и не повторял Gatekeeper на свежих
+  байтах.
+
+24 сентября Chrome Stable 154 для Mac выпущен как `154.0.8037.58` с 108
+security fixes. Обновлённый manual security baseline поэтому блокирует
+Chromium `153.0.8010.52`; новую Direct-бинарную версию нельзя выпускать без
+полного runtime gate cycle. Пользователь разрешил update/release; gates пока
+не пройдены.
 
 ### Фаза 1 — manager-only vertical slice
 
@@ -297,14 +314,18 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Релиз 
 добавляет preview snapshot до commit: он использует тот же заранее
 проверенный payload, показывает только дату и aggregate counts,
 не меняет store при отмене и повторно проверяет работающие профили при commit.
+Публичный 0.7.11 исторически включал app-issued VoiceOver announcements для
+preview восстановления. Текущий незакоммиченный diff удаляет эти речевые
+объявления; нативные подписи элементов macOS и клавиатурный фокус сохранены.
+Это изменение ещё не попало в новый бинарный Direct-релиз.
 
 Автоматические presentation/render проверки прошли, но не подтверждают физическую
-клавиатуру и VoiceOver. Ручной проход основных сценариев на macOS остаётся
-отдельным пользовательским QA пунктом.
+клавиатуру. Повторный проход Tab order и shortcuts нужен на exact candidate;
+app-issued speech announcements в текущем diff удалены.
 
 ### Фаза 2 — критерии следующего exact manager candidate
 
-- следующая версия/build должна быть выше v0.7.10/73 и пройти полный набор
+- следующая версия/build должна быть выше v0.7.11/74 и пройти полный набор
   source, manager и privacy checks;
 - собрать manager-only Direct candidate с тем же exact Chromium/runtime;
 - связать candidate manifest, source commit, runtime hashes и UI evidence;
@@ -317,14 +338,14 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Релиз 
 - обновить GitHub Release и browser.free contract/page только для exact
   проверенного candidate;
 - проверить production deployment и публичный `/api/release` contract;
-- сохранить v0.7.9 и v0.7.8 как rollback releases.
+- сохранить v0.7.10 как rollback release; не удалять предыдущие версии.
 
 ## 9. Release acceptance gates
 
 Публикация разрешена только если все пункты подтверждены свежими отчётами:
 
 1. exact source commit and clean intended diff;
-2. manager version/build greater than public v0.7.10/73;
+2. manager version/build greater than the recorded v0.7.11/74 baseline;
 3. runtime version/hash remains exactly pinned and unchanged;
 4. package contains no secrets or local source paths;
 5. Swift tests and targeted tests pass;
@@ -336,14 +357,26 @@ privacy-safe status и release evidence summary вошла в 0.7.9. Релиз 
 11. a clean-machine or fresh-download smoke can launch and create a profile;
 12. previous public artifact remains available for rollback.
 
-Для v0.7.10 подтверждены точный source/candidate, тесты, подпись, notarization,
-Gatekeeper, свежая загрузка ZIP и live page/API. Отдельный запуск на чистом Mac
-и физический VoiceOver проход не выполнялись; strict production fingerprint
-coherence остаётся неполным.
+Свежая read-only GitHub API проверка подтвердила неизменяемый опубликованный
+v0.7.11 и asset metadata: ZIP SHA-256
+`141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576`, DMG
+SHA-256 `fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4`;
+v0.7.10 rollback release и его assets остаются опубликованными. В этом pass
+артефакты заново не скачивались, поэтому свежая подпись и Gatekeeper на байтах
+не подтверждались. browser.free Sites version 95 развернута, live
+`/api/release` проверен: исторические метаданные 0.7.11 сохранены, но
+`published-runtime-gated`, `canDownload=false`, `downloadUrl=null` из-за
+Chromium 153.0.8010.52 ниже baseline 154.0.8037.58. Обязательный NeAntik
+`doctor` остановился: AffPapa deploy credential недоступен; это отдельный
+deploy-path gate и не отменяет публичный GitHub/Sites read-only результат.
+Новый exact candidate и его физический keyboard smoke ещё не существуют;
+strict production fingerprint coherence не подтверждена. Системный VoiceOver
+не является отдельной функцией NeAntik и не входит в release QA.
 
 ## 10. Источники нового исследования
 
 - Chromium/Chrome stable release: https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0541751186.html
+- Chrome 154 macOS Stable and security fixes (22 September 2026): https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0856730748.html
 - Chrome 153 release notes: https://developer.chrome.com/release-notes/153
 - Chrome storage and cookie partitioning: https://developer.chrome.com/docs/extensions/develop/concepts/storage-and-cookies
 - Chrome Permissions Policy: https://developer.chrome.com/docs/privacy-security/permissions-policy
@@ -360,7 +393,7 @@ coherence остаётся неполным.
 
 ## 11. Definition of done текущего manager-only goal
 
-- roadmap отражает реальный код 0.7.10 и следующие неготовые пункты;
+- roadmap отражает исходную точку 0.7.11 и следующие неготовые пункты;
 - snapshot save/restore и plain/encrypted export не сериализуют большие
   документы на UI-потоке;
 - повторное изменение состояния профилей не может привести к частичному

@@ -59,6 +59,11 @@ private struct ClipboardNotice: Equatable {
     let message: String
 }
 
+private struct WorkspaceSuccessNotice: Identifiable, Equatable {
+    let id: UUID
+    let message: String
+}
+
 private struct BulkProxyProgress: Equatable {
     let completed: Int
     let total: Int
@@ -210,6 +215,8 @@ struct ContentView: View {
     @State private var backgroundFileOperationTasks:
         [UUID: Task<Void, Never>] = [:]
     @State private var localError: String?
+    @State private var workspaceSuccessNotice: WorkspaceSuccessNotice?
+    @State private var workspaceSuccessNoticeTask: Task<Void, Never>?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
     @State private var resolvedRuntime: BrowserRuntime?
     @State private var isResolvingRuntime = true
@@ -250,8 +257,6 @@ struct ContentView: View {
     @State private var showsAllTags = false
     @State private var isCreatingFirstProfile = false
     @State private var profileListResolver = ProfileListStateResolver()
-    @State private var workspaceAnnouncementGate =
-        AccessibilityAnnouncementGate<String>()
 
     private var selectedProfile: BrowserProfile? {
         store.profile(withID: selection)
@@ -539,6 +544,30 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let workspaceSuccessNotice {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Label(
+                        workspaceSuccessNotice.message,
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .font(.callout)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Закрыть") {
+                        clearWorkspaceSuccessNotice()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .accessibilityElement(children: .contain)
+            }
+        }
     }
 
     private var workspaceNavigation: some View {
@@ -566,6 +595,7 @@ struct ContentView: View {
                 )
         }
         .navigationSplitViewStyle(.balanced)
+        .disabled(isImportingProfileConfigurations || isRestoringLocalSnapshot)
         .frame(
             minWidth: WorkspaceLayout.minimumWindowWidth,
             minHeight: WorkspaceLayout.minimumWindowHeight
@@ -664,6 +694,7 @@ struct ContentView: View {
                     payload: request.payload,
                     existingFolderNames: store.organization.folders.map(\.name)
                 ),
+                isRestoring: isRestoringLocalSnapshot,
                 onCancel: { pendingSnapshotRestore = nil },
                 onRestore: { confirmLocalSnapshotRestore(request.payload) }
             )
@@ -881,7 +912,6 @@ struct ContentView: View {
         }
         .onChange(of: runtimeAvailability) { _, availability in
             presentReleaseFingerprintAuditIfNeeded()
-            announceRuntimeAvailability(availability)
         }
         .onChange(of: telemetrySnapshot) { _, value in
             telemetry.record(.snapshot, snapshot: value)
@@ -973,6 +1003,7 @@ struct ContentView: View {
         .onDisappear {
             cancelProxyTests()
             cancelBackgroundFileOperations()
+            workspaceSuccessNoticeTask?.cancel()
         }
     }
 
@@ -1282,6 +1313,31 @@ struct ContentView: View {
         backgroundFileOperationTasks[id] = task
     }
 
+    private func showWorkspaceSuccessNotice(_ message: String) {
+        let notice = WorkspaceSuccessNotice(id: UUID(), message: message)
+        workspaceSuccessNoticeTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.18)) {
+            workspaceSuccessNotice = notice
+        }
+        workspaceSuccessNoticeTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled,
+                  workspaceSuccessNotice?.id == notice.id
+            else { return }
+            withAnimation(.easeInOut(duration: 0.18)) {
+                workspaceSuccessNotice = nil
+            }
+        }
+    }
+
+    private func clearWorkspaceSuccessNotice() {
+        workspaceSuccessNoticeTask?.cancel()
+        workspaceSuccessNoticeTask = nil
+        withAnimation(.easeInOut(duration: 0.18)) {
+            workspaceSuccessNotice = nil
+        }
+    }
+
     private func cancelBackgroundFileOperations() {
         for task in backgroundFileOperationTasks.values {
             task.cancel()
@@ -1310,8 +1366,7 @@ struct ContentView: View {
             defer { isPreparingProfileExport = false }
             do {
                 try Task.checkCancellation()
-                announceWorkspaceStatus("Подготавливаю безопасный экспорт…")
-                guard let count = try await
+                guard let exportedCount = try await
                     ProfileConfigurationTransferFileCoordinator.export(
                         profiles: stoppedProfiles,
                         folderNameByProfileID: folderNames
@@ -1319,10 +1374,8 @@ struct ContentView: View {
                     return
                 }
                 try Task.checkCancellation()
-                announceWorkspaceStatus(
-                    "Экспортировано " + String(count) + " " +
-                        profileCountWord(count) +
-                        ". Proxy-login включён; пароли, cookies, BrowserData и Keychain-секреты — нет."
+                showWorkspaceSuccessNotice(
+                    "Экспортировано настроек профилей: \(exportedCount)."
                 )
             } catch is CancellationError {
                 return
@@ -1346,17 +1399,15 @@ struct ContentView: View {
                     try document.makeProfiles()
                 }.value
                 try Task.checkCancellation()
-                let saved = try store.insertImportedProfiles(
+                let saved = try await store.insertImportedProfilesOffMainActor(
                     imported,
                     folderNames: document.profiles.map(\.folderName)
                 )
                 if let first = saved.first {
                     revealSavedProfile(first)
                 }
-                announceWorkspaceStatus(
-                    "Импортировано " + String(saved.count) + " " +
-                        profileCountWord(saved.count) +
-                        " с распределением по папкам."
+                showWorkspaceSuccessNotice(
+                    "Импортировано профилей: \(saved.count)."
                 )
             } catch is CancellationError {
                 return
@@ -1389,20 +1440,17 @@ struct ContentView: View {
             defer { isSavingLocalSnapshot = false }
             do {
                 try Task.checkCancellation()
-                announceWorkspaceStatus("Сохраняю локальный snapshot…")
                 _ = try await ProfileSnapshotFileService.save(
                     profiles: stoppedProfiles,
                     folderNameByProfileID: folderNames,
                     paths: store.paths
                 )
-                try Task.checkCancellation()
-                announceWorkspaceStatus(
-                    ProfileSnapshotSaveSummary(
-                        savedProfileCount: stoppedProfiles.count,
-                        skippedRunningProfileCount:
-                            totalProfileCount - stoppedProfiles.count
-                    ).announcement
+                let summary = ProfileSnapshotSaveSummary(
+                    savedProfileCount: stoppedProfiles.count,
+                    skippedRunningProfileCount:
+                        totalProfileCount - stoppedProfiles.count
                 )
+                showWorkspaceSuccessNotice(summary.statusMessage)
             } catch is CancellationError {
                 return
             } catch {
@@ -1425,7 +1473,6 @@ struct ContentView: View {
                 guard let url = try ProfileSnapshotFileCoordinator.chooseSnapshot(
                     paths: store.paths
                 ) else { return }
-                announceWorkspaceStatus("Проверяю локальный snapshot…")
                 let prepared = try await ProfileSnapshotFileService
                     .prepareRestore(from: url, paths: store.paths)
                 try Task.checkCancellation()
@@ -1446,28 +1493,36 @@ struct ContentView: View {
     private func confirmLocalSnapshotRestore(
         _ prepared: ProfileSnapshotRestorePayload
     ) {
+        guard !isRestoringLocalSnapshot else { return }
         guard processes.runningProfileIDs.isEmpty else {
             pendingSnapshotRestore = nil
             localError = "Восстановление отменено: сначала закрой все профили."
             return
         }
-        do {
-            let saved = try store.insertImportedProfiles(
-                prepared.profiles,
-                folderNames: prepared.folderNames
-            )
-            pendingSnapshotRestore = nil
-            if let first = saved.first {
-                revealSavedProfile(first)
+        isRestoringLocalSnapshot = true
+        runBackgroundFileOperation {
+            defer { isRestoringLocalSnapshot = false }
+            guard processes.runningProfileIDs.isEmpty else {
+                pendingSnapshotRestore = nil
+                localError = "Восстановление отменено: сначала закрой все профили."
+                return
             }
-            announceWorkspaceStatus(
-                "Восстановлено " + String(saved.count) + " " +
-                    profileCountWord(saved.count) +
-                    " с новыми identity и без данных браузера."
-            )
-        } catch {
-            pendingSnapshotRestore = nil
-            localError = error.localizedDescription
+            do {
+                let saved = try await store.insertImportedProfilesOffMainActor(
+                    prepared.profiles,
+                    folderNames: prepared.folderNames
+                )
+                pendingSnapshotRestore = nil
+                if let first = saved.first {
+                    revealSavedProfile(first)
+                }
+                showWorkspaceSuccessNotice(
+                    "Восстановлено профилей: \(saved.count), с новыми identity."
+                )
+            } catch {
+                pendingSnapshotRestore = nil
+                localError = error.localizedDescription
+            }
         }
     }
 
@@ -1493,7 +1548,7 @@ struct ContentView: View {
             )) != nil else {
                 return
             }
-            announceWorkspaceStatus("Безопасная диагностика сохранена.")
+            showWorkspaceSuccessNotice("Безопасная диагностика сохранена.")
         } catch {
             localError = error.localizedDescription
         }
@@ -1521,8 +1576,7 @@ struct ContentView: View {
             defer { isPreparingProfileExport = false }
             do {
                 try Task.checkCancellation()
-                announceWorkspaceStatus("Готовлю зашифрованный экспорт…")
-                guard let count = try await
+                guard let exportedCount = try await
                     ProfileConfigurationTransferFileCoordinator
                         .exportEncrypted(
                             profiles: stoppedProfiles,
@@ -1532,10 +1586,8 @@ struct ContentView: View {
                     return
                 }
                 try Task.checkCancellation()
-                announceWorkspaceStatus(
-                    "Зашифровано " + String(count) + " " +
-                        profileCountWord(count) +
-                        ". Proxy-login зашифрован; пароли, cookies, BrowserData и Keychain-секреты не включены."
+                showWorkspaceSuccessNotice(
+                    "Зашифрованный экспорт сохранён: \(exportedCount) профилей."
                 )
             } catch is CancellationError {
                 return
@@ -1562,17 +1614,15 @@ struct ContentView: View {
                     try document.makeProfiles()
                 }.value
                 try Task.checkCancellation()
-                let saved = try store.insertImportedProfiles(
+                let saved = try await store.insertImportedProfilesOffMainActor(
                     imported,
                     folderNames: document.profiles.map(\.folderName)
                 )
                 if let first = saved.first {
                     revealSavedProfile(first)
                 }
-                announceWorkspaceStatus(
-                    "Импортировано " + String(saved.count) + " " +
-                        profileCountWord(saved.count) +
-                        " из зашифрованной конфигурации."
+                showWorkspaceSuccessNotice(
+                    "Импортировано профилей из зашифрованного файла: \(saved.count)."
                 )
             } catch is CancellationError {
                 return
@@ -2000,6 +2050,15 @@ struct ContentView: View {
             profileListHeader(listState)
             Divider()
             runtimeReadinessBanner
+            if isImportingProfileConfigurations {
+                Label("Импортирую профили…", systemImage: "square.and.arrow.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .accessibilityLabel("Выполняется импорт профилей")
+            }
             if isRestoringLocalSnapshot {
                 Label("Проверяю snapshot…", systemImage: "arrow.triangle.2.circlepath")
                     .font(.caption)
@@ -2852,6 +2911,12 @@ struct ContentView: View {
     }
 
     private func launch(_ profile: BrowserProfile) {
+        guard !isImportingProfileConfigurations,
+              !isRestoringLocalSnapshot
+        else {
+            localError = "Дождись завершения импорта или восстановления профилей."
+            return
+        }
         do {
             let runtime = try launchReadyRuntime()
             switch BrowserLaunchPreparationPolicy.resolveForUserStart(
@@ -3036,37 +3101,6 @@ struct ContentView: View {
         resolvedRuntime = value
         isResolvingRuntime = false
         presentReleaseFingerprintAuditIfNeeded()
-    }
-
-    private func announceRuntimeAvailability(
-        _ availability: BrowserRuntimeAvailability
-    ) {
-        guard !store.profiles.isEmpty else { return }
-        let message: String
-        switch availability {
-        case .resolving:
-            return
-        case .ready:
-            message = "Браузерный движок готов. Профили можно запускать."
-        case .missing, .invalid:
-            message =
-                "Встроенный браузер недоступен. Доступно повторить проверку."
-        }
-        announceWorkspaceStatus(message)
-    }
-
-    private func announceWorkspaceStatus(_ message: String) {
-        guard workspaceAnnouncementGate.shouldAnnounce(message) else {
-            return
-        }
-        NSAccessibility.post(
-            element: NSApp as Any,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.medium.rawValue
-            ]
-        )
     }
 
     private func beginFingerprintAudit() {
@@ -3263,9 +3297,6 @@ struct ContentView: View {
             bulkProxyStatusMessage = total > 0
                 ? "Проверка остановлена: \(completed) из \(total)"
                 : "Проверка остановлена"
-            if let bulkProxyStatusMessage {
-                announceWorkspaceStatus(bulkProxyStatusMessage)
-            }
             bulkProxyProgress = nil
             bulkProxyTestTask.cancel()
             return
@@ -3306,9 +3337,6 @@ struct ContentView: View {
                 if !Task.isCancelled {
                     bulkProxyStatusMessage =
                         "Проверено \(completed) из \(profiles.count)"
-                    if let bulkProxyStatusMessage {
-                        announceWorkspaceStatus(bulkProxyStatusMessage)
-                    }
                 }
                 bulkProxyTestTask = nil
                 bulkProxyTestID = nil
@@ -3511,14 +3539,6 @@ struct ContentView: View {
             message: successMessage
         )
         clipboardNotice = notice
-        NSAccessibility.post(
-            element: NSApp as Any,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: successMessage,
-                .priority: NSAccessibilityPriorityLevel.medium.rawValue
-            ]
-        )
         clearClipboardLater(changeCount: changeCount)
         clipboardNoticeTask = Task { @MainActor in
             do {

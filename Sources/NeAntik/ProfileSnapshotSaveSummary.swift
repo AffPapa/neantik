@@ -4,7 +4,7 @@ struct ProfileSnapshotSaveSummary: Equatable, Sendable {
     let savedProfileCount: Int
     let skippedRunningProfileCount: Int
 
-    var announcement: String {
+    var statusMessage: String {
         var message = "Сохранены настройки " +
             Self.countPhrase(savedProfileCount) + "."
         if skippedRunningProfileCount > 0 {

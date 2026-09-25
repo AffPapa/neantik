@@ -6,19 +6,23 @@ This document tracks the Chromium 153 source-port decision and release gates.
 It does not authorize publication and does not treat an unsigned local build
 candidate as a release artifact.
 
-## Verified version boundary — 2026-09-21
+## Historical verified version boundary — 2026-09-21 (superseded 2026-09-24)
+
+This section records the Chromium 153 source-port decision at that date only.
+The current manual security baseline is Chromium 154.0.8037.58; the 153 port
+and NeAntik 0.7.11 binary are below today's baseline.
 
 The official Chrome Stable desktop update for macOS published on 17 September
 2026 is Chromium/Chrome `153.0.8010.52/.53` and lists 16 security fixes:
 
 - <https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0194356994.html>
 
-The checked NeAntik security baseline therefore uses `153.0.8010.52` as the
-minimum public version and records `.53` as the observed macOS companion build.
+At that time the checked NeAntik security baseline used `153.0.8010.52` as the
+minimum public version and recorded `.53` as the observed macOS companion build.
 The major version `153` is correct, but a `153.0.8010.36` runtime is not
 current against this security boundary.
 
-The currently published NeAntik `v0.7.3` release uses Chromium
+At that date the public NeAntik `v0.7.3` release used Chromium
 `153.0.8010.36`. Its release notes already disclose that the runtime is below
 the `.52/.53` security boundary. This is a public-alpha limitation, not a
 qualification for a new Direct release.
@@ -44,6 +48,35 @@ rather than inventing an official 153 macOS packaging release. The exact
 decision, source commits, candidate hashes, and open gates are recorded in
 `runtime/chromium-153-port-status.json`. The 152 packaging checkout remains a
 reference input only; it is not silently relabeled as 153.
+
+## Fresh 154 update — 2026-09-25
+
+Chrome Stable for macOS remains `154.0.8037.58` in the official desktop
+release notice; the official Chromium source tag `154.0.8037.60` is a distinct
+source revision and is not itself proof of a newer Chrome Stable publication.
+The pinned security floor remains `.58`.
+
+The exact `.60` source is available locally at commit
+`368ecb10bc157de1a420392d7f664537de2096dc`, tree
+`185d9e0f76de628765c051bc537a752fa9a7df37`. A read-only three-way replay check
+of the existing 1.7 MB M153 downstream diff (838 paths) found 33 text conflicts
+and 26 distinct path issues, including private/internal refs and six removed
+paths. This is not a clean M154 port. No M154 patch was applied or built.
+
+The public ungoogled common release line observed for this pass is still M153;
+the public macOS packaging line observed is M152. The M154 source therefore
+needs new pinned ungoogled inputs, an owned/reviewed macOS packaging port, a
+toolchain lock, and a minimal NeAntik patch rebase with exact postimage hashes
+before GN generation or build. Existing `prepare-runtime-source.sh`,
+`build-runtime.sh`, and `apply-neantik-patchset.py` remain pinned to Chromium
+152 and must not be used as M154 entrypoints.
+
+The same source inspection found that `chrome_paks.gni` still consumes
+`platform_pak_locales`; its per-resource `locale_allowlist` does not reduce the
+whole packaged locale set. A Mac-only `platform_pak_locales` reduction is a
+possible size optimization, but requires language/fallback, locale selection,
+`navigator.language`, Accept-Language, page smoke, and signed artifact-size
+verification before release.
 
 ## Current NeAntik source state
 
@@ -241,7 +274,7 @@ credential value is retained in the repository evidence. A history entry is
 therefore provenance that the profile once existed, not a recoverable keychain
 profile or authorization to guess/reuse another product's credential.
 
-## Historical release assets rediscovered — 2026-09-23
+## Historical release assets rediscovered — snapshot from 2026-09-23
 
 The earlier publication claim is real. Local history contains the old
 `NeAntikBuilds/runtime-153-36` packaging checkout and the project `dist/`
@@ -250,21 +283,16 @@ for releases `0.3.14` through `0.3.20`. The old packaging script explicitly
 expected a Developer ID certificate name and Apple notarization credentials;
 those are configuration inputs, not embedded secrets.
 
-The historical app copy available on this host still carries the old Team ID
-in its signature metadata, but the current Keychain cannot resolve its
-certificate authority (`Authority unavailable`) and has no matching private
-key. The retained receipts contain archive hashes, candidate provenance and
-Apple status/submission metadata only. A search of the historical build trees,
-transaction inputs, old archives, mounted volumes, private temporary areas and
-the user's credential-like files found no `.p12`, `.pfx`, `.cer`, `.p8` or
-private-key artifact. These findings confirm that previous releases were
-signed and notarized, while also proving that the signing private key and
-notary secret are no longer present in the current environment.
+At that time, the historical app copy available on the host carried an old
+Team ID in its signature metadata, its certificate authority could not be
+resolved (`Authority unavailable`), and a matching private key was not
+available in that check. This is a dated environment snapshot, not the current
+Keychain status. The retained receipts contained archive hashes, candidate
+provenance and Apple submission metadata only.
 
-## Public rollback baseline — 2026-09-22
+## Public rollback baseline — historical snapshot from 2026-09-22
 
-The current public GitHub Direct release `v0.7.3` was checked read-only before
-any new publication. The ZIP asset hash is
+At that time, the public GitHub Direct release was `v0.7.3`. Its ZIP asset hash was
 `c380a1a4f998f96758380287b0725d7013ebcb33cfed36ee5ba0ccaf058b916b` and the
 DMG asset hash is
 `b86e6834135db1593fbc37fab09e56d7b24fa6043287500eb387472f1e2b6264`; both
@@ -278,10 +306,57 @@ though its embedded signature metadata and ticket are present. This local
 Gatekeeper result is therefore inconclusive and is not reused as evidence for
 the new candidate.
 
-## Required post-permission gates
+## Required post-permission gates — historical snapshot from 2026-09-22
 
-With rebuild permission now present, the remaining gates are the release
-checks: Developer ID signing, notarization, stapling, Gatekeeper, GitHub asset
-verification, AffPapa staging, live download checks, and rollback evidence.
-Network evidence remains intentionally scoped to configured-route/WebRTC
-controls; no direct HTTP exit-IP proof is claimed.
+At that time, the remaining gates were Developer ID signing, notarization,
+stapling, Gatekeeper, GitHub asset verification, staging, live download checks,
+and rollback evidence. This checklist is historical and is superseded by the
+fresh status below.
+
+## Fresh Chromium 154 and Direct release status — 2026-09-25
+
+The public GitHub release is `v0.7.11` (build 74); `v0.7.10` remains available
+as rollback. The live `browser.free/api/release` contract reports Chromium
+153.0.8010.52 below the macOS Stable security baseline 154.0.8037.58,
+`canDownload=false`, and no download URL. Chrome's official Stable notice
+records 108 security fixes for the M154 rollout. The upstream ungoogled macOS
+release page still lists M152 as its latest packaged line.
+
+The allowed macOS Keychain check currently finds four valid signing identities,
+including Developer ID Application for team H6VGU2M6JD, and the existing
+`neantik-notary` profile returns accepted historical submissions. These gates
+are available; no new candidate has been signed or notarized.
+
+A read-only `git apply --check` of each of the eleven exact groups in
+`runtime/nevision-patches/series.json` against clean official Chromium
+154.0.8037.60 showed six groups apply directly, while five do not. Failures
+include missing `components/ungoogled` paths and Blink context drift. Passing
+generic groups do not make a complete runtime; the M154 metrics comment patch is
+already upstream-covered and is not a required behavior change. The broad 838-path dry-run's 26
+distinct path issues are not the NeAntik patch-group inventory; separately,
+the exact manifest-group check confirms the owned series still needs a reviewed
+M154 rebase. The reference checkout `/private/tmp/neantik-154-checkout` remains
+clean.
+
+A separate isolated worktree `/private/tmp/neantik-154-downstream-port` now
+contains an incomplete experiment applying the broad M153 downstream diff
+(`SHA-256 d4a96682d4bebce6860e4d501e793b4ae88a583b7f443b4621f68078945ea97f`).
+`git apply --reject` left 48 rejected hunks across 48 files and 818 tracked
+status entries. This experiment is not the NeAntik M154 source candidate. It
+also contains unscoped historical switches, so only individually reviewed,
+current behaviors may be retained. No runtime build was started.
+
+The safe size-reduction opportunity is source-build-time locale pruning while
+retaining `en-US` and `ru`. A previous M153 inventory measured 78,455,749 bytes
+of locale packs, of which 76,696,796 bytes were outside those two locales.
+This is only a raw-input estimate, not a verified M154 or final ZIP/DMG saving.
+Validate generated GN outputs, English/Russian/fallback launches, unchanged
+browser language and `Accept-Language`, and signed artifact sizes before
+including the optimization.
+
+The next release remains blocked until a pinned M154 source contract and
+packaging inputs exist, all required NeAntik runtime behavior is rebased and
+verified, the ARM64/Metal candidate passes runtime gates, and the exact
+candidate clears signing, notarization, Gatekeeper, hosting, and rollback
+checks. Network evidence remains scoped to configured-route/WebRTC controls;
+no direct HTTP exit-IP proof is claimed.

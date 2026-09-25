@@ -41,6 +41,19 @@ struct ResponsiveLayoutRenderTests {
             name: "snapshot-restore-preview",
             size: CGSize(width: 520, height: 460)
         )
+        try render(
+            ProfileSnapshotRestorePreviewSheet(
+                preview: ProfileSnapshotRestorePreview(
+                    payload: restorePayload,
+                    existingFolderNames: ["Работа"]
+                ),
+                isRestoring: true,
+                onCancel: {},
+                onRestore: {}
+            ),
+            name: "snapshot-restore-in-progress",
+            size: CGSize(width: 520, height: 460)
+        )
 
         try render(
             ProfileDetailView(

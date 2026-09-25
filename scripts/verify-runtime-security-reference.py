@@ -113,7 +113,7 @@ def verify_reference(
     reference = assert_official_reference(baseline.get("reference"))
     text = html_text if html_text is not None else fetch_text(reference)
     versions = set(VERSION_RE.findall(text))
-    if minimum not in versions:
+    if not version_appears_in_text(minimum, text, versions):
         raise SecurityReferenceError(
             f"Baseline version {minimum} was not found in the official reference"
         )
