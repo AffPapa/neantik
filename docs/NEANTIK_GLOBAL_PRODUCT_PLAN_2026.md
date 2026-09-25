@@ -214,7 +214,7 @@ MoreLogin повторяют устойчивый набор функций:
 | P2-10 | Fuzz malformed imports | done in 0.7.8 | Decoder fail-closed, bounded size/count, malformed corpus |
 | P2-11 | Fuzz provenance/quarantine records | done in 0.7.8 | Unknown fields, symlink ancestor и path traversal отклоняются |
 | P2-12 | Release rollback rehearsal | shipped in 0.7.9 | Retained ZIP/DMG v0.7.8 скопированы во временный staging и повторно сверены по байтам. Это не install/launch или hosted rollback smoke. |
-| P2-13 | Distinguish BrowserData scan caps from filesystem errors | implemented/tested locally after `66c590b` | Entry/byte safety-cap hits have their own status; symlink and I/O failures remain unavailable |
+| P2-13 | Distinguish BrowserData scan caps from filesystem errors | implemented/tested in `29b4325` | Entry/byte safety-cap hits have their own status; symlink and I/O failures remain unavailable |
 
 ### Defer permanently unless product direction changes
 

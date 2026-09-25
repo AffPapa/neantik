@@ -22,6 +22,9 @@ not make newer local manager changes a public release candidate.
 Subsequent source work improves off-main-actor profile import and recovery,
 snapshot-restore progress, and clearer BrowserData scan-limit status. Tests
 cover transaction recovery, entry/byte caps, and fail-closed symlink behavior.
+The implementation checkpoints are `66c590b` and `29b4325`; neither is
+represented by the 0.7.11 source binding or binary. Pin the final clean Git HEAD
+before creating any future exact candidate.
 App-issued speech announcements were removed; keyboard actions and native
 macOS control metadata remain. These changes are not present in the public
 0.7.11 binary or its release evidence.
