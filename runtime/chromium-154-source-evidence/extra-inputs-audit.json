@@ -1,0 +1,630 @@
+{
+  "externalSymlinks": [
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/.bin/esbuild",
+      "exists": true,
+      "isDirectory": false,
+      "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e",
+      "snapshotTargetMatches": true,
+      "targetSHA256": "180e3171a829c0f34156a37d8bf18ac6ab51907dd67ca1b764d58dcc173c72aa"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/@esbuild/darwin-arm64/bin/esbuild",
+      "exists": true,
+      "isDirectory": false,
+      "sha256": "162cd5b74d36fc7e5cd6ce5143bf114342aa41f66764b34c5cbe88d97ab4c6b5",
+      "snapshotTargetMatches": true,
+      "targetSHA256": "7fe69ca88ea1f98857b008fa96409df03940625e7778615a519f0d2f6d288f71"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/esbuild",
+      "exists": true,
+      "isDirectory": true,
+      "sha256": null,
+      "snapshotTargetMatches": true,
+      "targetSHA256": "2d52e9c76309f6cd37bdd9576865da954a8aff13553e10a7258964785fa5711b"
+    }
+  ],
+  "dependencyUntracked": [
+    {
+      "dependency": "src/agents/shared",
+      "untracked": []
+    },
+    {
+      "dependency": "src/chrome/test/data/perf/canvas_bench",
+      "untracked": []
+    },
+    {
+      "dependency": "src/chrome/test/data/perf/frame_rate/content",
+      "untracked": []
+    },
+    {
+      "dependency": "src/chrome/test/data/xr/webvr_info",
+      "untracked": []
+    },
+    {
+      "dependency": "src/docs/website",
+      "untracked": []
+    },
+    {
+      "dependency": "src/media/cdm/api",
+      "untracked": []
+    },
+    {
+      "dependency": "src/net/third_party/quiche/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/testing/libfuzzer/fuzzers/wasm_corpus",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/angle",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/anonymous_tokens/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/boringssl/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/breakpad/breakpad",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/cast_core/public/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/catapult",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ced/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/clang-format/script",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/cld_3/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/colorama/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/compiler-rt/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/content_analysis_sdk/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/cpu_features/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/cpuinfo/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/crabbyavif/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/crc32c/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/cros-components/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/crossbench",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/crossbench-web-tests",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dav1d/libdav1d",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/depot_tools",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/devtools-frontend/src",
+      "untracked": [
+        "node_modules/@esbuild/darwin-arm64/bin/esbuild",
+        "node_modules/esbuild"
+      ]
+    },
+    {
+      "dependency": "src/third_party/disarm/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dom_distiller_js/dist",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/domato/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dragonbox/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ds_store/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/eigen3/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/emoji-segmenter/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/expat/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/fadec/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/farmhash/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/fast_float/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/federated_compute/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ffmpeg",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/flac",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/flatbuffers/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/fp16/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/freetype/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/fuzztest/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/fxdiv/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/gemmlowp/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/glslang/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/google_benchmark/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/googletest/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/harfbuzz/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/highway/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/hunspell_dictionaries",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/icu",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ink/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/jetstream/main",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/jetstream/v2.2",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/jsoncpp/source",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/leveldatabase/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libFuzzer/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libaddressinput/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libaom/source/libaom",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libc++/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libc++abi/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libgav1/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libjpeg_turbo",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libpfm4/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libphonenumber/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libprotobuf-mutator/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libsrtp",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libunwind/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libva-fake-driver/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libvpx/source/libvpx",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libwebm/source",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libwebp/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/libyuv",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/litert/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/llvm-libc/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/mac_alias/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/material_color_utilities/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/nasm",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/nearby/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/neon_2_sse/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/nlohmann_json/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/oak/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/openh264/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/openscreen/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ots/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/pdfium",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/perfetto",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/protobuf-javascript/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/pthreadpool/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/pywebsocket3/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/quic_trace/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/re2/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/readability/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ruy/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/search_engines_data/resources",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/securemessage/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/sframe/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/skia",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/smhasher/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/snappy/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/speedometer/main",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/speedometer/v2.0",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/speedometer/v2.1",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/speedometer/v3.0",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/speedometer/v3.1",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/spirv-cross/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/spirv-headers/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/spirv-tools/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/sqlite/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/swiftshader",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/text-fragments-polyfill/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/tflite/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/ukey2/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan-deps",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan-headers/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan-loader/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan-tools/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan-utility-libraries/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan-validation-layers/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/vulkan_memory_allocator",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/webdriver/pylib",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/webgl/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/webgpu-cts/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/webpagereplay",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/webrtc",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/wuffs/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/xnnpack/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/zstd/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/v8",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/angle/third_party/VK-GL-CTS/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/angle/third_party/glmark2/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/angle/third_party/rapidjson/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/EGL-Registry/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/OpenGL-Registry/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/directx-headers/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/directx-shader-compiler/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/glfw3/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/webgpu-cts",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/dawn/third_party/webgpu-headers/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/openscreen/src/buildtools",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/openscreen/src/third_party/tinycbor/src",
+      "untracked": []
+    },
+    {
+      "dependency": "src/third_party/webpagereplay/third_party/clang-format/script",
+      "untracked": []
+    }
+  ],
+  "scope": "nonignored untracked inputs and snapshot external symlinks only"
+}

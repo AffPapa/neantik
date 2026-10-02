@@ -1,0 +1,29 @@
+--- a/chrome/test/data/webui/extensions/sidebar_test.ts
++++ b/chrome/test/data/webui/extensions/sidebar_test.ts
+@@ -5,7 +5,7 @@
+ /** @fileoverview Suite of tests for extension-sidebar. */
+ import type {ExtensionsSidebarElement} from 'chrome://extensions/extensions.js';
+ import {navigation, Page} from 'chrome://extensions/extensions.js';
+-import {assertDeepEquals, assertEquals, assertFalse, assertTrue} from 'chrome://webui-test/chai_assert.js';
++import {assertDeepEquals, assertEquals, assertFalse} from 'chrome://webui-test/chai_assert.js';
+ import {eventToPromise, microtasksFinished} from 'chrome://webui-test/test_util.js';
+ 
+ import {testVisible} from './test_util.js';
+@@ -52,7 +52,7 @@
+         // enableEnhancedSiteControls is set to false.
+         boundTestVisible('#sectionsSitePermissions', false);
+         boundTestVisible('#sectionsShortcuts', true);
+-        boundTestVisible('#moreExtensions', true);
++        boundTestVisible('#moreExtensions', false);
+ 
+         sidebar.enableEnhancedSiteControls = true;
+         await microtasksFinished();
+@@ -91,7 +91,6 @@
+         sidebar.$.sectionsSitePermissions.getAttribute('href'));
+     assertEquals(
+         '/shortcuts', sidebar.$.sectionsShortcuts.getAttribute('href'));
+-    assertTrue(sidebar.$.moreExtensions.querySelector('a')!
+-                   .getAttribute('href')!.includes('utm_source=ext_sidebar'));
++    assertEquals(null, sidebar.shadowRoot.querySelector('#moreExtensions'));
+   });
+ });

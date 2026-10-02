@@ -1,0 +1,15 @@
+diff --git a/build/rust/gni_impl/rustc_wrapper.py b/build/rust/gni_impl/rustc_wrapper.py
+index ddb7c6c4f2..78a7e540a7 100755
+--- a/build/rust/gni_impl/rustc_wrapper.py
++++ b/build/rust/gni_impl/rustc_wrapper.py
+@@ -248,7 +248,9 @@ def PrepareRustEnvForExecution(env):
+         #   files - see https://crbug.com/448040713#comment6).
+         # * `SDKROOT` - see https://crbug.com/442128549
+         if v and os.path.exists(v):
+-            env[k] = os.path.abspath(v)
++            # xcodebuild cannot resolve Chromium's SDKROOT symlink created by
++            # sdk_info.py. Keep the canonical SDK path for Apple build tools.
++            env[k] = os.path.realpath(v) if k == 'SDKROOT' else os.path.abspath(v)
+ 
+     # Merge in os.environ. Keys already in env take precedence over os.environ.
+     for k, v in os.environ.items():

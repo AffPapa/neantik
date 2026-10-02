@@ -1,0 +1,5 @@
+{
+  "trackedChangesVerified": 31883,
+  "releaseReady": false,
+  "scope": "Recorded tracked deltas only; live source, untracked inputs, tools and binary require separate verification"
+}

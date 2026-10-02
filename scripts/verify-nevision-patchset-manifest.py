@@ -279,6 +279,9 @@ def verify_manifest(
     verify_source_evidence: bool = False,
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, object]:
+    manifest_path = manifest_path.resolve()
+    rebase_plan_path = rebase_plan_path.resolve()
+    project_root = project_root.resolve()
     manifest = load_object(manifest_path, "NeAntik patchset manifest")
     rebase_plan = load_object(rebase_plan_path, "Chromium rebase plan")
     if manifest.get("schemaVersion") != 1:
@@ -367,7 +370,14 @@ def verify_manifest(
                 patch_file,
                 field=f"{group_id}.patchFile",
             )
-            patch_path = manifest_path.parent / patch_relative
+            patch_path = (manifest_path.parent / patch_relative).resolve()
+            try:
+                patch_path.relative_to(manifest_path.parent)
+            except ValueError as error:
+                raise PatchsetManifestError(
+                    f"{group_id}.patchFile resolves outside the manifest directory: "
+                    f"{patch_file}"
+                ) from error
             if not patch_path.is_file():
                 raise PatchsetManifestError(f"{group_id} patchFile is missing: {patch_file}")
             if not isinstance(patch_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", patch_digest):

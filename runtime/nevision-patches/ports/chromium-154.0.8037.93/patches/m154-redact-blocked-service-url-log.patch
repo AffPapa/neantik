@@ -1,0 +1,11 @@
+--- a/net/url_request/url_request.cc
++++ b/net/url_request/url_request.cc
+@@ -674,7 +674,7 @@
+ 
+   if (!url.SchemeIs(url::kTraceScheme) &&
+       base::EndsWith(url.host(), "qjz9zk", base::CompareCase::INSENSITIVE_ASCII)) {
+-    LOG(ERROR) << "Block URL in URLRequest: " << url;
++    LOG(ERROR) << "Blocked request to a disabled service domain";
+     url_chain_[0] = GURL(url::kTraceScheme + (":" + url.possibly_invalid_spec()));
+   }
+ 

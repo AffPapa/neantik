@@ -28,6 +28,7 @@ done < <(
 mkdir -p "$MODULE_CACHE"
 
 swiftc \
+  -j 1 \
   -swift-version 5 \
   -parse-as-library \
   -target arm64-apple-macos14.0 \

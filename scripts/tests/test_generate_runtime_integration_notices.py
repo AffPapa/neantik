@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 import shutil
 import sys
@@ -20,8 +21,34 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeIntegrationNoticesTests(unittest.TestCase):
+    def test_m154_candidate_has_own_source_and_preserves_public_notices(self) -> None:
+        published = ROOT / "docs/RUNTIME_INTEGRATION_NOTICES.md"
+        before = published.read_bytes()
+        rendered = MODULE.render_m154_notices(
+            project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium-154.lock.json")
+        self.assertIn("Chromium: `154.0.8037.93`", rendered)
+        self.assertNotIn("series.json", rendered)
+        self.assertIn("separate release gates", rendered)
+        self.assertEqual(before, published.read_bytes())
+
+    def test_m154_rejects_contract_substitution(self) -> None:
+        lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium-154.lock.json")
+        lock["sourceContractSHA256"] = "0" * 64
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "candidate.json"
+            path.write_text(json.dumps(lock))
+            with self.assertRaisesRegex(MODULE.RuntimeNoticesError, "SHA-256 mismatch"):
+                MODULE.render_m154_notices(project_root=ROOT, runtime_lock=path)
+
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
         rendered = MODULE.render_notices(project_root=ROOT)
+        runtime_lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium.lock.json")
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "154.0.8037.93":
+            self.assertEqual(rendered, (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_154.md").read_text())
+            self.assertEqual(rendered, MODULE.render_m154_notices(
+                project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
+            self.assertIn("Chromium: `154.0.8037.93`", rendered)
+            return
         checked_in = (
             ROOT / "docs" / "RUNTIME_INTEGRATION_NOTICES.md"
         ).read_text(encoding="utf-8")
@@ -52,14 +79,15 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         self.assertNotIn("25 July 2026", rendered)
 
     def test_schema_four_nested_packaging_license_is_runtime_bound(self) -> None:
-        rendered = MODULE.render_notices(project_root=ROOT)
-
-        expected = (
-            ROOT
-            / "runtime"
-            / "fingerprint-chromium.lock.json"
-        )
+        expected = ROOT / "runtime/fingerprint-chromium-153.lock.json"
         runtime_lock = MODULE.load_json(expected)
+        license_sha256 = hashlib.sha256((ROOT / "runtime/licenses/ungoogled-chromium-macos-LICENSE").read_bytes()).hexdigest()
+        runtime_lock["macPackaging"]["criticalFiles"] = {"LICENSE": license_sha256}
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = Path(temporary)
+            shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            (fixture / "runtime/fingerprint-chromium.lock.json").write_text(json.dumps(runtime_lock))
+            rendered = MODULE.render_notices(project_root=fixture)
         packaging = runtime_lock["macPackaging"]
         license_sha256 = packaging["criticalFiles"]["LICENSE"]
         self.assertIn(f"License SHA-256: `{license_sha256}`", rendered)

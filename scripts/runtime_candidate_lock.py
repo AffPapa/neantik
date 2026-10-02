@@ -10,8 +10,10 @@ from typing import Any
 from runtime_source_provenance import (
     CHROMIUM_153_LOCK,
     CHROMIUM_153_VERSION,
+    DEFAULT_REBASE_PLAN,
     PROJECT_ROOT,
     SourceProvenanceError,
+    contract_paths_for_version,
     ensure_no_stale_markers,
     load_object,
     sha256_file,
@@ -19,9 +21,12 @@ from runtime_source_provenance import (
     verify_contract,
     verify_document,
 )
+from chromium_154_release_evidence import (
+    M154EvidenceError,
+    verify_candidate_lock as verify_chromium_154_candidate_lock,
+)
 
 
-DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-152-source-contract.json"
 DEFAULT_PATCH_MANIFEST = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
 DEFAULT_DEVICE_TUPLES = PROJECT_ROOT / "runtime" / "apple-device-tuples.json"
 DEFAULT_SECURITY_BASELINE = PROJECT_ROOT / "runtime" / "security-baseline.json"
@@ -55,19 +60,42 @@ def expected_candidate_lock(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
     project_root = project_root.resolve()
-    contract_path = project_root / "runtime" / "chromium-152-source-contract.json"
     provenance = load_object(
         provenance_path,
         "emitted Chromium source provenance",
     )
+    version = provenance.get("targetChromiumVersion")
+    if not isinstance(version, str) or not version:
+        raise SourceProvenanceError(
+            "Source provenance targetChromiumVersion must be a non-empty string"
+    )
+    if version == CHROMIUM_153_VERSION:
+        contract_path = project_root / "runtime" / "chromium-152-source-contract.json"
+        rebase_plan_path = DEFAULT_REBASE_PLAN
+    elif version == "154.0.8037.93":
+        try:
+            verify_document(provenance, project_root=project_root)
+        except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return load_object(
+            project_root / "runtime" / "fingerprint-chromium-154.lock.json",
+            "Chromium 154 candidate runtime lock",
+        )
+    else:
+        contract_path, rebase_plan_path = contract_paths_for_version(
+            version,
+            project_root=project_root,
+        )
     verify_document(
         provenance,
         project_root=project_root,
         contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     contract = verify_contract(
         project_root=project_root,
         contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     contract_sha = sha256_file(contract_path)
     if provenance.get("contractSHA256") != contract_sha:
@@ -143,6 +171,16 @@ def verify_candidate_lock(
         provenance_path,
         "emitted Chromium source provenance",
     )
+    if provenance.get("targetChromiumVersion") == "154.0.8037.93":
+        try:
+            verify_chromium_154_candidate_lock(
+                actual,
+                provenance=provenance,
+                project_root=project_root,
+            )
+        except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return actual
     if provenance.get("targetChromiumVersion") == CHROMIUM_153_VERSION:
         verify_chromium_153_candidate_document(
             provenance,

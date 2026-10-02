@@ -1,0 +1,10 @@
+{
+  "path": "net/url_request/url_request.cc",
+  "beforeSHA256": "21deb38592808777b2d6bae85199e192479e75175ca3005dfa45b21741c47757",
+  "afterSHA256": "45d3129b53e309745117d650c3afa53a4dfa3e83f43d5284ce02a773178c8335",
+  "patchSHA256": "4839fe9e080a4c9649cadda7d5327d552b97c4a4a6c87b9907e94c7ab984ac7a",
+  "status": "replay-verified-not-applied",
+  "scope": "Remove full URL from blocked-service error log; blocking behavior unchanged",
+  "runtimeReproduction": "blocked-url-log-before-redaction.json",
+  "zeroFuzzZeroOffsetReplay": true
+}

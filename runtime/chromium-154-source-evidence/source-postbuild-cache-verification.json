@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "addedCacheCount": 40,
+  "existingContentChanges": 0,
+  "removedCount": 0,
+  "modeOnlyCount": 588,
+  "items": [
+    {
+      "path": "build/apple/__pycache__/plist_util.cpython-311.pyc",
+      "sourcePath": "build/apple/plist_util.py",
+      "sourceSHA256": "9093c0922f01cd98bf4964328df08c1dec89f1dd89624be0a6b14305a92b5c61",
+      "pycSHA256": "bdc74ab543d76f92842590d0930a07439118674a0ecf23cf6b9f1baadc22fc1a",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "build/util/__pycache__/version.cpython-311.pyc",
+      "sourcePath": "build/util/version.py",
+      "sourceSHA256": "45cf759de74813c5dc7b4f9c203209e8c44218a52fb008793c38e7dfc875b98a",
+      "pycSHA256": "9c98e706addf43b86dc3d3226af38c72225745b5c8672f9e8107fa56aea85753",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/__pycache__/policy_template_generator.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/policy_template_generator.py",
+      "sourceSHA256": "736f24b6e469265dcfe97abe8766ae21ee9dc7bd60434bb6a628b95da56f68f9",
+      "pycSHA256": "81af8f79d542cd0d3c648ed55039206355beaec46c2e2056f9777129ef9f24b3",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/__pycache__/writer_configuration.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writer_configuration.py",
+      "sourceSHA256": "f9529cfdfae8f2d44801387c506091d4fb41973dc8668f15375399adf614a5e9",
+      "pycSHA256": "88f6142b970269fefacc168fa95f59de0b0af27bbf8c2362a5c48f8175f78bda",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/__init__.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/__init__.py",
+      "sourceSHA256": "8e8766e4bf2cfb566ee7f7ac8c3bf15051cec1ee8ffe2d0e99a7475b186d003a",
+      "pycSHA256": "5bcddc0a088d7743aafc3d163893e3fd1839bcf22caca8bc23e6498dd308cba1",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/adm_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/adm_writer.py",
+      "sourceSHA256": "38486b7d4cb648ec21653aedbdc36d2880586152d0a079fc753f7d4c91935382",
+      "pycSHA256": "07923d52d59e5a6a3ef0ba827f7193ae22ac1bc7807f94ae7cef1200a19b1672",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/adml_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/adml_writer.py",
+      "sourceSHA256": "73c911b17669f8d496d1884a2d35ab95ca7013acaab66322b315b793d2040e5a",
+      "pycSHA256": "fddee6f333be2707cda13478831bd8a7818f9a0e8109bf16ad622b052e7165dc",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/admx_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/admx_writer.py",
+      "sourceSHA256": "e42ed96bdce171c28a24d452472f0d35132bcb8fed79260c47ffa3a8140f200a",
+      "pycSHA256": "edef573fd53209a6bcdbd285253ac00329290efa7b965f6aa1abb7471cae8202",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/android_policy_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/android_policy_writer.py",
+      "sourceSHA256": "58c721d343cab50da3ab7956a3a7bb0340140accdf21e6b9bb00557d50f35bdb",
+      "pycSHA256": "d5c21f91ada8fdab885ea06b041df3916328891bff3e499688cf9dcc2309c3a2",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/doc_atomic_groups_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/doc_atomic_groups_writer.py",
+      "sourceSHA256": "eb1dcb9f3d365813e3751c7e18d92d7ed9302e04c45bd048da1ca640d499b53c",
+      "pycSHA256": "24e8346fa0b1175bebb664b60fd47d6a506b7d9b2be79b4ecf19274f3dd736a5",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/doc_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/doc_writer.py",
+      "sourceSHA256": "fcecc4d9be25a05a7631f736feb79b2683fcce08d688215a2b98f1408e1b5c5c",
+      "pycSHA256": "a52cd92eb7860c2a8e3d13fd137cf5bc8ceb632f133b2549e0d92f5adf5b96ec",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/google_adml_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/google_adml_writer.py",
+      "sourceSHA256": "98c2da3624da6f1ed20f7a39a45fd91af5ce30c4d6803a907d6fc8bbf32b1a14",
+      "pycSHA256": "07079069467c74d671b93de4ab6153f8dd43be74e68597383d6244ada11ed971",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/google_admx_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/google_admx_writer.py",
+      "sourceSHA256": "16bfa5f5829ed9d1919366d922991d8899f9cd0cc67effeae4a1dc0c1fbb353a",
+      "pycSHA256": "a95709becbf32ee0a87e5eefc9fa99f4e63d557b2155cd601d072fa00e77d51f",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/gpo_editor_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/gpo_editor_writer.py",
+      "sourceSHA256": "1e667ec0e893101ea685c5eb7acc40c20832aef129a08f482181572f3b4aa0c6",
+      "pycSHA256": "a0c084c68b8924ed7e868bb5acddb11ca6be97c0a73ea03c010ae3eb1d07cb19",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/ios_app_config_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/ios_app_config_writer.py",
+      "sourceSHA256": "08d97c7c62acada2ba629744a316f9e0c54595cdd670ccf8d22275283320e016",
+      "pycSHA256": "d092f55cbcef7b2006dd59ea04c30c94484e2b5b3ede7c26d56db4e7e5c7ca16",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/jamf_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/jamf_writer.py",
+      "sourceSHA256": "9784be91366e5316b7da75c5b3ca3f0a12222294ecea891e41ed7fc0a5b276f5",
+      "pycSHA256": "64830824e3f342517b04a381ad1d95ef03744066acbc18b28383af64183ca6d0",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/json_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/json_writer.py",
+      "sourceSHA256": "496022d2c7d1d164d7341ce77bba28e1421bfc92cf427766879c9a872b6b3601",
+      "pycSHA256": "b6694745b910d95bf8c5996089cd752f6718eccaef9f99a4ac1d689e43e4af0e",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/plist_helper.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/plist_helper.py",
+      "sourceSHA256": "a18c4f35ebab7f77fd0de5755a69dfc3f2fd4a3426741b02ecd770567ce8e233",
+      "pycSHA256": "06e37e0cd13d1eb04215abc323847427b98a7e42366f83c98d4368db75d5faba",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/plist_strings_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/plist_strings_writer.py",
+      "sourceSHA256": "42e29a2acef7802b629fd59efd0e29f35dd7b9cf7649b4b0c2b6fee43241cef7",
+      "pycSHA256": "04f92e35e629152f80c747b7a6fda44d1b784122351b010b5ed927e83e3645f7",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/plist_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/plist_writer.py",
+      "sourceSHA256": "0f9872c275635e487bbf1a6242ba8f21fde56fede22fa09be730b9d67538dee5",
+      "pycSHA256": "14609988af537d1bc99f00fdaf137c91bae14576305d8df653c8f6d01e71c5c9",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/reg_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/reg_writer.py",
+      "sourceSHA256": "433325f6fe7e1366c8598ec19a1ff4fb506d7a51b139a9b04bb23f1f11e249ba",
+      "pycSHA256": "569f62b670e9f2b34823b6e6a282c7e6896f345b0b3af48aa21192e06a5edbb5",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/template_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/template_writer.py",
+      "sourceSHA256": "9aa7ce66dd56d2ee1ef934fb5675a9806e51fc9fc4e1086fe1133dca5ca1395f",
+      "pycSHA256": "d26859ddf95fa8f4a7099d28b124342b3559a304407c1bb373e0a148668cc453",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/__pycache__/xml_formatted_writer.cpython-311.pyc",
+      "sourcePath": "components/policy/tools/template_writers/writers/xml_formatted_writer.py",
+      "sourceSHA256": "9c0ce6c5a3e8b7a9cbdd799ee6951d32d00222662581a4fe633a93dafdf1994e",
+      "pycSHA256": "fcd18844acf43722d2e7e11091fe9b0bef546508cc517a1864735084b7ce3617",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/typescript/__pycache__/typescript.cpython-311.pyc",
+      "sourcePath": "third_party/typescript/typescript.py",
+      "sourceSHA256": "968a454eca00fa9514d33b72959d54c609a58a202519ba003eee5d4ff861ad55",
+      "pycSHA256": "2b202950e287ad3b2965f677bc9fe7e44098bc371c1c1efcc0cf53165ba4a17d",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/flags/__pycache__/flags_utils.cpython-311.pyc",
+      "sourcePath": "tools/flags/flags_utils.py",
+      "sourceSHA256": "17e678c6eed847534d5331d7ffaf6479dd05726c7469fbe14001cc783e4fd582",
+      "pycSHA256": "3ae6637f1fb72fbbf0b2cbd4a8f6bcd1f1a86f6c35b7ca687616f88913a30f69",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/common/__pycache__/path_util.cpython-311.pyc",
+      "sourcePath": "tools/metrics/common/path_util.py",
+      "sourceSHA256": "241562c08153d9383e76ab119275e2ef5ec73bef1df6c0d4904dc8965cea0665",
+      "pycSHA256": "c0669957891c52c2c4391312c0973eb50f38b5dbe816284ba7930d8bc12d8a06",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/histograms/__pycache__/expand_owners.cpython-311.pyc",
+      "sourcePath": "tools/metrics/histograms/expand_owners.py",
+      "sourceSHA256": "297a466c3d676930fc3665b1abaae26c446a2cb7017bb6f69f749c97905b468a",
+      "pycSHA256": "a6e379d49ea9b50105f61a34cc7325d2971ac5946fbd6701eb887bfc687513a3",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/histograms/__pycache__/histogram_configuration_model.cpython-311.pyc",
+      "sourcePath": "tools/metrics/histograms/histogram_configuration_model.py",
+      "sourceSHA256": "ed4aa50d2981aeeda9d940b5090010dfa1095f3ab0857d22248e4db69c57c5e4",
+      "pycSHA256": "489833141dd29ef9db9d4a96976eedd74ac167bc083197798314890075189757",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/histograms/__pycache__/histogram_paths.cpython-311.pyc",
+      "sourcePath": "tools/metrics/histograms/histogram_paths.py",
+      "sourceSHA256": "3902c8ec5d98f2d84bfc8551014f78f22bd44e0cdb180f5e503958b30fc36553",
+      "pycSHA256": "27ba4395d1f92f5ba8ce7200a6b0d3205058b2379140e65dcfd6df580d033f7a",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/histograms/__pycache__/merge_xml.cpython-311.pyc",
+      "sourcePath": "tools/metrics/histograms/merge_xml.py",
+      "sourceSHA256": "a9a86de63f6b22fe78ca3774f8ff5487b35cb6d7d837e357518270c0c66821af",
+      "pycSHA256": "48bc19cee9e7514511d0db9e92ba08cab34081ae5601cc217a32ca266e1d5fa6",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/histograms/__pycache__/populate_enums.cpython-311.pyc",
+      "sourcePath": "tools/metrics/histograms/populate_enums.py",
+      "sourceSHA256": "76de0d6c1eaf209cc2b07a0e1bfc53a059153590e9bda9253900b4ffb59f46fb",
+      "pycSHA256": "410f185e2979980616f73b358e1218d43fa5aeb6645083a773f8bc666beeda4a",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/code_generator.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/code_generator.py",
+      "sourceSHA256": "779dd14d0955d23bc5f5cdd52277d6d509bec5605e51d89a2f04f0b09b0131a2",
+      "pycSHA256": "e2c6e8264784d765c8d693d7c497756edb7e752e723eb32eb6164bcfae9c0bf2",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/code_generator_cpp.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/code_generator_cpp.py",
+      "sourceSHA256": "600f929743f1b9ce665be8d75b59f4d7bf92e41a23876a7b03178820e58cf596",
+      "pycSHA256": "2ec9a446b23167592f002066856a3a34812ed856bf73054f7df75255d848a5f0",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/code_generator_ts.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/code_generator_ts.py",
+      "sourceSHA256": "e1572a25d40400f9e5ca826ba7a70fd0df4056ec0aa22bf84ef4bb3a60af8fac",
+      "pycSHA256": "8277221e65225ea4bd3700ab1fa035f828451837e680f74abcd8b4016ebfdc91",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/codegen_util.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/codegen_util.py",
+      "sourceSHA256": "40cc064ab71e33fe16b7e605b300b7e1069b7a4641f8e8ec49e12c4c180c7545",
+      "pycSHA256": "ab063a6d289e02a2d563efde669cc2c11a13ac4ff3d81182f1c8ee994bb48ad6",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/setup_modules.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/setup_modules.py",
+      "sourceSHA256": "832df570b94b698490174dd7cf1cfa0ef10a67f04cc3d8a3898ce549e5145e22",
+      "pycSHA256": "3cbe8d4d1eec55d67fe6cc422101584192e698d7c78e9c6d4984c988a0571927",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/templates_events.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/templates_events.py",
+      "sourceSHA256": "c3ad72bf1f95a92c088addaa731834ebecac7c9bd82d6396bbf0847abc20833a",
+      "pycSHA256": "35f96a6fec9a2504c64ce4fa6c32c59a8db4373f17ce5fa8583978e1a29ee47d",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/__pycache__/templates_validator.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/templates_validator.py",
+      "sourceSHA256": "570bfaf2d1855f7bb43d45224cd1447140dc79b8b9bee134f56c84a3502e6314",
+      "pycSHA256": "d115eb711f86c98235b365d2b85eb423fc97f16391e6ebed2624626aff0db628",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/sync/__pycache__/model.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/sync/model.py",
+      "sourceSHA256": "c65568bfa47f425d513c4763ebceeba5746a5e7555277c77e3ed1364c89d793e",
+      "pycSHA256": "0cc08bd382e8ed1cf0f408ec74afb4ae982189090bf4f54ce1641f04b283dbdf",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "tools/metrics/structured/sync/__pycache__/model_util.cpython-311.pyc",
+      "sourcePath": "tools/metrics/structured/sync/model_util.py",
+      "sourceSHA256": "22068a7b0b4e009797ab7c129c4fad29f850790d6cdd8ae4c2eda1b654c82db5",
+      "pycSHA256": "838ee1412fcf3c00213927bfc44e95a392f9e137c06319f50bd6383b0c6ad823",
+      "timestampAndCodeMatch": true
+    }
+  ],
+  "releaseReady": false
+}

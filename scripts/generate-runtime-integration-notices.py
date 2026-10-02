@@ -98,9 +98,68 @@ def verified_license(
     return actual
 
 
+def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
+    """Render candidate metadata without promoting the published runtime lock."""
+    lock = load_json(runtime_lock)
+    chromium = required_mapping(lock.get("fingerprintChromium"), "fingerprintChromium")
+    version = chromium.get("chromiumVersion")
+    if version != "154.0.8037.93":
+        raise RuntimeNoticesError("explicit candidate notices require Chromium 154.0.8037.93")
+    contract_path = project_root / "runtime/chromium-154-source-contract.json"
+    if lock.get("sourceContract") != "runtime/chromium-154-source-contract.json":
+        raise RuntimeNoticesError("candidate must reference the exact M154 source contract")
+    if lock.get("sourceContractSHA256") != sha256_file(contract_path):
+        raise RuntimeNoticesError("candidate source contract SHA-256 mismatch")
+    contract = load_json(contract_path)
+    if contract.get("targetChromiumVersion") != version or contract.get("schemaVersion") != 2:
+        raise RuntimeNoticesError("candidate source contract version/schema mismatch")
+    base = required_mapping(contract.get("officialChromiumBase"), "officialChromiumBase")
+    if base.get("commit") != chromium.get("commit"):
+        raise RuntimeNoticesError("candidate Chromium source commit mismatch")
+    groups = contract.get("ownedPatchGroupCount")
+    if not isinstance(groups, int) or groups <= 0:
+        raise RuntimeNoticesError("source contract must declare owned patch groups")
+    lines = ["# NeAntik Chromium runtime notices", "", "## Source references", "",
+             f"- Chromium: `{version}`", f"- Owned patch groups: `{groups}`",
+             f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
+             f"- Source contract SHA-256: `{sha256_file(contract_path)}`"]
+    for label, component in (("Chromium", chromium),
+                             ("Common Chromium packaging", lock.get("commonChromium")),
+                             ("macOS packaging", lock.get("macPackaging"))):
+        component = required_mapping(component, label)
+        repository = required_text(component.get("repository"), label + ".repository")
+        commit = required_text(component.get("commit"), label + ".commit")
+        lines.append(f"- {label}: `{repository}` at `{commit}`")
+    lines.extend(["", "## Bundled licenses", "",
+                  "The hashes below identify the license files included with the application.",
+                  "Chromium-generated third-party notices and the SPDX SBOM are also required.", ""])
+    for filename in ("Chromium-LICENSE", "ungoogled-chromium-macos-LICENSE",
+                     "fingerprint-chromium-LICENSE"):
+        expected = None
+        if filename == "Chromium-LICENSE":
+            expected = required_text(chromium.get("licenseSHA256"), "Chromium licenseSHA256")
+        digest = verified_license(project_root=project_root,
+                                  relative_path="runtime/licenses/" + filename,
+                                  expected_sha256=expected)
+        lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
+    lines.extend(["", "The fingerprint-chromium license is retained for historical attribution.",
+                  "The owned M154 port is recorded under",
+                  "`runtime/nevision-patches/ports/chromium-154.0.8037.93/`.", "",
+                  "## Distribution boundary", "",
+                  "These notices identify source references and bundled license bytes only.",
+                  "They do not attest runtime behavior, security checks, signing, notarization,",
+                  "Gatekeeper acceptance or publication. Those are separate release gates.", ""])
+    return "\n".join(lines)
+
+
 def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
+    if lock.get("fingerprintChromium", {}).get("chromiumVersion") == "154.0.8037.93":
+        return render_m154_notices(
+            project_root=project_root,
+            runtime_lock=project_root / "runtime/fingerprint-chromium.lock.json",
+        )
     source_contract = load_json(
         project_root / "runtime" / "chromium-152-source-contract.json"
     )
@@ -290,15 +349,23 @@ def main() -> int:
         help="Print freshly generated notices without writing a file.",
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--runtime-lock", type=Path, help="Explicit M154 candidate lock; does not change published metadata.")
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
-    output = args.output
+    if args.runtime_lock and not args.stdout and args.output is None:
+        parser.error("--runtime-lock requires --output or --stdout to preserve published notices")
+    output = args.output or DEFAULT_OUTPUT
+    if args.output is None and not args.runtime_lock:
+        current_lock = load_json(project_root / "runtime/fingerprint-chromium.lock.json")
+        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") == "154.0.8037.93":
+            output = project_root / "docs/RUNTIME_INTEGRATION_NOTICES_154.md"
     if not output.is_absolute():
         output = project_root / output
     try:
-        rendered = render_notices(project_root=project_root)
+        rendered = (render_m154_notices(project_root=project_root, runtime_lock=args.runtime_lock)
+                    if args.runtime_lock else render_notices(project_root=project_root))
         if args.stdout:
             print(rendered, end="")
             return 0
@@ -312,7 +379,7 @@ def main() -> int:
                     "generated notices are stale; run "
                     "scripts/generate-runtime-integration-notices.py"
                 )
-            print("PASS: Chromium runtime notices match public lock and licenses.")
+            print("PASS: Chromium runtime notices match selected metadata and licenses.")
             return 0
         if output.is_symlink():
             raise RuntimeNoticesError(

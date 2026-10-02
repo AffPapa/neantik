@@ -14,6 +14,19 @@ from runtime_source_provenance import (
     verify_document,
 )
 from runtime_candidate_lock import verify_candidate_lock
+from chromium_154_release_evidence import M154EvidenceError, verify_candidate_document
+
+
+def verify_live_source(document: dict, source_root: Path, project_root: Path) -> None:
+    if document.get("targetChromiumVersion") == "154.0.8037.93":
+        try:
+            verify_candidate_document(document, project_root=project_root, source_root=source_root)
+        except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
+    fresh = build_provenance(source_root, project_root=project_root)
+    if document != fresh:
+        raise SourceProvenanceError("Emitted provenance does not match fresh source-root evidence")
 
 
 def main() -> int:
@@ -54,14 +67,7 @@ def main() -> int:
                 project_root=project_root,
             )
         if args.source_root is not None:
-            fresh = build_provenance(
-                args.source_root,
-                project_root=project_root,
-            )
-            if document != fresh:
-                raise SourceProvenanceError(
-                    "Emitted provenance does not match fresh source-root evidence"
-                )
+            verify_live_source(document, args.source_root, project_root)
     except (OSError, SourceProvenanceError) as error:
         print(f"Source provenance verification failed: {error}", file=sys.stderr)
         return 1

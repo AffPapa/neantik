@@ -94,6 +94,103 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         ):
             MODULE.verify_document(document, project_root=PROJECT_ROOT)
 
+    def test_contract_selector_keeps_152_and_selects_explicit_154_paths(self) -> None:
+        self.assertEqual(
+            MODULE.contract_paths_for_version(
+                MODULE.CHROMIUM_152_VERSION,
+                project_root=PROJECT_ROOT,
+            ),
+            (
+                PROJECT_ROOT / "runtime" / "chromium-152-source-contract.json",
+                PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json",
+            ),
+        )
+        self.assertEqual(
+            MODULE.contract_paths_for_version(
+                MODULE.CHROMIUM_154_VERSION,
+                project_root=PROJECT_ROOT,
+            ),
+            (
+                PROJECT_ROOT / "runtime" / "chromium-154-source-contract.json",
+                PROJECT_ROOT / "runtime" / "chromium-154-rebase-plan.json",
+            ),
+        )
+
+    def test_m154_provenance_never_falls_back_to_m152_contract(self) -> None:
+        document = MODULE.expected_static_document(project_root=PROJECT_ROOT)
+        document["targetChromiumVersion"] = MODULE.CHROMIUM_154_VERSION
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = Path(temporary)
+            (fixture / "runtime").mkdir()
+            self.write_json(fixture / "runtime/chromium-152-source-contract.json", MODULE.load_object(PROJECT_ROOT / "runtime/chromium-152-source-contract.json", "fixture"))
+            with self.assertRaisesRegex(
+                MODULE.SourceProvenanceError,
+                "M154 built candidate evidence is missing",
+            ):
+                MODULE.verify_document(document, project_root=fixture)
+
+    def test_m154_runtime_lock_rejects_unreviewed_legacy_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "runtime-lock.json"
+            fixture = Path(temporary)
+            (fixture / "runtime").mkdir()
+            self.write_json(fixture / "runtime/chromium-154-source-contract.json", {"schemaVersion": 1, "binaryBindingStatus": "unreviewed"})
+            self.write_json(fixture / "runtime/chromium-154-rebase-plan.json", {"schemaVersion": 1})
+            self.write_json(
+                path,
+                {
+                    "schemaVersion": 4,
+                    "fingerprintChromium": {
+                        "chromiumVersion": MODULE.CHROMIUM_154_VERSION,
+                    },
+                },
+            )
+            with self.assertRaisesRegex(
+                MODULE.SourceProvenanceError,
+                "pending-new-build",
+            ):
+                MODULE.verify_runtime_lock_for_new_candidate(
+                    path,
+                    project_root=fixture,
+                )
+
+    def test_m154_source_export_selects_m154_contract_before_git_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source_root = Path(temporary) / "build" / "src"
+            (source_root / "chrome").mkdir(parents=True)
+            (source_root / "chrome" / "VERSION").write_text(
+                "MAJOR=154\nMINOR=0\nBUILD=8037\nPATCH=93\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                MODULE.SourceProvenanceError,
+                "dedicated M154 source/build candidate verifier",
+            ):
+                MODULE.build_provenance(
+                    source_root,
+                    project_root=PROJECT_ROOT,
+                )
+
+    def test_unsupported_source_contract_version_is_rejected(self) -> None:
+        with self.assertRaisesRegex(
+            MODULE.SourceProvenanceError,
+            "Unsupported Chromium source contract version: 155.0.8100.1",
+        ):
+            MODULE.contract_paths_for_version(
+                "155.0.8100.1",
+                project_root=PROJECT_ROOT,
+            )
+
+    def test_m153_cannot_be_routed_through_source_contract_selector(self) -> None:
+        with self.assertRaisesRegex(
+            MODULE.SourceProvenanceError,
+            "separately governed port evidence",
+        ):
+            MODULE.contract_paths_for_version(
+                MODULE.CHROMIUM_153_VERSION,
+                project_root=PROJECT_ROOT,
+            )
+
     def test_rejects_stale_chromium_144_mac_commit(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "contract.json"

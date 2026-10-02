@@ -1,0 +1,11 @@
+--- a/content/browser/resources/traces_internals/BUILD.gn
++++ b/content/browser/resources/traces_internals/BUILD.gn
+@@ -109,7 +109,7 @@
+   extra_grdp_deps = [ ":bufbuild_grdp" ]
+   extra_grdp_files = [ "$root_gen_dir/bufbuild.grdp" ]
+ 
+-  ts_path_mappings = [ "@bufbuild/protobuf/wire|" + rebase_path(
++  ts_path_mappings = [ "/@bufbuild/protobuf/wire/index.js|" + rebase_path(
+                            "//third_party/node/node_modules/@bufbuild/protobuf/dist/esm/wire/index.d.ts",
+                            target_gen_dir) ]
+ 

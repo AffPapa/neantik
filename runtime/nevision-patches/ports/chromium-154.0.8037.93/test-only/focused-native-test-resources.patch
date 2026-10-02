@@ -1,0 +1,36 @@
+--- a/chrome/test/data/webui/BUILD.gn
++++ b/chrome/test/data/webui/BUILD.gn
+@@ -15,6 +15,12 @@
+ import("//tools/typescript/webui_ts_library.gni")
+ import("//ui/webui/resources/tools/generate_grd.gni")
+ import("//ui/webui/webui_features.gni")
++
++declare_args() {
++  # Native security tests need shared test resources, not the WebUI JS suites.
++  # Leave disabled for all full WebUI test runs.
++  neantik_focused_security_test_resources = false
++}
+ 
+ assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
+ 
+@@ -999,6 +1005,20 @@
+     grdp_files += [ "$target_gen_dir/guest_view_shared/resources.grdp" ]
+   }
+ 
++  if (neantik_focused_security_test_resources) {
++    deps = []
++    grdp_files = []
++    deps = [
++      ":build_chai_grdp",
++      ":build_mocha_grdp",
++      ":build_ts",
++    ]
++    grdp_files = [
++      "$target_gen_dir/chai_resources.grdp",
++      "$target_gen_dir/mocha_resources.grdp",
++    ]
++  }
++
+   manifest_files =
+       filter_include(get_target_outputs(":build_ts"), [ "*_manifest.json" ])
+ }

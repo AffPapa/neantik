@@ -18,11 +18,28 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
+from chromium_154_release_evidence import (
+    M154EvidenceError,
+    verify_candidate_document as verify_chromium_154_candidate_document,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-152-source-contract.json"
 DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
 CHROMIUM_153_VERSION = "153.0.8010.52"
+CHROMIUM_152_VERSION = "152.0.7977.64"
+CHROMIUM_154_VERSION = "154.0.8037.93"
+CONTRACT_SOURCE_VERSIONS = {
+    CHROMIUM_152_VERSION: (
+        "chromium-152-source-contract.json",
+        "chromium-152-rebase-plan.json",
+    ),
+    CHROMIUM_154_VERSION: (
+        "chromium-154-source-contract.json",
+        "chromium-154-rebase-plan.json",
+    ),
+}
 CHROMIUM_153_STATUS = "chromium-153-port-status.json"
 CHROMIUM_153_CANDIDATE = "chromium-153-port-candidate.json"
 CHROMIUM_153_LOCK = "fingerprint-chromium-153.lock.json"
@@ -36,6 +53,30 @@ STALE_PROVENANCE_MARKERS = (
 
 class SourceProvenanceError(ValueError):
     pass
+
+
+def contract_paths_for_version(
+    version: str,
+    *,
+    project_root: Path = PROJECT_ROOT,
+) -> tuple[Path, Path]:
+    """Select an explicitly supported source contract without version fallback.
+
+    Chromium 153 remains governed by its separate owned-port evidence. M154 is
+    recognized here so callers can use its future reviewed contract, but this
+    selector does not create or imply that contract or its source evidence.
+    """
+    paths = CONTRACT_SOURCE_VERSIONS.get(version)
+    if paths is None:
+        if version == CHROMIUM_153_VERSION:
+            raise SourceProvenanceError(
+                "Chromium 153 must use its separately governed port evidence"
+            )
+        raise SourceProvenanceError(
+            f"Unsupported Chromium source contract version: {version}"
+        )
+    runtime_dir = project_root.resolve() / "runtime"
+    return runtime_dir / paths[0], runtime_dir / paths[1]
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -450,6 +491,11 @@ def build_provenance(
         raise SourceProvenanceError(
             f"Chromium source root does not exist: {source_root}"
         )
+    if chromium_version(source_root) == CHROMIUM_154_VERSION:
+        raise SourceProvenanceError(
+            "Chromium 154 provenance must be emitted by the dedicated "
+            "M154 source/build candidate verifier"
+        )
     build_dir = source_root.parent
     if source_root.name != "src" or build_dir.name != "build":
         raise SourceProvenanceError(
@@ -459,6 +505,15 @@ def build_provenance(
     common_root = build_root / "ungoogled-chromium"
 
     project_root = project_root.resolve()
+    if (
+        contract_path == DEFAULT_CONTRACT
+        and rebase_plan_path == DEFAULT_REBASE_PLAN
+        and chromium_version(source_root) != CHROMIUM_153_VERSION
+    ):
+        contract_path, rebase_plan_path = contract_paths_for_version(
+            chromium_version(source_root),
+            project_root=project_root,
+        )
     contract_path = contract_path.resolve()
     rebase_plan_path = rebase_plan_path.resolve()
     contract = verify_contract(
@@ -789,12 +844,34 @@ def verify_document(
     rebase_plan_path: Path = DEFAULT_REBASE_PLAN,
 ) -> None:
     ensure_no_stale_markers(document, "emitted source provenance")
+    if document.get("targetChromiumVersion") == CHROMIUM_154_VERSION:
+        try:
+            verify_chromium_154_candidate_document(
+                document,
+                project_root=project_root,
+            )
+        except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if document.get("targetChromiumVersion") == CHROMIUM_153_VERSION:
         verify_chromium_153_candidate_document(
             document,
             project_root=project_root,
         )
         return
+    version = require_text(
+        document.get("targetChromiumVersion"),
+        "targetChromiumVersion",
+    )
+    if (
+        contract_path == DEFAULT_CONTRACT
+        and rebase_plan_path == DEFAULT_REBASE_PLAN
+        and version != CHROMIUM_153_VERSION
+    ):
+        contract_path, rebase_plan_path = contract_paths_for_version(
+            version,
+            project_root=project_root,
+        )
     expected = expected_static_document(
         project_root=project_root,
         contract_path=contract_path,
@@ -849,6 +926,20 @@ def verify_runtime_lock_for_new_candidate(
         raise SourceProvenanceError(
             "New-candidate runtime lock must use source-contract schema 4"
         )
+    fingerprint = lock.get("fingerprintChromium")
+    if not isinstance(fingerprint, dict):
+        raise SourceProvenanceError(
+            "New-candidate runtime lock must declare fingerprintChromium"
+        )
+    version = require_text(
+        fingerprint.get("chromiumVersion"),
+        "fingerprintChromium.chromiumVersion",
+    )
+    if contract_path == DEFAULT_CONTRACT and rebase_plan_path == DEFAULT_REBASE_PLAN:
+        contract_path, rebase_plan_path = contract_paths_for_version(
+            version,
+            project_root=project_root,
+        )
     contract = verify_contract(
         project_root=project_root,
         contract_path=contract_path,
@@ -860,7 +951,6 @@ def verify_runtime_lock_for_new_candidate(
             "New-candidate runtime lock is not bound to the Chromium "
             "source contract"
         )
-    fingerprint = lock.get("fingerprintChromium")
     mac = lock.get("macPackaging")
     common = lock.get("commonChromium")
     if not all(isinstance(value, dict) for value in (fingerprint, mac, common)):

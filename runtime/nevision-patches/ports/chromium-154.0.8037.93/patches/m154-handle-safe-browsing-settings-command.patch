@@ -1,0 +1,22 @@
+diff --git a/chrome/browser/ui/webui/browser_command/browser_command_handler.cc b/chrome/browser/ui/webui/browser_command/browser_command_handler.cc
+--- a/chrome/browser/ui/webui/browser_command/browser_command_handler.cc
++++ b/chrome/browser/ui/webui/browser_command/browser_command_handler.cc
+@@ -100,10 +100,18 @@
+       // Nothing to do.
+       break;
+     case Command::kOpenSafetyCheck:
+       can_execute = !enterprise_util::IsBrowserManaged(profile_);
+       break;
++    case Command::kOpenSafeBrowsingEnhancedProtectionSettings: {
++      PrefService* prefs = profile_->GetPrefs();
++      can_execute =
++          !prefs->IsManagedPreference(prefs::kSafeBrowsingEnabled) &&
++          !prefs->IsManagedPreference(prefs::kSafeBrowsingEnhanced) &&
++          !prefs->GetBoolean(prefs::kSafeBrowsingEnhanced);
++      break;
++    }
+     case Command::kOpenFeedbackForm:
+       can_execute = true;
+       break;
+     case Command::kOpenPrivacyGuide:
+       can_execute =

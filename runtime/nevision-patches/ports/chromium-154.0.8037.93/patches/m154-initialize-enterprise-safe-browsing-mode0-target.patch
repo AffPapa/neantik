@@ -1,0 +1,27 @@
+--- a/chrome/browser/safe_browsing/BUILD.gn
++++ b/chrome/browser/safe_browsing/BUILD.gn
+@@ -629,13 +629,13 @@
+   }
+ 
+   if (enterprise_cloud_content_analysis && safe_browsing_mode == 0) {
+-    public += [
++    public = [
+       "cloud_content_scanning/cloud_binary_upload_service.h",
+       "cloud_content_scanning/cloud_binary_upload_service_factory.h",
+       "cloud_content_scanning/deep_scanning_utils.h",
+       "cloud_content_scanning/file_analysis_request.h",
+     ]
+-    sources += [
++    sources = [
+       "cloud_content_scanning/cloud_binary_upload_service.cc",
+       "cloud_content_scanning/cloud_binary_upload_service_factory.cc",
+       "cloud_content_scanning/deep_scanning_utils.cc",
+@@ -643,7 +643,7 @@
+       "extension_telemetry/search_hijacking_detector.cc",
+       "safe_browsing_navigation_observer_manager_factory.cc",
+     ]
+-    deps += [
++    deps = [
+       "//chrome/common/safe_browsing:archive_analyzer_results",
+       "//chrome/browser/security_events",
+       "//chrome/services/file_util/public/cpp",

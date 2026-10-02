@@ -25,6 +25,14 @@ resolve_source_provenance() {
     echo "$configured"
     return
   fi
+  local packaged_version
+  packaged_version="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json" \
+    2>/dev/null || true)"
+  if [[ "$packaged_version" == 154.* ]]; then
+    echo "Chromium 154 manager-only preparation requires explicit NEANTIK_SOURCE_PROVENANCE from the exact qualified source build; refusing the historical M152 default." >&2
+    exit 66
+  fi
   local default="/private/tmp/nevision-chromium-152/build/source-provenance.json"
   if [[ -f "$default" ]]; then
     echo "$default"
@@ -67,11 +75,21 @@ verify_reviewed_runtime_evidence() {
   runtime_candidate_lock="$(resolve_runtime_candidate_lock)"
   runtime_version="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$evidence/fingerprint-chromium.lock.json" 2>/dev/null || true)"
-  if [[ "$runtime_version" == 153.* ]]; then
-    source_contract="$PROJECT_DIR/runtime/chromium-153-port-status.json"
-  else
-    source_contract="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
-  fi
+  case "$runtime_version" in
+    153.*)
+      source_contract="$PROJECT_DIR/runtime/chromium-153-port-status.json"
+      ;;
+    152.*)
+      source_contract="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
+      ;;
+    154.0.8037.93)
+      source_contract="$PROJECT_DIR/runtime/chromium-154-source-contract.json"
+      ;;
+    *)
+      echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2
+      exit 65
+      ;;
+  esac
 
   local comparisons=(
     "$source_provenance:$evidence/source-provenance.json"

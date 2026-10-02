@@ -1,0 +1,790 @@
+{
+  "afterSnapshot": {
+    "argsGN": {
+      "relativePath": "out/NeAntikM154Qualified20261001/args.gn",
+      "sha256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e"
+    },
+    "deletedPathCount": 3253,
+    "deletedPathsSHA256": "57558a6886a2de49eb551d0fb69f96264374281dc66ce4b88debf0a8c260dc60",
+    "entriesSHA256": "da7b4362a94fbb730801c7e5b501bc559f7a1980118fa19673664ee1e2c48cd7",
+    "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+    "officialChromiumBase": {
+      "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+      "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+    },
+    "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+    "recordType": "chromium-source-snapshot",
+    "releaseReady": false,
+    "schemaVersion": 2,
+    "sourceFileCount": 1136452,
+    "targetChromiumVersion": "154.0.8037.93"
+  },
+  "beforeSnapshot": {
+    "argsGN": {
+      "relativePath": "out/NeAntikM154Qualified20261001/args.gn",
+      "sha256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e"
+    },
+    "deletedPathCount": 3253,
+    "deletedPathsSHA256": "57558a6886a2de49eb551d0fb69f96264374281dc66ce4b88debf0a8c260dc60",
+    "entriesSHA256": "691b5da7c9c9e08a91239afc2c37abc974f55c212bf519b5b8cea7f6b90187cb",
+    "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+    "officialChromiumBase": {
+      "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+      "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+    },
+    "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+    "recordType": "chromium-source-snapshot",
+    "releaseReady": false,
+    "schemaVersion": 2,
+    "sourceFileCount": 1136428,
+    "targetChromiumVersion": "154.0.8037.93"
+  },
+  "changes": [
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "chrome/BUILD.gn",
+        "sha256": "8fc84724d5b88d4c9e9fa8cc05f943cc268280e069f992ca316c548b93c9b35b",
+        "sizeBytes": 71405
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "chrome/BUILD.gn",
+        "sha256": "c9c137f9403363b94b082f44dfae965cfa2da7fb728f69a61b51de03892bfd17",
+        "sizeBytes": 71230
+      },
+      "path": "chrome/BUILD.gn"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/enterprise/connectors/core/analysis_service_settings_base.cc",
+        "sha256": "3bdbaf03eacc52dc990ba62bbdcbf0ca314ddda3f36f292c7beb1b847459586f",
+        "sizeBytes": 16249
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/enterprise/connectors/core/analysis_service_settings_base.cc",
+        "sha256": "637649281a540867b7c79c54be66cf0a2c43eab7ce5164a004bbc2c24c8d44b8",
+        "sizeBytes": 16102
+      },
+      "path": "components/enterprise/connectors/core/analysis_service_settings_base.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/resources/traces_internals/BUILD.gn",
+        "sha256": "202f173aa99826f4218d0bc76dfcbd63afb762a5a96efb6ea0c940c59936f214",
+        "sizeBytes": 3540
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/resources/traces_internals/BUILD.gn",
+        "sha256": "3f5fcaf8890233ed5c86bed6becb73c51a09e3a87f49f8457ab94747e09bfcfc",
+        "sizeBytes": 3530
+      },
+      "path": "content/browser/resources/traces_internals/BUILD.gn"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "net/url_request/trk_protocol_handler.cc",
+        "sha256": "2c5e1bc107aafd443978c392de758d861da90a2fd7dcca2c03654129c9e905bd",
+        "sizeBytes": 775
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "net/url_request/trk_protocol_handler.cc",
+        "sha256": "fabefccd0f9844ee269748d1f48e7e3de68a91bcb0ae9ea6bed292023230bdeb",
+        "sizeBytes": 785
+      },
+      "path": "net/url_request/trk_protocol_handler.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "net/url_request/url_request.cc",
+        "sha256": "45d3129b53e309745117d650c3afa53a4dfa3e83f43d5284ce02a773178c8335",
+        "sizeBytes": 50417
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "net/url_request/url_request.cc",
+        "sha256": "21deb38592808777b2d6bae85199e192479e75175ca3005dfa45b21741c47757",
+        "sizeBytes": 50405
+      },
+      "path": "net/url_request/url_request.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/css/media_values.cc",
+        "sha256": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629",
+        "sizeBytes": 19899
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/css/media_values.cc",
+        "sha256": "92f60cddfa313d0d334ddc8add812489c26d11d77cd496cb925fb60849c1634a",
+        "sizeBytes": 19497
+      },
+      "path": "third_party/blink/renderer/core/css/media_values.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts",
+        "sha256": "2bce9e7a1068c1a913abaeea530ecfcdf100e801dc4fa5b3f96d324826751186",
+        "sizeBytes": 30802
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts",
+        "sha256": "f206bd1d2a6f53adfe1f60ab7005fb1683b7565b88f66153ab5b8de621f2a0ec",
+        "sizeBytes": 30475
+      },
+      "path": "third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/@lit/reactive-element/reactive-element.d.ts",
+        "sha256": "2bce9e7a1068c1a913abaeea530ecfcdf100e801dc4fa5b3f96d324826751186",
+        "sizeBytes": 30802
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/@lit/reactive-element/reactive-element.d.ts",
+        "sha256": "f206bd1d2a6f53adfe1f60ab7005fb1683b7565b88f66153ab5b8de621f2a0ec",
+        "sizeBytes": 30475
+      },
+      "path": "third_party/node/node_modules/@lit/reactive-element/reactive-element.d.ts"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 493,
+        "path": "third_party/node/node_modules/@types/d3/index.d.ts",
+        "sha256": "c8fbdee2b5bffd2316b5994ee841a2a99d4a312dea22bea56383c0775a135a0d",
+        "sizeBytes": 1142
+      },
+      "before": {
+        "kind": "file",
+        "mode": 493,
+        "path": "third_party/node/node_modules/@types/d3/index.d.ts",
+        "sha256": "32e5beeefac1493f9dbf2498eb4de6b5ef69a411eb1b9321cdf25a6f37086361",
+        "sizeBytes": 1544
+      },
+      "path": "third_party/node/node_modules/@types/d3/index.d.ts"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/@types/trusted-types/index.d.ts",
+        "sha256": "cd05fb7a0d2d8f84781594a4affac005ba5f0cf72688374512ac2f39766f41a4",
+        "sizeBytes": 2362
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/@types/trusted-types/index.d.ts",
+        "sha256": "2c3b8be03577c98530ef9cb1a76e2c812636a871f367e9edf4c5f3ce702b77f8",
+        "sizeBytes": 2353
+      },
+      "path": "third_party/node/node_modules/@types/trusted-types/index.d.ts"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/lit-html/lit-html.js",
+        "sha256": "5f3f13ce43b1c71998ec279a2eaab3e30b5cdbf140db9cd627c5c227f25da66f",
+        "sizeBytes": 7311
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/lit-html/lit-html.js",
+        "sha256": "3e0445299f606a16670a068e5cac0170a4b6e9f31f3cc9cce1676f5fe166f393",
+        "sizeBytes": 7303
+      },
+      "path": "third_party/node/node_modules/lit-html/lit-html.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/ts-poet/build/Code.js",
+        "sha256": "67bffa10c16e5b0a824332314b9da5ee6f64bb9301885ce2ec2d9a60c0fcb323",
+        "sizeBytes": 10753
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/ts-poet/build/Code.js",
+        "sha256": "31b2b686836743f4a1bcd6114c4096f1344964d3aaeeb5d4c038eaf2e13adebe",
+        "sizeBytes": 10815
+      },
+      "path": "third_party/node/node_modules/ts-poet/build/Code.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/typescript/lib/lib.dom.d.ts",
+        "sha256": "d56b273cb8a607374fa9bb57087034453b95aa5fa71b068d4907c384d62bc59c",
+        "sizeBytes": 2350034
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/node/node_modules/typescript/lib/lib.dom.d.ts",
+        "sha256": "d6b1eba8496bdd0eed6fc8a685768fe01b2da4a0388b5fe7df558290bffcf32f",
+        "sizeBytes": 2349483
+      },
+      "path": "third_party/node/node_modules/typescript/lib/lib.dom.d.ts"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/public.cpython-311.pyc",
+        "sha256": "98af843857db4f2fb6f53a7b64de2066e61a4eb051ef2ee716f8c53db7934444",
+        "sizeBytes": 11521
+      },
+      "before": null,
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/public.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/serialize.cpython-311.pyc",
+        "sha256": "9abb58808319637687f304e7805006ed74ff698e78bcfd60a501f8943245604f",
+        "sizeBytes": 34945
+      },
+      "before": null,
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/serialize.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/util.cpython-311.pyc",
+        "sha256": "5603fcb3f991ebb67d4918dc52845a4b91bb2ec348db8ee27105033fa3c52059",
+        "sizeBytes": 13991
+      },
+      "before": null,
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/util.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/python/tools/__pycache__/cpp_blob_emitter.cpython-311.pyc",
+        "sha256": "e6bd66772c75ae35b7654e1b01c013c53d8929a4a4a0b20811eafc3812dc08b8",
+        "sizeBytes": 8664
+      },
+      "before": null,
+      "path": "third_party/perfetto/python/tools/__pycache__/cpp_blob_emitter.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/ancestor/__pycache__/tables.cpython-311.pyc",
+        "sha256": "f396bcaf11d657ab778105f42e4ab665c795e01e7369662badc86a66a10ef742",
+        "sizeBytes": 3090
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/ancestor/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/android_framework_track_event/__pycache__/tables.cpython-311.pyc",
+        "sha256": "cce65e53bb0550a5c845a4ed32b6308cead1ff5386748986434759e2ed7eacee",
+        "sizeBytes": 3441
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/android_framework_track_event/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/connected_flow/__pycache__/tables.cpython-311.pyc",
+        "sha256": "9243d2883093eb6adf98631be2b1431e5ede625fb13fb74d5bcfbfb49b211a48",
+        "sizeBytes": 1338
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/connected_flow/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/critical_path/__pycache__/tables.cpython-311.pyc",
+        "sha256": "28dd0d04e74095ba9b1da6b164d78ecd9dbab2c0c9306700b39479ed74eb7e25",
+        "sizeBytes": 1481
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/critical_path/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/developer_functions/__pycache__/tables.cpython-311.pyc",
+        "sha256": "a064510c4babbfb0f639f07164545524323f5e70bd364d134b6876c0a1e2d881",
+        "sizeBytes": 1026
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/developer_functions/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/dfs_weight_bounded/__pycache__/tables.cpython-311.pyc",
+        "sha256": "37237444d0d73d22e96326c1c6e530a7968935ed353d61f69ea15151f2cad813",
+        "sizeBytes": 1072
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/dfs_weight_bounded/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/dominator_tree/__pycache__/tables.cpython-311.pyc",
+        "sha256": "b0b434db972e336cd3878da4b930346d69b80d6f794cd5624853a77d7d3629ff",
+        "sizeBytes": 1009
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/dominator_tree/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/experimental_annotated_stack/__pycache__/tables.cpython-311.pyc",
+        "sha256": "a47409fd52923c418f58774a42f03cc8aaa4944bbce3ec085a878f524c054a48",
+        "sizeBytes": 1556
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_annotated_stack/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/experimental_flat_slice/__pycache__/tables.cpython-311.pyc",
+        "sha256": "91faf542179336f3534df535afa9b5e16332ab562c03125fab89a2451b019e94",
+        "sizeBytes": 3307
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_flat_slice/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/experimental_slice_layout/__pycache__/tables.cpython-311.pyc",
+        "sha256": "98c39e1269fae228e27d9a01b765364d317d0e9a7043aeff2e61261ea32731cf",
+        "sizeBytes": 1104
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_slice_layout/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/graph_traversal/__pycache__/tables.cpython-311.pyc",
+        "sha256": "2bf9cc8ff268e46afca102a102beae920e7edabe170824f7afe435a835778f09",
+        "sizeBytes": 971
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/graph_traversal/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/stdlib_docs/__pycache__/tables.cpython-311.pyc",
+        "sha256": "6b5fcdbee52fdfb537ccca9441eaf553a5674b2b0f76461bbeeeb5793dcac726",
+        "sizeBytes": 1722
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/stdlib_docs/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/structural_tree_partition/__pycache__/tables.cpython-311.pyc",
+        "sha256": "6018291e0b226a866a44fe616409bf4d086417e28d36ca9914a8ba4511ae03c1",
+        "sizeBytes": 1121
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/structural_tree_partition/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/table_info/__pycache__/tables.cpython-311.pyc",
+        "sha256": "11bad391085535d9570d18f456bc33e08ccc63fa04f9f261b9cb32a15e9aece5",
+        "sizeBytes": 1227
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/table_info/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/plugins/video_frame_importer/__pycache__/tables.cpython-311.pyc",
+        "sha256": "07646cbf8b34fdf9de777bf06721ae7b22712ac1817901b45f4ac509f5469180",
+        "sizeBytes": 2911
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/plugins/video_frame_importer/__pycache__/tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/counter_tables.cpython-311.pyc",
+        "sha256": "957818eb4d5960a31a49eab59d82edea84b0b592e39a8c79b5b92ee145bacc0b",
+        "sizeBytes": 1768
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/counter_tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/metadata_tables.cpython-311.pyc",
+        "sha256": "95375d4f705658da89e6df3a9535429e20df0cfa6b3f9388f0e713733cfe959c",
+        "sizeBytes": 31420
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/metadata_tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/profiler_tables.cpython-311.pyc",
+        "sha256": "e8fe58c141d7a846524918aa060b312d8fdb9923a8c6ca504be0df611fa15b68",
+        "sizeBytes": 47350
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/profiler_tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/slice_tables.cpython-311.pyc",
+        "sha256": "616d28614aee2207da0b0835381364b52d390316a0451ae6bab24bc20d85870d",
+        "sizeBytes": 7908
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/slice_tables.cpython-311.pyc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/track_tables.cpython-311.pyc",
+        "sha256": "e5c03ac1e4cdcaaa31f55a4da095b58a29601a5150434b14b4d16d01179a6525",
+        "sizeBytes": 2839
+      },
+      "before": null,
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/track_tables.cpython-311.pyc"
+    }
+  ],
+  "overlaySteps": [
+    {
+      "afterSHA256": "c8fbdee2b5bffd2316b5994ee841a2a99d4a312dea22bea56383c0775a135a0d",
+      "beforeSHA256": "32e5beeefac1493f9dbf2498eb4de6b5ef69a411eb1b9321cdf25a6f37086361",
+      "patchSHA256": "9b183cb19d5015d26e385bc86b10a6131fbc3bf43d275eb5310315b4371f4c8c",
+      "path": "third_party/node/node_modules/@types/d3/index.d.ts"
+    },
+    {
+      "afterSHA256": "5f3f13ce43b1c71998ec279a2eaab3e30b5cdbf140db9cd627c5c227f25da66f",
+      "beforeSHA256": "3e0445299f606a16670a068e5cac0170a4b6e9f31f3cc9cce1676f5fe166f393",
+      "patchSHA256": "4fa5dd62024ad0c4574823b51c6a078cca5460bfefe548abb19d2ebeff1f71c5",
+      "path": "third_party/node/node_modules/lit-html/lit-html.js"
+    },
+    {
+      "afterSHA256": "2bce9e7a1068c1a913abaeea530ecfcdf100e801dc4fa5b3f96d324826751186",
+      "beforeSHA256": "f206bd1d2a6f53adfe1f60ab7005fb1683b7565b88f66153ab5b8de621f2a0ec",
+      "patchSHA256": "e2a4a3606d007b8034c01ed705d77c7b9f8d96b70042168476f37d1863a42047",
+      "path": "third_party/node/node_modules/@lit/reactive-element/reactive-element.d.ts"
+    },
+    {
+      "afterSHA256": "cd05fb7a0d2d8f84781594a4affac005ba5f0cf72688374512ac2f39766f41a4",
+      "beforeSHA256": "2c3b8be03577c98530ef9cb1a76e2c812636a871f367e9edf4c5f3ce702b77f8",
+      "patchSHA256": "b6ac377af03d849852876c2d9c3d1d189272df869b36250d1a2ad8c1a67ae733",
+      "path": "third_party/node/node_modules/@types/trusted-types/index.d.ts"
+    },
+    {
+      "afterSHA256": "d56b273cb8a607374fa9bb57087034453b95aa5fa71b068d4907c384d62bc59c",
+      "beforeSHA256": "d6b1eba8496bdd0eed6fc8a685768fe01b2da4a0388b5fe7df558290bffcf32f",
+      "patchSHA256": "894efe30aaadf1d482a9560e41026c9c63a3707d14f667b83a594ab8fb1d5916",
+      "path": "third_party/node/node_modules/typescript/lib/lib.dom.d.ts"
+    },
+    {
+      "afterSHA256": "67bffa10c16e5b0a824332314b9da5ee6f64bb9301885ce2ec2d9a60c0fcb323",
+      "beforeSHA256": "31b2b686836743f4a1bcd6114c4096f1344964d3aaeeb5d4c038eaf2e13adebe",
+      "patchSHA256": "28b16d4fb3acd776a3c26abbe48648e9c63b1b0cedab0d5e0345964a4a4c60c7",
+      "path": "third_party/node/node_modules/ts-poet/build/Code.js"
+    },
+    {
+      "afterSHA256": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629",
+      "beforeSHA256": "92f60cddfa313d0d334ddc8add812489c26d11d77cd496cb925fb60849c1634a",
+      "patchSHA256": "07f8f2b7319a6952a935f31bd8071c02ae045180dee103df5c6b2a528886ff15",
+      "path": "third_party/blink/renderer/core/css/media_values.cc"
+    },
+    {
+      "afterSHA256": "8fc84724d5b88d4c9e9fa8cc05f943cc268280e069f992ca316c548b93c9b35b",
+      "beforeSHA256": "c9c137f9403363b94b082f44dfae965cfa2da7fb728f69a61b51de03892bfd17",
+      "patchSHA256": "131876aa81695c5c5ca1300409c6017f466f212394b27b45212d6950b77988b6",
+      "path": "chrome/BUILD.gn"
+    },
+    {
+      "afterSHA256": "202f173aa99826f4218d0bc76dfcbd63afb762a5a96efb6ea0c940c59936f214",
+      "beforeSHA256": "3f5fcaf8890233ed5c86bed6becb73c51a09e3a87f49f8457ab94747e09bfcfc",
+      "patchSHA256": "eb7a9190e54d38384df04e94e3eda50b546511afadb24094f192da20165b03db",
+      "path": "content/browser/resources/traces_internals/BUILD.gn"
+    },
+    {
+      "afterSHA256": "2bce9e7a1068c1a913abaeea530ecfcdf100e801dc4fa5b3f96d324826751186",
+      "beforeSHA256": "f206bd1d2a6f53adfe1f60ab7005fb1683b7565b88f66153ab5b8de621f2a0ec",
+      "patchSHA256": "59ce411abb5ded864f2d74ff615a199a5ac3760d499145a920c78902d076dc4f",
+      "path": "third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts"
+    },
+    {
+      "afterSHA256": "3bdbaf03eacc52dc990ba62bbdcbf0ca314ddda3f36f292c7beb1b847459586f",
+      "beforeSHA256": "637649281a540867b7c79c54be66cf0a2c43eab7ce5164a004bbc2c24c8d44b8",
+      "patchSHA256": "99c88fc0f50756c4af1005c941ec6bb05a7bb06fc5e57e83306642c9bd3def39",
+      "path": "components/enterprise/connectors/core/analysis_service_settings_base.cc"
+    },
+    {
+      "afterSHA256": "45d3129b53e309745117d650c3afa53a4dfa3e83f43d5284ce02a773178c8335",
+      "beforeSHA256": "21deb38592808777b2d6bae85199e192479e75175ca3005dfa45b21741c47757",
+      "patchSHA256": "4839fe9e080a4c9649cadda7d5327d552b97c4a4a6c87b9907e94c7ab984ac7a",
+      "path": "net/url_request/url_request.cc"
+    },
+    {
+      "afterSHA256": "2c5e1bc107aafd443978c392de758d861da90a2fd7dcca2c03654129c9e905bd",
+      "beforeSHA256": "fabefccd0f9844ee269748d1f48e7e3de68a91bcb0ae9ea6bed292023230bdeb",
+      "patchSHA256": "133d12fe98568447688b24682ba2561a19a6e5b7169ef9bb645a1439d61bdcc6",
+      "path": "net/url_request/trk_protocol_handler.cc"
+    }
+  ],
+  "privateExecution": {
+    "afterFullSHA256": "609a64c584cbc3db45d3731c5fb8d2bc3cc737d108eb0be5dddb4aa21abc9c4a",
+    "beforeFullSHA256": "10de83408f41c2c038ab8ebd7adbd26cb3ff03344ab6255bbd069714ae815a54",
+    "driverSHA256": "b30f83709a9d104dd90a38096a9728c318f42c89125511e05ceaec10a6f42918",
+    "inputsSHA256": "b77f0fafd8c6473027d1b24215008a9b128d7b5b5e850267d1823ec209f67b93",
+    "verifierSHA256": "0ce64c7a8d39f09927193f38f7884bdf5dfde71cb92fc189ab7f7846600794f8"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "scope": "Exact full-inventory transition; overlay/cache provenance is a separate check",
+  "unexplainedChanges": 0,
+  "verifiedCaches": [
+    {
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/public.cpython-311.pyc",
+      "pycSHA256": "98af843857db4f2fb6f53a7b64de2066e61a4eb051ef2ee716f8c53db7934444",
+      "sourcePath": "third_party/perfetto/python/generators/trace_processor_table/public.py",
+      "sourceSHA256": "4383410a04e2f6abf55806ae262db62fca01d599e22f104d972781d5eac81741",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/serialize.cpython-311.pyc",
+      "pycSHA256": "9abb58808319637687f304e7805006ed74ff698e78bcfd60a501f8943245604f",
+      "sourcePath": "third_party/perfetto/python/generators/trace_processor_table/serialize.py",
+      "sourceSHA256": "fe4438ef0bf799152451896cf5b06789eeb7320e6e5a7fa10580dba3e73f2949",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/util.cpython-311.pyc",
+      "pycSHA256": "5603fcb3f991ebb67d4918dc52845a4b91bb2ec348db8ee27105033fa3c52059",
+      "sourcePath": "third_party/perfetto/python/generators/trace_processor_table/util.py",
+      "sourceSHA256": "357e0047447e9e865d971df72177036e311ec0a5bad92c5473899e9573effa54",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/__pycache__/cpp_blob_emitter.cpython-311.pyc",
+      "pycSHA256": "e6bd66772c75ae35b7654e1b01c013c53d8929a4a4a0b20811eafc3812dc08b8",
+      "sourcePath": "third_party/perfetto/python/tools/cpp_blob_emitter.py",
+      "sourceSHA256": "f9e67f33b8aab5b4ef68f664892cfb8ad72ddb5576fa7fb186495a195963eb34",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/ancestor/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "f396bcaf11d657ab778105f42e4ab665c795e01e7369662badc86a66a10ef742",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/ancestor/tables.py",
+      "sourceSHA256": "9fe2903cb1d17407aa4eaf7efb8988aadb4dab80ab1fdf92b46964642b2e2b77",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/android_framework_track_event/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "cce65e53bb0550a5c845a4ed32b6308cead1ff5386748986434759e2ed7eacee",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/android_framework_track_event/tables.py",
+      "sourceSHA256": "443249ac014c98f2d7eff78c7722b3b6f52cdf284d8518a61b0c73c230d6e151",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/connected_flow/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "9243d2883093eb6adf98631be2b1431e5ede625fb13fb74d5bcfbfb49b211a48",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/connected_flow/tables.py",
+      "sourceSHA256": "7aca3f450cd38d55e0f10566380b6fa4dfd9f228dda7c5c4d82956240f7fe21e",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/critical_path/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "28dd0d04e74095ba9b1da6b164d78ecd9dbab2c0c9306700b39479ed74eb7e25",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/critical_path/tables.py",
+      "sourceSHA256": "0ec5ec1845c566d643728de812d181df3232e73f74bf4f6fbc5ea2f4d5f5c552",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/developer_functions/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "a064510c4babbfb0f639f07164545524323f5e70bd364d134b6876c0a1e2d881",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/developer_functions/tables.py",
+      "sourceSHA256": "02a1e4b7c8a680bf5547ab89ab9a09eec9409accdf43fa2d2618fc19b228db95",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/dfs_weight_bounded/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "37237444d0d73d22e96326c1c6e530a7968935ed353d61f69ea15151f2cad813",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/dfs_weight_bounded/tables.py",
+      "sourceSHA256": "fe88a58b3cf225d3d484d2c027e6633560535d0077af1a93053b4e92ecda8245",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/dominator_tree/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "b0b434db972e336cd3878da4b930346d69b80d6f794cd5624853a77d7d3629ff",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/dominator_tree/tables.py",
+      "sourceSHA256": "9932492e4e50e541d0aade314449df8774a77c66a0c43a784aa5b5e792dcc022",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_annotated_stack/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "a47409fd52923c418f58774a42f03cc8aaa4944bbce3ec085a878f524c054a48",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/experimental_annotated_stack/tables.py",
+      "sourceSHA256": "6c2c2d1a3872471f8a7ed07c60d81693250f9902401e0d00555dd35896ec3a35",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_flat_slice/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "91faf542179336f3534df535afa9b5e16332ab562c03125fab89a2451b019e94",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/experimental_flat_slice/tables.py",
+      "sourceSHA256": "c8d4e591b0c3d140402414e9407bfc31f795502ab1f8cad11e3ef118389bc7cd",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_slice_layout/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "98c39e1269fae228e27d9a01b765364d317d0e9a7043aeff2e61261ea32731cf",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/experimental_slice_layout/tables.py",
+      "sourceSHA256": "3d396bf139bf9ec337ed23c15c3f77b521966bed5405062d6300b4b4e982a307",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/graph_traversal/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "2bf9cc8ff268e46afca102a102beae920e7edabe170824f7afe435a835778f09",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/graph_traversal/tables.py",
+      "sourceSHA256": "016dcbb684d8a6933c575b14c2dfa04e837b3f41ef090b441f790cb79e7f4dc1",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/stdlib_docs/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "6b5fcdbee52fdfb537ccca9441eaf553a5674b2b0f76461bbeeeb5793dcac726",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/stdlib_docs/tables.py",
+      "sourceSHA256": "b0bf778ef8ad109e52f5ac97e530de20b3690be320d7ab586f916b6101ae206c",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/structural_tree_partition/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "6018291e0b226a866a44fe616409bf4d086417e28d36ca9914a8ba4511ae03c1",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/structural_tree_partition/tables.py",
+      "sourceSHA256": "373ff05fd2d37980243134741ebb3c6cfb2fa6d9505b759e04bc9345fb4b7e51",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/table_info/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "11bad391085535d9570d18f456bc33e08ccc63fa04f9f261b9cb32a15e9aece5",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/table_info/tables.py",
+      "sourceSHA256": "ccde42973b83b1b3e4b35d159fed7f9019aac4733e16b737b7a5d1a030f71cdd",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/video_frame_importer/__pycache__/tables.cpython-311.pyc",
+      "pycSHA256": "07646cbf8b34fdf9de777bf06721ae7b22712ac1817901b45f4ac509f5469180",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/video_frame_importer/tables.py",
+      "sourceSHA256": "57d3288ae0a6684cd9afdf89980fcc3758b3bbf60a8a84e87660566dec40b9dc",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/counter_tables.cpython-311.pyc",
+      "pycSHA256": "957818eb4d5960a31a49eab59d82edea84b0b592e39a8c79b5b92ee145bacc0b",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/counter_tables.py",
+      "sourceSHA256": "da91d952749135cea9afbe3e1d04574ba1c6e10d70b6e04620dffac85d0b3c13",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/metadata_tables.cpython-311.pyc",
+      "pycSHA256": "95375d4f705658da89e6df3a9535429e20df0cfa6b3f9388f0e713733cfe959c",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/metadata_tables.py",
+      "sourceSHA256": "c3ba62cf95e3c6990ec955d8af4cb219d8f17372ebbcb389c8384c9125f5b97f",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/profiler_tables.cpython-311.pyc",
+      "pycSHA256": "e8fe58c141d7a846524918aa060b312d8fdb9923a8c6ca504be0df611fa15b68",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/profiler_tables.py",
+      "sourceSHA256": "6908dd72017af05a0ee95e20f652e3b318b17c59f96b7b473f82642f197c4f9a",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/slice_tables.cpython-311.pyc",
+      "pycSHA256": "616d28614aee2207da0b0835381364b52d390316a0451ae6bab24bc20d85870d",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/slice_tables.py",
+      "sourceSHA256": "eeed165c0d0d777db6419d3cb2559dadde01c7bd63926ac06ff86a7ee49cebf5",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/track_tables.cpython-311.pyc",
+      "pycSHA256": "e5c03ac1e4cdcaaa31f55a4da095b58a29601a5150434b14b4d16d01179a6525",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/track_tables.py",
+      "sourceSHA256": "10f38f0d8600d05a26cb76123f1fbfc36f76a7794d8e6dcdf52da61bee52e37d",
+      "timestampAndCodeMatch": true
+    }
+  ]
+}

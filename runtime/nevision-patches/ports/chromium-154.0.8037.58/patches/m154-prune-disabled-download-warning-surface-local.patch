@@ -1,0 +1,13 @@
+--- a/chrome/browser/download/download_warning_desktop_hats_utils.cc
++++ b/chrome/browser/download/download_warning_desktop_hats_utils.cc
+@@ -240,10 +240,6 @@
+     psd.string_data_.insert({Fields::kUrlReferrer, kNotLoggedNoSafeBrowsing});
+     psd.string_data_.insert({Fields::kFilename, kNotLoggedNoSafeBrowsing});
+ 
+-  // Interaction details logged only for ESB users.
+-  std::optional<DownloadItemWarningData::WarningSurface>
+-      warning_first_shown_surface =
+-          DownloadItemWarningData::WarningFirstShownSurface(download_item);
+     psd.string_data_.insert(
+         {Fields::kWarningInteractions, kNotLoggedNoEnhancedProtection});
+ 

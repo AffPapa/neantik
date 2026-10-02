@@ -81,6 +81,36 @@ class RuntimeCandidateLockTests(unittest.TestCase):
         self.assertNotIn("144.0.7559", text)
         self.assertNotIn("6bbb0dbdeae887af207c75c9e5173cceddbd381b", text)
 
+    def test_m154_candidate_requires_its_own_reviewed_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            provenance = self.write_provenance(Path(temporary))
+            document = json.loads(provenance.read_text(encoding="utf-8"))
+            document["targetChromiumVersion"] = SOURCE.CHROMIUM_154_VERSION
+            SOURCE.atomic_write_json(provenance, document)
+            with self.assertRaisesRegex(
+                SOURCE.SourceProvenanceError,
+                "M154 built candidate evidence is missing",
+            ):
+                CANDIDATE.expected_candidate_lock(
+                    provenance,
+                    project_root=Path(temporary),
+                )
+
+    def test_candidate_lock_rejects_unsupported_source_contract_version(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            provenance = self.write_provenance(Path(temporary))
+            document = json.loads(provenance.read_text(encoding="utf-8"))
+            document["targetChromiumVersion"] = "155.0.8100.1"
+            SOURCE.atomic_write_json(provenance, document)
+            with self.assertRaisesRegex(
+                SOURCE.SourceProvenanceError,
+                "Unsupported Chromium source contract version",
+            ):
+                CANDIDATE.expected_candidate_lock(
+                    provenance,
+                    project_root=PROJECT_ROOT,
+                )
+
     def test_chromium_153_lock_is_stale_after_security_baseline_advance(self) -> None:
         provenance = PROJECT_ROOT / "runtime" / "chromium-153-port-candidate.json"
         candidate = PROJECT_ROOT / "runtime" / "fingerprint-chromium-153.lock.json"

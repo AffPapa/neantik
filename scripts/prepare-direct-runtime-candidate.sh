@@ -31,12 +31,8 @@ if [[ -e "$CANDIDATE_MANIFEST" || -L "$CANDIDATE_MANIFEST" ]]; then
   exit 65
 fi
 
-EXPECTED_BUILD_ARGS="$SOURCE_ROOT/out/Default/args.gn"
-if [[ "$(cd "$(dirname "$BUILD_ARGS")" && pwd -P)/$(basename "$BUILD_ARGS")" !=
-      "$(cd "$(dirname "$EXPECTED_BUILD_ARGS")" && pwd -P)/$(basename "$EXPECTED_BUILD_ARGS")" ]]; then
-  echo "Direct candidate requires canonical source-root out/Default/args.gn." >&2
-  exit 65
-fi
+python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
+  "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
@@ -101,6 +97,10 @@ cleanup() {
 trap cleanup EXIT
 
 export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-154-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+fi
 "$PROJECT_DIR/scripts/sign-runtime.sh" \
   "$RUNTIME_APP" \
   "$PACKAGING_DIR" \
@@ -118,7 +118,13 @@ python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
   "$BUILD_ARGS" \
   "$RUNTIME_REPORT" \
   --confirm-promote-source-lock
-python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
+    --runtime-lock "$CANDIDATE_LOCK" \
+    --output "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_154.md"
+else
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
+fi
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
@@ -131,6 +137,7 @@ codesign \
   --force \
   --options runtime \
   --timestamp \
+  --entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist" \
   --sign "$NEANTIK_SIGNING_IDENTITY" \
   "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"

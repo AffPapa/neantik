@@ -1,0 +1,8 @@
+diff --git a/chrome/browser/ui/pdf/chrome_pdf_document_helper_client.cc b/chrome/browser/ui/pdf/chrome_pdf_document_helper_client.cc
+--- a/chrome/browser/ui/pdf/chrome_pdf_document_helper_client.cc
++++ b/chrome/browser/ui/pdf/chrome_pdf_document_helper_client.cc
+@@ -198,4 +198,3 @@
+     guest_view->SetPluginCanSave(can_save);
+   }
+ }
+-

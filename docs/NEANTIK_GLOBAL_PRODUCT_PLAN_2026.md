@@ -429,3 +429,28 @@ candidate. Системный VoiceOver не запускался. SwiftUI-ко�
   на конкретном непрохождении gate без ложного объявления релиза;
 - handoff содержит source commit, version/build, тесты, SHA-256, live checks,
   rollback и оставшиеся runtime-gate пункты.
+
+## Историческая сверка — 29 сентября 2026 (заменена статусом ниже)
+
+Исторические значения Sites version 92/95 и недоступности browser.free,
+записанные выше, superseded: Sites сейчас version 98, а свежий
+`browser.free/api/release` отвечает и подтверждает прежний опубликованный
+0.7.11/build 74 с Chromium 153 и `canDownload=false`. GitHub connector доступен
+для чтения; сохранённые локальные GitHub CLI-токены сейчас недействительны,
+поэтому asset upload этим CLI не авторизован. Сертификаты Developer ID и
+`neantik-notary` доступны в разрешённом macOS-контексте. Chrome M154 `.58`
+остаётся последним broad Stable для Mac; M155 пока Early Stable для малого
+процента. M154 port diagnostic-only, без проверенного macOS source pair,
+hermetic SDK/toolchain и source contract. Без этих inputs Chromium build,
+integrated candidate и публикация не готовы; v0.7.11 остаётся rollback.
+
+## Состояние выпуска — 2 октября 2026
+
+GitHub CLI снова доступен: свежий запрос latest release подтвердил `v0.7.11`
+с ZIP/DMG и контрольными суммами; повторная авторизация не требуется.
+Chromium `154.0.8037.93` собран, происхождение исходников и проверка
+подписанного Developer ID runtime пройдены. Кандидат менеджера — `0.7.12`
+build `75`. Интегрированное приложение собрано; продолжаются его проверки,
+затем требуются свежий authenticated GUI A → B → A, нотариальное заверение
+ZIP/DMG и проверка опубликованных файлов. Новый релиз ещё не опубликован,
+сайт ещё не переведён на него. `v0.7.11` сохраняется для отката.

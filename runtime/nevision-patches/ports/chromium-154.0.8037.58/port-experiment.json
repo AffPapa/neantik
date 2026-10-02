@@ -1,0 +1,1696 @@
+{
+  "schemaVersion": 1,
+  "status": "diagnostic-not-release-ready",
+  "targetChromiumVersion": "154.0.8037.58",
+  "recordedAt": "2026-09-28",
+  "officialChromiumBase": {
+    "commit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "tree": "63b6339af403b6f8dc70fe2d4613f91f1c04f43a"
+  },
+  "upstreamCommonOverlay": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "154.0.8037.57-1",
+    "commit": "800d0bb5078472e4442c1fd73373172754a60939",
+    "tree": "b94932e613bbbb63656c285c614145ef1255d358",
+    "seriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+    "applied": 109,
+    "conflicts": 0,
+    "replayMethod": "Pinned common commit/series verified by hash; full DEPS sync locked by 240-entry revinfo text; exact upstream pruning list filtered to present files; official --keep-contingent-paths prune; 109 patches applied without fuzz/offset.",
+    "cleanReplayRoot": "/private/tmp/neantik-m154-deps-sync-20260927/src",
+    "dependencyRevisionCount": 240,
+    "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+    "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+    "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+    "upstreamApplyLogSHA256": "704522c81f9cb7bb93b5dfab8ded0f78b360065a6efec56ab5feaacc3f63f4af",
+    "upstreamPruneLogSHA256": "7e2b56337cab07b28479e9b86c8ef849e23bbb4ef2679d96b5f94c00d0fe38e2",
+    "applyLogScan": "No fuzz, offset, FAILED, ignored, missing-file, or reject-file findings.",
+    "sourceRepositoryPath": "/private/tmp/neantik-ungoogled-common-154.0.8037.57-1",
+    "seriesPath": "/private/tmp/neantik-ungoogled-common-154.0.8037.57-1/patches/series",
+    "upstreamApplyLogPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/common-apply.log",
+    "upstreamPruneLogPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/prune.log",
+    "pruningListPath": "/private/tmp/neantik-ungoogled-common-154.0.8037.57-1/pruning.list",
+    "presentPruningListPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/pruning-present.list",
+    "dependencyRevisionMapPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/revinfo-locked.txt",
+    "pruneMode": "keep-contingent-paths"
+  },
+  "ownedPatchApplyCheck": {
+    "method": "Fresh clean ordered replay on locked M154 source: 20 pinned upstream macOS patches and 71 owned patches applied with patch --fuzz=0; disjoint group72 then exact-reversed and forward-applied without fuzz; source-tree manifest updated for its five postimages; tuple overlay 8/8; GN generation and checks passed.",
+    "applied": 72,
+    "failed": 0,
+    "groups": [
+      {
+        "order": 1,
+        "id": "profile-seed-contract",
+        "patchFile": "patches/profile-seed-contract.patch",
+        "sha256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 2,
+        "id": "deterministic-rendered-surfaces",
+        "patchFile": "patches/deterministic-rendered-surfaces.patch",
+        "sha256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 3,
+        "id": "deterministic-offline-audio",
+        "patchFile": "patches/deterministic-offline-audio.patch",
+        "sha256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 4,
+        "id": "deterministic-webgl-pixels",
+        "patchFile": "patches/deterministic-webgl-pixels.patch",
+        "sha256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 5,
+        "id": "timezone-locale-network-context",
+        "patchFile": "patches/timezone-locale-network-context.patch",
+        "sha256": "b90aab37047d35e0c0e4bbe1938eaac965779bc7b241f534d27b9debf930985b",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 6,
+        "id": "real-browser-version-contract",
+        "patchFile": "patches/real-browser-version-contract.patch",
+        "sha256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 7,
+        "id": "minimal-apple-device-tuple",
+        "patchFile": "patches/minimal-apple-device-tuple.patch",
+        "sha256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 8,
+        "id": "neantik-branding-and-source-lock",
+        "patchFile": "patches/neantik-branding-and-source-lock.patch",
+        "sha256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 9,
+        "id": "official-lite-archive-build-contract",
+        "patchFile": "patches/official-lite-archive-build-contract.patch",
+        "sha256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 10,
+        "id": "private-runtime-config-environment",
+        "patchFile": "patches/private-runtime-config-environment.patch",
+        "sha256": "30881d9440c3c02f32d340595f7b3d1c07f11010921337482dcef65348dd4fd1",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 11,
+        "id": "cached-runtime-profile-seed",
+        "patchFile": "patches/cached-runtime-profile-seed.patch",
+        "sha256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 12,
+        "id": "m154-unused-signin-helpers",
+        "patchFile": "patches/m154-unused-signin-helpers.patch",
+        "sha256": "05e16c61c527b40f21d59784504387d43ad191b4d1a654907777f26b65abde92",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 13,
+        "id": "m154-remove-unreachable-disabled-gcm-body",
+        "patchFile": "patches/m154-remove-unreachable-disabled-gcm-body.patch",
+        "sha256": "39c2fac5ab57d17e07d830b03969fa262c2b36773ce8f4229d6f8c0f550e553b",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 14,
+        "id": "m154-remove-unreachable-domain-reliability-upload-body",
+        "patchFile": "patches/m154-remove-unreachable-domain-reliability-upload-body.patch",
+        "sha256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 15,
+        "id": "m154-template-url-service-init-order",
+        "patchFile": "patches/m154-template-url-service-init-order.patch",
+        "sha256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 16,
+        "id": "enterprise-cloud-archive-analysis-mode0-common-overlay",
+        "patchFile": "patches/enterprise-cloud-archive-analysis-mode0-common-overlay.patch",
+        "sha256": "06e2ca25388163e3300b05cb50ee90ca3a7c2ed2939f85f13de9ac07e2d3df75",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 17,
+        "id": "m154-remove-unreachable-assist-ranker-body",
+        "patchFile": "patches/m154-remove-unreachable-assist-ranker-body.patch",
+        "sha256": "3a6a19a56acd5709d3431614da1c0ecebdaba5e76c9ef7463c40c91642b76c92",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 18,
+        "id": "m154-remove-unreachable-translate-ranker-body",
+        "patchFile": "patches/m154-remove-unreachable-translate-ranker-body.patch",
+        "sha256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 19,
+        "id": "m154-prune-disabled-autofill-network-helpers",
+        "patchFile": "patches/m154-prune-disabled-autofill-network-helpers.patch",
+        "sha256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 20,
+        "id": "m154-remove-disabled-safe-move-activation-field",
+        "patchFile": "patches/m154-remove-disabled-safe-move-activation-field.patch",
+        "sha256": "5e84a629c25a599c172abc7e621f7f97b573b3749db29b0f8ef4587a4432452e",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 21,
+        "id": "restore-download-quarantine-provenance",
+        "patchFile": "patches/restore-download-quarantine-provenance.patch",
+        "sha256": "e46f0c1beb8af118faa78b845edf484a75f836fb3cff0218800ac5957ab5668b",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 22,
+        "id": "m154-file-system-access-quarantine-provenance-test",
+        "patchFile": "patches/m154-file-system-access-quarantine-provenance-test.patch",
+        "sha256": "35ac40363df829f2899d792921278f0801d142932ff722b2e36a5143f17b64d7",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 23,
+        "id": "m154-prune-disabled-ssl-interstitial-prefs-helper",
+        "patchFile": "patches/m154-prune-disabled-ssl-interstitial-prefs-helper.patch",
+        "sha256": "b6a35a6ec88459461f2d1c7368f1c9db40264f72d96099b2ea5061b13599ec3f",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 24,
+        "id": "m154-disable-nonlinux-crashpad-unreachable-body",
+        "patchFile": "patches/m154-disable-nonlinux-crashpad-unreachable-body.patch",
+        "sha256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 25,
+        "id": "m154-prune-disabled-safe-browsing-metrics-helpers",
+        "patchFile": "patches/m154-prune-disabled-safe-browsing-metrics-helpers.patch",
+        "sha256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 26,
+        "id": "m154-restore-safe-browsing-prefs-declarations-include",
+        "patchFile": "patches/m154-restore-safe-browsing-prefs-declarations-include.patch",
+        "sha256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 27,
+        "id": "m154-prune-disabled-webstore-download-helper",
+        "patchFile": "patches/m154-prune-disabled-webstore-download-helper.patch",
+        "sha256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 28,
+        "id": "m154-prune-disabled-omaha-action-flag",
+        "patchFile": "patches/m154-prune-disabled-omaha-action-flag.patch",
+        "sha256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 29,
+        "id": "m154-prune-disabled-bound-session-helper-state",
+        "patchFile": "patches/m154-prune-disabled-bound-session-helper-state.patch",
+        "sha256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 30,
+        "id": "m154-prune-disabled-signin-promo-metric-state",
+        "patchFile": "patches/m154-prune-disabled-signin-promo-metric-state.patch",
+        "sha256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 31,
+        "id": "m154-prune-disabled-mdns-helpers-and-client-init",
+        "patchFile": "patches/m154-prune-disabled-mdns-helpers-and-client-init.patch",
+        "sha256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 32,
+        "id": "m154-mark-disabled-advanced-protection-branch-intentional",
+        "patchFile": "patches/m154-mark-disabled-advanced-protection-branch-intentional.patch",
+        "sha256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 33,
+        "id": "m154-include-enterprise-file-type-policy-resource",
+        "patchFile": "patches/m154-include-enterprise-file-type-policy-resource.patch",
+        "sha256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 34,
+        "id": "m154-remove-dead-ntp-collection-fetch-body",
+        "patchFile": "patches/m154-remove-dead-ntp-collection-fetch-body.patch",
+        "sha256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 35,
+        "id": "m154-include-safe-browsing-prefs-in-enterprise-upload",
+        "patchFile": "patches/m154-include-safe-browsing-prefs-in-enterprise-upload.patch",
+        "sha256": "a507447c8353ce7c4bc14bb5bb975c721219f65c7b33d3eded47c6456a08d961",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 36,
+        "id": "m154-prune-disabled-supervised-ntp-helpers",
+        "patchFile": "patches/m154-prune-disabled-supervised-ntp-helpers.patch",
+        "sha256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 37,
+        "id": "m154-prune-disabled-sync-builder-helpers",
+        "patchFile": "patches/m154-prune-disabled-sync-builder-helpers.patch",
+        "sha256": "8a7f111ad1a320cdd9060030c14efed591076e18f16b48ed97014beaed54df75",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 38,
+        "id": "m154-prune-disabled-sync-service-helpers",
+        "patchFile": "patches/m154-prune-disabled-sync-service-helpers.patch",
+        "sha256": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 39,
+        "id": "m154-prune-disabled-offstore-safety-helper",
+        "patchFile": "patches/m154-prune-disabled-offstore-safety-helper.patch",
+        "sha256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 40,
+        "id": "m154-guard-force-save-cloud-helper",
+        "patchFile": "patches/m154-guard-force-save-cloud-helper.patch",
+        "sha256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 41,
+        "id": "m154-prune-disabled-download-warning-surface-local",
+        "patchFile": "patches/m154-prune-disabled-download-warning-surface-local.patch",
+        "sha256": "54aaa31d472f478d274874d0756f02ef7124bcf41a75ddbd313c0ad6bf68a8d1",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 42,
+        "id": "m154-prune-disabled-warning-action-serializer",
+        "patchFile": "patches/m154-prune-disabled-warning-action-serializer.patch",
+        "sha256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 43,
+        "id": "m154-restore-enterprise-context-realtime-url-mode",
+        "patchFile": "patches/m154-restore-enterprise-context-realtime-url-mode.patch",
+        "sha256": "d698f7e1ebd3657435e77d9c39f37f8e08709cd7d0008b1461387abdd8468b85",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 44,
+        "id": "m154-populate-enterprise-profile-id",
+        "patchFile": "patches/m154-populate-enterprise-profile-id.patch",
+        "sha256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 45,
+        "id": "m154-honor-download-bypass-justification-policy",
+        "patchFile": "patches/m154-honor-download-bypass-justification-policy.patch",
+        "sha256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 46,
+        "id": "m154-complete-disabled-one-google-bar-callback",
+        "patchFile": "patches/m154-complete-disabled-one-google-bar-callback.patch",
+        "sha256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 47,
+        "id": "m154-prune-disabled-one-google-account-consistency-state",
+        "patchFile": "patches/m154-prune-disabled-one-google-account-consistency-state.patch",
+        "sha256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 48,
+        "id": "m154-prune-disabled-page-annotation-helpers",
+        "patchFile": "patches/m154-prune-disabled-page-annotation-helpers.patch",
+        "sha256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 49,
+        "id": "m154-prune-disabled-avatar-url-constant",
+        "patchFile": "patches/m154-prune-disabled-avatar-url-constant.patch",
+        "sha256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 50,
+        "id": "m154-prune-disabled-account-consistency-entry",
+        "patchFile": "patches/m154-prune-disabled-account-consistency-entry.patch",
+        "sha256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 51,
+        "id": "m154-prune-disabled-signin-promo-helpers",
+        "patchFile": "patches/m154-prune-disabled-signin-promo-helpers.patch",
+        "sha256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 52,
+        "id": "m154-prune-inactive-signin-promo-helper-chain",
+        "patchFile": "patches/m154-prune-inactive-signin-promo-helper-chain.patch",
+        "sha256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 53,
+        "id": "m154-prune-unused-https-first-pref-local",
+        "patchFile": "patches/m154-prune-unused-https-first-pref-local.patch",
+        "sha256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 54,
+        "id": "m154-rename-shadowed-extension-anchor-view",
+        "patchFile": "patches/m154-rename-shadowed-extension-anchor-view.patch",
+        "sha256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 55,
+        "id": "m154-prune-disabled-signout-sync-lookup",
+        "patchFile": "patches/m154-prune-disabled-signout-sync-lookup.patch",
+        "sha256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 56,
+        "id": "m154-prune-disabled-sync-menu-title-helper",
+        "patchFile": "patches/m154-prune-disabled-sync-menu-title-helper.patch",
+        "sha256": "c408f47d246022f3ec2ad83f3d0514597380db9962e73aa46e1c1d66019d1e4a",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 57,
+        "id": "m154-prune-disabled-signin-status-chip-helper",
+        "patchFile": "patches/m154-prune-disabled-signin-status-chip-helper.patch",
+        "sha256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 58,
+        "id": "m154-handle-safe-browsing-settings-command",
+        "patchFile": "patches/m154-handle-safe-browsing-settings-command.patch",
+        "sha256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 59,
+        "id": "m154-include-safe-browsing-command-prefs",
+        "patchFile": "patches/m154-include-safe-browsing-command-prefs.patch",
+        "sha256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562",
+        "sequentialApplyCheck": "passed"
+      },
+      {
+        "order": 60,
+        "id": "m154-remove-unused-read-anything-screen-ai-parameter",
+        "patchFile": "patches/m154-remove-unused-read-anything-screen-ai-parameter.patch",
+        "sha256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9",
+        "sequentialApplyCheck": "passed",
+        "note": "Group63 removes the unused ScreenAI member/initializer and two call arguments; group64 removes the remaining constructor parameter and ChromeOS call argument. Neither constitutes a fresh ordered replay."
+      },
+      {
+        "order": 61,
+        "id": "m154-remove-remaining-read-anything-screen-ai-parameter",
+        "patchFile": "patches/m154-remove-remaining-read-anything-screen-ai-parameter.patch",
+        "sha256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1",
+        "sequentialApplyCheck": "passed",
+        "note": "Exact apply to diagnostic source after groups 1-63; not a refreshed ordered replay."
+      },
+      {
+        "order": 62,
+        "id": "m154-remove-unreferenced-protego-sampling-constant",
+        "patchFile": "patches/m154-remove-unreferenced-protego-sampling-constant.patch",
+        "sha256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6",
+        "sequentialApplyCheck": "passed",
+        "note": "Corrected minimal one-hunk patch removes the now-unused sampling-probability constant after the common overlay disables its only caller; verified as ordered continuation group 66."
+      },
+      {
+        "order": 63,
+        "id": "m154-guard-enterprise-analysis-include-with-enterprise-buildflag",
+        "patchFile": "patches/m154-guard-enterprise-analysis-include-with-enterprise-buildflag.patch",
+        "sha256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328",
+        "sequentialApplyCheck": "passed",
+        "note": "Enterprise Content Analysis include follows ENTERPRISE_CLOUD_CONTENT_ANALYSIS; unrelated consumer Safe Browsing includes remain under SAFE_BROWSING_AVAILABLE."
+      },
+      {
+        "order": 64,
+        "id": "m154-prune-unreferenced-navigation-predictor-helpers",
+        "patchFile": "patches/m154-prune-unreferenced-navigation-predictor-helpers.patch",
+        "sha256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157",
+        "sequentialApplyCheck": "passed",
+        "note": "Only MLModelMaxHoverTime and RecordMetricsForModelTraining are removed; MLModelExecutionTimerInterval and MaySendTraffic remain intact."
+      },
+      {
+        "order": 65,
+        "id": "m154-restore-safe-browsing-prefs-plumbing",
+        "patchFile": "patches/m154-restore-safe-browsing-prefs-plumbing.patch",
+        "sha256": "51ffee29032e0f3a311d16316a230df1aa6317b54717fd9eb5ee07d3158f2bef",
+        "sequentialApplyCheck": "passed",
+        "note": "Restores only exact upstream safe_browsing_prefs.h/.cc and the original static_library target removed by the common overlay. safe_browsing_mode remains 0; generated SAFE_BROWSING_AVAILABLE and SAFE_BROWSING_DOWNLOAD_PROTECTION remain 0. Enterprise Content Analysis remains separately enabled."
+      },
+      {
+        "order": 66,
+        "id": "m154-include-content-settings-prefs-in-js-optimizer-tests",
+        "patchFile": "patches/m154-include-content-settings-prefs-in-js-optimizer-tests.patch",
+        "sha256": "cff2b738b6ef49cb25e08fe31ff6b1e7c7bf07fab9fc12e605e3cee820398afd",
+        "sequentialApplyCheck": "passed",
+        "purpose": "Restore direct includes for JavaScript optimizer and Safe Browsing tests that reference the preference now owned by components/content_settings/core/common/pref_names.h."
+      },
+      {
+        "order": 67,
+        "id": "m154-fix-blocklist-state-fetcher-test-seam",
+        "patchFile": "patches/m154-fix-blocklist-state-fetcher-test-seam.patch",
+        "sha256": "b87023e10c4f4e2cdb221c8ee2727640447f0bb286edb948102ef8bb8133ca7c",
+        "sequentialApplyCheck": "passed",
+        "note": "Updates the test-only helper to inject its fake V4 config through its existing friend seam after the pinned upstream no-Safe-Browsing overlay removes the public setter. No production source or Safe Browsing build flags change."
+      },
+      {
+        "order": 68,
+        "id": "m154-prune-disabled-testing-browser-process-members",
+        "patchFile": "patches/m154-prune-disabled-testing-browser-process-members.patch",
+        "sha256": "794361e5f6a09e4c07c43e6f77261b2937d3230e14548edbf2828d95d38794d9",
+        "sequentialApplyCheck": "passed",
+        "note": "Gates test-only SafeBrowsingService members on SAFE_BROWSING_AVAILABLE and removes a stale test getter absent from BrowserProcess. Preserves remaining test setters and does not change production code or Safe Browsing flags."
+      },
+      {
+        "order": 69,
+        "id": "m154-include-safe-browsing-prefs-in-notification-telemetry-test",
+        "patchFile": "patches/m154-include-safe-browsing-prefs-in-notification-telemetry-test.patch",
+        "sha256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c",
+        "sequentialApplyCheck": "passed",
+        "note": "Adds the direct header that declares prefs::kSafeBrowsingEnhanced to the Chromium unit test that uses it. The pref and test are valid in mode 0; this fixes a transitive-include assumption without suppressing coverage or changing production code."
+      },
+      {
+        "order": 70,
+        "id": "m154-include-safe-browsing-prefs-in-advanced-protection-test",
+        "patchFile": "patches/m154-include-safe-browsing-prefs-in-advanced-protection-test.patch",
+        "sha256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d",
+        "sequentialApplyCheck": "passed",
+        "note": "Adds the direct declaration header required by the Advanced Protection unit test. No production semantics, mode-0 flags, or coverage were changed."
+      },
+      {
+        "order": 71,
+        "id": "m154-resolve-sdkroot-symlink-for-apple-build-tools",
+        "patchFile": "patches/m154-resolve-sdkroot-symlink-for-apple-build-tools.patch",
+        "sha256": "712fd430b3090969330b4100d56ffba237a371f2d893a2c3a4f527ecb0569d2c",
+        "sequentialApplyCheck": "passed",
+        "note": "Resolve only SDKROOT symlinks to their canonical SDK path before Rust-hosted Apple build helpers run. Reproduces and addresses xcodebuild rejecting the GN-created SDK alias while accepting the canonical SDK path; no Chromium runtime semantics changed."
+      },
+      {
+        "order": 72,
+        "id": "m154-use-deps-pinned-devtools-node-tools",
+        "patchFile": "patches/m154-use-pinned-devtools-node-tools.patch",
+        "sha256": "d9608369a39376932240cc813ebafaa5184eee9f068157aba2ddc59f1198cd14",
+        "sequentialApplyCheck": "passed",
+        "note": "Use the already locked DevTools TypeScript package and its lockfile-verified @esbuild/darwin-arm64 package, plus Chromium DEPS-pinned Node, instead of hidden /opt/homebrew binaries or unavailable legacy mac-arm64 package paths."
+      }
+    ],
+    "pending": 0,
+    "latestOrderedAttempt": {
+      "recordedAtLocal": "2026-09-30",
+      "orderedGroupCount": 72,
+      "appliedGroupCount": 72,
+      "rejectedArtifactCount": 0,
+      "status": "clean ordered replay 71/71 plus disjoint exact group72 replay passed; GN checks passed; full chrome target incomplete",
+      "releaseQualified": false,
+      "wholeTreePostimageManifestPath": "/private/tmp/neantik-m154-source-tree-postimage-r4-20260930.jsonl",
+      "wholeTreePostimageManifestSHA256": "f12e1e973da852f40250b1b643af0c815c6d653ba9d0c319acd4601ded226b8c",
+      "orderedReplayContinuationLogPath": "/private/tmp/neantik-m154-source-replay-r4-continuation-20260930.log",
+      "orderedReplayContinuationLogSHA256": "6492ef6a3240368dc43d360d611a7d9692710b7e0ff244945776f5b7c0fbd0cc",
+      "qualificationLimit": "Source and GN evidence now covers 72 owned groups. Chromium source selects system Xcode for this non-corporate host. Diagnostic full chrome build remains incomplete; integrated runtime/security/signing/notarization/Gatekeeper/publication gates remain open.",
+      "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+      "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+      "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+      "pruneMode": "keep-contingent-paths",
+      "commonApplyLogSHA256": "704522c81f9cb7bb93b5dfab8ded0f78b360065a6efec56ab5feaacc3f63f4af",
+      "devtoolsBootstrapPatchSHA256": "d9608369a39376932240cc813ebafaa5184eee9f068157aba2ddc59f1198cd14",
+      "diagnosticBuild": {
+        "outputDirectory": "out/NeAntikM154Final20260930",
+        "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /opt/homebrew/bin/ninja -C out/NeAntikM154Final20260930 chrome -j6",
+        "lastObservedAction": "2232/57479",
+        "result": "interrupted-before-target-completion; diagnostic only; same output may resume after exact source/input audit"
+      },
+      "devtoolsBootstrapPostimagePaths": [
+        "third_party/devtools-frontend/src/scripts/build/ninja/bundle.gni",
+        "third_party/devtools-frontend/src/scripts/build/typescript/typescript.gni",
+        "third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni",
+        "third_party/devtools-frontend/src/scripts/devtools_paths.py",
+        "third_party/devtools-frontend/src/third_party/typescript/typescript.py"
+      ]
+    },
+    "rebases": {
+      "deterministic-rendered-surfaces": {
+        "sha256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e",
+        "basis": "Rebased the five Blink files from the exact full-DEPS/common preimage to the already compiled M154 diagnostic postimages. The isolated apply and byte-for-byte comparison passed for all five."
+      },
+      "enterprise-cloud-archive-analysis-mode0-common-overlay": {
+        "sha256": "664c99021f33f33b386a41d29bb7696fd9c3350a53e9e7cd4d0bfda0684e4ff9",
+        "basis": "Removed the obsolete deletion hunk for a generic is_mac utility dependency that pinned M154 macOS packaging already removes. Retains the enterprise_archive_analysis condition, sources, and utility dependency under the narrow enterprise gate. Fresh replay pending."
+      }
+    },
+    "postReplayGroup36Check": {
+      "order": 36,
+      "method": "Reversed then exact-applied group 36 atop the active diagnostic source carrying groups 1-35; compiled cloud_binary_upload_service.o successfully with the corrected GN target configs.",
+      "result": "passed",
+      "releaseQualified": false
+    },
+    "postReplayGroup37Check": {
+      "order": 37,
+      "method": "Exact-applied after group 36 to the active M154 diagnostic source; removed only two unused helpers and includes made unused by the existing local-NTP source patch.",
+      "compileObject": "obj/chrome/browser/search/search/search.o compiled successfully with Xcode Beta 27A5228h.",
+      "result": "passed",
+      "scope": "Patch applies atop the pinned M154 common-overlay base and active diagnostic source; complete clean ordered replay, regenerated full postimages, and release qualification remain false.",
+      "patchSHA256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5",
+      "releaseQualified": false,
+      "pinnedCommonOverlayBaseApplyCheck": "passed via git apply --check against /private/tmp/neantik-m154-deps-sync-20260927/src; base was not modified"
+    },
+    "postReplayGroup38And39Check": {
+      "orders": [
+        38,
+        39
+      ],
+      "method": "Removed the private controller-builder functions and three callbacks used only by those builders after the pinned common overlay makes BuildSyncService return nullptr. Applied both groups in order to a temporary copy of the pinned common-overlay file; the result exactly matched the active diagnostic source.",
+      "patchSHA256": {
+        "m154-prune-disabled-sync-builder-helpers": "8a7f111ad1a320cdd9060030c14efed591076e18f16b48ed97014beaed54df75",
+        "m154-prune-disabled-sync-service-helpers": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac"
+      },
+      "compileObject": "obj/chrome/browser/sync/sync/sync_service_factory.o compiled successfully after groups 38-39.",
+      "result": "passed",
+      "scope": "patch-only sequence check and one isolated object compile; whole-tree clean replay and release qualification remain false.",
+      "releaseQualified": false
+    },
+    "postReplayGroup40Check": {
+      "order": 40,
+      "method": "Source-wide search found only the helper definition; common overlay has disabled its caller. Exact isolated apply/reverse-check passed.",
+      "result": "apply-check-passed; isolated extension_safety_check_utils.o compile passed",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/extensions/extensions/extension_safety_check_utils.o",
+      "patchSHA256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b"
+    },
+    "postReplayGroup41Check": {
+      "order": 41,
+      "method": "Helper callers are both inside SAFE_BROWSING_DOWNLOAD_PROTECTION blocks; helper now uses the same buildflag. Exact isolated apply/reverse-check passed.",
+      "result": "apply-check-passed; isolated chrome_download_manager_delegate.o compile passed",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/download/impl/chrome_download_manager_delegate.o",
+      "patchSHA256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4"
+    },
+    "postReplayGroup42Check": {
+      "order": 42,
+      "method": "Source occurrence is definition-only; surrounding PSD string fields deliberately retain explicit not-logged values. Exact isolated apply/reverse-check passed.",
+      "result": "apply-check-passed; object compile pending",
+      "releaseQualified": false
+    },
+    "postReplayGroup43Check": {
+      "order": 43,
+      "method": "Source-wide search found only serializer definition after no-Safe-Browsing overlay removed its only use. Exact isolated apply/reverse-check passed; explicitly non-sensitive not-logged fields are retained.",
+      "result": "apply-check-passed; isolated download_warning_desktop_hats_utils.o compile passed",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/download/impl/download_warning_desktop_hats_utils.o",
+      "patchSHA256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15"
+    },
+    "postReplayGroup44Check": {
+      "order": 44,
+      "method": "Fetch assigns GetRealtimeUrlCheckMode under the same buildflag. Common enum type is available through existing enterprise connectors headers. Exact isolated apply/reverse-check passed.",
+      "result": "apply-check-passed; object compile pending",
+      "releaseQualified": false
+    },
+    "postReplayGroup45Check": {
+      "order": 45,
+      "method": "ContextInfo field is forwarded by ToContextInfo and enterprise_reporting_private tests expect it populated; helper existed but had no caller. The ID remains local output to privileged enterprise reporting API only; no diagnostics/network call added. Exact isolated apply/reverse-check passed.",
+      "result": "apply-check-passed; isolated context_info_fetcher.o compile passed",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/enterprise/impl/context_info_fetcher.o",
+      "patchSHA256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa"
+    },
+    "postReplayGroup46Check": {
+      "order": 46,
+      "method": "The policy constructor argument is stored but accessor returned false, dropping required enterprise bypass rationale. The accessor now returns the stored value and focused tests assert true/false.",
+      "result": "apply-check-passed; implementation object compile passed; focused unit test awaits full target build",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/enterprise/impl/content_analysis_downloads_delegate.o",
+      "patchSHA256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93"
+    },
+    "postReplayGroup47Check": {
+      "order": 47,
+      "method": "Removed two stale references to moreExtensions (element absent from current sidebar template) and the now-unused assertTrue import. Exact apply/reverse-check passed against pinned source.",
+      "result": "exact apply/reverse-check passed against pinned source",
+      "releaseQualified": false,
+      "patchSHA256": "6fd296034a832ea5e72cf6ea759334f073c302b81c6c00636b51f79cfe3333b4"
+    },
+    "postReplayGroup48Check": {
+      "order": 48,
+      "method": "Current sidebar template contains only History and clear-data entries; stale test accessed nonexistent syncedTabs property. Test now directly routes for syncedTabs while preserving current sidebar keyboard assertions and URL/search checks. Exact apply/reverse-check passed.",
+      "result": "apply-check-passed; TS generation pending",
+      "releaseQualified": false
+    },
+    "postReplayGroup49Check": {
+      "order": 49,
+      "method": "Existing overlay had an unconditional return, leaving callers without completion and leaving unreachable queue code. Disabled loader now synchronously reports FATAL_ERROR/nullopt and a focused unit test asserts no URL request.",
+      "result": "apply-check-passed; isolated one_google_bar_loader_impl.o compile passed",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/new_tab_page/impl/one_google_bar_loader_impl.o",
+      "patchSHA256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683"
+    },
+    "postReplayGroup50Check": {
+      "order": 50,
+      "method": "Local-only callback completion removes the only use of OneGoogleBarImpl account_consistency_mirror_required_; removed only the now-dead member and initializer. Exact apply/reverse-check passed.",
+      "result": "apply-check-passed; isolated one_google_bar_loader_impl.o compile passed",
+      "releaseQualified": false,
+      "compileObject": "obj/chrome/browser/new_tab_page/impl/one_google_bar_loader_impl.o",
+      "patchSHA256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c"
+    },
+    "postReplayGroup51Check": {
+      "order": 51,
+      "patchFile": "patches/m154-prune-disabled-page-annotation-helpers.patch",
+      "patchSHA256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed against the current diagnostic source after groups 1-50; this is not a refreshed ordered replay",
+      "compile": "page_content_annotations_service_factory.o compiled in next full-target retry; full target later stopped on the next dead constant",
+      "releaseQualified": false
+    },
+    "postReplayGroup52Check": {
+      "order": 52,
+      "patchFile": "patches/m154-prune-disabled-avatar-url-constant.patch",
+      "patchSHA256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed against current diagnostic source after groups 1-51; this is not a refreshed ordered replay",
+      "compile": "profile_avatar_downloader.o compiled in next full-target retry; full target later stopped on an unrelated unused local",
+      "releaseQualified": false
+    },
+    "postReplayGroup53Check": {
+      "order": 53,
+      "patchFile": "patches/m154-prune-disabled-account-consistency-entry.patch",
+      "patchSHA256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-52 against current diagnostic source; this is not a refreshed ordered replay",
+      "compile": "account_consistency_mode_manager.o compiled during the next target retry; full target later stopped at unrelated sign-in promo helper warnings",
+      "releaseQualified": false
+    },
+    "postReplayGroup54Check": {
+      "order": 54,
+      "patchFile": "patches/m154-prune-disabled-signin-promo-helpers.patch",
+      "patchSHA256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-53 against current diagnostic source; this is not a refreshed ordered replay",
+      "compile": "signin_promo_util.o compiled after group54 but compiler then reported additional unused helper-chain symbols; group55 removes only those 11 compiler-reported symbols",
+      "releaseQualified": false
+    },
+    "postReplayGroup55Check": {
+      "order": 55,
+      "patchFile": "patches/m154-prune-inactive-signin-promo-helper-chain.patch",
+      "patchSHA256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-54 against diagnostic source",
+      "compile": "signin_promo_util.o compiled successfully after group55; target later stopped at one unused https-first local",
+      "releaseQualified": false
+    },
+    "postReplayGroup56Check": {
+      "order": 56,
+      "patchFile": "patches/m154-prune-unused-https-first-pref-local.patch",
+      "patchSHA256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-55 against current diagnostic source; not a refreshed ordered replay",
+      "compile": "https_upgrades_util.o compiled after group56; the test target later stopped on extension-toolbar -Wshadow",
+      "releaseQualified": false
+    },
+    "postReplayGroup57Check": {
+      "order": 57,
+      "patchFile": "patches/m154-rename-shadowed-extension-anchor-view.patch",
+      "patchSHA256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-56 on current diagnostic source; not an ordered replay",
+      "compile": "extensions_toolbar_desktop.o compiled successfully after group57; target later stopped in disabled signout path on unused sync_service",
+      "releaseQualified": false
+    },
+    "postReplayGroup58Check": {
+      "order": 58,
+      "patchFile": "patches/m154-prune-disabled-signout-sync-lookup.patch",
+      "patchSHA256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-57 against diagnostic source",
+      "compile": "signin_view_controller.o compiled; target later stopped at unused app-menu sync title helper",
+      "releaseQualified": false
+    },
+    "postReplayGroup59Check": {
+      "order": 59,
+      "patchFile": "patches/m154-prune-disabled-sync-menu-title-helper.patch",
+      "patchSHA256": "c408f47d246022f3ec2ad83f3d0514597380db9962e73aa46e1c1d66019d1e4a",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-58 on current diagnostic source; not a refreshed ordered replay",
+      "compile": "app_menu_model.o compiled successfully after group59; next target attempt stopped at unused GetSigninStatusChipString",
+      "releaseQualified": false
+    },
+    "postReplayGroup60Check": {
+      "order": 60,
+      "patchFile": "patches/m154-prune-disabled-signin-status-chip-helper.patch",
+      "patchSHA256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-59 against diagnostic source",
+      "compile": "app_menu.o compiled; target then failed on a distinct missing Safe Browsing command case",
+      "releaseQualified": false
+    },
+    "postReplayGroup61Check": {
+      "order": 61,
+      "patchFile": "patches/m154-handle-safe-browsing-settings-command.patch",
+      "patchSHA256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-60 on current diagnostic source; not a refreshed ordered replay",
+      "existingUnitCoverage": "browser_command_handler_unittest.cc has pref-enabled, managed-pref, and default cases for this eligibility contract",
+      "compile": "full target reached browser_command_handler.cc; failed only because the file lacked a direct include for prefs::kSafeBrowsingEnabled/kSafeBrowsingEnhanced; group62 adds that include",
+      "releaseQualified": false
+    },
+    "postReplayGroup62Check": {
+      "order": 62,
+      "patchFile": "patches/m154-include-safe-browsing-command-prefs.patch",
+      "patchSHA256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-61 against current diagnostic source; not an ordered replay",
+      "compile": "browser_command_handler.o and browser_command_handler_unittest.o compiled with exact GN command after the prefs header fix; tests not run. Subsequent target failed on dead Read Anything ScreenAI member.",
+      "releaseQualified": false
+    },
+    "postReplayGroup63Check": {
+      "order": 63,
+      "patchFile": "patches/m154-remove-unused-read-anything-screen-ai-parameter.patch",
+      "patchSHA256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-62 against current diagnostic source; not a refreshed ordered replay",
+      "compile": "removed the unused ScreenAI member/initializer and updated two call arguments; retry then found the constructor declaration and one ChromeOS caller still carried the dead parameter; group64 removes those remaining signature sites",
+      "releaseQualified": false
+    },
+    "postReplayGroup64Check": {
+      "order": 64,
+      "patchFile": "patches/m154-remove-remaining-read-anything-screen-ai-parameter.patch",
+      "patchSHA256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact patch dry-run and apply passed after groups 1-63 against current diagnostic source; not a refreshed ordered replay",
+      "compile": "pending enterprise_archive_analyzer_unittests retry",
+      "releaseQualified": false
+    },
+    "postReplayGroup65Check": {
+      "order": 65,
+      "patchFile": "patches/m154-align-disabled-settings-test-guards-and-search-engine-fixtures.patch",
+      "patchSHA256": "9370fe358e4a01521b4029bcf8023d10977211682a107d9736ea3cf974e00ebb",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact reverse dry-run/reverse/apply passed after groups 1-64 against current diagnostic source; not a refreshed ordered replay",
+      "compile": "Settings WebUI TypeScript build_ts passed after disabling tests for deliberately compiled-out update/sign-in UI and filling suggestionsUrl fixtures",
+      "releaseQualified": false
+    },
+    "postReplayGroup66Check": {
+      "order": 66,
+      "patchFile": "patches/m154-remove-unreferenced-protego-sampling-constant.patch",
+      "patchSHA256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact reverse dry-run/reverse/apply passed after groups 1-65 against diagnostic source; not a refreshed ordered replay",
+      "compile": "isolated url_lookup_service.o compiled successfully under Xcode Beta 27A5228h",
+      "releaseQualified": false
+    },
+    "postReplayGroup67Check": {
+      "order": 67,
+      "patchFile": "patches/m154-guard-enterprise-analysis-include-with-enterprise-buildflag.patch",
+      "patchSHA256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact reverse dry-run/reverse/apply passed after groups 1-66 against diagnostic source; not a refreshed ordered replay",
+      "compile": "isolated chrome_file_system_access_permission_context.o compiled successfully under Xcode Beta 27A5228h",
+      "releaseQualified": false
+    },
+    "postReplayGroup68Check": {
+      "order": 68,
+      "patchFile": "patches/m154-prune-unreferenced-navigation-predictor-helpers.patch",
+      "patchSHA256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "result": "exact reverse dry-run/reverse/apply passed after groups 1-67 against diagnostic source; not a refreshed ordered replay",
+      "compile": "passed isolated navigation_predictor.o compile under Xcode Beta 27A5228h",
+      "releaseQualified": false
+    },
+    "postReplayGroup74Check": {
+      "checkedAtUTC": "2026-09-28T14:50:45Z",
+      "preimageManifestPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/whole-tree-postimage-manifest-73-with-node-deps.jsonl",
+      "preimageManifestSHA256": "764a1b617fd23264abd6e53e1117ea829d6b9f11939018b7172f6c9eeeafbd9d",
+      "file": "chrome/browser/safe_browsing/notification_telemetry/notification_telemetry_service_unittest.cc",
+      "preimageSHA256": "9fe5f3f0f93bd438296be14a8567e6d1b9db0228c425225dbbaed28b15720950",
+      "postimageSHA256": "c630ea851fca81ab1c69318c96f3112dbac983930adeb58a225ee50118c713c0",
+      "reverseApplyCheck": "passed",
+      "reverseApply": "passed",
+      "forwardApplyCheck": "passed",
+      "forwardApply": "passed",
+      "safeBrowsingMode": 0,
+      "productionFilesChanged": false,
+      "testCompile": "passed: obj/chrome/browser/safe_browsing/unit_tests/notification_telemetry_service_unittest.o",
+      "sourceExporter": "passed in the 75-group manifest continuation; superseded by cumulative 75-group source manifest",
+      "releaseReady": false
+    },
+    "postReplayGroup75Check": {
+      "preimageManifestPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/whole-tree-postimage-manifest-74-with-node-deps.jsonl",
+      "preimageManifestSHA256": "ee9a1f261c4901badbf3c14fec3e85597a5a60a215c72f2f0d455e048175b924",
+      "file": "chrome/browser/safe_browsing/advanced_protection_status_manager_unittest.cc",
+      "preimageSHA256": "4edfd67baba2b4b8a3a161e6dda642d5f89cbfaa02dc7a8402778186d5cb9f57",
+      "postimageSHA256": "5df201e6c9b723b2d05f5dc68dd8a377ab554f5290f612b1f9937c92cd0caaea",
+      "reverseApplyCheck": "passed",
+      "reverseApply": "passed",
+      "forwardApplyCheck": "passed",
+      "forwardApply": "passed",
+      "targetObjectCompile": "passed: obj/chrome/browser/safe_browsing/unit_tests/advanced_protection_status_manager_unittest.o",
+      "productionCodeChanged": false,
+      "releaseReady": false,
+      "checkedAtUTC": "2026-09-28T14:50:45Z",
+      "focusedSourceSetBuild": "passed: exact incremental invocation for net_unittests, enterprise_archive_analyzer_unittests, chrome/browser/safe_browsing:unit_tests, components/safe_browsing/content/browser:unit_tests; final emitted action 22/22; no failure output.",
+      "focusedNetTests": "passed 67, skipped 2 Android-only, failed 0; ProxyConfig/ProxyConfigWebSocket/ProxyHostMatchingRules/ProxyList/URLRequestContextBuilder filter; rerun in permitted macOS context after sandbox denied local binds.",
+      "unitTestRunner": "chrome/browser/safe_browsing source_set compiled; aggregate Chrome unit_tests executable was not linked, so those tests were not executed.",
+      "enterpriseArchiveAnalyzerTests": "51/51 passed earlier; source groups74-75 are test-only and do not alter the production analyzer."
+    },
+    "supersededOwnedGroups20260930": [
+      {
+        "historicalOrder": 23,
+        "id": "m154-clang27-webgl-safe-bounds-and-renderer-format",
+        "patchFile": "patches/m154-clang27-webgl-safe-bounds-and-renderer-format.patch",
+        "sha256": "61fe308c4b942ff9626b78d106e5b5b8930b4ada6e35a6c404f3730d703427c2",
+        "historicalApplyClaim": "passed",
+        "state": "superseded-not-in-active-sequence",
+        "retainedPatchFile": true,
+        "reason": "Its entire WebGL postimage is now emitted and hash-locked by the final M154 tuple overlay; exact transform output matches the prior complete source copy byte-for-byte."
+      },
+      {
+        "historicalOrder": 47,
+        "id": "m154-remove-stale-extension-sidebar-test-selector",
+        "patchFile": "patches/m154-remove-stale-extension-sidebar-test-selector.patch",
+        "sha256": "6fd296034a832ea5e72cf6ea759334f073c302b81c6c00636b51f79cfe3333b4",
+        "historicalApplyClaim": "passed",
+        "state": "superseded-not-in-active-sequence",
+        "retainedPatchFile": true,
+        "reason": "The target sidebar_test.ts is absent after the pinned common-overlay source base; retain this historical patch, do not claim a M154 apply."
+      },
+      {
+        "historicalOrder": 48,
+        "id": "m154-update-history-routing-test-to-current-sidebar",
+        "patchFile": "patches/m154-update-history-routing-test-to-current-sidebar.patch",
+        "sha256": "f988c4e78f1e367bdabf029d25bb21a3475756bafc9869f7bc64cb1368dee4c6",
+        "historicalApplyClaim": "passed",
+        "state": "superseded-not-in-active-sequence",
+        "retainedPatchFile": true,
+        "reason": "The target history_routing_test.ts is absent after the pinned common-overlay source base; retain this historical patch, do not claim a M154 apply."
+      },
+      {
+        "historicalOrder": 65,
+        "id": "m154-align-disabled-settings-test-guards-and-search-engine-fixtures",
+        "patchFile": "patches/m154-align-disabled-settings-test-guards-and-search-engine-fixtures.patch",
+        "sha256": "9370fe358e4a01521b4029bcf8023d10977211682a107d9736ea3cf974e00ebb",
+        "historicalApplyClaim": "passed",
+        "state": "superseded-not-in-active-sequence",
+        "retainedPatchFile": true,
+        "reason": "All three settings test targets are absent after the pinned common-overlay source base; retain this historical patch, do not claim a M154 apply."
+      },
+      {
+        "historicalOrder": 70,
+        "id": "m154-guard-disabled-screen-ai-sandbox-setup",
+        "patchFile": "patches/m154-guard-disabled-screen-ai-sandbox-setup.patch",
+        "sha256": "613419c7bf824bd7775fb14c5265e56fb0f841ac59931f2c36779305965687ef",
+        "historicalApplyClaim": "passed",
+        "state": "superseded-not-in-active-sequence",
+        "retainedPatchFile": true,
+        "reason": "The M154 source no longer contains the targeted macOS ScreenAI sandbox setup body; the stale include-only partial patch was reversed in scratch."
+      }
+    ],
+    "supersededOrderedAttempt75": {
+      "recordedAtUTC": "2026-09-29T07:49:01Z",
+      "orderedGroupCount": 75,
+      "method": "Active owned sequence contains 75 groups. The prior group69 was superseded after clean GN proved it overwrote non-empty lists; the current Safe Browsing file was reconstructed from pristine .58 HEAD plus group16 and GN generation passed. Group75 is the SDKROOT path fix.",
+      "baseRoot": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src",
+      "baseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "wholeTreePostimageManifestPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/whole-tree-postimage-manifest-active75-with-node-deps.jsonl",
+      "wholeTreePostimageManifestSHA256": "52d8663686daf0405367d4e8b0bf35119be2244b96457ea93cac7ea6de32e06a",
+      "orderedReplayContinuationLogPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/owned-replay-active75.log",
+      "orderedReplayContinuationLogSHA256": "17b619e860a83df9abf66ecaa5f7569d4dee54aad1e23b210135781c528d68f1",
+      "orderedReplayContinuation": "Group76 exact-applied to pristine M154 rustc_wrapper.py in an isolated patch check; SDKROOT canonicalization passed and xcodebuild accepted the canonical SDK path.",
+      "appliedGroupCount": 75,
+      "rejectedArtifactCount": 0,
+      "releaseQualified": false,
+      "qualificationLimit": "Source manifest is diagnostic; clean SB graph now generates. Stable Xcode27/SDK27 is not the pinned hermetic release toolchain; integrated browser build, runtime, signing/notarization, publication remain unpassed.",
+      "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+      "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+      "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+      "pruneMode": "keep-contingent-paths",
+      "commonApplyLogSHA256": "704522c81f9cb7bb93b5dfab8ded0f78b360065a6efec56ab5feaacc3f63f4af"
+    },
+    "preSatisfied": 0
+  },
+  "modifiedHunks": {
+    "timezone-locale-network-context": "Adjusted CoreInitializer::Initialize context from removed ScriptStateImpl::Init to current M154 BindingSecurity::Init; timezone override remains after TimeZoneController::Init.",
+    "private-runtime-config-environment": "Adjusted dependent CoreInitializer hunk to current M154 BindingSecurity::Init context and follows the timezone patch.",
+    "m154-remove-unreachable-disabled-gcm-body": "Remove only code unreachable after the common-overlay unconditional return and two helpers made unused by the same GCM/MCS disablement; preserve all returns and disabled network behavior.",
+    "m154-remove-unreachable-domain-reliability-upload-body": "Preserve the common overlay's always-discard upload behavior and synchronous success callback while removing the unreachable Google upload body and its unused MIME/annotation declarations.",
+    "m154-template-url-service-init-order": "Move should_autocollect_ initialization after the fields declared before it to satisfy -Wreorder-ctor; preserve its true value and runtime behavior.",
+    "enterprise-cloud-archive-analysis-mode0-common-overlay": "Rebase the Enterprise archive-analysis/M154 mode-0 port over pinned common inputs; two no-Safe-Browsing call deletions apply on clean .58, while the renamed multipart_uploader.cc telemetry call is guarded by this owned group.",
+    "m154-remove-unreachable-assist-ranker-body": "Preserve the common overlay return false that blocks AssistRanker network requests; remove only the unreachable request body, its retry constant and unused retry_count_ field, plus includes made unused by that body.",
+    "m154-remove-unreachable-translate-ranker-body": "Preserve the common overlay behavior that returns true before model ranker evaluation; remove only the dead body after that return. Translate ranking and enforcement are already explicitly disabled by the common overlay; translation prompts retain the same default allow behavior.",
+    "m154-prune-disabled-autofill-network-helpers": "The common overlay reduces AutofillCrowdsourcingManager::StartRequest to a return-true stub with no network request. Remove only its now-unused timeout/header constants and the network-annotation and API-body helpers; preserve the no-network behavior and existing caller-visible return.",
+    "m154-prune-disabled-supervised-ntp-helpers": "Remove GetDefaultSearchProviderTemplateURL and IsURLAllowedForSupervisedUser, which became unreferenced when the prior owned New Tab patch made local NTP the sole route; remove only includes used by those helpers. Preserves the active New Tab behavior and UMA enum values.",
+    "m154-prune-disabled-sync-builder-helpers": "Remove private CreateCommonControllers, CreateChromeControllers, CreateControllers, and BuildSyncClient helpers. The pinned common overlay intentionally makes BuildSyncService return nullptr, so these builders have no callers.",
+    "m154-prune-disabled-sync-service-helpers": "Remove GetTabGroupSyncService, GetTemplateURLService, and GetAddressDataManager plus stale comments; they are used only by the disabled Sync controller builders removed by group 38."
+  },
+  "releaseBlockers": [
+    "M154 macOS source pins and 20/20 series patch applicability are now recorded, but no reviewed M154 source contract binds the full clean Chromium + common + macOS + NeAntik replay and exact postimages.",
+    "No release-qualified verifier binds the pending 71 owned patch postimages, final M154 tuple transform, canonical Apple tuples, pinned common/macOS overlays, generated GN args, and full source tree.",
+    "build-runtime.sh and prepare-runtime-source.sh still select M152 locks/plans; M154 release preparation must fail closed until an explicit reviewed source/toolchain selection is implemented.",
+    "The exact attempt8 diagnostic app passed only a limited CUA GUI startup/version smoke on chrome://version. Isolated-profile, real network, proxy/WebRTC/DNS, recovery/crash, fingerprint coherence, keyboard, and A→B→A behavior remain unverified.",
+    "No M154 candidate has passed exact-candidate runtime report, Developer ID signing, notarization/stapling, Gatekeeper, hosted-byte verification, or rollback cycle.",
+    "The official M154 hermetic Xcode package with SDK26.5/build25F70 is absent; the local CLT SDK alone is not release qualification.",
+    "Current local gh CLI authentication is invalid; the connected GitHub API works for public reads, but CLI authentication must be restored before any eventual upload or publication. A fresh permitted Keychain check confirms Developer ID identities and neantik-notary profile access; exact-candidate signing, notarization, stapling, and Gatekeeper remain unperformed.",
+    "The old active75 expected whole-tree hashes are not reproduced. Its five test-header changes and one pref-declaration removal are now bound by a new owned patch, but all 71 active groups are pending a fresh clean replay and regenerated whole-tree postimage manifest."
+  ],
+  "safetyInvariant": "safe_browsing_mode=0 is retained. Enterprise Cloud Content Analysis code is included, but the default Google upload URL is intentionally domain-substituted and blocked; custom-provider upload/verdict behavior remains unverified.",
+  "diagnosticSourceCopy": "/private/tmp/neantik-m154-deps-sync-20260927/src-neantik-owned",
+  "upstreamMacPackagingRecheck": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "checkedAt": "2026-09-27",
+    "defaultBranch": "master",
+    "branches": [
+      "master"
+    ],
+    "headCommit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "latestReleaseTag": "152.0.7977.82-1.1",
+    "latestReleaseCommit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "latestReleasePublishedAt": "2026-09-06T22:16:05Z",
+    "chromium154PackagingTagOrBranch": "none-found",
+    "releaseImpact": "M154 macOS packaging layer still requires an owned, reviewed port; no matching upstream tag or branch was present in the fresh GitHub API listing.",
+    "supersededBy": "upstreamMacPackagingCurrent",
+    "historicalSnapshotOnly": true,
+    "historicalAsOf": "2026-09-27"
+  },
+  "macosPackagingPortProbe": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "commit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "tree": "977597e8e338be52f44d282f885ed33c025b3122",
+    "seriesSHA256": "c2e7a060a0ef191eb8a4ad7c3488a07d5c4939379bea740891cbe03dd3e88c84",
+    "base": "official Chromium 154.0.8037.58 plus the clean 109/109 ungoogled common replay",
+    "method": "Applied the pinned M152 macOS packaging series in order to an isolated APFS copy; failed patches were allowed to continue so the remaining independent patch contexts could be mapped.",
+    "patchCount": 16,
+    "cleanlyApplied": 10,
+    "unresolved": [
+      {
+        "patch": "ungoogled-chromium/macos/build-bindgen.patch",
+        "result": "2 of 3 hunks failed against M154 tools/rust/build_bindgen.py"
+      },
+      {
+        "patch": "ungoogled-chromium/macos/disable-clang-version-check.patch",
+        "result": "clang version patch applied; toolchain.gni hunk failed because M154 changed clang_version selection"
+      },
+      {
+        "patch": "ungoogled-chromium/macos/fix-disabling-safebrowsing.patch",
+        "result": "most hunks applied; one chrome/browser/ui/BUILD.gn dependency hunk no longer matches"
+      },
+      {
+        "patch": "ungoogled-chromium/macos/fix-dsymutil.patch",
+        "result": "toolchain.gni hunk applied; dump-static-initializers.py hunk failed against current script"
+      },
+      {
+        "patch": "ungoogled-chromium/macos/build-bindgen-target-override.patch",
+        "result": "1 of 4 hunks applied; three build_bindgen.py hunks need a current-source port"
+      },
+      {
+        "patch": "ungoogled-chromium/macos/bindgen-disable-static.patch",
+        "result": "hunk failed against the M154 bindgen build function"
+      }
+    ],
+    "safetyReview": "The M152 Safe Browsing compatibility patch removes the generic macOS chrome/utility/safe_browsing dependency and strips Safe Browsing-only UI/test dependencies. The M154 Enterprise archive feature must restore the utility dependency under its explicit enterprise_archive_analysis gate and keep safe_browsing_mode=0. This source-level requirement has not yet been built or runtime-tested.",
+    "patchSeriesSHA256": "c2e7a060a0ef191eb8a4ad7c3488a07d5c4939379bea740891cbe03dd3e88c84",
+    "applyLogSHA256": "b6704ef89c46d741d2ae96566f69fce4d51552dbbbeb0a31136f9f2dd65a8267",
+    "reportPath": "/private/tmp/neantik-m154-deps-sync-20260927/macos-packaging-cleanprobe.json",
+    "logPath": "/private/tmp/neantik-m154-deps-sync-20260927/macos-packaging-cleanprobe.log",
+    "buildOrRuntimeEvidence": false,
+    "historicalOnly": true,
+    "supersededBy": "upstreamMacPackagingCurrent",
+    "scopeCorrection": "This was an exploratory application of the pinned M152 packaging series to M154 source, not a probe of the later M154 tag."
+  },
+  "macosFeaturePreservationOverlay": {
+    "patchPath": "patches/macos-feature-preservation.patch",
+    "sha256": "e128b89aeefe51a9a775322627c40f3dc51cda518edf1a8aff2f12b57383d14b",
+    "order": "Apply after the pinned M152 macOS packaging compatibility layer, before GN generation/build.",
+    "restores": [
+      "M154 guarded Enterprise Client Certificate policy map entries for per-user and per-browser policies.",
+      "M154 macOS sandbox parameter handling for ScreenAI and On-device Translation."
+    ],
+    "applyCheck": "git apply --check and git apply passed on isolated src-macos-packaging-port and src-macos-packaging-cleanprobe trees.",
+    "gnCheck": "Passed: buildtools/mac/gn check out/NeAntikM154PortProbe //chrome:chrome.",
+    "gnConfiguration": {
+      "safeBrowsingMode": 0,
+      "enterpriseCloudContentAnalysis": true,
+      "enterpriseArchiveAnalysis": "derived true on macOS from Enterprise Cloud Content Analysis",
+      "safeBrowsingUseUnrar": true,
+      "archiveAnalyzerSources": [
+        "ZIP",
+        "RAR"
+      ],
+      "focusedTestTarget": "//chrome/services/file_util/public/cpp:enterprise_archive_analyzer_unittests"
+    },
+    "runtimeEvidence": "none; this overlay is not release-qualified."
+  },
+  "enterpriseSafeBrowsingMode0Guards": {
+    "patchPath": "patches/enterprise-safe-browsing-mode0-guards.patch",
+    "sha256": "b0a87f4f560f4fe7df518b72d7cb4623dec71afe3dd4cde2200fd80d6ec444ff",
+    "change": "Guard the three Enterprise cloud upload references to WebUIContentInfoSingleton with SAFE_BROWSING_DOWNLOAD_PROTECTION while preserving Enterprise Cloud Content Analysis.",
+    "basis": "The pinned ungoogled-chromium commit a638756eb14c8b6ce64b4b2a067afea5d4207bf4 contains fix-building-without-safebrowsing.patch at patches/core/ungoogled-chromium/fix-building-without-safebrowsing.patch. Fresh GitHub raw bytes are 175769 UTF-8 bytes with SHA-256 74788df8163ba56909c8fe55938b85a6af1ecbfeb99e773bc7c5b4a1bfb41682; the earlier b0be19d0... hash was wrong. On clean M154 .58 commit a654841425914cbb703a2931e07b70a83aedbafd, its FilesRequestHandlerBase and ResumableUploadRequestBase removal hunks apply. Its multipart patch targets renamed multipart_uploader_base.cc, absent in .58; owned group 16 now carries the SAFE_BROWSING_DOWNLOAD_PROTECTION guard for multipart_uploader.cc. The combined selected three-site patch check passes on that clean base.",
+    "applyCheck": "Passed git apply --check on clean .58 for the selective patch at /private/tmp/neantik-m154-mode0-upload-webui-gates.patch (SHA-256 2daef49892978f713d2df301fa0651e70885ee4c4de655edc16c80418d2e7b27). This validates only the three call-site hunks, not the complete common or owned patch series.",
+    "status": "selected three-site ownership and applicability verified on clean .58; full source replay and complete release qualification remain open",
+    "safeBrowsingMode": 0,
+    "enterpriseCloudContentAnalysis": true
+  },
+  "latestDiagnosticBuildCheckpoint": {
+    "checkedAtUTC": "2026-09-27T10:11:03Z",
+    "sourceTree": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe",
+    "outDir": "out/NeAntikM154PortProbe",
+    "command": "/opt/homebrew/bin/ninja -C out/NeAntikM154PortProbe -j6 chrome",
+    "sessionId": 24473,
+    "result": "completed-exit-0",
+    "lastEmittedAction": "13314/13315; //chrome:verify_libraries_chrome_app completed",
+    "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "sourceTreeStatus": "Diagnostic overlay with 312 .rej/.orig files; not a clean owned replay.",
+    "xcodeSDK": "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+    "compileStatus": "full chrome target completed, diagnostic-only; no release qualification",
+    "binaryVersion": "154.0.8037.58",
+    "binaryArchitecture": "arm64",
+    "binarySignature": "adhoc-linker-signed",
+    "runtimeLaunch": "Not passed: direct headless startup aborted during macOS TransformProcessType application registration; LaunchServices open returned kLSNoExecutableErr (-10827).",
+    "releaseQualified": false,
+    "supersededForLatestSource": true
+  },
+  "upstreamPackagingSourceReview": {
+    "reviewedAt": "2026-09-27",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "tag": "152.0.7977.82-1.1",
+    "commit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "tree": "977597e8e338be52f44d282f885ed33c025b3122",
+    "evidence": "A fresh shallow clone of the pinned tag resolved to the recorded commit and tree; patch files were reviewed against the official M154 base and the isolated packaging cleanprobe.",
+    "portDecisions": [
+      "Do not port disable-clang-version-check literally: its if(false) disables compiler consistency checks and its second hunk pins clang_version=23, while M154 declares clang_version=24.",
+      "Do not port the Rust generator if(true) literally: it moves a Linux-only shared-library argument to all platforms; the M154 compile is exercising the current port before any narrower compatibility change is considered.",
+      "The M154 cleanprobe keeps safe_browsing_mode=0 and gates the macOS utility Safe Browsing dependency and archive-analyzer sources on enterprise_archive_analysis; this graph is under the active diagnostic build.",
+      "The stale dSYM script hunk remains unresolved and unqualified; let the full build reveal whether it is needed before changing the M154 tool path."
+    ],
+    "releaseEvidence": false,
+    "historicalOnly": true,
+    "supersededBy": "upstreamMacPackagingCurrent"
+  },
+  "generatedAppleTupleOverlay": {
+    "scriptPath": "scripts/apply-owned-runtime-device-tuples-154.py",
+    "scriptSHA256": "c19132664ad79180d9ddecd53822bb0fb00a5a1d0054bed293c6746596ee9328",
+    "catalogPath": "runtime/apple-device-tuples.json",
+    "catalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+    "sourceCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "sourceTree": "63b6339af403b6f8dc70fe2d4613f91f1c04f43a",
+    "sourceVersion": "154.0.8037.58",
+    "canonicalTupleCount": 11,
+    "postimageSHA256": {
+      "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
+      "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
+      "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
+      "third_party/blink/renderer/core/frame/screen.cc": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
+      "third_party/blink/renderer/core/frame/local_dom_window.cc": "9a6916b77dd58f5860a7b7b2fc2124615b0a5db0c2a73e56134380f59212a087",
+      "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "ff4756e11005c719c4cfeaee06ad783a073d8b5a02b9290aba59879d184a26b7",
+      "components/embedder_support/user_agent_utils.cc": "6849c382d3bf1ca5d8fa2320d945547d429c45a5c7e8638428cd2e9856e3a996",
+      "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac"
+    },
+    "verification": "Applied to src-macos-packaging-cleanprobe; exact M154 pre/postimage checks pass; verify-apple-device-tuples.py passes; GN regenerated and gn check //chrome:chrome passes.",
+    "releaseEvidence": false,
+    "selectionContract": "C++ GetAppleDeviceTuple(seed) indexes seed % 11, matching Sources/NeAntik/FingerprintAudit.swift Int(seed % UInt32(appleDeviceTuples.count)); the M154 overlay test asserts both contracts."
+  },
+  "enterpriseUploadRouting": {
+    "defaultEndpoint": "https://safebrowsing.9oo91e.qjz9zk/safebrowsing/uploads/scan",
+    "officialChromiumEndpoint": "https://safebrowsing.google.com/safebrowsing/uploads/scan",
+    "domainSubstitution": "The qjz9zk host is intentionally non-existent and runtime-blocked by the ungoogled model.",
+    "customProviderRuntime": "not verified",
+    "releaseImpact": "Enterprise scan execution is not yet proven; preserve mode 0 and do not claim this feature works until custom-provider upload and verdict tests pass."
+  },
+  "domainSubstitutionRuntimeAndLogReview": {
+    "sourceBehavior": "qjz9zk requests are converted to trk: and rejected with ERR_BLOCKED_BY_CLIENT.",
+    "runtimeVerification": "passed: one filtered net_unittests case returned ERR_BLOCKED_BY_CLIENT; captured both ERROR records and verified neither contains the private query term.",
+    "privacyIssue": "Current diagnostic logs include the full blocked URL in URLRequest and TrkProtocolHandler, including query data.",
+    "nextGate": "Add exact runtime block test and sanitize logging before release qualification.",
+    "patchPath": "patches/domain-substitution-runtime-probe-and-log-redaction.patch",
+    "patchSHA256": "e49ddfec93ac0cfc16a068a68099ff22ad92034cfd8bfb329465e9f226794fc9",
+    "applyCheck": "Updated patch reverse-check passed against the diagnostic M154 tree after integration; the original forward apply-check passed on the unpatched owned-overlay tree before integration.",
+    "patchContents": [
+      "runtime test expects qjz9zk Enterprise fallback URL to return ERR_BLOCKED_BY_CLIENT",
+      "both blocked-request logs print only the host and omit path/query/fragment"
+    ],
+    "compileAndRuntimeTest": "pending after current Ninja session completes",
+    "latestCompileAndRuntimeTest": {
+      "recordedAtUTC": "2026-09-27T11:02:21Z",
+      "sourceRoot": "/private/tmp/neantik-m154-build-20260925/src",
+      "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "sourceQualification": "diagnostic overlay, not a clean pinned release replay",
+      "argsFile": "out/NeAntikMode0Audit/args.gn",
+      "safeBrowsingMode": 0,
+      "target": "net_unittests",
+      "targetSHA256": "106f47e3262d295d581352ba95cc4c92a65c01276f8570770279407a247ece1c",
+      "test": "URLRequestTest.BlocksSubstitutedSafeBrowsingUploadHost",
+      "result": "passed: 1/1",
+      "log": "/private/tmp/neantik-m154-domain-substitution-test-20260927.log",
+      "logSHA256": "8d3eef6bc0cf2dbceedc6b9aa5a6c20f22cc89cd6bd39fb424e4d724a922a6c8",
+      "logBytes": 1160,
+      "releaseQualified": false
+    }
+  },
+  "previousDiagnosticBuildCheckpoint": {
+    "sourceTree": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe",
+    "outDir": "out/NeAntikM154PortProbe",
+    "command": "/opt/homebrew/bin/ninja -C out/NeAntikM154PortProbe -j6 chrome",
+    "previousAttempt": "Stopped intentionally at 12798/29164 after finding manual ninja had skipped the required canonical 11-row Apple tuple overlay. Its incomplete 5-row source was not accepted.",
+    "sourceRestorationApplied": true,
+    "gnCheckAfterRestoration": "passed after applying M154 canonical tuple overlay",
+    "currentAttempt": "terminal historical checkpoint; stored session 5467 unavailable and later exact sourceRoot/outDir checkpoint is completed-exit-0",
+    "sessionId": 5467,
+    "observedActions": "32244/50953; process confirmed live at 2026-09-27 03:41:20 UTC",
+    "sourceTreeStatus": "M154-owned runtime patches + pinned macOS packaging layer + feature-preservation patch + canonical 11-row Apple tuple overlay are applied.",
+    "compileStatus": "historical diagnostic attempt; superseded by completed latestDiagnosticBuildCheckpoint; release qualification false"
+  },
+  "enterpriseCloudArchiveAnalysisMode0PatchPort": {
+    "patchPath": "patches/enterprise-cloud-archive-analysis-mode0-common-overlay.patch",
+    "sha256": "86d2fa0d4ad24a97f205e1a00d2ebe27c60f85f5b844363ea974331fb51731a9",
+    "upstreamDiagnosticPatchPath": "patches/enterprise-cloud-archive-analysis-mode0.patch",
+    "upstreamDiagnosticPatchSHA256": "6e4e7c76a599d0fa1d9820694ac50e3f0b643d22aa3cefcc3c56d5da7a5b2827",
+    "bytes": 57927,
+    "changedFiles": 34,
+    "rebasedPatchSHA256": "86d2fa0d4ad24a97f205e1a00d2ebe27c60f85f5b844363ea974331fb51731a9",
+    "upstreamDiagnosticPatchBytes": 61234,
+    "baseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "safeBrowsingMode": 0,
+    "enterpriseCloudContentAnalysis": true,
+    "cleanBaseApplyCheck": "The final 34-file Enterprise patch passes git apply --check and apply after groups 1-15 in the pinned ordered sparse replay. All 17 owned groups pass on the exact 64 touched source paths from the pinned common+full-DEPS base. This is patch applicability evidence only; whole-tree postimage regeneration, GN, full build, runtime, signing, and release gates remain open.",
+    "gnGeneration": "passed in a disposable validation tree after consumer guards",
+    "fullGraphValidation": "failed: 10 GN include/dependency errors remain across Extensions, File System Access, policy/preferences, zlib ZIP, and Safe Browsing search-engine dependencies.",
+    "freshAllTargetsGNCheck": {
+      "checkedAtUTC": "2026-09-27",
+      "sourceRoot": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe",
+      "outDir": "out/NeAntikM154PortProbe",
+      "productTargetCheck": "Passed: buildtools/mac/gn check out/NeAntikM154PortProbe //chrome:chrome.",
+      "allTargetsCheck": "Failed; gn check out/NeAntikM154PortProbe reached the default 100-error limit in test and support targets.",
+      "log": "/private/tmp/neantik-m154-fullgncheck-20260927.log",
+      "classification": "The product-target pass does not waive the all-target failures. The all-target failures are not fixed by broadening dependencies; isolate valid test-only GN ownership and keep runtime checks scoped.",
+      "releaseQualified": false
+    },
+    "targetedValidation": "5 target-scoped GN header checks passed; archive and enterprise tests were exercised only in separate diagnostic trees.",
+    "status": "All 17 owned groups pass ordered sparse apply; remains diagnostic-only because the whole-tree source/postimage contract, complete GN graph, runtime, and release gates are still open.",
+    "releaseQualified": false,
+    "nextGate": "Reconstruct and pin the full clean common+DEPS source replay with regenerated whole-tree postimage hashes; resolve GN ownership failures, complete mode-0 Enterprise unit suites and service crash/sandbox/provider runtime tests, then exact-candidate GUI/sign/notary/Gatekeeper/site/rollback gates."
+  },
+  "sourceReplayManifestExporterAttempt": {
+    "recordedAtUTC": "2026-09-27T11:14:22Z",
+    "exporter": "scripts/export-chromium-154-port-input-manifest.py",
+    "result": "blocked; no manifest was written",
+    "candidateRoot": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe",
+    "candidateArgsGN": "out/NeAntikM154PortProbe/args.gn",
+    "argsVerified": "arm64, Metal enabled, safe_browsing_mode=0, enterprise_cloud_content_analysis=true",
+    "exportFailure": "13 untracked .rej/.orig files remain from the macOS packaging port probe; these are retained as diagnostic evidence.",
+    "gitMetadata": "The candidate .git file points to /private/tmp/neantik-154-checkout/.git/worktrees/neantik-154-stable-58, so it is not an independent Git worktree. The rollback checkout itself returned clean status.",
+    "releaseQualified": false,
+    "latestStatus": {
+      "recordedAtUTC": "2026-09-29T17:24:40Z",
+      "result": "Chromium 154 diagnostic input manifest exported. It binds the upstream M154 macOS tag, series, and all 20 patch file SHA-256 values. Tracked diff SHA remains bbe4176598471829f4c1bf31f0028db47b09a0e34a7c6b6a2a34c71a116f13b7; 20 untracked inputs.",
+      "manifestPath": "/private/tmp/neantik-m154-input-manifest-pinned-packaging-20260930.json",
+      "releaseQualified": false,
+      "releaseReady": false,
+      "limitation": "The exporter binds current inputs but does not validate or repair the separate 23-file active75 postimage mismatch."
+    }
+  },
+  "compileFixCheckpoint": {
+    "recordedAtUTC": "2026-09-27T14:11:22Z",
+    "fix": "Replace raw pixel pointer arithmetic with SkPixmap typed writable_addr8/16/32 accessors; use actual pixmap dimensions and clamp profile/random fractions and pixel coordinates into bounds; remove source-image offsets from local pixmap addressing.",
+    "sourceFiles": [
+      "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc",
+      "third_party/blink/renderer/platform/graphics/static_bitmap_image.h",
+      "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc",
+      "third_party/blink/renderer/platform/image-encoders/image_encoder.cc"
+    ],
+    "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer third_party/ninja/ninja -C out/NeAntikM154Fresh -j6 obj/third_party/blink/renderer/platform/platform/static_bitmap_image.o obj/third_party/blink/renderer/platform/platform/image_encoder.o obj/third_party/blink/renderer/modules/canvas/canvas/base_rendering_context_2d.o",
+    "result": "passed-exit-0; 2659/2659 required graph actions completed",
+    "xcodeBuild": "27A266a",
+    "gnGeneration": "passed under process-scoped stable DEVELOPER_DIR",
+    "unsupportedGNArg": "removed use_metal (GN had warned it had no effect)",
+    "metalBuildArgs": {
+      "angle_enable_metal": true,
+      "dawn_enable_metal": true
+    },
+    "safeBrowsingMode": 0,
+    "enterpriseCloudContentAnalysis": true,
+    "releaseQualified": false,
+    "gnCheckTargets": [
+      "//chrome:chrome",
+      "//chrome/services/file_util/public/cpp:enterprise_archive_analyzer_unittests"
+    ],
+    "buildArgumentLock": {
+      "angle_enable_metal": true,
+      "dawn_enable_metal": true,
+      "safe_browsing_mode": 0,
+      "enterprise_cloud_content_analysis": true,
+      "unsupported_use_metal_removed": true
+    },
+    "lastObservedAtUTC": "2026-09-27T19:49:19Z",
+    "status": "full test-target build resumed after isolated AssistRanker, Translate Ranker and Autofill crowdsourcing objects passed; active session 38350 is compiling the remaining test graph",
+    "latestFailure": {
+      "action": "obj/components/autofill/core/browser/browser/autofill_crowdsourcing_manager.o",
+      "source": "components/autofill/core/browser/crowdsourcing/autofill_crowdsourcing_manager.cc:99,131,220,548",
+      "diagnostic": "four -Werror unused const/function diagnostics after common overlay replaces StartRequest network body with return true",
+      "classification": "The pinned common overlay has already removed the Autofill crowdsourcing request network body; remaining request-only declarations are unreachable/unused. No network path was restored.",
+      "resolution": "Owned patch group 19 removes only two unused request constants and two unused request helpers; isolated object compile passed."
+    },
+    "compileCompatibilityPatch6": "patches/m154-remove-unreachable-translate-ranker-body.patch",
+    "compileCompatibilityPatch6SHA256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4",
+    "compileCompatibilityPatch6ObjectStatus": "passed: isolated translate_ranker_impl.o compile",
+    "activeSessionId": 38350,
+    "activeProgress": "1309/28375 actions; session 38350 confirmed live at 2026-09-27T19:49:19Z",
+    "activeCommand": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /opt/homebrew/bin/ninja -C out/NeAntikM154Fresh -j6 net_unittests enterprise_archive_analyzer_unittests",
+    "compileCompatibilityPatch7": "patches/m154-prune-disabled-autofill-network-helpers.patch",
+    "compileCompatibilityPatch7SHA256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d",
+    "compileCompatibilityPatch7ObjectStatus": "passed: isolated autofill_crowdsourcing_manager.o compile"
+  },
+  "publicStateFreshCheck": {
+    "checkedAtUTC": "2026-09-27",
+    "githubRelease": "v0.7.11 build 74 remains latest and immutable",
+    "releaseID": 395788089,
+    "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+    "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+    "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+    "releaseChromium": "153.0.8010.52",
+    "browserFreeLiveSiteVersion": 98,
+    "browserFreeLiveSiteCommit": "827e7231d0a756063425387d4c635d7066fa0424",
+    "browserFreeLatestDeployment": "succeeded 2026-09-26",
+    "browserFreeAPI": "v0.7.11/build 74 and matching ZIP SHA; published-runtime-gated; canDownload=false because Chromium 153 is below M154 baseline; direct source evidence provided by parallel read-only agent using public GET",
+    "historicalReleaseJSONSiteEvidence": "v0.7.11 release JSON records Sites v92 and commit 6fa411a653bd72886b9da074c6315bea8f774bf7; stale versus current live Sites v98, not a payload/hash mismatch"
+  },
+  "canonicalReleasePipelineAudit": {
+    "checkedAtUTC": "2026-09-27T17:15:37Z",
+    "patchSeries": "runtime/nevision-patches/series.json targets Chromium 152.0.7977.64.",
+    "buildRuntime": "scripts/build-runtime.sh hard-codes chromium-152-rebase-plan.json and chromium-152-toolchain-lock.json.",
+    "prepareRuntimeSource": "scripts/prepare-runtime-source.sh hard-codes chromium-152-rebase-plan.json.",
+    "runtimeVerifier": "scripts/verify-built-runtime.sh has M152 as its primary contract and a separate compatibility path for M153 only; no M154 contract selector is present.",
+    "directReleaseEntrypoint": "scripts/Run-NeAntik-Release.command defaults to /private/tmp/nevision-chromium-152/build/source-provenance.json.",
+    "m154Contract": "not present; the diagnostic input exporter is not wired to build, package, candidate lock, or release entrypoints.",
+    "releaseImpact": "Do not invoke the release entrypoint for this M154 diagnostic tree; a test binary or linked app cannot be promoted through the current canonical source pipeline."
+  },
+  "activeM154TestBuild": {
+    "startedAtUTC": "2026-09-27T21:08Z",
+    "sessionId": 20624,
+    "targets": [
+      "net_unittests",
+      "enterprise_archive_analyzer_unittests"
+    ],
+    "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /opt/homebrew/bin/ninja -C out/NeAntikM154Fresh -j6 net_unittests enterprise_archive_analyzer_unittests",
+    "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+    "liveSourceCheck": {
+      "checkedAtUTC": "2026-09-27T19:11:31Z",
+      "head": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "gitStatusPathCount": 720,
+      "rejectAndOrigCount": 268,
+      "argsGNSHA256": "f89bca0caf42fc5650717fc307584de81ec7353328b8236bc20ddf14f3df4ada",
+      "targetCPU": "arm64",
+      "safeBrowsingMode": 0,
+      "enterpriseCloudContentAnalysis": true,
+      "classification": "Diagnostic tree only; dirty source with reject artifacts is not a clean replay or release input."
+    },
+    "lastObservedActions": "retry after group37 failed at 78/13590 on dead sync helpers; groups38-39 now remove the complete private sync-builder helper chain; isolated sync_service_factory.o compile passed.",
+    "sourceStatus": "diagnostic M154 tree, not clean release replay",
+    "safeBrowsingMode": 0,
+    "xcodeBuild": "27A266a",
+    "status": "historical terminal diagnostic test attempt; stored session 20624 unavailable and no active Ninja/linker process observed at 2026-09-28T13:10:42Z",
+    "lastObservedAtUTC": "2026-09-27T21:09:20Z",
+    "firstFailure": "resume5 stopped at 7866/61869 because the ANGLE Metal compiler tried to create PCM files under /Users/dumay/.cache/clang/ModuleCache and sandbox denied the writes; no source compile error was reported",
+    "compileCompatibilityPatch": "patches/m154-unused-signin-helpers.patch",
+    "resumeLog": "/private/tmp/neantik-m154-testbuild-after-sbprefs-include.log",
+    "compileCompatibilityPatch2": "patches/m154-remove-unreachable-disabled-gcm-body.patch",
+    "compileCompatibilityPatch2SHA256": "39c2fac5ab57d17e07d830b03969fa262c2b36773ce8f4229d6f8c0f550e553b",
+    "compileCompatibilityPatch3": "patches/m154-remove-unreachable-domain-reliability-upload-body.patch",
+    "compileCompatibilityPatch3SHA256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428",
+    "compileCompatibilityPatch4": "patches/m154-template-url-service-init-order.patch",
+    "compileCompatibilityPatch4SHA256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032",
+    "ninjaBuildLogNotice": "The run uses the refreshed Ninja log and re-evaluated the graph; previous completed actions were not fully reused.",
+    "latestFailure": {
+      "action": "obj/components/themes/themes/ntp_background_service.o",
+      "source": "components/themes/ntp_background_service.cc:96",
+      "diagnostic": "unreachable body after existing unconditional return in FetchCollectionInfo",
+      "classification": "Common overlay intentionally disables NTP backdrop network fetch; leftover body is dead.",
+      "resolution": "Owned patch group 35 retains an immediate return and removes only the dead request body. Isolated object compile passed; full targets have not been rerun."
+    },
+    "compileCompatibilityPatch5": "patches/m154-remove-unreachable-assist-ranker-body.patch",
+    "compileCompatibilityPatch5SHA256": "3a6a19a56acd5709d3431614da1c0ecebdaba5e76c9ef7463c40c91642b76c92",
+    "compileCompatibilityPatch5ObjectStatus": "passed: isolated ranker_url_fetcher.o compile",
+    "compileCompatibilityPatch6": "patches/m154-disable-nonlinux-crashpad-unreachable-body.patch",
+    "compileCompatibilityPatch6SHA256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd",
+    "compileCompatibilityPatch6ObjectStatus": "passed: isolated crashpad.o compile with the current diagnostic args and process-scoped stable Xcode",
+    "compileCompatibilityPatch7": "patches/m154-prune-disabled-safe-browsing-metrics-helpers.patch",
+    "compileCompatibilityPatch7SHA256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd",
+    "compileCompatibilityPatch7ObjectStatus": "passed: isolated safe_browsing_metrics_collector.o compile after group 26",
+    "compileCompatibilityPatch8": "patches/m154-restore-safe-browsing-prefs-declarations-include.patch",
+    "compileCompatibilityPatch8SHA256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749",
+    "compileCompatibilityPatch8ObjectStatus": "passed: isolated safe_browsing_navigation_observer_manager.o compile",
+    "releaseQualified": false,
+    "compileCompatibilityPatch9": "patches/m154-prune-disabled-webstore-download-helper.patch",
+    "compileCompatibilityPatch9SHA256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4",
+    "compileCompatibilityPatch9ObjectStatus": "passed: isolated webstore_installer.o compile",
+    "compileCompatibilityPatch10": "patches/m154-prune-disabled-omaha-action-flag.patch",
+    "compileCompatibilityPatch10SHA256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd",
+    "compileCompatibilityPatch10ObjectStatus": "passed: isolated update_service.o compile",
+    "compileCompatibilityPatch11": "patches/m154-prune-disabled-bound-session-helper-state.patch",
+    "compileCompatibilityPatch11SHA256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63",
+    "compileCompatibilityPatch11ObjectStatus": "passed: isolated google_url_loader_throttle.o compile",
+    "compileCompatibilityPatch12": "patches/m154-prune-disabled-signin-promo-metric-state.patch",
+    "compileCompatibilityPatch12SHA256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c",
+    "compileCompatibilityPatch12ObjectStatus": "passed: isolated signin_metrics_service.o compile",
+    "compileCompatibilityPatch13": "patches/m154-prune-disabled-mdns-helpers-and-client-init.patch",
+    "compileCompatibilityPatch13SHA256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773",
+    "compileCompatibilityPatch13ObjectStatus": "passed: isolated dns_sd_device_lister.o and dns_sd_registry.o",
+    "compileCompatibilityPatch14": "patches/m154-mark-disabled-advanced-protection-branch-intentional.patch",
+    "compileCompatibilityPatch14SHA256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5",
+    "compileCompatibilityPatch14ObjectStatus": "passed: isolated advanced_protection_status_manager_desktop.o compile",
+    "compileCompatibilityPatch15": "patches/m154-include-enterprise-file-type-policy-resource.patch",
+    "compileCompatibilityPatch15SHA256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab",
+    "compileCompatibilityPatch15ObjectStatus": "passed: enterprise file type resource generated and isolated file_type_policies.o compiled",
+    "compileCompatibilityPatch16": "patches/m154-remove-dead-ntp-collection-fetch-body.patch",
+    "compileCompatibilityPatch16SHA256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd",
+    "compileCompatibilityPatch16ObjectStatus": "passed: isolated ntp_background_service.o compile",
+    "currentRetry": {
+      "previousSessionId": 20624,
+      "retryTargets": [
+        "net_unittests",
+        "enterprise_archive_analyzer_unittests"
+      ],
+      "progressAtFirstFailure": "35870/49463; two unused search helpers",
+      "progressAtSecondFailure": "78/13590; two sync builder helpers",
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "outputDirectory": "out/NeAntikM154Fresh",
+      "parallelJobs": 6,
+      "xcodeBuild": "27A5228h",
+      "safeBrowsingMode": 0,
+      "failures": [
+        "chrome/browser/search/search.cc: unused GetDefaultSearchProviderTemplateURL and IsURLAllowedForSupervisedUser",
+        "chrome/browser/sync/sync_service_factory.cc: unused controller builder helper chain"
+      ],
+      "fixPatches": {
+        "group37": "patches/m154-prune-disabled-supervised-ntp-helpers.patch",
+        "group38": "patches/m154-prune-disabled-sync-builder-helpers.patch",
+        "group39": "patches/m154-prune-disabled-sync-service-helpers.patch"
+      },
+      "isolatedObjectCompilesPassed": [
+        "obj/chrome/browser/search/search/search.o",
+        "obj/chrome/browser/sync/sync/sync_service_factory.o"
+      ],
+      "fullTargetRetry": "pending",
+      "releaseQualified": false
+    }
+  },
+  "toolchainSelection": {
+    "globalXcodeSelect": "/Applications/Xcode-beta.app/Contents/Developer",
+    "processScopedBuildXcode": "/Applications/Xcode.app/Contents/Developer",
+    "processScopedBuildNumber": "27A266a",
+    "globalSelectionChanged": false,
+    "metalToolchainPath": "/Users/dumay/Library/Developer/DVTDownloads/MetalToolchain/mounts/e0303a069097c7034cc5befc63a7a7c2c8ee7720/Metal.xctoolchain",
+    "metalToolchainIdentifier": "com.apple.dt.toolchain.Metal.32023.920.1",
+    "metalCompilerVersion": "Apple metal version 32023.921 (metalfe-32023.921)",
+    "metalToolchainSignatureAndSmoke": "Passed in permitted macOS context; metal and metallib signatures valid, Metal smoke AIR/metallib built with private scratch cache.",
+    "metalModuleCaches": [
+      "/private/tmp/neantik-m154-clang-module-cache",
+      "/private/tmp/neantik-m154-metal-module-cache"
+    ],
+    "latestObservedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "latestObservedXcodeBuild": "27A5228h",
+    "installationPerformed": false
+  },
+  "currentTurnBuildContinuation": {
+    "checkedAtUTC": "2026-09-28T13:10:42Z",
+    "attempt7": "terminal failure: final framework ThinLTO undefined screen_ai::ScreenAIInstallState::GetInstance(); see runtime/chromium-154-diagnostic-status.json latestBuildLoopAudit.",
+    "attempt8": "affected object compiled; incremental chrome completed 476/476, exit 0, SDK27.0 diagnostic only.",
+    "group71": "sequential apply passed; group70 preimage checked against prior whole-tree manifest; refreshed manifest binds updated source file.",
+    "releaseReady": false,
+    "runtimeLaunch": "Limited GUI smoke passed through CUA for the exact attempt8 app: chrome://version showed Chromium 154.0.8037.58 arm64 and expected source. It used the existing Default profile and opened no external site; no profile isolation or behavioral runtime matrix was exercised.",
+    "nextAction": "Do not repeat attempt7 or attempt8. Continue only at the next unpassed gate: obtain the hermetic SDK26.5/build25F70 package and implement the reviewed M154 source contract/verifier/pipeline; then run the isolated runtime matrix and exact-candidate release gates.",
+    "pipelineGuard": "The packaged-runtime verifier now refuses M154-to-M152 evidence fallback and rejects unknown Chromium majors; focused suite passed 10/10. This closes only an unsafe selector path, not M154 release qualification.",
+    "releaseEvidenceSelectorGuard": "Run-NeAntik-Release.command now binds cached lock and provenance versions to the exact integrated app, refuses implicit M154 evidence, and skips version-mismatched legacy evidence. Full scripts/tests suite passed 725 tests with one skipped. This removes avoidable selection/retry work; it does not supply missing M154 source/toolchain qualification.",
+    "keychainRecheck": "Fresh permitted macOS-context check: 4 valid identities, 2 Developer ID Application, neantik-notary history readable (100 entries; latest Accepted). No candidate signed or submitted. Earlier shell-context error is superseded."
+  },
+  "supersededPatchEvidence": {
+    "id": "m154-initialize-enterprise-safe-browsing-mode0-target",
+    "patchFile": "patches/m154-initialize-enterprise-safe-browsing-mode0-target.patch",
+    "sha256": "d7fb5264a64f98fb533d46003dc40e8a23a0d7010933cacdd860b6ed17ad922e",
+    "state": "superseded-not-in-active-series",
+    "reason": "On the pristine owned postimage, gn gen failed at BUILD.gn:657 because public was already non-empty from line 157; sources and deps were also pre-populated. Group16 already uses += to add enterprise archive analysis. Reconstructing the file from Chromium .58 HEAD plus group16 removed the issue and gn gen passed. The original patch file is retained as audit evidence and must not be replayed."
+  },
+  "upstreamMacPackagingCurrent": {
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "checkedAt": "2026-09-30",
+    "releasePublishedAtUTC": "2026-09-28T05:03:35Z",
+    "releaseTag": "154.0.8037.57-1.1",
+    "tagRefType": "commit",
+    "releaseCommit": "3241dc9cacee393621d277ec936376072f0cb3c5",
+    "releaseTree": "ef5ef849ed78edb7d8c07773df6bbb6753efe9ea",
+    "commonSubmoduleCommit": "800d0bb5078472e4442c1fd73373172754a60939",
+    "seriesPath": "patches/series",
+    "seriesGitBlobSHA1": "106434335706003ebe86ed2b0fdace9e07f83886",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "seriesBytes": 1084,
+    "seriesPatchCount": 20,
+    "verificationSource": [
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/git/ref/tags/154.0.8037.57-1.1",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/git/commits/3241dc9cacee393621d277ec936376072f0cb3c5",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/contents/ungoogled-chromium?ref=154.0.8037.57-1.1",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/contents/patches/series?ref=154.0.8037.57-1.1",
+      "https://raw.githubusercontent.com/ungoogled-software/ungoogled-chromium-macos/154.0.8037.57-1.1/patches/series"
+    ],
+    "qualification": "Verified upstream source availability and immutable source pins only. Local source replay, postimage manifest, toolchain, runtime, signing, and release remain separate gates.",
+    "releaseReady": false
+  },
+  "postimageMismatchAuditCurrent": {
+    "checkedAt": "2026-09-30",
+    "sourceRoot": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src",
+    "expectedManifest": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/whole-tree-postimage-manifest-active75-with-node-deps.jsonl",
+    "mismatchedTrackedFiles": 23,
+    "attributionSummary": "18 paths map to known pinned common overlay and/or named M154 owned patch hunks, but matching hunk text does not prove exact postimage provenance.",
+    "unregisteredDeltas": [
+      {
+        "path": "chrome/browser/policy/test/v8_optimizer_policy_browsertest.cc",
+        "delta": "adds components/content_settings/core/common/pref_names.h"
+      },
+      {
+        "path": "chrome/browser/renderer_host/javascript_optimizer_feature_browsertest.cc",
+        "delta": "adds components/content_settings/core/common/pref_names.h"
+      },
+      {
+        "path": "chrome/browser/safe_browsing/metrics/bundled_settings_metrics_provider_unittest.cc",
+        "delta": "adds components/content_settings/core/common/pref_names.h"
+      },
+      {
+        "path": "chrome/browser/site_protection/site_familiarity_utils_unittest.cc",
+        "delta": "adds components/content_settings/core/common/pref_names.h"
+      },
+      {
+        "path": "chrome/browser/site_protection/site_protection_metrics_observer_unittest.cc",
+        "delta": "adds components/content_settings/core/common/pref_names.h"
+      },
+      {
+        "path": "components/safe_browsing/core/common/safe_browsing_prefs.h",
+        "delta": "removes kJavascriptOptimizerBlockedForUnfamiliarSites block; removal absent from active common/M154 series"
+      }
+    ],
+    "releaseImpact": "Do not refresh the expected manifest against this tree or qualify a source contract until each extra delta is either reverted or represented by an ordered, reviewed patch and clean replay.",
+    "releaseReady": false,
+    "supersededBy": "The five test-header additions and safe_browsing_prefs.h declaration removal are now represented in owned group m154-include-content-settings-prefs-in-js-optimizer-tests; the old active75 postimage manifest is superseded and must be regenerated."
+  },
+  "m154MacPackagingSeriesReplay": {
+    "checkedAt": "2026-09-30",
+    "upstreamTag": "154.0.8037.57-1.1",
+    "upstreamCommit": "3241dc9cacee393621d277ec936376072f0cb3c5",
+    "sourceBase": "Chromium 154.0.8037.58 plus the pinned 154.0.8037.57-1 common overlay in /private/tmp/neantik-m154-deps-sync-20260927/src",
+    "sourceCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "method": "Copied the 58 unique paths touched by the 20 pinned patches into a disposable scratch tree, then applied the series sequentially with patch -p1 --batch --forward.",
+    "touchedFileCount": 58,
+    "missingTouchedFiles": 0,
+    "patchCount": 20,
+    "applied": 20,
+    "failed": 0,
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "patchSHA256": {
+      "ungoogled-chromium/macos/build-bindgen.patch": "f4a3b542d338cc0976286fb2f71a39d7a686ba6db3a7f123253e7fe3cf1aa9da",
+      "ungoogled-chromium/macos/disable-clang-version-check.patch": "1ec9d36202a5627f462305f7dd9e2857bfcbae203f24be154cd719b38800171d",
+      "ungoogled-chromium/macos/disable-crashpad-handler.patch": "c398174bb146e6f4e5f28ac79d3019e1886bb0d383c4c7c549ecb69f25fc821b",
+      "ungoogled-chromium/macos/disable-symbol-order-verification.patch": "4880cde4c84e0bca67e96b77ff2bb93b64b7ee3b5f53dbf05839473b72ac9da7",
+      "ungoogled-chromium/macos/fix-build-with-rust.patch": "92c2627e253cabc8b678981f14619744ba5853c7302f15d7606cf6912249b958",
+      "ungoogled-chromium/macos/fix-clang-format-path.patch": "9c17ec553026025ba994cf8c4395e1249751a49e7dd554165d2cc5af25fda644",
+      "ungoogled-chromium/macos/fix-disabling-safebrowsing.patch": "cdf94a992c21e466d439fdb2a04c64ef11bd7a1b543473353d3dc06db5ae70e6",
+      "ungoogled-chromium/macos/fix-dsymutil.patch": "c2ce394fdcb1b22328ab5cf161f9b72a76da537fc3ddb6fbb3229617191a0f2c",
+      "ungoogled-chromium/macos/no-unknown-warnings.patch": "fe1734ec4bef5b7eb7ca2d772b04afd93e7a8c738e309f0eaaf47380a4bcf6e1",
+      "ungoogled-chromium/macos/build-bindgen-target-override.patch": "a34d9f345974f2a53214fe782b72efd4ccc449c9624674f18da0db3919efa26c",
+      "ungoogled-chromium/macos/bindgen-disable-static.patch": "92ab8ef8a9bfd63b49bc431554daaae832ea90db4410bc4b8c024d06c543805a",
+      "ungoogled-chromium/macos/set-rustc-nightly-capability.patch": "0c02a139dc5db01a167fe4740dbd4eeffec748ad7b83bce2136934a340137ea8",
+      "ungoogled-chromium/macos/revert-v8-sanitizer-changes.patch": "d5e9d1a096d0939a02332afd970e466f836cc77826c5029bd1cc10ff77415996",
+      "ungoogled-chromium/macos/fix-nasm-build-config.patch": "7edab94489ce48ceac4d1c682c698e8663df563aa319d709abfe7f9afc277297",
+      "ungoogled-chromium/macos/fix-anyappleos-availability.patch": "242ecabba4db1f799aaef4f5db953e80bed29d9b5d62ad349c83aa6f1243931e",
+      "ungoogled-chromium/macos/fix-build-without-crubit.patch": "9e650d883ef34e1f526476054d5f67472705e5cf8f661ac97aaa59be854348d3",
+      "ungoogled-chromium/macos/use-system-python.patch": "2a79214f80cd0d1851dc7b759bf87029a0c00affa8213a02f002df2ae7a5f65a",
+      "ungoogled-chromium/macos/fix-disable-verification-token.patch": "89133df06c62adcbc7dff04e6164ecf9bbe807dbf1363106fd66eb671d14da2a",
+      "ungoogled-chromium/macos/fix-esbuild.patch": "db050704d0beaa1da438e91a03275a7a511ad734614716c3df4aeb2f179f90bd",
+      "ungoogled-chromium/macos/fix-typescript.patch": "48176806bc7822099940fe75bba5c79bce6c46d66a7824b5cb04cea077df8679"
+    },
+    "scratchRoot": "/var/folders/tq/cx6qnzks0nd8_c0y80rf3j300000gp/T/neantik-m154-macos-series-replay-ew1zcs01",
+    "scope": "Applicability check only; it does not verify a complete source tree, downstream patch postimages, compile, runtime, or release.",
+    "releaseReady": false
+  },
+  "freshOrderedReplayAudit20260930": {
+    "checkedAtLocal": "2026-09-30",
+    "method": "Sequential patch replay on disposable APFS copy of the current clean M154 source plus pinned common and macOS overlays; manual diagnostic adjustments and skipped groups are explicitly not qualification.",
+    "result": "The 2026-09-30 disposable source replay reached group 75 only after diagnostic accommodations: 20/20 pinned upstream macOS packaging patches applied; owned groups 1-15 and 17-22 applied, but group16 required an unrecorded BUILD.gn rebase because upstream packaging removed the old is_mac dependency; group23 required generated device-tuple overlay before the owned patch despite the generator documentation saying to run it after owned patches; groups24-46 applied; groups47-48 could not find their M153-era WebUI test files in the M154 source; groups49-64 applied; group65 could not find three settings test files; groups66-69 applied; group70 sandbox-body hunks do not match current M154 ChromeContentBrowserClient and its include-only partial application was reversed; groups71-75 applied. This is not a clean ordered replay or a qualification. Exact blockers and logs remain in /private/tmp/neantik-m154-qualified-source-replay-20260930/replay*.log; no repository patch series was promoted.",
+    "unresolvedGroups": [
+      16,
+      23,
+      47,
+      48,
+      65,
+      70
+    ],
+    "releaseReady": false,
+    "logs": [
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-continuation.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-groups49-75.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-groups66-75.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-groups71-75.log"
+    ],
+    "qualification": "None. Clean ordered replay, regenerated exact whole-tree postimages, build, runtime, signing, notarization, Gatekeeper, hosted artifact verification, GitHub, and site gates remain separate and incomplete.",
+    "supersededBy": "ownedPatchApplyCheck.latestOrderedAttempt (new 71-group sequence pending clean replay)"
+  },
+  "freshPostimageDeltaAuditCorrection20260930": {
+    "checkedAtLocal": "2026-09-30",
+    "supersedesPriorAttribution": "These six deltas are not supplied by the pinned common overlay. Five direct test includes and removal of the old JavaScript optimizer pref declaration were present in the stale active75 source copy but absent from its owned patch list.",
+    "nowBoundByOwnedPatch": "m154-include-content-settings-prefs-in-js-optimizer-tests",
+    "patchSHA256": "baf4a3d5c47c42bc2cb7b2f68d51530f7bf3dc5d0fa1a453b62144e9f75f1713",
+    "activeSequenceStatus": "Superseded by fresh 71/71 replay and GN checks in latestOrderedAttempt; enterprise mode-0 graph has explicit dependencies.",
+    "oldExpectedManifest": "superseded active75 manifest must not qualify the new sequence",
+    "releaseReady": false
+  },
+  "supersededPatchFilesRetained20260930": [
+    {
+      "id": "m154-clang27-webgl-safe-bounds-and-renderer-format",
+      "patchFile": "patches/m154-clang27-webgl-safe-bounds-and-renderer-format.patch",
+      "sha256": "61fe308c4b942ff9626b78d106e5b5b8930b4ada6e35a6c404f3730d703427c2"
+    },
+    {
+      "id": "m154-remove-stale-extension-sidebar-test-selector",
+      "patchFile": "patches/m154-remove-stale-extension-sidebar-test-selector.patch",
+      "sha256": "6fd296034a832ea5e72cf6ea759334f073c302b81c6c00636b51f79cfe3333b4"
+    },
+    {
+      "id": "m154-update-history-routing-test-to-current-sidebar",
+      "patchFile": "patches/m154-update-history-routing-test-to-current-sidebar.patch",
+      "sha256": "f988c4e78f1e367bdabf029d25bb21a3475756bafc9869f7bc64cb1368dee4c6"
+    },
+    {
+      "id": "m154-align-disabled-settings-test-guards-and-search-engine-fixtures",
+      "patchFile": "patches/m154-align-disabled-settings-test-guards-and-search-engine-fixtures.patch",
+      "sha256": "9370fe358e4a01521b4029bcf8023d10977211682a107d9736ea3cf974e00ebb"
+    },
+    {
+      "id": "m154-guard-disabled-screen-ai-sandbox-setup",
+      "patchFile": "patches/m154-guard-disabled-screen-ai-sandbox-setup.patch",
+      "sha256": "613419c7bf824bd7775fb14c5265e56fb0f841ac59931f2c36779305965687ef"
+    }
+  ],
+  "releaseReady": false,
+  "supersededOrderedAttempt20260930": {
+    "recordedAtUTC": "2026-09-29T18:39:58.492570+00:00",
+    "orderedGroupCount": 71,
+    "appliedGroupCount": 71,
+    "rejectedArtifactCount": 0,
+    "status": "passed-full-source-ordered-replay",
+    "releaseQualified": false,
+    "wholeTreePostimageManifestPath": "/private/tmp/neantik-m154-source-tree-postimage-20260930.jsonl",
+    "wholeTreePostimageManifestSHA256": "64252473661a99f3c0c5d73dafeee3e9f1109dbd29a1b5655c7d9adedc1e0921",
+    "orderedReplayContinuationLogPath": "/private/tmp/neantik-m154-source-replay-continuation-20260930.log",
+    "orderedReplayContinuationLogSHA256": "e07eda14eeaaf4d23181492c045df8346a0b21d45eded2ab30fbf21af1b42c5d",
+    "rawOrderedReplayLogPath": "/private/tmp/neantik-m154-source-replay-final-20260930.log",
+    "rawOrderedReplayLogSHA256": "98473466907ba15c2b53bc63e84be6acebca6dee376f7376be26825c822e79fa",
+    "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+    "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+    "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+    "pruneMode": "keep-contingent-paths",
+    "commonApplyLogSHA256": "704522c81f9cb7bb93b5dfab8ded0f78b360065a6efec56ab5feaacc3f63f4af",
+    "qualificationLimit": "Source replay only. Toolchain release qualification, current GN args, full current build, runtime/security checks, signing/notarization and publication remain pending.",
+    "supersededReason": "The first replay applied all patches in order, but fresh GN generation found group16 appended to Safe Browsing lists initialized only inside the disabled common-overlay block. The source record is retained as diagnostic-only and does not qualify the corrected sequence."
+  },
+  "personalMacToolchainPolicyCorrection20260930": {
+    "officialSourceScript": "build/mac/should_use_hermetic_xcode.py mac",
+    "result": "0",
+    "corporateMarkerPresent": false,
+    "processScopedXcode": "Xcode 27.0 build 27A266a; macOS SDK 27.0 build 26A425 at /Applications/Xcode.app/Contents/Developer",
+    "selection": "Chromium source defaults personal Macs to system Xcode; internal CIPD toolchain is not required on this host unless FORCE_MAC_TOOLCHAIN is set.",
+    "exactInternalCipdPackage": "Access denied for user mrdumay@gmail.com; not a release blocker for the source-selected personal-Mac path.",
+    "releaseQualified": false,
+    "checkedAtLocal": "2026-09-30"
+  }
+}

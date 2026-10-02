@@ -1,0 +1,24 @@
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -1351,6 +1351,12 @@
+     }
+   }
+ 
++  config("neantik_bounded_framework_lto") {
++    if (use_thin_lto) {
++      ldflags = [ "-Wl,--thinlto-jobs=2" ]
++    }
++  }
++
+   mac_framework_bundle("chrome_framework") {
+     output_name = chrome_framework_name
+ 
+@@ -1400,6 +1406,8 @@
+     if (!is_component_build && !using_sanitizer) {
+       configs += [ ":chrome_dll_symbol_exports" ]
+     }
++
++    configs += [ ":neantik_bounded_framework_lto" ]
+ 
+     ldflags = [
+       "-compatibility_version",

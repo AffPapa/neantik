@@ -29,6 +29,31 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class DirectPublicReleasePreflightTests(unittest.TestCase):
+    def test_m154_preflight_uses_candidate_verifier_and_checks_packaged_args(self) -> None:
+        import chromium_154_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion": 2}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            with mock.patch.object(chromium_154_release_evidence, "verify_candidate_lock") as verifier:
+                kwargs = dict(runtime_version="154.0.8037.93", contract={"schemaVersion": 2},
+                              contract_path=contract_path, provenance=provenance,
+                              candidate_lock={}, project_root=root, args_gn=args)
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+                kwargs["runtime_version"] = "154.0.8037.58"
+                with self.assertRaisesRegex(ValueError, "unqualified"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
     def test_current_project_blocks_without_external_release_inputs(self) -> None:
         results = MODULE.verify_direct_public_release_plan(
             project_root=Path(__file__).resolve().parents[2],

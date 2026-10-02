@@ -1,0 +1,72 @@
+--- a/components/signin/internal/identity_manager/primary_account_manager.cc
++++ b/components/signin/internal/identity_manager/primary_account_manager.cc
+@@ -42,7 +42,8 @@
+ namespace {
+ 
+ #if BUILDFLAG(ENABLE_DICE_SUPPORT)
+-constexpr std::string_view kExplicitSigninDatatypeMigrationHistogram =
++[[maybe_unused]] constexpr std::string_view
++    kExplicitSigninDatatypeMigrationHistogram =
+     "Signin.ExplicitSigninDatatypeMigration";
+ #endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
+ 
+@@ -103,8 +104,9 @@
+   }
+ }
+ 
+-void LogPrimaryAccountPrefsOnInitialize(const std::string& pref_account_id,
+-                                        bool pref_consented_to_sync) {
++[[maybe_unused]] void LogPrimaryAccountPrefsOnInitialize(
++    const std::string& pref_account_id,
++    bool pref_consented_to_sync) {
+   if (pref_account_id.empty()) {
+     base::UmaHistogramEnumeration(
+         "Signin.PAMInitialize.PrimaryAccountPrefs",
+@@ -124,7 +126,8 @@
+ // gated behind `syncer::kReplaceSyncPromosWithSignInPromos` and require no
+ // changes to bookmarks/extensions explicit signin pref.
+ #if BUILDFLAG(ENABLE_DICE_SUPPORT)
+-bool ShouldEnableExtensionsExplicitBrowserSigninPrefForSignedInUser() {
++[[maybe_unused]] bool
++ShouldEnableExtensionsExplicitBrowserSigninPrefForSignedInUser() {
+   // Returns true if extensions should be enabled for existing signed-in users
+   // with `syncer::kReplaceSyncPromosWithSignInPromos` enabled.
+   //
+@@ -139,7 +142,8 @@
+       syncer::kReplaceSyncPromosWithSignInPromos);
+ }
+ 
+-bool ShouldEnableBookmarksExplicitBrowserSigninPrefForSignedInUser() {
++[[maybe_unused]] bool
++ShouldEnableBookmarksExplicitBrowserSigninPrefForSignedInUser() {
+   // Returns true if bookmarks should be enabled for existing signed-in users
+   // with `syncer::kReplaceSyncPromosWithSignInPromos` enabled.
+   //
+@@ -154,14 +158,14 @@
+       syncer::kReplaceSyncPromosWithSignInPromos);
+ }
+ 
+-bool ShouldEnableExtensionExplicitBrowserSigninPrefOnSignIn(
++[[maybe_unused]] bool ShouldEnableExtensionExplicitBrowserSigninPrefOnSignIn(
+     signin_metrics::AccessPoint access_point) {
+   // For all user groups, for new sign-in enable extensions.
+   return access_point == signin_metrics::AccessPoint::kExtensionInstallBubble ||
+          syncer::IsReplaceSyncPromosWithSignInPromosEnabled();
+ }
+ 
+-bool ShouldEnableBookmarksExplicitBrowserSigninPrefOnSignIn(
++[[maybe_unused]] bool ShouldEnableBookmarksExplicitBrowserSigninPrefOnSignIn(
+     signin_metrics::AccessPoint access_point) {
+   // For all user groups, for new sign-in enable bookmarks.
+   return access_point == signin_metrics::AccessPoint::kBookmarkBubble ||
+--- a/components/signin/internal/identity_manager/account_tracker_service.cc
++++ b/components/signin/internal/identity_manager/account_tracker_service.cc
+@@ -107,7 +107,7 @@
+   }
+ }
+ 
+-std::string AccountsToString(
++[[maybe_unused]] std::string AccountsToString(
+     const std::map<CoreAccountId, AccountInfo>& accounts) {
+   std::stringstream result;
+   result << "[";

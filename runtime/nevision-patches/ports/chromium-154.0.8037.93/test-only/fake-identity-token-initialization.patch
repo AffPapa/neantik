@@ -1,0 +1,11 @@
+--- a/chrome/browser/enterprise/connectors/test/deep_scanning_test_utils.cc
++++ b/chrome/browser/enterprise/connectors/test/deep_scanning_test_utils.cc
+@@ -417,6 +417,8 @@
+ 
+   RealtimeReportingClientFactory::GetForProfile(profile)
+       ->SetBrowserCloudPolicyClientForTesting(client_.get());
++  // Initialize fake token storage explicitly when production sign-in is disabled.
++  identity_test_environment_.ReloadAccountsFromDisk();
+   identity_test_environment_.MakePrimaryAccountAvailable(
+       "test-user@ch40m1um.qjz9zk", signin::ConsentLevel::kSignin);
+   RealtimeReportingClientFactory::GetForProfile(profile)

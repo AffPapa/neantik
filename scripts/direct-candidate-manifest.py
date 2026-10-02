@@ -238,11 +238,7 @@ def manifest_payload(
     runtime_framework_relative = runtime_framework.relative_to(app).as_posix()
     evidence_root = "Contents/Resources/NeAntikRuntimeEvidence"
     runtime_version = str(runtime_info.get("CFBundleShortVersionString", ""))
-    source_contract_name = (
-        "chromium-153-port-status.json"
-        if runtime_version.startswith("153.")
-        else "chromium-152-source-contract.json"
-    )
+    source_contract_name = GUI_VERIFIER.source_contract_name(runtime_version)
 
     return {
         "schemaVersion": 3,

@@ -1,0 +1,11 @@
+--- a/components/enterprise/connectors/core/analysis_service_settings_base.cc
++++ b/components/enterprise/connectors/core/analysis_service_settings_base.cc
+@@ -335,6 +335,8 @@
+   CHECK(is_cloud_analysis());
+ 
+   CloudAnalysisSettings cloud_settings;
++  // Use the configured default endpoint, including its disabled-domain substitution.
++  cloud_settings.analysis_url = GURL(analysis_config_->url);
+   // We assume all support_tags structs have the same max file size.
+   cloud_settings.max_file_size =
+       analysis_config_->supported_tags[0].max_file_size;

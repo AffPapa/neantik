@@ -1,0 +1,4122 @@
+{
+  "scope": "restore exact tracked executable bit only",
+  "count": 588,
+  "files": [
+    {
+      "path": "PRESUBMIT_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cd7040bc82f4714befdae3de7e900044f2a76b5ed02e4ea8b89917fa5a0698b6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/infra/review_rag_indexer/gerrit_steps_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e3dd71302ba8de59ba62533d8731be0b912e373261e642fa1d263e83115d9f05",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/infra/review_rag_indexer/local_git_steps_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "61e262b7f10c847e2bb9c07631d0d3b567dcec39e411cc9f178670d516f80570",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/infra/review_rag_indexer/text_protos_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7e8123bb4c0ecef19eff1d5541ec7dcd40756ae7639151066e9b8abda65501a1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/skills/chrome-performance-optimizer/scripts/analyze_profile.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2c0e998e93fb0af8549dae1cdb258ed3b2c39c0171d6777857f70dcc1110b0c8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/skills/chrome-performance-optimizer/scripts/fetch_tried_cls.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f1d346bff15b91e51a3d0ad7cd903cdcfeef25e8ea0aa7aeb1d76cf2dcc0283b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/skills/chrome-performance-optimizer/scripts/pinpoint_evaluator.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "661e38ff0a7012e824ca2c05bc11c40d00217411ad5c7328622ca016ceae7a36",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/skills/chrome-releases/scripts/chrome_releases.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cb4f46a5ee728294380aa6676ac7db001cbc21220b39067cc2133a2406a32e00",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/testing/skia_perf_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8dc14c5b48a054510a18f5541a34e3f9a7c530e7d4e2b45b64db0e50be0df2e8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "base/tracing/test/test_data.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fed6b887fbf653c323a5252117ee0e8498db06117c8c91cd8a4676554fcddd89",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/apk_operations.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a57960a0d8a6e6c5e38378b30876e9d49b7c0cd0dc7fc6ed8bd7d2be12d95366",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/dump_apk_resource_strings.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "25d533ee872537c4aa4ba0583604a80fc473494ae9d7e4773c8e69bb08576a8a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/fast_local_dev_server.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8f364e683f32c3a65bf04df386e250e33d3560add59a17da7c929ab4da3a8fef",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/generate_wrap_sh.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a24ac1f8ac97dc8b7d166f6342c74c37c6296d56f76f9646af279a6f78e50c06",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gradle/generate_gradle.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8941f777a365951087a66678967f6a650c06bb99bd3791967e7608a6633ffada",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/apkbuilder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fdedce5f94bb5686172fb512a72a314cee90e2e93fdff420fcb8bd88d87b8ad6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/assert_static_initializers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2103c1cb65f04a2ac5b9974fd3d1f1185090b4b15220d2a8fb8d0fa35701710c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/bundletool.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e5c83b251182950cf0e8bbf39a3939577b1302213eae3caeb7bf8967a602501b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/create_app_bundle.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "35d87443317c0c9a5fdf704671643e19a2132694788e60aad99d2b200bb59455",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/create_java_binary_script.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "01912b04291894ac7418fd0adbe5452348f1e6d29e9fdcedea5af77a908197a6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/dex.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7dbe6ca3b902dadbf7d1e0a2dd623ec1f255d9b3651c412cbe1c3465c8da96d6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/errorprone.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "49daec70bc4c7a6fc513ba789210d9ba5efc8f9327588d2dfa9324d889ec7c87",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/lint.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "03d227624bfb4effae409f208c405539470e78e5ac64c7769e9c53e38e186cdb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/merge_manifest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2f6fee4e1232b7e0ec8121963009e27a78a604aac6cab3d025e748cce7252f29",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/gyp/write_build_config.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "40d870515e964795edeab6f9583318c5a7be1c2a5aaf0c805a51fd3d741f200d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/incremental_install/generate_android_manifest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8aaa558dccc05351d8d654137d952e00d5ea15ef99e1e0ec6a43c4df1e09d4e2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/method_count.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3cd4519e37fa95e8c34dea44801c9ade1d6a4282d6c8e77c5094bf6da863e859",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/pylib/dex/dex_parser.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b058b4c4583cc4d282cca3e3343ee5946b9fb2368f79c42f4f4f79693170abdc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/pylib/results/presentation/test_results_presentation.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3a1fadfefe8d5d95667496d2302b106fb324d445cb2f787fe9c41aac66ed264f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/pylib/utils/maven_downloader.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d5d20e654c961114591f4c24365db9e32248d646b81b7cd04b19e0a95e203e61",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/resource_sizes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2b7247a2e675231f56986e5ca33464955bf67fde4eeb58daeb37ceddec471c27",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/test_runner.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f6612aee8f7f8a5c331987d18e663e5208491abcbbac3f8c9006552e7ddda4de",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/android/test_wrapper/logdog_wrapper.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f40cdcb856411ef7eac4f67d0ad416159a9cf1959df8bff28709fbc72d3dc9d4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/apple/tweak_info_plist.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4a1e31a3ac287ca5f89cffba4d7cc06bbd8ae97be506af89a897b362fd3ed514",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/bench/compare_autoninja.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2b99202153f44ae0761ddec184af0d9a7985bac81d353c7ea97c144e884fcb58",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/chromeos/test_runner.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8f3333629f0493167ca01b02141a0a12218be5e67c0fb500433592ab8660a246",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/config/siso/configure_siso.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "dcda7689c3852ad0ccdc317cca69533fbff9c56892b05d059c64407f8444f411",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/fuchsia/binary_size_differ.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ef3b05933f636168c511871a5ade4a3530a739e6814d45a01332c4cb2ba95234",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/fuchsia/binary_sizes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d2c29a193ce6afc9b550a39f5bad40924c8b4aba3580bdce0decd510134a8d92",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/fuchsia/get_auth_token.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9168d0afb3c11b012e8dd0eeca3224febbb9598aa8ca2a27140fc1f124753d1f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/fuchsia/starview/avbtool.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "eb3da9f2268998daf1c316415bde16538436f632994a32250cca66601716b3ff",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/install-build-deps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "540857adc8f9a91d4ca369025dcd366ecf7005cd7616494131f59c6b631cbdfa",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/linux/install-chromeos-fonts.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e9a6ca56a2171ec9062c7579cf1c00a8df119bd37efb4829895f6d99eb8fe03c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/linux/unbundle/remove_bundled_libraries.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "58077e3dfc6e598a7ec10997747559700ffe5195621e4a4aa9d40109c32820ae",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/mac_toolchain.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "89287f37df972e1f67b4e5af065b1f26924d68a3e8a3162371fb57dd2bb26725",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/rust/gni_impl/rustc_wrapper.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "84296db29e73d30ae466940256630b0ef04683f98343c60ce40b87a46c1f5716",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/toolchain/check_rewrapper_cfg.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "478f7b9dd17e29061239422444b8e8f63c2203592c059c7981632b7e6055e9aa",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/toolchain/win/rc/rc.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "297576d8d67024474813e0e5feea9bf4f7812d7d6bf1aaa7cf1dee6411fe1db3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/util/lib/common/google_storage_helper_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "91bb2579722168fc86e48b5a5b9341885f07be14f0337a9c24d240376a410b1f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "build/vs_toolchain.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "706738d45b3559ad09fcd42a74bb75feb9317d4abcf7d7058a9a261d139a67dd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "buildtools/reclient_cfgs/configure_reclient_cfgs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f93045ea2b0660fdb69572ea01d3086eb731c35b371165374003e0072fda6f69",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/browser/chrome_for_testing/tools/generate_about_file.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4332b551ff689a2099526f33f27428a3687bb619d78ba3219482de252f17922b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/browser/preloading/prefetch/no_state_prefetch/tools/prerender_test_server/prerender_test_server.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "99b5752c95b5e28fe131af39389bbe0630bda71d72b73bf1c0356834fd85cab1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/installer/linux/common/update_key_include.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "312f52e2760d25a1204e327e282d80e9df4b6e6b13ada796a7469b6edf855d6b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/installer/linux/debian/build_repo_package.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a014b01f983fd5b875e45e17b0cae1d9c844d5191f15e5b0d168a396e7be6fd9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/test/base/chromeos/crosier/helper/reset_dut.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e076dbbc75a7a5baf9e0011ebaaffeed8018f49edd6c33a485480ee1d30dc07c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/test/chromedriver/test/run_py_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "30f6964698acf25eb0d06f5b1fdba7a726e04986eb32ff0e76d588323f14fce3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/test/mini_installer/create_zip.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4a8825d037ea3b74a1c793858313b408bb18488072028e6a44bbcfb8fca78f3a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/tools/build/win/makecab.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9a993d0d4b295836a4ab18228f91a54b1f704e8248c326213f09e6760eae03bf",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/tools/check_ownership.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "42052c66520e9f3d9953120db3d1546b43f6c42d1beedc2ffb229c7065c1e5c7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/tools/webforms_aggregator_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f07620112a3420e3d36485a078e8ded02642145cb07886fa5fe7c430c10fb8cb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/updater/enterprise/win/google/build_group_policy_template_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c4c8f0d2dfdae3f1d7687980095860910eb3529e688b3a4ece93dc0fd3dc5efd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/updater/enterprise/win/google/public_apps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "73ec9cce55ffc5b3c0c72f2e458d9fccdde28c236e6e0c68a81a3c5b1090c98d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/updater/fix_licenses.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "259b67f47a1ea5e4d646a7e59ff319f69d1ef1a94a8c8a59a8e0789cab2384bb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "chrome/updater/win/signing/msi_from_standalone.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "66a1aca4330d45bb193f8cb0bf2c0d42b781e9c9f96002ef5010e978bd0a384c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/cronet/gn2bp/run_gn2bp.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5adf664215201c9827a80a1b45eb92c58a0c6f5fc07125680af0a0b09fcc6875",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/cronet/tools/cr_cronet.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "061f99fd288b9ed9b8c663ab31805c516b94c0ad39982fe3ab367342e8a4be0c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/cronet/tools/utils.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "742655237d0bfdf667f5868ea482e38417b2a8d4c7e4757d15db2620a5cbd7ab",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/domain_reliability/bake_in_configs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5cb2ecf08169badee1d0c521bd654d28dd0880e38789aad06e3d55b059bacf51",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/optimization_guide/tools/gen_on_device_proto_descriptors.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6e16f1c771f40fc52586de924e3f3ea5107213b0d58b3a916d65983631504075",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/resources/policy_templates.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a27fe7dbfc8080c0d81ab80c8288aa021542dd7f8a3f3cc8c357f50935e51454",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/syntax_check_policy_template_json.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7d9274732e3f2c16c48a9113ec3bbf98be743b3d35e8be7b00210ec13d5ad77d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/syntax_check_policy_template_json_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "190d626877d10bdb71f350512aec01921bf55121554d86515a76ed4c6d61c263",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/PRESUBMIT.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "602bc61f6c4281572988fd036b44671811f357b66c0cee39674b0b30d76244d8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/adm_writer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "38486b7d4cb648ec21653aedbdc36d2880586152d0a079fc753f7d4c91935382",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/doc_atomic_groups_writer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "eb1dcb9f3d365813e3751c7e18d92d7ed9302e04c45bd048da1ca640d499b53c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/doc_writer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fcecc4d9be25a05a7631f736feb79b2683fcce08d688215a2b98f1408e1b5c5c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/ios_app_config_writer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "08d97c7c62acada2ba629744a316f9e0c54595cdd670ccf8d22275283320e016",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/ios_app_config_writer_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "053c0cab97fcd08e090a26341ce816ec039769c6685bce0542735f5599823a8b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/safe_browsing/content/resources/real_time_url_checks_allowlist/store_real_time_url_allowlist_prefixes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1f8074fa45beae31c87a9ee13345701e47307802b6161c23157860a3ac950ac7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "components/url_formatter/spoof_checks/top_domains/fetch_crux_domains.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "345f288d83c6731b641ef6b1ab9b5684c80137953d47cf73be2b0967ba1d01fc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/find_unknown_typ_tags.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f8d2bca6342cdf511631100cc5d1e5cb34870085f715fb12ba7e37ca99b5b0da",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/flake_suppressor/gpu_results_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b5cecfd93e7a5a5b65ce291011048755d3f9636bcb2899bb90eea6db4710fe9b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/gather_power_measurement_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2b727931277669d869f632256c0ed2a8951b728e5ffa621e0242f41174b95211",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/gather_swarming_json_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7eb37f9e8572959a6ca8e54015e6a8aaf8aca6c3bbff885c78eb30a8697a76c6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/power_measurement_results/analyze_power_measurement_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bdd68770cc3e786b49f10d5bb91b6fba1a4f9d563c98712f60adadef59f6fec8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/suppress_flakes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e6a69ae73199204fd903ae4d5ae83a530594e766aa5fb0a3e84097f9b43dcaf1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/trim_culprit_cls.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b2975e8962c7f6f17169f1e640d4e34d4776ae64393aa91411517033a464c252",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/unexpected_pass_finder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3425e656f43118741c35cbec596940c816bf44f41f4f9d573134131cb5b4f6e5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "content/test/gpu/unexpected_passes/gpu_queries_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ad29c76ad6dc43c00bfdc685baabe6baa79710e82c2a722e9785a98eb13801cb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "docs/enterprise/extension_query.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e98065fc014164f3a5ec8256d7c154082b4a0c5713a2fcdd2e88e97655606cd6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "docs/enterprise/extension_query_py2.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "66476288659cc4a96dbebadc02fed9a7564c660576bace4c254be289642fd9b7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "infra/config/scripts/sync-pyl-files.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c4f9b4567a968750b0527d23ddc888afcc625a0dbc5e83e3033cc80420eef97b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "media/ffmpeg/scripts/build_ffmpeg.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a71568b70979cac1695b6a304ca1c17b71c2bf99a8ee9f0ee062d1c6bf2a2e94",
+      "mtimePreserved": true
+    },
+    {
+      "path": "media/ffmpeg/scripts/credits_updater.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fca8700e65bba2bb231b30a202e06925efce8c86e47163815fdf11e9727b0006",
+      "mtimePreserved": true
+    },
+    {
+      "path": "media/ffmpeg/scripts/generate_gn.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "09842a9e2b9c21583897e7e05f68daceeb6d73033045bd3e5259a6b00a4dbf4e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "media/ffmpeg/scripts/robo_branch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "aaea21d54d63bdae8dd1c06fe75ac8ff89d335208a6c2e7b2315f886ac8e5fe8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "media/ffmpeg/scripts/robo_setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4b1fd780e4b63c32e230b0bedd5908ded6c489e6ec1e0af9940e3ee398eb58cb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "net/tools/print_certificates.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a3da346782c5cb5ab7b6f87eb4329af21f1e5a5a02b1402500150530b0a69907",
+      "mtimePreserved": true
+    },
+    {
+      "path": "remoting/host/linux/linux_me2me_host.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6c8e0a28d77fe552c72fee2edab86180cebb2b9ff6fcd94465d7e73e12e4bf70",
+      "mtimePreserved": true
+    },
+    {
+      "path": "remoting/tools/build/remoting_localize.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b88e8f7402227b69ee9a09407745ab03a3781fa7b2db5228847de1561c439b19",
+      "mtimePreserved": true
+    },
+    {
+      "path": "remoting/tools/zip2msi.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d439395c41a80f9298289b6f06497bf8216c7b81ffe65305cf3469a71cb5973f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/buildbot/check.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4b46d046bd7fbd582fda4ac13ad514917eee53aaa791142bc26616e852e94092",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/buildbot/generate_buildbot_json.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e3701a3d133d2819f48963ca61bb8036ade0fb5b8ec3266413d5f67387587343",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/buildbot/scripts/upload_test_result_artifacts.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b512d9960c6df3c00c91403165c6a8dfecc90cc0c56259b52923612825559cc4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/flake_suppressor_common/expectations_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f791f75387d4b54d71b11cd5762c5d52aa26e3e5032feaba4c2e7cae4dacf899",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/flake_suppressor_common/results_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "101fda5fe498266bf6c2ae61a1e348ecbfa46833d79a7a3da609db20a54ea1e8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/generate_location_tags.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e75fe2d5d985a4fe9f235da62334248395076ba5e88245c6d67b09ae33eba62b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/merge_scripts/code_coverage/merge_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "967cf84a126e8df8b292a698418590f708507a5847d53656cf5ab20fd0b11c23",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/merge_scripts/results_merger.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "adff5c22bff1d89163fe6c65bf210153f90614ffdfb7d70397a759fdddca8653",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/scripts/run_performance_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "915cffc9c70e828b52adaee1c9c17c9b8f5df2b25fb02b53f4ef7bf1a077ccda",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/scripts/rust/test_filtering_unittests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "32e67af72b68391f6b551a3207f89760c278524386771f6846e6fc35312b6d2f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/test_env.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9646b056836899f9e251c277973bc4a643759e3c2e9378abf064f3ae7e8f1d02",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/trigger_scripts/base_test_triggerer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6981a2a81594ae99ed1a1fdceb2803dba46f90d47bcf9a2a0fdb075ebe7d4ece",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/trigger_scripts/perf_device_trigger_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6025823e9496434fc15da73cc86a7bfcf9c90fe57cbcaf72bed9cb0481703035",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/unexpected_passes_common/data_types_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0ad80dd7ef75e22a0f679849cace17b0f8e6b59acb0dcdc1dadd860b7a399b4c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "testing/unexpected_passes_common/result_output_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7d844b398338ac2546b7625c03149e640eba8391a289343c95972d3ae6fb9e2e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/abseil-cpp/absl/abseil.podspec.gen.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "88fa3c16e083a3e143932b0c40e8593f97f26fbaac98fa432d39fd9bf35d4bcb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/abseil-cpp/conanfile.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9db5e8c56a1a7cec1f0be3872cb7f6a99ba955609e1bc62d2ea3b8c74b5026ce",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/abseil-cpp/generate_def_files.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3c8f87cca3c70bc5588fe7d0fb413e9a5fbdac251aa29611148a74ba94c7a63c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/abseil-cpp/roll_abseil.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8ee3ad047b89e4fd876a05df0e7338ed1794ddd1ba7c538ef8930b5533031962",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/android_build_tools/aapt2/3pp/3pp.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e64d35dd78531d1b4d2b0a5fb8e8f305bf17f570eb462c00fff3711bad1c94cc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/android_deps/libs/com_android_tools_common/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ecc71606432e5a1c04bcc7cc57935863fa2b35a1b3aa9127d9ecdbf55caacacf",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/android_deps/libs/com_android_tools_layoutlib_layoutlib_api/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "92a639f0d0df6ded2a036f825af683aaf7b40832dec04f81aadc83349b3f325a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/android_deps/libs/com_android_tools_sdk_common/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7e946a75b4289a73c4deb9dea50cd18905b90c338f59ddcb7dc199d4e7eb2feb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/android_deps/libs/com_google_android_apps_common_testing_accessibility_framework_accessibility_test_framework/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "aacc9be8456245fbbced7fd543a6887ccce8894e3c4ce43674b77a0564b4bf82",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/blink/renderer/build/scripts/core/style/make_computed_style_base.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "750c52078c70fca7200f0743c2454c9d6e9d8a1f445024a99960147bd9157234",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/blink/renderer/build/scripts/make_event_factory.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3fce4213b48c60da69eae591a717776e299cf69c497aad5a3924cac372304664",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/blink/renderer/core/trustedtypes/generate_eventhandler_names.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "af4b5aa88dfd331ee77aa92859a50bc9f583de51a0d8af5673c8a54f92d0f771",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/crashpad/crashpad/build/install_linux_sysroot.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c365723a1eae718117e8229fb8da89ba3d7bcb5cdbb686158c19f04308980cf1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/crashpad/crashpad/snapshot/win/end_to_end_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a91dd171a84104d2cfe51c25cdb43f10a01484f0ce21fd8359006b82261d6a4b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/crashpad/update.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d08d52f33630ff555dcf2b6613168e05a129eaf54e9448d9dd1d563356ea66fb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/dav1d/generate_source.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c96521013a45e851beea1e711458d60d68082562ecdbb3c980648a8a55dd8af8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/fuchsia-gn-sdk/src/gen_fidl_response_file.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2195cd5cacb6369c7d8e68902005bfcfe3f584d1e45b903be7712eec177ac658",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/fuchsia-gn-sdk/src/prepare_package_inputs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a915c92d98bd40b66f8a12c803674040e2be98d716520ac69794984352a651bd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google-closure-library/closure/bin/build/depswriter.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7ebb447c7a2847287183f9f2ac0618fa657a9d5957037cd8e363409e8bc7f6a2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google-closure-library/closure/bin/build/treescan.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0dd3e34bab12891593184ab5ae33a126f7ea7848ea2da94ff697ae12149087d2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google-closure-library/closure/bin/labs/code/generate_jsdoc_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "efc0d9869f5b00b0299750bcf202ad476a9551833c4453c32c01ef6c3264b430",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/closurebuilder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ba4acc41f9b91cc104900f9308cb97a2441d5a7505ef5e956f27d772887acbcc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/depstree.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6155c99cccc55d090c049144d7d42f8d5019d865ea8eebdb43889498e82c7a94",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/depstree_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "40eeb5a29f5734854d4536f45ca78541c86b4b54dea48d1ea85f1d8ed6a64f9d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/depswriter.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3409e758408881774cf8ee3d28245031129a67850f2c807e98fe390fb1c996e2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/jscompiler.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9c4f1fb979f6115a6cf89aedf99bd11061762329f32781bf7e80360e0fe4c58c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/source.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d0c7f09634e7f466f2f767fd1eb566c3025201ffa614e7a302bd416f6af2704a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/source_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2b045cc1b14c487bc6396679e8f01696480ca949cc378218cbf6b623e438e802",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/treescan.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0dd3e34bab12891593184ab5ae33a126f7ea7848ea2da94ff697ae12149087d2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/scopify.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "858ad55645706bcc20f0f636385e95cadf1625486f63cf13cbbe596a953a2d18",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/inspector_protocol/roll.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bfe99448e888fa2405af5c087ee0e19ffd60f3947c5230229c9ee1a3ead80155",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libaddressinput/chromium/tools/require_fields.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "836450f1db92a397de709c267e0b10192422aa0d1a59d4aeb827376a11d57d3d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libxslt/chromium/roll.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "af522f1443ddca238173a41b40f123b8530cd825cb6f860c95218544a0efa47e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/pefile_py3/pefile.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a08d1070e9cab8751375db4b91876a444ca380e09f7031e50133fdd32b36daa8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/pipewire/on_update.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "70973b5c4f4345f786efd05343dae17850e1bbdf7a0ad97ce450b80bd683d1bc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/benchmarks/compare.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d0ed0eb187e2d2a1d878499ccf13899cdf1bb5dca050643747ab6ee7179d22d7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/conformance/conformance_python.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "294aa34dbf2fd3eecacf283fb4456190d18457ba8eabbe8ca0fb70a260d79ac6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/conformance/update_failure_list.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "16f88a9ee060975dfe15d12086089d7a0441f48967dd4c599ceffe9b67c0d1c6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/docs/upb/render.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "52ae678f8f753e1d70da3b8d4ad5b1b7134064c8aacadf715af0c4cea6dee4d0",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/objectivec/DevTools/pddm.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "570e2809fe600f99fcfe88e92725aaa0d50cbec093c7425180c2564beed6f4d1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/objectivec/DevTools/pddm_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c1ffc5678e83f6b7013d3c57ae410dedcd2e7e74b4798f5351647d66bc033d35",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/dist/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7d1722609a8da7b53b57eb1095ecb6011b165815aea8273977031697b19c61bb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/docs/generate_docs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0e89e65d3531f02e05884ede88d92bd1c73dc132b48bc446d0f876cc359e92e8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/__init__.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "dcb1c59e0353c7fd8a1b4dc1970d59ac877fd6734f9732fdcd14421a35b0d091",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/descriptor.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e0197b9722c9a369e7246ffac135c81e1c44ff184f060e2fd765769d66b673a4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/__init__.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7483a7995116c4b940673739728a8bce9749137e47619730148c077a615692d8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/api_implementation.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c7cfacb2e77a161363417d4870e1c8b361daabe33bc6d052a1d9d7cc770d90c7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/containers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "af05573f45d9d74ce240fc6e7683d263d3362b2fb77a7c74b5230697df436608",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/decoder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "740347d41fed5781eb9f5bc805d5d2c3eff755b5fb4d5e99da66af8f57784a64",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/descriptor_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "61ed0fc92a4edc0a325d1980e833f71c8b37dd39ce00fd41eabbacf38187414e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/encoder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5485ed2b455a79015cd8792639f91b11cdc67b3febda4f44787b78e0c58df093",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/message_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "27c0f2b10bba73395680d0b44f569714c8d475f393673268d6f25e3e2695103b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/numpy/__init__.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7483a7995116c4b940673739728a8bce9749137e47619730148c077a615692d8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/python_message.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1b0d32ae37b9893ba63ea692f1b2f42a4af24dd32251f811dd71808de4b1584b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/reflection_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d57a70c5a795f38388664a20069c94f8bd2d5c83b9b53ecc75f3a69c7e54b132",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/test_util.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "03aa239861059301eb69414ea3f1dd4506738f493ba03d301060fdc66a523603",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/text_encoding_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6fd1ea3ef3124cab74c9ea4b53c6d1943938f12eb379431de51197f4ddea7357",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/type_checkers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "77d01de9e92536326076f90d24140e054871f3df884c0aa26396e5d607e0ff1b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/unknown_fields_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "76de03c7a56b58ddc7254bf5e1d17975eae5515b76001d19f5185975834b15af",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/wire_format_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fb3ed9113b26b2ebbcba67619500ee9009f19bc7725f887da715fb2f27ee6b6d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/message.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "32f14bfd4e6fbdc694ffb939c9bcb431c6670da491d606e66da3d21387fa825c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/ruby/ext/google/protobuf_c/ruby-upb.h",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7862db6e9b28a9921dd0de9a874922bcd045d3415d8fbb42a2f96797836832d1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf/upb/bazel/private/oss/amalgamate.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "40e5b24cdeb0d001c54216c241ca3ab1b61e1b8acdbd237f050f8706c89b3e26",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/r8/3pp/3pp.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "aa679315cdf73f0892fa1a077515e33f63a3a6b6ba342942c2c90767beac15f2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/rust/chromium_crates_io/crate_utils.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a5405bc2f230e70d205791cd276584e24f0d771899954adf61a55f89ef76d5e9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chrome_mac_universal/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "073c3af436de9ec02c3cd26e8e657a5ab6c669fd15c5eb3bb308417159cced91",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chrome_mac_universal_prod/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "18130ccfd36fa0a35a97f66e26c6694543496facd3925fdde329dc8227bab5c2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chrome_win_arm64/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "53cf52d867ec5afaec0e2dcfc1cf75c1b649d27f08a787ddbc337c545fdcba26",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chrome_win_x86/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c11acc0077cdeefbc6830a3d146cc240630bc76259530fdc91f380f2ca98b056",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chrome_win_x86_64/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "191ea11f20d11bed31f538b85285ca608809da5fa2babdf561ab7adc30681911",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chromium_mac_amd64/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cc349a79f04d3ed7efbe41950453fdbf7948ad10d37bdb307615d58bcaf6d853",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chromium_mac_arm64/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c9728abc937a5a26e1e67f80b7aafb702b4395932bb4c1f0094aaa80e95fb792",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chromium_win_arm64/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9bc1bf49a904b5a375552b1f2451f16da6bfe1f2f6d9560441500d7bc42c1166",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chromium_win_x86/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "976406ee4f93142fd6c867c203bb52c9c7b2abddcb444bfb2e0f8bb022e13494",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/updater/chromium_win_x86_64/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a1cc0cfb428879df9e9c5547cdcbfeb5d01d237c9b58f8b16fd2d7c32cd45a5f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webxr_test_pages/update_bucket.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "13ec6cfc0c6d15e14135954a2bcab172fb36c9cbf81b6614632aaf290ab55cd6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/win_virtual_display/3pp/build.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "05f2117539f8d0786b848b249a40816914d09041fdc5a7b1ce0301fd5197182d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/win_virtual_display/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "532fb4295725044c1d4bfe68090676623fcbcadab46a16565630f8d1b3b11e5e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/wpt_tools/roll_wpt.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "57c00ab4255166fb41d6a0ee93a95e5cb437a1c6a02f1870cd68c27ecc40b6ef",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/wpt_tools/wpt/tools/third_party/pywebsocket3/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6501d3e4040d11867d453e84d201e213467e58acc1451502d9ca760d016e2864",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/accessibility/codereview/download_issue.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ad37f4b4e0e8401468a68c6ed6c6bb1518e91f14fd3c050a919dd0211e093cbd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/accessibility/codereview/mph.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6fbb220fabc690b776f92de985d9675777072d44410a79d1579fa857c12fabb4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/accessibility/rebase_dump_accessibility_tree_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e015d961775a24abc72a95d1ae0735f2ff49c754517ba2e61d0adcec849d9947",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/avd/3pp/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0e9fdd8f60210ca82c5570232d7f7615a27a4af34015ecae86802ec4dd4fd185",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/checkxmlstyle/checkxmlstyle_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2bb6f08b981457b0ee84353d252830de3fa1648fd3468383ea11223cceba84bd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/customtabs_benchmark/scripts/customtabs_benchmark.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e3b72724733bc2b42c7503be3046c78dd5e1ed949886961575274530efe4f9c4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/customtabs_benchmark/scripts/run_benchmark.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "70a5b48d2959bb7f6dac4d9e1d347991bd72a17515e530dbaed1763c0417ca08",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/dependency_analysis/upload_html_viewer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "99222d83c872e6888b5569711cc50527de6b3e7602d0fc04cd2cf4ee1aedf5f3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/generate_java_test/generate_java_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d29a2b0681131ab404120dff219eab99a5adb72fc190f24e38a83fe5a2d2128f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/modularization/convenience/touch_resources.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bff19ac6b6ccba0451ed97a75939248dc137230ca8a2b4561c41f50ab51869be",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/android/tracing/systrace-extract-startup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "79c59dfcbae77ab1462af57f588ca26093d508150d11705f9ef9b86d23ccb40a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/diagnose_bloat.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "60aecef58e1794a870f3f06915c5706e092e5b33cc19a193e15aac533d3ce42a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/generate_milestone_reports.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f771bfe2e8e348c381ffaf78b7f1ff56e78cfdd963fd5c9a26efedd49d40c2b1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/libsupersize/arsc_parser.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "80efe0a622aa3c198f8eca6c6b1508d0c566385d27bdb137c14ea424609d814a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/libsupersize/dex_parser.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a8617635b8581451996d68314a2fefad2833ab1f808e2d6731c4bb91bd6475ca",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/libsupersize/ninja_parser_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c0a79771fa7594834f9bd62588aee2294496188a2f7d2bae18587d84486ba663",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/libsupersize/viewer/upload_html_viewer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9a5099d120b5a32c260f70bbf4e4e97fdd787f53a50c952c0f26dc2ed245c96f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/libsupersize/zip_util_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7077e60b885445f9bb4f2b26fc695d6a622b4baf3a5424007758444ba725a33e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/sizes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "98cdb9b1d516c681730b591ba86d460647237b86abe38ed0472973885d4ecedf",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/binary_size/trybot_commit_size_checker.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b31529c65d6f4b1ed279f8b4ebfc5a3a1a6ed9a7932d00e3e32bf51d77fac081",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/bisect-builds.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "25c0224257eb1669f191943c1e03c97d53f78df3525eced93aa95b82beaf2bf1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/bisect_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "33da3c90cec813b57660ad77608e1de32fb6009072ada9332d321833635419b7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/boilerplate.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2a6fe9a3c648a0f4c56e245c11f7f4de62fd0779076cd9c2cbec9960d0ea1677",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/captured_sites/refresh.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "55eca75e28f4198f680cbdcd0b473de172c5ac575d080ca5466a51910c503cf1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/check_git_config.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "89402bb1f82b7a4880c8e4b29f3d40e245728e46b388a7d94fdb59f21aa58218",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/checkbins/checkbins.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "81bbb5f157f9006067db0d6999ba6e72d6133644efe7ca8b2450bc440d83831c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/checkteamtags/checkteamtags.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "88e3cb07400237b700f3703e2a781a9ae47522a2c11ee4c3a1bfac110e98062b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/checkteamtags/extract_components.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "afec35eeb1b1c53f1b112bab2eb1adee07dc35fefcc50e555c22d8d9023433a4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/rewrite_templated_container_fields/extract_edits.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fbc566f5c3d2a0f5433191807fbc230e59583109ee15ab75de6f6e516ff15ed9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/scripts/build.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "df642d23fb544b1dacfeb1d104e369f6f70487a69722f235e99b503b9753475e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/scripts/dashboard.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e9dafc57704e0c53eba45550f8a4951a4b7d79bc75cc5e9c78b24d2080ab2db2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/scripts/package.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b38335a74c590edb91b42dffced55b3a7f65f0abbd72e0f46efe858e5f7155d1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/scripts/update.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a357eea555da5b43ec60e323c3f5b3f8c26c5a3aa6916e32a117191f52e60ee3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/2p_perftest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4e9b43f866f762bb07d4af94f72da174cb75fc8a86abf0271977993c549e2128",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/evaluate_patches.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c408bba9c2bda45bc53febd8c890be15e124706951a1b97e40434f7632dc22da",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/extract_edits.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "aa5a1ea6a3cc63f66ad18120bf1d1c030d9a7ef4f24e971b9da11f781cfd21bc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/gnconfigs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "43788ae685249989c232149c251ba7433e636a5e661a1bd3caa53fe35366e6fe",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/list-required-pragma.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "53ff9aa0ff552a16949edf4ee7615509fdcccce96ae2359a21826e087f9cf473",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/remove-unneeded-pragmas.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5a173d9c3d0c48721d216cec4767562e84f556a6f947abb936178af44cc9c0ad",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/rewrite_multiple_platforms.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6d2f4ea4c56301192609c4d1f2a677dad970710fb3ce3239714a0ae8413c11fc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/spanify/upload-rewrites.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9ac47d13120adb450fcccd28c5c6d1b55e9cae0a0a480e0f8f2a607622889003",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/clang/translation_unit/test_translation_unit.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "aad04ac5a83c9c46d4e7dddcfc719d8147f27d46972cbae232a9869db881bcd9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/code_coverage/coverage.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6c429b87e94f482fd0e11dea9b8a7cacd37a5b34bb6259a44e305aa6f37b77d3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/code_coverage/fetch_coverage_metrics.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "88a27446fd412aa4885099cc167d2e2e6c2f3a0108ac5b5b6fc49f99896b6a4a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/code_coverage/find_affected_coverage_guided_fuzzers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b9af616ac2407eb70325718f84ef6524008ef987eeb7bd913989d00592473929",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/code_coverage/inspect_coverage_build.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4cf5ce6123ba53a1127d76161d77e598ae282606a4aa8a441f8295393c5e4262",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/code_coverage/inspect_coverage_build_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4dc95999fddef8f4fb49fe3e763c5d8ad9002c9ce8052a2aea4458702a2eb43f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/code_coverage/parse_gerrit_url_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "78f511b09d7c44aa483325c1eaa10cb4be7a1cec62c11c957ebb035ee7893dbb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/crates/create_draft_comments.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6739ec69eba5cb51977f103890354119a2247073397be66b83572d0052affea7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/crates/create_update_cl.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1b8c63fdc2fed658aa2eb5e973071eae3cf4ea5688fadd727a146823aac6172a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/cygprofile/android_profile_tool.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "17661c676e796d1a0174715ab6a4ff3e9b8278611f7c1e6b7fb9886aac5f0867",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/determinism/compare_build_artifacts.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "58bdc3f2fefbcb81cdb86b20e4e25e1e7c23302f5c368e48891c0c459ebc96cc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/diagnose-me.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "605b5ed9ed62d923d772858a24bb7f9ab4e3a67ea1eb8203cfeb0d1af8924d3d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/disable_tests/disable.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e80dd511c8d579f0a359b83a280b878624cc46cff3b22e17f5ad04d3205aafe8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/download_optimization_profile.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "102353c72a210a512953d31b9284666978f2e52c6f3391826d350571f22db1a3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/dromaeo_benchmark_runner/dromaeo_benchmark_runner.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "53a8d37ce610ece3b4c9cd9ff0fe16dec24465410f2ab651a17b3571cec32d3a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/flags/generate_clank_feature_flag.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9ff3d275287320505ae5569c4a2c52b436b6da6c7da21483b8996f2326b1cdfb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/flags/list_flags.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c08eb096d8889dc91467b8c80ce9de21c75c428fb76ca4996b4a25e537eea240",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/fuchsia/3pp/fetch_archive.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a1c6f859ec89d26b7d935d623c262df9c653277734cd318af5793f9c830eaf86",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/generate_stubs/generate_stubs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a1e3b7a8a7a4a7e424d7891f60c3ed3d4ecb70c5cdb95ec3e1d9aadde188da72",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/gerrit/send_after_cq_dryrun.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ba2c771df895971b4e4370ddd9dfeb14c37dac91517ca7bacad5ef63fbe6138c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/gerrit/send_after_cq_dryrun_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "276dda7fe8fb4566aa66bb58d9070fc738d3fed9cdb31562c55095237a5842da",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/get_asan_chrome/get_asan_chrome.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b6a79beed3ddd5bfffd967fb8e770430a83782af772eeac7dc779dbad9163101",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/git/suggest_owners.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3dd2570437b49e0e3bcf942cf23e545151fe4694b427d0c328eadd5585f5f869",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/git/worktree.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9b4ca72530113b91ffed93f99530b46c39440fb25d2e5fa86bc963df707c2b9d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/grit/grit/gather/policy_json_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3aef38fa554160474128ecef9e1b6facf1de17d4951afb51c5489bc9b29b149f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/grit/grit/gather/tr_html_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7f5a129f9c99d7e0bbd428fa2aece8896962e83afb14cc7d6a2b4c5ef6e0ecce",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/grit/grit/grd_reader_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9190817db2f9661b14813d5db7365baa93cac3646a85c8ab5258cd4ccc5701f5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/grit/grit/tclib_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c9a96165eed7b0ccf92489377293bc508ebe5cb893f00c8cc8b7cc9f33dc07c4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/grit/pak_util.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "46ab367b2f1c6fbb17796c38655f046e4e99325b52d3ebaf3fd6f8dd5db15fc6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/grit/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a571790affeb4b6106313f56499aa35182f7e67caee410984161f60a0d8721d7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/include_tracer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1636bf894837b7913901f4ef66289fbf251701ae38eaaa4eec298c4223d6ac93",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/infra/find_bad_builds.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5958190332f5a1b77c4284609ae7f7945089d65cd4b0077f7682458744c5d4aa",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/jj/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "71eb4a45ee157bb148f99931a06649e52af9c33849a16c24ecae5581830f84f6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/jj/upload.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ca6d0555bb6d22c61e29ec662a3a578cea165daf38a4db2eec620ec178b0f909",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/json_schema_compiler/js_externs_generator_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "56999d4198d222bd1a3af1a045819def0439847f5c631b17a203b53d6541dbde",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/json_schema_compiler/js_interface_generator_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "52dd91464fcfb2df83182e093f409b961d623e6dfb5258355e905de7708554c5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/json_schema_compiler/preview.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bc1b4a0614dc99277cddd82b16bdfe66b7b7936da11a7fc60808cee520ef40d1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/licenses/tests/integration_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "49690739d21a3f3b2552f4e8eed3b170a6b8d38f9be573b6b1eccc1830243eae",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/mac/download_symbols.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "70e939abf456fb13191daf1471ac565a73162e9d3f27f700b169870d8c14161f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/mac/icons/compile_car.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ccb3eea463e5b900d244e4e2ec14fb5253f54f83f81bfe34a54aeeccfe79f1c4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/mb/mb.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a5a63573eb1a509e8bb50fdb8d458a3469b30d45a7ee9c93c9d4394ff6b2b0d1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/md_browser/md_browser.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "67a8bfb60e98df09b6d2631e6c6c8dc15b5f7f54de938b309fd810b8b4da6a99",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/media_engagement_preload/make_dafsa_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f00eb737cc2e20654470c929eb1f4d1fc0c53b2c57e7c70fe253a096258d419c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/actions/extract_actions_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1245ec81cfafccdbc339b3698180cefd35ef11d38759dee7b35de549f51bc7de",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/histograms/find_unmapped_histograms.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ab0fa658295a8915bd7ae60aeda3d99e78ee145f6eb7aa6f4ef2b56922d30dc6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/histograms/generate_expired_histograms_array_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d1f9b23582a163df0b8a87657b6a22c136a8ba378b1f8df1dc3cb7bc891f7512",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/histograms/merge_xml.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a9a86de63f6b22fe78ca3774f8ff5487b35cb6d7d837e357518270c0c66821af",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/histograms/pretty_print_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1ab496c7b3a1abf0613359326b74c8449e1afc39514700c0fad0c2ef3d80db9d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/histograms/split_enums.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e24d48f33e84e3e130045c015a38eae932624ec9697201fd23b63fafd83c5bd9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/md2xml.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3cfab72399fd450bbbc5424aa5ecc46ad9cb938aeee46be3498c6f71236c8512",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/private_metrics/private_metrics_model_shared_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5dc0e9357f9cb3c7598bc36ad83dbe2b870936381633d2df0f7a9853d55380ec",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/private_metrics/private_metrics_validations_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9926829352513f927e268fd83353befda243025cec07365961a42f52fcdd8610",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/structured/sync/model_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2846079e33e0b79a5bf522d7b3560462b58073931bc82615612681594b21bb4a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/metrics/ukm/ukm_model_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4db8552af297899f103827a9db3a896aadfffe0340a8ce866ab3771e1d476109",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/nocompile/driver.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e25ba4c0cb582071e24ef2ecb13173b1a135238e6a75c7327c60b8c2aafb766e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/omahaproxy.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "da50b50b5c9369c35cadc147bf1d77bae7157debcf16a0d185547bfa5c39dad7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/contrib/cluster_telemetry/ct_benchmarks_util.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6f676211f181682e9fa7da0a22d46395bd2aea45fedef1807bd1ecdd98b0e075",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/core/perf_data_generator.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c2605f76815fe13a44b4c8b300bccebae008ce9e00192a428ede909e5edf54f8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/core/results_dashboard.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e43521db9c0615026eb1f43ddd5a5281320fcf02cbcabf4aa6434ea8e476295e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/core/retrieve_story_timing.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "028e96b1bdd58d78f70aa2fdc5765f3e9257da9ac776797ea08d3bdb7e86378e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/download_proto_trace.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bfcc8bb853b6e5d999437e2ae271ae231d36d2e889e1f354520eaea5401b0a49",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/generate_legacy_perf_dashboard_json.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a9d24e162c3ca06d0f9e25192f495c5ed2dc8d439555775a2bfc676e98332a81",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/generate_perf_sharding.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0892c100f577f0373133a2eefdff6f1c77fd8c6690d99dd210632bc502cf92cf",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/json_util_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "19a4ee719ff95ad18a7d7af6d5e372c48493813bd1d1a1b476651ceffcb660a8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/process_perf_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4ea133e702116b3857f9d1ff543fa9d656dac976ce33206d816e9c2f3831cee8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/perf/process_perf_results_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e80f913039dd0720bb95416edb08168d6b77e14e6861b5b005280b8b9b2f3aad",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/pgo/generate_profile.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d2aa8116aeeb1e62ac42121d3099c786b7d8e96ce76ff1b1ef0f9cdd530a8b28",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/python/google/gethash_timer.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "61d9ab3f6d4b6085475eaa6f7a5405c1fd65dd3e07e36a596a48412a8842f4ba",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/resources/find_unused_resources.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4e9b54a7dadf6cbbcedb3fc5e5ad39f0ccea474d9a55ef9e4d24477db990859a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/resources/icon_checker/update_icon_list.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c390cb8cb788f10e91162251e345fcbdeabdf1ee1d8b40b07131f66752e80926",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/roll_webgl_conformance.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9c664cb56f1dd7267a97c82cefc429a41a64fe524a323323662a54dadb82e049",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/run-build.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fb3af39db3b865b4e9eecc93238d70a2b9765d5a1de8b7de70b6e72f61185d0a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/run-swarmed.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9983a293e051fc85a961eede3103685464823ad49f599c803e96044176021eac",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/rust/build_crubit.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "097bc6b243b9cd79b88b2ef33f800de8151f20d9375f61606be7dab614a933db",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/rust/build_rust.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4cbd9b98c397cfbe9039e8ad6e5b57bce231353afb6dfee68a59554efb88efb5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/sample_clang_tidy_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "15f3498267575c3ce105fad3fbe5586cda5d9713cc99dc1dffbba439a8923afd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/site_compare/scrapers/chrome/chromebase.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "22979a50c9ceb91692725eaa380e84c3b2b09f8aea59581b787eaa5c4940887b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/site_compare/scrapers/firefox/firefox2.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "32708c1236a83542a9ea82bdc6ad6dd6e6b8b910c37e57ae77568f10cc68155a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/site_compare/scrapers/ie/ie7.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1b847e577b52e1a61e2230eeff2a206294712fa5e73ece1d6ccbc3ebe4b6d5d5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/symsrc/source_index.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e650110c08f7b7343fee877f6bc40784365e5b20360e334e1f0463e5ce44ceb9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/test_selection/decisiongraph_invoker.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5ebb556b9e95a9c7c3ea05d0ef0315dd93b1d6f5b46b8083cc49ee10ec315083",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/auditor/auditor.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b33a4328c39723ac627d52267d183a4dd66454b73420877ca0a2147a4463c428",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/auditor/auditor_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4b0c0caf8e2b00a152f20f9ead3f5bda4d4ae24cb698e65f807bc82f41d3da66",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/update_annotations_doc.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1b5cc99418e6760d080a23f26bd297a229ae19296fb70dd682b5b460582c22f0",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/update_annotations_sheet.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f2b0526d78f489bc4ed42f60f869fc8ad2859c19badd23e5196fef0981a4a7f6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/translation/check_grd_for_unused_strings.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3aa45465cf3d10bb243bbf882cd9a54f8b80673f48f02a61bff8262c5c486f33",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/translation/upload_screenshots.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "aec1609f9d350dbc4cd07dcdb84d5728efde34a6921edb2ef92d6ae101e4ad18",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/utr/output_adapter_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "53b1f72b8bc47f20d016871b6660990c646b042395d716700afb19def61246f9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/variations/bisect_variations.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fa781fd2eafbb8ee2fc1cacd336fdb4574643d279c0d7f1e92355dd118a7adcb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/warning_analysis/pull_logs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "05199b5ea310dd86e244258f61d8520123016ced05a4b4b1e9ac808339b0174e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "tools/web_dev_style/js_checker_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c7935da338037d2fe082084637f0bd6edcebace6e241ede7a46b98a3b1100641",
+      "mtimePreserved": true
+    },
+    {
+      "path": "ui/accessibility/extensions/tools/webstore_extension_util.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "59ac4ec459e8c234690b090c0e9b898bb44b12085f1778fdcd12a68c7376147b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/shared/skills/git-cl-helper/scripts/git_cl_helper.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bc3848f0ef857421359bd782d2020eec14751b7bb23b26e37a95d1a16db84709",
+      "mtimePreserved": true
+    },
+    {
+      "path": "agents/shared/skills/git-cl-helper/scripts/git_cl_helper_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f300b1e2931db6f98433076b8a147d0836dfc3852e65346f41ea6049f276eb1b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "docs/website/scripts/fetch_lobs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5e5ffdadb0236283c0f4266c9b99cc2f9fd289cca78a2a0c0d823e5ad7dd709a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "docs/website/scripts/fetch_node_modules.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "58256ffb7336b31cb039bb1b170acc6e3931f21f7a308e42edda6e968d9018db",
+      "mtimePreserved": true
+    },
+    {
+      "path": "docs/website/site/chromium-os/developer-library/reference/linux-constants/syscalls/syscalls.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b83b40d63552f00a20a9dc50649d4eddfd32e9c440c5fcfd140bd348c2befc6a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/bootstrap.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7011a490795ee7f3f1cfa6014738c690f7f1578875e86f58299648a3e1f0eecc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/export_targets.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "52a91fdb14cda97f362976eef5e6ba2a596a4f691847b4c7f17d6f11f052d1ae",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/process_angle_perf_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6efa933e41b85a0d66ebce319dd0bc987c8dc524995ff41805b6d4262694ce40",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/roll_chromium_deps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "de18991caf28f1af2fb8682b020c21798b5a082f46c1dbabab54088cf8fec818",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/roll_chromium_deps_v2.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5cefa984c4fdb994b12083e0d33ccf08be94545efdb3b710ec0b41efe026db8f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/trigger.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b643cdbe28ee987afbbcfc988808deb5d49acc867744182b8127dd7510171446",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/scripts/update_extension_data.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c97955361ec27b8661ae80b49a01a6ca14fa8b0cfa22888abd1c2b8b3f13f14f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/src/program_serialize_data_version.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ecff26f983d257cf6e5ab33c41f4dcebf2bee5808d84a0cec4d5441dc1515bc1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/src/tests/restricted_traces/gen_restricted_traces.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "05a9daff54fdccd4cc5922d7ddc801b762170b3159c6c8196d202b3ed90c1088",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/src/tests/restricted_traces/sync_restricted_traces_to_cipd.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0217e2c83f811d52bd84bc0ffbeed57416091e9ed04b9f3fc2a2b01aaf90c72b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/angle/src/tests/run_perf_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3df4aff5753aae915de5579208ed361bc683d6154fc66003a5a3c1ccd6216b8e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/catapult_build/perfbot_stats/chrome_perf_stats.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a47e630bd292a4e8a764becae7cd30f4c9d7488282c85ce8b88cd5fe1175ebf9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/catapult_build/perfbot_stats/chrome_perf_step_timings.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a1d8ba9f508ab7ca424bf7af7e79a4c52f37033a37035281006529fdce663fd6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/common/bin/update_chrome_reference_binaries.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9bc2d0822444226c3c0be0c460c5e0c5043972b2f2254559bea3d0a34a5a1b41",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/common/lab/commits.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "44824c5647fe631c22ec96668206a1644667dcdece27cfe1a208ad0cfa98a349",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/common/lab/hardware.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "960c2429c5585fd3059517b0722354588e57f6422aa8ad0046cdf179ce3ae3f6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/devil/devil/android/device_utils_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9b15d27813e408d737ef6014c5a8ca0cc7cd4adef5d085f5e72c21369b753fb1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/devil/devil/android/tools/system_app.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "81ca93a65e65b4ceefd0cb1ce93df48ab1069edfba7d5844e4ce8ad2a5bd95e4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/devil/devil/utils/markdown.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e4faa0053a468a59c3bedd0c064ee29db693264e25176a46a575cdb97c1664f0",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/devil/devil/utils/markdown_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4ecd262eef18530d55b6943f9bf4e46e2a795540d06103cb0858b7a580d0a48c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/experimental/alert_configs/memory.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cacd4bde251b79c6f5f9c5ef19f784405bb553417e5472628f460ccd28523e8f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/experimental/bisect_lib/fetch_intervening_revisions.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0028de4f7d19b954088fefebfe4cbd0b42c574f8a17d3fa92f93adfbc929116e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/experimental/bisect_lib/fetch_revision_info.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9094e24a7e21f79011f7ef010a5695d274d0d34b283fdc1268fe68850b745cf3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/experimental/bisect_lib/fetch_revision_info_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c94a39adee13a0b917a4e062039bfd03956a65bce39fb175e1f93c019e458151",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/experimental/tracing/bin/diff_heap_profiler.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d6d38a74613110f8c5c56c8b9c7961555d3283ae395e2e454eab58cfd281ff85",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/systrace/profile_chrome/main.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f469c070032f70160d54b182494a32797a58c3c2856b3e427f57ea1949792293",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/telemetry/third_party/png/png.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fde29811ed72b69efaea764d29f161841931441973b04f79ecd5e98a810b84ac",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/gslib/vendored/boto/boto/gs/connection.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f8322e1570ed2ee4402a4a5f543eafedeb360a430be9a22018c0e6b96aa53042",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/gsutil.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8064aedb81e7a73cad26f7b07744c5f12c15421ba83e3b79203173198853f1a6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "092bbdce7627275fdf642369803ed0960e1824c962c97c1ed83b8a10345401a8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/apitools/apitools/gen/testdata/compute/compute_2025-01-01-preview.json",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d37810de9f8583600368a838e244cbcff8ebf1c28f20053b48d843e54cb043fb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/cmpdump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a17efc3124fdb74557f2799369cf768b01edbd59cfd8bcc62041ab62019171ec",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/crldump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e956b7da408b26b4c146d27036f250f83fe8910db821465f33de48efdea9afa4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/crmfdump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e462ddd65c235e4a9dd8cf0e8f9bf305ec708a5a50120872e68bac3c0475a7d8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/ocspclient.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9611b819347882ac4e3a8d3c4633f26b733c0fa6e28525019e099d78d6f29bb3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/ocspreqdump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "68d6a5ec67af12424571499d00673737bf60d8fc19cc740fa910daf15436c828",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/ocsprspdump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1f1508847620b037a086c196d13a8a3679c174a9fc4f9c8516a73cacb001ee18",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs10dump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "35450d0bef6bff3d20f8218c93ffd0aac1a994c10ba70fd4c8229cab199eb773",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs1dump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a90674c0f03f9d68b56917aeb69975712c4b0801c185bc70e62fa29a8e5ec4d7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs7dump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f7c30e785f88937e627674e5b8fab769b078b9ef0a912c0bd7e5f00c3a434d3b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs8dump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f2d8fd745277ae6bde943764cee3a78f6828b643c332db7f8c7b29a3a40a8926",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/snmpget.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "15430a8c891d5e75eb1f1142719b05cffe35f0513c8ee9c70a0e88104c7ef57c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/x509dump-rfc5280.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "203f7bbea7ab91e089864cda8f87db82d8355dca93d94a0898b7cef2bf49abbb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/x509dump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b9ec0b46640880645914c2ef6da4a4d1f15925d6ea387fa824aa3a7d40fd2376",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/retry-decorator/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3e90a06b0e3d971ed8c532cd27dd3370f739756052e64780bc5a5a28f8317d24",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/mocha/mocha.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4455f94fdf76a727fdd966f2831e51af69b05995912371d42441be13e20dd2a2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/polymer/components/paper-card/paper-card.html",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3a60218c76f5c5192b9188bc1a3acd841e5c9d6cce4f44ffef6f8946fff6d429",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/webapp2/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ae3214e81983951832a712f81dcb32377e54f8002ddadf1f0ed783076d579aef",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/third_party/webapp2/webapp2.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "608c6d04826fc5f56b01a23d27cb5625676742f31eba922c022da1d0f23e5bbc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/tracing/third_party/mocha/mocha.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4455f94fdf76a727fdd966f2831e51af69b05995912371d42441be13e20dd2a2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/catapult/tracing/tracing/extras/symbolizer/symbolize_trace.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cc6060fc4699ec0228ee07bf1441cc671943a4a3761a8a5f010acb75b94240f3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/crossbench/protoc/compile.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "77083d2e3ac5c2f681cc259b5542921a0b8f4511abfe997950569819101515fa",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/dawn/scripts/roll_chromium_deps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9789f64504fca8f8b5058a345594d0aaef8cdc2387a13089c34cb0437f621743",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/buildbucket/scripts/bb_wrapper.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d54296924d080d6203f6a2008cb78ba96986569dc77f5d2130f4efc5de396196",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/buildbucket/scripts/bb_wrapper_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ce6b638fb8db4b5631c45a30f619f68973886d4118f928d0f1b7e1fd5d26b5af",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/luci-test-results/scripts/find_cl_builds.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f145dc07425130b8cc746ac29646b6566ca491101e63c4e3b8ebf425e28d7e79",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/luci-test-results/scripts/luci_client.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f39906ce0747d937af2d830ad6f8a4a21222f13144c529e601d7169cc38be57f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/luci-test-results/scripts/luci_scripts_integration_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ec7c823a3000cac5bcccd238fe3afa2efcf27038e369726e4a54cf1013f6a6c3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/autoninja.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cac0f88a3d8226bd6b3c0e0faa89174a10905d4f48ad3072f8b3b2db69093317",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/build_telemetry.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1f4dfc667ee6e6f2357d9c6b7b085728f0f32009ef4bd9804bfa9489dbb9a542",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/fetch.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "40c21e9234eaa1986fe49657d561764241d9813a7d445cc6fb83f4529ffd2fc7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/gclient-new-workdir.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "14361cefe1851358d37bd4e79bf16f1b8e2cc486a3d5024d8cd289536d78b132",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/gclient.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8ae11ff9619b16bed28b26e6622da889e755175b1eec20a40ab7abf481d817f2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/gerrit_client.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8c98aa80aafad7536c73256b2f43f597b346957954b057188334e55476a1b9ef",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/git_cache.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5cc4a0d58a0b76791d859000fe9ddf127de04397db61ddc89da6a15798b25fef",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/git_cl.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "552c0689d72120d90929c4a0cda463d9e28ef335dc598062f88640e260e91c96",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/git_number.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7445338b6eb3923e45e3e7a710ff774886e86f3d1c5061cecccac68fad55563c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/git_retry.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "989571cfce230e05854a54c74d77bead84d46c993933732fa9eaedb9bc80b0af",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/gsutil.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e01da8c19ae8091215b8a45bbcc6ad61c05748fe4aba51543469f294dd891037",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/luci_auth_fido2_plugin.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9a5de87ee9f61b65148975cc7c9773d3e6c215a053755404a335818e17531028",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/my_activity.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "01160ffda7757c1b496f5a9e4cdac4a098c7940059415135095b2aafbb74ca36",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/ninja.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a74aa1b2e70c4a7a1697e08495869115215a16c104b6320b76d97fa696fc0621",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/ninjalog_uploader.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e4d05a78f6499b784988b29f3774cade1ea9c8d541520f8b83f4a86a55a72413",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/presubmit_diff.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "056db2353597fe08ba427e1668470c88af4099323de41fa202a7281cd314e86a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/presubmit_support.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5fc64bbe4ea121da44ec6d7ae9022d044ba6833696cb9b029ea318960f57227c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipe_modules/bot_update/resources/bot_update.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e72298850f3ef2e871c7c1e28aca1a3c1c3a885d29608217e4b564c4cafb03a6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipe_modules/gitiles/resources/gerrit_client.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e5d941e2343deaf45865e7616227181e35e04f456543f831c17f7ea414257221",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipe_proto/turboci/update.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "430e25da0b2a988610224eff458759b83624955142f3a12301ff08f7d7fa059d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4b5ae75aa919f823fadcb41d77c932f573a0ffe1f82703792068a55f80e959fb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/roll_dep.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f8feb62e8b8976d0a8b014c422bc1784fff45b5dc854fe7aa949b782a935e3ae",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/testing_support/fake_repos.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a2f962d18d306b4fbc5bfc1724ba1233b51ccd9835066d1596707293ae50cd26",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/bot_update_coverage_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ef892d3f86467597ebd5b5ff1aa3d3f253c71742c9a91819d0f84dbe4be99e3b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/build_telemetry_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9b922006fffd0ed8e37aa1e9e2987c71b2107b03f5794c503f05c0ca734ee3e9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/fetch_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5110c9bae2c9de5e1960fd63c4d15c2d9f89e1007e4a4c244ad5de71863733cf",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_eval_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "66d13af446f2d14b98a0275f86d5404414c16fd645ef0072afadb697354f15fb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_git_smoketest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a4ca85a3e4f77f8ca7bf6dec1c3580b7888cb0c86135fd6d20d383c15dcceac9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_scm_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b249b33f80ff6ef3820f7828d9143ab3739a15e2af6773616f6f17c3348a8cc4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_utils_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "93247c0b7d0951cfd94ce829a676b212d951e053ccbfb44be04a62a5544af9f9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/gerrit_util_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3072bc5b90268e6418f40d3b0ff578df302c2dde6072139c51d702da73a12f5e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/git_auth_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ac1918527329a17ec2811d047d80812f6f64345c7a3c955e407d29487c52846a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/git_cache_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4065b6f729061768d6e711144f3100c6a9ae0f7f77e4ad6a8b549dfc6aa59271",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/git_cl_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b3191462cfad98c8e34b5af0509375f3bdafb8f9162b12e75b3f9566994df27d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/luci_auth_fido2_plugin_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2987c6810b291724721a5c8e7833cfb9640a811af61f64b7e38acc50fc74f673",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/metrics_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5f61f33c5fc1300f7d0b5955341fa8b6d69aec387c7c120c4d51f8391a50c474",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/presubmit_canned_checks_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "91522c96b04d3385b74682ee95a8b7f6c07e01b09e3e9061979e41d28c6bfa32",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/presubmit_support_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "80f7ca26781ede901e907e272ba1e6b267ce038a214964072a21de496054dbcd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/presubmit_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e6d493ae90bbfb3e114f7102b63f75f5d48324e71fa0fd49201d4efd63cc4a98",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/reclient_helper_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1b65d570e21403b5b8776afc4250d2d7ca767b76fd4dba372a27ffa8c40cdfc7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/roll_dep_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cde01920534bdcbea1cbc2db1003e6aed241b851bb722c9bc7a0821c1bf8d766",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/scm_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2a60f77cd3287c6c8c9792d67655ce0d783692c6cf16f1282d1fdad90d509483",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/siso_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "422ed7b1220e46ba42489403ca1c08c8c111d0c17879d73b033650347dd40910",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/split_cl_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "719a4ed76a9a7fe5c5c2227691415f8e133e55405026788f946d6748cc5a44c3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/tests/watchlists_unittest.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "25e0cca1fbdc74030746622a0a8603c4adac066c0e8b80d40da01c662e5553b6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/watchlists.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4c864c751ce802cfdd41ff98a26efb30dc4c4f1083afe34c08bd6bdd2019c007",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/depot_tools/win_toolchain/get_toolchain_if_necessary.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "efe0095f4dc12d5352e54cb538ea0896be0a9117f4db4e937d8ec99e7156b15d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/.agents/skills/gerrit-cli/scripts/import_upstream.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "17fdc3a9df32e83a65a6cae5c46afd8af2ed2d102eecc003a75b81a158a37db9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/front_end/third_party/intl-messageformat/package/package.json",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0c13a42908248240ef31d6e0cd2de27321ab87fe29d8ab81a9d20ba2e522f305",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/esrecurse/package.json",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4912125928a53fedbd290ffb6ae88ad3176e07e88872ae31fa301e49f83640ca",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/uri-js/dist/es5/uri.all.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ca4efe183e18e5992ce05ac4dca9290c190a1ba0a7f74034b9d825bb01ee65a3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/uri-js/dist/esnext/uri.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "df914f423a230f4161c8fce2eec5c4ea5ea1997b124b9cf22269db7a7b8e9c7f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/uri-js/package.json",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0e7953e7885c02b1530a2aa8c917a7015d189d9121456912c51e7eb4a183a54e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/scripts/deps/roll_to_chromium.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f6bef716696657525c420908a8c0b83372e0952f77612c537d217744729fb528",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/devtools-frontend/src/scripts/tools/update_goldens.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c417e91a5d5662fb4dcc94a8529178e207b0077e313e1242a2c29e14e03f476b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/domato/src/generator.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "91a39620795780181ea6d7c4db758ad77d8504e40bc300f5441dc937108a0040",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/domato/src/grammar.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3f1cc19048ad1ea7869e1f27a410e04bdf7bf505fcd37d4bc653b41de4de526d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/domato/src/jscript/generator.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "280f358f47a862c7e89e425cd7fe2f58a9288974f8d8205a5d4e656e8d2b09a9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/domato/src/php/generator.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6f8c3df2c7ed2e6823c8da3d11f01e102e2eeb4bc72ae8c9046b755ce3526eb6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/domato/src/vbscript/generator.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8b26b70d87d28d26088e8923825f3a6f75385a6ec8a28a0ac8b2a81cfe15d8fe",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/eigen3/src/scripts/add_spdx_headers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "900f920c1628363d37374450322dfaf736f01bdcc9ec09144919c5cd45dc5dac",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/ffmpeg/.forgejo/inject-pr-samples.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "607db312e12f0054c0ae244b20ab08b1fa1c184ca6c4e21f67cc17cbe5ddbb20",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/harfbuzz/src/src/gen-indic-table.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c85fca6d9ad1efb1fa19393c58ab3c6294283edc86f0a5dc70bef1d35914290a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/harfbuzz/src/src/gen-os2-unicode-ranges.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8d13c6c1aec16ff07eb1f3d5c943244533a15aa913c9b8292bd8ec84bd0e627f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/harfbuzz/src/src/gen-tag-table.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "994b69f6f766b85efd34925da3c4d80d9dae097c33636d9ba6323740841897d2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libaom/source/libaom/test/gviz_api.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1302c2be9017329c147abe5e9d004dbb111487c1e2e14995f8c27f7b3c7f3331",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libaom/source/libaom/test/visual_metrics.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8a3c528eaa3865c0c3e4e4dd7bcf641eb46fb64f620a677d4069fefa9ad31882",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libaom/source/libaom/tools/cpplint.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fef5a71809d8e2c56824c5d6947847558b196edba7eaac631879fd0401b3de7e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libaom/source/libaom/tools/intersect-diffs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b9100f09951012cc9627d81e440bcf4adae3fd951fd46ff69c9fb8c3efe074a6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libaom/source/libaom/tools/wrap-commit-msg.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cb7119f60c7148559a26ec284a9ffe8a557e5ac4a7513efc428536a4a5aeb87e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libpfm4/src/perf_examples/syst_smpl.c",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1740ed9c4c2a85a9fe50189991805a5d7a017903f31f2ed52a30228d5a3c5ee5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libpfm4/src/python/self.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6da594249df7f28b61d888b34a9d7da2b216a04be6bd170037302cd72b30e2c1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libpfm4/src/python/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "eda687eeb811df6680c21b78f51ccf2613dfda3b293c6608022b3c0e1cd0aaee",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libpfm4/src/python/sys.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "414ccc2453e68476be88e6b2724674ac4442852463e7ecd67bd329663262f440",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libvpx/source/libvpx/tools/cpplint.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fef5a71809d8e2c56824c5d6947847558b196edba7eaac631879fd0401b3de7e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libvpx/source/libvpx/tools/intersect-diffs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3e6ce286fe26507da58b587455d18ee81bd4346e0b94ea427ba9107d2a999c45",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libvpx/source/libvpx/tools/wrap-commit-msg.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5f4c4f69c9d4ef2af706a81be5d4b84d886bb8e30500032a445135431e9832f1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libyuv/tools_libyuv/autoroller/roll_deps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f259834f35df662e572473fccd2f2b8452fc31af845712c742f1e20ad6a4ccdc",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/libyuv/tools_libyuv/autoroller/unittests/roll_deps_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0b3a3ffbbdbde9185313a0cfdd6738fabbf047a91665afa2593dd3fc7af23360",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/benchmarks/compare.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d0ed0eb187e2d2a1d878499ccf13899cdf1bb5dca050643747ab6ee7179d22d7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/conformance/conformance_python.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "294aa34dbf2fd3eecacf283fb4456190d18457ba8eabbe8ca0fb70a260d79ac6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/conformance/update_failure_list.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "16f88a9ee060975dfe15d12086089d7a0441f48967dd4c599ceffe9b67c0d1c6",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/docs/upb/render.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "52ae678f8f753e1d70da3b8d4ad5b1b7134064c8aacadf715af0c4cea6dee4d0",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/dist/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "826b340477af195fcbc1fc0b70448fb527e21ae786a89ae343612a201874ff25",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/docs/generate_docs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "80cc38b06f0e242e9d713da2a8fbf569d0e4f9a4fcfa1c5f9b75d5677dc8b769",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/__init__.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2513888f7e2ec53c0f6f63c09b1ada14119f9b0bcf215cdebdd6c31bf0b4fbde",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/descriptor.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cc1229a17738977e5e99239ec656b1887f5aae0f90e96c2a28f92d978e491872",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/__init__.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7483a7995116c4b940673739728a8bce9749137e47619730148c077a615692d8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/api_implementation.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c7cfacb2e77a161363417d4870e1c8b361daabe33bc6d052a1d9d7cc770d90c7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/containers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c495c25dc00b048fb65e2d925560a0c81b3a57b8f14e59429c86679480572b14",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/decoder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "32c2ff0eee4bc5dfc3ff023de7ad2cf6c0d6c8e5572a8439380837d2e91ab774",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/descriptor_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "61ed0fc92a4edc0a325d1980e833f71c8b37dd39ce00fd41eabbacf38187414e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/encoder.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5485ed2b455a79015cd8792639f91b11cdc67b3febda4f44787b78e0c58df093",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/message_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "37748761c4e949055d3174545f01fd6e635638578e1521c4182dcf04d3365b01",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/numpy/__init__.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7483a7995116c4b940673739728a8bce9749137e47619730148c077a615692d8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/python_message.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c8530c2155c6ed174f33868f0b3ef2dcc84a2b8bf41396ada0f90bf295a5828a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/reflection_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d57a70c5a795f38388664a20069c94f8bd2d5c83b9b53ecc75f3a69c7e54b132",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/test_util.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "03aa239861059301eb69414ea3f1dd4506738f493ba03d301060fdc66a523603",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/text_encoding_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6fd1ea3ef3124cab74c9ea4b53c6d1943938f12eb379431de51197f4ddea7357",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/type_checkers.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ddc0a1fabff6e60737a58e965e36f13f8c9aed5d28e04faa92a467397038165b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/unknown_fields_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "76de03c7a56b58ddc7254bf5e1d17975eae5515b76001d19f5185975834b15af",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/wire_format_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fb3ed9113b26b2ebbcba67619500ee9009f19bc7725f887da715fb2f27ee6b6d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/message.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "32f14bfd4e6fbdc694ffb939c9bcb431c6670da491d606e66da3d21387fa825c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/upb/bazel/amalgamate.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9d83a9452101d560ad845bc390a032e8837cfca641d36f8f9a28b663e143845d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/tools/download-chromium-file.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4f1bfcb23d1e0fd3a381a87535001b5ac4b2230639de8d3c34b6704603b2c33d",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/pdfium/testing/tools/safetynet_compare.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9839fde73807dc399196ed83aa8cd88edade6dcaaf7b2dcf0ca200aafc9d9eb4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/infra/ci/config.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a19b34d1460b0f402ee699623e4e3ff28e56abc6f1ba8f07d7e4c600e901603f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/infra/luci/recipes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2fadda636fdbc556628593afb45ffda270c180686ac0a89065b5a3642263196a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/heapprofd_glibc_preload.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "31d4245ca562cd705f723bdd52fc77059a1009b794f46e17223ba4336257b6be",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/perfetto-c-sdk-src.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "29f0bd019dd4ab127facb6c22caf8c8bbc6814f4f366fa92f2c62116c6b975a1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/perfetto-cpp-sdk-src.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "063c7a636c399953214942034faceefe47fec725c29e120a58d0f3338fc02391",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/trace_processor_shell.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "380ac16701e9279cf1aac49da502251883006dfa5a2561353ce933469b3c1f43",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/tracebox.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5254ec37cb526c808e5a438d779ab90bda8068df6268192872302958bebd2179",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/traceconv.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "94b7205b4ecf1865fc4627cf3db36de949ad90581b54140e915841dd34e8b02b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/install_test_reporter_app.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "205bd004af27d4f4fe582707a09398ebe136d257e6d8771e982592e353c2a993",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/record_android_trace.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "883c611ab90fdda976234620e3369b540d20ade77691167120f815ad6b498ee7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/roll_emscripten.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0e868d112282e776d939b74890e21634947b738ec4a3c547eeabd60f5a439818",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/roll_node.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "87839d20760a04fb84f1d913a0e2c6f6f7bc980f20a2d065e263b3bcd7c9527e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/roll_pnpm.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "488c6c561e560d1ca1c32ac9fae9e2fbffbbda18d2ba563fd427ec57f819b823",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/update_permalink.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9f6104b652a4545561e87d8e82a3e0520761e30f8e36e1dde968241cf2fd7e47",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/tools/download_changed_screenshots.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8ab283d4df9ba6540d5f7260265a998f9a041f9bde80d81431fd90d4dbdfeb51",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/perfetto/tools/release/release_perfetto.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "64a2002e8923c7814368d1f1d6efdc98d389345a5861aecff26eed4091af62f3",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/arith.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7eefc2c083354d501a8e830a944bd47fee24e919ba9eecc45e770528833bd5da",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/arith_test.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "9df37c2555902bd3563c2b51d9cc182bbadca717ec1900924960c6158e9b2607",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/decoder.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b3f0ae3145877e2acf9a69bce956709d6d1a08343d03d3644830a1b86c2bcf7e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/decoder_test.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a2f8f5a8312f0481893ef63f19e163829c0141fa74d3a9c1c2cba5224dcb7c90",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/encoder.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "80e2714db6d138ab0b557e93c681ef7b07a9b6d8ba74921cd35e55b9697ff3f7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/proto_test.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5f26ea5c1dad78fc02f5d18cbd3cf5ee38d3cad93df8730237562bc1f7417fce",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/reader.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "119dea4483570510ce95b6f4327c4c8319dcbaca26c7275f7c7aa764cac463b8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/reader_test.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "424ee66069fb50b296e3552a805dcbce0099f603b52ee856386c0c24f632aa13",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/test_utils.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "bc024e6fcfded19161c536b5299fc9b030fd1d8514d76bdec912fbb647306c3e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/utils.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ca37550683ec607041e3b224b1fba76c22fae78d4e5f51cfeb0714e5a59656dd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/utils_test.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "5308f602f4bda81487ff8eaa056493268e421f53f97e99349d5125e1409e61f4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/writer.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3096b739104a162d11b64092dd9259338a21800af5c4cd82bc18d2f10992bd99",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/writer_test.js",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e3b4cf7329ad8f64c978c1005e1ff14eff7c44e711c6d290ec4c432cbd90907b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/pywebsocket3/src/setup.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "66996fa32a1ae7bbbe2d9bb9963821f04e973a36fb328099b3013908bdd68519",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/pywebsocket3/src/test/test_handshake_hybi.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "16070ea5255ae0d65e877f383b7c00a1303c0a25a08c4b3aba6e371e69fc58a7",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/experimental/tools/pdf-comparison.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "050e7137b6e9f9c462fe4943adaa8d2756f63941f1461933c5cd5004a1f047e9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/gn/gn_to_bp.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7dbcdaef0f760631fe13ec524dfde7588e59f21159ce25de883829a9b34f95a1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/android_ndk_darwin/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f9c889e0e452234417867f2f1c0b9fd12a16bbaa29af729af78dcfac0dc9bf51",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/android_ndk_linux/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "abb10168332ead18c6740ffbc61166e57ad2d940e6eefea2e06f635cb4a8cf59",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/android_ndk_windows/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7e4cc90533f376200f5f65b056f76e92e517130670b58bd3e854b796e906b863",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/clang_mac_arm/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1fb45bf8c1f48370d273e29afdd28ddc23ccdebf9c19c1928c53e8250c781d2b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/clang_mac_intel/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6e336e1aadbfa7880587f78ce55bd4bbbbfe89e2e2d172aedeabe132df70733e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/clang_win/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e7da89629dfd202339609f7ebc8380ec18edaa60cc13c76dff813336337b1a96",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/gcloud_linux/create.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d3f890b0619c160c3c074bc63aa5b56a8d8708067b01a8325ecbae7aebd73a73",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/check_deps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1bc53a231ccd9f2fcfd36ce349621871071e6488f50d2e3fd37f6a8ef0f8ddce",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/git_utils.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c672f9a7fd0e15f617c4522e958bd1955212b69ba7dc9d465ea50ad5ac33caab",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/recipes.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4b5ae75aa919f823fadcb41d77c932f573a0ffe1f82703792068a55f80e959fb",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/run_recipe.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e7079ee9ab4b6674858eb1eb24511a5efc77ae3a293b9c4bdbe957870f60b3ce",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/infra/bots/utils.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1bf38db470bb7b310c839cf0461b7a87ee06a5113787b1ea63b5afb341a64b7b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/platform_tools/android/tradefed/upload_dm_results.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "14d2515bf70091c3c5907babcc7c8bde844110f7fc752be959098205403ce6ac",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/resources/sksl/es2_conformance/import_conformance_tests.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c794e6f3e7626c47610780596f1b3fdc2d17639ddb3f33a07e830bab075710d9",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/tools/abandon_gerrit_cls.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "a4d7ed4a08c5182b86a44338d0d742176082bcc908bcdc003448a65ab0ae8470",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/tools/bloaty_treemap.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "28cab7ddb2b7dd2597df60a00c62a7219b8db6563cd1a70560ec504c872f31ff",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/tools/skp/generate_page_set.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cc10292e62a0bb92f02b99afe34269e948f7862e1feabb62522405c6795da611",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/tools/skp/webpages_playback.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "95aaf3e99867028a1b2343d5463704a004852bd6404eac82d6c1411526ed601e",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/skia/tools/skpbench/sheet.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7ee070c1d64d5a7c4a64581a2c990859d5428418aab54629436fdf023c7bc656",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/tflite/src/tensorflow/tools/android/test/jni/rgb2yuv.cc",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fbfd850cd196f9d4174d2dc053c16168bc177ed3df558d9c472b50a18e33f03a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/vulkan-loader/src/scripts/gn/gn.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "be7d984e6f3ca67c1c89278de9d3343b82dbf26661093b94e799807a29c5a313",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/vulkan-tools/src/scripts/android.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "8da9f6f7f77ea91a59f4a25f845e297d4361ee0fe6866cb5e4479eff3bb08093",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/vulkan-tools/src/scripts/gn/gn.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "be7d984e6f3ca67c1c89278de9d3343b82dbf26661093b94e799807a29c5a313",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/vulkan-utility-libraries/src/scripts/gn/gn.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "14610a47685f7f587430a9393347d10a920d4aa397b2063e682d59b9ce4c3891",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/vulkan-validation-layers/src/scripts/android.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f80feea02bb1e7bb98b5ba386f4986c23cd6a9fb843cfa191f1913a56a43c750",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/vulkan-validation-layers/src/scripts/gn/export_targets.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "915098ef4a181ef49dcf4dc5060023cb23b9ce2b87e86f8d6da9b765a99e9d65",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/PRESUBMIT.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "300f1e49d968e901c2ad0ed957e028463dbd79825013fca0d142663acfea13b5",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/rtc_tools/testing/utils.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3db9bb33bef6ca035a49f95ae0f1670ef370bbe156ffb6b123797ae4cdf90582",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/apply_clang_tidy.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d4e3b4940d7341125b4a1176ac84c18274b7a4be2d6a1542425fbddd62fad590",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/autoroller/roll_deps.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3b455ce4c17b8b5abb15f3a39d4b30ef60b1414c22d1f5ce69cc3807d43907c8",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/autoroller/unittests/roll_deps_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "cb1f0d503bc2917dd8cfda5744381c52673dd7430685790838a22b45e7154774",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/generate_changelog.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "82efaecfc9784c0c97f8eeabf8cd9de82f9a8cad86c72045b0ae2f3dc0e0be8f",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/iwyu/apply_include_cleaner.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "351ac9b68ade6fa72e8f502ac84386060a3366da828c2a5dd03d15d57755dca0",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/summarize_external_commits.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "e85623b7754ded5e5c32df23ae4086c512ab94e89acbe4f0626a5fab4cb1258c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/agents/scripts/validate_cl_description.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "3eabe682875e7e71e3559c4508e2dcda4a83f8b594363910d93533b1764556f2",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/agents/skills/workflow-perf/scripts/upload_and_pinpoint.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0928724389cde9fa7d65742142d33c69cb85a1abcf083bbed1b3e1223b2e3cca",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/third_party/inspector_protocol/roll.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "2aa2cb28d8f3eae13c6755790a5a6f6ae7f35dc96c9735827aaeca33f3fed71c",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/builtins-pgo/download_profiles.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b5e4739652627f8dfa511153f5a4e6a43476e26f76b7edc41a113bb11ce94d8b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/callstats.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "fd23046c67e059676fb8a1b44f8f9578b0756e2371d20651f6843e3f7711d941",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/cppgc/gen_cmake.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "7c1bfc5efbcae29ed215ba95f16dae71845bdc2ed427bf235371b6161e43e907",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/dev/gm.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "0ed4a3a0eec93969fbddd5e3213cbba929b4e28ca2ce074e12eb89f344989717",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/dev/setup-reclient.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "157490db8ee4b03a3cce705723d24e2b0ec7b4512072da37e8491c14293852ca",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/grokdump.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "4c7c858f38ba40f04d2bfcc3530c693a32d73f90768bf50d6dab4d199b1cdca4",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/mb/mb.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d69aac63b73734efadbf740440e4089c0d6ae0d96ff513eec58ad609abd48064",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/release/create_release.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "39f7b89c6f624f4ea9b72aaa8d50d9f97b78852de49bb750e2b61d7613c15bfd",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/release/merge_to_branch_gerrit.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "37d06ff107e179e5eb6f0d640710ac277dd19a28efa681295e8306f5d7132470",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/release/roll_bisect.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "d5f01ac2a22644a0afcc799aef30ad5b5496df47696880dce295286cf4f8af63",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/release/roll_merge_gerrit.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "6707c1c522392337293b64adc76703f2535cc3bdd89c4a220053ea6c1141a508",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/release/test_scripts.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "1421e7176afd42018aee3da339ec8ac28470a62444c3c06ea7dc4d8a5e467e76",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/run_perf.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "943180408d0316ddd1ddebb2ff30a60848b0b073bbee8699bf34f28254204536",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/sanitizers/sancov_formatter.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "342e842c451c2059ed2cb09cd8e269ffdb4975972960692c1785d2555ba93706",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/sanitizers/sancov_merger.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "ff8eeeaa60f90fb573712be85ff82384b738070d4a3e6bc71475b997c4ca9f5b",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/try_perf.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "b14656b63c161f260759667d1c39d8c4876c4e8f0dc573c2f485e0d58002985a",
+      "mtimePreserved": true
+    },
+    {
+      "path": "v8/tools/unittests/run_perf_test.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "c7784a32e563a6821d4e27c02bed64351f06871eedc1605b0105c561c77db4e1",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/dawn/third_party/OpenGL-Registry/src/extensions/NV/NV_uniform_buffer_std430_layout.txt",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f104f5413d9be4bb86dc540b045e1e106db6db11179581168a787617d854f0be",
+      "mtimePreserved": true
+    },
+    {
+      "path": "third_party/openscreen/src/buildtools/reclient_cfgs/configure_reclient_cfgs.py",
+      "previousMode": "100644",
+      "restoredMode": "100755",
+      "sha256": "f93045ea2b0660fdb69572ea01d3086eb731c35b371165374003e0072fda6f69",
+      "mtimePreserved": true
+    }
+  ]
+}

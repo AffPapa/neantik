@@ -20,6 +20,21 @@ SHA_B = "b" * 64
 
 
 class VerifyGuiFingerprintReportTests(unittest.TestCase):
+    def test_m154_embedded_contract_uses_exact_version(self):
+        self.assertEqual(MODULE.source_contract_name("154.0.8037.93"), "chromium-154-source-contract.json")
+        with self.assertRaises(MODULE.FingerprintReportError):
+            MODULE.source_contract_name("154.0.8037.58")
+
+    def test_m154_embedded_app_cannot_fall_back_to_legacy_contract(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app = write_integrated_app_fixture(Path(temporary))
+            path = app / "Contents/Resources/NeAntik Browser.app/Contents/Info.plist"
+            info = plistlib.loads(path.read_bytes())
+            info["CFBundleShortVersionString"] = "154.0.8037.93"
+            path.write_bytes(plistlib.dumps(info))
+            with self.assertRaises(MODULE.FingerprintReportError):
+                MODULE.expected_runtime_evidence_from_app(app)
+
     def test_accepts_production_gui_report(self) -> None:
         summary = MODULE.verification_summary(production_report())
 

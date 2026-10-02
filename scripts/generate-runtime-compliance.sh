@@ -9,7 +9,7 @@ usage() {
   echo "Usage: $0 /absolute/path/to/chromium/src /absolute/output/directory /absolute/path/to/runtime-candidate-lock.json" >&2
 }
 
-if [[ $# -ne 3 ]]; then
+if [[ $# -lt 3 || $# -gt 4 ]]; then
   usage
   exit 64
 fi
@@ -17,6 +17,7 @@ fi
 SOURCE_ROOT="$1"
 OUTPUT_DIR="$2"
 LOCK_FILE="$3"
+BUILD_ARGS="${4:-$SOURCE_ROOT/out/Default/args.gn}"
 
 if [[ "$SOURCE_ROOT" != /* || ! -d "$SOURCE_ROOT" ]]; then
   echo "Chromium source root must be an existing absolute path." >&2
@@ -35,7 +36,8 @@ VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
 )"
 LICENSE_TOOL="$SOURCE_ROOT/tools/licenses/licenses.py"
-CREDITS_SOURCE="$SOURCE_ROOT/out/Default/gen/components/resources/about_credits.html"
+VERIFIED_ARGS="$(python3 "$SCRIPT_DIR/runtime_build_path.py" "$SOURCE_ROOT" "$BUILD_ARGS" "$LOCK_FILE")"
+CREDITS_SOURCE="$(dirname "$VERIFIED_ARGS")/gen/components/resources/about_credits.html"
 
 if [[ ! -f "$LICENSE_TOOL" || ! -f "$CREDITS_SOURCE" ]]; then
   echo "Chromium license generator or built credits artifact is missing." >&2

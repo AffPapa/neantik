@@ -1,0 +1,34 @@
+--- a/components/crash/core/app/crashpad.cc
++++ b/components/crash/core/app/crashpad.cc
+@@ -59,12 +59,14 @@
+ 
+ crashpad::CrashReportDatabase* g_database;
+ 
++#if BUILDFLAG(IS_LINUX)
+ void InitializeDatabasePath(const base::FilePath& database_path) {
+   DCHECK(!g_database_path);
+ 
+   // Intentionally leaked.
+   g_database_path = new base::FilePath(database_path);
+ }
++#endif  // BUILDFLAG(IS_LINUX)
+ 
+ bool InitializeCrashpadImpl(bool initial_client,
+                             const std::string& process_type,
+@@ -78,7 +80,7 @@
+ // disabled there.
+ #if !BUILDFLAG(IS_LINUX)
+   return false;
+-#endif
++#else
+ 
+   static bool initialized = false;
+   DCHECK(!initialized);
+@@ -195,6 +197,7 @@
+ #endif
+   }
+   return true;
++#endif  // BUILDFLAG(IS_LINUX)
+ }
+ 
+ }  // namespace

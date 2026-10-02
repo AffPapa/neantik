@@ -28,6 +28,9 @@ RUNTIME_VERSION="$(
 if [[ "$RUNTIME_VERSION" == 153.* ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-153-port-status.json"
   SOURCE_CONTRACT_NAME="chromium-153-port-status.json"
+elif [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-154-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-154-source-contract.json"
 else
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
@@ -45,12 +48,8 @@ if [[ "$SOURCE_ROOT" != /* || ! -d "$SOURCE_ROOT" ]]; then
   echo "Chromium source root must be an existing absolute path." >&2
   exit 66
 fi
-EXPECTED_BUILD_ARGS="$SOURCE_ROOT/out/Default/args.gn"
-if [[ "$(cd "$(dirname "$BUILD_ARGS")" && pwd -P)/$(basename "$BUILD_ARGS")" !=
-      "$(cd "$(dirname "$EXPECTED_BUILD_ARGS")" && pwd -P)/$(basename "$EXPECTED_BUILD_ARGS")" ]]; then
-  echo "args.gn must be the canonical source-root out/Default/args.gn." >&2
-  exit 65
-fi
+python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
+  "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
@@ -86,8 +85,13 @@ if [[ "$RUNTIME_BUNDLE_ID" != "app.neantik.runtime" ||
   echo "Runtime is not a declared NeAntik fingerprint runtime." >&2
   exit 65
 fi
-python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
-if [[ "$RUNTIME_VERSION" == 153.* ]]; then
+if [[ "$RUNTIME_VERSION" != "154.0.8037.93" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
+fi
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  # Generated below in temporary compliance storage from this exact candidate.
+  RUNTIME_NOTICES_FILE=""
+elif [[ "$RUNTIME_VERSION" == 153.* ]]; then
   RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_153.md"
 else
   RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md"
@@ -103,6 +107,11 @@ cleanup() {
   rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"
 }
 trap cleanup EXIT
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  RUNTIME_NOTICES_FILE="$COMPLIANCE_DIR/RUNTIME_INTEGRATION_NOTICES_154.md"
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
+    --runtime-lock "$CANDIDATE_LOCK" --output "$RUNTIME_NOTICES_FILE"
+fi
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$VERIFY_REPORT" \
@@ -112,7 +121,8 @@ trap cleanup EXIT
 "$PROJECT_DIR/scripts/generate-runtime-compliance.sh" \
   "$SOURCE_ROOT" \
   "$COMPLIANCE_DIR" \
-  "$CANDIDATE_LOCK"
+  "$CANDIDATE_LOCK" \
+  "$BUILD_ARGS"
 ditto "$RUNTIME_APP" "$SNAPSHOT_RUNTIME"
 cp "$BUILD_ARGS" "$SNAPSHOT_ARGS"
 

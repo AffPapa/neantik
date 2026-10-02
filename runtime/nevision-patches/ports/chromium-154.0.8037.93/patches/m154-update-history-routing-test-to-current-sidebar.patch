@@ -1,0 +1,39 @@
+--- a/chrome/test/data/webui/history/history_routing_test.ts
++++ b/chrome/test/data/webui/history/history_routing_test.ts
+@@ -115,10 +115,8 @@
+       assertEquals('history', sidebar.$.menu.selected);
+       assertEquals('chrome://history/', window.location.href);
+ 
+-      sidebar.$.syncedTabs.click();
+-      await eventToPromise('iron-select', sidebar.$.menu);
+-      await microtasksFinished();
+-      assertEquals('syncedTabs', sidebar.$.menu.selected);
++      navigateTo('/syncedTabs', app);
++      await microtasksFinished();
+       assertEquals('chrome://history/syncedTabs', window.location.href);
+ 
+       // Currently selected history view is preserved in sidebar menu item.
+@@ -138,10 +136,8 @@
+         assertEquals('grouped', sidebar.$.menu.selected);
+         assertEquals('chrome://history/grouped', window.location.href);
+ 
+-        keyDownOn(sidebar.$.syncedTabs, 0, [], ' ');
+-        await eventToPromise('iron-select', sidebar.$.menu);
++        navigateTo('/syncedTabs', app);
+         await microtasksFinished();
+-        assertEquals('syncedTabs', sidebar.$.menu.selected);
+         assertEquals('chrome://history/syncedTabs', window.location.href);
+ 
+         // Currently selected history view is preserved in sidebar menu item.
+@@ -184,10 +180,8 @@
+           assertEquals('history', sidebar.$.menu.selected);
+           navigateTo('/?q=' + searchTerm, app);
+ 
+-          sidebar.$.syncedTabs.click();
+-          await eventToPromise('iron-select', sidebar.$.menu);
++          navigateTo('/syncedTabs?q=' + searchTerm, app);
+           await microtasksFinished();
+-          assertEquals('syncedTabs', sidebar.$.menu.selected);
+           assertEquals(searchTerm, app.$.toolbar.searchTerm);
+           assertEquals(
+               'chrome://history/syncedTabs?q=' + searchTerm,

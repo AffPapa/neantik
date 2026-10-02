@@ -65,7 +65,7 @@ struct ProfileStoreTests {
     }
 
     @Test
-    func importedProfilesShareFolderNamesAndReloadAtomically() throws {
+    func importedProfilesShareFolderNamesAndReloadAtomically() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -76,7 +76,7 @@ struct ProfileStoreTests {
         let second = BrowserProfile(name: "Импорт второй")
         let third = BrowserProfile(name: "Без папки")
 
-        let saved = try store.insertImportedProfiles(
+        let saved = try await store.insertImportedProfilesOffMainActor(
             [first, second, third],
             folderNames: ["Работа", "работа", nil]
         )
@@ -299,7 +299,7 @@ struct ProfileStoreTests {
     }
 
     @Test
-    func importingThousandsOfDistinctFoldersBatchesOrganizationSorting() throws {
+    func importingThousandsOfDistinctFoldersBatchesOrganizationSorting() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -316,7 +316,7 @@ struct ProfileStoreTests {
         let folderNames = (0..<count).map { "Folder \($0)" }
 
         let startedAt = Date()
-        let saved = try store.insertImportedProfiles(
+        let saved = try await store.insertImportedProfilesOffMainActor(
             profiles,
             folderNames: folderNames
         )
@@ -339,26 +339,22 @@ struct ProfileStoreTests {
     }
 
     @Test
-    func importedProfilesRollBackWhenFolderPersistenceFails() throws {
+    func importedProfilesRollBackWhenFolderPersistenceFails() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let paths = AppPaths(rootDirectory: root)
-        var failNextOrganizationPersist = true
         let store = ProfileStore(
             paths: paths,
-            beforeOrganizationPersist: {
-                if failNextOrganizationPersist {
-                    failNextOrganizationPersist = false
-                    throw ProfileStoreTestError()
-                }
+            beforeBackgroundImportOrganizationPersist: {
+                throw ProfileStoreTestError()
             }
         )
         let profile = BrowserProfile(name: "Откат импорта")
 
-        #expect(throws: ProfileStoreTestError.self) {
-            try store.insertImportedProfiles(
+        await #expect(throws: ProfileStoreTestError.self) {
+            try await store.insertImportedProfilesOffMainActor(
                 [profile],
                 folderNames: ["Новая папка"]
             )

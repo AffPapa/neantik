@@ -207,6 +207,46 @@ def gpu_mode(args_path: Path) -> str:
     )
 
 
+def source_evidence_paths(
+    runtime_version: Any,
+    evidence: Path,
+    project_root: Path,
+) -> tuple[Path, Path]:
+    if not isinstance(runtime_version, str):
+        raise PackagedRuntimeReportError(
+            "Runtime report chromiumVersion must be a string"
+        )
+    if runtime_version == "154.0.8037.58":
+        raise PackagedRuntimeReportError(
+            "Chromium 154.0.8037.58 is diagnostic-only and cannot be "
+            "packaged as a release runtime"
+        )
+    if runtime_version == "153.0.8010.52":
+        return (
+            project_root / "runtime/fingerprint-chromium-153.lock.json",
+            evidence / "chromium-153-port-status.json",
+        )
+    if runtime_version == "152.0.7977.64":
+        return (
+            project_root / "runtime/fingerprint-chromium.lock.json",
+            evidence / "chromium-152-source-contract.json",
+        )
+    if runtime_version == "154.0.8037.93":
+        return (
+            project_root / "runtime/fingerprint-chromium-154.lock.json",
+            evidence / "chromium-154-source-contract.json",
+        )
+    if runtime_version.startswith("154."):
+        raise PackagedRuntimeReportError(
+            f"Chromium {runtime_version} release qualification is unavailable; "
+            "refusing to fall back to M152 evidence"
+        )
+    raise PackagedRuntimeReportError(
+        f"Unsupported Chromium runtime version for packaged evidence: "
+        f"{runtime_version}"
+    )
+
+
 def verify(
     report_path: Path,
     runtime_app: Path,
@@ -237,14 +277,12 @@ def verify(
         report,
     )
 
-    source_contract = evidence / "chromium-153-port-status.json"
-    if not source_contract.is_file():
-        source_contract = evidence / "chromium-152-source-contract.json"
     runtime_version = field(report, "chromiumVersion")
-    if runtime_version == "153.0.8010.52":
-        source_lock = project_root / "runtime/fingerprint-chromium-153.lock.json"
-    else:
-        source_lock = project_root / "runtime/fingerprint-chromium.lock.json"
+    source_lock, source_contract = source_evidence_paths(
+        runtime_version,
+        evidence,
+        project_root,
+    )
     evidence_files = {
         "sourceLockSHA256": source_lock,
         "candidateLockSHA256": evidence / "fingerprint-chromium.lock.json",

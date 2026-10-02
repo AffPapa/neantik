@@ -11,7 +11,7 @@ PLAN = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
 
 
 class RuntimeRebaseEntrypointTests(unittest.TestCase):
-    def test_version_neutral_entrypoint_uses_explicit_current_plan(self):
+    def test_version_neutral_entrypoint_rejects_explicit_legacy_plan(self):
         result = subprocess.run(
             [
                 sys.executable,
@@ -33,7 +33,8 @@ class RuntimeRebaseEntrypointTests(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertFalse(report["ok"])
         self.assertIn("152.0.7977.64", report["error"])
-        self.assertIn("154.0.8037.58", report["error"])
+        baseline = json.loads((PROJECT_ROOT / "runtime/security-baseline.json").read_text())
+        self.assertEqual(report["error"], "Chromium rebase target 152.0.7977.64 is below security baseline " + baseline["minimumPublicChromiumVersion"])
 
 
 if __name__ == "__main__":

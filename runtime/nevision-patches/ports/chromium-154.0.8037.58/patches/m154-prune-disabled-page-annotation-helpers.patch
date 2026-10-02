@@ -1,0 +1,41 @@
+diff --git a/chrome/browser/page_content_annotations/page_content_annotations_service_factory.cc b/chrome/browser/page_content_annotations/page_content_annotations_service_factory.cc
+index 02b0e1a..b410335 100644
+--- a/chrome/browser/page_content_annotations/page_content_annotations_service_factory.cc
++++ b/chrome/browser/page_content_annotations/page_content_annotations_service_factory.cc
+@@ -48,36 +48,5 @@
+ namespace {
+ 
+-bool IsEphemeralProfile(Profile* profile) {
+-#if BUILDFLAG(IS_CHROMEOS)
+-  if (ash::ProfileHelper::IsEphemeralUserProfile(profile)) {
+-    return true;
+-  }
+-#endif
+-
+-  // Catch additional logic that may not be caught by the existing Ash check.
+-  ProfileAttributesStorage& storage =
+-      g_browser_process->profile_manager()->GetProfileAttributesStorage();
+-  ProfileAttributesEntry* entry =
+-      storage.GetProfileAttributesWithPath(profile->GetPath());
+-  return entry && entry->IsEphemeral();
+-}
+-
+-bool ShouldEnablePageContentAnnotations(Profile* profile) {
+-  if (IsRunningInAppMode()) {
+-    // The annotations we provide cannot provide any benefit to users in kiosk
+-    // mode, so we can skip.
+-    return false;
+-  }
+-
+-  if (IsEphemeralProfile(profile)) {
+-    // The annotations we provide won't have lasting effect if profile is
+-    // ephemeral, so we can skip.
+-    return false;
+-  }
+-  return page_content_annotations::features::
+-      ShouldEnablePageContentAnnotations();
+-}
+-
+ }  // namespace
+
+ // static

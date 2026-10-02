@@ -290,6 +290,16 @@ def _runtime_framework(runtime_app: Path) -> Path:
     return framework
 
 
+def source_contract_name(runtime_version: str) -> str:
+    if runtime_version == "154.0.8037.93":
+        return "chromium-154-source-contract.json"
+    if runtime_version.startswith("154."):
+        raise FingerprintReportError("Unsupported M154 runtime version")
+    if runtime_version.startswith("153."):
+        return "chromium-153-port-status.json"
+    return "chromium-152-source-contract.json"
+
+
 def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
     runtime_app = (
         integrated_app
@@ -322,9 +332,9 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must use provenance schema 3"
         )
-    source_contract = evidence_root / "chromium-153-port-status.json"
-    if not source_contract.is_file():
-        source_contract = evidence_root / "chromium-152-source-contract.json"
+    source_contract = evidence_root / source_contract_name(
+        str(runtime_info.get("CFBundleShortVersionString", ""))
+    )
     provenance_files = {
         "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
         "candidateLockSHA256":

@@ -124,7 +124,51 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             'source_contract="$PROJECT_DIR/runtime/chromium-152-source-contract.json"',
             text,
         )
+        self.assertIn(
+            '154.0.8037.93)',
+            text,
+        )
+        self.assertIn(
+            'source_contract="$PROJECT_DIR/runtime/chromium-154-source-contract.json"',
+            text,
+        )
+        self.assertIn(
+            "refusing the historical M152 default",
+            text,
+        )
         self.assertIn('"$source_contract:$evidence/$(basename "$source_contract")"', text)
+
+    def test_integrated_verifier_dispatches_qualified_m154_without_fallback(self) -> None:
+        text = INTEGRATED_VERIFIER.read_text(encoding="utf-8")
+
+        self.assertIn(
+            '[[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]',
+            text,
+        )
+        self.assertIn(
+            'SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-154-port-candidate.json"',
+            text,
+        )
+        self.assertIn(
+            'CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-154.lock.json"',
+            text,
+        )
+        self.assertIn(
+            'SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-154-source-contract.json"',
+            text,
+        )
+        self.assertIn(
+            'PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-154-source-contract.json"',
+            text,
+        )
+        self.assertIn(
+            "154.0.8037.58 is diagnostic-only and cannot be released.",
+            text,
+        )
+        self.assertIn(
+            '[[ "$EXPECTED_RUNTIME_VERSION" == 152.* ||',
+            text,
+        )
 
     def test_manager_only_update_preserves_russian_bundle_contract(self) -> None:
         prepare = PREPARE_MANAGER.read_text(encoding="utf-8")

@@ -1,0 +1,1671 @@
+{
+  "buildEvidence": {
+    "blockingDependency": "The next incremental test-target build must validate group 24's dead-helper removal; full net/Enterprise targets, FSA quarantine tests, runtime, and release qualification remain open",
+    "build": {
+      "approxActionsPerMinute": null,
+      "approxRemainingActions": null,
+      "approxRemainingCompileHours": null,
+      "attemptOnSameOutput": 4,
+      "checkpointUTC": "2026-09-28T11:44:30Z",
+      "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ninja -C out/NeAntikM154OrderedReplayStable27 -j6 chrome",
+      "concurrentNinjaProcesses": "one build was launched from this task; OS process listing is sandbox-denied",
+      "currentAction": 11587,
+      "estimateStatus": "Action count remaining excludes any further test builds, runtime, or release qualification.",
+      "generatedFlags": {
+        "SAFE_BROWSING_AVAILABLE": 0,
+        "SAFE_BROWSING_DOWNLOAD_PROTECTION": 0
+      },
+      "limitations": "Output is diagnostic SDK27.0, not qualified to the official SDK26.5/build25F70 pin. No runtime, tests, packaging, signing, notarization, Gatekeeper or hosted artifact validation yet.",
+      "ninjaPID": null,
+      "outputDirectory": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src/out/NeAntikM154OrderedReplayStable27",
+      "parallelJobs": 6,
+      "previousAttemptFailure": {
+        "action": "36621/49729",
+        "error": "safe_browsing_prefs.h missing after common overlay replaced safe_browsing_prefs static_library with empty group",
+        "file": "components/safe_browsing/content/browser/safe_browsing_navigation_observer_manager.cc",
+        "repairGroup": 70
+      },
+      "progress": "Attempt4 checkpoint at 11587/13107 (2026-09-28 11:44 UTC); superseded by terminal attempt7 and completed same-output attempt8. No active Ninja/linker process observed at 2026-09-28 13:10 UTC.",
+      "recentObservedActionsPerMinute": null,
+      "releaseQualified": false,
+      "repairEvidence": {
+        "compileAfterRepair": "safe_browsing_prefs.cc and safe_browsing_navigation_observer_manager.cc compiled in incremental retry",
+        "gnChecks": "passed: chrome, safe_browsing common/browser unit_tests, enterprise connectors unit_tests",
+        "gnGeneration": "passed 35012 targets"
+      },
+      "safeBrowsingMode": 0,
+      "sourceRoot": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src",
+      "status": "superseded-historical-attempt4",
+      "supersededBy": "latestBuildLoopAudit.build attempt8, completed chrome target 476/476.",
+      "totalActions": 13107
+    },
+    "cause": "The complete chrome target linked after the documented enterprise-gated sources were added. The initial headless about:blank smoke aborted with SIGABRT in TransformProcessType/InitHeadlessMode, and an earlier GUI attempt lacked an isolated profile. A newer isolated GUI smoke passed for local data-URL rendering; its limited evidence and boundaries are recorded under runtimeSmoke.",
+    "fullUnitTestsAttempt": {
+      "cause": "The mode-0 build excludes Safe Browsing implementations while the monolithic unit_tests target still links test objects that reference them.",
+      "command": "/opt/homebrew/bin/ninja -C out/NeAntikMode0Audit -j6 unit_tests",
+      "linkLog": "/private/tmp/neantik-m154-unit-tests-link-retry-20260926.log",
+      "progress": "851/851 graph steps; failed at final LINK ./unit_tests",
+      "representativeUnresolvedSymbols": [
+        "safe_browsing::FileTypePoliciesTestOverlay::SwapConfig",
+        "safe_browsing::SafeBrowsingUIManager::CreateBlockingPage",
+        "safe_browsing::DownloadProtectionService::GetURLLoaderFactory"
+      ],
+      "runnerBuilt": false,
+      "status": "link-failed",
+      "testsExecuted": false,
+      "unresolvedSymbolCount": 21
+    },
+    "lastAttempt": {
+      "command": "/opt/homebrew/bin/ninja -C out/NeAntikMode0Audit -j6 chrome",
+      "compilerError": null,
+      "firstAttemptProgress": "52903/57607 actions before Ninja stopped",
+      "generatedBuildflags": {
+        "SAFE_BROWSING_AVAILABLE": 0,
+        "SAFE_BROWSING_DOWNLOAD_PROTECTION": 0
+      },
+      "incrementalRetryProgress": "483/483 chrome actions completed; exit code 0",
+      "recordedAt": "2026-09-26",
+      "verifiedPassedObject": "NeAntik Browser.app/Contents/MacOS/NeAntik Browser"
+    },
+    "latestTestTargetBuild": {
+      "currentRetry": {
+        "developerDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+        "failure": "OneGoogleBar local-only overlay returned before firing callers, leaving unreachable request queue code. Group49 returns explicit FATAL_ERROR/nullopt without network; group50 prunes now-unused account-consistency member. Isolated object compile passed; full unit test runtime not executed.",
+        "fixPatch": "runtime/nevision-patches/ports/chromium-154.0.8037.58/patches/m154-guard-force-save-cloud-helper.patch",
+        "fixPatchGroups": [
+          44,
+          45,
+          46,
+          47
+        ],
+        "fixPatchSHA256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4",
+        "isolatedObjectCompile": "passed: obj/chrome/browser/download/impl/chrome_download_manager_delegate.o",
+        "isolatedObjectCompilesPassed": [
+          "obj/chrome/browser/extensions/extensions/extension_safety_check_utils.o",
+          "obj/chrome/browser/download/impl/chrome_download_manager_delegate.o",
+          "obj/chrome/browser/download/impl/download_warning_desktop_hats_utils.o",
+          "obj/chrome/browser/enterprise/impl/context_info_fetcher.o",
+          "obj/chrome/browser/enterprise/impl/content_analysis_downloads_delegate.o",
+          "obj/chrome/browser/enterprise/connectors/analysis/unit_tests/content_analysis_downloads_delegate_unittest.o (direct compile command; Ninja target graph blocked by unrelated Settings TS prerequisites)",
+          "obj/chrome/browser/new_tab_page/impl/one_google_bar_loader_impl.o"
+        ],
+        "outputDirectory": "out/NeAntikM154Fresh",
+        "parallelJobs": 6,
+        "progressAtCheckpoint": "3/9213 at 2026-09-28T01:48:00Z; stored session 4839 is no longer available and permitted process audit found no active Ninja process at 2026-09-28T13:10:42Z.",
+        "recordedAtUTC": "2026-09-28T01:48:00Z",
+        "releaseQualified": false,
+        "sessionId": 4839,
+        "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+        "status": "terminal-historical-attempt-session-unavailable",
+        "targets": [
+          "net_unittests",
+          "enterprise_archive_analyzer_unittests"
+        ],
+        "terminalCheck": "stored session handle unavailable; no active ninja/ld64.lld process in permitted read-only process listing",
+        "testsExecuted": false,
+        "xcodeBuild": "27A5228h"
+      },
+      "failure": "Six warnings-as-errors: String::Format with non-NUL-terminated tuple.gpu_model and four raw data[byte_index] accesses. The source now uses StrCat/String and base::span<uint8_t>, but has not yet been recompiled.",
+      "firstRetryFailure": "At 168/23064, Clang rejected constructing base::span<uint8_t> directly from raw data; group 23 was revised to use the existing DOMArrayBufferView::ByteSpanMaybeShared().subspan() contract and the WebGL object now compiles in latestRetry.",
+      "globalDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "isolatedObjectCompilesPassed": [
+        "components/assist_ranker/ranker_url_fetcher.cc",
+        "components/translate/core/browser/translate_ranker_impl.cc",
+        "components/autofill/core/browser/crowdsourcing/autofill_crowdsourcing_manager.cc"
+      ],
+      "latestRetry": {
+        "failure": "components/security_interstitials/content/ssl_blocking_page_base.cc: GetPrefs is unused after the mode-0 common overlay; owned group 24 removes the helper and direct-only includes, awaiting recompile.",
+        "log": "/private/tmp/neantik-m154-testbuild-webgl-span-fix.log",
+        "maxParallelJobs": 6,
+        "progress": "2585/22894 actions; stopped on one unused-function warning-as-error",
+        "sessionId": 59762,
+        "webglObject": "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc compiled successfully after group 23 revision"
+      },
+      "outputDirectory": "out/NeAntikM154Fresh",
+      "parallelJobs": 6,
+      "processScopedDeveloperDirectory": "/Applications/Xcode.app/Contents/Developer",
+      "progress": "3133/26196 actions; terminal failure in webgl_rendering_context_base.cc under Clang 27 -Wunsafe-buffer-usage",
+      "recordedAtUTC": "2026-09-27T20:42:25Z",
+      "releaseQualified": false,
+      "sessionId": 21038,
+      "sourceRoot": "/private/tmp/neantik-m154-unpruned-root/src",
+      "targets": [
+        "net_unittests",
+        "enterprise_archive_analyzer_unittests"
+      ]
+    },
+    "passedTargetObjects": [
+      "chrome/browser/download/chrome_download_manager_delegate.cc",
+      "chrome/browser/enterprise/connectors/analysis/page_print_request_handler.cc",
+      "chrome/browser/enterprise/connectors/impl/files_request_handler.cc",
+      "chrome/browser/safe_browsing/cloud_content_scanning/file_analysis_request.cc",
+      "chrome/common/common_message_generator.cc",
+      "chrome/browser/security_events/security_event_recorder_factory.cc",
+      "chrome/browser/safe_browsing/extension_telemetry/search_hijacking_detector.cc",
+      "chrome/browser/safe_browsing/safe_browsing_navigation_observer_manager_factory.cc"
+    ],
+    "releaseReady": false,
+    "runtimeSmoke": {
+      "gui": "Passed isolated GUI smoke on 2026-09-27: LaunchServices opened the unsigned M154 diagnostic app; loopback-only DevTools reported Chrome/154.0.8037.58 and a rendered local data: page titled NeAntik-M154-Smoke. External networking and component updates were disabled.",
+      "guiEvidence": {
+        "appPath": "/private/tmp/neantik-m154-build-20260925/src/out/NeAntikMode0Audit/NeAntik Browser.app",
+        "browserProduct": "Chrome/154.0.8037.58",
+        "executableSHA256": "8f7e464000a83fa0298ecd3d0cb075c5a4d298fbb1a3f1de8f582a1683775886",
+        "limitations": [
+          "No external website was loaded.",
+          "No fingerprint-coherence or A→B→A test was run.",
+          "The diagnostic app source/build is not release-qualified."
+        ],
+        "pageTitle": "NeAntik-M154-Smoke",
+        "pageUrl": "data:text/html local smoke page",
+        "remoteDebugging": "temporary loopback-only port 19229; closed after verification",
+        "userDataDir": "/private/tmp/neantik-m154-runtime-ui-20260927/UserData",
+        "webkitCommit": "a654841425914cbb703a2931e07b70a83aedbafd"
+      },
+      "headless": "failed: SIGABRT in TransformProcessType during InitHeadlessMode",
+      "profileIsolation": "Isolated temporary UserData confirmed in main and helper process arguments and by files created only under /private/tmp/neantik-m154-runtime-ui-20260927/UserData. This does not prove A→B→A persistence, production profile migration, or network/privacy invariants.",
+      "supersededForCurrentBuild": "Attempt8 app has its own current LaunchServices smoke record under latestBuildLoopAudit.runtimeSmoke."
+    },
+    "status": "M154 diagnostic test-target retry stopped at 2585/22894 on another mode-0 unused helper, SSL interstitial GetPrefs. Owned group 24 removes that helper and its direct-only includes; the full target build is not yet rerun. The WebGL object now compiles. Existing linked unsigned M154 diagnostic app remains unrelated and is not release-bound.",
+    "statusRecordClassification": "Historical test-target retry record from 2026-09-27, not the current M154 build verdict. It remains relevant only to its separate net/Enterprise test targets; group24 was not proven by that historical retry. Current diagnostic chrome build state is latestBuildLoopAudit.build (attempt8, 476/476); release qualification is still false.",
+    "supersededForOverallBuildStatusBy": "latestBuildLoopAudit.build",
+    "testSourceSetBuild": {
+      "command": "/opt/homebrew/bin/ninja -C out/NeAntikMode0Audit -j6 chrome/browser/safe_browsing:unit_tests components/safe_browsing/content/browser:unit_tests",
+      "log": "/private/tmp/neantik-m154-unit-test-compile-retry5-20260926.log",
+      "progress": "21/21 final incremental actions; dependencies compiled in earlier retries",
+      "runnerBuilt": false,
+      "status": "passed-compile-only",
+      "testsExecuted": false
+    },
+    "unitTestLimit": "The full monolithic unit_tests target still fails at ThinLTO link with Safe Browsing symbols excluded by mode 0. The archive analyzer suite passes 50/50, and a separate Enterprise policy/verdict runner passes 46/46 after a disposable-only utility-service registration gate was added; see enterpriseArchiveAnalyzerFocusedTests, enterprisePolicyFocusedTests, and enterpriseFileUtilServiceGate. This proves only the exercised archive and policy path in the diagnostic harness. Crash/disconnect, sandbox denial, end-to-end download and negative Safe Browsing privacy behavior remain unverified."
+  },
+  "canonicalTupleOverlayBuild": {
+    "catalogCheck": "scripts/verify-apple-device-tuples.py passed for 11 tuples",
+    "chromiumVersion": "154.0.8037.58",
+    "currentBuild": {
+      "command": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer TOOLCHAINS=com.apple.dt.toolchain.Metal.32023.921.5 /opt/homebrew/bin/ninja -C out/NeAntikM154PortProbe -j6 chrome",
+      "compilerErrorsObserved": false,
+      "observedProgress": "32244/50953 at 2026-09-27 03:41:20 UTC; process confirmed live through session 5467",
+      "releaseQualified": false,
+      "sessionId": 5467,
+      "status": "completed-historical-diagnostic-superseded",
+      "supersededBy": "canonicalTupleOverlayBuild.latestDiagnosticBuildCheckpoint",
+      "terminalCheck": "stored session handle 5467 unavailable; a later checkpoint for this same sourceRoot/outDir records completed-exit-0; no active Ninja/linker process observed at 2026-09-28T13:10:42Z.",
+      "toolchain": "GN SDK link resolves to Xcode-beta 27.0 SDK build 26A5388f. Ninja receives DEVELOPER_DIR=/Applications/Xcode.app so xcrun resolves the already installed Apple MetalToolchain; requested TOOLCHAINS label ends .921.5 but the resolved compiler reports 32023.921.6. Beta reports its bundled Metal Toolchain missing. A no-compile probe through scripts/runtime-tools/xcrun proved the same metal/metallib binaries resolve with DEVELOPER_DIR=Xcode-beta and NEANTIK_METAL_TOOLCHAIN_PATH; no Xcode or component was installed. use_system_xcode testing override remains enabled; diagnostic only. Chromium documents newer SDKs as usually working; official CI pin is 26.5 build 25F70"
+    },
+    "enterpriseCloudContentAnalysis": true,
+    "gnCheck": "passed: //chrome:chrome",
+    "gnGeneration": "passed; 35,007 targets",
+    "incompleteBuild": "manual diagnostic using provisional five-row tuples stopped at 12798/29164 before acceptance",
+    "outDir": "out/NeAntikM154PortProbe",
+    "recordedAt": "2026-09-27T00:43:00Z",
+    "safeBrowsingMode": 0,
+    "sourceCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "sourceRoot": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe",
+    "sourceTree": "63b6339af403b6f8dc70fe2d4613f91f1c04f43a",
+    "tupleCount": 11,
+    "tupleOverlayCheck": "passed exact pre/postimage lock for 8 files",
+    "tupleOverlayScript": "scripts/apply-owned-runtime-device-tuples-154.py",
+    "tupleOverlayScriptSHA256": "99c9270bd080191986b85ea71fc191f53acb7f9f87e9de60e0a870159bf3dae5",
+    "tupleSelectionContract": "C++ raw seed modulo 11 matches Swift raw seed modulo 11; static source test asserts the equality."
+  },
+  "chromium154SourceToolchainEvidence": {
+    "capturedAtUTC": "2026-09-30T10:30:00Z",
+    "dawnGo": {
+      "architecture": "arm64",
+      "depsVersion": "version:3@1.26.6",
+      "instanceId": "GV753evfC30xSfiiI6ycB66mmNJupBAGnkcJo8F_mn4C",
+      "package": "infra/3pp/tools/go/mac-arm64",
+      "resolution": "read-only CIPD describe succeeded",
+      "sourceFile": "third_party/dawn/DEPS",
+      "sourceFileSHA256": "10f41005ac318946aa6e79eb86fdcdabcca34141d3804c60ce0d7eecd172ce65"
+    },
+    "limitations": [
+      "Pinned Rust and Dawn Go inputs match the exact .93 DEPS files; this does not qualify the full toolchain or binary.",
+      "Xcode Beta 27A5228h is selected and identity-verified; the system toolchain is not hermetic or release-qualified.",
+      "Full Chromium build remains in progress; runtime, security, app integration, signing, notarization, Gatekeeper, and publication gates are open."
+    ],
+    "releaseQualified": false,
+    "rust": {
+      "architecture": "arm64",
+      "gcsBucket": "chromium-browser-clang",
+      "generation": 1786821096222521,
+      "objectName": "Mac_arm64/rust-toolchain-0913b18e489ac1011b580e31fa5559654be12bfc-2-llvmorg-24-init-3796-g20e97c4b.tar.xz",
+      "rustcRevision": "0913b18e489ac1011b580e31fa5559654be12bfc-2-llvmorg-24-init-3796-g20e97c4b",
+      "rustcVersion": "1.99.0-nightly",
+      "sha256": "fe128475561d7a51c797d1cb3ccea6f94fd770b167c8e0cc33bf75e7c25d8225",
+      "sizeBytes": 248465344,
+      "sourceFile": "DEPS",
+      "sourceFileSHA256": "4d567fffba5e7b64c777c16211a66763aa410e9b4de13ad9ac57686cfd0e3888"
+    },
+    "source": {
+      "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+      "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5",
+      "version": "154.0.8037.93"
+    }
+  },
+  "cleanEnterpriseMode0PortAttempt": {
+    "applyCheck": "passed against clean Chromium 154.0.8037.58 source",
+    "baseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "buildAttempted": false,
+    "curatedPatchSHA256": "6e4e7c76a599d0fa1d9820694ac50e3f0b643d22aa3cefcc3c56d5da7a5b2827",
+    "dependencyContext": "The temporary validation tree used 136 submodule worktree checkouts whose HEAD matched the source gitlink, plus locally synchronized generated/CIPD inputs. It is a disposable validation overlay, not a clean-room reproducible environment; no mismatched submodule symlinks remain.",
+    "focusedHeaderChecks": {
+      "passed": [
+        "//chrome/browser/download:impl",
+        "//chrome/browser/download:unit_tests",
+        "//chrome/browser/safe_browsing:unit_tests",
+        "//chrome/services/file_util:unit_tests",
+        "//chrome/browser/ui:ui"
+      ],
+      "result": "all five target-scoped GN header checks passed"
+    },
+    "fullGraphHeaderCheck": {
+      "remainingAreas": [
+        "extensions browser and unit tests",
+        "file-system access implementation and tests",
+        "policy/preferences file-type-policy dependencies",
+        "transitive zlib ZIP target dependencies",
+        "Safe Browsing search-engine dependency"
+      ],
+      "reportedIncludeDependencyErrors": 10,
+      "result": "failed"
+    },
+    "gnConfiguration": {
+      "enterpriseCloudContentAnalysis": true,
+      "enterpriseLocalContentAnalysis": true,
+      "safeBrowsingMode": 0
+    },
+    "gnGeneration": {
+      "generatedTargetCount": 34845,
+      "result": "passed",
+      "unusedArgs": "none"
+    },
+    "gnResult": "failed unresolved dependencies in the complete graph",
+    "interpretation": "The curated Enterprise patch applies but does not form a complete GN-valid Safe Browsing mode-0 source graph. Required mode-gated consumers and test ownership still need source review/repair.",
+    "mode0ConsumerGatesAttempted": [
+      "chrome/browser/feedback:feedback_impl and unsafe-site targets",
+      "chrome/browser/ui/page_info and views/page_info suspicious-site guards",
+      "chrome/browser/safe_browsing/suspicious_site_warnings guard",
+      "chrome/browser test dependency guard",
+      "safe_browsing_mode=0 Enterprise file_type_policies build ownership"
+    ],
+    "patchBytes": 61234,
+    "patchSHA256": "6e4e7c76a599d0fa1d9820694ac50e3f0b643d22aa3cefcc3c56d5da7a5b2827",
+    "recordedAt": "2026-09-27",
+    "releaseQualified": false,
+    "sourceTree": "/private/tmp/neantik-m154-enterprise-clean-port",
+    "unresolvedTargets": [
+      "//chrome/browser/feedback:feedback_impl -> //components/safe_browsing/content/browser:client_side_detection",
+      "//chrome/browser/feedback:interactive_ui_tests -> //components/safe_browsing/content/browser:client_side_detection",
+      "//chrome/browser/feedback/report_unsafe_site:report_unsafe_site -> //components/safe_browsing/content/browser:client_side_detection",
+      "//chrome/browser/safe_browsing/suspicious_site_warnings:suspicious_site_warnings -> //components/safe_browsing/content/browser:safe_browsing_blocking_page",
+      "//chrome/browser/ui/webui/feedback/report_unsafe_site:report_unsafe_site -> //components/safe_browsing/content/browser:client_side_detection",
+      "//chrome/test:browser_tests -> //chrome/browser/safe_browsing:blocking_page_platform_test_support",
+      "//chrome/test:interactive_ui_tests -> //components/safe_browsing/content/browser:client_side_detection"
+    ]
+  },
+  "cleanStable58Preflight": {
+    "cleanCheckout": {
+      "head": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "path": "/private/tmp/neantik-154-stable-58",
+      "tree": "63b6339af403b6f8dc70fe2d4613f91f1c04f43a",
+      "workingTree": "clean"
+    },
+    "officialChromiumTag": {
+      "repository": "https://chromium.googlesource.com/chromium/src.git",
+      "tag": "154.0.8037.58",
+      "tagCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "tree": "63b6339af403b6f8dc70fe2d4613f91f1c04f43a",
+      "verifiedBy": "git ls-remote; tag commit matches local clean checkout"
+    },
+    "ownedPatchsetPreflight": {
+      "command": "python3 scripts/verify-nevision-patchset-manifest.py --manifest runtime/nevision-patches/series.json --source-root /private/tmp/neantik-154-stable-58 --json",
+      "exitCode": 1,
+      "manifestPath": "runtime/nevision-patches/series.json",
+      "manifestSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+      "manifestTargetChromiumVersion": "152.0.7977.64",
+      "reason": "The owned manifest targets Chromium 152. Direct read-only per-group application checks against clean M154.0.8037.58 show 6 of 11 groups apply syntactically and 5 conflict; the manifest postimage hashes also do not match the M154 tree. Applicability alone is not behavior or runtime proof.",
+      "releaseRequiredGroupCount": 11,
+      "status": "failed-m154-port-required"
+    },
+    "patchGroupContextCheck": {
+      "applied": false,
+      "appliesSyntactically": [
+        "deterministic-offline-audio",
+        "deterministic-webgl-pixels",
+        "real-browser-version-contract",
+        "minimal-apple-device-tuple",
+        "neantik-branding-and-source-lock",
+        "official-lite-archive-build-contract"
+      ],
+      "behaviorValidated": false,
+      "conflicts": [
+        "profile-seed-contract",
+        "deterministic-rendered-surfaces",
+        "timezone-locale-network-context",
+        "private-runtime-config-environment",
+        "cached-runtime-profile-seed"
+      ],
+      "method": "git apply --check, each existing release-required patch independently against the clean exact .58 worktree; no patch applied"
+    },
+    "recordedAt": "2026-09-26T12:43:32Z",
+    "ungoogledCommonOverlayRecheck": {
+      "behaviorValidated": false,
+      "conflicts": [
+        "timezone-locale-network-context",
+        "private-runtime-config-environment",
+        "cached-runtime-profile-seed"
+      ],
+      "method": "Read-only git apply --check of owned release-required groups independently; prerequisite NeAntik patches were not applied in this recheck.",
+      "officialChromiumCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "releaseReady": false,
+      "source": "/private/tmp/neantik-m154-common-58-dep-replay",
+      "syntacticApplyCount": 8,
+      "syntacticConflictCount": 3
+    },
+    "verifierPathFix": {
+      "change": "Resolve manifest/rebase paths and patch inputs before invoking git; reject patch symlinks that escape the manifest directory.",
+      "file": "scripts/verify-nevision-patchset-manifest.py",
+      "fullScriptSuite": "690 tests passed; 1 skipped",
+      "issue": "Relative patch paths were passed to git apply after changing cwd to the external Chromium source worktree.",
+      "targetedTests": "22 passed (relative-path regression and escaping-symlink checks included)",
+      "test": "test_ported_group_can_be_dry_run_applied_to_source_root now invokes the verifier with relative manifest and rebase paths from a different cwd."
+    }
+  },
+  "currentDisposableSourceEvidence": {
+    "baseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "modifiedTrackedPathCount": 241,
+    "notes": "This snapshot includes disposable policy and Mojo-disconnect regression tests plus their focused runners. It is still a large diagnostic overlay, not an owned or release-ready M154 patch manifest.",
+    "recordedAt": "2026-09-27",
+    "trackedBinaryDiffBytes": 367325,
+    "trackedBinaryDiffSHA256": "815bf6019327a58f2a58eead6b56e14b53d419669b8a8df61159d837c09b73f6",
+    "untrackedInputCount": 17,
+    "untrackedPathInventorySHA256": "8ff4ebecb278fcc0d6be20e24c2910578bd1a4f6cea7858a0beffd5dc4e4388f"
+  },
+  "currentToolchainEvidence20260930": {
+    "actualArgsGn": "out/NeAntikM154OrderedReplayStable27/args.gn has use_system_xcode=false; the old status entry claiming true is contradicted.",
+    "chromiumPinnedToolchainPackage": "infra_internal/ios/xcode/xcode_binaries/mac-amd64:c5txl4HTukDs4xiCybqz3zK9jxr4N4PwzHRNOhjBDOQC",
+    "localStagedBundle": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src/build/mac_files/xcode_binaries; xcodebuild reports Xcode 27.0 build 27A266a; the bundle contains a MacOSX26.5.sdk but its CIPD instance provenance is unverified.",
+    "releaseReady": false,
+    "upstreamToolchainDescription": "Xcode 26.6 build 17F113, macOS SDK 26.5 build 25F70, Metal 17F109 (from source build/mac_toolchain.py comments and pinned tag).",
+    "verifierResult": "scripts/verify-chromium-154-toolchain.py against that args.gn fails as expected because its lock is diagnostic system-Xcode mode and requires use_system_xcode=true."
+  },
+  "currentTurnCorrection20260930": {
+    "browserFreeApi": "Fresh direct HTTPS response: 0.7.11/build74, Chromium153, canDownload=false; exact ZIP SHA matches GitHub asset; runtime gate is explicit.",
+    "checkedAtLocal": "2026-09-30",
+    "githubCLI": "gh auth status reports invalid saved tokens for AffPapa and mrdumay-source; public GitHub connector confirms immutable v0.7.11 and assets. Do not start GitHub OAuth until exact upload-ready candidate exists.",
+    "inputManifest": "/private/tmp/neantik-m154-input-manifest-r4-group72-20260930.json",
+    "inputManifestTrackedDiffSHA256": "6b643e8d10786b34ebf602426949c5f027029e3f165d421acbb5a02abb9e524a",
+    "inputManifestUntrackedInputCount": 52,
+    "nextAction": "Resume the same chrome build output, capture its next failure or completion once, run targeted runtime/security checks on this exact source, then sign/notarize/publish only after all candidate gates.",
+    "ownedGroupCount": 72,
+    "personalMacToolchain": "Chromium build/mac/should_use_hermetic_xcode.py mac returned 0; /Library/GoogleCorpSupport absent; process-scoped /Applications/Xcode.app is Xcode 27.0/27A266a, SDK 27.0/26A425; exact system-Xcode identity verifier passed. Internal CIPD package ACL denied for mrdumay@gmail.com, but not used by Chromium source policy on this host.",
+    "releaseReady": false,
+    "resumedBuild": {
+      "activeCommand": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /opt/homebrew/bin/ninja -C out/NeAntikM154Final20260930 chrome -j6",
+      "activeSessionId": 18653,
+      "currentNinjaRemainingActionsAtLastPoll": 49702,
+      "failedAction": "ANGLE Metal shader AIR generation: sandbox denied user Clang module-cache writes",
+      "outputDirectory": "/private/tmp/neantik-m154-clean-source-replay-20260930-r4/src/out/NeAntikM154Final20260930",
+      "parallelism": 6,
+      "previouslyInterruptedAt": "5831/55539",
+      "releaseQualified": false,
+      "singleActionRetry": "passed outside sandbox with process-scoped stable Xcode 27.0/27A266a; no source changes",
+      "target": "chrome"
+    },
+    "safeBrowsingMode": 0,
+    "sourceReplay": "M154 base a654841425914cbb703a2931e07b70a83aedbafd; 20 pinned macOS patches + 71 clean ordered owned patches + disjoint exact group72 DevTools bootstrap patch; tuple overlay 8/8; GN checks passed.",
+    "wholeTreePostimageManifest": "/private/tmp/neantik-m154-source-tree-postimage-r4-20260930.jsonl",
+    "wholeTreePostimageManifestSHA256": "f12e1e973da852f40250b1b643af0c815c6d653ba9d0c319acd4601ded226b8c"
+  },
+  "currentTurnPatchFollowup": {
+    "applyChecks": "passed against pristine M154 chrome_content_browser_client.cc and reverse-apply checked against the exact diagnostic scratch file already carrying group70 plus this delta. Affected CXX object compiled; incremental chrome completed 476/476 on the same output; framework symbol audit found no undefined ScreenAIInstallState::GetInstance.",
+    "checkedAtUTC": "2026-09-28T13:04:00Z",
+    "nextAction": "Do not repeat attempt7 or attempt8. Remaining blockers are hermetic SDK26.5/build25F70 availability plus fresh runtime, signing/notarization, and release candidate gates. ReleaseReady remains false.",
+    "orderedGroupLedger": "group71 appended and sequential apply verified against the group70 manifest-bound source preimage; refreshed 71-group whole-tree inventory SHA-256 34e7ef182cfbb61f9c4ef75871ca424e353cb1b8ebd13d6eb6de3a14ecee6638.",
+    "patch": "runtime/nevision-patches/ports/chromium-154.0.8037.58/patches/m154-guard-disabled-screen-ai-sandbox-setup.patch",
+    "patchSHA256": "613419c7bf824bd7775fb14c5265e56fb0f841ac59931f2c36779305965687ef",
+    "status": "group71-ordered-continuation-and-source-exporter-passed; diagnostic-chrome-build-passed"
+  },
+  "currentTurnRecheck": {
+    "checkedAtUTC": "2026-09-27T10:11:03Z",
+    "githubLatestRelease": {
+      "assetCount": 4,
+      "build": "74",
+      "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+      "immutable": true,
+      "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+      "tag": "v0.7.11",
+      "version": "0.7.11",
+      "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+    },
+    "githubWorkspaceBranch": {
+      "behindGithub": 0,
+      "branch": "codex/neantik-workplaces",
+      "committedOrPushedThisRecheck": false,
+      "dirtyPathCount": 12,
+      "githubTip": "39e51de05c173c3f9261b894fd43f486b6429a0a",
+      "localAheadOfGithub": 9,
+      "localHEAD": "36db4e7a32882319cf6e1c49c4acd4ac59122cb7"
+    },
+    "macOSSigningContext": {
+      "existingStableXcode": "27.0 (27A266a)",
+      "latestNeAntikNotaryEvidence": "0.7.11 ZIP and DMG Accepted on 2026-09-24; no M154 candidate submission",
+      "neantikNotaryProfileReadSucceeded": true,
+      "selectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "selectedXcode": "27.0 (27A5228h)",
+      "validCodeSigningIdentities": 4,
+      "validDeveloperIDApplicationIdentities": 2,
+      "xcodeInstalledDuringRecheck": false
+    },
+    "networkBoundary": "Raw shell curl was DNS-blocked by the sandbox; GitHub connector, Sites connector, and Playwright returned fresh release/site data.",
+    "publicSite": {
+      "active": true,
+      "apiBuild": "74",
+      "apiVersion": "0.7.11",
+      "apiZipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+      "canDownload": false,
+      "currentChromium": "153.0.8010.52",
+      "deploymentStatus": "succeeded",
+      "homepageRelease": "0.7.11 (74)",
+      "publicReleaseState": "published-runtime-gated",
+      "requiredBaseline": "154.0.8037.58",
+      "sitesVersion": 98,
+      "url": "https://browser.free"
+    }
+  },
+  "currentTurnSafeBrowsingGraphAudit": {
+    "activeOwnedGroups": 75,
+    "activeSourceRoot": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src",
+    "cause": "On the clean owned postimage, group69 reassigned `public` after the existing non-empty toast-helper list; GN reports Replacing nonempty list at BUILD.gn:657. The `sources` and `deps` assignments had the same invalid overwrite shape.",
+    "checkedAtUTC": "2026-09-29T07:49:01Z",
+    "correction": "Withdraw group69 from active replay; retain its patch file and hash as superseded audit evidence. Group16 already adds Enterprise Cloud Analysis with +=. Restore exact source file from Chromium .58 HEAD plus active group16 target section; SHA-256 caae080441a134ac33b8efed330fe12655dad048b3f8733ed7c5c1710e293c36 for group16+group69 was candidate; corrected active group16-only file SHA-256 9232c9a7c786689712d080d7740637fb85c46a7e0ea63197d574a0db2262bd28.",
+    "gnGeneration": "passed; Stable Xcode process scope; 35,018 targets from 4,940 files.",
+    "releaseReady": false,
+    "sdkRootPatch": "Group75 m154-resolve-sdkroot-symlink-for-apple-build-tools; pristine patch apply and SDKROOT behavior check passed.",
+    "supersededPatch": "runtime/nevision-patches/ports/chromium-154.0.8037.58/patches/m154-initialize-enterprise-safe-browsing-mode0-target.patch",
+    "supersededPatchSHA256": "d7fb5264a64f98fb533d46003dc40e8a23a0d7010933cacdd860b6ed17ad922e"
+  },
+  "currentTurnStableSdkBuild": {
+    "argsGN": "safe_browsing_mode=0; enterprise_cloud_content_analysis=true; use_system_xcode=true",
+    "checkedAt": "2026-09-29",
+    "chromiumVersion": "154.0.8037.58",
+    "correction": "Re-ran GN generation with process-scoped Stable Xcode; verified sdk/xcode_links now point to /Applications/Xcode.app and mach/exc.defs is readable. Crashpad MIG steps passed on continuation.",
+    "currentBuild": {
+      "activeProcess": "none",
+      "approximateActionsCompletedBeforeStop": 19926,
+      "attemptsNotRepeated": [
+        "Do not repeat the first Beta-linked SDK output; its Crashpad MIG failure was resolved by regenerating GN links to installed Stable Xcode.",
+        "Do not repeat Metal module-cache sandbox attempts; isolated shader compile succeeded with temporary cache path.",
+        "Do not repeat xcodebuild/xcode-select alias shims; host-context test confirmed the symlink-path lookup is still rejected."
+      ],
+      "blockingFailure": "The active diagnostic build graph depended on an unowned temporary Safe Browsing BUILD.gn scaffold that disabled existing public/source/deps blocks. Stopped before candidate output. After restoring owned group16 postimage and superseding invalid group69, GN generation passed.",
+      "lastNinjaExitCode": "interrupted-after-diagnostic-scaffold-discovered",
+      "lastSessionId": 5485,
+      "status": "stopped-intentionally-before-invalid-safe-browsing-graph-build"
+    },
+    "developerDirectory": "/Applications/Xcode.app/Contents/Developer (27A266a)",
+    "firstBuildAttempt": "Stopped at 4949/57576 because generated sdk/xcode_links still pointed to Xcode Beta and Crashpad could not read mach/exc.defs.",
+    "globalDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer (unchanged)",
+    "metalCacheCorrection": "Apple/Clang accepts -fmodules-cache-path. A temporary /private/tmp xcrun wrapper adds that flag only to metal invocations; standalone ANGLE shader compile passed and wrote a 147 KiB AIR file.",
+    "metalCacheFailure": "The Metal driver attempted to write module PCM files under /Users/dumay/.cache/clang and sandbox denied it; CLANG_MODULE_CACHE_PATH was not honored by this xcrun metal route.",
+    "outputDirectory": "out/NeAntikM154OrderedReplayStable27",
+    "qualification": "Diagnostic build stopped before browser output because Safe Browsing scaffold invalidated its graph. Clean GN generation now passes after restoring the owned file. Resume only from corrected graph; installed Stable Xcode 27/SDK27 remains diagnostic, not pinned hermetic toolchain. No candidate was produced.",
+    "rootCause": "The output directory symlinks were generated on 2026-09-28 against Xcode Beta; process-scoped DEVELOPER_DIR did not rewrite them.",
+    "sourceRoot": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src"
+  },
+  "currentTurnVerifiedM15493": {
+    "build": {
+      "actionCount": 57508,
+      "argsGNSHA256": "6ee5395fc7136ef525e25dddfc0258a3a1d754b39bb68661fcb1e924de1edcb1",
+      "outputDirectory": "out/NeAntikM154Release15493",
+      "releaseQualified": false,
+      "status": "running"
+    },
+    "recordedAtUTC": "2026-09-30T10:30:00Z",
+    "releaseReady": false,
+    "source": {
+      "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+      "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5",
+      "version": "154.0.8037.93"
+    },
+    "sourceReplay": {
+      "failed": 0,
+      "groups": 72,
+      "logSHA256": "7f8be1e68a6d6fd3e604509d675745800b03ff17040de3e37abd47574fe02caa",
+      "postimageManifestPath": "/private/tmp/neantik-m154-clean-replay-20260930/whole-tree-postimage-15493.jsonl",
+      "postimageManifestSHA256": "57af42f9f845dfbfdee6b83ebe9caf904f9e60e7966fba47038b2fda0f4f8d1f",
+      "rejectedArtifacts": 0,
+      "status": "clean-ordered-replay-passed"
+    },
+    "toolchain": {
+      "developerDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "identityReportPath": "/private/tmp/neantik-m154-clean-replay-20260930/toolchain-identity-recheck.json",
+      "identityReportSHA256": "6ab0ebfe5ceafb5c1dc744a4f62820c1ba3ab3eadcfbea240aa53a2b013a0e80",
+      "lockSHA256": "f19600cbf920ec473ed93317858fac04f62b87c5b0cd8b38b8fee3a88ee209e5",
+      "metalBuild": "32023.921",
+      "releaseQualified": false,
+      "sdkBuild": "26A5388f",
+      "xcodeBuild": "27A5228h"
+    },
+    "upstreamInputs": {
+      "commonApplyLogSHA256": "3066f86c6196d094464ec759bc0b16409096a7ac2d7512791f05c55ffac871a8",
+      "commonSeriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+      "macPackagingApplyLogSHA256": "dec73f039eb8be93a64db4b471d1887c0c4946bf189469e6c21c03ca29f816ba",
+      "macPackagingSeriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+      "tupleOverlayApplyLogSHA256": "cc20b761ca3be689d3402daacb1db5dc9d7cf467654d09f628e31b9b468ddea1"
+    }
+  },
+  "diagnosticInputManifestTests": {
+    "checkedAtUTC": "2026-09-27T08:08:50Z",
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest scripts.tests.test_export_chromium_154_port_input_manifest scripts.tests.test_apply_owned_runtime_device_tuples_154",
+    "coverage": [
+      "M154 source version/commit/tree and GN argument locks",
+      "owned patch hashes and sequential apply status fail-closed behavior",
+      "Rust and Dawn Go DEPS source hash pins",
+      "diagnostic and shared exporter implementation hashes",
+      "diagnostic manifest data-flow keeps Safe Browsing mode 0 and releaseReady false",
+      "owned Apple tuple overlay contract"
+    ],
+    "limitations": [
+      "Does not validate the active full source diff, a complete Chromium build, runtime behavior, production profile isolation, signing, or release readiness."
+    ],
+    "releaseQualified": false,
+    "result": "passed; 13 tests"
+  },
+  "diagnosticM154BuildAndLaunchProbe": {
+    "binary": {
+      "file": "Mach-O 64-bit executable arm64",
+      "path": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe/out/NeAntikM154PortProbe/NeAntik Browser.app/Contents/MacOS/NeAntik Browser",
+      "signature": "adhoc-linker-signed",
+      "teamIdentifier": null,
+      "versionOutput": "NeAntik Browser 154.0.8037.58"
+    },
+    "build": {
+      "architecture": "arm64",
+      "command": "/opt/homebrew/bin/ninja -C out/NeAntikM154PortProbe -j6 chrome",
+      "exitCode": 0,
+      "lastObservedAction": "13314/13315; verify_libraries_chrome_app completed",
+      "releaseQualified": false,
+      "sdkLink": "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+      "target": "chrome",
+      "targetChromiumVersion": "154.0.8037.58"
+    },
+    "checkedAtUTC": "2026-09-27T10:07:57Z",
+    "officialBaseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "releaseQualified": false,
+    "runtimeLaunchProbe": {
+      "LaunchServicesExit": "kLSNoExecutableErr (-10827) despite existing CFBundleExecutable and Mach-O file",
+      "classification": "No runtime pass; launch path is not usable as product GUI or release proof.",
+      "directHeadlessExit": "SIGABRT",
+      "faultFrame": "headless::InitHeadlessMode -> TransformProcessType -> _RegisterApplication"
+    },
+    "sourceHasRejectOrOrigFiles": 312,
+    "sourceIsCleanPinnedReplay": false,
+    "sourceLimitation": "The diagnostic source includes unresolved patch conflicts and is not an owned clean replay.",
+    "sourceRoot": "/private/tmp/neantik-m154-deps-sync-20260927/src-macos-packaging-cleanprobe"
+  },
+  "disposableSourceEvidence": {
+    "argsGNSHA256": "0f29ac6ab5adb2872f46b4b4a59d55026b4b6f22bd1bf5bb49d39e1f68069826",
+    "binarySourceSnapshotStatus": "historical-manifest-does-not-bind-current-tree: the existing diagnostic app has main executable SHA-256 8f7e464000a83fa0298ecd3d0cb075c5a4d298fbb1a3f1de8f582a1683775886; the utility framework was relinked to SHA-256 d82a31058d8e685bf32c8f0a3796b8b15e26c79bb6de930347edf6683c30bde8 after adding the Enterprise FileUtilService gate. No exact source-to-full-app release manifest has been generated; diagnostic only.",
+    "candidateBinary": {
+      "appPath": "/private/tmp/neantik-m154-build-20260925/src/out/NeAntikMode0Audit/NeAntik Browser.app",
+      "executableSHA256": "8f7e464000a83fa0298ecd3d0cb075c5a4d298fbb1a3f1de8f582a1683775886",
+      "releaseEligible": false,
+      "sourceManifestPath": "/private/tmp/neantik-m154-diagnostic-manifest-final-20260926.json",
+      "sourceManifestSHA256": "6ef080228996d4e71d40ea0bb69130a2a7309918835e0a50f8b398b0d140b1b3",
+      "status": "unsigned-diagnostic-only",
+      "versionOutput": "NeAntik Browser 154.0.8037.58"
+    },
+    "modifiedTrackedPathCount": 240,
+    "safeBrowsingMode": 0,
+    "trackedDiffBytes": 361243,
+    "trackedDiffSHA256": "f0343464ea2cfc8e59ebf12f60accdc7a569cd51ba5fed204c0cc3f0a69ae367",
+    "untrackedInputCount": 13,
+    "untrackedInventorySHA256": "8ff4ebecb278fcc0d6be20e24c2910578bd1a4f6cea7858a0beffd5dc4e4388f"
+  },
+  "domainSubstitutionRuntimeTest": {
+    "log": "/private/tmp/neantik-m154-domain-substitution-test-20260927.log",
+    "logBytes": 1160,
+    "logSHA256": "8d3eef6bc0cf2dbceedc6b9aa5a6c20f22cc89cd6bd39fb424e4d724a922a6c8",
+    "patchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.58/patches/domain-substitution-runtime-probe-and-log-redaction.patch",
+    "patchSHA256": "e49ddfec93ac0cfc16a068a68099ff22ad92034cfd8bfb329465e9f226794fc9",
+    "recordedAtUTC": "2026-09-27T11:02:21Z",
+    "releaseQualified": false,
+    "result": "passed: 1/1; ERR_BLOCKED_BY_CLIENT; both captured ERROR lines exclude the private query term",
+    "safeBrowsingMode": 0,
+    "sourceBase": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "sourceQualification": "diagnostic overlay, not a clean pinned release replay",
+    "sourceRoot": "/private/tmp/neantik-m154-build-20260925/src",
+    "target": "net_unittests",
+    "targetSHA256": "106f47e3262d295d581352ba95cc4c92a65c01276f8570770279407a247ece1c",
+    "test": "URLRequestTest.BlocksSubstitutedSafeBrowsingUploadHost"
+  },
+  "enterpriseArchiveAnalyzerFocusedTests": {
+    "command": "/opt/homebrew/bin/ninja -C out/NeAntikMode0Audit -j6 enterprise_archive_analyzer_unittests && ./enterprise_archive_analyzer_unittests --test-launcher-jobs=1",
+    "coverage": [
+      "ZIP archive parsing, nested archives, encrypted and obfuscated archives",
+      "RAR archive parsing, encrypted and obfuscated archives",
+      "temporary-file lifecycle and file-limit behavior"
+    ],
+    "failed": 0,
+    "latestRun": {
+      "addedCoverage": "FileUtilService Mojo disconnect completes Enterprise analyzer callback.",
+      "failed": 0,
+      "log": "/private/tmp/neantik-m154-enterprise-archive-tests-plus-disconnect-20260927.log",
+      "logBytes": 16630,
+      "logSHA256": "2b8d9447e09980111d07d5fadc3b4d66a1bfd0e85473b743191ef30eefa3b0b1",
+      "passed": 51,
+      "recordedAt": "2026-09-27",
+      "result": "passed"
+    },
+    "limitations": [
+      "Unit tests do not prove Enterprise policy-to-upload-to-verdict-to-download behavior.",
+      "Mojo service binding, sandbox-denial and disconnect behavior are not covered by this runner.",
+      "Safe Browsing negative network, clipboard, IP and referrer privacy behavior remains untested.",
+      "The runner and source tree are diagnostic-only; the source is not a clean replay and the modified test harness is not represented in a release patch manifest."
+    ],
+    "log": "/private/tmp/neantik-m154-enterprise-archive-tests-20260927.log",
+    "logBytes": 16476,
+    "logSHA256": "270122dfdd5363fa49204231422e9c0791363c22e35ffcfae084c27993aa7b4e",
+    "outputDirectory": "out/NeAntikMode0Audit",
+    "passed": 50,
+    "recordedAt": "2026-09-27",
+    "result": "passed",
+    "safeBrowsingAvailable": false,
+    "safeBrowsingDownloadProtection": false,
+    "sourceTree": "/private/tmp/neantik-m154-build-20260925/src",
+    "target": "enterprise_archive_analyzer_unittests",
+    "testRunner": "ChromeUnitTestSuite via chrome/test:test_support_unit; a disposable-only BUILD.gn harness correction was needed because the first runner used base::TestSuite and lacked Chrome test-data path and Mojo initialization"
+  },
+  "enterpriseDownloadPolicyMode0FocusedTest": {
+    "coverage": [
+      "block-until-verdict Enterprise FILE_DOWNLOADED policy enables obfuscation",
+      "report-only Enterprise FILE_DOWNLOADED policy does not enable obfuscation"
+    ],
+    "enterpriseContentAnalysis": true,
+    "failed": 0,
+    "limitations": [
+      "Direct ShouldObfuscateDownload policy behavior only; no end-to-end download/upload/verdict transition.",
+      "No Mojo service crash/disconnect or sandbox-denial coverage.",
+      "No Safe Browsing negative network/privacy coverage.",
+      "First sandboxed run could not create TestingProfile temp directory; same test passed in permitted macOS context."
+    ],
+    "log": "/private/tmp/neantik-m154-download-policy-test-20260927.log",
+    "logBytes": 1130,
+    "logSHA256": "6708e9df4a72829eac493055c311f2763e6b260593871669655c922422c21df0",
+    "passed": 1,
+    "recordedAt": "2026-09-27",
+    "result": "passed",
+    "runner": "Disposable-only target isolated one regression test from the Safe Browsing mode-0 monolithic unit_tests link boundary; test source and BUILD.gn edits are not in the owned M154 manifest.",
+    "safeBrowsingDownloadProtection": false,
+    "sourceTree": "/private/tmp/neantik-m154-build-20260925/src",
+    "target": "download_delegate_enterprise_mode0_focused_unittests",
+    "test": "ChromeDownloadManagerDelegateTest.ShouldObfuscateDownloadEnterprisePolicyWithoutSafeBrowsing"
+  },
+  "enterpriseFileUtilServiceGate": {
+    "behavior": "Registers and links FileUtilService when Enterprise cloud content analysis is built, even while Safe Browsing download protection remains disabled.",
+    "cleanM154ApplyCheck": "Patch hunks apply cleanly to /private/tmp/neantik-154-stable-58 at Chromium 154.0.8037.58 commit a654841425914cbb703a2931e07b70a83aedbafd, but this is not a clean build proof: chrome/utility/BUILD.gn references the diagnostic-only enterprise_archive_analysis GN arg, which is absent in the clean checkout. The clean checkout was not modified.",
+    "dependsOnDiagnosticOnlyPrerequisites": [
+      "chrome/services/file_util/public/features.gni enterprise_archive_analysis GN definition",
+      "Enterprise-gated safe_archive_analyzer Mojo/source/typemap dependencies in chrome/services/file_util/public/mojom/BUILD.gn and chrome/services/file_util/BUILD.gn",
+      "Enterprise-archive analyzer source wiring and mode-0 compile guards recorded in the wider disposable source diff"
+    ],
+    "diagnosticBuild": {
+      "command": "/opt/homebrew/bin/ninja -C out/NeAntikMode0Audit -j6 enterprise_connectors_analysis_focused_unittests",
+      "frameworkSHA256": "d82a31058d8e685bf32c8f0a3796b8b15e26c79bb6de930347edf6683c30bde8",
+      "result": "passed; utility service source compiled, framework relinked, focused runner linked",
+      "safeBrowsingMode": 0
+    },
+    "modifiedFiles": [
+      "chrome/utility/BUILD.gn",
+      "chrome/utility/services.cc"
+    ],
+    "patch": "/private/tmp/neantik-m154-enterprise-service-gate.patch",
+    "patchSHA256": "2690686133a46a3361d6b38849a4e67433c6be8d6991926ef71e7b8a6b8dbdc8",
+    "recordedAt": "2026-09-27",
+    "status": "diagnostic-only; test-positive in the modified source tree, but not self-contained, not ported to the owned M154 source manifest, and not clean-build qualified."
+  },
+  "enterprisePolicyFocusedTests": {
+    "command": "TMPDIR=/private/tmp/neantik-m154-enterprise-test-tmp ./enterprise_connectors_analysis_focused_unittests --gtest_filter='FilesRequestHandlerTest.*:ContentAnalysisDelegateAuditOnlyTest.*' --single-process-tests",
+    "failed": 0,
+    "limitations": [
+      "Disposable harness only; corresponding service gate is not yet in the owned M154 patchset.",
+      "Does not exercise real downloads end-to-end, utility service crash/disconnect, sandbox denial, or Safe Browsing negative network/clipboard/IP/referrer behavior.",
+      "Passing synthetic/unit behavior does not establish a qualified browser runtime or release candidate."
+    ],
+    "log": "/private/tmp/neantik-m154-enterprise-policy-focused-tests-fixed-20260927.log",
+    "logBytes": 8509,
+    "logSHA256": "0cc56e130661b7073c512513b27fe02f1d6cdd7457e6e35f22efc448f94ad49b",
+    "outputDirectory": "out/NeAntikMode0Audit",
+    "passed": 46,
+    "priorFinding": "The initial 44/46 run allowed encrypted ZIPs because the utility process did not register FileUtilService under safe_browsing_mode=0.",
+    "recordedAt": "2026-09-27",
+    "result": "passed",
+    "safeBrowsingAvailable": false,
+    "safeBrowsingDownloadProtection": false,
+    "scope": "Enterprise audit-only delegate policy behavior and file-request behavior, including block_password_protected encrypted ZIP verdicts.",
+    "sourceTree": "/private/tmp/neantik-m154-build-20260925/src",
+    "target": "enterprise_connectors_analysis_focused_unittests"
+  },
+  "enterpriseServiceDisconnectFocusedTest": {
+    "coverage": "Destroy the test FileUtilService peer after nested analyzer binding; SandboxedZipAnalyzer disconnect handler completes callback with unsuccessful empty result instead of hanging.",
+    "enterpriseCloudContentAnalysis": true,
+    "failed": 0,
+    "limitations": [
+      "This is a Mojo peer-disconnect test using FakeFileUtilService, not an OS utility-process crash test.",
+      "Sandbox-denial behavior remains untested.",
+      "Test source and one-off target remain disposable-only and are not in the product-owned M154 patch manifest."
+    ],
+    "log": "/private/tmp/neantik-m154-enterprise-archive-tests-plus-disconnect-20260927.log",
+    "logBytes": 16630,
+    "logSHA256": "2b8d9447e09980111d07d5fadc3b4d66a1bfd0e85473b743191ef30eefa3b0b1",
+    "passed": 1,
+    "recordedAt": "2026-09-27",
+    "result": "passed",
+    "safeBrowsingDownloadProtection": false,
+    "sourceTree": "/private/tmp/neantik-m154-build-20260925/src",
+    "suiteResult": "51/51 archive, temporary-file, and disconnect tests passed",
+    "target": "enterprise_archive_analyzer_unittests",
+    "test": "SandboxedZipAnalyzerTest.FileUtilServiceDisconnectCompletesEnterpriseAnalysis"
+  },
+  "externalReleaseGateRecheck": {
+    "browserFree": {
+      "apiArchiveSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+      "apiBuild": "74",
+      "apiHTTPWithBrowserUserAgent": 200,
+      "apiResponseBytes": 2367,
+      "apiResponseSHA256": "40843ee519de50550c7fa533575764865c8916de89415ec71299d411b95f7580",
+      "apiRuntimeSecurityCurrent": false,
+      "apiVersion": "0.7.11",
+      "apiZipSHA256MatchesGitHub": true,
+      "canDownload": false,
+      "chromium": "153.0.8010.52",
+      "dmgDownloadUrlPresent": false,
+      "downloadUrlPresent": false,
+      "landingBytes": 73055,
+      "landingHTTP": 200,
+      "landingHTTPWithBrowserUserAgent": 200,
+      "liveReleaseAPICheckedAt": "2026-09-27T02:49Z",
+      "releaseAPIState": "published-runtime-gated",
+      "requiredBaseline": "154.0.8037.58",
+      "siteStatus": "active",
+      "sitesVersion": 98
+    },
+    "continuationCheck": {
+      "directReleaseApiProbe": {
+        "apiBuild": "74",
+        "apiVersion": "0.7.11",
+        "apiZipSHA256MatchesGitHub": true,
+        "canDownload": false,
+        "chromium": "153.0.8010.52",
+        "dmgDownloadUrlPresent": false,
+        "downloadUrlPresent": false,
+        "httpStatus": 200,
+        "landingHTTP": 200,
+        "requestPolicyNote": "A request without a browser-like User-Agent returned HTTP 403; retrying without authentication using a browser-like User-Agent returned HTTP 200. The edge response is not a DNS or GitHub-authentication failure.",
+        "requiredBaseline": "154.0.8037.58",
+        "responseBytes": 2367,
+        "responseSHA256": "40843ee519de50550c7fa533575764865c8916de89415ec71299d411b95f7580",
+        "status": "http-200-with-browser-like-user-agent",
+        "url": "https://browser.free/api/release"
+      },
+      "githubConnector": {
+        "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+        "immutable": true,
+        "latestTag": "v0.7.11",
+        "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+        "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+      },
+      "recordedAt": "2026-09-27",
+      "sitesConnector": {
+        "deploymentId": "appgdep_6ab7a6a93c0c8191bfa09f9f60a55a5d",
+        "deploymentStatus": "succeeded",
+        "sourceCommit": "827e7231d0a756063425387d4c635d7066fa0424",
+        "status": "active",
+        "version": 98
+      }
+    },
+    "github": {
+      "build": "74",
+      "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+      "immutable": true,
+      "latestTag": "v0.7.11",
+      "releaseDescriptionSitesVersion": "92",
+      "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+      "version": "0.7.11",
+      "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+    },
+    "githubAccess": {
+      "browserWebSession": "signed out on github.com/AffPapa/neantik/releases at 2026-09-27T02:48Z",
+      "cliReleaseLookup": "shell network could not resolve api.github.com",
+      "codexConnectorRead": "successful for repository, main ref, workspace branch ref, and release API",
+      "localGhCLI": "invalid saved token according to read-only gh auth status",
+      "releaseAssetUpload": "no authenticated local CLI or signed-in browser upload session available; no candidate exists yet",
+      "repositoryPermission": "admin,push"
+    },
+    "keychain": {
+      "latestAcceptedSubmission": "NeClip-2.8.7.dmg",
+      "latestSubmissionIsM154NeAntikEvidence": false,
+      "notaryHistoryCount": 100,
+      "notaryProfileAccessible": true,
+      "validCodeSigningIdentityCount": 4,
+      "validDeveloperIDApplicationIdentityCount": 2
+    },
+    "recordedAt": "2026-09-27",
+    "releaseDoctor": {
+      "error": "deploy credential is unavailable (private path redacted)",
+      "scope": "AffPapa server publishing client only; does not establish GitHub API access state",
+      "secretsInspected": false,
+      "status": "blocked"
+    },
+    "releaseReady": false,
+    "workspaceSourceState": {
+      "branch": "codex/neantik-workplaces",
+      "candidateOrReleaseCreated": false,
+      "commitsAheadOfRemoteBranch": 9,
+      "dirtyPathCount": 12,
+      "head": "36db4e7a32882319cf6e1c49c4acd4ac59122cb7",
+      "pushed": false,
+      "remoteBranchCommit": "39e51de05c173c3f9261b894fd43f486b6429a0a"
+    }
+  },
+  "freshExternalChecks": {
+    "checkedAt": "2026-09-27",
+    "checkedAtUTC": "2026-09-27T19:32:49Z",
+    "githubRelease": {
+      "build": "74",
+      "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+      "source": "GitHub REST API latest release",
+      "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+      "status": "immutable-published",
+      "tag": "v0.7.11",
+      "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+    },
+    "keychain": {
+      "developerIdCodeSigningIdentities": 2,
+      "latestNeAntikSubmissions": "0.7.11 ZIP and DMG Accepted on 2026-09-24",
+      "notaryProfile": "neantik-notary usable through xcrun notarytool history",
+      "validCodeSigningIdentityCount": 4,
+      "verification": "fresh read-only macOS-context checks; no signing or submission performed"
+    },
+    "releaseAPI": {
+      "apiResponseBytes": 2367,
+      "apiResponseSHA256": "40843ee519de50550c7fa533575764865c8916de89415ec71299d411b95f7580",
+      "apiSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+      "build": "74",
+      "canDownload": false,
+      "chromium": "153.0.8010.52",
+      "dmgDownloadUrlPresent": false,
+      "downloadUrlPresent": false,
+      "httpStatus": 200,
+      "requiredBaseline": "154.0.8037.58",
+      "requiredBaselineSatisfied": false,
+      "runtimeStatus": "public-alpha",
+      "securityCurrent": false,
+      "status": "published-runtime-gated",
+      "version": "0.7.11"
+    },
+    "sites": {
+      "deploymentId": "appgdep_6ab7a6a93c0c8191bfa09f9f60a55a5d",
+      "deploymentStatus": "succeeded",
+      "siteVersion": 98,
+      "sourceCommit": "827e7231d0a756063425387d4c635d7066fa0424"
+    },
+    "xcode": {
+      "action": "No Xcode was installed, removed, or globally switched; diagnostic Ninja has process-scoped Xcode.app override",
+      "selectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "selectedVersion": "27.0 (27A5228h)"
+    }
+  },
+  "freshPostimageDeltaAuditCorrection20260930": {
+    "checkedAtLocal": "2026-09-30",
+    "correction": "The five test pref_names.h includes and one Safe Browsing pref declaration removal were not supplied by the pinned common overlay. They are now bound by the new active owned patch, SHA-256 cff2b738b6ef49cb25e08fe31ff6b1e7c7bf07fab9fc12e605e3cee820398afd.",
+    "currentActiveOwnedGroupCount": 71,
+    "oldActive75Manifest": "superseded; do not use for qualification",
+    "releaseReady": false,
+    "verification": "The new patch dry-run applied all six file changes to the disposable post-group69 source tree. It has not yet been included in a fresh complete ordered replay."
+  },
+  "freshSourceReplayAudit20260930": {
+    "checkedAtLocal": "2026-09-30",
+    "logs": [
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-continuation.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-groups49-75.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-groups66-75.log",
+      "/private/tmp/neantik-m154-qualified-source-replay-20260930/replay-groups71-75.log"
+    ],
+    "nextAction": "Create a fresh source copy, replay pinned macOS packaging and the revised 71-group sequence, run the tuple overlay last, regenerate exact whole-tree hashes, then verify the pinned CIPD toolchain and GN args before any build.",
+    "releaseImpact": "Source replay remains blocked; do not build a release candidate from this tree.",
+    "releaseReady": false,
+    "result": "The 2026-09-30 disposable source replay reached group 75 only after diagnostic accommodations: 20/20 pinned upstream macOS packaging patches applied; owned groups 1-15 and 17-22 applied, but group16 required an unrecorded BUILD.gn rebase because upstream packaging removed the old is_mac dependency; group23 required generated device-tuple overlay before the owned patch despite the generator documentation saying to run it after owned patches; groups24-46 applied; groups47-48 could not find their M153-era WebUI test files in the M154 source; groups49-64 applied; group65 could not find three settings test files; groups66-69 applied; group70 sandbox-body hunks do not match current M154 ChromeContentBrowserClient and its include-only partial application was reversed; groups71-75 applied. This is not a clean ordered replay or a qualification. Exact blockers and logs remain in /private/tmp/neantik-m154-qualified-source-replay-20260930/replay*.log; no repository patch series was promoted. Active group23 was moved into the exact-hash tuple overlay; groups47,48,65,70 were retired but retained; a new active group owns the six formerly unbound test/pref deltas. This is a 71-group pending sequence; old 75-group evidence is historical only.",
+    "scope": "Disposable diagnostic replay only; no build or release qualification.",
+    "sourceTree": "/private/tmp/neantik-m154-qualified-source-replay-20260930/src",
+    "unresolvedGroups": [
+      16,
+      "new-active-pref-test-patch",
+      "full-source-postimages"
+    ]
+  },
+  "freshToolchainProbe": {
+    "betaXcode": "27.0 (27A5228h)",
+    "checkedAt": "2026-09-27T02:44:50Z",
+    "cryptexMetalToolchain": "mounted in the Apple cryptex runtime; discover its path dynamically with TOOLCHAINS=com.apple.dt.toolchain.Metal.32023.921.5 xcrun --find metal",
+    "defaultXcrunMetal": "not runnable: Metal Toolchain component is missing",
+    "releaseQualified": false,
+    "selectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "systemXcode": "27.0 (27A266a)",
+    "wrapperMetalAndMetallibWithBeta": "passed; compiler 32023.921.6",
+    "xcodeOrComponentInstalledThisPass": false
+  },
+  "latestBuildLoopAudit": {
+    "build": {
+      "attempt8": "Affected object compile passed; same-output incremental chrome target passed 476/476, exit 0, using process-scoped Stable Xcode 27.0 and SDK 27.0.",
+      "attemptOnSameOutput": 8,
+      "currentProcessAudit": "2026-09-28T13:10:42Z permitted ps listing found no ninja or ld64.lld processes.",
+      "frameworkCheck": "arm64 Mach-O; undefined ScreenAIInstallState::GetInstance symbol absent.",
+      "linkedFramework": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src/out/NeAntikM154OrderedReplayStable27/NeAntik Browser Framework.framework/Versions/Current/NeAntik Browser Framework",
+      "nextGate": "Acquire/use authorized hermetic SDK26.5/build25F70 toolchain, then run remaining runtime and candidate release gates; source exporter currently reports releaseReady=false.",
+      "parallelJobs": 6,
+      "previousAttempt": "Attempt7 failed at 1603/2077 on undefined screen_ai::ScreenAIInstallState::GetInstance() in final framework ThinLTO link.",
+      "previousError": "Attempt7 terminal failure at final ThinLTO link: undefined screen_ai::ScreenAIInstallState::GetInstance() because ENABLE_SCREEN_AI_SERVICE=0; group71 fixes it.",
+      "progress": "Attempt8 terminal success: affected object compiled; chrome target completed 476/476, exit 0. No active Ninja/linker process remains.",
+      "releaseQualified": false,
+      "status": "completed-diagnostic-attempt-8-exit-0"
+    },
+    "checkedAtUTC": "2026-09-28T13:29:00Z",
+    "currentTurnPipelineGuard": {
+      "change": "Packaged report evidence selection is limited to exact reviewed M152 152.0.7977.64 and M153 153.0.8010.52 pairs; M154/unknown patch versions fail closed. Release launcher now compares both selected lock and provenance versions to the exact source app lock, refuses implicit M154 evidence, and skips mismatched cached evidence.",
+      "checkedAtUTC": "2026-09-28T13:24:30Z",
+      "chromiumRebuild": "not required",
+      "files": [
+        "scripts/verify-packaged-runtime-report.py",
+        "scripts/tests/test_verify_packaged_runtime_report.py",
+        "scripts/Run-NeAntik-Release.command",
+        "scripts/tests/test_release_runtime_evidence_cache.py"
+      ],
+      "tests": "Full scripts/tests unittest discovery: 725 tests, all passed, 1 skipped. zsh -n, Python py_compile, both M154 JSON parses, and git diff --check passed."
+    },
+    "followupAfterGroups75": {
+      "checkedAtUTC": "2026-09-28T14:50:45Z",
+      "interpretation": "The attempt8 diagnostic chrome build was not repeated. Two subsequent test-only include patches (groups74-75) repaired test compile errors. Focused target compilation completed; 67 relevant net tests passed and 2 Android-only cases skipped. This does not establish browser route behavior or release qualification.",
+      "releaseReady": false
+    },
+    "fullSwiftVerification": {
+      "buildLog": "/private/tmp/neantik-swift-full-kk4H2y/test.log",
+      "combinedOutcome": "all 636 Swift tests are covered by passing evidence across the full run and the isolated permitted-context retry",
+      "developerDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "focusedPermittedRetry": "FingerprintAuditLoopbackSTUNServerTests: 3/3 passed outside sandbox",
+      "fullRun": "636 tests in 70 suites; one loopback STUN test blocked by sandbox Operation not permitted",
+      "xcodeBuild": "27A5228h"
+    },
+    "githubCli": "Fresh read-only local check at 2026-09-28 13:16 UTC reports the local gh CLI tokens invalid. The connected GitHub API connector remains usable for reads; no OAuth/device flow was started. Restore CLI authentication before a later upload/publication.",
+    "gn": {
+      "checks": "passed //chrome:chrome, Safe Browsing common/browser unit_tests, Enterprise connectors unit_tests",
+      "generation": "passed; 35012 targets",
+      "output": "out/NeAntikM154OrderedReplayStable27"
+    },
+    "keychainSigning": "Fresh permitted macOS-context read-only check at 13:27 UTC found four valid code-signing identities, including two Developer ID Application identities; neantik-notary history is readable with 100 entries and latest status Accepted. This establishes profile availability, not candidate signing/notarization. Earlier shell-context parameter error is superseded and was not evidence of missing credentials.",
+    "latestCredentialContextRecheck": {
+      "checkedAtUTC": "2026-09-28T13:27:00Z",
+      "githubCli": "local gh auth status remains invalid; GitHub connector supports current public reads; no OAuth/device flow attempted",
+      "interpretation": "Supersedes the earlier shell-context Keychain error. Credentials are present and profile is accessible in the permitted macOS context, but a specific release candidate has not been signed or submitted.",
+      "keychain": {
+        "context": "permitted macOS read-only",
+        "developerIDApplicationIdentities": 2,
+        "latestHistoryStatus": "Accepted",
+        "notaryHistoryEntries": 100,
+        "notaryProfile": "neantik-notary",
+        "signingOrSubmissionPerformed": false,
+        "validCodeSigningIdentities": 4
+      }
+    },
+    "latestKeychainRecheck": {
+      "checkedAtUTC": "2026-09-28T12:36:00Z",
+      "developerIDApplicationAvailable": true,
+      "notaryHistoryRecords": 100,
+      "notaryLatestStatus": "Accepted",
+      "operation": "read-only",
+      "profile": "neantik-notary",
+      "validSigningIdentities": 4
+    },
+    "latestPublicRecheck": {
+      "apiBaseline": "154.0.8037.58",
+      "apiBuild": "74",
+      "apiChromium": "153.0.8010.52",
+      "apiVersion": "0.7.11",
+      "apiZipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+      "assetCount": 4,
+      "canDownload": false,
+      "checkedAtUTC": "2026-09-28T13:16:03Z",
+      "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+      "githubTag": "v0.7.11",
+      "homepageHTTP": "200",
+      "homepageTitle": "NeAntik — бесплатный антидетект-браузер для Mac",
+      "interpretation": "GitHub latest release and browser.free homepage/API were freshly read. Hosted release remains v0.7.11/build74 on Chromium 153; API correctly keeps downloads disabled below the 154 baseline.",
+      "publishedAtUTC": "2026-09-24T14:47:52Z",
+      "releaseImmutable": true,
+      "releaseName": "NeAntik 0.7.11 (74)",
+      "releaseQualified": false,
+      "sourceCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+      "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+    },
+    "loopAssessment": "Attempt7 is terminal failure; do not repeat. Attempt8 compiled the guarded ScreenAI object and completed the same-output diagnostic chrome target 476/476; group71 and the source exporter passed. Exact attempt8 app then opened through CUA and showed chrome://version (limited GUI startup/version smoke passed). No current Chromium process remains. Older nested test-target records are historical/superseded and do not establish those tests passed. Remaining gates: isolated-profile/network/recovery/fingerprint/A→B→A runtime coverage; hermetic SDK26.5/build25F70; reviewed M154 source contract, postimage verifier and pipeline integration; then exact-candidate release checks. Developer ID identities and neantik-notary profile are available in the permitted macOS context, but no M154 candidate has been signed or submitted. Local GitHub CLI auth is invalid; restore it before upload/publication.",
+    "releaseQualified": false,
+    "runtimeSmoke": {
+      "checkedAtUTC": "2026-09-28T13:14:00Z",
+      "interpretation": "Diagnostic GUI launch proof only; unsigned/unsealed diagnostic app and SDK27 build remain unqualified for release.",
+      "limitations": "Only app startup and local chrome://version were verified. No isolated profile, real page/network behavior, proxy/WebRTC/DNS, recovery, crash, fingerprint coherence, keyboard scenario, or A→B→A run. App was quit after inspection.",
+      "method": "Opened exact attempt8 app through CUA native GUI, navigated only to chrome://version, verified version/architecture/executable path, then quit. No external site opened.",
+      "observed": "Chromium 154.0.8037.58 (Official Build, ungoogled-chromium) (arm64); source a654841425914cbb703a2931e07b70a83aedbafd; executable is attempt8 app under NeAntikM154OrderedReplayStable27.",
+      "profile": "/Users/dumay/Library/Application Support/Chromium/Default (existing default profile was selected by app startup; no profile management or site activity performed).",
+      "result": "limited-gui-smoke-passed",
+      "shellLaunchServicesProbe": "Shell open returned OSStatus -10827 in the Codex execution context; this shell-only result is superseded as a launch verdict by the successful CUA native-GUI launch of the exact attempt8 app.",
+      "shellProbeError": "OSStatus -10827 kLSNoExecutableErr, although CFBundleExecutable path exists, is executable, and is arm64 Mach-O."
+    },
+    "source": {
+      "chromiumVersion": "154.0.8037.58",
+      "commit": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "currentDiagnosticInputManifest": "/private/tmp/neantik-current-m154-input-manifest-group71.json",
+      "currentDiagnosticInputManifestSHA256": "1bd602d69289d3b365f0d3d3936d4c7cc828e31202f1f1b89581fc80f2b936e3",
+      "inputManifestStatus": "diagnostic-source-only; releaseReady=false; 71 ordered owned groups; group71 exact group70 preimage checked against prior full inventory, then full inventory refreshed for the one changed path; source exporter passed; args.gn binds safe_browsing_mode=0.",
+      "newGroup": "m154-guard-disabled-screen-ai-sandbox-setup",
+      "orderedOwnedPatchGroups": 71,
+      "patchSHA256": "613419c7bf824bd7775fb14c5265e56fb0f841ac59931f2c36779305965687ef",
+      "root": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src",
+      "safeBrowsingGeneratedBuildflags": {
+        "FULL_SAFE_BROWSING": false,
+        "SAFE_BROWSING_AVAILABLE": false,
+        "SAFE_BROWSING_DOWNLOAD_PROTECTION": false,
+        "argsGN": "safe_browsing_mode=0; enterprise_cloud_content_analysis=true",
+        "checkedAtUTC": "2026-09-28T12:44:00Z",
+        "generatedHeader": "out/NeAntikM154OrderedReplayStable27/gen/components/safe_browsing/buildflags.h",
+        "interpretation": "The Safe Browsing mode-0 boundary is preserved; Enterprise Cloud Content Analysis is separately enabled. Do not describe standard Safe Browsing protections as enabled."
+      },
+      "safeBrowsingMode": 0
+    },
+    "swiftTestHarness": {
+      "fix": "the script now exits 69 on resolver failure or empty path",
+      "issue": "verify-native-swift-suite.sh swallowed a failing compatible-toolchain resolver inside export assignment and fell back to global Xcode Beta",
+      "verification": "zsh syntax passed; explicit Stable attempt correctly failed closed with 69; prior single ProfileStoreTests run passed 38/38 under global Xcode Beta and is not a Stable result"
+    },
+    "toolchainSelection": {
+      "cipdAuth": ".cipd_client auth-info reports Not logged in; internal infra_internal Xcode package absent; no login/download attempted; local CLT SDK 26.5 build 25F70 is not hermetic toolchain proof",
+      "globalSelectedBuild": "27A5228h",
+      "globalSelectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "globalSelectionChanged": false,
+      "installPerformed": false,
+      "localSDK26_5": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk (build 25F70); SDK only, not the internal hermetic Xcode binaries package",
+      "processBuild": "27A266a",
+      "processScopedDeveloperDirectory": "/Applications/Xcode.app/Contents/Developer",
+      "releaseQualified": false,
+      "releaseToolchainPin": "Chromium official hermetic Xcode package with SDK 26.5 / build 25F70; matching CLT SDK exists locally, hermetic bundle absent",
+      "sdk": "27.0"
+    }
+  },
+  "latestContinuationNoLoopAudit": {
+    "blockingGate": "Pinned hermetic CIPD Xcode bundle SDK 26.5/build 25F70; last recorded cipd auth-info reports Not logged in. This is separate from GitHub credentials.",
+    "checkedAtUTC": "2026-09-29T09:34:42Z",
+    "correctedGraph": "GN generation passed for 35,018 targets; active ordered group count 75; superseded group69 remains excluded.",
+    "doNotRepeat": [
+      "Do not resume the Stable27 full build as release evidence.",
+      "Do not use M152 default verifier output as M154 evidence.",
+      "Do not repeat M154 focused tests or attempt8 chrome/GUI smoke absent a changed source/toolchain.",
+      "Do not run GitHub device OAuth before an exact upload-ready release candidate."
+    ],
+    "freshM154InputExport": {
+      "path": "/private/tmp/neantik-m154-input-manifest-live-20260929.json",
+      "releaseReady": false,
+      "trackedDiffSHA256": "37585aba78a81eab1fbd8de0ce038b744f533c75205e274f626ab8592edb110c",
+      "untrackedInputCount": 20
+    },
+    "freshReleaseReview": {
+      "browserFree": "Live Sites listing was read; /api/release could not be fetched in this environment and remains unverified.",
+      "github": "v0.7.11/build74 remains immutable rollback; public read confirmed assets and SHA-256 sidecars.",
+      "publication": "No upload or site publication performed.",
+      "signing": "No M154 candidate signed or notarized."
+    },
+    "officialBaseline": "Chromium 154.0.8037.58 remains broad Stable for Mac; 155.0.8059.12/.13 remains Early Stable for a small percentage.",
+    "releaseReady": false,
+    "stoppedDiagnosticBuild": {
+      "lastObservedProgress": "1028/33585",
+      "outputDirectory": "out/NeAntikM154OrderedReplayStable27",
+      "result": "stopped intentionally before completion; not release evidence",
+      "sessionId": 92337,
+      "toolchain": "Stable Xcode 27A266a / SDK27; use_system_xcode=true"
+    },
+    "verifierScopeCorrection": "The generic verify-nevision-patchset-manifest.py default selects Chromium 152 series.json. Its release-ready result does not verify M154. Use the M154 exporter and ordered patch ledger."
+  },
+  "latestCredentialContextProbe": {
+    "actions": "No credential, Keychain item, account state, Xcode selection, or public release was changed.",
+    "checkedAtUTC": "2026-09-28T14:39:07Z",
+    "cipd": "Corrected: client exists at /private/tmp/neantik-depot-tools/.cipd_client (SHA-256 4ac2fa37f23486d249a2d71ff5084b6207c00cfa55928dad577fe99f0376ab71). Read-only auth-info reports Not logged in. This is Chromium CIPD/Google auth, separate from GitHub; no interactive auth, package fetch, or install attempted.",
+    "githubCLI": "gh auth status reports stored CLI credentials for AffPapa and mrdumay-source as invalid. This does not revoke or disprove the connected GitHub app/API read path; do not repeat device OAuth now. CLI upload/push is not available until its own credential is repaired.",
+    "keychain": "Sandboxed shell security query returned zero identities and notarytool output was not valid JSON. Treat this as context-limited/unverified, not evidence that certificates/profile are absent. The prior permitted macOS-context check recorded 4 identities, 2 Developer ID Application, and neantik-notary history Accepted; recheck only in that permitted context before candidate signing."
+  },
+  "latestCurrentCheckpoint": {
+    "checkedAt": "2026-09-29",
+    "localGhCLI": "Saved local CLI credentials invalid; GitHub connector public reads are available but do not authorize uploads.",
+    "macSigning": "4 valid identities, including 2 Developer ID Application; neantik-notary profile accessible. No M154 candidate signed or submitted.",
+    "noRepeat": "Do not repeat the prior failed SDK alias shims, obsolete Safe Browsing group69 patch, the scaffolded GN graph build, limited GUI smoke, or GitHub device OAuth before an exact upload-ready candidate.",
+    "publicRelease": "GitHub v0.7.11/build74 remains immutable; browser.free API says published-runtime-gated and canDownload=false; current Sites version98.",
+    "releaseReady": false,
+    "sourceAndToolchain": "Official Stable target remains Chromium 154.0.8037.58. Active owned M154 patch set now has 75 groups; the prior group69 initialization patch is superseded after clean GN showed it overwrote non-empty lists. Safe Browsing BUILD.gn now matches clean .58 plus active group16 postimage; GN generated 35,018 targets successfully. Group75 fixes SDKROOT symlink canonicalization. Diagnostic Xcode27/SDK27 only; CIPD auth-info is Not logged in and no hermetic Xcode package is cached. Release qualification remains false.",
+    "targetSelection": "Chrome 154.0.8037.58 remains broad Stable for Mac. Chrome 155.0.8059.12/.13 is Early Stable for a small percentage only.",
+    "tests": "Python 725 passed, 1 skipped; full native Swift 636 passed across 70 suites in permitted macOS context; focused loopback suite 3/3 passed; git diff --check passed. The earlier sandboxed loopback failure was environmental."
+  },
+  "latestGateCheckpoint": {
+    "checkedAtLocal": "2026-09-30",
+    "chromiumStable": "154.0.8037.57/.58; macOS build uses .58",
+    "diagnosticExporter": "stable tracked diff SHA bbe4176598471829f4c1bf31f0028db47b09a0e34a7c6b6a2a34c71a116f13b7; now hashes pinned M154 macOS series+20 patches; releaseReady=false",
+    "githubCLI": "invalid local gh auth; no release upload",
+    "hermeticToolchain": "Pinned Chromium source toolchain: CIPD tag c5txl4HTukDs4xiCybqz3zK9jxr4N4PwzHRNOhjBDOQC; source describes Xcode 26.6/17F113 and macOS SDK 26.5/25F70. A staged Xcode 27.0/27A266a bundle contains SDK26.5 files but is not proven to be that package.",
+    "releaseReady": false,
+    "runtime": "diagnostic-only; full isolation/network/recovery/fingerprint A→B→A runtime gates outstanding",
+    "signing": "Developer ID identities and notary profile accessible, candidate not signed",
+    "sourcePostimages": "The old active75 expected whole-tree hashes were not reproduced and are superseded. Five direct test includes plus the JavaScript optimizer pref declaration removal are now represented by owned patch m154-include-content-settings-prefs-in-js-optimizer-tests; the new 71-group sequence is pending clean replay and manifest regeneration.",
+    "upstreamMacPackaging": "154.0.8037.57-1.1 pinned; ordered 20/20 touched-file applicability passed"
+  },
+  "latestGoalAudit": {
+    "affectedTests": "49 passed: M154 input manifest, patchset verifier, built runtime verifier, packaged runtime report. ProfileStoreTests: 38/38 passed under the then-global Xcode Beta after the suite wrapper silently fell back from an incompatible resolver result; the wrapper now fails closed and this result is not claimed as Stable-Xcode evidence.",
+    "buildProgress": "2026-09-28: resumed diagnostic `chrome` target reached 12632/13107 then failed at the final NeAntik Browser Framework LTO link; original detailed stderr was truncated and is not recoverable from the available logs. A later broad resume was stopped at 143/2243 after read-only Ninja explain showed SDK/header timestamp invalidations. No release build completed.",
+    "checkedAtUTC": "2026-09-28T12:36:00Z",
+    "githubConnectorAuth": {
+      "authenticatedAs": "AffPapa",
+      "localGhCliToken": "valid active AffPapa keyring token with repo and workflow scopes",
+      "oauthRepeated": false,
+      "releaseAndBinaryAssetWrite": "no exposed connector write tool; local gh CLI is freshly authenticated and available",
+      "repositoryReads": "successful"
+    },
+    "localGitHubCliAuth": "Fresh 2026-09-28 12:36 UTC: active AffPapa keyring with repo/workflow scopes; earlier invalid-token observation is superseded.",
+    "loopAssessment": "Historical 2026-09-28T12:36Z snapshot; its attempt7-progress statement is superseded by latestBuildLoopAudit.",
+    "newGroup70": {
+      "GN": "regenerated 35012 targets; gn check passed for //chrome:chrome, Safe Browsing common/browser unit_tests, and Enterprise connectors unit_tests",
+      "apply": "exact reverse/apply on active group69 source and isolated common-overlay postimage replay passed",
+      "generatedFlags": {
+        "SAFE_BROWSING_AVAILABLE": 0,
+        "SAFE_BROWSING_DOWNLOAD_PROTECTION": 0,
+        "enterprise_cloud_content_analysis": true,
+        "safe_browsing_mode": 0
+      },
+      "id": "m154-restore-safe-browsing-prefs-plumbing",
+      "patchSHA256": "51ffee29032e0f3a311d16316a230df1aa6317b54717fd9eb5ee07d3158f2bef",
+      "releaseReady": false
+    },
+    "nextTargetRetry": "one M154 GN generation/build after exporter accepts exact manifest; stop on first failed gate and repair only that gate.",
+    "optimization": {
+      "inputManifestExporter": "now verifies the manifest file SHA and streams JSONL records instead of loading the 209 MB file into memory; the gate binds lock header, record count, and continuation log.",
+      "result": "no repeated full dependency sync or build was started; next one-pass target is GN generation, then build only if GN succeeds."
+    },
+    "orderedReplayContinuationSHA256": "2b46fa955d0e71f936d6752777ad9fc06d25bcd46e8424519556c2a7fea05e51",
+    "orderedReplayPostimageManifestSHA256": "0499481d3ec8a693a7c620dbb18c1e6451c12432c750df7baa109fb6d76d9c18",
+    "ownedGroups": 70,
+    "publicReleaseRecheck": {
+      "assets": [
+        "NeAntik-0.7.11-arm64-notarized.dmg",
+        "NeAntik-0.7.11-arm64-notarized.zip"
+      ],
+      "build": "74",
+      "checkedAtUTC": "2026-09-28T10:36:04Z",
+      "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+      "githubTag": "v0.7.11",
+      "releaseReady": false,
+      "siteAPI": {
+        "baseline": "154.0.8037.58",
+        "build": "74",
+        "canDownload": false,
+        "chromium": "153.0.8010.52",
+        "dmgDownloadUrl": null,
+        "downloadUrl": null,
+        "publicReleaseState": "published-runtime-gated",
+        "version": "0.7.11",
+        "zipSHA256MatchesGitHub": true
+      },
+      "version": "0.7.11",
+      "writeAuth": "gh auth status says AffPapa saved token invalid; no OAuth retried",
+      "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+    },
+    "releaseStatus": "Diagnostic only; see latestBuildLoopAudit for current toolchain/build state. No signing, notarization submission, commit, push or publication.",
+    "safeBrowsingInvariant": "safe_browsing_mode=0 remains required; this replay is not build-args proof.",
+    "signingAndNotaryRecheck": {
+      "candidateSigned": false,
+      "candidateSubmitted": false,
+      "checkedAtUTC": "2026-09-28T10:44:45Z",
+      "codeSigningIdentityCount": 4,
+      "developerIDApplicationIdentityAvailable": true,
+      "historyRecords": 100,
+      "latestHistoryStatus": "Accepted",
+      "notaryProfile": "neantik-notary",
+      "notaryProfileAccessible": true,
+      "previousRestrictedContextFailure": "superseded by successful permitted macOS read-only query"
+    },
+    "sourceReplay": {
+      "chromiumVersion": "154.0.8037.58",
+      "commit": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "commonApplyLogSHA256": "704522c81f9cb7bb93b5dfab8ded0f78b360065a6efec56ab5feaacc3f63f4af",
+      "commonCommit": "800d0bb5078472e4442c1fd73373172754a60939",
+      "commonPatchCount": 109,
+      "commonSeriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+      "continuationLogSHA256": "e4cb360484aedfef8c8a5e3b148e328e4a7d1d9fb078152933eafd9e17511f4a",
+      "correctedGroup66SHA256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6",
+      "dependencyRevisionCount": 240,
+      "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+      "ownedGroups": 68,
+      "prefixLogSHA256": "9e3e78f2dd3dda85a37d059ffdb3be1c226c58845c275fd346962942b30ca259",
+      "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+      "pruneLogSHA256": "7e2b56337cab07b28479e9b86c8ef849e23bbb4ef2679d96b5f94c00d0fe38e2",
+      "pruneMode": "keep-contingent-paths",
+      "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+      "rejectArtifacts": 0,
+      "result": "ordered groups 1-65 prefix plus corrected ordered continuation 66-68 passed; source postimage snapshot is bound; no GN/build/runtime qualification yet.",
+      "tree": "63b6339af403b6f8dc70fe2d4613f91f1c04f43a",
+      "wholeTreeManifestPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/whole-tree-postimage-manifest.jsonl",
+      "wholeTreeManifestSHA256": "d5fd6fa32966a942a4b4fe2ef10c864d99a7efcbda529f7cd703badcb44aad91"
+    },
+    "supersededBy": "latestBuildLoopAudit; exact current attempt7/8 result and no-live-process audit recorded at 2026-09-28T13:10:42Z",
+    "xcodeReconciliation": {
+      "activeDiagnosticProcessDeveloperDirectory": "/Applications/Xcode.app/Contents/Developer",
+      "beta": "Xcode 27.0 (27A5228h)",
+      "globalSelectionChanged": false,
+      "officialPinnedToolchain": "SDK 26.5 / build 25F70; current diagnostic build uses SDK 27.0 / 27A266a and does not satisfy that release pin",
+      "stable": "Xcode 27.0 (27A266a)",
+      "xcodeSelect": "/Applications/Xcode-beta.app/Contents/Developer"
+    }
+  },
+  "latestLoopCorrection": {
+    "checkedAtUTC": "2026-09-28T14:53:48Z",
+    "confirmedTestFixtureDefect": "scripts/tests/test_export_chromium_154_port_input_manifest.py hardcoded 71 groups after the ledger reached 75. Assertions now derive counts from the current ordered group list.",
+    "nextAction": "Keep group75 frozen. Resume M154 build work only after access to the pinned hermetic CIPD toolchain or a newly observed failure from clean replay/integrated runtime.",
+    "releaseReady": false,
+    "staleRecordClarification": "latestBuildLoopAudit and currentTurnPatchFollowup are historical attempt8/group71 snapshots. The newer latestTurnFocusedTestTargetBuild and port-experiment.json are authoritative for the current diagnostic source: 75 ordered groups. No duplicate chrome build, GUI smoke, GitHub OAuth, or Xcode installation was performed.",
+    "verification": "python3 -m unittest scripts.tests.test_export_chromium_154_port_input_manifest scripts.tests.test_verify_nevision_patchset_manifest: 33 tests passed."
+  },
+  "latestPublicReleaseCheck": {
+    "browserFreeAPI": "0.7.11/build74; matching ZIP SHA; Chromium 153.0.8010.52 below 154.0.8037.58; publicReleaseState=published-runtime-gated; canDownload=false.",
+    "checkedAtUTC": "2026-09-28T14:34:30Z",
+    "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+    "github": "v0.7.11/build74 remains immutable at source commit fa3b03cbe122840ea308d2ecf19004a1128a1a06; 4 assets unchanged.",
+    "mutation": "None.",
+    "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+  },
+  "latestPublicReleaseCheck20260930": {
+    "browserFreeApi": {
+      "baseline": "154.0.8037.58",
+      "build": "74",
+      "canDownload": false,
+      "publicReleaseState": "published-runtime-gated",
+      "sha256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+      "url": "https://browser.free/api/release",
+      "version": "0.7.11"
+    },
+    "build": "74",
+    "chromium": "153.0.8010.52",
+    "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+    "githubRelease": "https://github.com/AffPapa/neantik/releases/tag/v0.7.11",
+    "immutable": true,
+    "siteVersionCommit": "827e7231d0a756063425387d4c635d7066fa0424",
+    "sitesLiveVersion": 98,
+    "tag": "v0.7.11",
+    "verifiedAtLocal": "2026-09-30",
+    "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+  },
+  "latestRuntimeFeasibility": {
+    "availableArtifact": "M154 arm64 diagnostic NeAntik Browser.app exists, but it is a bare Chromium browser app on diagnostic SDK27, not the integrated manager/candidate.",
+    "checkedAtUTC": "2026-09-28T14:39:07Z",
+    "priorGUIEvidence": "Only startup plus local chrome://version; earlier smoke selected the existing Chromium Default profile and did not test isolation or behavior. Do not repeat.",
+    "processState": "Current CUA inventory shows NeAntik is not running. Shell process listing was denied, so no broader host process claim is made.",
+    "productionPatchDelta": "Groups72/73 are test-support-only and do not alter the browser runtime; existing app runtime code corresponds to group71 production sources.",
+    "releaseReady": false,
+    "safeCurrentRuntimeTest": "No honest end-to-end manager A→B→A/recovery/proxy test is available with the bare browser bundle. Creating a fresh isolated user-data-dir for Chromium alone would test a different contract and cannot qualify manager profile/runtime launch."
+  },
+  "latestToolchainSearch": {
+    "checkedAtUTC": "2026-09-28T14:39:07Z",
+    "cipdClient": "/private/tmp/neantik-depot-tools/.cipd_client; auth-info=Not logged in.",
+    "localPackageCache": "No matching hermetic xcode_binaries/SDK package found in bounded active repo and scratch caches (independent read-only agent check).",
+    "localSDK": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk resolves with process-scoped DEVELOPER_DIR=/Library/Developer/CommandLineTools; SDK version 26.5. Its compiler is Apple clang 21.0.3.30.1. Global Xcode Beta and installed Stable each expose only SDK 27.0. CLT SDK/compiler alone does not establish the required hermetic Xcode build.",
+    "nextAction": "Use only an already authorized CIPD account/package path; GitHub OAuth does not grant the separate Chromium CIPD package ACL. Do not initiate repeated device login or fall back to CLT as release qualification.",
+    "officialPackage": "infra_internal/ios/xcode/xcode_binaries/mac-arm64, pinned SDK 26.5 build 25F70",
+    "settingsChanged": false
+  },
+  "latestTurnBuildContinuation": {
+    "checkedAtUTC": "2026-09-28T03:48:21Z",
+    "command": "ninja -C out/NeAntikM154Fresh -j6 enterprise_archive_analyzer_unittests",
+    "fullTargetResult": "blocked during Chromium Settings WebUI TypeScript generation: 34 errors across about_page_test.ts, personalization_options_test.ts, test_search_engines_browser_proxy.ts; tests not executed",
+    "fullTargetRetry": "Not yet started at this checkpoint; the current clean ordered replay, fresh whole-tree source manifest, and GN checks now pass. One -j6 build is the next gate.",
+    "isolatedCompilePasses": [
+      "Read Anything untrusted page handler C++ object after group64"
+    ],
+    "ownedPortGroup65": {
+      "apply": "exact reverse dry-run/reverse/apply passed atop groups1-64 diagnostic source",
+      "fullTargetRetry": "pending",
+      "name": "m154-align-disabled-settings-test-guards-and-search-engine-fixtures",
+      "patchSHA256": "9370fe358e4a01521b4029bcf8023d10977211682a107d9736ea3cf974e00ebb",
+      "releaseReady": false,
+      "settingsTypeScriptGate": "passed"
+    },
+    "ownedPortGroup66": {
+      "apply": "exact reverse dry-run/reverse/apply passed atop groups1-65 diagnostic source",
+      "evidence": "zero source references; declaration only",
+      "name": "m154-remove-unreferenced-protego-sampling-constant",
+      "objectCompile": "passed: obj/components/safe_browsing/core/browser/realtime/url_lookup_service/url_lookup_service.o",
+      "patchSHA256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6",
+      "releaseReady": false,
+      "safeBrowsingMode": 0
+    },
+    "ownedPortGroup67": {
+      "apply": "exact reverse dry-run/reverse/apply passed atop groups1-66 diagnostic source",
+      "name": "m154-guard-enterprise-analysis-include-with-enterprise-buildflag",
+      "objectCompile": "passed: obj/chrome/browser/file_system_access/impl/chrome_file_system_access_permission_context.o",
+      "patchSHA256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328",
+      "reason": "Enterprise Content Analysis is enabled independently of SAFE_BROWSING_AVAILABLE under safe_browsing_mode=0",
+      "releaseReady": false,
+      "safeBrowsingMode": 0
+    },
+    "ownedPortGroup68": {
+      "apply": "exact reverse dry-run/reverse/apply passed atop groups1-67 diagnostic source",
+      "evidence": "both helpers have zero source call sites",
+      "name": "m154-prune-unreferenced-navigation-predictor-helpers",
+      "objectCompile": "passed: obj/chrome/browser/navigation_predictor/impl/navigation_predictor.o; corrected patch removes only two unused helpers and preserves active traffic gating",
+      "patchSHA256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157",
+      "releaseReady": false
+    },
+    "ownedPortGroup69": {
+      "apply": "exact reverse/apply ordered continuation from group68 passed",
+      "gnChecks": "chrome, safe_browsing unit_tests, enterprise archive analyzer unit_tests, net unit_tests all passed",
+      "gnGeneration": "passed 35012 targets",
+      "name": "m154-initialize-enterprise-safe-browsing-mode0-target",
+      "patchSHA256": "d7fb5264a64f98fb533d46003dc40e8a23a0d7010933cacdd860b6ed17ad922e",
+      "reason": "common overlay leaves initial enterprise target lists undefined while Safe Browsing mode 0 is retained",
+      "releaseReady": false,
+      "safeBrowsingMode": 0
+    },
+    "releaseReady": false,
+    "safeBrowsingMode": 0,
+    "xcode": {
+      "globalSelectionChanged": false,
+      "installationPerformed": false,
+      "previousAttemptProcessScopedXcode": "/Applications/Xcode.app/Contents/Developer (27A266a), already-installed stable Xcode; no installation recorded",
+      "selectedBuild": "27A5228h",
+      "selectedPath": "/Applications/Xcode-beta.app/Contents/Developer"
+    }
+  },
+  "latestTurnFocusedTestTargetBuild": {
+    "checkedAtUTC": "2026-09-28T14:50:45Z",
+    "chromiumVersion": "154.0.8037.58",
+    "groups74And75": {
+      "group74": "m154-include-safe-browsing-prefs-in-notification-telemetry-test.patch",
+      "group74SHA256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c",
+      "group75": "m154-include-safe-browsing-prefs-in-advanced-protection-test.patch",
+      "group75SHA256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d",
+      "orderedReplay": "passed manifest-bound reverse/apply checks; group75 whole-tree manifest SHA-256 f323388ae69357d5dd42f82ad5b025f60fa99d2ce4227d27af5ea049cb6da728",
+      "scope": "Test-only direct includes; no production code or Safe Browsing mode change.",
+      "sourceExporter": "passed diagnostic manifest /private/tmp/neantik-current-m154-input-manifest-group75.json SHA-256 55413ff3d4c3e9d80cc02d5b0fa2f345bb1bccea041008d68a90effb83d1f503; releaseReady=false"
+    },
+    "incrementalBuild": {
+      "command": "ninja -C out/NeAntikM154OrderedReplayStable27 -j6 net_unittests enterprise_archive_analyzer_unittests chrome/browser/safe_browsing:unit_tests components/safe_browsing/content/browser:unit_tests",
+      "result": "completed incremental targets; 22/22 emitted actions, no compiler/link errors. net_unittests and enterprise archive binaries were already linked; Safe Browsing test source targets compiled. Aggregate chrome unit_tests binary was not linked.",
+      "toolchain": "process-scoped Stable Xcode 27A266a, SDK27.0; diagnostic only"
+    },
+    "nextAction": "Do not repeat the passing build/test commands. Remaining gates are hermetic Xcode/CIPD auth and package, integrated M154 manager/runtime matrix, full clean release build, Developer ID/notary/Gatekeeper, CLI upload credential, hosted bytes and rollback.",
+    "orderedOwnedPatchGroups": 75,
+    "releaseReady": false,
+    "safeBrowsingMode": 0,
+    "sourceCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "sourceRoot": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/src",
+    "tests": {
+      "coverageLimit": "These are Chromium unit tests, not NeAntik proxy-route or browser runtime proof. Safe Browsing chrome unit test cases were compiled, not run.",
+      "enterpriseArchiveAnalyzer": "51/51 passed earlier; unchanged production target.",
+      "networkFilter": "67 passed, 2 Android-only skipped, 0 failed in permitted macOS context. Suites: ProxyConfig, ProxyConfigWebSocket, ProxyHostMatchingRules, ProxyList, URLRequestContextBuilder."
+    }
+  },
+  "latestTurnRecheck": {
+    "browserFree": {
+      "apiBuild": "74",
+      "apiVersion": "0.7.11",
+      "apiZipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576",
+      "canDownload": false,
+      "currentChromium": "153.0.8010.52",
+      "homepageRelease": "0.7.11 (74)",
+      "liveURL": "https://browser.free",
+      "publicReleaseState": "published-runtime-gated",
+      "requiredBaseline": "154.0.8037.58"
+    },
+    "checkedAtUTC": "2026-09-28T01:48:00Z",
+    "github": {
+      "assets": {
+        "dmgSHA256": "fa0489a57b790f51f3d8eea0fa2b4d816bf9a123559f9fd0da71e0ddab6521f4",
+        "zipSHA256": "141ffacec0fb601a9e20fa722b348bc6eed444132efee9c72ab582b5645d3576"
+      },
+      "behindRemoteBranch": 0,
+      "committedOrPushedThisTurn": false,
+      "dirtyStatusEntries": 12,
+      "latestRelease": "v0.7.11",
+      "localAheadOfRemoteBranch": 9,
+      "localGitHubCliAuth": "active account AffPapa; repo/workflow scopes available",
+      "localHEAD": "36db4e7a32882319cf6e1c49c4acd4ac59122cb7",
+      "originMainTip": "1bb00379c50e93b64f92903e09ab48bd018914c2",
+      "publishedAtUTC": "2026-09-24T14:47:52Z",
+      "releaseName": "NeAntik 0.7.11 (74)",
+      "tagCommit": "fa3b03cbe122840ea308d2ecf19004a1128a1a06",
+      "workspaceBranch": "codex/neantik-workplaces",
+      "workspaceBranchRemoteTip": "39e51de05c173c3f9261b894fd43f486b6429a0a"
+    },
+    "m154DiagnosticPort": {
+      "checkedAtUTC": "2026-09-28T01:12:31Z",
+      "completeOrderedReplayRefreshed": false,
+      "currentFullTestTargetBuild": {
+        "failure": "local-only OneGoogleBar loader left unreachable callback queue code; now completes callers without network",
+        "parallelJobs": 6,
+        "progressAtLastPoll": "467/8244 before NTP unreachable-code blocker; groups49-50 isolated object compile passed; enterprise archive target retry pending",
+        "releaseQualified": false,
+        "safeBrowsingMode": 0,
+        "sessionId": 54999,
+        "status": "previous target retry stopped, OneGoogleBar fixes49-50 compile passed; retry pending",
+        "targets": [
+          "enterprise_archive_analyzer_unittests"
+        ],
+        "testsExecuted": false,
+        "xcodeBuild": "27A5228h"
+      },
+      "group36TargetObjectCompile": "passed",
+      "ownedPatchGroupsInDiagnosticSource": 39,
+      "ownedPatchGroupsSequentiallyApplied": 50,
+      "releaseQualified": false,
+      "safeBrowsingMode": 0,
+      "targetChromiumVersion": "154.0.8037.58"
+    },
+    "macOSKeychain": {
+      "developerIDApplicationIdentities": 2,
+      "latestHistoryStatus": "Accepted",
+      "m154CandidateNotarySubmission": false,
+      "neantikNotaryProfileHistoryRead": true,
+      "privateKeyMaterialExported": false,
+      "validCodeSigningIdentities": 4
+    },
+    "xcode": {
+      "globalSelectionChanged": false,
+      "installedDuringThisTurn": false,
+      "selectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+      "selectedVersion": "27.0 (27A5228h)"
+    }
+  },
+  "macPackagingEvidenceSource": "runtime/nevision-patches/ports/chromium-154.0.8037.58/port-experiment.json#m154MacPackagingSeriesReplay",
+  "managerTests": {
+    "benchmark": "5,000 profiles across 5,000 folders imported in 2.5088 seconds in this run; no before/after comparison was performed",
+    "checkedAt": "2026-09-27T03:03:20Z",
+    "command": "swift test --jobs 2 --filter ProfileStoreTests",
+    "fullSuite": {
+      "command": "swift test --jobs 2",
+      "result": "passed; 636 tests in 70 suites"
+    },
+    "pythonSuite": {
+      "command": "python3 -m unittest discover -s scripts/tests",
+      "result": "passed; 700 tests, one skipped"
+    },
+    "result": "passed; 38 tests in one suite"
+  },
+  "officialChromiumBase": {
+    "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+    "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+  },
+  "orderedOwnedPatchReplay": {
+    "baseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+    "independentOwnedConflict": "The old TimeZone startup hunk targeted ScriptStateImpl::Init, which no longer exists in M154. Updating that context allowed the dependent private-environment and cached-seed groups to apply.",
+    "latestOrderedSparseReplay": {
+      "baseCommit": "a654841425914cbb703a2931e07b70a83aedbafd",
+      "evidencePath": "runtime/nevision-patches/ports/chromium-154.0.8037.58/port-experiment.json",
+      "groupFailures": 0,
+      "groupsApplied": 19,
+      "limitations": "Sparse touched-path applicability only; one Safe Browsing BUILD.gn diagnostic scaffold mismatch remains. The separate locked Apple tuple generator reproduces all 8 generated postimages. Not full-tree source/postimage replay, GN, build, runtime, or release qualification.",
+      "recordedAtUTC": "2026-09-27T19:42:13Z",
+      "scratchRoot": "/var/folders/tq/cx6qnzks0nd8_c0y80rf3j300000gp/T/neantik-m154-owned-19-sparse-siau26px",
+      "supersededBy": "port-experiment.json ownedPatchApplyCheck.latestOrderedAttempt recorded 2026-09-27T20:12:27Z: 21 groups, 70 touched paths, 69/70 byte-matched diagnostic postimages",
+      "touchedPathCount": 66
+    },
+    "ownedGroupFailures": 0,
+    "ownedGroupsAppliedSequentially": 19,
+    "portedExperimentPath": "runtime/nevision-patches/ports/chromium-154.0.8037.58/port-experiment.json",
+    "recordedAt": "2026-09-27",
+    "releaseQualified": false,
+    "runtimeValidated": false,
+    "sourceLockUpdated": false,
+    "upstreamCommonOverlay": {
+      "applied": 100,
+      "commit": "800d0bb5078472e4442c1fd73373172754a60939",
+      "conflicts": 9,
+      "tag": "154.0.8037.57-1"
+    }
+  },
+  "policy": "Source/build diagnostics only. This record does not qualify runtime behavior, consumer protection, signing, notarization, Gatekeeper, publication, or release readiness.",
+  "recordedAt": "2026-09-30T10:30:00Z",
+  "releaseReady": false,
+  "requiredNextGates": [
+    "Port the complete dependency-ordered Enterprise archive-analysis GN/Mojo/service-registration changes into a reviewed M154 owned patch manifest from clean pinned inputs; the two-file diagnostic patch alone references missing enterprise_archive_analysis and is not a clean source build.",
+    "Test Enterprise Cloud Content Analysis with safe_browsing_mode=0 using an explicitly configured custom provider: verify upload, verdict, download behavior and fail-closed handling; the compiled-in Google fallback is intentionally domain-substituted and blocked.",
+    "Verify domain-substitution protection at runtime for the enterprise Google fallback and remove query/fragment data from blocked-request logs; test that the transformed request returns ERR_BLOCKED_BY_CLIENT without exposing the original URL.",
+    "Add and run utility-service crash/disconnect and sandbox-denial tests, plus end-to-end Enterprise file-download verdict tests; keep Safe Browsing flags and Enterprise policy expectations unchanged.",
+    "Resolve the mode-0 monolithic unit_tests Safe Browsing dependency boundary with explicit test-only build ownership, without enabling Safe Browsing in the browser binary or stripping Enterprise coverage.",
+    "Extend isolated GUI/runtime coverage to production profile recovery and A→B→A behavior; test headless support separately rather than treating the observed abort as a user-mode failure.",
+    "Finish the complete Chromium target from the exact 72-group replay and supported process-scoped system Xcode; the currently interrupted build has not completed and remains diagnostic.",
+    "Promote only one exact proven source/build to release source, then pass runtime, profile isolation, network, GUI, signing, notarization, Gatekeeper, hosted-byte, site, and rollback checks."
+  ],
+  "schemaVersion": 1,
+  "sourceReplayLimit": "runtime/chromium-154-ungoogled-common-replay.json records a separate M154 154.0.8037.60 experiment. It does not replay or qualify this 154.0.8037.58 source tree.",
+  "status": "m154-154.0.8037.93-diagnostic-build-in-progress",
+  "systemXcodeDiagnosticBuild": {
+    "appLinked": false,
+    "buildErrors": "No compiler or Xcode/SDK error observed in completed actions. The first sandboxed attempt stopped because Metal could not write ~/.cache/clang; the same command resumed in an approved macOS context and passed the Metal target.",
+    "command": "/opt/homebrew/bin/ninja -C out/NeAntikStableXcodeDiagnostic -j6 chrome",
+    "gnGeneration": "passed; 35,076 targets; args.gn SHA-256 0f29ac6ab5adb2872f46b4b4a59d55026b4b6f22bd1bf5bb49d39e1f68069826",
+    "macAllowSystemXcodeForOfficialBuildsForTesting": true,
+    "progress": "12,743/49,767 remaining actions completed before interruption",
+    "recordedAt": "2026-09-26T16:05:29Z",
+    "releaseQualified": false,
+    "runtimeValidated": false,
+    "safeBrowsingMode": 0,
+    "sdkLink": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+    "sdkOverlayUsed": false,
+    "sourceRoot": "/private/tmp/neantik-m154-build-20260925/src",
+    "status": "partial-intentionally-interrupted",
+    "stopReason": "Stopped intentionally because this full diagnostic rebuild could not clear the already-known M154 patch-manifest, Safe Browsing unit-test, or runtime release gates.",
+    "target": "chrome",
+    "testsExecuted": false
+  },
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "154.0.8037.93",
+  "toolchainInventory": {
+    "betaMacSDKContainsMachExcDefs": false,
+    "checkedAt": "2026-09-26T16:05:29Z",
+    "cipdReadOnlyProbe": {
+      "authLoginAttempted": false,
+      "downloadAttempted": false,
+      "package": "infra_internal/ios/xcode/xcode_binaries/mac-amd64",
+      "result": "not visible to unauthenticated callers",
+      "tag": "c5txl4HTukDs4xiCybqz3zK9jxr4N4PwzHRNOhjBDOQC"
+    },
+    "commandLineToolsSDK": "27.0",
+    "commandLineToolsSDKContainsMachExcDefs": true,
+    "hermeticToolchainDistribution": "The M154 source references an internal CIPD package. A fresh read-only cipd describe request for the pinned package returned not visible to unauthenticated callers; no login or package download was attempted.",
+    "installedXcodeApps": [
+      "/Applications/Xcode-beta.app",
+      "/Applications/Xcode.app"
+    ],
+    "m154OfficialHermeticSDKPin": {
+      "build": "25F70",
+      "version": "26.5"
+    },
+    "m154PinnedHermeticToolchainPresent": false,
+    "releaseImpact": "The second pre-existing Xcode app supplies SDK 27.0 for system-Xcode diagnostics; the selected Beta remains 27A5228h. Chromium's Mac guide says newer SDKs usually work, so the 26.5 official-build pin does not by itself require another Xcode installation. The partial system-Xcode compile was not a full clean-source build or release qualification; the pinned CIPD package remains unavailable to the unauthenticated probe.",
+    "secondSystemXcode": {
+      "clarification": "This is the second pre-existing Xcode app; its stable-release status is not asserted.",
+      "developerDirectory": "/Applications/Xcode.app/Contents/Developer",
+      "macSDKBuild": "26A425",
+      "macSDKContainsMachExcDefs": true,
+      "macSDKVersion": "27.0",
+      "version": "27.0 (27A266a)"
+    },
+    "selectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "selectedDeveloperDirectoryChanged": false,
+    "selectedXcode": "27.0 (27A5228h)",
+    "xcodeActionThisPass": "No Xcode installation, removal, or xcode-select change was performed. /Applications/Xcode.app 27A266a and /Applications/Xcode-beta.app 27A5228h were both already present; xcode-select remains pointed to the Beta."
+  },
+  "toolchainLimit": "The earlier diagnostic app used a build-output SDK overlay and is not a supported release toolchain. A separate fresh output configured against installed stable Xcode 27.0 without the overlay compiled 12,743 of 49,767 remaining Ninja actions before intentional interruption; no compiler/toolchain error was seen in that partial run. This system-Xcode run used the explicit testing override and is not a release qualification.",
+  "upstreamMacPackagingCurrent": {
+    "checkedAt": "2026-09-30",
+    "commonSubmoduleCommit": "800d0bb5078472e4442c1fd73373172754a60939",
+    "qualification": "Verified upstream source availability and immutable source pins only. Local source replay, postimage manifest, toolchain, runtime, signing, and release remain separate gates.",
+    "releaseCommit": "3241dc9cacee393621d277ec936376072f0cb3c5",
+    "releasePublishedAtUTC": "2026-09-28T05:03:35Z",
+    "releaseReady": false,
+    "releaseTag": "154.0.8037.57-1.1",
+    "releaseTree": "ef5ef849ed78edb7d8c07773df6bbb6753efe9ea",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "seriesBytes": 1084,
+    "seriesGitBlobSHA1": "106434335706003ebe86ed2b0fdace9e07f83886",
+    "seriesPatchCount": 20,
+    "seriesPath": "patches/series",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "tagRefType": "commit",
+    "verificationSource": [
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/git/ref/tags/154.0.8037.57-1.1",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/git/commits/3241dc9cacee393621d277ec936376072f0cb3c5",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/contents/ungoogled-chromium?ref=154.0.8037.57-1.1",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/contents/patches/series?ref=154.0.8037.57-1.1",
+      "https://raw.githubusercontent.com/ungoogled-software/ungoogled-chromium-macos/154.0.8037.57-1.1/patches/series"
+    ]
+  },
+  "upstreamMacPackagingRecheck": {
+    "branches": [
+      "master"
+    ],
+    "checkedAt": "2026-09-27",
+    "chromium154PackagingTagOrBranch": "none-found",
+    "defaultBranch": "master",
+    "headCommit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "historicalAsOf": "2026-09-27",
+    "historicalSnapshotOnly": true,
+    "latestReleaseCommit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "latestReleasePublishedAt": "2026-09-06T22:16:05Z",
+    "latestReleaseTag": "152.0.7977.82-1.1",
+    "releaseImpact": "M154 macOS packaging layer still requires an owned, reviewed port; no matching upstream tag or branch was present in the fresh GitHub API listing.",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "supersededBy": "upstreamMacPackagingCurrent"
+  },
+  "xcodeSdkCompletenessRecheck": {
+    "checkedAtUTC": "2026-09-27T08:01:08Z",
+    "existingSystemMacOSSDK": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+    "existingSystemSDKContainsMachExcDefs": true,
+    "existingSystemXcode": "27.0 (27A266a)",
+    "existingSystemXcodeDeveloperDirectory": "/Applications/Xcode.app/Contents/Developer",
+    "limitations": [
+      "This records SDK file presence only; it does not identify the active Ninja process SDK or qualify Chromium compatibility, a hermetic toolchain, or a release."
+    ],
+    "releaseQualified": false,
+    "selectedDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "selectedMacOSSDK": "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk",
+    "selectedSDKContainsMachExcDefs": false,
+    "selectedXcode": "27.0 (27A5228h)",
+    "xcodeInstalledDuringRecheck": false
+  }
+}

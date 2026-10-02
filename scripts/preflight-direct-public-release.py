@@ -62,6 +62,32 @@ sys.modules[VERSION_BUMP_SPEC.name] = VERSION_BUMP
 VERSION_BUMP_SPEC.loader.exec_module(VERSION_BUMP)
 
 
+def verify_source_contract_binding(
+    *, runtime_version: str, contract: dict[str, Any], contract_path: Path,
+    provenance: dict[str, Any], candidate_lock: dict[str, Any],
+    project_root: Path, args_gn: Path,
+) -> None:
+    if runtime_version == "154.0.8037.93":
+        from chromium_154_release_evidence import verify_candidate_lock
+
+        # Schema 2 binds exact source inputs and the unsigned build separately
+        # from the final signed runtime hashes checked by runtime_lock_contract.
+        verify_candidate_lock(candidate_lock, provenance=provenance, project_root=project_root)
+        if contract.get("schemaVersion") != 2:
+            raise ValueError("M154 requires source contract schema 2")
+        if provenance.get("sourceContractSHA256") != sha256_file(contract_path):
+            raise ValueError("M154 source provenance is not bound to embedded source contract")
+        if provenance.get("binaryBinding", {}).get("argsGNSHA256") != sha256_file(args_gn):
+            raise ValueError("M154 packaged args differ from built candidate")
+        return
+    if runtime_version.startswith("154."):
+        raise ValueError("unqualified Chromium 154 candidate")
+    if provenance.get("contractSHA256") != sha256_file(contract_path):
+        raise ValueError("source provenance is not bound to embedded source contract")
+    if contract.get("binaryBindingStatus") != "pending-new-build":
+        raise ValueError("checked source contract has an unexpected binary-binding claim")
+
+
 VERSION_RE = re.compile(r"^(?P<parts>[0-9]+(?:\.[0-9]+){1,3})")
 
 
@@ -333,16 +359,11 @@ def verify_direct_public_release_plan(
             raise ValueError(
                 "embedded candidate lock differs from explicit release candidate"
             )
-        if provenance.get("contractSHA256") != sha256_file(
-            embedded_contract_path
-        ):
-            raise ValueError(
-                "source provenance is not bound to embedded source contract"
-            )
-        if contract.get("binaryBindingStatus") != "pending-new-build":
-            raise ValueError(
-                "checked source contract has an unexpected binary-binding claim"
-            )
+        verify_source_contract_binding(
+            runtime_version=runtime_version, contract=contract,
+            contract_path=embedded_contract_path, provenance=provenance,
+            candidate_lock=candidate_lock, project_root=project_root, args_gn=args_gn,
+        )
         if candidate_lock.get("sourceContractSHA256") != sha256_file(
             embedded_contract_path
         ):

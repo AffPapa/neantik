@@ -1,0 +1,12 @@
+--- a/chrome/browser/enterprise/signals/context_info_fetcher.h
++++ b/chrome/browser/enterprise/signals/context_info_fetcher.h
+@@ -41,6 +41,9 @@
+   std::vector<std::string> on_bulk_data_entry_providers;
+   std::vector<std::string> on_print_providers;
+   std::vector<std::string> on_security_event_providers;
++#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
++  enterprise_connectors::EnterpriseRealTimeUrlCheckMode realtime_url_check_mode;
++#endif  // BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
+   std::string browser_version;
+   bool site_isolation_enabled;
+   bool built_in_dns_client_enabled;

@@ -1,0 +1,11 @@
+--- a/net/url_request/trk_protocol_handler.cc
++++ b/net/url_request/trk_protocol_handler.cc
+@@ -14,7 +14,7 @@
+ 
+ std::unique_ptr<URLRequestJob> TrkProtocolHandler::CreateJob(
+     URLRequest* request) const {
+-  LOG(ERROR) << "Blocked URL in TrkProtocolHandler: " << request->original_url();
++  LOG(ERROR) << "Blocked request in disabled-service protocol handler";
+   return std::make_unique<URLRequestErrorJob>(request, ERR_BLOCKED_BY_CLIENT);
+ }
+ 

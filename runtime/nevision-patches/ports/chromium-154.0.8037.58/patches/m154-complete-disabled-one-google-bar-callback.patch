@@ -1,0 +1,43 @@
+--- a/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl.cc
++++ b/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl.cc
+@@ -291,17 +291,9 @@
+ OneGoogleBarLoaderImpl::~OneGoogleBarLoaderImpl() = default;
+ 
+ void OneGoogleBarLoaderImpl::Load(OneGoogleCallback callback) {
+-  return;
+-  callbacks_.push_back(std::move(callback));
+-
+-  // Note: If there is an ongoing request, abandon it. It's possible that
+-  // something has changed in the meantime (e.g. signin state) that would make
+-  // the result obsolete.
+-  pending_request_ = std::make_unique<AuthenticatedURLLoader>(
+-      url_loader_factory_, GetApiUrl(), account_consistency_mirror_required_,
+-      base::BindOnce(&OneGoogleBarLoaderImpl::LoadDone,
+-                     base::Unretained(this)));
+-  pending_request_->Start();
++  // This product keeps the New Tab page local and does not request Google
++  // content. Complete callers explicitly so they can clear loading state.
++  std::move(callback).Run(Status::FATAL_ERROR, std::nullopt);
+ }
+ 
+ GURL OneGoogleBarLoaderImpl::GetLoadURLForTesting() const {
+
+--- a/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl_unittest.cc
++++ b/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl_unittest.cc
+@@ -141,6 +141,16 @@
+   net::HttpRequestHeaders last_request_headers_;
+   std::unique_ptr<OneGoogleBarLoaderImpl> one_google_bar_loader_;
+ };
++
++TEST_F(OneGoogleBarLoaderImplTest, DisabledLoadCompletesWithoutNetwork) {
++  base::MockCallback<OneGoogleBarLoader::OneGoogleCallback> callback;
++  EXPECT_CALL(callback,
++              Run(OneGoogleBarLoader::Status::FATAL_ERROR, Eq(std::nullopt)));
++
++  one_google_bar_loader()->Load(callback.Get());
++
++  EXPECT_EQ(0, test_url_loader_factory_.NumPending());
++}
+ 
+ TEST_F(OneGoogleBarLoaderImplTest, RequestUrlContainsLanguage) {
+   SetUpResponseWithData(kMinimalValidResponse);

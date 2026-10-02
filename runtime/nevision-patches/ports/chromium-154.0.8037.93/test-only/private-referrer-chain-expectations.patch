@@ -1,0 +1,80 @@
+--- a/chrome/browser/enterprise/connectors/analysis/content_analysis_delegate_unittest.cc
++++ b/chrome/browser/enterprise/connectors/analysis/content_analysis_delegate_unittest.cc
+@@ -1942,7 +1942,8 @@
+ 
+ using ContentAnalysisDelegateReferrerChainTest = BaseTest;
+ 
+-TEST_F(ContentAnalysisDelegateReferrerChainTest, UnaffectedByNavigations) {
++TEST_F(ContentAnalysisDelegateReferrerChainTest,
++       DoesNotExposeNavigationReferrerChain) {
+   sessions::SessionTabHelper::CreateForWebContents(
+       contents(),
+       base::BindRepeating(
+@@ -1954,6 +1955,17 @@
+       safe_browsing::SafeBrowsingNavigationObserverManagerFactory::
+           GetForBrowserContext(profile()),
+       profile()->GetPrefs(), /*has_safe_browsing_service=*/true);
++  ASSERT_EQ(nullptr,
++            safe_browsing::SafeBrowsingNavigationObserver::FromWebContents(
++                contents()));
++  // A scoped test observer supplies history without enabling production tracking.
++  auto* observer_manager =
++      safe_browsing::SafeBrowsingNavigationObserverManagerFactory::
++          GetForBrowserContext(profile());
++  ASSERT_NE(nullptr, observer_manager);
++  safe_browsing::SafeBrowsingNavigationObserver test_observer(
++      contents(), HostContentSettingsMapFactory::GetForProfile(profile()),
++      observer_manager);
+ 
+   // Navigate to the referring page.
+   content::WebContentsTester::For(contents())
+@@ -1965,6 +1977,16 @@
+   simulator->SetHasUserGesture(true);
+   simulator->Commit();
+ 
++  // Positive control: navigation history exists in the isolated fixture.
++  safe_browsing::ReferrerChain observed_initial_chain;
++  observer_manager->IdentifyReferrerChainByEventURL(
++      GURL(kTestUrl), sessions::SessionTabHelper::IdForTab(contents()),
++      2 /* user_gesture_limit */, &observed_initial_chain);
++  ASSERT_GT(observed_initial_chain.size(), 0);
++  EXPECT_EQ(observed_initial_chain[0].url(), kTestUrl);
++  EXPECT_EQ(observed_initial_chain[0].referrer_url(),
++            "https://referrer.example.com/");
++
+   ContentAnalysisDelegate::Data data;
+   data.url = GURL(kTestUrl);
+ 
+@@ -1972,10 +1994,10 @@
+       contents(), std::move(data));
+ 
+   auto initial_referrer_chain = delegate->referrer_chain();
+-  ASSERT_GT(initial_referrer_chain.size(), 0);
+-  EXPECT_EQ(initial_referrer_chain[0].url(), kTestUrl);
+-  EXPECT_EQ(initial_referrer_chain[0].referrer_url(),
+-            "https://referrer.example.com/");
++  // NeAntik deliberately excludes navigation history from Enterprise analysis.
++  EXPECT_TRUE(initial_referrer_chain.empty());
++  EXPECT_TRUE(GetReferrerChain(GURL(kTestUrl), *contents()).empty());
++  EXPECT_FALSE(HasCachedChainForTesting(*contents()));
+ 
+   // Navigate to a new URL, effectively creating a new referrer chain for the
+   // WebContents.
+@@ -1987,14 +2009,9 @@
+ 
+   auto after_navigation_referrer_chain = delegate->referrer_chain();
+ 
+-  EXPECT_EQ(initial_referrer_chain.size(),
+-            after_navigation_referrer_chain.size());
+-  for (int i = 0; i < initial_referrer_chain.size(); ++i) {
+-    EXPECT_EQ(initial_referrer_chain[i].url(),
+-              after_navigation_referrer_chain[i].url());
+-    EXPECT_EQ(initial_referrer_chain[i].referrer_url(),
+-              after_navigation_referrer_chain[i].referrer_url());
+-  }
++  EXPECT_TRUE(after_navigation_referrer_chain.empty());
++  EXPECT_TRUE(GetReferrerChain(new_url, *contents()).empty());
++  EXPECT_FALSE(HasCachedChainForTesting(*contents()));
+ 
+   // Verify that the underlying SafeBrowsing observer recorded the new chain
+   // correctly.

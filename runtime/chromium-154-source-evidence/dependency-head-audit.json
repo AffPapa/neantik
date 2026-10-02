@@ -1,0 +1,899 @@
+{
+  "scope": "actual Git HEAD versus saved gclient entries; not dirty-content verification",
+  "entries": [
+    {
+      "path": "src/agents/shared",
+      "expected": "73470db4a7810560ec92e8aa27ff3c6a8a36bea5",
+      "actual": "73470db4a7810560ec92e8aa27ff3c6a8a36bea5",
+      "status": "match"
+    },
+    {
+      "path": "src/chrome/test/data/perf/canvas_bench",
+      "expected": "a7b40ea5ae0239517d78845a5fc9b12976bfc732",
+      "actual": "a7b40ea5ae0239517d78845a5fc9b12976bfc732",
+      "status": "match"
+    },
+    {
+      "path": "src/chrome/test/data/perf/frame_rate/content",
+      "expected": "c10272c88463efeef6bb19c9ec07c42bc8fe22b9",
+      "actual": "c10272c88463efeef6bb19c9ec07c42bc8fe22b9",
+      "status": "match"
+    },
+    {
+      "path": "src/chrome/test/data/xr/webvr_info",
+      "expected": "c58ae99b9ff9e2aa4c524633519570bf33536248",
+      "actual": "c58ae99b9ff9e2aa4c524633519570bf33536248",
+      "status": "match"
+    },
+    {
+      "path": "src/docs/website",
+      "expected": "c3cbe61e9891506afb2075e4430a228ad7658e23",
+      "actual": "c3cbe61e9891506afb2075e4430a228ad7658e23",
+      "status": "match"
+    },
+    {
+      "path": "src/media/cdm/api",
+      "expected": "d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4",
+      "actual": "d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4",
+      "status": "match"
+    },
+    {
+      "path": "src/net/third_party/quiche/src",
+      "expected": "80bf9559d3a4c08dde4b85abc46d190a88ffef64",
+      "actual": "80bf9559d3a4c08dde4b85abc46d190a88ffef64",
+      "status": "match"
+    },
+    {
+      "path": "src/testing/libfuzzer/fuzzers/wasm_corpus",
+      "expected": "1df5e50a45db9518a56ebb42cb020a94a090258b",
+      "actual": "1df5e50a45db9518a56ebb42cb020a94a090258b",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/angle",
+      "expected": "802a8704ca940b633b731493ee192e0661eb8cdd",
+      "actual": "802a8704ca940b633b731493ee192e0661eb8cdd",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/anonymous_tokens/src",
+      "expected": "4640033b0879d78a0725fdf6b7365b00d6841cad",
+      "actual": "4640033b0879d78a0725fdf6b7365b00d6841cad",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/boringssl/src",
+      "expected": "ac39ea6853833c1f18fd23614091d11855e71752",
+      "actual": "ac39ea6853833c1f18fd23614091d11855e71752",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/breakpad/breakpad",
+      "expected": "418aacd617897c19d960ec3e649f42ea95a6363a",
+      "actual": "418aacd617897c19d960ec3e649f42ea95a6363a",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/cast_core/public/src",
+      "expected": "f5ee589bdaea60418f670fa176be15ccb9a34942",
+      "actual": "f5ee589bdaea60418f670fa176be15ccb9a34942",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/catapult",
+      "expected": "50c971fc0958d8c1fb0adcc97f41b90042fa7c87",
+      "actual": "50c971fc0958d8c1fb0adcc97f41b90042fa7c87",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ced/src",
+      "expected": "d127078cedef9c6642cbe592dacdd2292b50bb19",
+      "actual": "d127078cedef9c6642cbe592dacdd2292b50bb19",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/clang-format/script",
+      "expected": "70510081984cfcdb14a15b3e08dfe9776dc7ed37",
+      "actual": "70510081984cfcdb14a15b3e08dfe9776dc7ed37",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/cld_3/src",
+      "expected": "b48dc46512566f5a2d41118c8c1116c4f96dc661",
+      "actual": "b48dc46512566f5a2d41118c8c1116c4f96dc661",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/colorama/src",
+      "expected": "3de9f013df4b470069d03d250224062e8cf15c49",
+      "actual": "3de9f013df4b470069d03d250224062e8cf15c49",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/compiler-rt/src",
+      "expected": "949185fe89d2c78514ddaa6b8874de9415036491",
+      "actual": "949185fe89d2c78514ddaa6b8874de9415036491",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/content_analysis_sdk/src",
+      "expected": "0a0e7ea516249e786d5a8884552bbd6e163d89cb",
+      "actual": "0a0e7ea516249e786d5a8884552bbd6e163d89cb",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/cpu_features/src",
+      "expected": "81d13c49649f0714dd41fb56bb246398b6584085",
+      "actual": "81d13c49649f0714dd41fb56bb246398b6584085",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/cpuinfo/src",
+      "expected": "66ee79c038d70dad9f08705b2c9b3e58f6d8f512",
+      "actual": "66ee79c038d70dad9f08705b2c9b3e58f6d8f512",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/crabbyavif/src",
+      "expected": "6dcab82c0389d1d1eb0978702c9faafcb89238d4",
+      "actual": "6dcab82c0389d1d1eb0978702c9faafcb89238d4",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/crc32c/src",
+      "expected": "2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07",
+      "actual": "2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/cros-components/src",
+      "expected": "0abb2efaa3d16db861c9710b193c39e657ac3bdf",
+      "actual": "0abb2efaa3d16db861c9710b193c39e657ac3bdf",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/crossbench",
+      "expected": "437a7726d609643de0ea64d222689fca6c43cf3d",
+      "actual": "437a7726d609643de0ea64d222689fca6c43cf3d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/crossbench-web-tests",
+      "expected": "df7f538dbac4b62cb503179a0e2f1e304fc3096d",
+      "actual": "df7f538dbac4b62cb503179a0e2f1e304fc3096d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dav1d/libdav1d",
+      "expected": "52b9d3d3ec525f5a20849145fa0e879d585f4911",
+      "actual": "52b9d3d3ec525f5a20849145fa0e879d585f4911",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn",
+      "expected": "38bc7fb0b3a024d05212958ae843e4ddf8c44ff1",
+      "actual": "38bc7fb0b3a024d05212958ae843e4ddf8c44ff1",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/depot_tools",
+      "expected": "c101dcbe0489c455fce7c2247bfee19680b116c3",
+      "actual": "c101dcbe0489c455fce7c2247bfee19680b116c3",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/devtools-frontend/src",
+      "expected": "66df492aaa0129d090937e933dd44c5389ab24d2",
+      "actual": "66df492aaa0129d090937e933dd44c5389ab24d2",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/disarm/src",
+      "expected": "2d13d3f410a52daff1c5d8ef07d623332f372560",
+      "actual": "2d13d3f410a52daff1c5d8ef07d623332f372560",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dom_distiller_js/dist",
+      "expected": "199de96b345ada7c6e7e6ba3d2fa7a6911b8767d",
+      "actual": "199de96b345ada7c6e7e6ba3d2fa7a6911b8767d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/domato/src",
+      "expected": "fadff396cc45d521cc594d3e2396e27e887b1963",
+      "actual": "fadff396cc45d521cc594d3e2396e27e887b1963",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dragonbox/src",
+      "expected": "beeeef91cf6fef89a4d4ba5e95d47ca64ccb3a44",
+      "actual": "beeeef91cf6fef89a4d4ba5e95d47ca64ccb3a44",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ds_store/src",
+      "expected": "d93392c32b92033789e8e7590f09812f7289873b",
+      "actual": "d93392c32b92033789e8e7590f09812f7289873b",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/eigen3/src",
+      "expected": "e350b7eaaf48f6d315bd4e73cc082e9b5b794f79",
+      "actual": "e350b7eaaf48f6d315bd4e73cc082e9b5b794f79",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/emoji-segmenter/src",
+      "expected": "955936be8b391e00835257059607d7c5b72ce744",
+      "actual": "955936be8b391e00835257059607d7c5b72ce744",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/expat/src",
+      "expected": "a851869e111c06fbcdc89edf639abf5fc2b6deba",
+      "actual": "a851869e111c06fbcdc89edf639abf5fc2b6deba",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/fadec/src",
+      "expected": "c9f78f532b9004de278489019ab2c6c28ae9746e",
+      "actual": "c9f78f532b9004de278489019ab2c6c28ae9746e",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/farmhash/src",
+      "expected": "816a4ae622e964763ca0862d9dbd19324a1eaf45",
+      "actual": "816a4ae622e964763ca0862d9dbd19324a1eaf45",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/fast_float/src",
+      "expected": "34164f547b7df3f5d794ff67e9f885c36819ebfc",
+      "actual": "34164f547b7df3f5d794ff67e9f885c36819ebfc",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/federated_compute/src",
+      "expected": "f5241fb459426f88af484a909927044a71306209",
+      "actual": "f5241fb459426f88af484a909927044a71306209",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ffmpeg",
+      "expected": "a06d51a20a28f980b2ddc6b7d73d69b2d29bf323",
+      "actual": "a06d51a20a28f980b2ddc6b7d73d69b2d29bf323",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/flac",
+      "expected": "e7108e2ed031547c3759217819a032065c820d73",
+      "actual": "e7108e2ed031547c3759217819a032065c820d73",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/flatbuffers/src",
+      "expected": "a86afae9399bbe631d1ea0783f8816e780e236cc",
+      "actual": "a86afae9399bbe631d1ea0783f8816e780e236cc",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/fp16/src",
+      "expected": "782eea126dc5c755827be751a099eb01826175cf",
+      "actual": "782eea126dc5c755827be751a099eb01826175cf",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/freetype/src",
+      "expected": "4800589f76dc62fbe523a74a59e0d4850a5dd7df",
+      "actual": "4800589f76dc62fbe523a74a59e0d4850a5dd7df",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/fuzztest/src",
+      "expected": "94c3cf3a4391eb0bb12999128e29cbe625bad2f3",
+      "actual": "94c3cf3a4391eb0bb12999128e29cbe625bad2f3",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/fxdiv/src",
+      "expected": "63058eff77e11aa15bf531df5dd34395ec3017c8",
+      "actual": "63058eff77e11aa15bf531df5dd34395ec3017c8",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/gemmlowp/src",
+      "expected": "16e8662c34917be0065110bfcd9cc27d30f52fdf",
+      "actual": "16e8662c34917be0065110bfcd9cc27d30f52fdf",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/glslang/src",
+      "expected": "23076b376e06a99b4c765df5c9836d127c8bbbfc",
+      "actual": "23076b376e06a99b4c765df5c9836d127c8bbbfc",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/google_benchmark/src",
+      "expected": "8abf1e701fbd88c8170f48fe0558247e2e5f8e7d",
+      "actual": "8abf1e701fbd88c8170f48fe0558247e2e5f8e7d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/googletest/src",
+      "expected": "4fe3307fb2d9f86d19777c7eb0e4809e9694dde7",
+      "actual": "4fe3307fb2d9f86d19777c7eb0e4809e9694dde7",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/harfbuzz/src",
+      "expected": "886fc1e645388080b72f6d9b06347533a0018045",
+      "actual": "886fc1e645388080b72f6d9b06347533a0018045",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/highway/src",
+      "expected": "2607d3b5b0113992fe84d3848859eae13b3b52c1",
+      "actual": "2607d3b5b0113992fe84d3848859eae13b3b52c1",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/hunspell_dictionaries",
+      "expected": "cee14e319bb7603a1157bb4d1e216be64ee82b77",
+      "actual": "cee14e319bb7603a1157bb4d1e216be64ee82b77",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/icu",
+      "expected": "6ebb40c594776cc2c21ea14df85a2a89a328b364",
+      "actual": "6ebb40c594776cc2c21ea14df85a2a89a328b364",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ink/src",
+      "expected": "4aa45f40c047ee173dcbf1095ba9353e3308709d",
+      "actual": "4aa45f40c047ee173dcbf1095ba9353e3308709d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/jetstream/main",
+      "expected": "c603c04db8505477867974a69789309ded2cc948",
+      "actual": "c603c04db8505477867974a69789309ded2cc948",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/jetstream/v2.2",
+      "expected": "2145cedef4ca2777b792cb0059d3400ee2a6153c",
+      "actual": "2145cedef4ca2777b792cb0059d3400ee2a6153c",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/jsoncpp/source",
+      "expected": "3347a4b86bb914cb565f0cbda19c06e109513300",
+      "actual": "3347a4b86bb914cb565f0cbda19c06e109513300",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/leveldatabase/src",
+      "expected": "7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+      "actual": "7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libFuzzer/src",
+      "expected": "5811dc57603eac1fa0e76addedb77f72f62bfa2d",
+      "actual": "5811dc57603eac1fa0e76addedb77f72f62bfa2d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libaddressinput/src",
+      "expected": "81eb9628382b07d371d8ea0b11badf7de3857fd5",
+      "actual": "81eb9628382b07d371d8ea0b11badf7de3857fd5",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libaom/source/libaom",
+      "expected": "441c439b9916474cac15d2822af47a9ad70674a8",
+      "actual": "441c439b9916474cac15d2822af47a9ad70674a8",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libc++/src",
+      "expected": "97b436da4c33663581d394f4ee0a5977fc38c2f4",
+      "actual": "97b436da4c33663581d394f4ee0a5977fc38c2f4",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libc++abi/src",
+      "expected": "fc1897a2c12aa27e703c3ed48b62eba8abf4ce19",
+      "actual": "fc1897a2c12aa27e703c3ed48b62eba8abf4ce19",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libgav1/src",
+      "expected": "c1deec657b32b911920c78e078cfd089faa77200",
+      "actual": "c1deec657b32b911920c78e078cfd089faa77200",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libjpeg_turbo",
+      "expected": "640f254ad0fa03f6b1f29f89b7dd9366f2f6e533",
+      "actual": "640f254ad0fa03f6b1f29f89b7dd9366f2f6e533",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libpfm4/src",
+      "expected": "6870a9f00412830ceaa7e4384bb92ee323e2a28f",
+      "actual": "6870a9f00412830ceaa7e4384bb92ee323e2a28f",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libphonenumber/src",
+      "expected": "4ad67e90c65e365658ff9a480d3ac29ccfc6977b",
+      "actual": "4ad67e90c65e365658ff9a480d3ac29ccfc6977b",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libprotobuf-mutator/src",
+      "expected": "c1c950eae0440c3808f2b8bd7c57d0c6a42c1a90",
+      "actual": "c1c950eae0440c3808f2b8bd7c57d0c6a42c1a90",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libsrtp",
+      "expected": "cd5d177bf1fde755ddb4c7f0d9ff7693f8b49e5e",
+      "actual": "cd5d177bf1fde755ddb4c7f0d9ff7693f8b49e5e",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libunwind/src",
+      "expected": "45120ee2331193c3650acc9c427ed267fab31d62",
+      "actual": "45120ee2331193c3650acc9c427ed267fab31d62",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libva-fake-driver/src",
+      "expected": "a9bcab9cd6b15d4e3634ca44d5e5f7652c612194",
+      "actual": "a9bcab9cd6b15d4e3634ca44d5e5f7652c612194",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libvpx/source/libvpx",
+      "expected": "3ffe23d874a1b454e02be57f3e025d4aa70d6de0",
+      "actual": "3ffe23d874a1b454e02be57f3e025d4aa70d6de0",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libwebm/source",
+      "expected": "6184f4484a826724b5293837134ab9492261b941",
+      "actual": "6184f4484a826724b5293837134ab9492261b941",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libwebp/src",
+      "expected": "b43b2caa710c0c997c066cb32c7fea1391fad70a",
+      "actual": "b43b2caa710c0c997c066cb32c7fea1391fad70a",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/libyuv",
+      "expected": "2fed9193c94d3701f36188351bd5251854762cb6",
+      "actual": "2fed9193c94d3701f36188351bd5251854762cb6",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/litert/src",
+      "expected": "f67457790c9c2ab67347d6fe53270e8d3df20868",
+      "actual": "f67457790c9c2ab67347d6fe53270e8d3df20868",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/llvm-libc/src",
+      "expected": "43a9a99ce4b5a04954090f8a0e74bf2786f59379",
+      "actual": "43a9a99ce4b5a04954090f8a0e74bf2786f59379",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/mac_alias/src",
+      "expected": "43cd06eb8c233140be75c106e3c673097ffb5761",
+      "actual": "43cd06eb8c233140be75c106e3c673097ffb5761",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/material_color_utilities/src",
+      "expected": "5b3618b16fdc3825e21d5679bafd144662088ea1",
+      "actual": "5b3618b16fdc3825e21d5679bafd144662088ea1",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/nasm",
+      "expected": "525a09a813be0f75b646ee93fc2a31c27b87d722",
+      "actual": "525a09a813be0f75b646ee93fc2a31c27b87d722",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/nearby/src",
+      "expected": "0bad8b0c9877f92eeeb550654f1ea51a71a085e4",
+      "actual": "0bad8b0c9877f92eeeb550654f1ea51a71a085e4",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/neon_2_sse/src",
+      "expected": "183fc88bcb90dbfaefba33a292eae8a5ce94bd67",
+      "actual": "183fc88bcb90dbfaefba33a292eae8a5ce94bd67",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/nlohmann_json/src",
+      "expected": "55f93686c01528224f448c19128836e7df245f72",
+      "actual": "55f93686c01528224f448c19128836e7df245f72",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/oak/src",
+      "expected": "590f1df2c7528b39366a1a72533b6f9e9bf47d1e",
+      "actual": "590f1df2c7528b39366a1a72533b6f9e9bf47d1e",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/openh264/src",
+      "expected": "9547f96ea5c47f4d465d97b07264b997ecc4b4b6",
+      "actual": "9547f96ea5c47f4d465d97b07264b997ecc4b4b6",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/openscreen/src",
+      "expected": "fb748e428dfda43d3b55f3fb8c98d933ef66aa1c",
+      "actual": "fb748e428dfda43d3b55f3fb8c98d933ef66aa1c",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ots/src",
+      "expected": "46bea9879127d0ff1c6601b078e2ce98e83fcd33",
+      "actual": "46bea9879127d0ff1c6601b078e2ce98e83fcd33",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/pdfium",
+      "expected": "2358b16c1947eff67f0732754af6b3c4e1715ff9",
+      "actual": "2358b16c1947eff67f0732754af6b3c4e1715ff9",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/perfetto",
+      "expected": "5dbeaad4ceb91470a835426b52e0cb43a3e5ef10",
+      "actual": "5dbeaad4ceb91470a835426b52e0cb43a3e5ef10",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/protobuf-javascript/src",
+      "expected": "e6d763860001ba1a76a63adcff5efb12b1c96024",
+      "actual": "e6d763860001ba1a76a63adcff5efb12b1c96024",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/pthreadpool/src",
+      "expected": "15a6644ba1c45f1acc16ac1e883efc3e56c6bed2",
+      "actual": "15a6644ba1c45f1acc16ac1e883efc3e56c6bed2",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/pywebsocket3/src",
+      "expected": "284690c2a68ca1d4fc766807e00b354afd695897",
+      "actual": "284690c2a68ca1d4fc766807e00b354afd695897",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/quic_trace/src",
+      "expected": "6ecf6aa8e604655f1dfa72c4a1ae733c4c7fc883",
+      "actual": "6ecf6aa8e604655f1dfa72c4a1ae733c4c7fc883",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/re2/src",
+      "expected": "972a15cedd008d846f1a39b2e88ce48d7f166cbd",
+      "actual": "972a15cedd008d846f1a39b2e88ce48d7f166cbd",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/readability/src",
+      "expected": "d7949dc47dd9ed9ee1d3b34ffdcf3bce28cde435",
+      "actual": "d7949dc47dd9ed9ee1d3b34ffdcf3bce28cde435",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ruy/src",
+      "expected": "2264753777198e4393fb83c44c693462d57a2be1",
+      "actual": "2264753777198e4393fb83c44c693462d57a2be1",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/search_engines_data/resources",
+      "expected": "b9f48dc46a8172cbdd9c3923bd5a85c04458e49f",
+      "actual": "b9f48dc46a8172cbdd9c3923bd5a85c04458e49f",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/securemessage/src",
+      "expected": "fa07beb12babc3b25e0c5b1f38c16aa8cb6b8f84",
+      "actual": "fa07beb12babc3b25e0c5b1f38c16aa8cb6b8f84",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/sframe/src",
+      "expected": "b14090904433bed0d4ec3f875b9b39f3e0555930",
+      "actual": "b14090904433bed0d4ec3f875b9b39f3e0555930",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/skia",
+      "expected": "2466dcf3937437e217e7f284afe0e1aae15891ce",
+      "actual": "2466dcf3937437e217e7f284afe0e1aae15891ce",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/smhasher/src",
+      "expected": "0ff96f7835817a27d0487325b6c16033e2992eb5",
+      "actual": "0ff96f7835817a27d0487325b6c16033e2992eb5",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/snappy/src",
+      "expected": "32ded457c0b1fe78ceb8397632c416568d6714a0",
+      "actual": "32ded457c0b1fe78ceb8397632c416568d6714a0",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/speedometer/main",
+      "expected": "f866d2b077038bc85bea5edb7bff8e05cadef0b2",
+      "actual": "f866d2b077038bc85bea5edb7bff8e05cadef0b2",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/speedometer/v2.0",
+      "expected": "732af0dfe867f8815e662ac637357e55f285dbbb",
+      "actual": "732af0dfe867f8815e662ac637357e55f285dbbb",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/speedometer/v2.1",
+      "expected": "8bf7946e39e47c875c00767177197aea5727e84a",
+      "actual": "8bf7946e39e47c875c00767177197aea5727e84a",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/speedometer/v3.0",
+      "expected": "8d67f28d0281ac4330f283495b7f48286654ad7d",
+      "actual": "8d67f28d0281ac4330f283495b7f48286654ad7d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/speedometer/v3.1",
+      "expected": "1386415be8fef2f6b6bbdbe1828872471c5d802a",
+      "actual": "1386415be8fef2f6b6bbdbe1828872471c5d802a",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/spirv-cross/src",
+      "expected": "b8fcf307f1f347089e3c46eb4451d27f32ebc8d3",
+      "actual": "b8fcf307f1f347089e3c46eb4451d27f32ebc8d3",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/spirv-headers/src",
+      "expected": "496543121ce6419f23d6fa5d7194ba66c36212d2",
+      "actual": "496543121ce6419f23d6fa5d7194ba66c36212d2",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/spirv-tools/src",
+      "expected": "3a2f6ea08f17f149908a17ff9ba6cba4791d7f96",
+      "actual": "3a2f6ea08f17f149908a17ff9ba6cba4791d7f96",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/sqlite/src",
+      "expected": "ba8c54c83337618a9f15dd368a267e46b672fc84",
+      "actual": "ba8c54c83337618a9f15dd368a267e46b672fc84",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/swiftshader",
+      "expected": "5b0479bd2d15058aaa9eb490e364f920ff824a8c",
+      "actual": "5b0479bd2d15058aaa9eb490e364f920ff824a8c",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/text-fragments-polyfill/src",
+      "expected": "abc6ed408b3f20e91d9cbda9977748459f5e3877",
+      "actual": "abc6ed408b3f20e91d9cbda9977748459f5e3877",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/tflite/src",
+      "expected": "a28014403be71a9507e7a90136ecd34399411876",
+      "actual": "a28014403be71a9507e7a90136ecd34399411876",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/ukey2/src",
+      "expected": "0275885d8e6038c39b8a8ca55e75d1d4d1727f47",
+      "actual": "0275885d8e6038c39b8a8ca55e75d1d4d1727f47",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan-deps",
+      "expected": "14ee2ae607c275ecc1769f83e1a05376afa20c68",
+      "actual": "14ee2ae607c275ecc1769f83e1a05376afa20c68",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan-headers/src",
+      "expected": "31386378257ac8653ce5b32c93baec385259ebbe",
+      "actual": "31386378257ac8653ce5b32c93baec385259ebbe",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan-loader/src",
+      "expected": "07e50bb6cc89025c37586efd215e2b8280670978",
+      "actual": "07e50bb6cc89025c37586efd215e2b8280670978",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan-tools/src",
+      "expected": "af0452ed9eedc16acbe58ef378177057d67a8d84",
+      "actual": "af0452ed9eedc16acbe58ef378177057d67a8d84",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan-utility-libraries/src",
+      "expected": "634022187b2cd1e02e4793e75cdc569ed90e1f51",
+      "actual": "634022187b2cd1e02e4793e75cdc569ed90e1f51",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan-validation-layers/src",
+      "expected": "9ef2b8b81b6273898f37345472d87ca59d3e8d91",
+      "actual": "9ef2b8b81b6273898f37345472d87ca59d3e8d91",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/vulkan_memory_allocator",
+      "expected": "82a9d47e4f9d91f0e32d2b6acd9714fcee1933a0",
+      "actual": "82a9d47e4f9d91f0e32d2b6acd9714fcee1933a0",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/webdriver/pylib",
+      "expected": "1e954903022e9386b9acf452c24f4458dd4c4fc1",
+      "actual": "1e954903022e9386b9acf452c24f4458dd4c4fc1",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/webgl/src",
+      "expected": "064aaf18207438d4f6dd10c98b02b25778257b7f",
+      "actual": "064aaf18207438d4f6dd10c98b02b25778257b7f",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/webgpu-cts/src",
+      "expected": "c354d28170af04797c053d223ff53dbdb9e17b8d",
+      "actual": "c354d28170af04797c053d223ff53dbdb9e17b8d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/webpagereplay",
+      "expected": "b2b856131e36c99e9de9c419fe8ca02f857082ba",
+      "actual": "b2b856131e36c99e9de9c419fe8ca02f857082ba",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/webrtc",
+      "expected": "3a8b0c76e6b7bf0e72141047f82eb2c3f4862c8d",
+      "actual": "3a8b0c76e6b7bf0e72141047f82eb2c3f4862c8d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/wuffs/src",
+      "expected": "7411f488fe2e2c205c3d3b3d28638b7356522930",
+      "actual": "7411f488fe2e2c205c3d3b3d28638b7356522930",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/xnnpack/src",
+      "expected": "1eb7302a49e708c5c4dc3dd473be6e60ec598d6a",
+      "actual": "1eb7302a49e708c5c4dc3dd473be6e60ec598d6a",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/zstd/src",
+      "expected": "10da6ba6de05e29169261fa4b68eb99239f770dd",
+      "actual": "10da6ba6de05e29169261fa4b68eb99239f770dd",
+      "status": "match"
+    },
+    {
+      "path": "src/v8",
+      "expected": "31fac3bef58c3def36b0760e4ddc54ec77099596",
+      "actual": "31fac3bef58c3def36b0760e4ddc54ec77099596",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/angle/third_party/VK-GL-CTS/src",
+      "expected": "cf7edb26d3be2d8763595ed08fdc41f3c1b1966f",
+      "actual": "cf7edb26d3be2d8763595ed08fdc41f3c1b1966f",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/angle/third_party/glmark2/src",
+      "expected": "6edcf02205fd1e8979dc3f3964257a81959b80c8",
+      "actual": "6edcf02205fd1e8979dc3f3964257a81959b80c8",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/angle/third_party/rapidjson/src",
+      "expected": "24b5e7a8b27f42fa16b96fc70aade9106cf7102f",
+      "actual": "24b5e7a8b27f42fa16b96fc70aade9106cf7102f",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/EGL-Registry/src",
+      "expected": "5961a7fe64cf8a126890ced6f13d69e0a1e1b83e",
+      "actual": "5961a7fe64cf8a126890ced6f13d69e0a1e1b83e",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/OpenGL-Registry/src",
+      "expected": "1cdd228e34966dd6b95bd203e9f84faba0f371a1",
+      "actual": "1cdd228e34966dd6b95bd203e9f84faba0f371a1",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/directx-headers/src",
+      "expected": "980971e835876dc0cde415e8f9bc646e64667bf7",
+      "actual": "980971e835876dc0cde415e8f9bc646e64667bf7",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/directx-shader-compiler/src",
+      "expected": "942eeceb8500349a51ff0c8c1e2670050a0777a9",
+      "actual": "942eeceb8500349a51ff0c8c1e2670050a0777a9",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/glfw3/src",
+      "expected": "92dcf4ce74f2e2554a98fea09be7c705c17daa5a",
+      "actual": "92dcf4ce74f2e2554a98fea09be7c705c17daa5a",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/webgpu-cts",
+      "expected": "c354d28170af04797c053d223ff53dbdb9e17b8d",
+      "actual": "c354d28170af04797c053d223ff53dbdb9e17b8d",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/dawn/third_party/webgpu-headers/src",
+      "expected": "b5ff182caa90e53293f47939716281342c0812ba",
+      "actual": "b5ff182caa90e53293f47939716281342c0812ba",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/openscreen/src/buildtools",
+      "expected": "4277578aa9c45906e51ad33cac1a5a7ad5288010",
+      "actual": "4277578aa9c45906e51ad33cac1a5a7ad5288010",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/openscreen/src/third_party/tinycbor/src",
+      "expected": "49d3a238cf4b7b7ff8cba1836803af60ca9c7dc5",
+      "actual": "49d3a238cf4b7b7ff8cba1836803af60ca9c7dc5",
+      "status": "match"
+    },
+    {
+      "path": "src/third_party/webpagereplay/third_party/clang-format/script",
+      "expected": "70510081984cfcdb14a15b3e08dfe9776dc7ed37",
+      "actual": "70510081984cfcdb14a15b3e08dfe9776dc7ed37",
+      "status": "match"
+    }
+  ]
+}

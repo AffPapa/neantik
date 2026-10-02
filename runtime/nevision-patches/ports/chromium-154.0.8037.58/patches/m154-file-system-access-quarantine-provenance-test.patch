@@ -1,0 +1,35 @@
+--- a/content/browser/file_system_access/file_system_access_safe_move_helper_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_safe_move_helper_unittest.cc
+@@ -59,6 +59,9 @@
+                       const std::string& client_guid,
+                       QuarantineFileCallback callback) override {
+     paths.push_back(full_path);
++    source_urls.push_back(source_url);
++    referrer_urls.push_back(referrer_url);
++    request_initiators.push_back(request_initiator);
+     std::move(callback).Run(result);
+   }
+ 
+@@ -67,6 +70,9 @@
+   }
+ 
+   std::vector<base::FilePath> paths;
++  std::vector<GURL> source_urls;
++  std::vector<GURL> referrer_urls;
++  std::vector<std::optional<url::Origin>> request_initiators;
+   quarantine::mojom::QuarantineFileResult result =
+       quarantine::mojom::QuarantineFileResult::OK;
+ };
+@@ -292,6 +298,12 @@
+         loop.Quit();
+       }));
+   loop.Run();
++
++  ASSERT_EQ(size_t{1}, quarantine_.paths.size());
++  EXPECT_EQ(test_dest_url_.path(), quarantine_.paths[0]);
++  EXPECT_EQ(kTestURL, quarantine_.source_urls[0]);
++  EXPECT_EQ(kTestURL, quarantine_.referrer_urls[0]);
++  EXPECT_FALSE(quarantine_.request_initiators[0].has_value());
+ 
+   EXPECT_FALSE(storage::AsyncFileTestHelper::FileExists(
+       file_system_context_.get(), test_source_url_,

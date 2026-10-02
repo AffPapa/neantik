@@ -180,10 +180,14 @@ Raw schema-7 reports cannot enter the Direct release matrix. A release uses
 the exact prepared manager, schema-3 manifest and an explicit new schema-8
 output; the signed manager derives and signs the public-safe aggregate.
 
-The Codex environment cannot perform this GUI gate: Chromium processes inherit
-the `com.openai.codex` coalition and abort inside Apple's
-`_RegisterApplication`; LaunchServices also returns a false
-`kLSNoExecutableErr` for the otherwise verified bundle.
+A later limited GUI startup smoke succeeded through the native CUA interface
+for the exact M154 attempt8 diagnostic app: `chrome://version` showed the
+expected Chromium version, architecture, source commit, and executable path.
+A shell LaunchServices probe in the Codex execution context still returned
+`kLSNoExecutableErr`; that result did not prevent the native GUI launch. The
+smoke used the existing Chromium Default profile and opened no external site.
+It proves only startup/version display, not this behavioral GUI gate, profile
+isolation, networking, recovery, fingerprint coherence, or A→B→A persistence.
 
 ## Still required before public distribution
 

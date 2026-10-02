@@ -1,6 +1,32 @@
 # Supply chain Chromium runtime
 
-Проверено: 25 сентября 2026 года.
+Историческая проверка: 25 сентября 2026 года. Актуальное состояние ниже.
+
+### Current release and toolchain checkpoint — 29 September 2026
+
+Fresh GitHub and `browser.free/api/release` reads still identify immutable
+NeAntik `0.7.11` / build 74 / Chromium `153.0.8010.52`; the API is
+`published-runtime-gated` and `canDownload=false`. Sites is now version 98
+(the references to version 95 below are historical). Chrome 154
+`154.0.8037.58` remains the latest broad Stable Mac build; Chrome 155 is only
+Early Stable for a small percentage, so the active port target remains M154.
+
+The exact M154 port remains diagnostic-only. Upstream macOS packaging source
+was identified at `ungoogled-chromium-macos` tag `154.0.8037.57-1.1`
+(`3241dc9cacee393621d277ec936376072f0cb3c5`), pinning common source
+`800d0bb5078472e4442c1fd73373172754a60939`; Chromium `.58` is a direct child
+of `.57` with only `chrome/VERSION` changed. The clean upstream replay applied
+all 109 common and 20 macOS patches to `.58`; the full-DEPS source lock covers
+240 dependencies and the ordered owned replay records 75 groups. A diagnostic
+source-input manifest now binds that tree, but the NeAntik release source
+contract is still missing. Stable Xcode 27 is installed and was used for
+diagnostics, but it is not yet pinned as the release toolchain; the hermetic
+SDK package is unavailable in this authenticated context. Build/report/
+integrated-release scripts fail closed on missing evidence. `gh auth status`
+reports invalid local CLI
+tokens; connector read access does not authorize Release asset uploads. The
+Developer ID identities and `neantik-notary` profile are readable in the
+permitted macOS context, but no new candidate exists to sign or notarize.
 
 ## Актуальный менеджерский release record (24 сентября 2026)
 

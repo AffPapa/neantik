@@ -9,6 +9,8 @@ DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
 SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
 IS_CHROMIUM_153=0
+IS_CHROMIUM_154=0
+M154_SOURCE_SNAPSHOT_VERIFIED=0
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
@@ -46,6 +48,17 @@ if [[ "$LOCK_VERSION" == 153.* ]]; then
     LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium-153.lock.json"
   fi
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-153-port-status.json"
+elif [[ "$LOCK_VERSION" == 152.* ]]; then
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
+elif [[ "$LOCK_VERSION" == "154.0.8037.58" ]]; then
+  IS_CHROMIUM_154=0
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-154-source-contract.json"
+elif [[ "$LOCK_VERSION" == "154.0.8037.93" ]]; then
+  IS_CHROMIUM_154=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-154-source-contract.json"
+else
+  echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
+  exit 65
 fi
 
 INFO_PLIST="$APP_PATH/Contents/Info.plist"
@@ -128,12 +141,21 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
   fi
   PROVENANCE_VERIFY_ARGS=("$SOURCE_PROVENANCE_PATH")
   if [[ -n "$BUILD_ARGS_PATH" ]]; then
-    POSSIBLE_SOURCE_ROOT="$(
-      cd "$(dirname "$BUILD_ARGS_PATH")/../.." 2>/dev/null && pwd -P || true
-    )"
+    # Integrated bundles carry a copy of args.gn, not the source checkout.
+    # The packaging entrypoint explicitly supplies the original checkout.
+    if [[ -n "${NEANTIK_CHROMIUM_SOURCE_ROOT:-}" ]]; then
+      POSSIBLE_SOURCE_ROOT="$(
+        cd "$NEANTIK_CHROMIUM_SOURCE_ROOT" 2>/dev/null && pwd -P || true
+      )"
+    else
+      POSSIBLE_SOURCE_ROOT="$(
+        cd "$(dirname "$BUILD_ARGS_PATH")/../.." 2>/dev/null && pwd -P || true
+      )"
+    fi
     if [[ -n "$POSSIBLE_SOURCE_ROOT" &&
           -f "$POSSIBLE_SOURCE_ROOT/chrome/VERSION" &&
-          -d "$(dirname "$(dirname "$POSSIBLE_SOURCE_ROOT")")/.git" ]]; then
+          ( -e "$POSSIBLE_SOURCE_ROOT/.git" ||
+            -f "$(dirname "$POSSIBLE_SOURCE_ROOT")/.git" ) ]]; then
       PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
     fi
   fi
@@ -144,6 +166,16 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
       echo "Chromium 153 source candidate evidence does not match the project candidate." >&2
       exit 65
     fi
+  elif (( IS_CHROMIUM_154 == 1 )); then
+    if [[ -z "${PROVENANCE_VERIFY_ARGS[1]:-}" ||
+          "${PROVENANCE_VERIFY_ARGS[1]}" != --source-root ]]; then
+      echo "Chromium 154 verification requires the live source root." >&2
+      exit 66
+    fi
+    python3 "$SCRIPT_DIR/verify-chromium-154-source-snapshot.py" \
+      "${PROVENANCE_VERIFY_ARGS[2]}" \
+      "$SOURCE_PROVENANCE_PATH"
+    M154_SOURCE_SNAPSHOT_VERIFIED=1
   else
     python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
       "${PROVENANCE_VERIFY_ARGS[@]}"
@@ -170,6 +202,10 @@ if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
       "$SOURCE_PROVENANCE_PATH"
   fi
   CANDIDATE_LOCK_SHA256="$SOURCE_LOCK_SHA256"
+fi
+if [[ "$LOCK_VERSION" == "154.0.8037.58" && -n "$REPORT_PATH" ]]; then
+  echo "Chromium 154.0.8037.58 has diagnostic-only evidence and cannot produce a release runtime report." >&2
+  exit 66
 fi
 for provenance_file in \
   "$PATCH_SERIES_FILE" \
@@ -375,10 +411,15 @@ if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
   SERIES_FILE="$PATCH_SERIES_FILE"
   if (( IS_CHROMIUM_153 == 1 )); then
-    # Chromium 153 is an explicitly source-qualified owned macOS packaging
-    # port. The historical 152 patch postimages are not evidence for this
-    # port; the 153 status/candidate contract and runtime checks above bind
-    # the candidate instead. Keep the strict postimage gate for 152.
+    # Chromium 153 is an independently source-qualified owned packaging
+    # port. Its candidate evidence binds that source; historical 152 patch
+    # postimages are not evidence for this port.
+    SOURCE_POSTIMAGES_VERIFIED=1
+  elif (( IS_CHROMIUM_154 == 1 )); then
+    if (( M154_SOURCE_SNAPSHOT_VERIFIED != 1 )); then
+      echo "Chromium 154 source snapshot verification is required." >&2
+      exit 66
+    fi
     SOURCE_POSTIMAGES_VERIFIED=1
   elif [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
     if [[ ! -f "$SERIES_FILE" ]]; then

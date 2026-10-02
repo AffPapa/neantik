@@ -1,0 +1,27 @@
+diff --git a/third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts b/third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts
+index c5c21f4ff4a1a..2fe682da147d3 100644
+--- a/third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts
++++ b/third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts
+@@ -57,7 +57,9 @@ type AttributeConverter<Type = unknown, TypeHint = unknown> = ComplexAttributeCo
+ /**
+  * Defines options for a property accessor.
+  */
+-export interface PropertyDeclaration<Type = unknown, TypeHint = unknown> {
++// Chromium patch to only allow one of [String, Number, Boolean, Array, Object]
++// in 'type' fields, since these are the only actual valid values.
++export interface PropertyDeclaration<Type = unknown, TypeHint = typeof String|typeof Number|typeof Boolean|typeof Array|typeof Object> {
+     /**
+      * When set to `true`, indicates the property is internal private state. The
+      * property should not be set by users. When using TypeScript, this property
+@@ -78,8 +80,10 @@ export interface PropertyDeclaration<Type = unknown, TypeHint = unknown> {
+      * Indicates the type of the property. This is used only as a hint for the
+      * `converter` to determine how to convert the attribute
+      * to/from a property.
++     * Chromium patch to make this property required, since the type is
++     * validated against the declared TS type.
+      */
+-    readonly type?: TypeHint;
++    readonly type: TypeHint;
+     /**
+      * Indicates how to convert the attribute to/from a property. If this value
+      * is a function, it is used to convert the attribute value a the property

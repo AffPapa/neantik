@@ -1,0 +1,9 @@
+diff --git a/chrome/browser/profiles/profile_avatar_downloader.cc b/chrome/browser/profiles/profile_avatar_downloader.cc
+index 25db980..e2d1480 100644
+--- a/chrome/browser/profiles/profile_avatar_downloader.cc
++++ b/chrome/browser/profiles/profile_avatar_downloader.cc
+@@ -21,4 +21,2 @@
+ namespace {
+-const char kHighResAvatarDownloadUrlPrefix[] =
+-    "https://www.gstatic.com/chrome/profile_avatars/";
+ }

@@ -1,0 +1,125 @@
+# Fix GN safe_browsing and building with safebrowsing disabled on macOS
+
+--- a/chrome/browser/extensions/BUILD.gn
++++ b/chrome/browser/extensions/BUILD.gn
+@@ -876,9 +876,6 @@ source_set("extensions") {
+       # TODO(crbug.com/346472679): Remove this circular dependency.
+       "//chrome/browser/web_applications/extensions",
+ 
+-      # TODO(crbug.com/41437292): Remove this circular dependency.
+-      "//chrome/browser/safe_browsing",
+-
+       # TODO(crbug.com/343037853): Remove this circular dependency.
+       "//chrome/browser/themes",
+ 
+@@ -906,7 +903,6 @@ source_set("extensions") {
+       "//chrome/common",
+       "//chrome/common/extensions/api",
+       "//components/omnibox/browser",
+-      "//components/safe_browsing/core/common/proto:csd_proto",
+       "//components/safe_browsing/core/common/proto:realtimeapi_proto",
+       "//components/translate/content/browser",
+       "//content/public/browser",
+--- a/chrome/browser/ui/BUILD.gn
++++ b/chrome/browser/ui/BUILD.gn
+@@ -862,7 +862,6 @@ static_library("ui") {
+     "//components/policy/core/browser",
+     "//components/qr_code_generator:bitmap_generator",
+     "//components/resources",
+-    "//components/safe_browsing/content/browser",
+     "//components/search_engines",
+     "//components/security_interstitials/content:security_interstitial_page",
+     "//components/signin/public/identity_manager",
+@@ -3535,7 +3534,6 @@ group("ui_public_dependencies") {
+     "//components/dom_distiller/core",
+     "//components/enterprise/buildflags",
+     "//components/paint_preview/buildflags",
+-    "//components/safe_browsing:buildflags",
+     "//components/segmentation_platform/public",
+     "//components/sync",
+     "//components/sync_user_events",
+--- a/chrome/services/file_util/BUILD.gn
++++ b/chrome/services/file_util/BUILD.gn
+@@ -49,10 +49,6 @@ source_set("file_util") {
+     deps += [ "//components/services/filesystem/public/mojom" ]
+   }
+ 
+-  if (is_mac) {
+-    deps += [ "//chrome/utility/safe_browsing" ]
+-  }
+-
+   if (safe_browsing_mode == 1) {
+     sources += [
+       "obfuscated_archive_analysis_delegate.cc",
+--- a/chrome/browser/policy/configuration_policy_handler_list_factory.cc
++++ b/chrome/browser/policy/configuration_policy_handler_list_factory.cc
+@@ -2450,22 +2450,6 @@ const PolicyToPreferenceMapEntry kSimple
+     base::Value::Type::BOOLEAN },
+ #endif
+ 
+-// The per-user policy is available on ChromeOS (declared `future_on:
+-// chrome_os`), but the per-browser policy is not (it is `chrome.*`, i.e.
+-// win/mac/linux only). As a result the per-browser `key::` constant is only
+-// generated in non-ChromeOS builds, so its entry must be guarded accordingly.
+-#if BUILDFLAG(ENTERPRISE_CLIENT_CERTIFICATES)
+-  { key::kProvisionManagedClientCertificateForUser,
+-    client_certificates::prefs::kProvisionManagedClientCertificateForUserPrefs,
+-    base::Value::Type::INTEGER },
+-#endif  // BUILDFLAG(ENTERPRISE_CLIENT_CERTIFICATES)
+-
+-#if BUILDFLAG(ENTERPRISE_CLIENT_CERTIFICATES) && !BUILDFLAG(IS_CHROMEOS)
+-  { key::kProvisionManagedClientCertificateForBrowser,
+-    client_certificates::prefs::kProvisionManagedClientCertificateForBrowserPrefs,
+-    base::Value::Type::INTEGER },
+-#endif  // BUILDFLAG(ENTERPRISE_CLIENT_CERTIFICATES) && !BUILDFLAG(IS_CHROMEOS)
+-
+ #if BUILDFLAG(IS_CHROMEOS)
+   { key::kDeviceAuthenticationFlowAutoReloadInterval,
+     ash::prefs::kAuthenticationFlowAutoReloadInterval,
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -6116,8 +6116,6 @@ test("unit_tests") {
+       "//chrome/browser/renderer_host:history_swiper",
+       "//chrome/browser/renderer_host:history_swiping_control",
+       "//chrome/common/notifications",
+-      "//chrome/common/safe_browsing:archive_analyzer_results",
+-      "//chrome/common/safe_browsing:disk_image_type_sniffer_mac",
+       "//chrome/services/mac_notifications:unit_tests",
+       "//chrome/services/mac_notifications/public/mojom",
+       "//chrome/utility/safe_browsing",
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -8315,33 +8315,6 @@ bool ChromeContentBrowserClient::SetupEm
+     CHECK(!soda_language_pack_path.empty());
+     CHECK(serializer->SetParameter(sandbox::policy::kParamSodaLanguagePackPath,
+                                    soda_language_pack_path.value()));
+-    return true;
+-  }
+-  if (sandbox_type == sandbox::mojom::Sandbox::kScreenAI) {
+-    // ScreenAI service needs read access to ScreenAI component binary path to
+-    // load it.
+-    base::FilePath screen_ai_binary_path =
+-        screen_ai::ScreenAIInstallState::GetInstance()
+-            ->get_component_binary_path();
+-    if (screen_ai_binary_path.empty()) {
+-      VLOG(1) << "Screen AI component not found.";
+-      return false;
+-    }
+-    return serializer->SetParameter(
+-        sandbox::policy::kParamScreenAiComponentPath,
+-        screen_ai_binary_path.value());
+-  }
+-  if (sandbox_type == sandbox::mojom::Sandbox::kOnDeviceTranslation) {
+-    auto translatekit_binary_path =
+-        on_device_translation::ComponentManager::GetInstance()
+-            .GetTranslateKitComponentPath();
+-    if (translatekit_binary_path.empty()) {
+-      VLOG(1) << "TranslationKit component not found.";
+-      return false;
+-    }
+-    return serializer->SetParameter(
+-        sandbox::policy::kParamTranslatekitComponentPath,
+-        translatekit_binary_path.value());
+   }
+ 
+   return false;

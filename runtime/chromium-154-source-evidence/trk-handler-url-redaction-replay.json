@@ -1,0 +1,10 @@
+{
+  "path": "net/url_request/trk_protocol_handler.cc",
+  "beforeSHA256": "fabefccd0f9844ee269748d1f48e7e3de68a91bcb0ae9ea6bed292023230bdeb",
+  "afterSHA256": "2c5e1bc107aafd443978c392de758d861da90a2fd7dcca2c03654129c9e905bd",
+  "patchSHA256": "133d12fe98568447688b24682ba2561a19a6e5b7169ef9bb645a1439d61bdcc6",
+  "zeroFuzzZeroOffsetReplay": true,
+  "currentPostimageMatches": true,
+  "scope": "Redact second blocked-URL stderr sink; ERR_BLOCKED_BY_CLIENT unchanged",
+  "requiresRuntimeRebuild": true
+}

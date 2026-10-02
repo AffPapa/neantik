@@ -1,0 +1,21 @@
+--- a/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl.h
++++ b/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl.h
+@@ -52,7 +52,6 @@
+ 
+   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+   const std::string application_locale_;
+-  const bool account_consistency_mirror_required_;
+   const bool async_bar_parts_;
+ 
+   std::vector<OneGoogleCallback> callbacks_;
+
+--- a/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl.cc
++++ b/chrome/browser/new_tab_page/one_google_bar/one_google_bar_loader_impl.cc
+@@ -279,7 +279,6 @@
+     bool account_consistency_mirror_required)
+     : url_loader_factory_(url_loader_factory),
+       application_locale_(application_locale),
+-      account_consistency_mirror_required_(account_consistency_mirror_required),
+       async_bar_parts_(base::FeatureList::IsEnabled(
+           ntp_features::kNtpOneGoogleBarAsyncBarParts)),
+       additional_query_params_(

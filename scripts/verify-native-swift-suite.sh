@@ -85,9 +85,17 @@ case "$SUITE" in
 esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-export DEVELOPER_DIR="$(
+if ! RESOLVED_DEVELOPER_DIR="$(
   "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
-)"
+)"; then
+  echo "No compatible Xcode developer directory; refusing to run Swift tests with an implicit toolchain." >&2
+  exit 69
+fi
+if [[ -z "$RESOLVED_DEVELOPER_DIR" ]]; then
+  echo "Xcode resolver returned an empty developer directory; refusing an implicit toolchain." >&2
+  exit 69
+fi
+export DEVELOPER_DIR="$RESOLVED_DEVELOPER_DIR"
 SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/neantik-swift-suite-XXXXXX)"
 
 cleanup() {

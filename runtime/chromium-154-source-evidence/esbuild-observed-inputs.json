@@ -1,0 +1,38 @@
+{
+  "status": "observed-not-upstream-package-verified",
+  "version": "0.28.2",
+  "binarySHA256": "162cd5b74d36fc7e5cd6ce5143bf114342aa41f66764b34c5cbe88d97ab4c6b5",
+  "packageFiles": [
+    {
+      "path": "LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+    },
+    {
+      "path": "README.md",
+      "sha256": "6d481cd60ec3c679e5e395f547ab4221147f35642894f6b95a8df38fd25c87bd"
+    },
+    {
+      "path": "bin/esbuild",
+      "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e"
+    },
+    {
+      "path": "install.js",
+      "sha256": "612294e278914443bdcf81cb17f54afec34dbdd2ebd999a6ee187912320cc315"
+    },
+    {
+      "path": "lib/main.d.ts",
+      "sha256": "e078310f23f0ccfa28a6ac81b5fad81f27150e921f92ab6e648caab42e2d9a14"
+    },
+    {
+      "path": "lib/main.js",
+      "sha256": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd"
+    },
+    {
+      "path": "package.json",
+      "sha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+    }
+  ],
+  "selection": "DevTools scripts/build/esbuild.js sets ESBUILD_BINARY_PATH to /opt/homebrew/bin/esbuild; JS package is scratch symlink",
+  "chromiumCIPDVersion": "0.25.1.chromium.2",
+  "requiresExplicitToolchainQualification": true
+}

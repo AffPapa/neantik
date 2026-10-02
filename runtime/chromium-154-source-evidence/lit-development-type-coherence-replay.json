@@ -1,0 +1,11 @@
+{
+  "path": "third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts",
+  "beforeSHA256": "f206bd1d2a6f53adfe1f60ab7005fb1683b7565b88f66153ab5b8de621f2a0ec",
+  "afterSHA256": "2bce9e7a1068c1a913abaeea530ecfcdf100e801dc4fa5b3f96d324826751186",
+  "patchSHA256": "59ce411abb5ded864f2d74ff615a199a5ac3760d499145a920c78902d076dc4f",
+  "upstreamPatch": "third_party/node/patches/lit_reactive_element.patch",
+  "scope": "Independent replay of Lit development type patch only; not whole-source qualification",
+  "patchOutput": "patching file 'third_party/node/node_modules/@lit/reactive-element/development/reactive-element.d.ts'\n",
+  "zeroFuzzZeroOffsetReplay": true,
+  "livePostimageMatch": true
+}

@@ -1,0 +1,46 @@
+--- a/components/translate/core/browser/translate_ranker_impl.cc
++++ b/components/translate/core/browser/translate_ranker_impl.cc
+@@ -226,43 +226,6 @@
+ 
+   return kDefaultResponse;
+ 
+-  translate_event->set_ranker_request_timestamp_sec(
+-      (base::TimeTicks::Now() - base::TimeTicks()).InSeconds());
+-  translate_event->set_ranker_version(GetModelVersion());
+-
+-  if (!is_query_enabled_ && !is_enforcement_enabled_) {
+-    translate_event->set_ranker_response(TranslateEventProto::NOT_QUERIED);
+-    translate_metrics_logger->LogRankerMetrics(RankerDecision::kNotQueried,
+-                                               GetModelVersion());
+-    return kDefaultResponse;
+-  }
+-
+-  if (model_loader_)
+-    model_loader_->NotifyOfRankerActivity();
+-
+-  if (model_ == nullptr) {
+-    translate_event->set_ranker_response(TranslateEventProto::NOT_QUERIED);
+-    translate_metrics_logger->LogRankerMetrics(RankerDecision::kNotQueried,
+-                                               GetModelVersion());
+-    return kDefaultResponse;
+-  }
+-
+-  translate_metrics_logger->LogRankerStart();
+-  bool result = GetModelDecision(*translate_event);
+-  translate_metrics_logger->LogRankerFinish();
+-
+-  translate_event->set_ranker_response(result ? TranslateEventProto::SHOW
+-                                              : TranslateEventProto::DONT_SHOW);
+-
+-  translate_metrics_logger->LogRankerMetrics(
+-      result ? RankerDecision::kShowUI : RankerDecision::kDontShowUI,
+-      GetModelVersion());
+-
+-  if (!is_enforcement_enabled_) {
+-    return kDefaultResponse;
+-  }
+-
+-  return result;
+ }
+ 
+ bool TranslateRankerImpl::GetModelDecision(

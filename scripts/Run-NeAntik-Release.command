@@ -32,11 +32,58 @@ pause_on_error() {
 }
 trap pause_on_error ERR
 
+runtime_version_from_lock() {
+  python3 - "$1" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        document = json.load(handle)
+    version = document["fingerprintChromium"]["chromiumVersion"]
+except (OSError, KeyError, TypeError, json.JSONDecodeError):
+    raise SystemExit(1)
+if not isinstance(version, str) or not version:
+    raise SystemExit(1)
+print(version)
+PY
+}
+
+runtime_version_from_provenance() {
+  python3 - "$1" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        document = json.load(handle)
+    version = document["targetChromiumVersion"]
+except (OSError, KeyError, TypeError, json.JSONDecodeError):
+    raise SystemExit(1)
+if not isinstance(version, str) or not version:
+    raise SystemExit(1)
+print(version)
+PY
+}
+
 cache_runtime_source_evidence() {
   local cached_dir="$ATTEMPT_STATE_ROOT/runtime-source-evidence"
   local configured_provenance="${NEANTIK_SOURCE_PROVENANCE:-}"
   local configured_lock="${NEANTIK_RUNTIME_CANDIDATE_LOCK:-}"
+  local packaged_lock="$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json"
+  local packaged_version
   local -a evidence_dirs
+
+  if [[ ! -f "$packaged_lock" || -L "$packaged_lock" ]] ||
+     ! packaged_version="$(runtime_version_from_lock "$packaged_lock")"; then
+    echo "Не удалось определить версию Chromium из runtime evidence точного исходного приложения." >&2
+    return 66
+  fi
+  if [[ "$packaged_version" == 154.* &&
+        ( -z "$configured_provenance" || -z "$configured_lock" ) ]]; then
+    echo "Chromium 154 требует явно заданные runtime source evidence; исторический M152 default запрещён." >&2
+    return 66
+  fi
 
   if [[ -n "$configured_provenance" || -n "$configured_lock" ]]; then
     if [[ -z "$configured_provenance" || -z "$configured_lock" ||
@@ -50,6 +97,15 @@ cache_runtime_source_evidence() {
       ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
         "$configured_lock" "$configured_provenance" >/dev/null 2>&1; then
       echo "Configured runtime source evidence did not pass verification." >&2
+      return 66
+    fi
+    local configured_version
+    local configured_provenance_version
+    if ! configured_version="$(runtime_version_from_lock "$configured_lock")" ||
+       ! configured_provenance_version="$(runtime_version_from_provenance "$configured_provenance")" ||
+       [[ "$configured_version" != "$packaged_version" ||
+          "$configured_provenance_version" != "$packaged_version" ]]; then
+      echo "Configured runtime source evidence does not match Chromium $packaged_version in the exact source app." >&2
       return 66
     fi
     mkdir -p "$cached_dir"
@@ -85,6 +141,15 @@ cache_runtime_source_evidence() {
       lock="$evidence_dir/fingerprint-chromium.lock.json"
     fi
     [[ -f "$provenance" && -f "$lock" ]] || continue
+    local evidence_version
+    local provenance_version
+    if ! evidence_version="$(runtime_version_from_lock "$lock")" ||
+       ! provenance_version="$(runtime_version_from_provenance "$provenance")" ||
+       [[ "$evidence_version" != "$packaged_version" ||
+          "$provenance_version" != "$packaged_version" ]]; then
+      echo "Skipping runtime evidence for a different Chromium version than the exact source app." >&2
+      continue
+    fi
     if ! "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
         "$provenance" >/dev/null 2>&1 ||
       ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \

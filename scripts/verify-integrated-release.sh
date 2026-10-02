@@ -95,11 +95,19 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-153-port-status.json"
   SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-153-port-candidate.json"
   CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-153.lock.json"
-else
+elif [[ "$EXPECTED_RUNTIME_VERSION" == 152.* ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-152-source-contract.json"
   SOURCE_PROVENANCE_FILE="$EVIDENCE/source-provenance.json"
   CANDIDATE_LOCK_FILE="$EVIDENCE/fingerprint-chromium.lock.json"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-154-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-154-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-154-port-candidate.json"
+  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-154.lock.json"
+else
+  echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
+  exit 65
 fi
 
 if ! cmp -s \
@@ -139,7 +147,8 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
     echo "Integrated Chromium 153 candidate lock does not match." >&2
     exit 65
   fi
-else
+elif [[ "$EXPECTED_RUNTIME_VERSION" == 152.* ||
+        "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$EVIDENCE/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
@@ -197,7 +206,12 @@ for expectation in "${license_hashes[@]}"; do
 done
 
 VERIFY_BUILT_RUNTIME_ARGS=("$RUNTIME_APP")
-if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
+if [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.58" ]]; then
+  echo "Chromium 154.0.8037.58 is diagnostic-only and cannot be released." >&2
+  exit 65
+fi
+if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ||
+      "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
   VERIFY_BUILT_RUNTIME_ARGS+=(
     ""
     "$EVIDENCE/args.gn"
