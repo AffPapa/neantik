@@ -1,17 +1,14 @@
 # NeAntik Direct source-to-site handoff
 
-## Current continuation — 2 October 2026
+## Completed release — 2 October 2026
 
-GitHub CLI access works: a fresh latest-release query confirms immutable
-`v0.7.11` with ZIP/DMG and checksum sidecars. The historical invalid-token
-statements below no longer describe the current CLI state.
-Chromium `154.0.8037.93` is built and its live source provenance and signed
-runtime checks passed. NeAntik `0.7.12` build `75` integration is in progress;
-the integrated app is built, but exact GUI evidence, final notarized archives,
-hosted-byte verification and website publication remain pending.
-Do not restart Chromium compilation for this packaging continuation.
-The preceding public release remains the rollback; no new public release
-is claimed by these local checks.
+NeAntik **0.7.12 build75**, Chromium **154.0.8037.93 / ARM64 / Metal**, is published at GitHub `AffPapa/neantik` and browser.free. Exact app-source commit: `24de0234122ae49257011eef573502b822fcb157`.
+Developer ID, notarization, stapling, Gatekeeper, authenticated production GUI A→B→A and fresh hosted ZIP/DMG verification passed. browser.free Sites version99 (`8d9551152d1862db630dbc5ed33ba39279ca8750`) reports canDownload=true and exact ZIP SHA; / and /download expose direct ZIP/DMG links.
+See `releases/v0.7.12.json` and `.md` for artifact hashes and limits. Safe Browsing remains disabled. Physical keyboard/VoiceOver traversal is not claimed. Immutable v0.7.11 is the rollback.
+
+No Chromium rebuild is needed to continue from this state. The earlier accepted candidate containing a local Metal toolchain RPATH was never published; its transaction and app are retained privately. Final candidate removes those RPATHs and passed full-bundle privacy checks. The standard hosted ZIP wrapper rejects the publisher's local hard link; fresh single-link downloaded bytes were pinned and passed the same archive, candidate and authenticated evidence gates without changing the public artifact.
+
+GitHub release tag/source branch is published. `main` has divergent history and was not force-pushed. The separate restricted affpapa.org deploy credential remains unavailable; browser.free was deployed through its authorized existing Sites project.
 
 ## Historical snapshot — 29 September 2026
 

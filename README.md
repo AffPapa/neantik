@@ -14,15 +14,15 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный Direct-релиз — NeAntik `0.7.11` (build `74`).
+Последний опубликованный Direct-релиз — NeAntik `0.7.12` (build `75`).
 
 - macOS 14 или новее, только Apple Silicon;
-- Chromium `153.0.8010.52`, ARM64, Metal;
-- текущие публичные ZIP/DMG и SHA-256 указаны в [релизе 0.7.11](https://github.com/AffPapa/neantik/releases/tag/v0.7.11).
+- Chromium `154.0.8037.93`, ARM64, Metal;
+- текущие публичные ZIP/DMG и SHA-256 указаны в [релизе 0.7.12](https://github.com/AffPapa/neantik/releases/tag/v0.7.12).
 
-В `0.7.11` улучшен контекст preview восстановления для VoiceOver; Chromium сохранён без пересборки. `0.7.10` остаётся rollback-точкой.
+В `0.7.12` обновлён и пересобран Chromium, исправлена упаковка менеджера. `0.7.11` остаётся rollback-точкой. Safe Browsing в этой сборке отключён.
 
-Сайт продукта: [affpapa.org/neantik](https://affpapa.org/neantik).
+Скачать напрямую: [browser.free](https://browser.free).
 
 Описание ниже отражает контракт менеджера и текущей ветки; точный состав
 публичного бинарного релиза определяется его release notes и артефактами.
