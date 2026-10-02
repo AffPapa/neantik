@@ -7,6 +7,30 @@ import Testing
 
 struct FingerprintEvidenceReleaseContextTests {
     @Test
+    func manifestAcceptsExactM154ContractAndRejectsUnknownPaths() throws {
+        let fixture = makeContext()
+        var root = try #require(JSONSerialization.jsonObject(with: fixture.manifest) as? [String: Any])
+        var critical = try #require(root["criticalFiles"] as? [String: Any])
+        var contract = try #require(critical["sourceContract"] as? [String: Any])
+        for filename in ["chromium-154-source-contract.json", "chromium-155-source-contract.json", "../chromium-154-source-contract.json"] {
+            contract["bundlePath"] = "Contents/Resources/NeAntikRuntimeEvidence/" + filename
+            critical["sourceContract"] = contract
+            root["criticalFiles"] = critical
+            let manifest = try JSONSerialization.data(
+                withJSONObject: root,
+                options: [.sortedKeys, .withoutEscapingSlashes]
+            )
+            if filename == "chromium-154-source-contract.json" {
+                _ = try FingerprintEvidenceReleaseContext.parseCandidateMetadata(manifest)
+            } else {
+                #expect(throws: FingerprintEvidenceReleaseError.invalidManifest) {
+                    try FingerprintEvidenceReleaseContext.parseCandidateMetadata(manifest)
+                }
+            }
+        }
+    }
+
+    @Test
     func qualifiedReportProducesOnePrivacySafeOneShotEnvelope() throws {
         let fixture = makeContext()
         let report = qualifiedReport()

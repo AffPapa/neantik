@@ -429,7 +429,7 @@ final class FingerprintEvidenceReleaseContext {
         return Self.hex(SHA256.hash(data: material))
     }
 
-    private static func parseCandidateMetadata(
+    static func parseCandidateMetadata(
         _ data: Data
     ) throws -> (
         metadata: FingerprintEvidenceCandidateMetadata,
@@ -552,7 +552,8 @@ final class FingerprintEvidenceReleaseContext {
                 "Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json",
             "sourceContract": [
                 "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
-                "Contents/Resources/NeAntikRuntimeEvidence/chromium-153-port-status.json"
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-153-port-status.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-154-source-contract.json"
             ].contains(path) ? path : "",
             "sourceProvenance":
                 "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json",
