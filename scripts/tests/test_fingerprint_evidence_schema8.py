@@ -47,6 +47,17 @@ def der_signature(r: int, s: int) -> bytes:
 
 
 class FingerprintEvidenceSchema8Tests(unittest.TestCase):
+    def test_manifest_accepts_exact_m154_contract_and_rejects_unknown_paths(self) -> None:
+        _, raw, _, _ = fixture_bytes()
+        manifest = json.loads(raw)
+        contract = manifest["criticalFiles"]["sourceContract"]
+        contract["bundlePath"] = "Contents/Resources/NeAntikRuntimeEvidence/chromium-154-source-contract.json"
+        MODULE._validate_candidate_manifest(manifest)
+        for name in ("chromium-155-source-contract.json", "../chromium-154-source-contract.json"):
+            contract["bundlePath"] = "Contents/Resources/NeAntikRuntimeEvidence/" + name
+            with self.assertRaisesRegex(MODULE.FingerprintEvidenceVerificationError, "sourceContract bundlePath is invalid"):
+                MODULE._validate_candidate_manifest(manifest)
+
     def test_manifest_binding_validation_is_exact_and_on_curve(self) -> None:
         _, manifest, _, _ = fixture_bytes()
         binding = json.loads(manifest)["fingerprintEvidence"]
