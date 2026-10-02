@@ -21,6 +21,11 @@ The application is distributed through GitHub Releases:
 - notarized ZIP and DMG files with a version number in their names;
 - SHA-256 sidecars are published with both GitHub Release assets.
 
+As of October 2, 2026, the latest verified Direct release is
+[NeAntik 0.7.12 (build 75)](https://github.com/AffPapa/neantik/releases/tag/v0.7.12)
+with bundled Chromium 154.0.8037.93. The release has its own exact source and
+artifacts; the default `main` branch may differ from the published binary.
+
 GitHub Releases is the source of current version, downloads and checksums.
 The [official product site](https://browser.free/)
 provides product, installation and changelog information. The
@@ -32,6 +37,10 @@ and is not a prerequisite for a release.
 Each part of your day gets its own internet. A workplace is an existing isolated
 profile with a name, persistent browser session, and optional proxy. Existing
 cookies, site data and identity are preserved.
+
+NeAntik runs only on Apple Silicon Macs with macOS 14 or newer. There is no
+Android or iPhone edition. Separate profiles can organize accounts you own or
+are authorized to manage; they do not bypass third-party platform rules.
 
 The app includes a home for pinned/recent workplaces, local name/tag/note
 search, Open/Continue actions and a separate full catalog. Command-1 opens home;
