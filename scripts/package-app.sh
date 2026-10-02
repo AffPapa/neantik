@@ -52,6 +52,7 @@ fi
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp "$MANAGER_BINARY" "$MACOS_DIR/NeAntik"
+python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$MACOS_DIR/NeAntik"
 
 cp "$PROJECT_DIR/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
 printf 'APPLNANT' >"$CONTENTS_DIR/PkgInfo"

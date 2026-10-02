@@ -257,6 +257,7 @@ fi
 rm -rf "$CANDIDATE_APP"
 ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"
 cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
+python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
 cp "$PROJECT_DIR/Resources/NeAntik.icns" \
@@ -293,6 +294,7 @@ fi
 codesign --verify --deep --strict --verbose=2 "$CANDIDATE_APP"
 
 verify_runtime_unchanged
+python3 "$PROJECT_DIR/scripts/verify-public-artifact-privacy.py" "$CANDIDATE_APP"
 
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$CANDIDATE_APP"
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
