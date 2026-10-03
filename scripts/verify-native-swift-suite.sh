@@ -64,6 +64,11 @@ case "$SUITE" in
   ProfileRevisionAndTransactionTests|\
   ProfileTagAppearanceTests|\
   ProfileTagEditorTests|\
+  ManagedBrowserQuitTests|\
+  ManagerLaunchAdmissionTests|\
+  ManagerLibraryTests|\
+  ManagerSearchBenchmarkTests|\
+  ProfileMetadataUndoTests|\
   ProfileStoreTests|\
   ProxyHealthTests|\
   ProxyImportParserTests|\

@@ -165,6 +165,7 @@ struct ProfileEditorView: View {
 
   init(
     original: BrowserProfile?,
+    creationTemplate: UserProfileTemplate? = nil,
     keychain: KeychainStore,
     folders: [ProfileFolder],
     initialFolderID: UUID?,
@@ -187,7 +188,7 @@ struct ProfileEditorView: View {
       initialValue: showsAdvancedOptionsInitially
     )
 
-    let profile = original ?? BrowserProfile(name: "")
+    let profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(name: "")
     draftProfileID = profile.id
     _name = State(initialValue: profile.name)
     _colorHex = State(initialValue: profile.colorHex)

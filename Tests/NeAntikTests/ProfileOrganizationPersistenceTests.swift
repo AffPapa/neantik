@@ -25,7 +25,9 @@ struct ProfileOrganizationPersistenceTests {
         let reloaded = ProfileStore(paths: fixture.paths)
 
         #expect(reloaded.profiles.map(\.id) == [profile.id])
-        #expect(reloaded.organization == .empty)
+        #expect(reloaded.organization.folders.isEmpty)
+        #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
+        #expect(reloaded.organization.mutationRevision == nil)
         #expect(reloaded.hasTrustedOrganization)
         #expect(try Data(contentsOf: fixture.paths.profilesFile) == profilesData)
         #expect(
@@ -178,7 +180,9 @@ struct ProfileOrganizationPersistenceTests {
 
         let reloaded = ProfileStore(paths: fixture.paths)
         #expect(reloaded.profiles.count == 2)
-        #expect(reloaded.organization == .empty)
+        #expect(reloaded.organization.folders.isEmpty)
+        #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
+        #expect(reloaded.organization.mutationRevision != nil)
     }
 
     @Test
@@ -274,7 +278,9 @@ struct ProfileOrganizationPersistenceTests {
 
         #expect(reloaded.hasTrustedMetadata)
         #expect(!reloaded.hasTrustedOrganization)
-        #expect(reloaded.organization == .empty)
+        #expect(reloaded.organization.folders.isEmpty)
+        #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
+        #expect(reloaded.organization.mutationRevision == nil)
         #expect(throws: ProfileOrganizationError.self) {
             try reloaded.createFolder(named: "Blocked")
         }

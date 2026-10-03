@@ -5,7 +5,7 @@ import Foundation
 /// Transitions deliberately change only the selected facet. A caller can
 /// therefore select a scope, folder, and tag in any order without losing the
 /// other two selections.
-struct WorkspaceQueryState: Equatable, Sendable {
+struct WorkspaceQueryState: Codable, Equatable, Sendable {
     static let `default` = WorkspaceQueryState()
 
     let scope: ProfileListScope

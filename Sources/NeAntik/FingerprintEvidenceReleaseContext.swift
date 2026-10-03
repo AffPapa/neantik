@@ -6,6 +6,12 @@ import Security
 struct FingerprintEvidenceReleaseRequest: Equatable, Sendable {
     let candidateManifestURL: URL
     let evidenceOutputURL: URL
+
+    /// A validated release attempt must never initialize the user's store or
+    /// run pending credential cleanup against production profiles.
+    var managerDataRoot: URL {
+        evidenceOutputURL.deletingLastPathComponent().appendingPathComponent("manager-data", isDirectory: true)
+    }
 }
 
 enum FingerprintEvidenceReleaseLoadResult {

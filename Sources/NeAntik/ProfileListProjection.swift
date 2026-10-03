@@ -1,6 +1,6 @@
 import Foundation
 
-enum ProfileListScope: String, CaseIterable, Identifiable, Sendable {
+enum ProfileListScope: String, Codable, CaseIterable, Identifiable, Sendable {
     case active
     case pinned
     case archived
@@ -16,7 +16,7 @@ enum ProfileListScope: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-enum ProfileFolderFilter: Hashable, Sendable {
+enum ProfileFolderFilter: Codable, Hashable, Sendable {
     case all
     case unfiled
     case folder(UUID)

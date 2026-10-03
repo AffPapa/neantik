@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Darwin
 import Foundation
@@ -514,7 +515,7 @@ final class BrowserProcessManager: ObservableObject {
     private let processInventoryProvider:
         (@Sendable () -> BrowserProcessInventory)?
     private let processSignaler: (pid_t, Int32) -> Int32
-    private let managedProcessTerminator: (Process) -> Void
+    private let managedProcessTerminator: (Process) -> Bool
     private let allowsExternalProcessSignaling: Bool
     private let observationIntervalNanoseconds: UInt64
     private let startingLeaseTimeout: TimeInterval
@@ -527,6 +528,8 @@ final class BrowserProcessManager: ObservableObject {
     private var externalUnverifiedProfileIDs = Set<UUID>()
     private var recoveryProfileIDs = Set<UUID>()
     private var recoveryRecords: [UUID: BrowserProcessRecoveryRecord] = [:]
+    private var managedStopRequests: [UUID: ObjectIdentifier] = [:]
+    private var managedStopWarnings: [UUID: Task<Void, Never>] = [:]
     private var externalStopTasks: [UUID: Task<Void, Never>] = [:]
     private var externalObservationTasks: [UUID: Task<Void, Never>] = [:]
     private var recoveryObservationTasks: [UUID: Task<Void, Never>] = [:]
@@ -563,7 +566,7 @@ final class BrowserProcessManager: ObservableObject {
             coordinator.capture()
         }
         self.processSignaler = { Darwin.kill($0, $1) }
-        self.managedProcessTerminator = { $0.terminate() }
+        self.managedProcessTerminator = Self.requestGracefulQuit
         self.allowsExternalProcessSignaling = false
         self.observationIntervalNanoseconds = 1_000_000_000
         self.startingLeaseTimeout = 30
@@ -579,8 +582,9 @@ final class BrowserProcessManager: ObservableObject {
         processSignaler: @escaping (pid_t, Int32) -> Int32 = {
             Darwin.kill($0, $1)
         },
-        managedProcessTerminator: @escaping (Process) -> Void = {
+        managedProcessTerminator: @escaping (Process) -> Bool = {
             $0.terminate()
+            return true
         },
         observationIntervalNanoseconds: UInt64 = 1_000_000_000,
         browserDataProcessInspector: @escaping
@@ -616,8 +620,9 @@ final class BrowserProcessManager: ObservableObject {
         processSignaler: @escaping (pid_t, Int32) -> Int32 = {
             Darwin.kill($0, $1)
         },
-        managedProcessTerminator: @escaping (Process) -> Void = {
+        managedProcessTerminator: @escaping (Process) -> Bool = {
             $0.terminate()
+            return true
         },
         observationIntervalNanoseconds: UInt64 = 1_000_000_000,
         browserDataProcessInspector: @escaping
@@ -1413,6 +1418,7 @@ final class BrowserProcessManager: ObservableObject {
             FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
+        try ManagerLaunchAdmission.shared.requireSafePressure()
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
         }
@@ -1590,7 +1596,7 @@ final class BrowserProcessManager: ObservableObject {
             )
         } catch {
             if process.isRunning {
-                managedProcessTerminator(process)
+                _ = managedProcessTerminator(process)
             }
             if process.isRunning {
                 processes[profile.id] = process
@@ -1633,10 +1639,36 @@ final class BrowserProcessManager: ObservableObject {
             arguments.allSatisfy(allowed.contains)
     }
 
+    private static func requestGracefulQuit(_ process: Process) -> Bool {
+        guard process.isRunning,
+              let application = NSRunningApplication(processIdentifier: process.processIdentifier),
+              let executable = application.executableURL,
+              executable.resolvingSymlinksInPath() == process.executableURL?.resolvingSymlinksInPath()
+        else { return false }
+        // SIGTERM can discard Chromium's pending cookie/localStorage writes.
+        // A refused quit must keep the profile locked, never force termination.
+        return application.terminate()
+    }
+
     func stop(profileID: UUID) {
         if let process = processes[profileID] {
             if process.isRunning {
-                managedProcessTerminator(process)
+                let identity = ObjectIdentifier(process)
+                guard managedStopRequests[profileID] != identity else { return }
+                managedStopRequests[profileID] = identity
+                guard managedProcessTerminator(process) else {
+                    managedStopRequests.removeValue(forKey: profileID)
+                    lastError = "Не удалось запросить безопасное завершение браузера. Закрой его через меню «Выйти»; профиль останется заблокированным до завершения процессов."
+                    return
+                }
+                managedStopWarnings[profileID] = Task { @MainActor [weak self, weak process] in
+                    do { try await Task.sleep(for: .seconds(8)) } catch { return }
+                    guard let self, let process, process.isRunning,
+                          self.processes[profileID] === process else { return }
+                    self.managedStopRequests.removeValue(forKey: profileID)
+                    self.managedStopWarnings.removeValue(forKey: profileID)
+                    self.lastError = "Браузер ожидает завершения. Повтори остановку или закрой его через меню «Выйти». Принудительная остановка не выполняется, чтобы сохранить данные."
+                }
             } else {
                 handleTermination(
                     profileID: profileID,
@@ -1716,6 +1748,8 @@ final class BrowserProcessManager: ObservableObject {
                 return
             }
         }
+        managedStopRequests.removeValue(forKey: profileID)
+        managedStopWarnings.removeValue(forKey: profileID)?.cancel()
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
         )

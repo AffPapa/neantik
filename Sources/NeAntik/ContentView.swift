@@ -6,15 +6,18 @@ private struct EditorRequest: Identifiable {
     let profile: BrowserProfile?
     let targetFolderID: UUID?
     let initialFocus: ProfileEditorField?
+    let creationTemplate: UserProfileTemplate?
 
     init(
         profile: BrowserProfile?,
         targetFolderID: UUID? = nil,
-        initialFocus: ProfileEditorField? = nil
+        initialFocus: ProfileEditorField? = nil,
+        creationTemplate: UserProfileTemplate? = nil
     ) {
         self.profile = profile
         self.targetFolderID = targetFolderID
         self.initialFocus = initialFocus
+        self.creationTemplate = creationTemplate
     }
 }
 
@@ -191,6 +194,9 @@ struct ContentView: View {
         FingerprintEvidenceReleaseContext?
     private let updateChannel = UpdateChannelConfiguration.fromBundle()
 
+    @State private var pendingManagerAction: (() -> Void)?
+    @State private var showingManagerLibrary = false
+    @State private var showingQuickCommands = false
     @State private var selection: UUID?
     @State private var editorRequest: EditorRequest?
     @State private var showingDeleteConfirmation = false
@@ -282,7 +288,8 @@ struct ContentView: View {
     }
 
     private var isWorkspaceModalPresented: Bool {
-        editorRequest != nil ||
+        showingManagerLibrary || showingQuickCommands ||
+            editorRequest != nil ||
             folderNameRequest != nil ||
             profileFolderPickerRequest != nil ||
             bulkProxyImportRequest != nil ||
@@ -318,6 +325,10 @@ struct ContentView: View {
             importEncryptedProfiles: {
                 transferPassphraseMode = .import
             },
+            canUndoMetadata: store.metadataUndo != nil,
+            undoMetadata: undoMetadata,
+            showManagerLibrary: { showingManagerLibrary = true },
+            showQuickCommands: { showingQuickCommands = true },
             focusProfileSearch: { profileSearchIsFocused = true },
             renameSelectedFolder: {
                 guard let selectedFolder else { return }
@@ -613,6 +624,25 @@ struct ContentView: View {
 
     private var workspaceSheets: some View {
         workspaceBase
+        .sheet(isPresented: $showingManagerLibrary, onDismiss: completeManagerSheetAction) {
+            ManagerLibrarySheet(library: store.managerLibrary, profile: selectedProfile,
+                folderID: selectedProfile.flatMap { store.folderID(forProfileID: $0.id) },
+                folders: store.organization.folders, query: workspaceQuery, search: profileSearchText,
+                create: { template in
+                    editorRequest = EditorRequest(profile: nil,
+                        targetFolderID: store.folder(withID: template.folderID)?.id,
+                        creationTemplate: template)
+                }, apply: applySavedFilter, performAction: { action in
+                    pendingManagerAction = action; showingManagerLibrary = false
+                })
+                .accessibilityHidden(true)
+        }
+        .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
+            ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, profileCommand: quickProfileCommand, performAction: { action in
+                pendingManagerAction = action; showingQuickCommands = false
+            })
+            .accessibilityHidden(true)
+        }
         .sheet(item: $editorRequest) { request in
             profileEditorSheet(for: request)
                 .accessibilityHidden(true)
@@ -785,6 +815,7 @@ struct ContentView: View {
                             profileID: deletedProfile.id
                         )
                     }
+                    store.managerLibrary.record(.delete, .succeeded)
                     if store.profiles.isEmpty {
                         profileSearchText = ""
                         selectedProfileTag = nil
@@ -809,7 +840,7 @@ struct ContentView: View {
             }
             Button("Отмена", role: .cancel) {}
         } message: { profile in
-            Text("Профиль «\(profile.name)» и его данные браузера будут перемещены в Корзину macOS.")
+            Text("Профиль «\(profile.name)» и его данные браузера будут перемещены в Корзину macOS. Пароль прокси будет удалён из Связки ключей. Возврат файлов из Корзины не восстанавливает профиль полностью. Для обратимого скрытия используй архив.")
         }
         .alert(
             "Удалить папку?",
@@ -1028,6 +1059,7 @@ struct ContentView: View {
         )
         return ProfileEditorView(
             original: request.profile,
+            creationTemplate: request.creationTemplate,
             keychain: keychain,
             folders: store.organization.folders,
             initialFolderID: initialFolderID,
@@ -1049,6 +1081,9 @@ struct ContentView: View {
         folderID: UUID?,
         original: BrowserProfile?
     ) throws {
+        var succeeded = false
+        defer { store.managerLibrary.record(original == nil ? .create : .edit, succeeded ? .succeeded : .failed) }
+
         if original != nil,
            presentedProcessState(for: profile).isRunning
         {
@@ -1064,7 +1099,8 @@ struct ContentView: View {
         }
         let saved = try store.upsert(
             profile,
-            toFolderID: folderID
+            toFolderID: folderID,
+            registerMetadataUndo: ProfileMetadataUndo.editorPreservesSecrets(original: original, passwordUpdate: passwordUpdate)
         ) { saved in
             switch passwordUpdate {
             case .delete:
@@ -1086,6 +1122,7 @@ struct ContentView: View {
         {
             fingerprintObservationStore.remove(profileID: saved.id)
         }
+        succeeded = true
         revealSavedProfile(saved)
         if original == nil {
             telemetry.record(.profileCreated, snapshot: telemetrySnapshot)
@@ -1297,6 +1334,70 @@ struct ContentView: View {
         }
         usesCompactWorkspaceColumns = shouldUseCompactColumns
         columnVisibility = shouldUseCompactColumns ? .doubleColumn : .all
+    }
+
+    private var quickCommands: [ProfileQuickCommand] {
+        [
+            ProfileQuickCommand(id: "library", title: "Шаблоны, фильтры и журнал", subtitle: "Локальная библиотека", enabled: true, action: { showingManagerLibrary = true }),
+            ProfileQuickCommand(id: "create", title: "Новый профиль", subtitle: "Открыть форму создания", enabled: true, action: beginCreatingProfile),
+            ProfileQuickCommand(id: "diagnostics", title: "Безопасная диагностика", subtitle: "Экспортировать существующий redacted support bundle", enabled: true, action: exportRedactedSupportBundle)
+        ]
+    }
+
+    private func quickProfileCommand(_ profile: BrowserProfile) -> ProfileQuickCommand {
+        let state = presentedProcessState(for: profile)
+        let action = BrowserLaunchActionPresentation.resolve(processState: state,
+            isArchived: profile.isArchived, runtimeAvailability: runtimeAvailability,
+            isProxyTesting: isProxyTestInFlight(profileID: profile.id),
+            isLaunchPreparation: launchPreparingProfileIDs.contains(profile.id))
+        return ProfileQuickCommand(id: profile.id.uuidString, title: profile.name,
+            subtitle: state == .stopped && action.isEnabled ? "Открыть профиль" : "Показать в менеджере • " + action.help,
+            enabled: true, action: { openOrShowProfile(profile.id) })
+    }
+
+    private func completeManagerSheetAction() {
+        let action = pendingManagerAction
+        pendingManagerAction = nil
+        profileSearchIsFocused = true
+        action?()
+    }
+
+    private func openOrShowProfile(_ id: UUID) {
+        guard let profile = store.profile(withID: id) else { return }
+        revealSavedProfile(profile)
+        if presentedProcessState(for: profile) == .stopped {
+            guard profileCommandSet(for: profile).presentation.launchIsEnabled else { return }
+            launch(profile)
+        }
+    }
+
+    private func applySavedFilter(_ filter: SavedWorkspaceFilter) {
+        let tags = Set(store.profiles.flatMap(\.tags).map { ProfileTagID(displayName: $0) })
+        let resolved = filter.resolved(folders: store.organization.folders, tags: tags)
+        profileListScope = resolved.query.scope
+        selectedFolderFilter = resolved.query.folderFilter
+        selectedProfileTag = resolved.query.tag
+        profileSearchText = filter.search
+        normalizeSelection()
+        if resolved.adjusted {
+            localError = "Фильтр применён с изменениями: удалённая папка заменена на «Без папки», отсутствующий тег снят."
+        }
+    }
+
+    private func undoMetadata() {
+        guard let token = store.metadataUndo,
+              !processes.processState(for: token.profileID).isRunning else {
+            localError = "Сначала останови профиль, затем отмени изменение метаданных."
+            return
+        }
+        do {
+            let saved = try store.undoLastMetadataChange()
+            revealSavedProfile(saved)
+            store.managerLibrary.record(.undo, .succeeded)
+        } catch {
+            store.managerLibrary.record(.undo, .failed)
+            localError = error.localizedDescription
+        }
     }
 
     private func beginCreatingProfile() {
@@ -1681,9 +1782,11 @@ struct ContentView: View {
         toFolderID folderID: UUID?
     ) {
         do {
-            try store.assignProfile(profile.id, toFolderID: folderID)
+            try store.moveProfileWithUndo(profile, toFolderID: folderID)
+            store.managerLibrary.record(.move, .succeeded)
             normalizeSelection(preferred: profile.id)
         } catch {
+            store.managerLibrary.record(.move, .failed)
             localError = error.localizedDescription
         }
     }
@@ -1731,9 +1834,10 @@ struct ContentView: View {
             return
         }
         do {
-            let saved = try store.mutateProfile(withID: profile.id) {
+            let saved = try store.mutateProfile(withID: profile.id, registerMetadataUndo: true) {
                 $0.isArchived.toggle()
             }
+            store.managerLibrary.record(.archive, .succeeded)
             if !saved.isArchived {
                 profileListScope = .active
                 normalizeSelection(preferred: saved.id)
@@ -1741,6 +1845,7 @@ struct ContentView: View {
                 normalizeSelection()
             }
         } catch {
+            store.managerLibrary.record(.archive, .failed)
             localError = error.localizedDescription
         }
     }
@@ -2697,11 +2802,13 @@ struct ContentView: View {
             ),
             folderOptions: folderProjection.options,
             hasMoreFolderOptions: folderProjection.hasMore,
+            openOrShow: { openOrShowProfile(profile.id) },
             toggleRunning: {
                 if launchPreparingProfileIDs.contains(profile.id) {
                     cancelLaunchPreparation(profileID: profile.id)
                 } else if processState.isRunning {
                     processes.stop(profileID: profile.id)
+                    store.managerLibrary.record(.stop, .requested)
                 } else {
                     launch(profile)
                 }
@@ -2933,21 +3040,28 @@ struct ContentView: View {
                 profile: profile
             ) {
             case .launchImmediately:
+                let admissionToken = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+                var launched = false
+                defer { ManagerLaunchAdmission.shared.finish(token: admissionToken, launched: launched) }
                 try launchPreparedProfile(
                     profile,
                     runtime: runtime,
                     preparationReceipt: nil
                 )
+                launched = true
             case .prepareProxyContext:
                 // Every browser session gets its own route observation.
                 // A manual health check is useful feedback, not authority to
                 // reuse a potentially rotating endpoint at Start time.
+                let admissionToken = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
                 startAutomaticLaunchPreparation(
                     profile,
-                    runtime: runtime
+                    runtime: runtime,
+                    admissionToken: admissionToken
                 )
             }
         } catch {
+            store.managerLibrary.record(.launch, error is ManagerLaunchAdmissionError ? .deferred : .failed)
             launchPreparationFailure = LaunchPreparationFailure(
                 profileID: profile.id,
                 message: error.localizedDescription,
@@ -2984,6 +3098,7 @@ struct ContentView: View {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
+        store.managerLibrary.record(.launch, .succeeded)
         telemetry.record(
             .browserLaunched,
             snapshot: telemetrySnapshot
@@ -2993,10 +3108,15 @@ struct ContentView: View {
     @MainActor
     private func startAutomaticLaunchPreparation(
         _ profile: BrowserProfile,
-        runtime: BrowserRuntime
+        runtime: BrowserRuntime,
+        admissionToken: UUID
     ) {
-        guard launchPreparationTasks[profile.id] == nil else { return }
+        guard launchPreparationTasks[profile.id] == nil else {
+            ManagerLaunchAdmission.shared.finish(token: admissionToken)
+            return
+        }
         guard !isProxyTestInFlight(profileID: profile.id) else {
+            ManagerLaunchAdmission.shared.finish(token: admissionToken)
             launchPreparationFailure = LaunchPreparationFailure(
                 profileID: profile.id,
                 message:
@@ -3009,7 +3129,10 @@ struct ContentView: View {
         launchPreparationTokens[profile.id] = launchToken
         launchPreparingProfileIDs.insert(profile.id)
         launchPreparationTasks[profile.id] = Task { @MainActor in
+            var launched = false
             defer {
+                ManagerLaunchAdmission.shared.finish(token: admissionToken, launched: launched)
+                if !launched && !Task.isCancelled { store.managerLibrary.record(.launch, .failed) }
                 if launchPreparationTokens[profile.id] == launchToken {
                     launchPreparationTokens[profile.id] = nil
                     launchPreparingProfileIDs.remove(profile.id)
@@ -3086,6 +3209,7 @@ struct ContentView: View {
                             proxyHealth: currentHealth
                         )
                 )
+                launched = true
             } catch {
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: currentProfile.id,
@@ -3408,6 +3532,7 @@ struct ContentView: View {
 
     @MainActor
     private func cancelLaunchPreparation(profileID: UUID) {
+        if launchPreparationTasks[profileID] != nil { store.managerLibrary.record(.launch, .cancelled) }
         launchPreparationTasks[profileID]?.cancel()
         launchPreparationTasks[profileID] = nil
         launchPreparationTokens[profileID] = nil

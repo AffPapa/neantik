@@ -19,6 +19,7 @@ final class ProfileStore: ObservableObject {
         didSet { profileListRevision &+= 1 }
     }
     @Published private(set) var recoveryNotice: ProfileRecoveryNotice?
+    @Published private(set) var metadataUndo: ProfileMetadataUndo?
     @Published var lastError: String?
 
     /// Monotonic cache key for derived profile-list indexes.
@@ -27,6 +28,8 @@ final class ProfileStore: ObservableObject {
     /// every SwiftUI computed-property access. The published properties still
     /// drive rendering; this key only proves whether a cached index is current.
     private(set) var profileListRevision: UInt64 = 0
+
+    lazy var managerLibrary = ManagerLibraryController(paths: paths)
 
     let paths: AppPaths
     private var storageIsAvailable = true
@@ -250,6 +253,24 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    func moveProfileWithUndo(_ profile: BrowserProfile, toFolderID folderID: UUID?) throws {
+        var before: BrowserProfile?
+        var oldFolderID: UUID?
+        try mutateOrganization { state in
+            guard let current = profiles.first(where: { $0.id == profile.id }),
+                  current.revision == profile.revision else { throw ProfileMetadataUndoConflict() }
+            if let folderID, state.folder(withID: folderID) == nil { throw ProfileOrganizationError.folderNotFound }
+            oldFolderID = state.folderID(forProfileID: profile.id)
+            guard oldFolderID != folderID else { return }
+            before = current
+            state.assign(profileIDs: [profile.id], toFolderID: folderID)
+        }
+        if let before {
+            metadataUndo = ProfileMetadataUndo(before: before, after: before, folderID: oldFolderID,
+                organizationRevision: organization.mutationRevision, folderOnly: true)
+        }
+    }
+
     func unfileProfile(_ profileID: UUID) throws {
         try assignProfile(profileID, toFolderID: nil)
     }
@@ -298,6 +319,7 @@ final class ProfileStore: ObservableObject {
     @discardableResult
     func mutateProfile(
         withID profileID: UUID,
+        registerMetadataUndo: Bool = false,
         _ mutation: (inout BrowserProfile) throws -> Void
     ) throws -> BrowserProfile {
         try requireSynchronousMutationAdmission()
@@ -307,6 +329,8 @@ final class ProfileStore: ObservableObject {
             else {
                 throw BrowserProfileDeletedError()
             }
+            let before = current
+            if registerMetadataUndo { try reloadLatestOrganizationForMutation() }
             let expectedRevision = current.revision
             try mutation(&current)
             guard current.id == profileID,
@@ -314,10 +338,13 @@ final class ProfileStore: ObservableObject {
             else {
                 throw NeAntikError.invalidProfile
             }
-            return try upsertAfterMetadataReload(
-                current,
-                afterPersist: { _ in }
-            )
+            let saved = try upsertAfterMetadataReload(current, afterPersist: { _ in })
+            if registerMetadataUndo, ProfileMetadataUndo.onlyAllowedFieldsChanged(before: before, after: saved) {
+                metadataUndo = ProfileMetadataUndo(before: before, after: saved,
+                    folderID: organization.folderID(forProfileID: saved.id),
+                    organizationRevision: organization.mutationRevision)
+            }
+            return saved
         }
     }
 
@@ -331,6 +358,8 @@ final class ProfileStore: ObservableObject {
     func upsert(
         _ profile: BrowserProfile,
         toFolderID folderID: UUID?,
+        registerMetadataUndo: Bool = false,
+        expectedOrganizationRevision: UUID?? = nil,
         afterPersist: (BrowserProfile) throws -> Void = { _ in }
     ) throws -> BrowserProfile {
         try requireSynchronousMutationAdmission()
@@ -353,6 +382,10 @@ final class ProfileStore: ObservableObject {
                 throw ProfileOrganizationError.folderNotFound
             }
 
+            if let expectedOrganizationRevision,
+               expectedOrganizationRevision != organization.mutationRevision {
+                throw ProfileMetadataUndoConflict()
+            }
             let previousProfiles = profiles
             let previousOrganization = organization
             let profileDirectory = paths.profileDirectory(for: profile.id)
@@ -375,7 +408,7 @@ final class ProfileStore: ObservableObject {
                 if nextOrganization != previousOrganization {
                     organization = nextOrganization
                     try persistOrganization()
-                    committedOrganization = nextOrganization
+                    committedOrganization = organization
                 }
                 try afterPersist(saved)
             } catch {
@@ -401,8 +434,38 @@ final class ProfileStore: ObservableObject {
                 }
                 throw operationError
             }
+            if registerMetadataUndo,
+               let before = previousProfiles.first(where: { $0.id == saved.id }),
+               ProfileMetadataUndo.onlyAllowedFieldsChanged(before: before, after: saved) {
+                metadataUndo = ProfileMetadataUndo(before: before, after: saved,
+                    folderID: previousOrganization.folderID(forProfileID: saved.id),
+                    organizationRevision: organization.mutationRevision)
+            }
             return saved
         }
+    }
+
+    @discardableResult
+    func undoLastMetadataChange() throws -> BrowserProfile {
+        guard let token = metadataUndo,
+              var profile = profile(withID: token.profileID), profile.revision == token.revision
+        else { throw ProfileMetadataUndoConflict() }
+        if token.folderOnly {
+            try mutateOrganization { state in
+                guard state.mutationRevision == token.organizationRevision,
+                      profiles.first(where: { $0.id == token.profileID })?.revision == token.revision
+                else { throw ProfileMetadataUndoConflict() }
+                if let folderID = token.folderID, state.folder(withID: folderID) == nil { throw ProfileOrganizationError.folderNotFound }
+                state.assign(profileIDs: [token.profileID], toFolderID: token.folderID)
+            }
+            metadataUndo = nil
+            return profile
+        }
+        profile.name = token.name; profile.tags = token.tags; profile.isArchived = token.isArchived
+        let saved = try upsert(profile, toFolderID: token.folderID,
+            expectedOrganizationRevision: .some(token.organizationRevision))
+        metadataUndo = nil
+        return saved
     }
 
     @discardableResult
@@ -613,7 +676,7 @@ final class ProfileStore: ObservableObject {
                     if nextOrganization != previousOrganization {
                         organization = nextOrganization
                         try persistOrganization()
-                        committedOrganization = nextOrganization
+                        committedOrganization = organization
                     }
                 }
                 try afterPersist(inserted)
@@ -1297,7 +1360,9 @@ final class ProfileStore: ObservableObject {
     ) throws {
         try requireOrganizationStorage()
         try beforeOrganizationPersist()
-        let data = try Self.encodeOrganization(organization)
+        var next = organization
+        next.mutationRevision = UUID()
+        let data = try Self.encodeOrganization(next)
         if synchronizeRecoverySnapshot {
             try paths.writePrivateFile(
                 data,
@@ -1307,6 +1372,7 @@ final class ProfileStore: ObservableObject {
                 data,
                 to: paths.profileOrganizationFile
             )
+            organization = next
             return
         }
         switch try paths.privateFileEntryKind(
@@ -1334,6 +1400,7 @@ final class ProfileStore: ObservableObject {
             throw POSIXError(.EFTYPE)
         }
         try paths.writePrivateFile(data, to: paths.profileOrganizationFile)
+        organization = next
     }
 
     private func ensureOrganizationRecoverySnapshotIfNeeded() throws {

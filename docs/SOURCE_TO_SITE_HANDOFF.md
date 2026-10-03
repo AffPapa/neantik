@@ -1,5 +1,41 @@
 # NeAntik Direct source-to-site handoff
 
+## Manager candidate — 3 October 2026
+
+0.7.13 build 76 is a manager-only candidate, not yet a published release.
+Chromium remains the qualified 154.0.8037.93 payload; the Integrated source and
+previous release runtime have identical inventories (482 files/symlinks).
+
+Implemented: shared quick commands (Cmd-Shift-P), safe user template previews,
+saved workspace filters, revision-checked metadata Undo (Cmd-Option-Z), one-at-a-time
+launch admission with pressure/thermal backoff, and a bounded typed local journal.
+Batch selection/launch UI is deferred; existing individual starts use admission.
+Templates exclude identity, BrowserData, notes, proxy credentials and URL tokens.
+
+Confirmed Stop defect: SIGTERM could lose recently buffered persistent-cookie and
+localStorage writes. Managed browsers now receive native graceful quit, with exact
+executable matching and no forced-kill fallback. Pending/refused quit retains locks.
+The existing-runtime localhost fixture passes persistent cookie, localStorage and
+IndexedDB after clean close/relaunch and a controlled browser crash. Session cookies
+expire after clean close under unchanged Chromium policy. Coordinator reconciliation
+was tested in a second instance in the same process; this is not a literal manager
+process-restart session test.
+
+Validation: 658 Swift tests passed (76 suites), separate opt-in exact-runtime fixture
+passed; GUI Dev.app on synthetic temporary data covered commands, Escape/Return/Tab,
+profile creation/edit, launch/stop, template preview/create, filter apply, metadata
+Undo and typed journal. No VoiceOver claim. Warm debug search baseline p95 at
+100/1000/5000 profiles: 0.104/0.798/4.022 ms; after isolated run at 1000: 0.757 ms,
+quick-command filtering 4.187 ms. These measure Swift projections, not end-to-end
+GUI latency. Full concurrent test-run timings are retained separately.
+
+G/H: deletion warning now explicitly distinguishes Archive from irreversible
+credential cleanup. Recoverable deletion and encrypted BrowserData backup are
+deferred with recovery/fault criteria in `MANAGER_RECOVERY_BACKUP_DESIGN.md`.
+Metadata snapshots are not session backups. Existing release 0.7.12 remains rollback.
+The restricted affpapa deploy credential is still unavailable. GitHub/Sites release
+requires the exact candidate's production GUI, signing, notarization and hosted gates.
+
 ## Completed release — 2 October 2026
 
 NeAntik **0.7.12 build75**, Chromium **154.0.8037.93 / ARM64 / Metal**, is published at GitHub `AffPapa/neantik` and browser.free. Exact app-source commit: `24de0234122ae49257011eef573502b822fcb157`.

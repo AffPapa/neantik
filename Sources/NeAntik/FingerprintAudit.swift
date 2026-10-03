@@ -2838,7 +2838,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
     """#
 }
 
-private final class FingerprintAuditLoopbackServer {
+final class FingerprintAuditLoopbackServer {
     let url: URL
 
     private let listener: NWListener

@@ -2160,7 +2160,7 @@ struct BrowserProcessManagerTests {
         let manager = BrowserProcessManager(
             paths: paths,
             processIdentityValidator: { _ in false },
-            managedProcessTerminator: { _ in }
+            managedProcessTerminator: { _ in true }
         )
         let runtime = BrowserRuntime(
             name: "Fake Chromium",

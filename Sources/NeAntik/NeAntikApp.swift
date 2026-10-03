@@ -84,14 +84,18 @@ struct NeAntikApp: App {
         let environment = NeAntikApplicationEnvironment.resolve(
             bundleIdentifier: Bundle.main.bundleIdentifier
         )
-        let paths = environment.isDevelopment
-            ? AppPaths(
-                rootDirectory: environment.applicationSupportRoot()
-            )
-            : AppPaths()
+        let auditRoot = fingerprintEvidenceReleaseContext?.request.managerDataRoot
+        let paths: AppPaths
+        if let auditRoot {
+            paths = AppPaths(rootDirectory: auditRoot)
+        } else if environment.isDevelopment {
+            paths = AppPaths(rootDirectory: environment.applicationSupportRoot())
+        } else {
+            paths = AppPaths()
+        }
         let keychain = KeychainStore(
-            service: environment.keychainService,
-            legacyService: environment.legacyKeychainService
+            service: auditRoot == nil ? environment.keychainService : "app.neantik.release-audit.proxy",
+            legacyService: auditRoot == nil ? environment.legacyKeychainService : nil
         )
         self.keychain = keychain
         credentialCleanup = DeletedProfileCredentialCleanup(

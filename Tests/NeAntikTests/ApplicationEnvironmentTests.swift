@@ -1,4 +1,5 @@
 import Foundation
+import Foundation
 import Testing
 @testable import NeAntik
 
@@ -26,6 +27,21 @@ struct ApplicationEnvironmentTests {
                 "NeAntik Development"
             )
         )
+    }
+
+    @Test func disposableRootIsDevelopmentOnly() {
+        let values = ["NEANTIK_DEVELOPMENT_DATA_ROOT": "/private/tmp/neantik-ui-fixture"]
+        let dev = NeAntikApplicationEnvironment.resolve(bundleIdentifier: nil)
+        let production = NeAntikApplicationEnvironment.resolve(bundleIdentifier: NeAntikApplicationEnvironment.productionBundleIdentifier)
+        #expect(dev.applicationSupportRoot(environment: values).path == values["NEANTIK_DEVELOPMENT_DATA_ROOT"])
+        #expect(production.applicationSupportRoot(environment: values).path != values["NEANTIK_DEVELOPMENT_DATA_ROOT"])
+    }
+
+    @Test func releaseAuditStorageBelongsToValidatedAttempt() {
+        let request = FingerprintEvidenceReleaseRequest(
+            candidateManifestURL: URL(fileURLWithPath: "/private/tmp/neantik-attempt/manifest.json"),
+            evidenceOutputURL: URL(fileURLWithPath: "/private/tmp/neantik-attempt/evidence.json"))
+        #expect(request.managerDataRoot.path == "/private/tmp/neantik-attempt/manager-data")
     }
 
     @Test func unknownOrUnbundledExecutableIsIsolatedFromProduction() {

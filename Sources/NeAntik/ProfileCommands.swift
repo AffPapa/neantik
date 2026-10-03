@@ -122,6 +122,7 @@ struct ProfileCommandSet {
     let presentation: ProfileCommandPresentation
     let folderOptions: [ProfileFolderCommandOption]
     let hasMoreFolderOptions: Bool
+    let openOrShow: () -> Void
     let toggleRunning: () -> Void
     let edit: () -> Void
     let togglePinned: () -> Void
@@ -136,6 +137,7 @@ struct ProfileCommandSet {
         presentation: .unavailable,
         folderOptions: [],
         hasMoreFolderOptions: false,
+        openOrShow: {},
         toggleRunning: {},
         edit: {},
         togglePinned: {},
@@ -165,6 +167,10 @@ struct WorkspaceCommandSet {
     let importProfiles: () -> Void
     let exportEncryptedProfiles: () -> Void
     let importEncryptedProfiles: () -> Void
+    let canUndoMetadata: Bool
+    let undoMetadata: () -> Void
+    let showManagerLibrary: () -> Void
+    let showQuickCommands: () -> Void
     let focusProfileSearch: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
@@ -181,6 +187,10 @@ struct WorkspaceCommandSet {
         importProfiles: {},
         exportEncryptedProfiles: {},
         importEncryptedProfiles: {},
+        canUndoMetadata: false,
+        undoMetadata: {},
+        showManagerLibrary: {},
+        showQuickCommands: {},
         focusProfileSearch: {},
         renameSelectedFolder: {},
         deleteSelectedFolder: {}
@@ -227,12 +237,22 @@ struct WorkspaceCommandMenu: Commands {
         }
 
         CommandGroup(after: .textEditing) {
+            Button("Быстрые команды…", action: resolved.showQuickCommands)
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(!resolved.isEnabled)
             Button("Найти профиль", action: resolved.focusProfileSearch)
                 .keyboardShortcut("f")
                 .disabled(!resolved.isEnabled)
         }
 
         CommandMenu("Профили") {
+            Button("Отменить изменение метаданных", action: resolved.undoMetadata)
+                .keyboardShortcut("z", modifiers: [.command, .option])
+                .disabled(!resolved.isEnabled || !resolved.canUndoMetadata)
+
+            Button("Шаблоны, фильтры и журнал…", action: resolved.showManagerLibrary)
+                .disabled(!resolved.isEnabled)
+
             Button(
                 "Экспортировать конфигурацию…",
                 systemImage: "square.and.arrow.up",
@@ -320,6 +340,9 @@ struct ProfileCommandMenu: Commands {
 
     var body: some Commands {
         CommandMenu("Профиль") {
+            Button("Открыть / показать профиль", action: resolved.openOrShow)
+                .disabled(!resolved.hasProfile)
+
             Button(
                 resolved.presentation.launchTitle,
                 systemImage: resolved.presentation.launchSystemImage,

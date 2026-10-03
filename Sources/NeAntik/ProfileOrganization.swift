@@ -66,19 +66,23 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
     let schemaVersion: Int
     var folders: [ProfileFolder]
     var assignments: [ProfileFolderAssignment]
+    var mutationRevision: UUID?
 
     init(
         schemaVersion: Int = Self.currentSchemaVersion,
         folders: [ProfileFolder] = [],
-        assignments: [ProfileFolderAssignment] = []
+        assignments: [ProfileFolderAssignment] = [],
+        mutationRevision: UUID? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.folders = folders
         self.assignments = assignments
+        self.mutationRevision = mutationRevision
     }
 
     init(state: ProfileOrganizationState) {
         schemaVersion = Self.currentSchemaVersion
+        mutationRevision = state.mutationRevision
         folders = state.folders.sorted(by: ProfileFolder.areInIncreasingOrder)
         assignments = state.assignmentsByProfileID
             .map {
@@ -145,7 +149,8 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
 
         let state = ProfileOrganizationState(
             folders: sortedFolders,
-            assignmentsByProfileID: assignmentsByProfileID
+            assignmentsByProfileID: assignmentsByProfileID,
+            mutationRevision: mutationRevision
         )
         if ProfileOrganizationDocument(state: state) != self {
             changed = true
@@ -157,13 +162,16 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
 struct ProfileOrganizationState: Equatable, Sendable {
     static let empty = ProfileOrganizationState()
 
+    var mutationRevision: UUID?
     private(set) var folders: [ProfileFolder]
     fileprivate(set) var assignmentsByProfileID: [UUID: UUID]
 
     init(
         folders: [ProfileFolder] = [],
-        assignmentsByProfileID: [UUID: UUID] = [:]
+        assignmentsByProfileID: [UUID: UUID] = [:],
+        mutationRevision: UUID? = nil
     ) {
+        self.mutationRevision = mutationRevision
         self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
         self.assignmentsByProfileID = assignmentsByProfileID
     }
