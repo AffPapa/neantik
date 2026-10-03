@@ -1,8 +1,13 @@
 # NeAntik Direct source-to-site handoff
 
-## Manager candidate — 3 October 2026
+## Completed manager release — 3 October 2026
 
-0.7.13 build 76 is a manager-only candidate, not yet a published release.
+0.7.13 build 76 is published at GitHub and browser.free (Sites version 106).
+Exact app-source commit: f2ae87d0adc77c3fb755d144b82f21ac07efaca1.
+Developer ID, notarization, stapling, Gatekeeper and fresh hosted ZIP/DMG hashes passed.
+API confirms 0.7.13/76, canDownload=true, exact ZIP SHA. /download retains its
+existing 307 to /#install; the landing exposes direct ZIP/DMG URLs.
+See releases/v0.7.13.json for immutable hashes and limitations.
 Chromium remains the qualified 154.0.8037.93 payload; the Integrated source and
 previous release runtime have identical inventories (482 files/symlinks).
 
@@ -34,7 +39,11 @@ credential cleanup. Recoverable deletion and encrypted BrowserData backup are
 deferred with recovery/fault criteria in `MANAGER_RECOVERY_BACKUP_DESIGN.md`.
 Metadata snapshots are not session backups. Existing release 0.7.12 remains rollback.
 The restricted affpapa deploy credential is still unavailable. GitHub/Sites release
-requires the exact candidate's production GUI, signing, notarization and hosted gates.
+passed the exact candidate's production GUI, signing, notarization and hosted gates.
+The first production GUI attempt timed out without evidence. One no-CUA control
+generated a valid authenticated production report and drained browser processes;
+the manager itself needed the existing wrapper timeout before report verification.
+The cause of the first failure remains unresolved; no gate was weakened.
 
 ## Completed release — 2 October 2026
 

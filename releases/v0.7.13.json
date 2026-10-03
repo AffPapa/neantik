@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.13",
+  "version": "0.7.13",
+  "build": 76,
+  "releasedAt": "2026-10-03",
+  "channel": "production",
+  "sourceCommit": "f2ae87d0adc77c3fb755d144b82f21ac07efaca1",
+  "runtime": {
+    "chromiumVersion": "154.0.8037.93",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "payloadEntriesUnchanged": 482,
+    "safeBrowsingEnabled": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.13-arm64-notarized.zip",
+    "sizeBytes": 175248615,
+    "sha256": "6258aa85ea2c4072d3913ed2b6e5d9e1564198ad93eeedfffddfca12d769a953"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.13-arm64-notarized.dmg",
+    "sizeBytes": 198134602,
+    "sha256": "70266c51f5867ee483f654e67f6bfacecc3be4338998e27e7a6754a53fa46302"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted ZIP and DMG",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "fingerprint": "authenticated production-qualified A-B-A",
+    "hostedDownload": "fresh ZIP and DMG sizes/SHA256 equal qualified local artifacts and GitHub digests",
+    "swiftTests": 658,
+    "swiftSuites": 76,
+    "pythonTests": {
+      "run": 796,
+      "initialPassed": 794,
+      "initialFailed": 1,
+      "skipped": 1,
+      "fix": "registered five new Swift suites in CI; targeted verifier 12/12 passed"
+    },
+    "siteTests": 26,
+    "physicalVoiceOver": "not claimed"
+  },
+  "siteVersion": 106,
+  "siteSourceCommit": "c60f82bb599cf6bead9e142e86d0fcb2a7e3637d",
+  "siteDeploymentId": "appgdep_6ac0dee2263081919e66d7a7ec452057",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.13",
+  "rollbackRelease": "v0.7.12",
+  "candidateManifestSHA256": "fb2a8efba1937b51832db785b3a85b0ba14d4ce52f55348fe8684802ff986a14",
+  "candidateSourceBindingSHA256": "aa9e00d49e0637326c9a69d51b445dab45e9843a000902d0dd564ab420207b42",
+  "limitations": [
+    "First production GUI attempt timed out without report; cause unresolved. One no-CUA control generated valid authenticated evidence, browser processes drained, manager exit required existing wrapper timeout.",
+    "Session cookies expire after clean close under unchanged runtime policy.",
+    "Second BrowserProcessManager reconciliation test used the same test PID; literal manager-process restart session persistence is not independently proved.",
+    "E uses conservative existing launch admission; batch UI deferred. G/H recovery and full encrypted backup deferred with design.",
+    "Restricted affpapa deploy credential unavailable; no affpapa publication."
+  ]
+}

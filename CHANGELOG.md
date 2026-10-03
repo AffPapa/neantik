@@ -1,5 +1,13 @@
 # NeAntik changelog
 
+## Direct 0.7.13 (76) — 3 октября 2026
+
+- Исправлена штатная остановка browser: graceful quit сохраняет буферизованные persistent data; отказ не приводит к принудительному завершению.
+- Быстрые команды, пользовательские безопасные шаблоны, сохранённые фильтры, revision-safe metadata Undo и локальный ограниченный журнал.
+- Ограничена подготовка запусков; memory pressure/thermal warning блокируют новые старты, не останавливая работающие профили.
+- Chromium 154.0.8037.93 сохранён без пересборки. ZIP/DMG прошли Direct gates и fresh hosted hashes.
+- G/H и batch UI отложены; session cookies и полный session backup не обещаются. Подробные ограничения: releases/v0.7.13.json.
+
 ## Direct 0.7.12 (75) — 2 октября 2026
 
 - Chromium пересобран и обновлён до 154.0.8037.93 для Apple Silicon / Metal.
