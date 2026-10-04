@@ -191,6 +191,12 @@ struct FingerprintAuditView: View {
             if coordinator.isRunning {
                 coordinator.cancel()
             }
+            if releaseAuditTerminationScheduled {
+                Task { @MainActor in
+                    await Task.yield()
+                    NSApplication.shared.terminate(nil)
+                }
+            }
         }
         .onAppear {
             normalizeSelection()
@@ -254,10 +260,9 @@ struct FingerprintAuditView: View {
                 try? FileHandle.standardError.write(contentsOf: data)
             }
         }
-        Task { @MainActor in
-            await Task.yield()
-            NSApplication.shared.terminate(nil)
-        }
+        // AppKit cannot complete termination while the SwiftUI audit sheet
+        // remains presented. The onDisappear handler terminates after dismiss.
+        dismiss()
     }
 
     private var header: some View {
