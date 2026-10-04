@@ -103,3 +103,14 @@ if codesign -d --entitlements - "$APP_PATH" 2>&1 |
 else
   echo "Distribution: Direct"
 fi
+
+# The Direct manager retains its App ID for existing Keychain items.  Adding
+# Team ID explicitly alongside it caused AMFI to demand a provisioning
+# profile at launch, even though notarization and Gatekeeper passed.
+MANAGER_ENTITLEMENTS="$(codesign -d --entitlements - "$APP_PATH" 2>&1)"
+if [[ "$(grep -c '\[Key\]' <<<"$MANAGER_ENTITLEMENTS")" != "1" ]] ||
+   ! grep -q 'H6VGU2M6JD.app.neantik.desktop' <<<"$MANAGER_ENTITLEMENTS" ||
+   grep -q 'com.apple.developer.team-identifier' <<<"$MANAGER_ENTITLEMENTS"; then
+  echo "Direct manager must claim only its existing App ID entitlement." >&2
+  exit 65
+fi

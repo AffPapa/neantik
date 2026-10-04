@@ -1,5 +1,11 @@
 # NeAntik changelog
 
+## Direct 0.7.14 (77) — 4 октября 2026
+
+- Исправлена согласованность `navigator.deviceMemory` и HTTP Client Hints на навигации и запросах из страницы в том же Chromium 154.0.8037.93.
+- Подпись manager сохраняет App ID для Keychain и больше не заявляет лишний Team ID, который мог блокировать запуск через AMFI.
+- Release gate проверяет оба пути Device Memory на локальном fixture и требует связанное runtime evidence; пользовательские профили не используются.
+
 ## Direct 0.7.13 (76) — 3 октября 2026
 
 - Исправлена штатная остановка browser: graceful quit сохраняет буферизованные persistent data; отказ не приводит к принудительному завершению.

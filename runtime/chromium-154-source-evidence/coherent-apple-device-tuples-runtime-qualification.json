@@ -1,0 +1,30 @@
+{
+  "authenticatedGUIEnvelopeSHA256": "415146656812617d28f5a057eba8d79439821be5d41eb6d00552a2963830ba9a",
+  "candidateManifestSHA256": "c92d86160610d7f862337f0900784a4b2a3f2a289e81b6557b0e51d4c0d7442f",
+  "chromiumVersion": "154.0.8037.93",
+  "deviceMemory": {
+    "coherent": true,
+    "js": 8,
+    "navigation": {
+      "legacy": "8",
+      "modern": "8"
+    },
+    "subresource": {
+      "legacy": "8",
+      "modern": "8"
+    }
+  },
+  "effectiveHTTPRouteObserved": false,
+  "guiProductionQualified": true,
+  "guiPublicAlphaQualified": true,
+  "publicSafeGUISummarySHA256": "538d8c24d435e9b2439c107b5d226102bc310814d727a9ef6b488a23355d34e7",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "scope": "Exact signed local runtime GUI A-B-A and same-origin JS/HTTP Device Memory; final production app requires its own authenticated GUI evidence.",
+  "signedRuntimeExecutableSHA256": "f0b3227d227da0f08776fd764905a89adcddaf7ecd99dab8a2778f4e4e78542d",
+  "signedRuntimeFrameworkSHA256": "4f1f556d2d0e63924afa0aef2b800e5872df312c32ec4e064f435ca4ef716803",
+  "sourceCandidateSHA256": "0d3bb77e8800745a8c9b962b201c80a84841cb3f52fc8587017d262131db4f9f",
+  "status": "verified",
+  "tupleCatalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "unsignedFrameworkSHA256": "19a2f3e5fd88e1b5f5d91cf28662d83dc050f7b3b4d8c0d530dcb15b156e9719"
+}

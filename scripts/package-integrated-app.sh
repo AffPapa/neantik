@@ -150,6 +150,12 @@ cp "$SOURCE_CONTRACT_FILE" \
   "$EVIDENCE/$SOURCE_CONTRACT_NAME"
 cp "$SOURCE_PROVENANCE" \
   "$EVIDENCE/source-provenance.json"
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  cp "$PROJECT_DIR/runtime/chromium-154-device-memory-hotfix.json" \
+    "$EVIDENCE/chromium-154-device-memory-hotfix.json"
+  cp "$PROJECT_DIR/runtime/chromium-154-posthotfix-source-snapshot.json" \
+    "$EVIDENCE/chromium-154-posthotfix-source-snapshot.json"
+fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
 cp "$RUNTIME_NOTICES_FILE" \
@@ -163,7 +169,9 @@ cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" \
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
   "$LICENSES/ungoogled-chromium-macos-LICENSE"
 
-codesign --force --sign - "$OUTPUT_APP"
+codesign --force --sign - \
+  --entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist" \
+  "$OUTPUT_APP"
 codesign --verify --deep --strict --verbose=2 "$OUTPUT_APP"
 
 # The full Direct verifier intentionally accepts only the public bundle name

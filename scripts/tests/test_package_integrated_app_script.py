@@ -57,6 +57,11 @@ class PackageIntegratedAppScriptTests(unittest.TestCase):
     def test_packager_uses_atomic_public_name_helper(self) -> None:
         text = PACKAGER.read_text(encoding="utf-8")
 
+        self.assertIn('codesign --force --sign -', text)
+        self.assertIn(
+            '--entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"',
+            text,
+        )
         self.assertIn("verify-public-named-bundle.py", text)
         self.assertIn('--engineering-app "$OUTPUT_APP"', text)
         self.assertIn("verify-integrated-release.sh", text)

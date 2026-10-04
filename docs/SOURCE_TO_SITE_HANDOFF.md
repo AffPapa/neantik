@@ -882,7 +882,7 @@ the complete source replay remains a release blocker.
 
 The first resume of this large test graph stopped at ANGLE's Metal shader
 action, which attempted to write PCM modules below
-`/Users/dumay/.cache/clang/ModuleCache` and hit sandbox `EPERM`. This was not a
+`$HOME/.cache/clang/ModuleCache` and hit sandbox `EPERM`. This was not a
 Chromium C++ diagnostic. In the permitted macOS context, both executables in
 the already-installed Metal Toolchain `32023.920.1` passed strict signature
 verification; the repository's `verify-metal-toolchain.sh` then compiled its

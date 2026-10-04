@@ -13,6 +13,8 @@ import hashlib
 import json
 import plistlib
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -174,6 +176,94 @@ def verify_contract(
         raise M154EvidenceError("M154 source contract is missing or symlinked")
 
 
+def verify_device_memory_hotfix(document: dict[str, Any], runtime: Path) -> dict[str, Any]:
+    """Bind both M154 Client Hint paths above the unchanged 73-group replay."""
+    addendum_path = runtime / "chromium-154-device-memory-hotfix.json"
+    post_snapshot_path = runtime / "chromium-154-posthotfix-source-snapshot.json"
+    report_path = runtime / "chromium-154-source-evidence/device-memory-hotfix-transition.json"
+    files = (
+        ("content/browser/client_hints/client_hints.cc",
+         runtime / "chromium-154-source-evidence/device-memory-client-hints-preimage.cc",
+         runtime / "nevision-patches/ports/chromium-154.0.8037.93/patches/device-memory-client-hints.patch"),
+        ("third_party/blink/renderer/core/loader/frame_fetch_context.cc",
+         runtime / "chromium-154-source-evidence/device-memory-renderer-client-hints-preimage.cc",
+         runtime / "nevision-patches/ports/chromium-154.0.8037.93/patches/device-memory-renderer-client-hints.patch"),
+    )
+    base_snapshot_path = runtime / "chromium-154-source-snapshot.json"
+    paths = (addendum_path, post_snapshot_path, report_path,
+             *(path for _, preimage, patch in files for path in (preimage, patch)))
+    if any(path.is_symlink() or not path.is_file() for path in paths):
+        raise M154EvidenceError("M154 Device Memory hotfix evidence is missing or unsafe")
+    if document.get("sourceHotfixSHA256") != sha256_file(addendum_path):
+        raise M154EvidenceError("M154 candidate does not bind the Device Memory hotfix")
+    if document.get("postSourceSnapshotSHA256") != sha256_file(post_snapshot_path):
+        raise M154EvidenceError("M154 candidate does not bind the post-hotfix snapshot")
+    addendum = read_object(addendum_path, "M154 Device Memory hotfix")
+    reject_local_paths(addendum, "M154 Device Memory hotfix")
+    expected_files = [
+        {"sourcePath": relative,
+         "preimageSHA256": sha256_file(preimage),
+         "patchSHA256": sha256_file(patch)}
+        for relative, preimage, patch in files
+    ]
+    bound_files = addendum.get("files")
+    if (not isinstance(bound_files, list) or len(bound_files) != len(files)
+            or any(not isinstance(item, dict) or set(item) !=
+                   {"sourcePath", "preimageSHA256", "postimageSHA256", "patchSHA256"}
+                   for item in bound_files)):
+        raise M154EvidenceError("M154 Device Memory file bindings are invalid")
+    if (addendum.get("schemaVersion") != 2
+            or addendum.get("status") != "two-file-source-hotfix"
+            or addendum.get("releaseReady") is not False
+            or addendum.get("baseSnapshotSHA256") != sha256_file(base_snapshot_path)
+            or addendum.get("postSnapshotSHA256") != sha256_file(post_snapshot_path)
+            or addendum.get("transitionSHA256") != sha256_file(report_path)
+            or [{k: item[k] for k in expected_files[0]} for item in bound_files]
+               != expected_files
+            or any(not isinstance(item["postimageSHA256"], str)
+                   or not HEX64.fullmatch(item["postimageSHA256"])
+                   for item in bound_files)):
+        raise M154EvidenceError("M154 Device Memory hotfix binding is inconsistent")
+    before = read_object(base_snapshot_path, "M154 original source snapshot")
+    after = read_object(post_snapshot_path, "M154 post-hotfix source snapshot")
+    if ({key: value for key, value in before.items() if key != "entriesSHA256"}
+            != {key: value for key, value in after.items() if key != "entriesSHA256"}
+            or before.get("entriesSHA256") == after.get("entriesSHA256")):
+        raise M154EvidenceError("M154 hotfix snapshot changes metadata or no source content")
+    report = read_object(report_path, "M154 Device Memory transition")
+    change = report.get("changes")
+    expected_steps = [
+        {"path": entry["sourcePath"],
+         "beforeSHA256": entry["preimageSHA256"],
+         "afterSHA256": entry["postimageSHA256"],
+         "patchSHA256": entry["patchSHA256"]}
+        for entry in bound_files
+    ]
+    if (report.get("schemaVersion") != 1
+            or report.get("beforeSnapshot") != before
+            or report.get("afterSnapshot") != after
+            or report.get("overlaySteps") != expected_steps
+            or report.get("verifiedCaches") != []
+            or report.get("unexplainedChanges") != 0
+            or report.get("releaseReady") is not False
+            or not isinstance(change, list) or len(change) != len(files)
+            or any(item.get("path") != step["path"]
+                   or item.get("before", {}).get("sha256") != step["beforeSHA256"]
+                   or item.get("after", {}).get("sha256") != step["afterSHA256"]
+                   for item, step in zip(change, expected_steps))):
+        raise M154EvidenceError("M154 Device Memory transition is not a two-file exact replay")
+    with tempfile.TemporaryDirectory(prefix="neantik-m154-hotfix-") as temporary:
+        for (relative, preimage_path, patch_path), entry in zip(files, bound_files):
+            replay_path = Path(temporary) / relative
+            replay_path.parent.mkdir(parents=True)
+            replay_path.write_bytes(preimage_path.read_bytes())
+            replay = subprocess.run(["git", "apply", str(patch_path)], cwd=temporary,
+                                    capture_output=True, check=False)
+            if replay.returncode != 0 or sha256_file(replay_path) != entry["postimageSHA256"]:
+                raise M154EvidenceError("M154 Device Memory patch does not replay exactly")
+    return after
+
+
 def verify_candidate_document(
     document: dict[str, Any],
     *,
@@ -200,6 +290,7 @@ def verify_candidate_document(
         raise M154EvidenceError("M154 candidate is not bound to its source contract")
     if document.get("sourceInputManifestSHA256") != contract.get("sourceInputManifestSHA256"):
         raise M154EvidenceError("M154 candidate source-input manifest is stale")
+    post_snapshot = verify_device_memory_hotfix(document, runtime)
     snapshot = document.get("sourceSnapshot")
     if not isinstance(snapshot, dict):
         raise M154EvidenceError("M154 candidate has no exact source snapshot binding")
@@ -218,7 +309,7 @@ def verify_candidate_document(
             raise M154EvidenceError("M154 live source snapshot verifier is unavailable")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        stored_snapshot = read_object(snapshot_path, "M154 source snapshot")
+        stored_snapshot = post_snapshot
         args_relative = stored_snapshot.get("argsGN", {}).get("relativePath")
         if not isinstance(args_relative, str):
             raise M154EvidenceError("M154 source snapshot has no args.gn path")
@@ -314,4 +405,55 @@ def verify_candidate_lock(
         raise M154EvidenceError("M154 runtime lock is not bound to its source contract")
     if lock.get("sourceProvenanceSHA256") != sha256_file(runtime / "chromium-154-port-candidate.json"):
         raise M154EvidenceError("M154 runtime lock is not bound to its candidate evidence")
+    verify_tuple_runtime_qualification(lock, provenance, runtime)
     reject_local_paths(lock)
+
+
+def verify_tuple_runtime_qualification(
+    lock: dict[str, Any],
+    candidate: dict[str, Any],
+    runtime: Path,
+) -> None:
+    verification = lock.get("verification")
+    if not isinstance(verification, dict) or verification.get("coherentAppleDeviceTuples") != "verified":
+        return
+    relative = "runtime/chromium-154-source-evidence/coherent-apple-device-tuples-runtime-qualification.json"
+    if verification.get("coherentAppleDeviceTuplesEvidence") != relative:
+        raise M154EvidenceError("M154 verified tuple evidence path is not pinned")
+    evidence_path = runtime.parent / relative
+    if evidence_path.is_symlink() or not evidence_path.is_file():
+        raise M154EvidenceError("M154 verified tuple evidence is missing or unsafe")
+    if verification.get("coherentAppleDeviceTuplesEvidenceSHA256") != sha256_file(evidence_path):
+        raise M154EvidenceError("M154 verified tuple evidence digest mismatch")
+    evidence = read_object(evidence_path, "M154 verified tuple evidence")
+    reject_local_paths(evidence)
+    memory = evidence.get("deviceMemory")
+    if (evidence.get("schemaVersion") != 1 or evidence.get("status") != "verified"
+            or evidence.get("chromiumVersion") != VERSION
+            or evidence.get("guiProductionQualified") is not True
+            or not isinstance(memory, dict) or memory.get("coherent") is not True
+            or evidence.get("releaseReady") is not False):
+        raise M154EvidenceError("M154 tuple runtime qualification is incomplete")
+    if evidence.get("sourceCandidateSHA256") != sha256_file(runtime / "chromium-154-port-candidate.json"):
+        raise M154EvidenceError("M154 tuple evidence is bound to another source candidate")
+    if evidence.get("tupleCatalogSHA256") != sha256_file(runtime / "apple-device-tuples.json"):
+        raise M154EvidenceError("M154 tuple evidence uses another device catalog")
+    binding = candidate.get("binaryBinding", {})
+    if evidence.get("unsignedFrameworkSHA256") != binding.get("candidateFrameworkSHA256"):
+        raise M154EvidenceError("M154 tuple evidence uses another unsigned framework")
+    js = memory.get("js")
+    if not isinstance(js, (int, float)) or isinstance(js, bool) or js <= 0:
+        raise M154EvidenceError("M154 Device Memory JS evidence is invalid")
+    for request_kind in ("navigation", "subresource"):
+        headers = memory.get(request_kind)
+        if not isinstance(headers, dict) or any(
+            headers.get(name) != str(js) for name in ("modern", "legacy")
+        ):
+            raise M154EvidenceError(f"M154 {request_kind} Device Memory evidence is incoherent")
+    for key in (
+        "signedRuntimeExecutableSHA256", "signedRuntimeFrameworkSHA256",
+        "candidateManifestSHA256", "authenticatedGUIEnvelopeSHA256",
+        "publicSafeGUISummarySHA256",
+    ):
+        if not isinstance(evidence.get(key), str) or not HEX64.fullmatch(evidence[key]):
+            raise M154EvidenceError(f"M154 tuple evidence {key} is invalid")

@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Testing
 @testable import NeAntik
 
@@ -86,6 +87,26 @@ struct LiveBrowserProcessManagerIntegrationTests {
         #expect(browserBecameReady)
         #expect(manager.processState(for: profile.id) == .managed)
 
+        let lockDecoder = JSONDecoder()
+        lockDecoder.dateDecodingStrategy = .iso8601
+        let lockData = try Data(contentsOf: paths.lockFile(for: profile.id))
+        let lock = try lockDecoder.decode(BrowserProcessLock.self, from: lockData)
+        let runningApplication = NSRunningApplication(processIdentifier: lock.pid)
+        let observedExecutable = runningApplication?.executableURL?
+            .resolvingSymlinksInPath().path
+        #expect(
+            observedExecutable == runtimeExecutable.resolvingSymlinksInPath().path
+        )
+        var guiReady = false
+        for _ in 0..<40 {
+            if runningApplication?.isFinishedLaunching == true {
+                guiReady = true
+                break
+            }
+            try await Task.sleep(nanoseconds: 125_000_000)
+        }
+        #expect(guiReady)
+
         manager.stop(profileID: profile.id)
         var browserStopped = false
         for _ in 0..<160 {
@@ -94,6 +115,9 @@ struct LiveBrowserProcessManagerIntegrationTests {
                 break
             }
             try await Task.sleep(nanoseconds: 125_000_000)
+        }
+        if !browserStopped {
+            Issue.record("Browser stop timed out; manager error: \(manager.lastError ?? "none")")
         }
         #expect(browserStopped)
         #expect(manager.processState(for: profile.id) == .stopped)

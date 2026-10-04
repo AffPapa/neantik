@@ -99,6 +99,12 @@ verify_reviewed_runtime_evidence() {
     "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
     "$source_contract:$evidence/$(basename "$source_contract")"
   )
+  if [[ "$runtime_version" == "154.0.8037.93" ]]; then
+    comparisons+=(
+      "$PROJECT_DIR/runtime/chromium-154-device-memory-hotfix.json:$evidence/chromium-154-device-memory-hotfix.json"
+      "$PROJECT_DIR/runtime/chromium-154-posthotfix-source-snapshot.json:$evidence/chromium-154-posthotfix-source-snapshot.json"
+    )
+  fi
   local comparison
   for comparison in "${comparisons[@]}"; do
     local expected="${comparison%%:*}"

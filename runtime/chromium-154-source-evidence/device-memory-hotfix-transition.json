@@ -1,0 +1,97 @@
+{
+  "afterSnapshot": {
+    "argsGN": {
+      "relativePath": "out/NeAntikM154Qualified20261001/args.gn",
+      "sha256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e"
+    },
+    "deletedPathCount": 3253,
+    "deletedPathsSHA256": "57558a6886a2de49eb551d0fb69f96264374281dc66ce4b88debf0a8c260dc60",
+    "entriesSHA256": "2ecf92e85b05dc3833879f53151185c764385fabd6802bcb16c0d8b5e91dda13",
+    "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+    "officialChromiumBase": {
+      "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+      "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+    },
+    "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+    "recordType": "chromium-source-snapshot",
+    "releaseReady": false,
+    "schemaVersion": 2,
+    "sourceFileCount": 1136452,
+    "targetChromiumVersion": "154.0.8037.93"
+  },
+  "beforeSnapshot": {
+    "argsGN": {
+      "relativePath": "out/NeAntikM154Qualified20261001/args.gn",
+      "sha256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e"
+    },
+    "deletedPathCount": 3253,
+    "deletedPathsSHA256": "57558a6886a2de49eb551d0fb69f96264374281dc66ce4b88debf0a8c260dc60",
+    "entriesSHA256": "da7b4362a94fbb730801c7e5b501bc559f7a1980118fa19673664ee1e2c48cd7",
+    "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+    "officialChromiumBase": {
+      "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+      "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+    },
+    "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+    "recordType": "chromium-source-snapshot",
+    "releaseReady": false,
+    "schemaVersion": 2,
+    "sourceFileCount": 1136452,
+    "targetChromiumVersion": "154.0.8037.93"
+  },
+  "changes": [
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/client_hints/client_hints.cc",
+        "sha256": "2be31380d7db1ba440d46c64905b52faed3e501027a247b6145883fbc7a0da88",
+        "sizeBytes": 47997
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/client_hints/client_hints.cc",
+        "sha256": "c7075f21c5e6f775a065d0d510a8536293f4d30729ecdac8c6496864677d82c8",
+        "sizeBytes": 47664
+      },
+      "path": "content/browser/client_hints/client_hints.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/loader/frame_fetch_context.cc",
+        "sha256": "a5f947773c91771b488bf7102454e20f74a2367575b4a5ed683ba1df7c4612c7",
+        "sizeBytes": 60421
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/loader/frame_fetch_context.cc",
+        "sha256": "c06e26367ea60d49001384ea71de202f9bbe8ff513f025379ae8090a7b42f1b0",
+        "sizeBytes": 60122
+      },
+      "path": "third_party/blink/renderer/core/loader/frame_fetch_context.cc"
+    }
+  ],
+  "overlaySteps": [
+    {
+      "afterSHA256": "2be31380d7db1ba440d46c64905b52faed3e501027a247b6145883fbc7a0da88",
+      "beforeSHA256": "c7075f21c5e6f775a065d0d510a8536293f4d30729ecdac8c6496864677d82c8",
+      "patchSHA256": "ac580b7fa38575580269e917bdc491c18a712ae667d4e91147af865ae1388fa1",
+      "path": "content/browser/client_hints/client_hints.cc"
+    },
+    {
+      "afterSHA256": "a5f947773c91771b488bf7102454e20f74a2367575b4a5ed683ba1df7c4612c7",
+      "beforeSHA256": "c06e26367ea60d49001384ea71de202f9bbe8ff513f025379ae8090a7b42f1b0",
+      "patchSHA256": "ec258437e41b36fa2b6ac65ca3342d4be7bebe46c4e33536fc8442c31f295620",
+      "path": "third_party/blink/renderer/core/loader/frame_fetch_context.cc"
+    }
+  ],
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "scope": "Exact full-inventory transition; overlay/cache provenance is a separate check",
+  "unexplainedChanges": 0,
+  "verifiedCaches": []
+}

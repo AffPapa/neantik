@@ -4,7 +4,7 @@
 
 - Chromium: `154.0.8037.93`
 - Owned patch groups: `73`
-- Candidate lock SHA-256: `46d55661f2c812094bb0df26eb54149dfdf66fab8a301ea796bf2feb4cde863f`
+- Candidate lock SHA-256: `c8f08b79f0d620139da900f1afb892878a8443f4ddcfc93c1bbf647a5473579f`
 - Source contract SHA-256: `db3b78fdb491d22904038e79de2b6ae20d98418b50ceae9f544528d1aeb7b155`
 - Chromium: `https://chromium.googlesource.com/chromium/src.git` at `f89f3a4363808e117c592adedcf9947882ac3b79`
 - Common Chromium packaging: `https://github.com/ungoogled-software/ungoogled-chromium.git` at `800d0bb5078472e4442c1fd73373172754a60939`

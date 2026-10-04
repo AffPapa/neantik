@@ -135,6 +135,15 @@ if ! cmp -s "$SOURCE_CONTRACT_FILE" "$PACKAGED_SOURCE_CONTRACT"; then
   echo "Integrated Chromium source contract does not match the project contract." >&2
   exit 65
 fi
+if [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  for evidence_name in chromium-154-device-memory-hotfix.json chromium-154-posthotfix-source-snapshot.json; do
+    if [[ ! -f "$EVIDENCE/$evidence_name" || -L "$EVIDENCE/$evidence_name" ]] ||
+       ! cmp -s "$PROJECT_DIR/runtime/$evidence_name" "$EVIDENCE/$evidence_name"; then
+      echo "Integrated M154 hotfix evidence differs from the reviewed source: $evidence_name" >&2
+      exit 65
+    fi
+  done
+fi
 
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
   if ! cmp -s "$EVIDENCE/source-provenance.json" "$SOURCE_PROVENANCE_FILE";

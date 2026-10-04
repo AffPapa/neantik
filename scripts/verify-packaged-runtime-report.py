@@ -298,6 +298,17 @@ def verify(
             raise PackagedRuntimeReportError(
                 f"Packaged runtime evidence is missing or unsafe: {path}"
             )
+    if runtime_version == "154.0.8037.93":
+        for name in ("chromium-154-device-memory-hotfix.json",
+                     "chromium-154-posthotfix-source-snapshot.json"):
+            packaged = evidence / name
+            reviewed = project_root / "runtime" / name
+            if (packaged.is_symlink() or not packaged.is_file()
+                    or reviewed.is_symlink() or not reviewed.is_file()
+                    or packaged.read_bytes() != reviewed.read_bytes()):
+                raise PackagedRuntimeReportError(
+                    f"Packaged M154 hotfix evidence differs from reviewed input: {name}"
+                )
 
     command_output(
         ["codesign", "--verify", "--deep", "--strict", str(runtime_app)]

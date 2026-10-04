@@ -269,6 +269,9 @@ else
   prepare_candidate
 fi
 
+echo "Проверяю JS/HTTP Device Memory на точном кандидате и временном профиле…"
+node "$PROJECT_DIR/scripts/verify-device-memory-coherence.mjs" "$APP_PATH"
+
 echo "[2/4] Проверяю изоляцию профилей A → B → A…"
 REUSED_GUI_EVIDENCE=0
 REUSE_CHECK_LOG="$ATTEMPT_STATE_ROOT/fingerprint-reuse-check.log"

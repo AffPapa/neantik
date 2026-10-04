@@ -1,4 +1,5 @@
 import unittest
+import plistlib
 from pathlib import Path
 
 
@@ -11,9 +12,25 @@ NOTARIZE = SCRIPTS / "notarize-direct-candidate.sh"
 NOTARY_TRANSACTION = SCRIPTS / "notarize_direct_transaction.py"
 ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
+DIRECT_ENTITLEMENTS = SCRIPTS.parent / "runtime/neantik-direct-entitlements.plist"
+RELEASE_COMMAND = SCRIPTS / "Run-NeAntik-Release.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_device_memory_control_blocks_release_before_gui_audit(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+        control = 'node "$PROJECT_DIR/scripts/verify-device-memory-coherence.mjs" "$APP_PATH"'
+        self.assertIn(control, text)
+        self.assertLess(text.index(control), text.index('echo "[2/4] Проверяю изоляцию'))
+
+    def test_manager_direct_signing_claims_only_existing_app_id(self) -> None:
+        claims = plistlib.loads(DIRECT_ENTITLEMENTS.read_bytes())
+        self.assertEqual(
+            claims,
+            {"com.apple.application-identifier":
+             "H6VGU2M6JD.app.neantik.desktop"},
+        )
+
     def test_release_packaging_resolves_current_swift_bin_path(self) -> None:
         stale_path = ".build/arm64-apple-macosx/release/NeAntik"
 
@@ -93,6 +110,16 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             '--entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"',
             text,
         )
+        for signing_script in (
+            PACKAGE_APP,
+            PREPARE,
+        ):
+            self.assertIn('--entitlements', signing_script.read_text(encoding="utf-8"))
+        verifier = (SCRIPTS / "verify-release.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('MANAGER_ENTITLEMENTS="$(codesign -d --entitlements -', verifier)
+        self.assertIn('com.apple.developer.team-identifier', verifier)
         self.assertIn('-Xswiftc -debug-prefix-map', text)
         self.assertIn('-Xswiftc -file-prefix-map', text)
         self.assertIn('--scratch-path "$BUILD_SUPPORT_DIR/swift-build"', text)

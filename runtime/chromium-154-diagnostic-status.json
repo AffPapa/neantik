@@ -509,7 +509,7 @@
     "firstBuildAttempt": "Stopped at 4949/57576 because generated sdk/xcode_links still pointed to Xcode Beta and Crashpad could not read mach/exc.defs.",
     "globalDeveloperDirectory": "/Applications/Xcode-beta.app/Contents/Developer (unchanged)",
     "metalCacheCorrection": "Apple/Clang accepts -fmodules-cache-path. A temporary /private/tmp xcrun wrapper adds that flag only to metal invocations; standalone ANGLE shader compile passed and wrote a 147 KiB AIR file.",
-    "metalCacheFailure": "The Metal driver attempted to write module PCM files under /Users/dumay/.cache/clang and sandbox denied it; CLANG_MODULE_CACHE_PATH was not honored by this xcrun metal route.",
+    "metalCacheFailure": "The Metal driver attempted to write module PCM files under $HOME/.cache/clang and sandbox denied it; CLANG_MODULE_CACHE_PATH was not honored by this xcrun metal route.",
     "outputDirectory": "out/NeAntikM154OrderedReplayStable27",
     "qualification": "Diagnostic build stopped before browser output because Safe Browsing scaffold invalidated its graph. Clean GN generation now passes after restoring the owned file. Resume only from corrected graph; installed Stable Xcode 27/SDK27 remains diagnostic, not pinned hermetic toolchain. No candidate was produced.",
     "rootCause": "The output directory symlinks were generated on 2026-09-28 against Xcode Beta; process-scoped DEVELOPER_DIR did not rewrite them.",
@@ -1059,7 +1059,7 @@
       "limitations": "Only app startup and local chrome://version were verified. No isolated profile, real page/network behavior, proxy/WebRTC/DNS, recovery, crash, fingerprint coherence, keyboard scenario, or A→B→A run. App was quit after inspection.",
       "method": "Opened exact attempt8 app through CUA native GUI, navigated only to chrome://version, verified version/architecture/executable path, then quit. No external site opened.",
       "observed": "Chromium 154.0.8037.58 (Official Build, ungoogled-chromium) (arm64); source a654841425914cbb703a2931e07b70a83aedbafd; executable is attempt8 app under NeAntikM154OrderedReplayStable27.",
-      "profile": "/Users/dumay/Library/Application Support/Chromium/Default (existing default profile was selected by app startup; no profile management or site activity performed).",
+      "profile": "$HOME/Library/Application Support/Chromium/Default (existing default profile was selected by app startup; no profile management or site activity performed).",
       "result": "limited-gui-smoke-passed",
       "shellLaunchServicesProbe": "Shell open returned OSStatus -10827 in the Codex execution context; this shell-only result is superseded as a launch verdict by the successful CUA native-GUI launch of the exact attempt8 app.",
       "shellProbeError": "OSStatus -10827 kLSNoExecutableErr, although CFBundleExecutable path exists, is executable, and is arm64 Mach-O."

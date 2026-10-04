@@ -3,14 +3,16 @@
     "architecture": "arm64",
     "argsGNSHA256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e",
     "candidateExecutableSHA256": "b0a3f33e72541316eb53784c134cda3f78ee68f3d7e03937e09e15ef7780f101",
-    "candidateFrameworkSHA256": "70997cd4b7fa023cb1be0e14d17d893d66eaed76596fab72bacd797def43b409",
+    "candidateFrameworkSHA256": "19a2f3e5fd88e1b5f5d91cf28662d83dc050f7b3b4d8c0d530dcb15b156e9719",
     "sourceVersion": "154.0.8037.93",
     "status": "bound-to-built-candidate"
   },
   "policy": "Source and build binding only. Runtime, integration, security, signing, notarization and publication gates remain required.",
+  "postSourceSnapshotSHA256": "f930cc91ad03df8f3698c84b26ac3f4c57db0482e3ce54ba85ed9912ed5a0b5f",
   "releaseReady": false,
   "schemaVersion": 1,
   "sourceContractSHA256": "db3b78fdb491d22904038e79de2b6ae20d98418b50ceae9f544528d1aeb7b155",
+  "sourceHotfixSHA256": "4bbad47652c875e0a9e66b48fd83e297edbcbe628e3e31c026111b38478ac608",
   "sourceInputManifestSHA256": "1387e3829b6175d2dbbd3915ad8601540f28743bb4819fed9ab1afcc49240ffb",
   "sourceSnapshot": {
     "path": "runtime/chromium-154-source-snapshot.json",

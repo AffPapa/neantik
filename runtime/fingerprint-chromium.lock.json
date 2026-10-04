@@ -32,12 +32,13 @@
   "sourceContract": "runtime/chromium-154-source-contract.json",
   "sourceContractSHA256": "db3b78fdb491d22904038e79de2b6ae20d98418b50ceae9f544528d1aeb7b155",
   "sourceProvenance": "runtime/chromium-154-port-candidate.json",
-  "sourceProvenanceSHA256": "f248304db2b3c4f25c4d08f71f6db30358e121c3d80d27675327756e6f8dff7f",
+  "sourceProvenanceSHA256": "0d3bb77e8800745a8c9b962b201c80a84841cb3f52fc8587017d262131db4f9f",
   "status": "source-qualified",
   "targetArchitecture": "arm64",
   "verification": {
     "coherentAppleDeviceTuples": "verified",
-    "coherentAppleDeviceTuplesEvidence": "runtime/chromium-154-source-evidence/coherent-apple-device-tuples-final.json",
-    "coherentAppleDeviceTuplesEvidenceSHA256": "99290fdb10e9d2f319259a4a48360f671446e23bcd93f84106bd33b69ce86b3c"
+    "coherentAppleDeviceTuplesEvidence": "runtime/chromium-154-source-evidence/coherent-apple-device-tuples-runtime-qualification.json",
+    "coherentAppleDeviceTuplesEvidenceSHA256": "b13094e291fe6062802a05cadc6616c0975d588d773dadae547ef235acdf0ecc",
+    "scope": "Production-qualified local GUI A-B-A and same-origin JS/HTTP Device Memory on the exact signed runtime; final production app requires its own authenticated GUI evidence."
   }
 }
