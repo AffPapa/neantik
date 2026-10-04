@@ -80,6 +80,7 @@ struct LiveFingerprintAuditIntegrationTests {
             return
         }
         guard let report = coordinator.report else {
+            print("LIVE_FINGERPRINT_PROCESS_STATE runningCount=\(processes.runningProfileIDs.count) managerError=\(processes.lastError ?? "none")")
             if let resultURL {
                 try (
                     "error: " +
