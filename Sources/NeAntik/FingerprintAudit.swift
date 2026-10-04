@@ -1931,12 +1931,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
             )
             let socket = session.webSocketTask(with: request)
             socket.resume()
+            let responseTimeout = Task {
+                do {
+                    try await Task.sleep(for: .seconds(2))
+                    socket.cancel(with: .goingAway, reason: nil)
+                } catch {
+                    // The browser responded or disconnected first.
+                }
+            }
             defer {
+                responseTimeout.cancel()
                 socket.cancel(with: .normalClosure, reason: nil)
             }
             let command = "{\"id\":1,\"method\":\"Browser.close\"}"
             try await socket.send(.string(command))
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            // Keep the socket alive until Chromium acknowledges the command
+            // or closes the connection. A fixed 200 ms delay can cancel the
+            // command before it reaches a busy browser process.
+            _ = try? await socket.receive()
         } catch {
             // This is a graceful fast path. BrowserProcessManager still owns
             // the process and performs the ordinary termination fallback.
