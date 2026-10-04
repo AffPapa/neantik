@@ -7,14 +7,14 @@ struct ProfileArtifactProvenanceView: View {
         GroupBox("Файлы и расширения") {
             VStack(alignment: .leading, spacing: 8) {
                 LabeledContent("Загрузки", value: snapshot.downloads.title)
-                LabeledContent("Расширения", value: snapshot.extensions.title)
+                LabeledContent("Каталоги расширений", value: snapshot.extensions.title)
                 LabeledContent("Карантин", value: snapshot.quarantine.title)
                 LabeledContent(
                     "Политика",
                     value: snapshot.quarantinePolicy.title
                 )
                 Text(
-                    "Provenance проверяется локально по профилю. Файлы не запускаются автоматически; карантин перемещает только явно выбранный безопасный объект."
+                    "Показано число локальных каталогов расширений, а не их активность или разрешения. Файлы не запускаются автоматически; карантин перемещает только явно выбранный безопасный объект."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

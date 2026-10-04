@@ -35,6 +35,13 @@ struct ProfileQuickCommandsSheet: View {
         performAction(selected.action)
     }
 
+    private func moveSelection(by offset: Int) {
+        let items = matches
+        guard !items.isEmpty else { return }
+        let current = items.firstIndex(where: { $0.id == selection }) ?? 0
+        selection = items[min(max(current + offset, 0), items.count - 1)].id
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Быстрые команды").font(.title2.bold())
@@ -42,12 +49,13 @@ struct ProfileQuickCommandsSheet: View {
                 .textFieldStyle(.roundedBorder)
                 .focused($searchFocused)
                 .onSubmit(perform)
-                .onMoveCommand { direction in
-                    let items = matches
-                    guard !items.isEmpty else { return }
-                    let current = items.firstIndex(where: { $0.id == selection }) ?? 0
-                    if direction == .down { selection = items[min(current + 1, items.count - 1)].id }
-                    if direction == .up { selection = items[max(current - 1, 0)].id }
+                .onKeyPress(.downArrow) {
+                    moveSelection(by: 1)
+                    return .handled
+                }
+                .onKeyPress(.upArrow) {
+                    moveSelection(by: -1)
+                    return .handled
                 }
             List(matches, selection: $selection) { command in
                 VStack(alignment: .leading) {

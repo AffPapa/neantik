@@ -643,7 +643,9 @@ struct ContentView: View {
             })
             .accessibilityHidden(true)
         }
-        .sheet(item: $editorRequest) { request in
+        .sheet(item: $editorRequest, onDismiss: {
+            profileSearchIsFocused = true
+        }) { request in
             profileEditorSheet(for: request)
                 .accessibilityHidden(true)
         }
@@ -1009,11 +1011,21 @@ struct ContentView: View {
         }
         .task(id: selectedLifecycleScanID) {
             guard let profile = selectedProfile else { return }
-            artifactProvenanceByProfileID[profile.id] =
-                ProfileArtifactProvenanceSnapshot.inspect(
-                    profileID: profile.id,
-                    paths: store.paths
-                )
+            do {
+                let artifacts = try await ProfileArtifactProvenanceSnapshot
+                    .inspectAsync(profileID: profile.id, paths: store.paths)
+                guard !Task.isCancelled,
+                      selectedProfile?.id == profile.id
+                else { return }
+                artifactProvenanceByProfileID[profile.id] = artifacts
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled,
+                      selectedProfile?.id == profile.id
+                else { return }
+                artifactProvenanceByProfileID[profile.id] = .unavailable
+            }
             do {
                 let snapshot = try await ProfileLifecycleHealthSnapshot
                     .inspectAsync(

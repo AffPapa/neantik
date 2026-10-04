@@ -951,8 +951,11 @@ final class ProfileStore: ObservableObject {
         _ profile: BrowserProfile
     ) throws {
         try requireStorage()
-        guard profiles.contains(where: { $0.id == profile.id }) else {
+        guard let current = profiles.first(where: { $0.id == profile.id }) else {
             throw BrowserProfileDeletedError()
+        }
+        guard current.revision == profile.revision else {
+            throw ProfileDeleteRevisionConflictError()
         }
         let previousProfiles = profiles
         let directory = paths.profileDirectory(for: profile.id)
@@ -1729,6 +1732,12 @@ struct BrowserProfileRevisionConflictError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         "Профиль изменился в другом окне. Твои изменения не сохранены; открой редактор заново, чтобы не перезаписать более новую версию."
+    }
+}
+
+struct ProfileDeleteRevisionConflictError: LocalizedError, Equatable {
+    var errorDescription: String? {
+        "Профиль изменился в другом окне. Удаление отменено; проверь текущие данные и повтори действие."
     }
 }
 

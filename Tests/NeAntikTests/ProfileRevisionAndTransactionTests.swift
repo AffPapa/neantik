@@ -75,6 +75,38 @@ struct ProfileRevisionAndTransactionTests {
     }
 
     @Test
+    func staleDeleteCannotRemoveNewerProfileOrBrowserData() throws {
+        let fixture = try TransactionFixture()
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original"))
+        let marker = fixture.paths.browserDataDirectory(for: original.id)
+            .appendingPathComponent("synthetic-session-marker")
+        try Data("keep".utf8).write(to: marker)
+        let otherWindow = ProfileStore(paths: fixture.paths)
+        var edited = try #require(otherWindow.profile(withID: original.id))
+        edited.name = "Edited in another window"
+        let current = try otherWindow.upsert(edited)
+        let manager = BrowserProcessManager(
+            paths: fixture.paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        #expect(throws: ProfileDeleteRevisionConflictError.self) {
+            try fixture.store.delete(original, processManager: manager)
+        }
+        let reloaded = ProfileStore(paths: fixture.paths)
+        #expect(reloaded.profile(withID: original.id)?.name == current.name)
+        #expect(reloaded.profile(withID: original.id)?.revision == current.revision)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        #expect(!FileManager.default.fileExists(
+            atPath: fixture.paths.profileDeletionTombstone(for: original.id).path
+        ))
+        #expect(!FileManager.default.fileExists(
+            atPath: fixture.paths.profileCredentialCleanupMarker(for: original.id).path
+        ))
+    }
+
+    @Test
     func narrowPinMutationPreservesNewerFields() throws {
         let fixture = try TransactionFixture()
         let original = try fixture.store.upsert(

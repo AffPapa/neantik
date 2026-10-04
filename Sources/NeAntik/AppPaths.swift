@@ -163,6 +163,10 @@ struct AppPaths: Sendable {
         )
     }
 
+    var snapshotsGuardFile: URL {
+        processLocksDirectory.appendingPathComponent("Snapshots.guard")
+    }
+
     var bulkCredentialImportGuardFile: URL {
         processLocksDirectory.appendingPathComponent(
             "BulkCredentialImport.guard"
@@ -395,6 +399,10 @@ struct AppPaths: Sendable {
             at: profilesMetadataGuardFile,
             operation
         )
+    }
+
+    func withSnapshotsGuard<T>(_ operation: () throws -> T) throws -> T {
+        try withPrivateFileGuard(at: snapshotsGuardFile, operation)
     }
 
     func acquireBulkCredentialImportGuard() throws -> PrivateFileGuardLease {

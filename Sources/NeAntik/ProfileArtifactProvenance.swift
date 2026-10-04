@@ -40,6 +40,13 @@ struct ProfileArtifactProvenanceSnapshot: Equatable, Sendable {
         quarantinePolicy: .explicitManagerActionOnly
     )
 
+    static let unavailable = Self(
+        downloads: .unavailable,
+        extensions: .unavailable,
+        quarantine: .unavailable,
+        quarantinePolicy: .explicitManagerActionOnly
+    )
+
     let downloads: ProfileArtifactInventoryStatus
     let extensions: ProfileArtifactInventoryStatus
     let quarantine: ProfileArtifactInventoryStatus
@@ -57,36 +64,58 @@ struct ProfileArtifactProvenanceSnapshot: Equatable, Sendable {
                     "Downloads",
                     isDirectory: true
                 ),
+                safeRoot: browserData,
                 fileManager: fileManager
             ),
             extensions: inventory(
                 at: browserData
                     .appendingPathComponent("Default", isDirectory: true)
                     .appendingPathComponent("Extensions", isDirectory: true),
-                fileManager: fileManager
+                safeRoot: browserData,
+                fileManager: fileManager,
+                countTopLevelDirectories: true
             ),
             quarantine: inventory(
                 at: browserData.appendingPathComponent(
                     "Quarantine",
                     isDirectory: true
                 ),
+                safeRoot: browserData,
                 fileManager: fileManager
             ),
             quarantinePolicy: .explicitManagerActionOnly
         )
     }
 
+    static func inspectAsync(profileID: UUID, paths: AppPaths) async throws -> Self {
+        let scan = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            let result = inspect(profileID: profileID, paths: paths)
+            try Task.checkCancellation()
+            return result
+        }
+        return try await withTaskCancellationHandler {
+            try await scan.value
+        } onCancel: {
+            scan.cancel()
+        }
+    }
+
     private static func inventory(
         at directory: URL,
-        fileManager: FileManager
+        safeRoot: URL,
+        fileManager: FileManager,
+        countTopLevelDirectories: Bool = false
     ) -> ProfileArtifactInventoryStatus {
         guard fileManager.fileExists(atPath: directory.path) else {
             return .empty
         }
         do {
-            guard try ProfileArtifactPathSafety.isDirectoryWithoutSymlink(
-                directory
-            ) else {
+            guard try ProfileArtifactPathSafety.isDirectoryWithoutSymlink(directory),
+                  try ProfileArtifactPathSafety.hasNoSymlinkAncestors(
+                      of: directory,
+                      inside: safeRoot
+                  ) else {
                 return .unavailable
             }
             let keys: Set<URLResourceKey> = [
@@ -110,7 +139,9 @@ struct ProfileArtifactProvenanceSnapshot: Equatable, Sendable {
                         .maximumSynchronousScanBytes
             )
             var count = 0
+            let canonicalRoot = directory.resolvingSymlinksInPath().path
             for case let entry as URL in enumerator {
+                if Task.isCancelled { return .unavailable }
                 let values = try entry.resourceValues(forKeys: keys)
                 guard values.isSymbolicLink != true,
                       values.isDirectory == true || values.isRegularFile == true
@@ -122,7 +153,13 @@ struct ProfileArtifactProvenanceSnapshot: Equatable, Sendable {
                     ? fileBytes
                     : 0)
                 else { return .unavailable }
-                if values.isRegularFile == true {
+                if countTopLevelDirectories {
+                    if values.isDirectory == true &&
+                        entry.deletingLastPathComponent()
+                            .resolvingSymlinksInPath().path == canonicalRoot {
+                        count += 1
+                    }
+                } else if values.isRegularFile == true {
                     count += 1
                 }
             }

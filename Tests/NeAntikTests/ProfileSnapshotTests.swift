@@ -40,6 +40,138 @@ struct ProfileSnapshotTests {
     }
 
     @Test
+    func clockRollbackCannotPruneTheSnapshotJustSaved() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-clock-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Clock rollback")
+        for offset in 1...3 {
+            _ = try ProfileSnapshotStore.save(
+                profiles: [profile], folderNameByProfileID: [:], paths: paths,
+                createdAt: Date(timeIntervalSince1970: 1_800_000_000 + Double(offset))
+            )
+        }
+
+        let saved = try ProfileSnapshotStore.save(
+            profiles: [profile], folderNameByProfileID: [:], paths: paths,
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        #expect(FileManager.default.fileExists(atPath: saved.path))
+        #expect(try ProfileSnapshotStore.snapshots(paths: paths).count == 3)
+        #expect(try ProfileSnapshotStore.document(from: saved, paths: paths).configuration.profiles.count == 1)
+    }
+
+    @Test
+    func concurrentSavesKeepRetentionConsistent() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-concurrent-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Concurrent")
+        var failures = 0
+        await withTaskGroup(of: Bool.self) { group in
+            for index in 0..<24 {
+                group.addTask {
+                    (try? ProfileSnapshotStore.save(
+                        profiles: [profile], folderNameByProfileID: [:], paths: paths,
+                        createdAt: Date(timeIntervalSince1970: 1_800_000_000 + Double(index))
+                    )) != nil
+                }
+            }
+            for await succeeded in group where !succeeded { failures += 1 }
+        }
+        #expect(failures == 0)
+        let files = try ProfileSnapshotStore.snapshots(paths: paths)
+        #expect(files.count == ProfileSnapshotStore.maximumSnapshots)
+        for file in files {
+            #expect(try ProfileSnapshotStore.document(from: file, paths: paths).configuration.profiles.count == 1)
+        }
+    }
+
+    @Test
+    func cancelledSaveWaitingForSnapshotGuardDoesNotCommit() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-cancel-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let acquired = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            try? paths.withSnapshotsGuard {
+                acquired.signal()
+                _ = release.wait(timeout: .now() + 5)
+            }
+        }
+        let acquiredGuard = await Task.detached {
+            acquired.wait(timeout: .now() + 5) == .success
+        }.value
+        #expect(acquiredGuard)
+        let task = Task {
+            try await ProfileSnapshotFileService.save(
+                profiles: [BrowserProfile(name: "Cancelled")],
+                folderNameByProfileID: [:], paths: paths
+            )
+        }
+        task.cancel()
+        release.signal()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(try ProfileSnapshotStore.snapshots(paths: paths).isEmpty)
+    }
+
+    @Test
+    func unsafeExistingSnapshotStopsSaveBeforeNewFileIsWritten() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-preflight-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let outside = root.appendingPathComponent("outside.json")
+        try Data("synthetic outside".utf8).write(to: outside)
+        let link = paths.profileSnapshotsDirectory
+            .appendingPathComponent("snapshot-1800000000-unsafe.json")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+
+        #expect(throws: POSIXError.self) {
+            try ProfileSnapshotStore.save(
+                profiles: [BrowserProfile(name: "Not saved")],
+                folderNameByProfileID: [:], paths: paths
+            )
+        }
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: paths.profileSnapshotsDirectory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(entries.map(\.lastPathComponent) == [link.lastPathComponent])
+        #expect(try Data(contentsOf: outside) == Data("synthetic outside".utf8))
+    }
+
+    @Test
+    func postWriteFailureRemovesNewSnapshotAndPreservesPriorVersions() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-fault-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Fault")
+        let previous = try ProfileSnapshotStore.save(
+            profiles: [profile], folderNameByProfileID: [:], paths: paths,
+            createdAt: Date(timeIntervalSince1970: 1_800_000_001)
+        )
+
+        #expect(throws: ProfileSnapshotCommitError.self) {
+            try ProfileSnapshotStore.save(
+                profiles: [profile], folderNameByProfileID: [:], paths: paths,
+                createdAt: Date(timeIntervalSince1970: 1_800_000_002),
+                afterWrite: { throw SnapshotInjectedFailure() }
+            )
+        }
+        let files = try ProfileSnapshotStore.snapshots(paths: paths)
+        #expect(files.map(\.lastPathComponent) == [previous.lastPathComponent])
+        #expect(try ProfileSnapshotStore.document(from: previous, paths: paths)
+            .configuration.profiles.count == 1)
+    }
+
+    @Test
     func restoreCreatesFreshIdentityAndFailsClosedForCorruption() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("neantik-snapshot-\(UUID().uuidString)")
@@ -179,3 +311,5 @@ struct ProfileSnapshotTests {
         #expect(snapshots.first?.lastPathComponent == savedURL.lastPathComponent)
     }
 }
+
+private struct SnapshotInjectedFailure: Error {}

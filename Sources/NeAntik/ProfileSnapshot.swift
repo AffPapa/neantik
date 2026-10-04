@@ -113,7 +113,8 @@ enum ProfileSnapshotStore {
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String],
         paths: AppPaths,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        afterWrite: () throws -> Void = {}
     ) throws -> URL {
         let document = try ProfileSnapshotDocument(
             profiles: profiles,
@@ -128,14 +129,37 @@ enum ProfileSnapshotStore {
             throw ProfileSnapshotError.fileTooLarge
         }
 
-        try paths.prepareBaseDirectories()
-        let stamp = Int(createdAt.timeIntervalSince1970)
-        let file = paths.profileSnapshotsDirectory.appendingPathComponent(
-            "snapshot-" + String(stamp) + "-" + UUID().uuidString + ".json"
-        )
-        try paths.writePrivateFile(data, to: file)
-        try prune(paths: paths)
-        return file
+        return try paths.withSnapshotsGuard {
+            try Task.checkCancellation()
+            try paths.prepareBaseDirectories()
+            // Refuse an unsafe existing entry before publishing a new file.
+            // Otherwise a failed retention scan leaves an unreported snapshot.
+            _ = try snapshots(paths: paths)
+            let stamp = Int(createdAt.timeIntervalSince1970)
+            let file = paths.profileSnapshotsDirectory.appendingPathComponent(
+                "snapshot-" + String(stamp) + "-" + UUID().uuidString + ".json"
+            )
+            // Cancellation is honored before the durable write. Once the
+            // file exists, finish retention and report the committed save.
+            try Task.checkCancellation()
+            try paths.writePrivateFile(data, to: file)
+            do {
+                try afterWrite()
+                try prune(paths: paths, preserving: file)
+            } catch {
+                let rolledBack: Bool
+                do {
+                    if FileManager.default.fileExists(atPath: file.path) {
+                        try FileManager.default.removeItem(at: file)
+                    }
+                    rolledBack = true
+                } catch {
+                    rolledBack = false
+                }
+                throw ProfileSnapshotCommitError(rolledBack: rolledBack)
+            }
+            return file
+        }
     }
 
     static func document(
@@ -214,10 +238,17 @@ enum ProfileSnapshotStore {
             }
     }
 
-    private static func prune(paths: AppPaths) throws {
+    private static func prune(paths: AppPaths, preserving saved: URL) throws {
         let files = try snapshots(paths: paths)
         guard files.count > maximumSnapshots else { return }
-        for file in files.dropFirst(maximumSnapshots) {
+        // A wall-clock correction must not make a successful save return a URL
+        // that retention immediately removed.
+        let retained = Set(
+            Array(files.filter { $0.lastPathComponent != saved.lastPathComponent }
+                .prefix(maximumSnapshots - 1)).map(\.lastPathComponent) +
+                [saved.lastPathComponent]
+        )
+        for file in files where !retained.contains(file.lastPathComponent) {
             try paths.validatePrivateFile(file)
             try FileManager.default.removeItem(at: file)
         }
@@ -227,6 +258,16 @@ enum ProfileSnapshotStore {
         let root = paths.profileSnapshotsDirectory.standardizedFileURL.path
         let candidate = url.standardizedFileURL.path
         return candidate.hasPrefix(root + "/")
+    }
+}
+
+struct ProfileSnapshotCommitError: LocalizedError {
+    let rolledBack: Bool
+
+    var errorDescription: String? {
+        rolledBack
+            ? "Snapshot не сохранён; новый файл удалён. Предыдущие версии проверь в списке snapshots."
+            : "Snapshot не завершён, и новый файл не удалось удалить. Проверь локальную папку snapshots перед повтором."
     }
 }
 
