@@ -1,6 +1,6 @@
 # Инвентаризация сетевых обращений NeAntik
 
-Проверено 21 сентября 2026 года по текущему Swift-коду, ресурсам приложения,
+Обновлено 5 октября 2026 года по текущему Swift-коду, ресурсам приложения,
 launch-policy и release-скриптам. Этот документ разделяет подтверждённые
 manager-поверхности и поведение встроенного Chromium. Он не является
 доказательством фактического сетевого маршрута браузера.
@@ -9,7 +9,7 @@ manager-поверхности и поведение встроенного Chro
 
 | Поверхность | Когда выполняется | Адрес/механизм | Данные и ограничения | Статус |
 | --- | --- | --- | --- | --- |
-| Проверка прокси | Только по действию пользователя и свежо перед прокси-запуском | `/usr/bin/curl` -> `https://ipapi.co/json/` через введённый proxy | Временный stdin-конфиг; пароль не попадает в аргументы. Ответ ограничен 16 KiB и проверяется по схеме. UI показывает только безопасный контекст; raw IP не входит в `ProxyHealthSuccess` и не сохраняется | verified |
+| Проверка прокси | Только по действию пользователя и свежо перед прокси-запуском | `/usr/bin/curl` через выбранный proxy к `https://ipwho.is/` и `https://free.freeipapi.com/api/v1/json`; при недоступности пары — резервный `https://ipapi.co/json/` | Временный stdin-конфиг; пароль не попадает в аргументы. Ответ каждого сервиса ограничен 16 KiB. Для пары требуются одинаковые выходной IP и страна, валидный часовой пояс из списка страны и язык. Несогласованные ответы отклоняются без резерва. Raw IP не сохраняется в `ProxyHealthSuccess` | live first-three HTTP fixtures + source tests |
 | Optional telemetry | Только если endpoint задан в `Info.plist`, пользователь дал consent и событие разрешено | `URLSession` -> HTTPS endpoint | Только агрегированные счётчики профилей, версия/build, архитектура, ОС и тип события. Exact host policy: `affpapa.org`, `browser.free`, `github.com`; без credentials/query/fragment и нестандартного порта. В Direct resource endpoint пустой, поэтому обращений нет | verified / disabled in Direct |
 | Public stats link | Только как пользовательский переход, если URL задан | HTTPS URL из `Info.plist` | Тот же exact host policy; в Direct URL пустой | verified / disabled in Direct |
 | Signed update manifest | Offline verification of a supplied manifest | Сеть не выполняется менеджером | URL только валидируется по exact host policy; automatic update и download выключены | verified / disabled |
@@ -49,5 +49,5 @@ runtime-измерения. Поэтому этот пункт остаётся 
 source/packaging pair и отдельного разрешения пересборки.
 
 Нельзя превращать launch flags, proxy configuration или успешный ответ
-`ipapi.co` в заявление о полной анонимности, необнаружимости или обходе
+IP-сервисов в заявление о полной анонимности, необнаружимости или обходе
 контролей третьих сторон.

@@ -174,6 +174,30 @@ struct BrowserLaunchPreparationPolicyTests {
         )
     }
 
+    @Test
+    func crossCheckedContextCanSatisfyTheSameStrictLaunchGate() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let observedAt = now.addingTimeInterval(-10)
+        var profile = proxiedProfile(evidenceObservedAt: observedAt)
+        profile.identity = profile.identity.replacingProxyContext(
+            timezoneIdentifier: "Europe/Berlin",
+            localeIdentifier: "de-DE",
+            evidence: .crossChecked(observedAt: observedAt)
+        )
+        let health = successfulHealth(
+            observedAt: observedAt,
+            source: .crossChecked
+        )
+        #expect(health.lastSuccess?.source == .crossChecked)
+        #expect(
+            BrowserLaunchPreparationPolicy.resolve(
+                profile: profile,
+                proxyHealth: health,
+                now: now
+            ) == .launchImmediately
+        )
+    }
+
     private func proxiedProfile(
         evidenceObservedAt: Date
     ) -> BrowserProfile {
@@ -193,7 +217,8 @@ struct BrowserLaunchPreparationPolicyTests {
 
     private func successfulHealth(
         observedAt: Date,
-        timezoneIdentifier: String? = "Europe/Berlin"
+        timezoneIdentifier: String? = "Europe/Berlin",
+        source: ProxyHealthSource = .ipAPI
     ) -> ProxyHealthState {
         ProxyHealthUpdatePolicy.success(
             ProxyTestObservation(
@@ -206,7 +231,8 @@ struct BrowserLaunchPreparationPolicyTests {
                     countryCode: "DE",
                     timezoneIdentifier: timezoneIdentifier,
                     localeIdentifier: "de-DE"
-                )
+                ),
+                source: source
             )
         )
     }

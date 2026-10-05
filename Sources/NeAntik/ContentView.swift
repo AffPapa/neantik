@@ -552,6 +552,9 @@ struct ContentView: View {
                     .onChange(of: proxy.size.width) { _, width in
                         updateWorkspaceColumns(for: width)
                     }
+                    .onChange(of: editorRequest?.id) { _, _ in
+                        updateWorkspaceColumns(for: proxy.size.width)
+                    }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -1339,11 +1342,16 @@ struct ContentView: View {
             width < WorkspaceLayout.minimumSourceColumnWidth +
                 WorkspaceLayout.minimumProfileColumnWidth +
                 WorkspaceLayout.minimumDetailColumnWidth
-        guard shouldUseCompactColumns != usesCompactWorkspaceColumns else {
+        let desiredVisibility: NavigationSplitViewVisibility =
+            shouldUseCompactColumns
+                ? (editorRequest == nil ? .doubleColumn : .detailOnly)
+                : .all
+        guard shouldUseCompactColumns != usesCompactWorkspaceColumns ||
+                columnVisibility != desiredVisibility else {
             return
         }
         usesCompactWorkspaceColumns = shouldUseCompactColumns
-        columnVisibility = shouldUseCompactColumns ? .doubleColumn : .all
+        columnVisibility = desiredVisibility
     }
 
     private var quickCommands: [ProfileQuickCommand] {
@@ -3416,7 +3424,10 @@ struct ContentView: View {
                     timezoneIdentifier:
                         observation.result.timezoneIdentifier,
                     localeIdentifier: observation.result.localeIdentifier,
-                    evidence: .ipAPI(observedAt: observation.observedAt)
+                    evidence: .from(
+                        observation.source,
+                        observedAt: observation.observedAt
+                    )
                 )
             _ = try store.upsert(currentProfile)
             fingerprintObservationStore.remove(profileID: profileID)

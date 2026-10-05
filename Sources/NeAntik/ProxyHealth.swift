@@ -51,6 +51,7 @@ enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
 
 enum ProxyHealthSource: String, Codable, Equatable, Sendable {
     case ipAPI = "ipapi.co"
+    case crossChecked = "ipwho.is+freeipapi.com"
 }
 
 struct ProxyHealthAttempt: Codable, Equatable, Sendable {
@@ -167,6 +168,7 @@ enum ProxyHealthUpdatePolicy {
     ) -> ProxyHealthState {
         let success = ProxyHealthSuccess(
             observedAt: observation.observedAt,
+            source: observation.source,
             responseTimeMilliseconds: observation.responseTimeMilliseconds,
             exitAddressWasObserved: !observation.result.ipAddress.isEmpty,
             city: observation.result.city,

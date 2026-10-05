@@ -157,8 +157,8 @@ struct ProfileEditorPresentationTests {
             location: "Нидерланды · Europe/Amsterdam"
         )
 
-        #expect(withoutLocation == "Маршрут подтверждён")
-        #expect(withLocation.contains("Маршрут подтверждён"))
+        #expect(withoutLocation == "Проверка через прокси прошла")
+        #expect(withLocation.contains("Проверка через прокси прошла"))
         #expect(!withoutLocation.contains("203.0.113.77"))
         #expect(!withLocation.contains("203.0.113.77"))
         #expect(!withLocation.contains("ipAddress"))

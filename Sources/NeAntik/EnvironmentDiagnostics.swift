@@ -714,7 +714,7 @@ enum ProfileEnvironmentInspector {
                 EnvironmentDiagnosticField(
                     id: "geolocation.source",
                     title: "Источник",
-                    value: "ipapi.co через проверку прокси",
+                    value: "\(success.source.rawValue) через проверку прокси",
                     state: .observed,
                     severity: routeContextIsComplete
                         ? .success

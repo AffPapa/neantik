@@ -131,6 +131,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
 
 struct ProxyContextEvidence: Codable, Equatable, Sendable {
     static let supportedSource = "ipapi.co"
+    static let crossCheckedSource = "ipwho.is+freeipapi.com"
     static let freshnessLifetime: TimeInterval = 30 * 24 * 60 * 60
 
     let source: String
@@ -143,8 +144,26 @@ struct ProxyContextEvidence: Codable, Equatable, Sendable {
         )
     }
 
+    static func crossChecked(observedAt: Date = Date()) -> ProxyContextEvidence {
+        ProxyContextEvidence(
+            source: crossCheckedSource,
+            observedAt: observedAt
+        )
+    }
+
+    static func from(
+        _ source: ProxyHealthSource,
+        observedAt: Date
+    ) -> ProxyContextEvidence {
+        switch source {
+        case .ipAPI: ipAPI(observedAt: observedAt)
+        case .crossChecked: crossChecked(observedAt: observedAt)
+        }
+    }
+
     var isValid: Bool {
-        source == Self.supportedSource &&
+        (source == Self.supportedSource ||
+            source == Self.crossCheckedSource) &&
             observedAt.timeIntervalSinceReferenceDate.isFinite
     }
 

@@ -109,7 +109,8 @@ present consistency checks as future privacy controls and must not promise that
 any third-party service cannot correlate a user.
 
 Proxy-derived timezone and locale values are applied only when a proxy is
-still configured and the local `ipapi.co` evidence is valid and no older than
+still configured and the local `ipapi.co` or independently cross-checked
+`ipwho.is` + `free.freeipapi.com` evidence is valid and no older than
 30 days. Clock skew up to five minutes is tolerated. The ordinary UI launch
 path has a stricter route gate: every Start for a proxied profile makes a fresh
 observation. It must be bound to the current profile revision, describe the

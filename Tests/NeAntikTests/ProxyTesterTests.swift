@@ -201,6 +201,68 @@ struct ProxyTesterTests {
     }
 
     @Test
+    func crossCheckedServicesRequireMatchingExitAndCountry() throws {
+        let first = Data(
+            """
+            {"success":true,"ip":"203.0.113.12","country_code":"DE",\
+            "country":"Germany","city":"Berlin",\
+            "timezone":{"id":"Europe/Berlin"}}
+            """.utf8
+        )
+        let second = Data(
+            """
+            {"ipAddress":"203.0.113.12","countryCode":"DE",\
+            "timeZones":["Europe/Berlin"],"languages":["de","en"]}
+            """.utf8
+        )
+        let result = try ProxyTester.parseCrossCheckedResponses(
+            ipWhois: first,
+            freeIPAPI: second
+        )
+        #expect(result.ipAddress == "203.0.113.12")
+        #expect(result.timezoneIdentifier == "Europe/Berlin")
+        #expect(result.localeIdentifier == "de")
+
+        for conflicting in [
+            """
+            {"ipAddress":"203.0.113.13","countryCode":"DE",\
+            "timeZones":["Europe/Berlin"],"languages":["de"]}
+            """,
+            """
+            {"ipAddress":"203.0.113.12","countryCode":"US",\
+            "timeZones":["Europe/Berlin"],"languages":["de"]}
+            """,
+            """
+            {"ipAddress":"203.0.113.12","countryCode":"DE",\
+            "timeZones":["Europe/Berlin"],"languages":[]}
+            """,
+            """
+            {"ipAddress":"203.0.113.12","countryCode":"DE",\
+            "timeZones":["Europe/Paris"],"languages":["de"]}
+            """
+        ] {
+            #expect(throws: NeAntikError.self) {
+                try ProxyTester.parseCrossCheckedResponses(
+                    ipWhois: first,
+                    freeIPAPI: Data(conflicting.utf8)
+                )
+            }
+        }
+    }
+
+    @Test
+    func crossCheckedEvidenceHasOwnSourceAndFreshness() {
+        let observedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let evidence = ProxyContextEvidence.from(
+            .crossChecked,
+            observedAt: observedAt
+        )
+        #expect(evidence.source == "ipwho.is+freeipapi.com")
+        #expect(evidence.isValid)
+        #expect(evidence.isFresh(relativeTo: observedAt))
+    }
+
+    @Test
     func rejectsFailedLocationResponse() {
         let data = Data(
             """

@@ -103,8 +103,8 @@ enum ProfileProxyTestPresentation {
       in: .whitespacesAndNewlines
     )
     return cleanLocation.isEmpty
-      ? "Маршрут подтверждён"
-      : "Маршрут подтверждён · " + cleanLocation
+      ? "Проверка через прокси прошла"
+      : "Проверка через прокси прошла · " + cleanLocation
   }
 }
 
@@ -550,7 +550,7 @@ struct ProfileEditorView: View {
               }
             }
             Text(
-              "Выбери тип и соответствующий ему порт из кабинета провайдера: у одного сервера порты HTTP и SOCKS5 могут различаться. HTTP-прокси подходит и для HTTPS-сайтов; HTTPS здесь означает шифрование до самого прокси."
+              "Выбери протокол и его порт из кабинета провайдера. Порты HTTP и SOCKS5 могут различаться."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -561,10 +561,18 @@ struct ProfileEditorView: View {
             )
             .accessibilityLabel("Строка прокси для импорта")
             Text(
-              "Можно вставить строку login:password@host:port или ссылку с http://, https:// либо socks5://. Без схемы сохранится выбранный выше тип."
+              "login:password@host:port · без схемы используется выбранный тип"
             )
             .font(.caption)
             .foregroundStyle(.secondary)
+
+            DisclosureGroup("Форматы и выбор протокола") {
+              Text(
+                "Принимаются login:password@host:port, host:port@login:password, host:port и ссылки с http://, https:// или socks5://. Схема в строке задаёт тип. HTTP-прокси подходит для HTTPS-сайтов; HTTPS-прокси означает шифрование соединения до самого прокси."
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            }
 
             ViewThatFits(in: .horizontal) {
               HStack {
@@ -634,46 +642,49 @@ struct ProfileEditorView: View {
               validationLabel(for: .proxyPassword)
             }
 
-            HStack(spacing: 10) {
-              if isTesting {
-                ProgressView()
-                  .controlSize(.small)
-                  .accessibilityHidden(true)
-                Text("Проверяем прокси…")
-                  .foregroundStyle(.secondary)
-                Button("Отменить") {
-                  cancelProxyTest()
-                }
-                .help("Отменить проверку прокси")
-              } else {
-                Button {
-                  testProxy()
-                } label: {
-                  Label("Проверить прокси", systemImage: "network")
+            VStack(alignment: .leading, spacing: 6) {
+              HStack(spacing: 10) {
+                if isTesting {
+                  ProgressView()
+                    .controlSize(.small)
+                    .accessibilityHidden(true)
+                  Text("Проверяем прокси…")
+                    .foregroundStyle(.secondary)
+                  Button("Отменить") {
+                    cancelProxyTest()
+                  }
+                  .help("Отменить проверку прокси")
+                } else {
+                  Button {
+                    testProxy()
+                  } label: {
+                    Label("Проверить прокси", systemImage: "network")
+                  }
                 }
               }
               if let testMessage {
                 Text(testMessage)
                   .font(.caption)
                   .foregroundStyle(
-                    proxyTestSucceeded ? Color.green : Color.secondary
+                    proxyTestSucceeded ? Color.green : Color.red
                   )
                   .accessibilityLabel(testMessage)
               }
             }
 
-            Text(
-              "Проверка обращается к ipapi.co через прокси. Перед запуском она повторится; маршрут Chromium проверяется отдельно."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            if !proxyUsername.isEmpty {
+            DisclosureGroup("Как работает проверка") {
               Text(
-                "Chromium может запросить логин и пароль при первом запуске. Они доступны в карточке профиля; пароль хранится в Связке ключей."
+                  "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно."
               )
               .font(.caption)
               .foregroundStyle(.secondary)
+              if !proxyUsername.isEmpty {
+                Text(
+                  "Chromium может запросить логин и пароль при первом запуске. Они доступны в карточке профиля; пароль хранится в Связке ключей."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+              }
             }
 
             if let detectedTimezone {
@@ -712,12 +723,6 @@ struct ProfileEditorView: View {
               )
               .font(.caption.weight(.semibold))
               .foregroundStyle(.orange)
-              Text(
-                "Перед следующим запуском профиля NeAntik проверит " +
-                "прокси заново. Можно проверить сейчас."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
             }
           }
         }
@@ -1051,7 +1056,7 @@ struct ProfileEditorView: View {
     Button {
       importProxy(source: proxyImportText)
     } label: {
-      Label("Применить строку", systemImage: "checkmark.circle")
+      Label("Заполнить поля из строки", systemImage: "checkmark.circle")
     }
     .disabled(isTesting || proxyImportText.isEmpty)
     .help("Разобрать строку из поля и заполнить настройки")
@@ -1063,7 +1068,7 @@ struct ProfileEditorView: View {
         source: NSPasteboard.general.string(forType: .string) ?? ""
       )
     } label: {
-      Label("Из буфера", systemImage: "doc.on.clipboard")
+      Label("Заполнить из буфера", systemImage: "doc.on.clipboard")
     }
     .disabled(isTesting)
     .help("Разобрать строку из буфера обмена и заполнить настройки")
@@ -1263,12 +1268,13 @@ struct ProfileEditorView: View {
     proxyTestSucceeded = false
     proxyTestTask = Task {
         do {
-          let result = try await ProxyTester().test(
+          let observation = try await ProxyTester().probe(
             configuration: proxy,
             password: password
           )
           try Task.checkCancellation()
           await MainActor.run {
+            let result = observation.result
             let location = result.locationSummary
             testMessage = ProfileProxyTestPresentation.successMessage(
               location: location
@@ -1277,7 +1283,10 @@ struct ProfileEditorView: View {
             detectedTimezone = result.timezoneIdentifier
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
-            detectedProxyContextEvidence = .ipAPI()
+            detectedProxyContextEvidence = .from(
+              observation.source,
+              observedAt: observation.observedAt
+            )
             isTesting = false
             proxyTestSucceeded = true
             proxyTestTask = nil

@@ -21,6 +21,19 @@ struct ProxyTestObservation: Equatable, Sendable {
     let observedAt: Date
     let responseTimeMilliseconds: Int
     let result: ProxyTestResult
+    let source: ProxyHealthSource
+
+    init(
+        observedAt: Date,
+        responseTimeMilliseconds: Int,
+        result: ProxyTestResult,
+        source: ProxyHealthSource = .ipAPI
+    ) {
+        self.observedAt = observedAt
+        self.responseTimeMilliseconds = responseTimeMilliseconds
+        self.result = result
+        self.source = source
+    }
 }
 
 struct ProxyProbeError: LocalizedError, Equatable, Sendable {
@@ -55,6 +68,10 @@ struct ProxyTester: Sendable {
         "--config", "-",
         "--write-out", "\nNEANTIK_METRICS_V1:%{time_starttransfer}\n",
         "https://ipapi.co/json/"
+    ]
+    static let crossCheckURLs = [
+        "https://ipwho.is/",
+        "https://free.freeipapi.com/api/v1/json"
     ]
 
     func test(
@@ -97,6 +114,22 @@ struct ProxyTester: Sendable {
         }
         let inputData = Data(config.utf8)
         config.removeAll(keepingCapacity: false)
+        do {
+            return try await crossCheckedProbe(
+                inputData: inputData,
+                observedAt: observedAt
+            )
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as ProxyProbeError {
+            // A disagreement or malformed response is evidence of an unsafe
+            // context, so another service must not override it. A service or
+            // connection failure may use the legacy independent source.
+            guard error.outcome != .invalidResponse,
+                  error.outcome != .authenticationRejected else {
+                throw error
+            }
+        }
         let result: ProxyProcessResult
         do {
             result = try await Self.runCancellableProcess(
@@ -121,13 +154,72 @@ struct ProxyTester: Sendable {
 
         do {
             let parsed = try Self.parseProbeOutput(result.output)
-        return ProxyTestObservation(
+            return ProxyTestObservation(
                 observedAt: observedAt(),
                 responseTimeMilliseconds: parsed.responseTimeMilliseconds,
                 result: parsed.result
             )
         } catch is CancellationError {
             throw CancellationError()
+        } catch {
+            throw ProxyProbeError(outcome: .invalidResponse)
+        }
+    }
+
+    private func crossCheckedProbe(
+        inputData: Data,
+        observedAt: @Sendable () -> Date
+    ) async throws -> ProxyTestObservation {
+        var responses: [Data] = []
+        var responseTime = 0
+        for url in Self.crossCheckURLs {
+            let arguments = Self.curlArguments.dropLast() + [url]
+            let process: ProxyProcessResult
+            do {
+                process = try await Self.runCancellableProcess(
+                    executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
+                    arguments: Array(arguments),
+                    standardInput: inputData,
+                    maximumOutputBytes: Self.maximumProbeOutputBytes
+                )
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                throw ProxyProbeError(outcome: .internalFailure)
+            }
+            guard !process.outputExceeded else {
+                throw ProxyProbeError(outcome: .invalidResponse)
+            }
+            guard process.status == 0 else {
+                throw ProxyProbeError(
+                    outcome: Self.outcome(forCurlStatus: process.status)
+                )
+            }
+            do {
+                let parsed = try Self.splitProbeOutput(process.output)
+                responses.append(parsed.body)
+                responseTime += parsed.responseTimeMilliseconds
+            } catch {
+                throw ProxyProbeError(outcome: .invalidResponse)
+            }
+        }
+        guard responses.count == 2 else {
+            throw ProxyProbeError(outcome: .internalFailure)
+        }
+        do {
+            let result = try Self.parseCrossCheckedResponses(
+                ipWhois: responses[0],
+                freeIPAPI: responses[1]
+            )
+            return ProxyTestObservation(
+                observedAt: observedAt(),
+                responseTimeMilliseconds: min(
+                    responseTime,
+                    ProxyHealthAttempt.maximumResponseTimeMilliseconds
+                ),
+                result: result,
+                source: .crossChecked
+            )
         } catch {
             throw ProxyProbeError(outcome: .invalidResponse)
         }
@@ -165,6 +257,16 @@ struct ProxyTester: Sendable {
         result: ProxyTestResult,
         responseTimeMilliseconds: Int
     ) {
+        let parsed = try splitProbeOutput(data)
+        return (
+            try parseResponse(parsed.body),
+            parsed.responseTimeMilliseconds
+        )
+    }
+
+    private static func splitProbeOutput(
+        _ data: Data
+    ) throws -> (body: Data, responseTimeMilliseconds: Int) {
         guard data.count <= maximumProbeOutputBytes,
               let text = String(data: data, encoding: .utf8),
               let marker = text.range(
@@ -192,10 +294,68 @@ struct ProxyTester: Sendable {
         else {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
-        return (
-            try parseResponse(Data(bodyText.utf8)),
-            milliseconds
+        return (Data(bodyText.utf8), milliseconds)
+    }
+
+    static func parseCrossCheckedResponses(
+        ipWhois: Data,
+        freeIPAPI: Data
+    ) throws -> ProxyTestResult {
+        guard ipWhois.count <= maximumResponseBytes,
+              freeIPAPI.count <= maximumResponseBytes,
+              let first = try JSONSerialization.jsonObject(
+                with: ipWhois
+              ) as? [String: Any],
+              let second = try JSONSerialization.jsonObject(
+                with: freeIPAPI
+              ) as? [String: Any],
+              first["success"] as? Bool == true,
+              let firstIP = first["ip"] as? String,
+              let secondIP = second["ipAddress"] as? String,
+              let firstAddress = addressBytes(firstIP),
+              firstAddress == addressBytes(secondIP),
+              let firstCountry = safeCountryCode(first["country_code"]),
+              firstCountry == safeCountryCode(second["countryCode"]),
+              let zone = (first["timezone"] as? [String: Any])?["id"] as? String,
+              TimeZone(identifier: zone) != nil,
+              let countryZones = second["timeZones"] as? [String],
+              countryZones.contains(zone),
+              let languages = second["languages"] as? [String],
+              let firstLanguage = languages.first,
+              let locale = normalizedLocale(firstLanguage)
+        else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        return ProxyTestResult(
+            ipAddress: firstIP,
+            city: safeDisplayText(first["city"]),
+            countryName: safeDisplayText(first["country"]),
+            countryCode: firstCountry,
+            timezoneIdentifier: zone,
+            localeIdentifier: locale
         )
+    }
+
+    private static func safeCountryCode(_ value: Any?) -> String? {
+        guard let text = value as? String,
+              text.utf8.count == 2,
+              text.utf8.allSatisfy({
+                (65...90).contains($0) || (97...122).contains($0)
+              }) else { return nil }
+        return text.uppercased()
+    }
+
+    private static func addressBytes(_ value: String) -> Data? {
+        guard isIPAddress(value) else { return nil }
+        var ipv4 = in_addr()
+        if value.withCString({ inet_pton(AF_INET, $0, &ipv4) }) == 1 {
+            return Data([4]) + withUnsafeBytes(of: ipv4) { Data($0) }
+        }
+        var ipv6 = in6_addr()
+        guard value.withCString({ inet_pton(AF_INET6, $0, &ipv6) }) == 1 else {
+            return nil
+        }
+        return Data([6]) + withUnsafeBytes(of: ipv6) { Data($0) }
     }
 
     static func runCancellableProcess(
