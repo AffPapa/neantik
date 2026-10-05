@@ -6,6 +6,44 @@ import Testing
 @Suite(.serialized)
 struct ProfileStoreTests {
     @Test
+    func existingLegacyRevisionZeroCanReceiveProxyWithoutReplacingOtherData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let legacy = BrowserProfile(
+            name: "Legacy",
+            note: "keep this note",
+            revision: 0
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(
+            encoder.encode([legacy]),
+            to: paths.profilesFile
+        )
+
+        let store = ProfileStore(paths: paths)
+        guard var loaded = store.profile(withID: legacy.id) else {
+            Issue.record("Legacy profile was not loaded")
+            return
+        }
+        #expect(loaded.revision == 0)
+        loaded.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+        let saved = try store.upsert(loaded)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(saved.revision == 1)
+        #expect(reloaded.profile(withID: legacy.id)?.proxy == loaded.proxy)
+        #expect(reloaded.profile(withID: legacy.id)?.note == "keep this note")
+    }
+
+    @Test
     func createsFirstProfileInFreshWorkspaceThroughFolderAwarePath() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
