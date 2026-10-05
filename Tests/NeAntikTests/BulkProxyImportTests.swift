@@ -3,6 +3,23 @@ import Testing
 @testable import NeAntik
 
 struct BulkProxyImportTests {
+    @Test func numericIPv4WithCredentialsPreviewsAsHTTPWithoutExposingPassword() throws {
+        let secret = "synthetic-password"
+        let preview = try BulkProxyImportParser.preview(
+            "synthetic-user:\(secret)@203.0.113.10:50100",
+            kind: .http,
+            order: .automatic
+        )
+        #expect(preview.isReady)
+        let draft = try #require(preview.drafts.first)
+        #expect(draft.configuration.kind == .http)
+        #expect(draft.configuration.host == "203.0.113.10")
+        #expect(draft.configuration.port == 50_100)
+        #expect(draft.configuration.username == "synthetic-user")
+        #expect(draft.password == secret)
+        #expect(!preview.rows.compactMap(\.safeSummary).joined().contains(secret))
+    }
+
     @Test func parsesOneProxyPerNonEmptyLine() throws {
         let drafts = try BulkProxyImportParser.parse(
             """

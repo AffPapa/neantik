@@ -1319,12 +1319,7 @@ final class ProfileStore: ObservableObject {
         if FileManager.default.fileExists(atPath: paths.profilesFile.path) {
             try paths.validatePrivateFile(paths.profilesFile)
             let previousData = try Data(contentsOf: paths.profilesFile)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            _ = try decoder.decode(
-                [BrowserProfile].self,
-                from: previousData
-            )
+            _ = try Self.decodeProfiles(previousData)
             try paths.writePrivateFile(
                 previousData,
                 to: paths.profilesBackupFile
@@ -1460,9 +1455,20 @@ final class ProfileStore: ObservableObject {
 
     nonisolated static func readProfiles(from url: URL) throws -> [BrowserProfile] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+        return try decodeProfiles(Data(contentsOf: url))
+    }
+
+    nonisolated static func decodeProfiles(_ data: Data) throws -> [BrowserProfile] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode([BrowserProfile].self, from: Data(contentsOf: url))
+        if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
+            let document = try decoder.decode(LegacyProfilesDocument.self, from: data)
+            guard document.schemaVersion == 1 else {
+                throw UnsupportedProfilesSchemaError()
+            }
+            return document.profiles
+        }
+        return try decoder.decode([BrowserProfile].self, from: data)
     }
 
     nonisolated static func readProfilesWithRecovery(
@@ -1487,12 +1493,7 @@ final class ProfileStore: ObservableObject {
             try paths.validatePrivateFile(paths.profilesFile)
             try paths.validatePrivateFile(paths.profilesBackupFile)
             let backupData = try Data(contentsOf: paths.profilesBackupFile)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let recovered = try decoder.decode(
-                [BrowserProfile].self,
-                from: backupData
-            )
+            let recovered = try decodeProfiles(backupData)
             let rejectedData = try Data(contentsOf: paths.profilesFile)
             let rejectedURL = paths.profilesRecoveryDirectory
                 .appendingPathComponent(
@@ -1719,6 +1720,20 @@ struct ProfileOrganizationLoad: Sendable {
     let changed: Bool
     let warning: String?
     let recovered: Bool
+}
+
+/// Older NeAntik installations stored the same profile records in a v1
+/// envelope. Keep reading it so an upgrade never turns valid user profiles
+/// into an apparent empty workspace. New writes continue using the array form.
+private struct LegacyProfilesDocument: Decodable {
+    let schemaVersion: Int
+    let profiles: [BrowserProfile]
+}
+
+private struct UnsupportedProfilesSchemaError: LocalizedError {
+    var errorDescription: String? {
+        "Версия файла профилей не поддерживается. Данные не изменены. Открой их в совместимой версии NeAntik или обратись в поддержку."
+    }
 }
 
 private struct BrowserIdentityAllocationError: LocalizedError {

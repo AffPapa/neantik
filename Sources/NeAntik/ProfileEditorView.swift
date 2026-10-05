@@ -118,6 +118,7 @@ struct ProfileEditorView: View {
     ProxyPasswordUpdate,
     UUID?
   ) throws -> Void
+  private let onClose: (() -> Void)?
   private let originalProxyPassword: String?
   private let proxyPasswordReadFailed: Bool
   private let draftProfileID: UUID
@@ -172,6 +173,7 @@ struct ProfileEditorView: View {
     suggestedTags: [String],
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
+    onClose: (() -> Void)? = nil,
     onSave: @escaping (
       BrowserProfile,
       ProxyPasswordUpdate,
@@ -183,6 +185,7 @@ struct ProfileEditorView: View {
     self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
     self.suggestedTags = suggestedTags
     self.onSave = onSave
+    self.onClose = onClose
     self.initialFocus = initialFocus
     _showsAdvancedOptions = State(
       initialValue: showsAdvancedOptionsInitially
@@ -268,6 +271,16 @@ struct ProfileEditorView: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      HStack {
+        Text(original == nil ? "Создать профиль" : "Настройки профиля")
+          .font(.title3.weight(.semibold))
+          .accessibilityHeading(.h1)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 16)
+      .padding(.bottom, 8)
+
       ScrollViewReader { scrollProxy in
         Form {
         if original == nil {
@@ -353,7 +366,8 @@ struct ProfileEditorView: View {
           validationLabel(for: .name)
         }
 
-        Section("Организация") {
+        if showsAdvancedOptions {
+        Section("Организация и заметки") {
           folderControl
 
           ProfileTagEditor(
@@ -373,6 +387,7 @@ struct ProfileEditorView: View {
           validationLabel(for: .tags)
 
           noteEditor
+        }
         }
 
         Section {
@@ -541,7 +556,7 @@ struct ProfileEditorView: View {
             )
             .accessibilityLabel("Строка прокси для импорта")
             Text(
-              "Вставь строку в поле или просто скопируй её и нажми кнопку. Поддерживаются login:password@ip:port, ip:port@login:password и оба варианта через четыре двоеточия."
+              "Формат: login:password@ip:port. Другие варианты доступны через выбор порядка."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -634,23 +649,14 @@ struct ProfileEditorView: View {
             }
 
             Text(
-              "Ручная проверка обращается к ipapi.co через прокси, " +
-              "чтобы увидеть внешний IP и примерную локацию. " +
-              "Перед каждым запуском профиля NeAntik выполняет " +
-              "свежую проверку прокси. Она не подтверждает маршрут Chromium."
+              "Проверка обращается к ipapi.co через прокси. Перед запуском она повторится; маршрут Chromium проверяется отдельно."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
 
             if !proxyUsername.isEmpty {
               Text(
-                "Chromium может попросить логин и пароль при первом запуске. NeAntik не подставляет их автоматически: скопируй логин и пароль из карточки профиля. Пароль хранится только в Связке ключей."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              Text(
-                "Проверка подтверждает доступность прокси и его внешний " +
-                "адрес, но не ввод логина в окне Chromium."
+                "Chromium может запросить логин и пароль при первом запуске. Они доступны в карточке профиля; пароль хранится в Связке ключей."
               )
               .font(.caption)
               .foregroundStyle(.secondary)
@@ -739,12 +745,7 @@ struct ProfileEditorView: View {
       }
       .padding()
     }
-    .frame(
-      minWidth: 460,
-      idealWidth: 540,
-      minHeight: 380,
-      idealHeight: usesProxy ? 580 : 430
-    )
+    .frame(minWidth: 460, maxWidth: .infinity, minHeight: 380, maxHeight: .infinity)
     .sheet(isPresented: $showingFolderPicker) {
       ProfileFolderPickerSheet(
         profileName:
@@ -765,7 +766,7 @@ struct ProfileEditorView: View {
     ) {
       Button("Продолжить редактирование", role: .cancel) {}
       Button("Отменить изменения", role: .destructive) {
-        dismiss()
+        closeEditor()
       }
     } message: {
       Text("Несохранённые изменения профиля будут потеряны.")
@@ -835,6 +836,14 @@ struct ProfileEditorView: View {
   private func requestDismiss() {
     if hasUnsavedChanges {
       showingDiscardConfirmation = true
+    } else {
+      closeEditor()
+    }
+  }
+
+  private func closeEditor() {
+    if let onClose {
+      onClose()
     } else {
       dismiss()
     }
@@ -1122,7 +1131,7 @@ struct ProfileEditorView: View {
         readFailed: proxyPasswordReadFailed
       )
       try onSave(profile, passwordUpdate, selectedFolderID)
-      dismiss()
+      closeEditor()
     } catch {
       errorMessage = error.localizedDescription
     }

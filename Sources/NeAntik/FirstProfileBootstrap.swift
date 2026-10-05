@@ -63,7 +63,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
         case .ready:
             return Self(
                 primaryAction: .createAndOpen,
-                primaryTitle: "Создать и открыть",
+                primaryTitle: "Сразу создать и открыть без прокси",
                 primarySystemImage: "play.fill",
                 primaryIsEnabled: true,
                 primaryAccessibilityHint:
@@ -156,16 +156,11 @@ struct FirstProfileOnboardingView: View {
             }
             .frame(maxWidth: 440)
         } actions: {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    createAndOpenButton
-                    configureButton
-                }
-                VStack(spacing: 8) {
-                    createAndOpenButton
-                    configureButton
-                }
+            VStack(spacing: 8) {
+                configureButton
+                createAndOpenButton
             }
+            .frame(minWidth: 260)
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -177,18 +172,27 @@ struct FirstProfileOnboardingView: View {
                 presentation.primaryTitle,
                 systemImage: presentation.primarySystemImage
             )
+            .lineLimit(2)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(minHeight: 28)
         }
-        .buttonStyle(.borderedProminent)
-        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.bordered)
         .disabled(!presentation.primaryIsEnabled)
         .accessibilityLabel(presentation.primaryTitle)
         .accessibilityHint(presentation.primaryAccessibilityHint)
     }
 
     private var configureButton: some View {
-        Button("Настроить…", action: onConfigure)
+        Button(action: onConfigure) {
+            Text("Создать профиль с настройками…")
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
             .frame(minHeight: 28)
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
             .disabled(isCreatingProfile)
             .accessibilityHint(
                 "Открывает полную настройку профиля и прокси"
@@ -204,5 +208,19 @@ struct FirstProfileOnboardingView: View {
         case .unavailable:
             break
         }
+    }
+}
+
+struct ProfileStorageUnavailableView: View {
+    var body: some View {
+        ContentUnavailableView {
+            Label("Профили временно недоступны", systemImage: "externaldrive.badge.exclamationmark")
+        } description: {
+            Text(
+                "NeAntik не смог прочитать сохранённые профили и не будет заменять их пустым списком. Перезапусти приложение. Если ошибка повторится, сохрани файлы данных и обратись в поддержку."
+            )
+            .frame(maxWidth: 460)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

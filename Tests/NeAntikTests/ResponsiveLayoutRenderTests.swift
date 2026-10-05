@@ -295,6 +295,29 @@ struct ResponsiveLayoutRenderTests {
         )
 
         try render(
+            ProfileStorageUnavailableView(),
+            name: "profile-storage-unavailable-minimum",
+            size: CGSize(width: 480, height: 560)
+        )
+
+        try render(
+            ProfileEditorView(
+                original: nil,
+                keychain: KeychainStore(
+                    backend: LayoutRenderKeychainBackend(),
+                    service: "layout.render.right-panel",
+                    legacyService: nil
+                ),
+                folders: [],
+                initialFolderID: nil,
+                suggestedTags: [],
+                onClose: {}
+            ) { _, _, _ in },
+            name: "profile-editor-right-panel-minimum",
+            size: CGSize(width: 480, height: 560)
+        )
+
+        try render(
             FirstProfileOnboardingView(
                 runtimeAvailability: .resolving,
                 isCreatingProfile: false,

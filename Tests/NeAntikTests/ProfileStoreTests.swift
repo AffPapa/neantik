@@ -6,6 +6,116 @@ import Testing
 @Suite(.serialized)
 struct ProfileStoreTests {
     @Test
+    func createsFirstProfileInFreshWorkspaceThroughFolderAwarePath() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+
+        let saved = try store.upsert(
+            BrowserProfile(name: "Первый"),
+            toFolderID: nil
+        )
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(reloaded.profiles.map(\.id) == [saved.id])
+    }
+
+    @Test
+    func readsLegacyV1EnvelopeAndPreservesItAsRecoverySnapshotOnWrite() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let original = BrowserProfile(name: "Старый профиль")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let array = try JSONSerialization.jsonObject(
+            with: encoder.encode([original])
+        )
+        let legacy = try JSONSerialization.data(
+            withJSONObject: ["schemaVersion": 1, "profiles": array]
+        )
+        try paths.writePrivateFile(legacy, to: paths.profilesFile)
+        try paths.writePrivateFile(legacy, to: paths.profilesBackupFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(store.profiles.map(\.id) == [original.id])
+        #expect(try Data(contentsOf: paths.profilesFile) == legacy)
+        _ = try store.upsert(BrowserProfile(name: "Новый"), toFolderID: nil)
+        #expect(try Data(contentsOf: paths.profilesBackupFile) == legacy)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(reloaded.profiles.count == 2)
+        #expect(reloaded.profile(withID: original.id) != nil)
+    }
+
+    @Test
+    func unsupportedEnvelopeNeverFallsBackToOlderBackupOrOverwritesData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let future = Data("{\"schemaVersion\":99,\"profiles\":[]}".utf8)
+        let backup = Data("[]".utf8)
+        try paths.writePrivateFile(future, to: paths.profilesFile)
+        try paths.writePrivateFile(backup, to: paths.profilesBackupFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(!store.hasTrustedMetadata)
+        #expect(store.lastError?.contains("не поддерживается") == true)
+        #expect(throws: (any Error).self) {
+            try store.upsert(BrowserProfile(name: "Не создавать"))
+        }
+        #expect(try Data(contentsOf: paths.profilesFile) == future)
+        #expect(try Data(contentsOf: paths.profilesBackupFile) == backup)
+    }
+
+    @Test
+    func corruptPrimaryRecoversLegacyV1BackupWithoutChangingBrowserData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let original = BrowserProfile(name: "Сохранённый")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let array = try JSONSerialization.jsonObject(
+            with: encoder.encode([original])
+        )
+        let legacy = try JSONSerialization.data(
+            withJSONObject: ["schemaVersion": 1, "profiles": array]
+        )
+        let damaged = Data("{incomplete".utf8)
+        try paths.writePrivateFile(damaged, to: paths.profilesFile)
+        try paths.writePrivateFile(legacy, to: paths.profilesBackupFile)
+        let browserData = paths.browserDataDirectory(for: original.id)
+        try FileManager.default.createDirectory(
+            at: browserData, withIntermediateDirectories: true
+        )
+        let marker = browserData.appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: marker)
+
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.hasTrustedMetadata)
+        #expect(recovered.profile(withID: original.id) != nil)
+        #expect(try Data(contentsOf: paths.profilesFile) == legacy)
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+        let recoveryFiles = try FileManager.default.contentsOfDirectory(
+            at: paths.profilesRecoveryDirectory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(recoveryFiles.count == 1)
+        #expect(try Data(contentsOf: recoveryFiles[0]) == damaged)
+    }
+
+    @Test
     func rejectsUnsafeOrOversizedProfileNames() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

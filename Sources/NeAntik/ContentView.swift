@@ -643,12 +643,6 @@ struct ContentView: View {
             })
             .accessibilityHidden(true)
         }
-        .sheet(item: $editorRequest, onDismiss: {
-            profileSearchIsFocused = true
-        }) { request in
-            profileEditorSheet(for: request)
-                .accessibilityHidden(true)
-        }
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
                 title: request.folder == nil
@@ -1060,7 +1054,7 @@ struct ContentView: View {
         }
     }
 
-    private func profileEditorSheet(
+    private func profileEditor(
         for request: EditorRequest
     ) -> some View {
         let initialFolderID = request.profile.flatMap {
@@ -1076,7 +1070,11 @@ struct ContentView: View {
             folders: store.organization.folders,
             initialFolderID: initialFolderID,
             suggestedTags: suggestedTags,
-            initialFocus: request.initialFocus
+            initialFocus: request.initialFocus,
+            onClose: {
+                editorRequest = nil
+                profileSearchIsFocused = true
+            }
         ) { profile, passwordUpdate, folderID in
             try saveProfileEditorDraft(
                 profile,
@@ -1414,6 +1412,10 @@ struct ContentView: View {
 
     private func beginCreatingProfile() {
         guard !isWorkspaceModalPresented else { return }
+        guard store.hasTrustedMetadata else {
+            localError = "Сохранённые профили сейчас недоступны. NeAntik не будет заменять их пустым списком."
+            return
+        }
         editorRequest = EditorRequest(
             profile: nil,
             targetFolderID: selectedFolderID
@@ -1756,6 +1758,10 @@ struct ContentView: View {
     }
 
     private func createAndOpenFirstProfile() {
+        guard store.hasTrustedMetadata else {
+            localError = "Сохранённые профили сейчас недоступны. NeAntik не будет заменять их пустым списком."
+            return
+        }
         guard runtimeAvailability == .ready else {
             if !isResolvingRuntime {
                 Task { await resolveRuntime() }
@@ -2215,7 +2221,14 @@ struct ContentView: View {
             }
             activeFiltersBar
 
-            if store.profiles.isEmpty {
+            if !store.hasTrustedMetadata {
+                ContentUnavailableView {
+                    Label("Профили недоступны", systemImage: "externaldrive.badge.exclamationmark")
+                } description: {
+                    Text("NeAntik сохранил данные без изменений. Подробности показаны справа.")
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.profiles.isEmpty {
                 ContentUnavailableView {
                     Label(
                         "Нет профилей",
@@ -2312,22 +2325,30 @@ struct ContentView: View {
                 )
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Spacer()
-                Button {
-                    bulkProxyImportRequest = BulkProxyImportRequest(
-                        targetFolderID: selectedFolderID
-                    )
-                } label: {
-                    Label(
-                        "Создать из прокси…",
-                        systemImage: "list.bullet.clipboard"
-                    )
-                    .frame(minHeight: 28)
-                }
-                .buttonStyle(.bordered)
-                .help("Создать профили из списка прокси")
-                .accessibilityLabel("Создать профили из списка прокси")
             }
+
+            Button(action: beginCreatingProfile) {
+                Label("Создать профиль…", systemImage: "plus")
+                    .frame(maxWidth: .infinity, minHeight: 28)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!store.hasTrustedMetadata || isWorkspaceModalPresented)
+            .help("Создать профиль с настройками (⌘N)")
+
+            Button {
+                bulkProxyImportRequest = BulkProxyImportRequest(
+                    targetFolderID: selectedFolderID
+                )
+            } label: {
+                Label(
+                    "Создать профили из списка прокси…",
+                    systemImage: "list.bullet.clipboard"
+                )
+                .frame(maxWidth: .infinity, minHeight: 28)
+            }
+            .buttonStyle(.bordered)
+            .disabled(!store.hasTrustedMetadata || isWorkspaceModalPresented)
+            .help("Каждая строка списка станет отдельным профилем")
 
             profileSearchField
 
@@ -2842,7 +2863,10 @@ struct ContentView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let profile = selectedProfile {
+        if let request = editorRequest {
+            profileEditor(for: request)
+                .id(request.id)
+        } else if let profile = selectedProfile {
             ProfileDetailView(
                 profile: profile,
                 processState: presentedProcessState(for: profile),
@@ -2933,7 +2957,9 @@ struct ContentView: View {
 
     private var emptyDetail: some View {
         Group {
-            if store.profiles.isEmpty {
+            if !store.hasTrustedMetadata {
+                ProfileStorageUnavailableView()
+            } else if store.profiles.isEmpty {
                 FirstProfileOnboardingView(
                     runtimeAvailability: runtimeAvailability,
                     isCreatingProfile: isCreatingFirstProfile,

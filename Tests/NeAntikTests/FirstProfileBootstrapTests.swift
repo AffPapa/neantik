@@ -57,7 +57,7 @@ struct FirstProfileBootstrapTests {
         )
 
         #expect(presentation.primaryAction == .createAndOpen)
-        #expect(presentation.primaryTitle == "Создать и открыть")
+        #expect(presentation.primaryTitle == "Сразу создать и открыть без прокси")
         #expect(presentation.primaryIsEnabled)
         #expect(presentation.statusMessage == nil)
     }
