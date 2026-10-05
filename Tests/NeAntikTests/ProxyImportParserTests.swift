@@ -33,6 +33,44 @@ struct ProxyImportParserTests {
         #expect(draft.password.isEmpty)
     }
 
+    @Test func explicitURLSchemeSelectsProxyProtocol() throws {
+        let http = try ProxyImportParser.parse(
+            "http://user:secret@proxy.example:8080",
+            kind: .https
+        )
+        #expect(http.configuration.kind == .http)
+        #expect(http.configuration.username == "user")
+        #expect(http.password == "secret")
+
+        let https = try ProxyImportParser.parse(
+            "HTTPS://proxy.example:443",
+            kind: .http
+        )
+        #expect(https.configuration.kind == .https)
+        #expect(https.configuration.username.isEmpty)
+
+        let socks = try ProxyImportParser.parse(
+            "socks5://proxy.example:1080",
+            kind: .http
+        )
+        #expect(socks.configuration.kind == .socks5)
+    }
+
+    @Test func unknownSchemeAndAuthenticatedSocksFailClosed() {
+        #expect(throws: ProxyImportError.invalid) {
+            try ProxyImportParser.parse(
+                "ftp://proxy.example:21",
+                kind: .http
+            )
+        }
+        #expect(throws: ProxyImportError.socksAuthenticationUnsupported) {
+            try ProxyImportParser.parse(
+                "socks5://user:secret@proxy.example:1080",
+                kind: .http
+            )
+        }
+    }
+
     @Test func bracketedIPv6IsSupported() throws {
         let draft = try ProxyImportParser.parse(
             "user:pass@[2001:db8::1]:1080",
@@ -103,7 +141,7 @@ struct ProxyImportParserTests {
 
     @Test func malformedOrUnsafeInputIsRejected() {
         for value in [
-            "https://proxy.example:443",
+            "ftp://proxy.example:443",
             "user:bad%@proxy.example:443",
             "user:pass@proxy.example:0",
             "user:pass@proxy.example:65536",

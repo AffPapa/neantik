@@ -78,7 +78,16 @@ struct ProxyTesterTests {
                 .transportSecurityFailed
         )
         #expect(ProxyTester.outcome(forCurlStatus: 97) == .protocolFailed)
+        #expect(ProxyTester.outcome(forCurlStatus: 56) == .protocolFailed)
         #expect(ProxyTester.outcome(forCurlStatus: 22) == .probeServiceFailed)
+        #expect(
+            ProxyHealthOutcome.probeServiceFailed.userSummary.contains(
+                "ограничил запросы"
+            )
+        )
+        #expect(ProxyHealthOutcome.protocolFailed.userSummary.contains("тип и порт"))
+        #expect(ProxyHealthOutcome.protocolFailed.userSummary.contains("причина пока не определена"))
+        #expect(ProxyHealthOutcome.transportSecurityFailed.userSummary.contains("TLS"))
     }
 
     @Test

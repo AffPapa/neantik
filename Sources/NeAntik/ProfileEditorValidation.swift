@@ -115,6 +115,14 @@ enum ProfileEditorValidation {
 
         guard usesProxy else { return nil }
 
+        if proxyKind == .socks5,
+           (!proxyUsername.isEmpty || !proxyPassword.isEmpty) {
+            return ProfileEditorValidationIssue(
+                field: .proxyPassword,
+                message: "SOCKS5 с логином и паролем не поддерживается браузером. Выбери HTTP-порт провайдера либо очисти учётные данные."
+            )
+        }
+
         let cleanHost = proxyHost.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
@@ -136,9 +144,7 @@ enum ProfileEditorValidation {
             kind: proxyKind,
             host: cleanHost,
             port: port,
-            username: proxyKind == .socks5
-                ? ""
-                : proxyUsername.trimmingCharacters(
+            username: proxyUsername.trimmingCharacters(
                     in: .whitespacesAndNewlines
                 )
         )

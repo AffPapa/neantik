@@ -549,28 +549,35 @@ struct ProfileEditorView: View {
                 Text(kind.title).tag(kind)
               }
             }
+            Text(
+              "Выбери тип и соответствующий ему порт из кабинета провайдера: у одного сервера порты HTTP и SOCKS5 могут различаться. HTTP-прокси подходит и для HTTPS-сайтов; HTTPS здесь означает шифрование до самого прокси."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
 
             SecureField(
-              "Вставить прокси одной строкой",
+              "login:password@host:port",
               text: $proxyImportText
             )
             .accessibilityLabel("Строка прокси для импорта")
             Text(
-              "Формат: login:password@ip:port. Другие варианты доступны через выбор порядка."
+              "Можно вставить строку login:password@host:port или ссылку с http://, https:// либо socks5://. Без схемы сохранится выбранный выше тип."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
 
             ViewThatFits(in: .horizontal) {
               HStack {
-                proxyImportOrderPicker
-                Spacer(minLength: 8)
                 importProxyButton
+                pasteProxyButton
               }
               VStack(alignment: .leading, spacing: 8) {
-                proxyImportOrderPicker
                 importProxyButton
+                pasteProxyButton
               }
+            }
+            DisclosureGroup("Другой порядок полей") {
+              proxyImportOrderPicker
             }
             if let proxyImportMessage {
               Text(proxyImportMessage)
@@ -606,6 +613,13 @@ struct ProfileEditorView: View {
               )
               .font(.caption)
               .foregroundStyle(.secondary)
+              if !proxyUsername.isEmpty || !proxyPassword.isEmpty {
+                Button("Очистить логин и пароль SOCKS5") {
+                  proxyUsername = ""
+                  proxyPassword = ""
+                }
+                validationLabel(for: .proxyPassword)
+              }
             } else {
               TextField(
                 "Логин (необязательно)",
@@ -813,7 +827,6 @@ struct ProfileEditorView: View {
       proxyInputDidChange()
     }
     .onChange(of: proxyImportOrder) { _, _ in
-      hasUnsavedChanges = true
       proxyImportMessage = nil
     }
     .onChange(of: tags) { _, _ in
@@ -1036,14 +1049,24 @@ struct ProfileEditorView: View {
 
   private var importProxyButton: some View {
     Button {
-      importProxy()
+      importProxy(source: proxyImportText)
     } label: {
-      Label("Вставить прокси", systemImage: "doc.on.clipboard")
+      Label("Применить строку", systemImage: "checkmark.circle")
+    }
+    .disabled(isTesting || proxyImportText.isEmpty)
+    .help("Разобрать строку из поля и заполнить настройки")
+  }
+
+  private var pasteProxyButton: some View {
+    Button {
+      importProxy(
+        source: NSPasteboard.general.string(forType: .string) ?? ""
+      )
+    } label: {
+      Label("Из буфера", systemImage: "doc.on.clipboard")
     }
     .disabled(isTesting)
-    .help(
-      "Взять строку из поля или буфера обмена и заполнить настройки"
-    )
+    .help("Разобрать строку из буфера обмена и заполнить настройки")
   }
 
   private func makeProxy() throws -> ProxyConfiguration? {
@@ -1055,9 +1078,7 @@ struct ProfileEditorView: View {
       kind: proxyKind,
       host: proxyHost.trimmingCharacters(in: .whitespacesAndNewlines),
       port: port,
-      username: proxyKind == .socks5
-        ? ""
-        : proxyUsername.trimmingCharacters(
+      username: proxyUsername.trimmingCharacters(
           in: .whitespacesAndNewlines
         )
     )
@@ -1202,11 +1223,8 @@ struct ProfileEditorView: View {
     testMessage = "Проверка отменена"
   }
 
-  private func importProxy() {
+  private func importProxy(source: String) {
     do {
-      let source = proxyImportText.isEmpty
-        ? NSPasteboard.general.string(forType: .string) ?? ""
-        : proxyImportText
       let draft = try ProxyImportParser.parse(
         source,
         kind: proxyKind,
@@ -1214,13 +1232,14 @@ struct ProfileEditorView: View {
       )
       isApplyingProxyImport = true
       usesProxy = true
+      proxyKind = draft.configuration.kind
       proxyHost = draft.configuration.host
       proxyPort = String(draft.configuration.port)
       proxyUsername = draft.configuration.username
       proxyPassword = draft.password
       proxyImportMessage =
         "Прокси распознан: \(draft.redactedSummary). " +
-        "Соединение ещё не проверено."
+        "Соединение ещё не проверено; сверь тип и порт с провайдером."
       errorMessage = nil
 
       Task { @MainActor in

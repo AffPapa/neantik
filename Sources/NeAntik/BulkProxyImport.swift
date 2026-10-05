@@ -522,9 +522,18 @@ struct BulkProxyImportView: View {
 
             Form {
                 Section("Прокси — по одному на строку") {
+                    Picker("Тип прокси", selection: $kind) {
+                        ForEach(ProxyKind.allCases) { value in
+                            Text(value.title).tag(value)
+                        }
+                    }
                     Text(
-                        "Вставь список. Каждая непустая строка станет " +
-                            "отдельным постоянным профилем."
+                        "Сверь тип и соответствующий ему порт с кабинетом провайдера: порты HTTP и SOCKS5 могут различаться. HTTP-прокси подходит для HTTPS-сайтов, а HTTPS-прокси требует TLS до самого прокси. Строка без схемы использует выбранный тип. SOCKS5 с логином и паролем Chromium не поддерживает."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    Text(
+                        "Вставь список. Каждая непустая строка создаст новый профиль; существующие профили не изменятся."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -626,12 +635,6 @@ struct BulkProxyImportView: View {
 
                         LabeledContent("Папка") {
                             Text(targetFolderName ?? "Без папки")
-                        }
-
-                        Picker("Тип прокси", selection: $kind) {
-                            ForEach(ProxyKind.allCases) { value in
-                                Text(value.title).tag(value)
-                            }
                         }
 
                         Picker("Порядок полей", selection: $order) {

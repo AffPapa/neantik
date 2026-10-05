@@ -57,34 +57,49 @@ enum ProxyImportParser {
         guard value.utf8.count <= maximumInputBytes else {
             throw ProxyImportError.tooLong
         }
-        guard value.rangeOfCharacter(from: .controlCharacters) == nil,
-              !value.contains("://")
-        else {
+        guard value.rangeOfCharacter(from: .controlCharacters) == nil else {
             throw ProxyImportError.invalid
+        }
+        let effectiveKind: ProxyKind
+        let body: String
+        if let schemeEnd = value.range(of: "://") {
+            switch value[..<schemeEnd.lowerBound].lowercased() {
+            case "http": effectiveKind = .http
+            case "https": effectiveKind = .https
+            case "socks5", "socks5h": effectiveKind = .socks5
+            default: throw ProxyImportError.invalid
+            }
+            body = String(value[schemeEnd.upperBound...])
+            guard !body.contains("://") else {
+                throw ProxyImportError.invalid
+            }
+        } else {
+            effectiveKind = kind
+            body = value
         }
 
         let parsedCandidates: [ProxyImportDraft]
-        if value.contains("@") {
-            guard value.filter({ $0 == "@" }).count == 1,
-                  let marker = value.firstIndex(of: "@")
+        if body.contains("@") {
+            guard body.filter({ $0 == "@" }).count == 1,
+                  let marker = body.firstIndex(of: "@")
             else {
                 throw ProxyImportError.invalid
             }
-            let left = String(value[..<marker])
-            let right = String(value[value.index(after: marker)...])
+            let left = String(body[..<marker])
+            let right = String(body[body.index(after: marker)...])
             parsedCandidates = candidates(
                 left: left,
                 right: right,
-                kind: kind,
+                kind: effectiveKind,
                 order: order
             )
         } else {
-            let parts = try topLevelComponents(value, separator: ":")
+            let parts = try topLevelComponents(body, separator: ":")
             if parts.count == 2 {
                 guard let endpoint = endpoint(
                     host: parts[0],
                     port: parts[1],
-                    kind: kind,
+                    kind: effectiveKind,
                     username: ""
                 ) else {
                     throw ProxyImportError.invalid
@@ -99,7 +114,7 @@ enum ProxyImportParser {
             }
             parsedCandidates = colonCandidates(
                 parts: parts,
-                kind: kind,
+                kind: effectiveKind,
                 order: order
             )
         }
@@ -116,7 +131,7 @@ enum ProxyImportParser {
             throw ProxyImportError.ambiguous
         }
         let result = unique[0]
-        if kind == .socks5 && !result.configuration.username.isEmpty {
+        if effectiveKind == .socks5 && !result.configuration.username.isEmpty {
             throw ProxyImportError.socksAuthenticationUnsupported
         }
         return result

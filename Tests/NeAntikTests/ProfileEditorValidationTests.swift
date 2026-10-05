@@ -199,13 +199,13 @@ struct ProfileEditorValidationTests {
     }
 
     @Test
-    func ignoredSocksPasswordDoesNotBlockSaving() {
-        #expect(
-            firstIssue(
-                usesProxy: true,
-                proxyKind: .socks5,
-                proxyPassword: "secret\0tail"
-            ) == nil
+    func socksCredentialsRequireExplicitRemoval() {
+        let issue = firstIssue(
+            usesProxy: true,
+            proxyKind: .socks5,
+            proxyPassword: "secret"
         )
+        #expect(issue?.field == .proxyPassword)
+        #expect(issue?.message.contains("не поддерживается") == true)
     }
 }
