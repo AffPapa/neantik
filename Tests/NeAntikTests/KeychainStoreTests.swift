@@ -297,6 +297,122 @@ struct KeychainStoreTests {
         }
     }
 
+    @Test @MainActor
+    func existingProfileProxyAssignmentRollsBackMetadataWhenKeychainFails() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profiles = ProfileStore(paths: paths)
+        let original = try profiles.upsert(BrowserProfile(name: "Existing"))
+        let persistedBefore = ProfileStore(paths: paths)
+            .profile(withID: original.id)
+        let browserData = paths.browserDataDirectory(for: original.id)
+        let marker = browserData.appendingPathComponent("untouched.txt")
+        try Data("keep".utf8).write(to: marker)
+
+        let backend = MemoryKeychainBackend()
+        backend.upsertAlwaysFails = true
+        let keychain = KeychainStore(backend: backend)
+        var edited = original
+        edited.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+
+        #expect(throws: MemoryKeychainError.self) {
+            try profiles.upsert(edited, toFolderID: nil) { saved in
+                try keychain.updateProxyPasswordForProfileEdit(
+                    "synthetic-password",
+                    profileID: saved.id
+                )
+            }
+        }
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: original.id) == persistedBefore)
+        #expect(backend.string(
+            service: KeychainStore.currentService,
+            profileID: original.id
+        ) == nil)
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+    }
+
+    @Test @MainActor
+    func staleExistingProfileProxyAssignmentCannotOverwriteNewerEdit() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstWindow = ProfileStore(paths: paths)
+        let original = try firstWindow.upsert(BrowserProfile(name: "Existing"))
+        let secondWindow = ProfileStore(paths: paths)
+        var newer = original
+        newer.note = "edited elsewhere"
+        _ = try secondWindow.upsert(newer)
+
+        var stale = original
+        stale.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+        var credentialCallbackRan = false
+        #expect(throws: BrowserProfileRevisionConflictError.self) {
+            try firstWindow.upsert(stale, toFolderID: nil) { _ in
+                credentialCallbackRan = true
+            }
+        }
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: original.id)?.note == "edited elsewhere")
+        #expect(reloaded.profile(withID: original.id)?.proxy == nil)
+        #expect(!credentialCallbackRan)
+    }
+
+    @Test @MainActor
+    func existingProfileProxyAssignmentPersistsOnlySelectedProfile() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profiles = ProfileStore(paths: paths)
+        let selected = try profiles.upsert(BrowserProfile(name: "Selected"))
+        let untouched = try profiles.upsert(BrowserProfile(name: "Untouched"))
+        let untouchedBefore = ProfileStore(paths: paths)
+            .profile(withID: untouched.id)
+        let marker = paths.browserDataDirectory(for: selected.id)
+            .appendingPathComponent("untouched.txt")
+        try Data("keep".utf8).write(to: marker)
+
+        let backend = MemoryKeychainBackend()
+        let keychain = KeychainStore(backend: backend)
+        var edited = selected
+        edited.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+        let saved = try profiles.upsert(edited, toFolderID: nil) { profile in
+            try keychain.updateProxyPasswordForProfileEdit(
+                "synthetic-password",
+                profileID: profile.id
+            )
+        }
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(saved.revision == selected.revision + 1)
+        #expect(reloaded.profile(withID: selected.id)?.proxy == edited.proxy)
+        #expect(reloaded.profile(withID: untouched.id) == untouchedBefore)
+        #expect(try keychain.proxyPassword(profileID: selected.id) ==
+            "synthetic-password")
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+    }
+
     @Test
     func purgeNeverAttemptsCompensatingRestore() throws {
         let backend = MemoryKeychainBackend()
