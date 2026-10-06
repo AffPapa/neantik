@@ -638,11 +638,13 @@ struct ContentView: View {
                 }, apply: applySavedFilter, performAction: { action in
                     pendingManagerAction = action; showingManagerLibrary = false
                 })
+                .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
             ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, organization: store.organization, profileCommand: quickProfileCommand, performAction: { action in
                 pendingManagerAction = action; showingQuickCommands = false
             })
+            .accessibilityHidden(true)
         }
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
@@ -664,6 +666,7 @@ struct ContentView: View {
                     normalizeSelection()
                 }
             }
+            .accessibilityHidden(true)
         }
         .sheet(item: $profileFolderPickerRequest) { request in
             if let profile = store.profile(withID: request.profileID) {
@@ -676,10 +679,12 @@ struct ContentView: View {
                 ) { folderID in
                     moveProfile(profile, toFolderID: folderID)
                 }
+                .accessibilityHidden(true)
             } else {
                 ProfileFolderPickerUnavailableSheet {
                     profileFolderPickerRequest = nil
                 }
+                .accessibilityHidden(true)
             }
         }
         .sheet(item: $bulkProxyImportRequest) { request in
@@ -694,6 +699,7 @@ struct ContentView: View {
                     targetFolderID: request.targetFolderID
                 )
             }
+            .accessibilityHidden(true)
         }
         .sheet(item: $transferPassphraseMode) { mode in
             ProfileConfigurationPassphraseSheet(
@@ -715,6 +721,7 @@ struct ContentView: View {
                     transferPassphraseMode = nil
                 }
             )
+            .accessibilityHidden(true)
         }
         .sheet(item: $pendingSnapshotRestore) { request in
             ProfileSnapshotRestorePreviewSheet(
@@ -726,6 +733,7 @@ struct ContentView: View {
                 onCancel: { pendingSnapshotRestore = nil },
                 onRestore: { confirmLocalSnapshotRestore(request.payload) }
             )
+            .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -740,6 +748,7 @@ struct ContentView: View {
                     paths: store.paths,
                     releaseContext: fingerprintEvidenceReleaseContext
                 )
+                .accessibilityHidden(true)
             } else {
                 ContentUnavailableView(
                     "Служебная проверка выпуска недоступна",
@@ -749,6 +758,7 @@ struct ContentView: View {
                     )
                 )
                 .frame(width: 520, height: 360)
+                .accessibilityHidden(true)
             }
         }
         .sheet(item: $fingerprintAuditRequest) { request in
@@ -783,6 +793,7 @@ struct ContentView: View {
                     }
                 }
             )
+            .accessibilityHidden(true)
         }
     }
 
