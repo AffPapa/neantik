@@ -36,6 +36,28 @@ struct ProfileMetadataUndoTests {
         #expect(throws: BrowserProfileRevisionConflictError.self) { try store.undoLastMetadataChange() }
         #expect(ProfileStore(paths: paths).profile(withID: original.id)?.name == "Newer")
     }
+    @Test func importedFolderMutationBlocksStaleUndoFromAnotherWindow() throws {
+        let paths = paths(); defer { try? FileManager.default.removeItem(at: paths.rootDirectory) }
+        let firstWindow = ProfileStore(paths: paths)
+        let original = try firstWindow.upsert(BrowserProfile(name: "Original"))
+        _ = try firstWindow.mutateProfile(withID: original.id, registerMetadataUndo: true) {
+            $0.name = "Changed"
+        }
+        let secondWindow = ProfileStore(paths: paths)
+        let before = secondWindow.organization.mutationRevision
+        let importResult = try ProfileMetadataImportTransaction.run(
+            paths: paths,
+            requestedProfiles: [BrowserProfile(name: "Imported")],
+            folderNames: ["Imported folder"]
+        )
+        #expect(importResult.organization.mutationRevision != before)
+        #expect(throws: ProfileMetadataUndoConflict.self) {
+            try firstWindow.undoLastMetadataChange()
+        }
+        let restarted = ProfileStore(paths: paths)
+        #expect(restarted.profile(withID: original.id)?.name == "Changed")
+        #expect(restarted.organization.folders.contains { $0.name == "Imported folder" })
+    }
     @Test func moveUndoAndDeletedDestination() throws {
         let paths = paths(); defer { try? FileManager.default.removeItem(at: paths.rootDirectory) }
         let store = ProfileStore(paths: paths)

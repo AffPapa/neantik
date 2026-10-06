@@ -188,6 +188,12 @@ enum ProfileMetadataImportTransaction {
                     )
                 }
             }
+            if nextOrganization != previousOrganization {
+                // An import is a metadata mutation even when it only adds
+                // folders for new profiles. Advance the revision so Undo in
+                // another manager window cannot accept a stale snapshot.
+                nextOrganization.mutationRevision = UUID()
+            }
 
             var createdDirectories: [URL] = []
             do {

@@ -108,6 +108,11 @@ enum ProfileProxyTestPresentation {
   }
 }
 
+private enum ProxyEntryMode: String, CaseIterable {
+  case paste = "Вставить строку"
+  case manual = "Поля"
+}
+
 struct ProfileEditorView: View {
   let original: BrowserProfile?
   let keychain: KeychainStore
@@ -143,6 +148,7 @@ struct ProfileEditorView: View {
   @State private var proxyUsername: String
   @State private var proxyPassword: String
   @State private var proxyImportText = ""
+  @State private var proxyEntryMode: ProxyEntryMode
   @State private var proxyImportOrder: ProxyImportOrder = .automatic
   @State private var proxyImportMessage: String?
   @State private var isApplyingProxyImport = false
@@ -208,6 +214,7 @@ struct ProfileEditorView: View {
     _usesProxy = State(initialValue: profile.proxy != nil)
     _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
     _proxyHost = State(initialValue: profile.proxy?.host ?? "")
+    _proxyEntryMode = State(initialValue: profile.proxy == nil ? .paste : .manual)
     _proxyPort = State(initialValue: profile.proxy.map { String($0.port) } ?? "")
     _proxyUsername = State(initialValue: profile.proxy?.username ?? "")
     if original == nil {
@@ -280,6 +287,15 @@ struct ProfileEditorView: View {
       .padding(.horizontal, 20)
       .padding(.top, 16)
       .padding(.bottom, 8)
+
+      if let errorMessage {
+        Label(errorMessage, systemImage: "exclamationmark.circle.fill")
+          .font(.callout)
+          .foregroundStyle(.red)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.bottom, 8)
+      }
 
       ScrollViewReader { scrollProxy in
         Form {
@@ -366,6 +382,207 @@ struct ProfileEditorView: View {
           validationLabel(for: .name)
         }
 
+        Section("Сеть") {
+          Toggle("Использовать прокси", isOn: $usesProxy)
+          if usesProxy {
+            Picker("Ввод прокси", selection: $proxyEntryMode) {
+              ForEach(ProxyEntryMode.allCases, id: \.self) { mode in
+                Text(mode.rawValue).tag(mode)
+              }
+            }
+            .pickerStyle(.segmented)
+            .help("Вставь одну строку или заполни поля вручную")
+            Picker("Тип", selection: $proxyKind) {
+              ForEach(ProxyKind.allCases) { kind in
+                Text(kind.title).tag(kind)
+              }
+            }
+            Text(
+              "Выбери протокол и его порт из кабинета провайдера. Порты HTTP и SOCKS5 могут различаться."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            if proxyEntryMode == .paste {
+            SecureField(
+              "login:password@host:port",
+              text: $proxyImportText
+            )
+            .accessibilityLabel("Строка прокси для импорта")
+            Text(
+              "login:password@host:port · без схемы используется выбранный тип"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            DisclosureGroup("Форматы и выбор протокола") {
+              Text(
+                "Принимаются login:password@host:port, host:port@login:password, host:port и ссылки с http://, https:// или socks5://. Схема в строке задаёт тип. HTTP-прокси подходит для HTTPS-сайтов; HTTPS-прокси означает шифрование соединения до самого прокси."
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            }
+
+            ViewThatFits(in: .horizontal) {
+              HStack {
+                importProxyButton
+                pasteProxyButton
+              }
+              VStack(alignment: .leading, spacing: 8) {
+                importProxyButton
+                pasteProxyButton
+              }
+            }
+            DisclosureGroup("Другой порядок полей") {
+              proxyImportOrderPicker
+            }
+            } else {
+
+            ViewThatFits(in: .horizontal) {
+              HStack {
+                TextField("Хост", text: $proxyHost)
+                  .focused($focusedField, equals: .proxyHost)
+                  .id(ProfileEditorField.proxyHost)
+                TextField("Порт", text: $proxyPort)
+                  .frame(width: 90)
+                  .focused($focusedField, equals: .proxyPort)
+                  .id(ProfileEditorField.proxyPort)
+              }
+              VStack(alignment: .leading, spacing: 8) {
+                TextField("Хост", text: $proxyHost)
+                  .focused($focusedField, equals: .proxyHost)
+                  .id(ProfileEditorField.proxyHost)
+                TextField("Порт", text: $proxyPort)
+                  .focused($focusedField, equals: .proxyPort)
+                  .id(ProfileEditorField.proxyPort)
+              }
+            }
+            validationLabel(for: .proxyHost)
+            validationLabel(for: .proxyPort)
+            if proxyKind == .socks5 {
+              Text(
+                "Chromium поддерживает SOCKS5 только без логина и пароля. DNS для сайтов будет идти через прокси."
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              if !proxyUsername.isEmpty || !proxyPassword.isEmpty {
+                Button("Очистить логин и пароль SOCKS5") {
+                  proxyUsername = ""
+                  proxyPassword = ""
+                }
+                validationLabel(for: .proxyPassword)
+              }
+            } else {
+              TextField(
+                "Логин (необязательно)",
+                text: $proxyUsername
+              )
+              SecureField(
+                "Пароль (хранится в Связке ключей)",
+                text: $proxyPassword
+              )
+              .focused($focusedField, equals: .proxyPassword)
+              .id(ProfileEditorField.proxyPassword)
+              validationLabel(for: .proxyPassword)
+            }
+            }
+
+            if let proxyImportMessage {
+              Text(proxyImportMessage)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(proxyImportMessage)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+              HStack(spacing: 10) {
+                if isTesting {
+                  ProgressView()
+                    .controlSize(.small)
+                    .accessibilityHidden(true)
+                  Text("Проверяем прокси…")
+                    .foregroundStyle(.secondary)
+                  Button("Отменить") {
+                    cancelProxyTest()
+                  }
+                  .help("Отменить проверку прокси")
+                } else {
+                  Button {
+                    testProxy()
+                  } label: {
+                    Label("Проверить прокси", systemImage: "network")
+                  }
+                  .disabled(proxyEntryMode == .paste)
+                  .help(proxyEntryMode == .paste
+                    ? "Сначала заполни поля из строки"
+                    : "Проверить настроенный прокси")
+                }
+              }
+              if let testMessage {
+                Text(testMessage)
+                  .font(.caption)
+                  .foregroundStyle(
+                    proxyTestSucceeded ? Color.green : Color.red
+                  )
+                  .accessibilityLabel(testMessage)
+              }
+            }
+
+            DisclosureGroup("Как работает проверка") {
+              Text(
+                  "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно."
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              if !proxyUsername.isEmpty {
+                Text(
+                  "Chromium может запросить логин и пароль при первом запуске. Они доступны в карточке профиля; пароль хранится в Связке ключей."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+              }
+            }
+
+            if let detectedTimezone {
+              Text(
+                [
+                  detectedLocation,
+                  detectedTimezone,
+                  detectedLocale,
+                ]
+                .compactMap { $0 }
+                .joined(separator: " · ")
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            }
+            if let evidence = detectedProxyContextEvidence {
+              let status = ProfileEditorProxyContextPresentation.resolve(
+                evidence: evidence
+              )
+              Label(status.title, systemImage: status.systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(
+                  status.requiresAttention
+                    ? Color.orange
+                    : Color.secondary
+                )
+              Text(status.detail)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .accessibilityElement(children: .combine)
+              .accessibilityLabel("\(status.title). \(status.detail)")
+            } else if detectedTimezone != nil {
+              Label(
+                "Контекст прокси без даты проверки",
+                systemImage: "exclamationmark.triangle.fill"
+              )
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(.orange)
+            }
+          }
+        }
+
         if showsAdvancedOptions {
         Section("Организация и заметки") {
           folderControl
@@ -410,8 +627,15 @@ struct ProfileEditorView: View {
               )
               .font(.caption.weight(.semibold))
               .accessibilityHidden(true)
-              Text("Дополнительно")
-                .fontWeight(.semibold)
+              VStack(alignment: .leading, spacing: 2) {
+                Text("Организация и оформление")
+                  .fontWeight(.semibold)
+                if !showsAdvancedOptions {
+                  Text("Папка, теги, заметка, стартовая страница, значок и цвет")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+              }
               Spacer()
             }
             .frame(
@@ -422,7 +646,7 @@ struct ProfileEditorView: View {
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
-          .accessibilityLabel("Дополнительные настройки профиля")
+          .accessibilityLabel("Организация и оформление профиля")
           .accessibilityValue(
             showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
           )
@@ -541,198 +765,7 @@ struct ProfileEditorView: View {
           }
         }
 
-        Section("Сеть") {
-          Toggle("Использовать прокси", isOn: $usesProxy)
-          if usesProxy {
-            Picker("Тип", selection: $proxyKind) {
-              ForEach(ProxyKind.allCases) { kind in
-                Text(kind.title).tag(kind)
-              }
-            }
-            Text(
-              "Выбери протокол и его порт из кабинета провайдера. Порты HTTP и SOCKS5 могут различаться."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
 
-            SecureField(
-              "login:password@host:port",
-              text: $proxyImportText
-            )
-            .accessibilityLabel("Строка прокси для импорта")
-            Text(
-              "login:password@host:port · без схемы используется выбранный тип"
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            DisclosureGroup("Форматы и выбор протокола") {
-              Text(
-                "Принимаются login:password@host:port, host:port@login:password, host:port и ссылки с http://, https:// или socks5://. Схема в строке задаёт тип. HTTP-прокси подходит для HTTPS-сайтов; HTTPS-прокси означает шифрование соединения до самого прокси."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            }
-
-            ViewThatFits(in: .horizontal) {
-              HStack {
-                importProxyButton
-                pasteProxyButton
-              }
-              VStack(alignment: .leading, spacing: 8) {
-                importProxyButton
-                pasteProxyButton
-              }
-            }
-            DisclosureGroup("Другой порядок полей") {
-              proxyImportOrderPicker
-            }
-            if let proxyImportMessage {
-              Text(proxyImportMessage)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(proxyImportMessage)
-            }
-
-            ViewThatFits(in: .horizontal) {
-              HStack {
-                TextField("Хост", text: $proxyHost)
-                  .focused($focusedField, equals: .proxyHost)
-                  .id(ProfileEditorField.proxyHost)
-                TextField("Порт", text: $proxyPort)
-                  .frame(width: 90)
-                  .focused($focusedField, equals: .proxyPort)
-                  .id(ProfileEditorField.proxyPort)
-              }
-              VStack(alignment: .leading, spacing: 8) {
-                TextField("Хост", text: $proxyHost)
-                  .focused($focusedField, equals: .proxyHost)
-                  .id(ProfileEditorField.proxyHost)
-                TextField("Порт", text: $proxyPort)
-                  .focused($focusedField, equals: .proxyPort)
-                  .id(ProfileEditorField.proxyPort)
-              }
-            }
-            validationLabel(for: .proxyHost)
-            validationLabel(for: .proxyPort)
-            if proxyKind == .socks5 {
-              Text(
-                "Chromium поддерживает SOCKS5 только без логина и пароля. DNS для сайтов будет идти через прокси."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              if !proxyUsername.isEmpty || !proxyPassword.isEmpty {
-                Button("Очистить логин и пароль SOCKS5") {
-                  proxyUsername = ""
-                  proxyPassword = ""
-                }
-                validationLabel(for: .proxyPassword)
-              }
-            } else {
-              TextField(
-                "Логин (необязательно)",
-                text: $proxyUsername
-              )
-              SecureField(
-                "Пароль (хранится в Связке ключей)",
-                text: $proxyPassword
-              )
-              .focused($focusedField, equals: .proxyPassword)
-              .id(ProfileEditorField.proxyPassword)
-              validationLabel(for: .proxyPassword)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-              HStack(spacing: 10) {
-                if isTesting {
-                  ProgressView()
-                    .controlSize(.small)
-                    .accessibilityHidden(true)
-                  Text("Проверяем прокси…")
-                    .foregroundStyle(.secondary)
-                  Button("Отменить") {
-                    cancelProxyTest()
-                  }
-                  .help("Отменить проверку прокси")
-                } else {
-                  Button {
-                    testProxy()
-                  } label: {
-                    Label("Проверить прокси", systemImage: "network")
-                  }
-                }
-              }
-              if let testMessage {
-                Text(testMessage)
-                  .font(.caption)
-                  .foregroundStyle(
-                    proxyTestSucceeded ? Color.green : Color.red
-                  )
-                  .accessibilityLabel(testMessage)
-              }
-            }
-
-            DisclosureGroup("Как работает проверка") {
-              Text(
-                  "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              if !proxyUsername.isEmpty {
-                Text(
-                  "Chromium может запросить логин и пароль при первом запуске. Они доступны в карточке профиля; пароль хранится в Связке ключей."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-              }
-            }
-
-            if let detectedTimezone {
-              Text(
-                [
-                  detectedLocation,
-                  detectedTimezone,
-                  detectedLocale,
-                ]
-                .compactMap { $0 }
-                .joined(separator: " · ")
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            }
-            if let evidence = detectedProxyContextEvidence {
-              let status = ProfileEditorProxyContextPresentation.resolve(
-                evidence: evidence
-              )
-              Label(status.title, systemImage: status.systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(
-                  status.requiresAttention
-                    ? Color.orange
-                    : Color.secondary
-                )
-              Text(status.detail)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .accessibilityElement(children: .combine)
-              .accessibilityLabel("\(status.title). \(status.detail)")
-            } else if detectedTimezone != nil {
-              Label(
-                "Контекст прокси без даты проверки",
-                systemImage: "exclamationmark.triangle.fill"
-              )
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(.orange)
-            }
-          }
-        }
-
-        if let errorMessage {
-          Section {
-            Text(errorMessage)
-              .foregroundStyle(.red)
-          }
-        }
         }
         .formStyle(.grouped)
         .onChange(of: validationIssue?.field) { _, field in
@@ -1094,6 +1127,10 @@ struct ProfileEditorView: View {
   }
 
   private func save() {
+    if usesProxy && proxyEntryMode == .paste {
+      errorMessage = "Сначала нажми «Заполнить поля из строки» или выбери «Поля»."
+      return
+    }
     if let issue = ProfileEditorValidation.firstIssue(
       name: name,
       tags: tags,
@@ -1245,6 +1282,7 @@ struct ProfileEditorView: View {
       proxyImportMessage =
         "Прокси распознан: \(draft.redactedSummary). " +
         "Соединение ещё не проверено; сверь тип и порт с провайдером."
+      proxyEntryMode = .manual
       errorMessage = nil
 
       Task { @MainActor in

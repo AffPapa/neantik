@@ -3987,6 +3987,41 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 22) {
+            if profile.proxy != nil {
+                GroupBox("Прокси") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        networkSummary
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) { proxyActions }
+                            VStack(alignment: .leading, spacing: 8) { proxyActions }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
+            if let environmentSnapshot {
+                ProfileEnvironmentView(
+                    snapshot: environmentSnapshot,
+                    proxyCheckSummary: proxyCheckSummary,
+                    hasProxy: profile.proxy != nil,
+                    isTestingProxy: isTestingProxy,
+                    canTestProxy: processState == .stopped,
+                    canCancelProxyTest: canCancelProxyTest,
+                    canRunFingerprintAudit: canRunFingerprintAudit,
+                    onTestProxy: onTestProxy,
+                    onCancelProxy: onCancelProxyTest,
+                    onEditProxy: onEditProxy,
+                    onRunFingerprintAudit: onRunFingerprintAudit
+                )
+                .id(environmentSnapshot.profileID)
+            } else if profile.proxy == nil {
+                GroupBox("Сеть") {
+                    networkSummary
+                        .padding(.vertical, 4)
+                }
+            }
+
             GroupBox("Стартовая страница") {
                 LabeledContent("URL", value: profile.startURL)
                     .textSelection(.enabled)
@@ -4028,35 +4063,6 @@ struct ProfileDetailView: View {
                     .padding(.vertical, 4)
                 } label: {
                     Label("Заметка", systemImage: "note.text")
-                }
-            }
-
-            if profile.proxy != nil {
-                GroupBox("Прокси") {
-                    networkSummary
-                        .padding(.vertical, 4)
-                }
-            }
-
-            if let environmentSnapshot {
-                ProfileEnvironmentView(
-                    snapshot: environmentSnapshot,
-                    proxyCheckSummary: proxyCheckSummary,
-                    hasProxy: profile.proxy != nil,
-                    isTestingProxy: isTestingProxy,
-                    canTestProxy: processState == .stopped,
-                    canCancelProxyTest: canCancelProxyTest,
-                    canRunFingerprintAudit: canRunFingerprintAudit,
-                    onTestProxy: onTestProxy,
-                    onCancelProxy: onCancelProxyTest,
-                    onEditProxy: onEditProxy,
-                    onRunFingerprintAudit: onRunFingerprintAudit
-                )
-                .id(environmentSnapshot.profileID)
-            } else if profile.proxy == nil {
-                GroupBox("Сеть") {
-                    networkSummary
-                        .padding(.vertical, 4)
                 }
             }
 
@@ -4183,6 +4189,28 @@ struct ProfileDetailView: View {
                 LabeledContent("Подключение", value: "Без прокси")
             }
         }
+    }
+
+    @ViewBuilder
+    private var proxyActions: some View {
+        Button {
+            if isTestingProxy && canCancelProxyTest {
+                onCancelProxyTest()
+            } else {
+                onTestProxy()
+            }
+        } label: {
+            Label(
+                isTestingProxy ? (canCancelProxyTest ? "Отменить проверку" : "Проверяется в другом окне") : "Проверить прокси",
+                systemImage: isTestingProxy ? "stop.circle" : "network"
+            )
+        }
+        .disabled((isTestingProxy && !canCancelProxyTest) || (!isTestingProxy && isRunning))
+        .help(isRunning ? "Сначала останови профиль" : "Проверить маршрут и контекст прокси")
+
+        Button("Изменить прокси…", systemImage: "slider.horizontal.3", action: onEditProxy)
+            .disabled(isRunning)
+            .help(isRunning ? "Сначала останови профиль" : "Открыть настройки прокси")
     }
 
     @ViewBuilder

@@ -1,5 +1,19 @@
 import SwiftUI
 
+private enum LibraryDeletionTarget {
+    case template(UUID)
+    case filter(UUID)
+    case events
+
+    var message: String {
+        switch self {
+        case .template: "Выбранный шаблон будет удалён. Профили не изменятся."
+        case .filter: "Выбранный фильтр будет удалён. Профили не изменятся."
+        case .events: "Локальный журнал операций будет очищен. Профили не изменятся."
+        }
+    }
+}
+
 struct ManagerLibrarySheet: View {
     @ObservedObject var library: ManagerLibraryController
     let profile: BrowserProfile?
@@ -15,6 +29,7 @@ struct ManagerLibrarySheet: View {
     @State private var name = ""
     @State private var preview: UserProfileTemplate?
     @State private var localError: String?
+    @State private var deletionTarget: LibraryDeletionTarget?
     @FocusState private var nameFocused: Bool
 
     private func later(_ action: @escaping () -> Void) {
@@ -30,22 +45,14 @@ struct ManagerLibrarySheet: View {
                 Text(error).foregroundStyle(.red).font(.callout)
             }
             if library.isBusy { ProgressView("Чтение / сохранение…") }
-            HStack {
-                TextField("Название шаблона или фильтра", text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
-                Button("Сохранить шаблон") {
-                    guard let profile else { return }
-                    do {
-                        preview = try UserProfileTemplate(name: name, profile: profile, folderID: folderID)
-                        localError = nil
-                    } catch { localError = error.localizedDescription }
-                }.disabled(profile == nil || name.isEmpty || library.isBusy)
-                Button("Сохранить фильтр") {
-                    do {
-                        let filter = try SavedWorkspaceFilter(name: name, query: query, search: search)
-                        Task { await library.update(operation: .filter) { $0.filters.append(filter) } }
-                        localError = nil
-                    } catch { localError = error.localizedDescription }
-                }.disabled(name.isEmpty || library.isBusy)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    creationControls
+                }
+                .frame(minWidth: 620)
+                VStack(alignment: .leading, spacing: 8) {
+                    creationControls
+                }
             }
             TabView {
                 List {
@@ -55,7 +62,7 @@ struct ManagerLibrarySheet: View {
                             Text(template.name).lineLimit(1)
                             Spacer()
                             Button("Состав / создать") { preview = template }
-                            Button("Удалить") { Task { await library.update(operation: .template) { $0.templates.removeAll { $0.id == template.id } } } }
+                            Button("Удалить") { deletionTarget = .template(template.id) }
                         }
                     }
                 }.tabItem { Text("Шаблоны") }
@@ -75,7 +82,7 @@ struct ManagerLibrarySheet: View {
                                     if let index = document.filters.firstIndex(where: { $0.id == filter.id }) { document.filters[index].name = newName }
                                 } }
                             }
-                            Button("Удалить") { Task { await library.update(operation: .filter) { $0.filters.removeAll { $0.id == filter.id } } } }
+                            Button("Удалить") { deletionTarget = .filter(filter.id) }
                         }
                     }
                 }.tabItem { Text("Фильтры") }
@@ -89,16 +96,34 @@ struct ManagerLibrarySheet: View {
                             Text(event.result.title).foregroundStyle(.secondary)
                         }.font(.callout)
                     }
-                    Button("Очистить журнал") { Task { await library.update { $0.events = [] } } }
+                    Button("Очистить журнал") { deletionTarget = .events }
+                        .disabled(library.document.events.isEmpty)
                 }.tabItem { Text("Журнал") }
             }.disabled(library.isBusy)
-            HStack {
-                Text("Только локальные данные; до 50 шаблонов и 50 фильтров.").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    Text("Только локальные данные; до 50 шаблонов и 50 фильтров.").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    closeButton
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Только локальные данные; до 50 шаблонов и 50 фильтров.").font(.caption).foregroundStyle(.secondary)
+                    closeButton
+                }
             }
-        }.padding(20).frame(width: 760, height: 510)
+        }
+        .padding(20)
+        .frame(minWidth: 480, idealWidth: 680, maxWidth: 820, minHeight: 400, idealHeight: 520, maxHeight: 680)
         .task { await library.load(); nameFocused = true }
+        .alert("Подтвердить удаление", isPresented: Binding(
+            get: { deletionTarget != nil },
+            set: { if !$0 { deletionTarget = nil } }
+        )) {
+            Button("Удалить", role: .destructive) { commitDeletion() }
+            Button("Отмена", role: .cancel) { deletionTarget = nil }
+        } message: {
+            Text(deletionTarget?.message ?? "")
+        }
         .sheet(item: $preview) { template in
             VStack(alignment: .leading, spacing: 14) {
                 Text(template.name).font(.title2.bold())
@@ -119,6 +144,43 @@ struct ManagerLibrarySheet: View {
                     }
                 }
             }.padding(24).frame(width: 530).accessibilityHidden(true)
+        }
+    }
+
+    private var creationControls: some View {
+        Group {
+            TextField("Название шаблона или фильтра", text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
+            Button("Сохранить шаблон") {
+                guard let profile else { return }
+                do {
+                    preview = try UserProfileTemplate(name: name, profile: profile, folderID: folderID)
+                    localError = nil
+                } catch { localError = error.localizedDescription }
+            }.disabled(profile == nil || name.isEmpty || library.isBusy)
+            Button("Сохранить фильтр") {
+                do {
+                    let filter = try SavedWorkspaceFilter(name: name, query: query, search: search)
+                    Task { await library.update(operation: .filter) { $0.filters.append(filter) } }
+                    localError = nil
+                } catch { localError = error.localizedDescription }
+            }.disabled(name.isEmpty || library.isBusy)
+        }
+    }
+
+    private var closeButton: some View {
+        Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+    }
+
+    private func commitDeletion() {
+        guard let target = deletionTarget else { return }
+        deletionTarget = nil
+        switch target {
+        case .template(let id):
+            Task { await library.update(operation: .template) { $0.templates.removeAll { $0.id == id } } }
+        case .filter(let id):
+            Task { await library.update(operation: .filter) { $0.filters.removeAll { $0.id == id } } }
+        case .events:
+            Task { await library.update { $0.events = [] } }
         }
     }
 }

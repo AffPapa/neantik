@@ -4,10 +4,6 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ru</string>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>ru</string>
-	</array>
 	<key>CFBundleDisplayName</key>
 	<string>NeAntik</string>
 	<key>CFBundleExecutable</key>
@@ -18,16 +14,20 @@
 	<string>app.neantik.desktop</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ru</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>NeAntik</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.7.16</string>
+	<string>0.7.17</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>79</string>
+	<string>80</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -44,15 +44,15 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 NeAntik. All rights reserved.</string>
-	<key>NeAntikPublicStatsURL</key>
-	<string></string>
 	<key>NeAntikDeveloperTeamIdentifier</key>
 	<string>H6VGU2M6JD</string>
+	<key>NeAntikPublicStatsURL</key>
+	<string></string>
 	<key>NeAntikTelemetryEndpoint</key>
 	<string></string>
-	<key>NeAntikUpdateChannelEnabled</key>
-	<false/>
 	<key>NeAntikUpdateAutoDownload</key>
+	<false/>
+	<key>NeAntikUpdateChannelEnabled</key>
 	<false/>
 	<key>NeAntikUpdateManifestURL</key>
 	<string></string>
