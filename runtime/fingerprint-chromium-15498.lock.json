@@ -1,0 +1,42 @@
+{
+  "binaryBinding": {
+    "requiredEvidence": "runtime/chromium-154-port-candidate.json",
+    "status": "bound-by-chromium-154-port-candidate-and-runtime-report"
+  },
+  "commonChromium": {
+    "commit": "800d0bb5078472e4442c1fd73373172754a60939",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tree": "b94932e613bbbb63656c285c614145ef1255d358"
+  },
+  "fingerprintChromium": {
+    "chromiumVersion": "154.0.8037.98",
+    "commit": "b859317bf11f6be47f9b7799ec690a0a42a1fb33",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "154.0.8037.98",
+    "tree": "e3eac82f3bb5479e80ab245c514083b5db4fedf3"
+  },
+  "macPackaging": {
+    "commit": "3241dc9cacee393621d277ec936376072f0cb3c5",
+    "packagedChromiumVersion": "154.0.8037.98",
+    "relationship": "Pinned upstream packaging plus reviewed NeAntik compatibility patches",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "tree": "ef5ef849ed78edb7d8c07773df6bbb6753efe9ea"
+  },
+  "ownedManifests": {
+    "securityBaselineSHA256": "bd82ccc23907590cde38364cdb88caf5300b55641dece3068e4f41ad13f4c3ad"
+  },
+  "policy": "Source-qualified candidate only; not runtime, security, signing or publication approval.",
+  "releaseReady": false,
+  "schemaVersion": 4,
+  "sourceContract": "runtime/chromium-15498-source-contract.json",
+  "sourceContractSHA256": "a018a7b7d40ea2a4d64eba8bb85a98915a1c556d9aa68efc1fd1df1de1755ea1",
+  "sourceProvenance": "runtime/chromium-15498-port-candidate.json",
+  "sourceProvenanceSHA256": "7ae09e3e8840fe4dcfda3ec77ddb4a29f3474523d1ec84e33e1ee5a217c71f1a",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "verification": {
+    "coherentAppleDeviceTuples": "pending-runtime-evidence",
+    "scope": "Exact signed runtime GUI and same-origin JS/HTTP Device Memory evidence pending."
+  }
+}

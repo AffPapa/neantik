@@ -1,0 +1,19 @@
+{
+  "binaryBinding": {
+    "architecture": "arm64",
+    "argsGNSHA256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e",
+    "candidateExecutableSHA256": "0821ef943809a9f0db455cb21c8578fa88d70295c237e64851db7deaafe6da21",
+    "candidateFrameworkSHA256": "6bf56d86c4f47b72e028ba3d0bdc4db40caf2dfe6b3cdec061233871864508b1",
+    "sourceVersion": "154.0.8037.98",
+    "status": "bound-to-built-candidate"
+  },
+  "policy": "Source and unsigned build only; signed runtime and release gates remain required.",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceContractSHA256": "a018a7b7d40ea2a4d64eba8bb85a98915a1c556d9aa68efc1fd1df1de1755ea1",
+  "sourceInputManifestSHA256": "03ee72e5697a90f53f93275d8851d1b4ada1dd81e4e38c430e5c51896c2bf183",
+  "sourceSnapshotSHA256": "cbab8b8f3bc5edd24fdc2c0198539b727b5346b692b4943ba8b729a18636e50e",
+  "status": "candidate-bound",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "154.0.8037.98"
+}

@@ -1,0 +1,22 @@
+{
+  "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "buildArgsSHA256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e",
+  "enterpriseCloudContentAnalysis": true,
+  "officialChromiumBase": {
+    "commit": "b859317bf11f6be47f9b7799ec690a0a42a1fb33",
+    "tree": "e3eac82f3bb5479e80ab245c514083b5db4fedf3"
+  },
+  "ownedPatchGroupCount": 73,
+  "rebasePlanSHA256": "3b72beee1e60e1062ace382f580a74493fea52ef1e6cfe23a98ec0435378e783",
+  "releaseReady": false,
+  "safeBrowsingMode": 0,
+  "schemaVersion": 2,
+  "securityBaselineSHA256": "bd82ccc23907590cde38364cdb88caf5300b55641dece3068e4f41ad13f4c3ad",
+  "sourceInputManifestSHA256": "03ee72e5697a90f53f93275d8851d1b4ada1dd81e4e38c430e5c51896c2bf183",
+  "sourceMode": "official-chromium-owned-macos-port",
+  "sourceSnapshotSHA256": "cbab8b8f3bc5edd24fdc2c0198539b727b5346b692b4943ba8b729a18636e50e",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "154.0.8037.98",
+  "toolchainLockSHA256": "22426fb462ddc37599177f6b08531066f767fb176f7b29d696c87ebd67c31faf"
+}
