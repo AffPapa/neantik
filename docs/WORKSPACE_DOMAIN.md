@@ -35,14 +35,28 @@ latest sanitized health outcome. It has no fields for:
 - WebRTC candidates or network addresses;
 - profile notes.
 
-## Future adapters
+## Local MCP foundation
 
-Any future local API, MCP server or SDK must consume this same DTO instead of
-reading JSON files independently. The first acceptable adapter is read-only,
-off by default, loopback-only and authenticated with an ephemeral session
-token. It must not launch/stop browsers, mutate profiles, expose Keychain
-material, expose profile notes or add a network-accessible listener. Those
-capabilities require a separate threat model and product decision.
+`--neantik-mcp-stdio --data-root /absolute/path` is an explicit, read-only
+local stdio mode. It is not started by the GUI and opens no socket. The
+separate process uses the canonical `ProfileStore` decoder on one bounded,
+regular metadata file and returns a still narrower allowlist than
+`WorkspacePublicSnapshotDTO`: ID, name, tags, pin/archive flags, and
+`processState: unverified`. It cannot claim a profile is running because it
+does not own `BrowserProcessManager`'s live reconciliation. It never returns
+notes, proxy details, exact network observations, BrowserData or fingerprint
+material. The mode cannot launch/stop browsers or mutate profiles.
 
-The current source tree provides the shared domain and DTO only. It does not
-start an HTTP listener, MCP server or background service.
+The initial supported MCP methods are `initialize`, `ping`, `tools/list` and
+`tools/call` for `workspace_list_profiles`, using the 2025-11-25 JSON-RPC
+stdio protocol. Messages are newline-delimited and requests are limited to
+64 KiB; metadata input is limited to 16 MiB. A malformed or unsafe metadata
+file yields a generic error. Standard output contains protocol messages only.
+Configure the client to execute the absolute path of the signed
+`NeAntik.app/Contents/MacOS/NeAntik` binary with these arguments and a
+deliberately selected local data root. Local stdio support varies by chat
+client; compatibility with Claude, ChatGPT or Grok has not yet been certified.
+
+Future create/edit/launch tools require a separate threat model, revision
+checks, process reconciliation and a user-visible confirmation model. The
+current adapter is a foundation for those tools, not browser RPA.

@@ -84,8 +84,8 @@ Direct before the click; the full editor remains a secondary action.
   context is described as automatic, while observed failures expose one
   relevant action.
 - One immutable workspace projection and an allowlisted read-only DTO for the
-  native UI and future local API/MCP/SDK adapters. There is no listener or
-  write API in this version.
+  native UI. An opt-in local MCP stdio mode lists safe profile metadata; it
+  has no listener, process control, secret access or write API.
 
 ## Explicitly excluded
 

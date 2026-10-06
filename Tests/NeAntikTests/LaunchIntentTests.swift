@@ -13,6 +13,28 @@ struct LaunchIntentTests {
     }
 
     @Test
+    func mcpStdioRequiresExactFlagAndExplicitCanonicalRoot() {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let root = "/private/tmp/neantik-mcp-fixture"
+        #expect(NeAntikLaunchIntent.parse(arguments: [
+            executable, "--neantik-mcp-stdio", "--data-root", root
+        ]).mode == .mcpStdio(dataRoot: URL(fileURLWithPath: root, isDirectory: true)))
+        let devExecutable = FileManager.default.currentDirectoryPath +
+            "/.build/neantik-local/NeAntik-Dev.app/Contents/MacOS/NeAntik"
+        #expect(NeAntikLaunchIntent.parse(arguments: [
+            devExecutable, "--neantik-mcp-stdio", "--data-root", root
+        ]).mode == .mcpStdio(dataRoot: URL(fileURLWithPath: root, isDirectory: true)))
+        for arguments in [
+            [executable, "--neantik-mcp-stdio"],
+            [executable, "--neantik-mcp-stdio", "--data-root", "relative"],
+            [executable, "--neantik-mcp-stdio", "--data-root", "/private/tmp/../unsafe"],
+            [executable, "--neantik-mcp-stdio=true"]
+        ] {
+            #expect(NeAntikLaunchIntent.parse(arguments: arguments).mode == .invalidControlArguments)
+        }
+    }
+
+    @Test
     func releaseArgumentOpensFingerprintAudit() {
         let manifest =
             "/private/tmp/neantik-release/direct-candidate-manifest.json"

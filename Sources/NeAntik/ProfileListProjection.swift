@@ -601,7 +601,7 @@ enum ProfileListProjection {
     }
 }
 
-private enum ProfileSearchText {
+enum ProfileSearchText {
     private static let locale = Locale(identifier: "en_US_POSIX")
 
     static func query(_ value: String) -> String {

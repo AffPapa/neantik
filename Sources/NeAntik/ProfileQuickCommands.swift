@@ -13,6 +13,7 @@ struct ProfileQuickCommand: Identifiable {
 struct ProfileQuickCommandsSheet: View {
     let commands: [ProfileQuickCommand]
     let profiles: [BrowserProfile]
+    let organization: ProfileOrganizationState
     let profileCommand: (BrowserProfile) -> ProfileQuickCommand
     let performAction: (@escaping () -> Void) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -23,7 +24,9 @@ struct ProfileQuickCommandsSheet: View {
 
     private var matches: [ProfileQuickCommand] {
         let actions = commands.filter { search.isEmpty || $0.title.localizedStandardContains(search) }
-        return actions + ProfileQuickCommandProjection.matching(profiles, search: search)
+        return actions + ProfileQuickCommandProjection.matching(
+            profiles, search: search, organization: organization
+        )
             .map(profileCommand)
     }
     private var selected: ProfileQuickCommand? {
@@ -45,7 +48,7 @@ struct ProfileQuickCommandsSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Быстрые команды").font(.title2.bold())
-            TextField("Имя профиля или команда", text: $search)
+            TextField("Команда, профиль, тег, заметка или папка", text: $search)
                 .textFieldStyle(.roundedBorder)
                 .focused($searchFocused)
                 .onSubmit(perform)
@@ -101,7 +104,23 @@ struct ProfileQuickCommandsSheet: View {
 }
 
 enum ProfileQuickCommandProjection {
-    static func matching(_ profiles: [BrowserProfile], search: String) -> [BrowserProfile] {
-        Array(profiles.lazy.filter { search.isEmpty || $0.name.localizedStandardContains(search) }.prefix(100))
+    static func matching(
+        _ profiles: [BrowserProfile],
+        search: String,
+        organization: ProfileOrganizationState = .empty
+    ) -> [BrowserProfile] {
+        let query = ProfileSearchText.query(search)
+        guard !query.isEmpty else { return Array(profiles.prefix(100)) }
+        let folderNames = Dictionary(uniqueKeysWithValues:
+            organization.folders.map { ($0.id, ProfileSearchText.fold($0.name)) })
+        return Array(profiles.lazy.filter { profile in
+            if ProfileSearchText.document(
+                profileValues: [profile.name] + profile.tags + [profile.note]
+            ).contains(query) { return true }
+            guard let folderID = organization.folderID(forProfileID: profile.id),
+                  let folderName = folderNames[folderID]
+            else { return false }
+            return folderName.contains(query)
+        }.prefix(100))
     }
 }

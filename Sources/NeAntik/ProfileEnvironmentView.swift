@@ -96,7 +96,7 @@ struct ProfileEnvironmentView: View {
                             )
                         }
 
-                        if hasProxy || canRunFingerprintAudit {
+                        if canRunFingerprintAudit {
                             Divider()
                                 .padding(.top, 6)
                             diagnosticTools
@@ -319,35 +319,14 @@ struct ProfileEnvironmentView: View {
         }
     }
 
-    private var recommendedAction: DiagnosticAction? {
-        ProfileEnvironmentPresentation.recommendedAction(in: snapshot)
-    }
-
-    private var overviewAction: DiagnosticAction? {
-        switch recommendedAction {
-        case .testProxy, .editProxy:
-            recommendedAction
-        case .runFingerprintAudit, .none:
-            nil
-        }
-    }
-
     private var hasOverviewAction: Bool {
-        switch overviewAction {
-        case .testProxy:
-            hasProxy && (canTestProxy || isTestingProxy)
-        case .editProxy:
-            hasProxy && canTestProxy
-        case .runFingerprintAudit, .none:
-            false
-        }
+        hasProxy
     }
 
     @ViewBuilder
     private var environmentActions: some View {
-        if overviewAction == .testProxy {
+        if hasProxy {
             proxyTestButton
-        } else if overviewAction == .editProxy {
             editProxyButton
         }
     }
@@ -360,18 +339,12 @@ struct ProfileEnvironmentView: View {
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
-                    if hasProxy {
-                        proxyTestButton
-                    }
                     if canRunFingerprintAudit {
                         fingerprintAuditButton
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    if hasProxy {
-                        proxyTestButton
-                    }
                     if canRunFingerprintAudit {
                         fingerprintAuditButton
                     }
@@ -444,7 +417,8 @@ struct ProfileEnvironmentView: View {
             Label("Изменить прокси…", systemImage: "slider.horizontal.3")
         }
         .buttonStyle(.borderedProminent)
-        .help("Исправить адрес, порт, логин или пароль прокси")
+        .disabled(!canTestProxy)
+        .help(canTestProxy ? "Исправить адрес, порт, логин или пароль прокси" : "Сначала останови профиль")
         .accessibilityHint(
             "Открывает настройки прокси текущего профиля"
         )

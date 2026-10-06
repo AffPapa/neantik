@@ -641,7 +641,7 @@ struct ContentView: View {
                 .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
-            ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, profileCommand: quickProfileCommand, performAction: { action in
+            ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, organization: store.organization, profileCommand: quickProfileCommand, performAction: { action in
                 pendingManagerAction = action; showingQuickCommands = false
             })
             .accessibilityHidden(true)
@@ -3287,7 +3287,7 @@ struct ContentView: View {
         guard let runtime, canRunFingerprintAudit
         else {
             localError =
-                "Нужны два активных профиля и готовый встроенный браузерный движок."
+                "Для ручной проверки нужны два остановленных профиля и готовый встроенный браузерный движок. Создавать профиль можно без неё."
             return
         }
         fingerprintAuditRequest = FingerprintAuditRequest(
@@ -3991,10 +3991,6 @@ struct ProfileDetailView: View {
                 GroupBox("Прокси") {
                     VStack(alignment: .leading, spacing: 10) {
                         networkSummary
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 8) { proxyActions }
-                            VStack(alignment: .leading, spacing: 8) { proxyActions }
-                        }
                     }
                     .padding(.vertical, 4)
                 }
@@ -4189,28 +4185,6 @@ struct ProfileDetailView: View {
                 LabeledContent("Подключение", value: "Без прокси")
             }
         }
-    }
-
-    @ViewBuilder
-    private var proxyActions: some View {
-        Button {
-            if isTestingProxy && canCancelProxyTest {
-                onCancelProxyTest()
-            } else {
-                onTestProxy()
-            }
-        } label: {
-            Label(
-                isTestingProxy ? (canCancelProxyTest ? "Отменить проверку" : "Проверяется в другом окне") : "Проверить прокси",
-                systemImage: isTestingProxy ? "stop.circle" : "network"
-            )
-        }
-        .disabled((isTestingProxy && !canCancelProxyTest) || (!isTestingProxy && isRunning))
-        .help(isRunning ? "Сначала останови профиль" : "Проверить маршрут и контекст прокси")
-
-        Button("Изменить прокси…", systemImage: "slider.horizontal.3", action: onEditProxy)
-            .disabled(isRunning)
-            .help(isRunning ? "Сначала останови профиль" : "Открыть настройки прокси")
     }
 
     @ViewBuilder

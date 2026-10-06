@@ -7,12 +7,15 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         "--neantik-enroll-fingerprint-evidence"
     static let candidateManifestArgument = "--candidate-manifest"
     static let outputArgument = "--output"
+    static let mcpStdioArgument = "--neantik-mcp-stdio"
+    static let dataRootArgument = "--data-root"
 
     enum Mode: Equatable, Sendable {
         case interactive(
             releaseFingerprintAudit: FingerprintEvidenceReleaseRequest?
         )
         case fingerprintEnrollment(outputURL: URL)
+        case mcpStdio(dataRoot: URL)
         case invalidControlArguments
     }
 
@@ -58,6 +61,16 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     static func parse(arguments: [String]) -> Self {
         if arguments.count == 4,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
+           arguments[1] == mcpStdioArgument,
+           arguments[2] == dataRootArgument,
+           isSafeAbsoluteMCPRoot(arguments[3])
+        {
+            return Self(mode: .mcpStdio(
+                dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true)
+            ))
+        }
+        if arguments.count == 4,
+           isCanonicalAbsoluteExecutablePath(arguments[0]),
            arguments[1] == fingerprintEnrollmentArgument,
            arguments[2] == outputArgument
         {
@@ -101,6 +114,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         }
         if arguments.contains(where: {
             $0 == outputArgument ||
+                $0 == dataRootArgument ||
+                $0.hasPrefix(mcpStdioArgument) ||
                 $0 == candidateManifestArgument ||
                 $0.hasPrefix(fingerprintEnrollmentArgument) ||
                 $0.hasPrefix(releaseFingerprintAuditArgument)
@@ -116,6 +131,14 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         _ path: String
     ) -> Bool {
         isCanonicalAbsoluteFilePath(path)
+    }
+
+    private static func isSafeAbsoluteMCPRoot(_ path: String) -> Bool {
+        guard path.hasPrefix("/"), path != "/",
+              !path.hasSuffix("/"), !path.contains("\u{0}")
+        else { return false }
+        return path.split(separator: "/", omittingEmptySubsequences: false)
+            .dropFirst().allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
     }
 
     private static func isCanonicalAbsoluteFilePath(
