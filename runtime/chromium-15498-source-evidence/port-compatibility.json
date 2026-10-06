@@ -23,6 +23,12 @@
       "postimageSHA256": "9d9ca3f8b5bf28c2658e685a8a1b9a1ae9265b6594c88d7a242aea59bb622270",
       "sha256": "31594642dec8cee97874af9411e8d92f07b370e3442a1d83ab6b66bda08ac449",
       "sourcePath": "components/safe_browsing/core/common/BUILD.gn"
+    },
+    {
+      "name": "bind-css-device-screen-coherence.patch",
+      "postimageSHA256": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629",
+      "sha256": "07f8f2b7319a6952a935f31bd8071c02ae045180dee103df5c6b2a528886ff15",
+      "sourcePath": "third_party/blink/renderer/core/css/media_values.cc"
     }
   ],
   "releaseReady": false,

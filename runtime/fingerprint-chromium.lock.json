@@ -9,36 +9,36 @@
     "tree": "b94932e613bbbb63656c285c614145ef1255d358"
   },
   "fingerprintChromium": {
-    "chromiumVersion": "154.0.8037.93",
-    "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+    "chromiumVersion": "154.0.8037.98",
+    "commit": "b859317bf11f6be47f9b7799ec690a0a42a1fb33",
     "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
     "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "154.0.8037.93",
-    "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+    "tag": "154.0.8037.98",
+    "tree": "e3eac82f3bb5479e80ab245c514083b5db4fedf3"
   },
   "macPackaging": {
     "commit": "3241dc9cacee393621d277ec936376072f0cb3c5",
-    "packagedChromiumVersion": "154.0.8037.93",
+    "packagedChromiumVersion": "154.0.8037.98",
     "relationship": "Pinned upstream packaging plus reviewed NeAntik compatibility patches",
     "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
     "tree": "ef5ef849ed78edb7d8c07773df6bbb6753efe9ea"
   },
   "ownedManifests": {
-    "securityBaselineSHA256": "1ea144644bb86dae9435b31e6293817c966eeb2ade7a3c9de79ad67237882e40"
+    "securityBaselineSHA256": "bd82ccc23907590cde38364cdb88caf5300b55641dece3068e4f41ad13f4c3ad"
   },
   "policy": "Source-qualified candidate only; not runtime, security, signing or publication approval.",
   "releaseReady": false,
   "schemaVersion": 4,
-  "sourceContract": "runtime/chromium-154-source-contract.json",
-  "sourceContractSHA256": "db3b78fdb491d22904038e79de2b6ae20d98418b50ceae9f544528d1aeb7b155",
-  "sourceProvenance": "runtime/chromium-154-port-candidate.json",
-  "sourceProvenanceSHA256": "0d3bb77e8800745a8c9b962b201c80a84841cb3f52fc8587017d262131db4f9f",
+  "sourceContract": "runtime/chromium-15498-source-contract.json",
+  "sourceContractSHA256": "2ff506abc7ef6f47d86578bdc96b4615cb9722b342c8411bd235b1ac6d896f01",
+  "sourceProvenance": "runtime/chromium-15498-port-candidate.json",
+  "sourceProvenanceSHA256": "ed308f9ffa2eb07eeff453bfad74dd069da88520d662d8adcd8a59deb1160b7e",
   "status": "source-qualified",
   "targetArchitecture": "arm64",
   "verification": {
     "coherentAppleDeviceTuples": "verified",
-    "coherentAppleDeviceTuplesEvidence": "runtime/chromium-154-source-evidence/coherent-apple-device-tuples-runtime-qualification.json",
-    "coherentAppleDeviceTuplesEvidenceSHA256": "b13094e291fe6062802a05cadc6616c0975d588d773dadae547ef235acdf0ecc",
-    "scope": "Production-qualified local GUI A-B-A and same-origin JS/HTTP Device Memory on the exact signed runtime; final production app requires its own authenticated GUI evidence."
+    "coherentAppleDeviceTuplesEvidence": "runtime/chromium-15498-source-evidence/coherent-apple-device-tuples-runtime-qualification.json",
+    "coherentAppleDeviceTuplesEvidenceSHA256": "478e3227d97d6bfc7052409708663e774dcb53f5fe6c96a687603c3151347850",
+    "scope": "Exact signed runtime GUI A-B-A and same-origin JS/HTTP Device Memory evidence verified."
   }
 }

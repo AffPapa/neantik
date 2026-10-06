@@ -57,7 +57,9 @@ SOURCE_LOCK_SHA256="$(
 DOCUMENT_NAMESPACE="https://neantik.app/spdx/chromium-$VERSION-$SOURCE_LOCK_SHA256"
 SOURCE_LINK="https://chromium.googlesource.com/chromium/src/+/refs/tags/$VERSION"
 
-python3 "$LICENSE_TOOL" license_file \
+# The Chromium source snapshot includes the license tool's import tree.
+# Keep its imports from writing __pycache__ into the frozen source checkout.
+python3 -B "$LICENSE_TOOL" license_file \
   --scan-root "$SOURCE_ROOT" \
   --target-os mac \
   --format spdx \

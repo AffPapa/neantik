@@ -16,12 +16,12 @@
     },
     {
       "path": "port-compatibility.json",
-      "sha256": "30bfec09269216dc7354b511007a177387668030e4c762cf264b0026b83a8e71"
+      "sha256": "07d6d83d859b9d1771e791c76f38f86bc7909883a133d9aab0241fae3fc57ef9"
     }
   ],
   "releaseReady": false,
   "schemaVersion": 1,
   "sourceInputsReady": true,
-  "sourceSnapshotSHA256": "cbab8b8f3bc5edd24fdc2c0198539b727b5346b692b4943ba8b729a18636e50e",
+  "sourceSnapshotSHA256": "490fc2007753214f00a5408d9ffd8c2c90a2dff5861a7fcb64acf6212b1bf15b",
   "status": "source-reconstructed"
 }

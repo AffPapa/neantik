@@ -1,0 +1,28 @@
+{
+  "authenticatedGUIEnvelopeSHA256": "e5079952541f35ba1fcffa965c2d45f7a84c1231758c5d91b042950ea3d527fd",
+  "candidateManifestSHA256": "c022c7dbb556a6d65567ef17c3f309e81ebea49d2534cf96c27d52c1eac5d83f",
+  "chromiumVersion": "154.0.8037.98",
+  "deviceMemory": {
+    "coherent": true,
+    "js": 8,
+    "navigation": {
+      "legacy": "8",
+      "modern": "8"
+    },
+    "subresource": {
+      "legacy": "8",
+      "modern": "8"
+    }
+  },
+  "guiProductionQualified": true,
+  "publicSafeGUISummarySHA256": "6a3a067f5dbc87864c6b7c2cddae68472cd75c1e8d182e285a4d01b88035f204",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "scope": "Exact signed public-alpha candidate with production-qualified GUI A-B-A; local same-origin JS and HTTP Client Hints control.",
+  "signedRuntimeExecutableSHA256": "5d280612bb8e6f805b7a0200e78de52334df2f4596cffb3df4bd4c32de83f6a2",
+  "signedRuntimeFrameworkSHA256": "7b28c7c45e0ff66f6128c6fe3b85e6198edcd693d71401f494c4e941180764ef",
+  "sourceCandidateSHA256": "ed308f9ffa2eb07eeff453bfad74dd069da88520d662d8adcd8a59deb1160b7e",
+  "status": "verified",
+  "tupleCatalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "unsignedFrameworkSHA256": "d9c641310dc162bc990d55ebbd6fc6a018a530912bd0478986fcf7ce1a922a88"
+}

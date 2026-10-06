@@ -33,6 +33,7 @@ COMPATIBILITY_TARGETS = {
     "restore-pinned-devtools-esbuild.patch": "third_party/devtools-frontend/src/scripts/build/esbuild.js",
     "bind-safe-browsing-pref-header.patch": "components/safe_browsing/core/common/safe_browsing_prefs.cc",
     "bind-safe-browsing-pref-dep.patch": "components/safe_browsing/core/common/BUILD.gn",
+    "bind-css-device-screen-coherence.patch": "third_party/blink/renderer/core/css/media_values.cc",
 }
 HOTFIX_TARGETS = {
     "content/browser/client_hints/client_hints.cc",

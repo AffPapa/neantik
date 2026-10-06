@@ -30,13 +30,15 @@
   "releaseReady": false,
   "schemaVersion": 4,
   "sourceContract": "runtime/chromium-15498-source-contract.json",
-  "sourceContractSHA256": "a018a7b7d40ea2a4d64eba8bb85a98915a1c556d9aa68efc1fd1df1de1755ea1",
+  "sourceContractSHA256": "2ff506abc7ef6f47d86578bdc96b4615cb9722b342c8411bd235b1ac6d896f01",
   "sourceProvenance": "runtime/chromium-15498-port-candidate.json",
-  "sourceProvenanceSHA256": "7ae09e3e8840fe4dcfda3ec77ddb4a29f3474523d1ec84e33e1ee5a217c71f1a",
+  "sourceProvenanceSHA256": "ed308f9ffa2eb07eeff453bfad74dd069da88520d662d8adcd8a59deb1160b7e",
   "status": "source-qualified",
   "targetArchitecture": "arm64",
   "verification": {
-    "coherentAppleDeviceTuples": "pending-runtime-evidence",
-    "scope": "Exact signed runtime GUI and same-origin JS/HTTP Device Memory evidence pending."
+    "coherentAppleDeviceTuples": "verified",
+    "coherentAppleDeviceTuplesEvidence": "runtime/chromium-15498-source-evidence/coherent-apple-device-tuples-runtime-qualification.json",
+    "coherentAppleDeviceTuplesEvidenceSHA256": "478e3227d97d6bfc7052409708663e774dcb53f5fe6c96a687603c3151347850",
+    "scope": "Exact signed runtime GUI A-B-A and same-origin JS/HTTP Device Memory evidence verified."
   }
 }

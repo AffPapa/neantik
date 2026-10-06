@@ -2,11 +2,11 @@
 
 ## Source references
 
-- Chromium: `154.0.8037.93`
+- Chromium: `154.0.8037.98`
 - Owned patch groups: `73`
-- Candidate lock SHA-256: `c8f08b79f0d620139da900f1afb892878a8443f4ddcfc93c1bbf647a5473579f`
-- Source contract SHA-256: `db3b78fdb491d22904038e79de2b6ae20d98418b50ceae9f544528d1aeb7b155`
-- Chromium: `https://chromium.googlesource.com/chromium/src.git` at `f89f3a4363808e117c592adedcf9947882ac3b79`
+- Candidate lock SHA-256: `6b3ef68531e3005a629765fed61274817731e5e0468bc137d44b90d1697e39ff`
+- Source contract SHA-256: `2ff506abc7ef6f47d86578bdc96b4615cb9722b342c8411bd235b1ac6d896f01`
+- Chromium: `https://chromium.googlesource.com/chromium/src.git` at `b859317bf11f6be47f9b7799ec690a0a42a1fb33`
 - Common Chromium packaging: `https://github.com/ungoogled-software/ungoogled-chromium.git` at `800d0bb5078472e4442c1fd73373172754a60939`
 - macOS packaging: `https://github.com/ungoogled-software/ungoogled-chromium-macos.git` at `3241dc9cacee393621d277ec936376072f0cb3c5`
 
@@ -21,7 +21,7 @@ Chromium-generated third-party notices and the SPDX SBOM are also required.
 
 The fingerprint-chromium license is retained for historical attribution.
 The owned M154 port is recorded under
-`runtime/nevision-patches/ports/chromium-154.0.8037.93/`.
+`runtime/nevision-patches/ports/chromium-154.0.8037.98/`.
 
 ## Distribution boundary
 
