@@ -4,6 +4,29 @@ import Testing
 
 struct RuntimeProvenanceCardTests {
     @Test
+    func managerWarningMatchesCheckedReleaseBaseline() throws {
+        let repository = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let baselineFile = repository.appendingPathComponent(
+            "runtime/security-baseline.json"
+        )
+        let data = try Data(contentsOf: baselineFile)
+        let document = try #require(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let releaseMinimum = try #require(
+            document["minimumPublicChromiumVersion"] as? String
+        )
+
+        #expect(
+            NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText
+                == releaseMinimum
+        )
+    }
+
+    @Test
     func cardUsesSafeRuntimeSummaryWithoutPathsOrFullHashes() {
         let runtime = BrowserRuntime(
             name: "NeAntik Browser",
