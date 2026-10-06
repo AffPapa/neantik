@@ -85,11 +85,18 @@ verify_reviewed_runtime_evidence() {
     154.0.8037.93)
       source_contract="$PROJECT_DIR/runtime/chromium-154-source-contract.json"
       ;;
+    154.0.8037.98)
+      source_contract="$PROJECT_DIR/runtime/chromium-15498-source-contract.json"
+      ;;
     *)
       echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2
       exit 65
       ;;
   esac
+  local packaged_contract_name="$(basename "$source_contract")"
+  if [[ "$runtime_version" == "154.0.8037.98" ]]; then
+    packaged_contract_name="chromium-154-source-contract.json"
+  fi
 
   local comparisons=(
     "$source_provenance:$evidence/source-provenance.json"
@@ -97,13 +104,21 @@ verify_reviewed_runtime_evidence() {
     "$PROJECT_DIR/runtime/security-baseline.json:$evidence/security-baseline.json"
     "$PROJECT_DIR/runtime/nevision-patches/series.json:$evidence/neantik-patch-series.json"
     "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
-    "$source_contract:$evidence/$(basename "$source_contract")"
+    "$source_contract:$evidence/$packaged_contract_name"
   )
   if [[ "$runtime_version" == "154.0.8037.93" ]]; then
     comparisons+=(
       "$PROJECT_DIR/runtime/chromium-154-device-memory-hotfix.json:$evidence/chromium-154-device-memory-hotfix.json"
       "$PROJECT_DIR/runtime/chromium-154-posthotfix-source-snapshot.json:$evidence/chromium-154-posthotfix-source-snapshot.json"
     )
+  elif [[ "$runtime_version" == "154.0.8037.98" ]]; then
+    local name
+    for name in chromium-15498-source-input-manifest.json chromium-15498-source-snapshot.json chromium-15498-rebase-plan.json; do
+      comparisons+=("$PROJECT_DIR/runtime/$name:$evidence/$name")
+    done
+    for name in device-memory-hotfix.json external-build-inputs.json ordered-patch-replay.json port-compatibility.json; do
+      comparisons+=("$PROJECT_DIR/runtime/chromium-15498-source-evidence/$name:$evidence/chromium-15498-source-evidence/$name")
+    done
   fi
   local comparison
   for comparison in "${comparisons[@]}"; do
