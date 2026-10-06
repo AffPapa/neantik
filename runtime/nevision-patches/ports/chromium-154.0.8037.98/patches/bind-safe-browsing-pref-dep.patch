@@ -1,0 +1,9 @@
+--- a/components/safe_browsing/core/common/BUILD.gn
++++ b/components/safe_browsing/core/common/BUILD.gn
+@@ -16,5 +16,6 @@
+   deps = [
+     ":features",
++    "//components/content_settings/core/common",
+     "//components/pref_registry",
+     "//components/prefs",
+     "//net",

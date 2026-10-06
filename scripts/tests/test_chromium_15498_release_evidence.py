@@ -11,6 +11,7 @@ PROJECT = SCRIPTS.parent
 sys.path.insert(0, str(SCRIPTS))
 
 from chromium_15498_release_evidence import (
+    COMPATIBILITY_TARGETS,
     COMMIT,
     TREE,
     VERSION,
@@ -46,7 +47,7 @@ class M15498EvidenceTests(unittest.TestCase):
         patches = self.runtime / "nevision-patches/ports/chromium-154.0.8037.98/patches"
         patches.mkdir(parents=True)
         source_patches = PROJECT / "runtime/nevision-patches/ports/chromium-154.0.8037.98/patches"
-        for name in ("restore-upstream-clang-24.patch", "restore-pinned-devtools-esbuild.patch"):
+        for name in COMPATIBILITY_TARGETS:
             shutil.copy2(source_patches / name, patches / name)
         shutil.copytree(
             PROJECT / "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches",
@@ -107,6 +108,12 @@ class M15498EvidenceTests(unittest.TestCase):
 
     def test_patch_tamper_fails(self):
         patch = self.runtime / "nevision-patches/ports/chromium-154.0.8037.98/patches/restore-upstream-clang-24.patch"
+        patch.write_bytes(patch.read_bytes() + b"\n")
+        with self.assertRaisesRegex(M15498EvidenceError, "patch digest"):
+            verify_contract(self.project)
+
+    def test_safe_browsing_binding_patch_tamper_fails(self):
+        patch = self.runtime / "nevision-patches/ports/chromium-154.0.8037.98/patches/bind-safe-browsing-pref-header.patch"
         patch.write_bytes(patch.read_bytes() + b"\n")
         with self.assertRaisesRegex(M15498EvidenceError, "patch digest"):
             verify_contract(self.project)

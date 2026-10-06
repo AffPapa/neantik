@@ -25,9 +25,21 @@
         "postimageSHA256": "7bb109092f20864461819d3fc61e137dcbe9d82775324789b3c06d85b3b0bb18",
         "sha256": "d9a150964a47a7850b983392af13f6b807f91b0630fae090e68c1ec99573dd8f",
         "sourcePath": "third_party/devtools-frontend/src/scripts/build/esbuild.js"
+      },
+      {
+        "name": "bind-safe-browsing-pref-header.patch",
+        "postimageSHA256": "7ac9abe3774abcf87c8e11a367f517f6103e50d8f7460d5ab997fb4e249fe1c1",
+        "sha256": "74b07f39884c59b92274003a55bd3eb2e55f55aeb7e6dbac02ff8ee3f0862160",
+        "sourcePath": "components/safe_browsing/core/common/safe_browsing_prefs.cc"
+      },
+      {
+        "name": "bind-safe-browsing-pref-dep.patch",
+        "postimageSHA256": "9d9ca3f8b5bf28c2658e685a8a1b9a1ae9265b6594c88d7a242aea59bb622270",
+        "sha256": "31594642dec8cee97874af9411e8d92f07b370e3442a1d83ab6b66bda08ac449",
+        "sourcePath": "components/safe_browsing/core/common/BUILD.gn"
       }
     ],
-    "reportSHA256": "2bd2bfd478d5cf137f91a2f3edb59f288ce143cb7bd1a9b4711aa284b365107f"
+    "reportSHA256": "30bfec09269216dc7354b511007a177387668030e4c762cf264b0026b83a8e71"
   },
   "deviceMemoryHotfix": {
     "reportSHA256": "d18430b6230f32b833fddfa30818986d340778ccf3fb2d92356a23dd14170e87",

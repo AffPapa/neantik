@@ -31,6 +31,8 @@ EVIDENCE_NAMES = (
 COMPATIBILITY_TARGETS = {
     "restore-upstream-clang-24.patch": "build/toolchain/toolchain.gni",
     "restore-pinned-devtools-esbuild.patch": "third_party/devtools-frontend/src/scripts/build/esbuild.js",
+    "bind-safe-browsing-pref-header.patch": "components/safe_browsing/core/common/safe_browsing_prefs.cc",
+    "bind-safe-browsing-pref-dep.patch": "components/safe_browsing/core/common/BUILD.gn",
 }
 HOTFIX_TARGETS = {
     "content/browser/client_hints/client_hints.cc",
@@ -238,9 +240,11 @@ def verify_contract(project_root: Path) -> tuple[dict[str, Any], dict[str, Any]]
     compatibility = read_object(evidence_root / "port-compatibility.json", "M154.98 port compatibility")
     if (compatibility.get("targetVersion") != VERSION
             or compatibility.get("releaseReady") is not False
-            or len(compatibility.get("patches", [])) != 2
+            or len(compatibility.get("patches", [])) != len(COMPATIBILITY_TARGETS)
             or {item.get("name") for item in compatibility["patches"] if isinstance(item, dict)} != set(COMPATIBILITY_TARGETS)):
         raise M15498EvidenceError("M154.98 port compatibility is incomplete")
+    if plan.get("compatibilityOverlay", {}).get("patches") != compatibility["patches"]:
+        raise M15498EvidenceError("M154.98 compatibility plan differs from evidence")
     for item in compatibility["patches"]:
         name = item.get("name")
         if name not in COMPATIBILITY_TARGETS or item.get("sourcePath") != COMPATIBILITY_TARGETS[name]:
