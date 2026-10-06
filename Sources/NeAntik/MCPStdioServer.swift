@@ -20,19 +20,29 @@ enum MCPStdioServer {
                 if errno == EINTR { continue }
                 Darwin.exit(EX_IOERR)
             }
-            pending.append(contentsOf: buffer.prefix(count))
-            if pending.count > maximumRequestBytes {
-                Darwin.exit(EX_DATAERR)
-            }
-            while let newline = pending.firstIndex(of: 0x0A) {
-                let line = pending.prefix(upTo: newline)
-                pending.removeSubrange(...newline)
-                if line.isEmpty { continue }
-                if let response = handle(Data(line), dataRoot: dataRoot) {
+            guard let lines = framedLines(
+                pending: &pending, incoming: Data(buffer.prefix(count))
+            ) else { Darwin.exit(EX_DATAERR) }
+            for line in lines {
+                if let response = handle(line, dataRoot: dataRoot) {
                     write(response)
                 }
             }
         }
+    }
+
+    /// The cap belongs to each JSON-RPC line, not to a batch of valid lines.
+    static func framedLines(pending: inout Data, incoming: Data) -> [Data]? {
+        pending.append(incoming)
+        var lines: [Data] = []
+        while let newline = pending.firstIndex(of: 0x0A) {
+            let line = Data(pending.prefix(upTo: newline))
+            guard line.count <= maximumRequestBytes else { return nil }
+            pending.removeSubrange(...newline)
+            if !line.isEmpty { lines.append(line) }
+        }
+        guard pending.count <= maximumRequestBytes else { return nil }
+        return lines
     }
 
     static func handle(_ line: Data, dataRoot: URL) -> Data? {
@@ -101,7 +111,6 @@ enum MCPStdioServer {
         let file = paths.profilesFile
         let descriptor = file.path.withCString { Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC) }
         if descriptor < 0 {
-            if errno == ENOENT { return [] }
             throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
         }
         defer { _ = Darwin.close(descriptor) }

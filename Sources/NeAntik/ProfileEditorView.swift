@@ -1130,8 +1130,7 @@ struct ProfileEditorView: View {
 
   private func save() {
     if usesProxy && proxyEntryMode == .paste {
-      errorMessage = "Сначала нажми «Заполнить поля из строки» или выбери «Поля»."
-      return
+      guard importProxy(source: proxyImportText) else { return }
     }
     if let issue = ProfileEditorValidation.firstIssue(
       name: name,
@@ -1267,7 +1266,8 @@ struct ProfileEditorView: View {
     testMessage = "Проверка отменена"
   }
 
-  private func importProxy(source: String) {
+  @discardableResult
+  private func importProxy(source: String) -> Bool {
     do {
       let draft = try ProxyImportParser.parse(
         source,
@@ -1293,10 +1293,12 @@ struct ProfileEditorView: View {
         proxyImportText = ""
         isApplyingProxyImport = false
       }
+      return true
     } catch {
       isApplyingProxyImport = false
       proxyImportMessage = error.localizedDescription
       proxyImportFailed = true
+      return false
     }
   }
 

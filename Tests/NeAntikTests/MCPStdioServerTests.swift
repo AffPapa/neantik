@@ -53,4 +53,33 @@ struct MCPStdioServerTests {
         #expect(call("profile_delete", root: root)["error"] != nil)
         #expect(call("tools/call", params: ["name": "profile_launch"], root: root)["error"] != nil)
     }
+
+    @Test func missingMetadataDoesNotMasqueradeAsAnEmptyWorkspace() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let response = call("tools/call", params: ["name": "workspace_list_profiles"], root: root)
+        let result = try #require(response["result"] as? [String: Any])
+        #expect(result["isError"] as? Bool == true)
+        #expect(!String(describing: result).contains(root.path))
+    }
+
+    @Test func framingLimitsEachRequestWithoutRejectingABatch() {
+        let validLine = Data(repeating: 0x20, count: MCPStdioServer.maximumRequestBytes - 2)
+            + Data("{}\n".utf8)
+        var pending = Data()
+        let first = MCPStdioServer.framedLines(pending: &pending, incoming: validLine)
+        #expect(first?.count == 1)
+        #expect(pending.isEmpty)
+        let pair = MCPStdioServer.framedLines(
+            pending: &pending, incoming: validLine + validLine
+        )
+        #expect(pair?.count == 2)
+        #expect(pending.isEmpty)
+
+        let tooLarge = Data(repeating: 0x20, count: MCPStdioServer.maximumRequestBytes + 1)
+        #expect(MCPStdioServer.framedLines(
+            pending: &pending, incoming: tooLarge
+        ) == nil)
+    }
 }

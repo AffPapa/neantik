@@ -54,7 +54,8 @@ stdio protocol. Messages are newline-delimited and requests are limited to
 file yields a generic error. Standard output contains protocol messages only.
 Configure the client to execute the absolute path of the signed
 `NeAntik.app/Contents/MacOS/NeAntik` binary with these arguments and a
-deliberately selected local data root. Local stdio support varies by chat
+deliberately selected, already initialized local data root. A missing
+`profiles.json` is an error rather than an apparently empty workspace. Local stdio support varies by chat
 client; compatibility with Claude, ChatGPT or Grok has not yet been certified.
 
 Future create/edit/launch tools require a separate threat model, revision
