@@ -182,7 +182,8 @@ def verify_contract(project_root: Path) -> tuple[dict[str, Any], dict[str, Any]]
     if evidence_root.is_symlink() or not evidence_root.is_dir():
         raise M15498EvidenceError("M154.98 evidence directory is unsafe")
     actual_names = sorted(path.name for path in evidence_root.iterdir() if path.is_file())
-    if actual_names != sorted(EVIDENCE_NAMES):
+    qualification_name = "coherent-apple-device-tuples-runtime-qualification.json"
+    if actual_names not in (sorted(EVIDENCE_NAMES), sorted((*EVIDENCE_NAMES, qualification_name))):
         raise M15498EvidenceError("M154.98 evidence directory has missing or extra files")
     for item in evidence:
         name = item["path"]
@@ -217,6 +218,10 @@ def verify_contract(project_root: Path) -> tuple[dict[str, Any], dict[str, Any]]
             or external.get("webuiNodeModules", {}).get("archiveSHA256") != "a298af5fafd358179d6aec9a42f667902dbcdb03a42ee4a87a1bff83515e96b9"
             or external.get("devtoolsEsbuild", {}).get("packageVersion") != "0.25.1"
             or external.get("devtoolsEsbuild", {}).get("archiveSHA512Integrity") != "sha512-5hEZKPf+nQjYoSr/elb62U19/l1mZDdqidGfmFutVUjjUZrOazAtwK+Kr+3y0C/oeJfLlxo9fXb1w7L+P7E4FQ=="
+            or external.get("undiciTypes", {}).get("packageVersion") != "7.18.2"
+            or external.get("undiciTypes", {}).get("archiveSHA512Integrity") != "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="
+            or external.get("undiciTypes", {}).get("archiveSHA256") != "4d92799b0e619468a30f70eff033c1a27e713134a4ff353e1a6794f67e425497"
+            or external.get("undiciTypes", {}).get("recoveredDeclarationCount") != 43
             or external.get("clang", {}).get("version") != "24.0.0"):
         raise M15498EvidenceError("M154.98 external inputs differ from pinned .98 inputs")
     compatibility = read_object(evidence_root / "port-compatibility.json", "M154.98 port compatibility")
@@ -270,6 +275,7 @@ def verify_candidate_document(
         live_inputs = (
             ("tools/clang/dsymutil/bin/dsymutil", external["dsymutil"]["installedSHA256"]),
             ("third_party/node/node_modules/lit-html/directives/repeat.d.ts", external["webuiNodeModules"]["repeatDeclarationSHA256"]),
+            ("third_party/node/node_modules/undici-types/index.d.ts", external["undiciTypes"]["indexDeclarationSHA256"]),
             ("third_party/devtools-frontend/src/node_modules/@esbuild/darwin-arm64/bin/esbuild", external["devtoolsEsbuild"]["binarySHA256"]),
             ("third_party/devtools-frontend/src/third_party/esbuild/esbuild", external["devtoolsEsbuild"]["pinnedCIPDBinarySHA256"]),
             ("third_party/llvm-build/Release+Asserts/bin/clang", external["clang"]["binarySHA256"]),
@@ -330,4 +336,48 @@ def verify_candidate_lock(
             or lock.get("sourceContractSHA256") != sha256_file(runtime / f"{PREFIX}-source-contract.json")
             or lock.get("sourceProvenanceSHA256") != sha256_file(runtime / f"{PREFIX}-port-candidate.json")):
         raise M15498EvidenceError("M154.98 candidate lock binding mismatch")
+    verify_tuple_runtime_qualification(lock, provenance, runtime)
     reject_local_paths(lock, "M154.98 candidate lock")
+
+
+def verify_tuple_runtime_qualification(
+    lock: dict[str, Any], candidate: dict[str, Any], runtime: Path
+) -> None:
+    verification = lock.get("verification")
+    if not isinstance(verification, dict) or verification.get("coherentAppleDeviceTuples") != "verified":
+        return
+    relative = f"runtime/{PREFIX}-source-evidence/coherent-apple-device-tuples-runtime-qualification.json"
+    if verification.get("coherentAppleDeviceTuplesEvidence") != relative:
+        raise M15498EvidenceError("M154.98 verified tuple evidence path is not pinned")
+    path = runtime.parent / relative
+    evidence = read_object(path, "M154.98 verified tuple evidence")
+    if verification.get("coherentAppleDeviceTuplesEvidenceSHA256") != sha256_file(path):
+        raise M15498EvidenceError("M154.98 verified tuple evidence digest mismatch")
+    reject_local_paths(evidence, "M154.98 verified tuple evidence")
+    memory = evidence.get("deviceMemory")
+    if (evidence.get("schemaVersion") != 1 or evidence.get("status") != "verified"
+            or evidence.get("chromiumVersion") != VERSION
+            or evidence.get("guiProductionQualified") is not True
+            or evidence.get("releaseReady") is not False
+            or not isinstance(memory, dict) or memory.get("coherent") is not True):
+        raise M15498EvidenceError("M154.98 tuple runtime qualification is incomplete")
+    if evidence.get("sourceCandidateSHA256") != sha256_file(runtime / f"{PREFIX}-port-candidate.json"):
+        raise M15498EvidenceError("M154.98 tuple evidence is bound to another source candidate")
+    if evidence.get("tupleCatalogSHA256") != sha256_file(runtime / "apple-device-tuples.json"):
+        raise M15498EvidenceError("M154.98 tuple evidence uses another device catalog")
+    binding = candidate.get("binaryBinding", {})
+    if evidence.get("unsignedFrameworkSHA256") != binding.get("candidateFrameworkSHA256"):
+        raise M15498EvidenceError("M154.98 tuple evidence uses another unsigned framework")
+    js = memory.get("js")
+    if not isinstance(js, (int, float)) or isinstance(js, bool) or js <= 0:
+        raise M15498EvidenceError("M154.98 Device Memory JS evidence is invalid")
+    for kind in ("navigation", "subresource"):
+        headers = memory.get(kind)
+        if not isinstance(headers, dict) or any(headers.get(name) != str(js) for name in ("modern", "legacy")):
+            raise M15498EvidenceError(f"M154.98 {kind} Device Memory evidence is incoherent")
+    for key in (
+        "signedRuntimeExecutableSHA256", "signedRuntimeFrameworkSHA256",
+        "candidateManifestSHA256", "authenticatedGUIEnvelopeSHA256",
+        "publicSafeGUISummarySHA256",
+    ):
+        require_hash(evidence.get(key), key)

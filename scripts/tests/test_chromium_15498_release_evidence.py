@@ -17,6 +17,7 @@ from chromium_15498_release_evidence import (
     EVIDENCE_NAMES,
     M15498EvidenceError,
     verify_candidate_document,
+    verify_candidate_lock,
     verify_contract,
 )
 
@@ -126,6 +127,56 @@ class M15498EvidenceTests(unittest.TestCase):
         write_json(self.runtime / "chromium-15498-port-candidate.json", candidate)
         with self.assertRaisesRegex(M15498EvidenceError, "source binding"):
             verify_candidate_document(candidate, project_root=self.project)
+
+    def test_verified_tuple_lock_requires_coherent_http_and_js(self):
+        candidate = {
+            "schemaVersion": 1, "status": "candidate-bound", "releaseReady": False,
+            "targetChromiumVersion": VERSION, "targetArchitecture": "arm64",
+            "sourceContractSHA256": digest(self.runtime / "chromium-15498-source-contract.json"),
+            "sourceInputManifestSHA256": digest(self.runtime / "chromium-15498-source-input-manifest.json"),
+            "sourceSnapshotSHA256": digest(self.runtime / "chromium-15498-source-snapshot.json"),
+            "binaryBinding": {"status": "bound-to-built-candidate", "sourceVersion": VERSION,
+                              "architecture": "arm64", "argsGNSHA256": self.args_sha,
+                              "candidateExecutableSHA256": "1" * 64,
+                              "candidateFrameworkSHA256": "2" * 64},
+        }
+        write_json(self.runtime / "chromium-15498-port-candidate.json", candidate)
+        qualification_path = self.evidence / "coherent-apple-device-tuples-runtime-qualification.json"
+        qualification = {
+            "schemaVersion": 1, "status": "verified", "releaseReady": False,
+            "chromiumVersion": VERSION, "guiProductionQualified": True,
+            "sourceCandidateSHA256": digest(self.runtime / "chromium-15498-port-candidate.json"),
+            "tupleCatalogSHA256": digest(self.runtime / "apple-device-tuples.json"),
+            "unsignedFrameworkSHA256": "2" * 64,
+            "deviceMemory": {"coherent": True, "js": 8,
+                             "navigation": {"modern": "8", "legacy": "8"},
+                             "subresource": {"modern": "8", "legacy": "8"}},
+        }
+        for key in ("signedRuntimeExecutableSHA256", "signedRuntimeFrameworkSHA256",
+                    "candidateManifestSHA256", "authenticatedGUIEnvelopeSHA256",
+                    "publicSafeGUISummarySHA256"):
+            qualification[key] = "3" * 64
+        write_json(qualification_path, qualification)
+        lock = {
+            "schemaVersion": 4, "status": "source-qualified", "releaseReady": False,
+            "targetArchitecture": "arm64",
+            "fingerprintChromium": {"chromiumVersion": VERSION, "commit": COMMIT, "tree": TREE},
+            "sourceContractSHA256": candidate["sourceContractSHA256"],
+            "sourceProvenanceSHA256": digest(self.runtime / "chromium-15498-port-candidate.json"),
+            "verification": {
+                "coherentAppleDeviceTuples": "verified",
+                "coherentAppleDeviceTuplesEvidence": "runtime/chromium-15498-source-evidence/coherent-apple-device-tuples-runtime-qualification.json",
+                "coherentAppleDeviceTuplesEvidenceSHA256": digest(qualification_path),
+            },
+        }
+        write_json(self.runtime / "fingerprint-chromium-15498.lock.json", lock)
+        verify_candidate_lock(lock, provenance=candidate, project_root=self.project)
+        qualification["deviceMemory"]["subresource"]["legacy"] = "32"
+        write_json(qualification_path, qualification)
+        lock["verification"]["coherentAppleDeviceTuplesEvidenceSHA256"] = digest(qualification_path)
+        write_json(self.runtime / "fingerprint-chromium-15498.lock.json", lock)
+        with self.assertRaisesRegex(M15498EvidenceError, "subresource Device Memory"):
+            verify_candidate_lock(lock, provenance=candidate, project_root=self.project)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,13 @@
   "schemaVersion": 1,
   "status": "verified-external-build-inputs",
   "targetVersion": "154.0.8037.98",
+  "undiciTypes": {
+    "archiveSHA256": "4d92799b0e619468a30f70eff033c1a27e713134a4ff353e1a6794f67e425497",
+    "archiveSHA512Integrity": "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==",
+    "indexDeclarationSHA256": "c9381908473a1c92cb8c516b184e75f4d226dad95c3a85a5af35f670064d9a2f",
+    "packageVersion": "7.18.2",
+    "recoveredDeclarationCount": 43
+  },
   "webuiNodeModules": {
     "archiveSHA256": "a298af5fafd358179d6aec9a42f667902dbcdb03a42ee4a87a1bff83515e96b9",
     "objectName": "faaf73cc8ff7b0b2f0d984d6cedcf758e006f57a",
