@@ -47,8 +47,12 @@ def write_new(path: Path, document: dict, created: list[Path]) -> None:
     temporary = path.with_name(path.name + ".tmp")
     if temporary.exists() or temporary.is_symlink():
         raise ValueError(f"temporary evidence path is occupied: {temporary.name}")
-    temporary.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    try:
+        temporary.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        temporary.replace(path)
+    except OSError:
+        temporary.unlink(missing_ok=True)
+        raise
     created.append(path)
 
 
