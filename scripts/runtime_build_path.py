@@ -10,10 +10,17 @@ def verify_build_args(source_root, args_gn, lock, project_root):
     version = lock.get('fingerprintChromium', {}).get('chromiumVersion', '')
     relative = 'out/Default/args.gn'
     digest = None
-    if version == '154.0.8037.93':
+    m154_evidence = {
+        '154.0.8037.93': 'chromium-154',
+        '154.0.8037.98': 'chromium-15498',
+    }
+    if version.startswith('154.') and version not in m154_evidence:
+        raise ValueError('Unsupported M154 build path version')
+    if version in m154_evidence:
         runtime = project_root / 'runtime'
-        snapshot_path = runtime / 'chromium-154-source-snapshot.json'
-        contract = json.loads((runtime / 'chromium-154-source-contract.json').read_text())
+        evidence_prefix = m154_evidence[version]
+        snapshot_path = runtime / f'{evidence_prefix}-source-snapshot.json'
+        contract = json.loads((runtime / f'{evidence_prefix}-source-contract.json').read_text())
         if snapshot_path.is_symlink() or hashlib.sha256(snapshot_path.read_bytes()).hexdigest() != contract.get('sourceSnapshotSHA256'):
             raise ValueError('M154 build path snapshot binding mismatch')
         snapshot = json.loads(snapshot_path.read_text())

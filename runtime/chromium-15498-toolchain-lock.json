@@ -1,0 +1,28 @@
+{
+  "chromiumVersion": "154.0.8037.98",
+  "qualificationPolicy": {
+    "globalXcodeSelectorChangesAllowed": false,
+    "promotionRequires": [
+      "Exact source replay from the reviewed M154 source contract",
+      "A fresh complete build using this exact process-scoped toolchain",
+      "Required Chromium, NeAntik integration, runtime, security, and release tests",
+      "Independent review and explicit promotion of this toolchain lock"
+    ],
+    "purpose": "Identity check only for isolated Chromium 154.0.8037.98 build; exact build and runtime verification remain required."
+  },
+  "schemaVersion": 1,
+  "toolchain": {
+    "clangVersion": "Apple clang version 21.0.0 (clang-2100.3.27.1)",
+    "developerDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "hermetic": false,
+    "metalBuild": "32023.921",
+    "metalVersion": "Apple metal version 32023.921 (metalfe-32023.921)",
+    "releaseQualified": false,
+    "sdkBuild": "26A5388f",
+    "sdkName": "macosx",
+    "sdkVersion": "27.0",
+    "systemXcode": true,
+    "xcodeBuild": "27A5228h",
+    "xcodeVersion": "27.0"
+  }
+}

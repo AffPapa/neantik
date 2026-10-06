@@ -291,7 +291,7 @@ def _runtime_framework(runtime_app: Path) -> Path:
 
 
 def source_contract_name(runtime_version: str) -> str:
-    if runtime_version == "154.0.8037.93":
+    if runtime_version in {"154.0.8037.93", "154.0.8037.98"}:
         return "chromium-154-source-contract.json"
     if runtime_version.startswith("154."):
         raise FingerprintReportError("Unsupported M154 runtime version")

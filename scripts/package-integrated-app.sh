@@ -31,6 +31,10 @@ if [[ "$RUNTIME_VERSION" == 153.* ]]; then
 elif [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-154-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-154-source-contract.json"
+elif [[ "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15498-source-contract.json"
+  # The bundled evidence schema pins this public path for M154 contracts.
+  SOURCE_CONTRACT_NAME="chromium-154-source-contract.json"
 else
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
@@ -85,10 +89,12 @@ if [[ "$RUNTIME_BUNDLE_ID" != "app.neantik.runtime" ||
   echo "Runtime is not a declared NeAntik fingerprint runtime." >&2
   exit 65
 fi
-if [[ "$RUNTIME_VERSION" != "154.0.8037.93" ]]; then
+if [[ "$RUNTIME_VERSION" != "154.0.8037.93" &&
+      "$RUNTIME_VERSION" != "154.0.8037.98" ]]; then
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
 fi
-if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
+      "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   # Generated below in temporary compliance storage from this exact candidate.
   RUNTIME_NOTICES_FILE=""
 elif [[ "$RUNTIME_VERSION" == 153.* ]]; then
@@ -107,7 +113,8 @@ cleanup() {
   rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"
 }
 trap cleanup EXIT
-if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
+      "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   RUNTIME_NOTICES_FILE="$COMPLIANCE_DIR/RUNTIME_INTEGRATION_NOTICES_154.md"
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
     --runtime-lock "$CANDIDATE_LOCK" --output "$RUNTIME_NOTICES_FILE"
@@ -155,6 +162,16 @@ if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
     "$EVIDENCE/chromium-154-device-memory-hotfix.json"
   cp "$PROJECT_DIR/runtime/chromium-154-posthotfix-source-snapshot.json" \
     "$EVIDENCE/chromium-154-posthotfix-source-snapshot.json"
+elif [[ "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+  cp "$PROJECT_DIR/runtime/chromium-15498-source-input-manifest.json" \
+    "$EVIDENCE/chromium-15498-source-input-manifest.json"
+  cp "$PROJECT_DIR/runtime/chromium-15498-source-snapshot.json" \
+    "$EVIDENCE/chromium-15498-source-snapshot.json"
+  cp "$PROJECT_DIR/runtime/chromium-15498-rebase-plan.json" \
+    "$EVIDENCE/chromium-15498-rebase-plan.json"
+  mkdir -p "$EVIDENCE/chromium-15498-source-evidence"
+  ditto "$PROJECT_DIR/runtime/chromium-15498-source-evidence" \
+    "$EVIDENCE/chromium-15498-source-evidence"
 fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"

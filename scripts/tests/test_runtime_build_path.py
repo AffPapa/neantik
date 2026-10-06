@@ -21,10 +21,10 @@ class RuntimeBuildPathTests(unittest.TestCase):
         (self.root / 'runtime').mkdir()
         self.lock = {'fingerprintChromium': {'chromiumVersion': '154.0.8037.93'}}
         self.freeze('out/Qualified/args.gn')
-    def freeze(self, relative):
-        p = self.root / 'runtime/chromium-154-source-snapshot.json'
+    def freeze(self, relative, prefix='chromium-154'):
+        p = self.root / 'runtime' / f'{prefix}-source-snapshot.json'
         p.write_text(json.dumps({'argsGN': {'relativePath': relative, 'sha256': hashlib.sha256(self.args.read_bytes()).hexdigest()}}))
-        (p.parent / 'chromium-154-source-contract.json').write_text(json.dumps({'sourceSnapshotSHA256': hashlib.sha256(p.read_bytes()).hexdigest()}))
+        (p.parent / f'{prefix}-source-contract.json').write_text(json.dumps({'sourceSnapshotSHA256': hashlib.sha256(p.read_bytes()).hexdigest()}))
     def verify(self, path=None):
         return module.verify_build_args(self.src, path or self.args, self.lock, self.root)
     def test_recorded_custom_directory_passes(self):
@@ -46,3 +46,14 @@ class RuntimeBuildPathTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.verify()
         p = self.src / 'out/Default/args.gn'; p.parent.mkdir();p.write_bytes(self.args.read_bytes())
         self.assertEqual(self.verify(p),p.resolve())
+    def test_15498_uses_separate_bound_snapshot(self):
+        self.lock['fingerprintChromium']['chromiumVersion'] = '154.0.8037.98'
+        with self.assertRaises(FileNotFoundError): self.verify()
+        self.freeze('out/Qualified/args.gn', 'chromium-15498')
+        self.assertEqual(self.verify(), self.args.resolve())
+        self.args.write_text('changed')
+        with self.assertRaises(ValueError): self.verify()
+    def test_unknown_m154_rejected(self):
+        self.lock['fingerprintChromium']['chromiumVersion'] = '154.0.8037.99'
+        with self.assertRaisesRegex(ValueError, 'Unsupported M154'):
+            self.verify()

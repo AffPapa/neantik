@@ -10,6 +10,7 @@ SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
 SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
 IS_CHROMIUM_153=0
 IS_CHROMIUM_154=0
+IS_CHROMIUM_15498=0
 M154_SOURCE_SNAPSHOT_VERIFIED=0
 
 usage() {
@@ -56,6 +57,9 @@ elif [[ "$LOCK_VERSION" == "154.0.8037.58" ]]; then
 elif [[ "$LOCK_VERSION" == "154.0.8037.93" ]]; then
   IS_CHROMIUM_154=1
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-154-source-contract.json"
+elif [[ "$LOCK_VERSION" == "154.0.8037.98" ]]; then
+  IS_CHROMIUM_15498=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15498-source-contract.json"
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
   exit 65
@@ -175,6 +179,18 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
     python3 "$SCRIPT_DIR/verify-chromium-154-source-snapshot.py" \
       "${PROVENANCE_VERIFY_ARGS[2]}" \
       "$SOURCE_PROVENANCE_PATH"
+    M154_SOURCE_SNAPSHOT_VERIFIED=1
+  elif (( IS_CHROMIUM_15498 == 1 )); then
+    if [[ -n "$REPORT_PATH" &&
+          ( -z "${PROVENANCE_VERIFY_ARGS[1]:-}" ||
+            "${PROVENANCE_VERIFY_ARGS[1]}" != --source-root ) ]]; then
+      echo "A new Chromium 154.98 runtime report requires the live source root." >&2
+      exit 66
+    fi
+    # Public bundle verification uses the frozen project source snapshot;
+    # creating a new report additionally requires the live checkout above.
+    python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
+      "${PROVENANCE_VERIFY_ARGS[@]}"
     M154_SOURCE_SNAPSHOT_VERIFIED=1
   else
     python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
@@ -415,7 +431,7 @@ if [[ -n "$BUILD_ARGS_PATH" ]]; then
     # port. Its candidate evidence binds that source; historical 152 patch
     # postimages are not evidence for this port.
     SOURCE_POSTIMAGES_VERIFIED=1
-  elif (( IS_CHROMIUM_154 == 1 )); then
+  elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 )); then
     if (( M154_SOURCE_SNAPSHOT_VERIFIED != 1 )); then
       echo "Chromium 154 source snapshot verification is required." >&2
       exit 66

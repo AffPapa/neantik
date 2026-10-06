@@ -1,0 +1,15 @@
+--- a/third_party/devtools-frontend/src/scripts/build/esbuild.js
++++ b/third_party/devtools-frontend/src/scripts/build/esbuild.js
+@@ -19,9 +19,8 @@ process.env.GODEBUG = 'asyncpreemptoff=1';
+ // esbuild module uses binary in this path.
+ const binaryName = os.type() === 'Windows_NT' ? 'esbuild.exe' : 'esbuild';
+ process.env.ESBUILD_BINARY_PATH = path.join(
+-    '/',
+-    'opt',
+-    'homebrew',
+-    'bin',
++    devtoolsRootPath(),
++    'third_party',
++    'esbuild',
+     binaryName,
+ );

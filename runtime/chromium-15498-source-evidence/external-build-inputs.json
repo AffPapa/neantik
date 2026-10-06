@@ -1,0 +1,26 @@
+{
+  "clang": {
+    "binarySHA256": "b6f6f673bb4b07cd5d36f74db6bd2e9c35ad6378bc348242737e854ab94c1cb3",
+    "version": "24.0.0"
+  },
+  "devtoolsEsbuild": {
+    "archiveSHA512Integrity": "sha512-5hEZKPf+nQjYoSr/elb62U19/l1mZDdqidGfmFutVUjjUZrOazAtwK+Kr+3y0C/oeJfLlxo9fXb1w7L+P7E4FQ==",
+    "binarySHA256": "9421c30477c33590c3b115729b5240b6df8a267ebe1df4508971022742a0f5f5",
+    "packageVersion": "0.25.1",
+    "pinnedCIPDBinarySHA256": "ebd1cf6592e93cca856c064897a8b043104ed500db268b61311581f4640288ea"
+  },
+  "dsymutil": {
+    "downloadSHA256": "704b60f6b13359b4065ee8710d27bb7def9ef40ad6da0549e7f78be89fd8aaa6",
+    "installedSHA256": "704b60f6b13359b4065ee8710d27bb7def9ef40ad6da0549e7f78be89fd8aaa6",
+    "objectSHA1": "d72733d9365a8c75966b524a739bccb23151a021"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "status": "verified-external-build-inputs",
+  "targetVersion": "154.0.8037.98",
+  "webuiNodeModules": {
+    "archiveSHA256": "a298af5fafd358179d6aec9a42f667902dbcdb03a42ee4a87a1bff83515e96b9",
+    "objectName": "faaf73cc8ff7b0b2f0d984d6cedcf758e006f57a",
+    "repeatDeclarationSHA256": "25f99f07f8fe189bedab93389438ac90b66fb6eae33a76634ed7a11d49715c44"
+  }
+}

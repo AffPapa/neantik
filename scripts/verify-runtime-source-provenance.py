@@ -15,6 +15,10 @@ from runtime_source_provenance import (
 )
 from runtime_candidate_lock import verify_candidate_lock
 from chromium_154_release_evidence import M154EvidenceError, verify_candidate_document
+from chromium_15498_release_evidence import (
+    M15498EvidenceError,
+    verify_candidate_document as verify_candidate_15498_document,
+)
 
 
 def verify_live_source(document: dict, source_root: Path, project_root: Path) -> None:
@@ -22,6 +26,14 @@ def verify_live_source(document: dict, source_root: Path, project_root: Path) ->
         try:
             verify_candidate_document(document, project_root=project_root, source_root=source_root)
         except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
+    if document.get("targetChromiumVersion") == "154.0.8037.98":
+        try:
+            verify_candidate_15498_document(
+                document, project_root=project_root, source_root=source_root
+            )
+        except M15498EvidenceError as error:
             raise SourceProvenanceError(str(error)) from error
         return
     fresh = build_provenance(source_root, project_root=project_root)

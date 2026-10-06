@@ -62,6 +62,19 @@ class VerifyPackagedRuntimeReportTests(unittest.TestCase):
                 Path("/tmp/project"),
             )
 
+    def test_m15498_selects_new_lock_and_canonical_bundle_contract_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            lock, contract = MODULE.source_evidence_paths(
+                "154.0.8037.98", root / "evidence", root / "project"
+            )
+            self.assertEqual(
+                lock, root / "project/runtime/fingerprint-chromium-15498.lock.json"
+            )
+            self.assertEqual(
+                contract, root / "evidence/chromium-154-source-contract.json"
+            )
+
     def test_m153_uses_only_m153_lock_and_contract(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

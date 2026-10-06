@@ -236,6 +236,11 @@ def source_evidence_paths(
             project_root / "runtime/fingerprint-chromium-154.lock.json",
             evidence / "chromium-154-source-contract.json",
         )
+    if runtime_version == "154.0.8037.98":
+        return (
+            project_root / "runtime/fingerprint-chromium-15498.lock.json",
+            evidence / "chromium-154-source-contract.json",
+        )
     if runtime_version.startswith("154."):
         raise PackagedRuntimeReportError(
             f"Chromium {runtime_version} release qualification is unavailable; "
@@ -308,6 +313,36 @@ def verify(
                     or packaged.read_bytes() != reviewed.read_bytes()):
                 raise PackagedRuntimeReportError(
                     f"Packaged M154 hotfix evidence differs from reviewed input: {name}"
+                )
+    elif runtime_version == "154.0.8037.98":
+        reviewed_names = (
+            "chromium-15498-source-input-manifest.json",
+            "chromium-15498-source-snapshot.json",
+            "chromium-15498-rebase-plan.json",
+        )
+        reviewed_evidence = (
+            "device-memory-hotfix.json",
+            "external-build-inputs.json",
+            "ordered-patch-replay.json",
+            "port-compatibility.json",
+        )
+        for name in reviewed_names:
+            packaged = evidence / name
+            reviewed = project_root / "runtime" / name
+            if (packaged.is_symlink() or not packaged.is_file()
+                    or reviewed.is_symlink() or not reviewed.is_file()
+                    or packaged.read_bytes() != reviewed.read_bytes()):
+                raise PackagedRuntimeReportError(
+                    f"Packaged M154.98 evidence differs from reviewed input: {name}"
+                )
+        for name in reviewed_evidence:
+            packaged = evidence / "chromium-15498-source-evidence" / name
+            reviewed = project_root / "runtime/chromium-15498-source-evidence" / name
+            if (packaged.is_symlink() or not packaged.is_file()
+                    or reviewed.is_symlink() or not reviewed.is_file()
+                    or packaged.read_bytes() != reviewed.read_bytes()):
+                raise PackagedRuntimeReportError(
+                    f"Packaged M154.98 source evidence differs: {name}"
                 )
 
     command_output(

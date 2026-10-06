@@ -22,6 +22,10 @@ from chromium_154_release_evidence import (
     M154EvidenceError,
     verify_candidate_document as verify_chromium_154_candidate_document,
 )
+from chromium_15498_release_evidence import (
+    M15498EvidenceError,
+    verify_candidate_document as verify_chromium_15498_candidate_document,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +34,7 @@ DEFAULT_REBASE_PLAN = PROJECT_ROOT / "runtime" / "chromium-152-rebase-plan.json"
 CHROMIUM_153_VERSION = "153.0.8010.52"
 CHROMIUM_152_VERSION = "152.0.7977.64"
 CHROMIUM_154_VERSION = "154.0.8037.93"
+CHROMIUM_15498_VERSION = "154.0.8037.98"
 CONTRACT_SOURCE_VERSIONS = {
     CHROMIUM_152_VERSION: (
         "chromium-152-source-contract.json",
@@ -38,6 +43,10 @@ CONTRACT_SOURCE_VERSIONS = {
     CHROMIUM_154_VERSION: (
         "chromium-154-source-contract.json",
         "chromium-154-rebase-plan.json",
+    ),
+    CHROMIUM_15498_VERSION: (
+        "chromium-15498-source-contract.json",
+        "chromium-15498-rebase-plan.json",
     ),
 }
 CHROMIUM_153_STATUS = "chromium-153-port-status.json"
@@ -491,7 +500,7 @@ def build_provenance(
         raise SourceProvenanceError(
             f"Chromium source root does not exist: {source_root}"
         )
-    if chromium_version(source_root) == CHROMIUM_154_VERSION:
+    if chromium_version(source_root) in {CHROMIUM_154_VERSION, CHROMIUM_15498_VERSION}:
         raise SourceProvenanceError(
             "Chromium 154 provenance must be emitted by the dedicated "
             "M154 source/build candidate verifier"
@@ -851,6 +860,15 @@ def verify_document(
                 project_root=project_root,
             )
         except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
+    if document.get("targetChromiumVersion") == CHROMIUM_15498_VERSION:
+        try:
+            verify_chromium_15498_candidate_document(
+                document,
+                project_root=project_root,
+            )
+        except M15498EvidenceError as error:
             raise SourceProvenanceError(str(error)) from error
         return
     if document.get("targetChromiumVersion") == CHROMIUM_153_VERSION:

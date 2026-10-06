@@ -1,0 +1,1051 @@
+{
+  "applied": [
+    {
+      "applyOutputSHA256": "a31232ebd7635fc5c66b12046bfdc8afca8d88fa06502a36f401e7fc0bf086b6",
+      "label": "common:1:missing-dependencies.patch",
+      "patchSHA256": "b995699ed9abedbaec394b924f08de19f0474a53b55199b8323ef2335fe02499"
+    },
+    {
+      "applyOutputSHA256": "4802b10ceff4a90b3514f599f782b88c4f59473538bad04c75db7f5c5f9984a2",
+      "label": "common:2:0001-fix-building-without-safebrowsing.patch",
+      "patchSHA256": "04c3421cd8a20f116e00279da4bfda21f5834d5b1842c4b70bb578d766a7b5fd"
+    },
+    {
+      "applyOutputSHA256": "f93b7dea259c585d59a175ae2755c847ca32d322b475050724b55f3e7ceea4ce",
+      "label": "common:3:0003-disable-autofill-download-manager.patch",
+      "patchSHA256": "c09f36ba3314fa24473de480b43dd480783e2d6d8752d17217aaff4a4fff3349"
+    },
+    {
+      "applyOutputSHA256": "b26a0a77e613a44e6dbf69fe61e50b4e5b61ca254755c342b7eba74cdcc98a2b",
+      "label": "common:4:0005-disable-default-extensions.patch",
+      "patchSHA256": "eb9103089d8dc422dfa8e4ce560f6e778d583cc3fc92ac29887cf23221fa9b30"
+    },
+    {
+      "applyOutputSHA256": "5a3c297d78f69aa6ee15b5537a66999283a724319890d5ef9034ee9a4d2c2fd6",
+      "label": "common:5:0015-disable-update-pings.patch",
+      "patchSHA256": "2d55af29e85ea1825930c1bf0ff79931a942450d9c5475ee6344c58c9e46debe"
+    },
+    {
+      "applyOutputSHA256": "71b990af91ea777083cbe92ea068c49433045c430723244442871edc57f15841",
+      "label": "common:6:0021-disable-rlz.patch",
+      "patchSHA256": "fd0283a48f09bbd68d8cf845d8822c3df1aa10ff9aacf4fa0c9c464d7779c1ab"
+    },
+    {
+      "applyOutputSHA256": "ff8df5ee293ac5771716f68eacf90f50e5b93baa556ae3676ca01b2fa7a63b3f",
+      "label": "common:7:safe_browsing-disable-incident-reporting.patch",
+      "patchSHA256": "a0db3e85556e074c7920469fa22bf7773c4e5d237cb8c97a561814efdf1646b7"
+    },
+    {
+      "applyOutputSHA256": "774aceb043ca227aafd30fcdea05698a5a4e88a4ece2bd54189b0e905e2bdc1f",
+      "label": "common:8:safe_browsing-disable-reporting-of-safebrowsing-over.patch",
+      "patchSHA256": "f7c5a21a183418e51980420b00286c5d3d4a636e3196313a0ed57db5e049e745"
+    },
+    {
+      "applyOutputSHA256": "71e2e0d9b5c7bb4ef88b066f3ce141f4da0eac46a82e4513a35d77398dc87378",
+      "label": "common:9:disable-crash-reporter.patch",
+      "patchSHA256": "aaf21816a4974b9841ca5f0d9e0cbf55d96948b622991071ca6767f5699b339e"
+    },
+    {
+      "applyOutputSHA256": "1e03cd9544c09d674772c8a226ed8b2c419b09dc465c2b998fcc5bddce00186d",
+      "label": "common:10:disable-google-host-detection.patch",
+      "patchSHA256": "daca4b4de02ec8873758184677a9bca45b9ad894e09bbf56cb7613abf1ee74e5"
+    },
+    {
+      "applyOutputSHA256": "7ffb106c3026e04a623efd54e728b9ab8cf7ba64a4a8bd63ad6cb6ff3d97df34",
+      "label": "common:11:replace-google-search-engine-with-nosearch.patch",
+      "patchSHA256": "a45013bd0db8e527899c08ddaf8fec58d24496a9e96e2284b393902f19a03008"
+    },
+    {
+      "applyOutputSHA256": "229b1cb73ca01241b12ae40b7cc164555c8af9c0adf74759985048f83d9e2cef",
+      "label": "common:12:toggle-translation-via-switch.patch",
+      "patchSHA256": "4f59410b7457f7ee80c4f705c846284bc7d40c3d7ac4f4beae4022fe3f2d60a4"
+    },
+    {
+      "applyOutputSHA256": "5d4e1d87f0d075db35820427e5e47ef120302c8637e4a4375d35d8a0d519406f",
+      "label": "common:13:disable-untraceable-urls.patch",
+      "patchSHA256": "febb342c492d09257e2e7a79059e0d87770f6f7d8ac14754c70732e4aa3174fc"
+    },
+    {
+      "applyOutputSHA256": "8593bd8cf14d39152cd0a925b3895e6ba33591bcc3dc25b6e59839bd804d49e5",
+      "label": "common:14:disable-profile-avatar-downloading.patch",
+      "patchSHA256": "3f105601f1b15815bd14c7a6c0aaba8e9443c7239db97644cd36220859576a22"
+    },
+    {
+      "applyOutputSHA256": "17f610ef25c4d2d6b6cfa51e05be09daaf6e365465dfadef6a24f895c0b971e7",
+      "label": "common:15:disable-gcm.patch",
+      "patchSHA256": "3dc9dd0a2924d6fb8449ac9b71f54cb0bab5da7705ab167ed461c9ddb444f23b"
+    },
+    {
+      "applyOutputSHA256": "9b33486d5583712c637316b13c190eb82608b225d475f8d374f8fdad7c6e830f",
+      "label": "common:16:disable-domain-reliability.patch",
+      "patchSHA256": "5a1314c9e123bfac43c3e26d36b06e420c523053904a2e4fb0aabcddb122a6a4"
+    },
+    {
+      "applyOutputSHA256": "c32d549891d80860bc1d1f587751e88702fd15955c12ade47ec6f31f3d4b4fbe",
+      "label": "common:17:block-trk-and-subdomains.patch",
+      "patchSHA256": "10d01e4f15b11a48fc6833ef4c39323ba4211e13e0b56b32cc274a4cb8663bc3"
+    },
+    {
+      "applyOutputSHA256": "d65b51ea8d8ce6a6d0bd4a672f41c39909fe8df3160d449a90fdf9bc05ee4bef",
+      "label": "common:18:disable-gaia.patch",
+      "patchSHA256": "046ed0cf962254b1963da43ce57c2b2cab399bab722d3a0565cc59bf3c035112"
+    },
+    {
+      "applyOutputSHA256": "73b4d2fa896756b94082b6e2b869a6b948b314ac2bf9bf6aed8a0bc6cd9fe312",
+      "label": "common:19:disable-fonts-googleapis-references.patch",
+      "patchSHA256": "3d9ddb1eb2917c7f54e4734f4d92b21d54b653e935eab7454006a9edfd377f45"
+    },
+    {
+      "applyOutputSHA256": "8848026ef7d525c8d1f18a44c22f488cb435e9063c2a051e8bac6ec62f77d7ed",
+      "label": "common:20:disable-webstore-urls.patch",
+      "patchSHA256": "cbbc106c54ad090de04cf93a9441a70358921e20406f31472b9b72db8fb4e471"
+    },
+    {
+      "applyOutputSHA256": "7ad333dfde7c227f7d5ad224052ba1d7173558f28ad4eb7af5fffe2a33abd957",
+      "label": "common:21:fix-learn-doubleclick-hsts.patch",
+      "patchSHA256": "b375d4923e22893b5bda4df533aff4ceca5b8f2de354197dabf6f01b1551daa3"
+    },
+    {
+      "applyOutputSHA256": "1d9da1303b8cc8dd723cf4c82648c32f40a5c02cd24cc93b1d6880f88e47a5a3",
+      "label": "common:22:disable-webrtc-log-uploader.patch",
+      "patchSHA256": "87025da2cd78fc438fddbaabb151804caf301f5feb6d5803ac1458f480b44435"
+    },
+    {
+      "applyOutputSHA256": "af64c32c816fa9889522e7aaa7aba81f8f26efc9d031fa8c4f25dc7d603fbbe0",
+      "label": "common:23:disable-ai.patch",
+      "patchSHA256": "bca6203c488a454fbb920ed8c4cfa0d79417d91127ae05e4319845ebd57aeefe"
+    },
+    {
+      "applyOutputSHA256": "835635ec0966ab99ed93cf89045109974e7b56ab526f1c83a33264c4f7bcea9f",
+      "label": "common:24:fix-building-with-prunned-binaries.patch",
+      "patchSHA256": "2fd2dfca1e053883a75645efd68866d6426403222f6eb60000278f3300486d2a"
+    },
+    {
+      "applyOutputSHA256": "a04f13c0ee721430130ed96cd751845e93f8deb2f9f5ef485e7b433b2c110846",
+      "label": "common:25:disable-network-time-tracker.patch",
+      "patchSHA256": "04278b44bfa8f0a3979e406e7208d6f27f278bfea1e3fd500c176cf7eac52d4e"
+    },
+    {
+      "applyOutputSHA256": "0791be6e62d390864cdc86dcdb8ac9bce66ab99be36213f7d7f1081b59ef3d65",
+      "label": "common:26:disable-mei-preload.patch",
+      "patchSHA256": "7cb66bc4c87cf0c2bcd654ca5702580638ca54dbdd64c2c15e2668810dde4d90"
+    },
+    {
+      "applyOutputSHA256": "d0ca7aa3ba002bddea8f29bc4fdea4fec47306759dc0ff972b274c3abd5fe0f6",
+      "label": "common:27:fix-building-without-safebrowsing.patch",
+      "patchSHA256": "b0be19d0e00a0c1dd9671c3e74cc84b61198cf401e379606bd9ee3c06d017f79"
+    },
+    {
+      "applyOutputSHA256": "1638cce55b75b34f3c11bcd7db3c05491b6aa6a67908e8446201e0d105f4e1e2",
+      "label": "common:28:remove-unused-preferences-fields.patch",
+      "patchSHA256": "1d9319e420773dda1c6ee33cc200665ace002f099b00e51c6b18633ea00f8b36"
+    },
+    {
+      "applyOutputSHA256": "4b184c9e1009c6a65df12d7d7434c1e434194ad216b87713f893eb7cfdbfcf57",
+      "label": "common:29:block-requests.patch",
+      "patchSHA256": "782c0444c67208efa642280154299c14f35f37d7f12d3e5d16a1f0907f7ae77f"
+    },
+    {
+      "applyOutputSHA256": "0791be6e62d390864cdc86dcdb8ac9bce66ab99be36213f7d7f1081b59ef3d65",
+      "label": "common:30:disable-privacy-sandbox.patch",
+      "patchSHA256": "564d1132649a540a7ea84d7d44404d937cd81f7704b9b7bb867103638d39d8d3"
+    },
+    {
+      "applyOutputSHA256": "af17dd37ff3a41f618e7d8a55bbe16bfff5988eb777cb1fe13a334a42efc8f36",
+      "label": "common:31:doh-changes.patch",
+      "patchSHA256": "89f8811b5adb64b32b3c7b9d685d726969c1f300553ae96e5e0bc100c4eb2488"
+    },
+    {
+      "applyOutputSHA256": "6e540b24c172e254a2480a3a498eb51653ee277e086cb7994c0c7d8c90e88c3e",
+      "label": "common:32:extensions-manifestv2.patch",
+      "patchSHA256": "840d656629da18e395b15c960d5d29d36dd8eae4f44b31b907a10a4c43af3ae7"
+    },
+    {
+      "applyOutputSHA256": "d4cefcbcbb3f7f304e784c5e442ab45b495bd8bc0fa0dbe597502e1804f22115",
+      "label": "common:33:remove-f1-shortcut.patch",
+      "patchSHA256": "20abe8b3d6e72aa1502293d1480089b43ed40a86e4640bc3c73c78effa372d55"
+    },
+    {
+      "applyOutputSHA256": "103122771f3728600e618d577d162146988a34584cd8bf88f1a680c6804c5c18",
+      "label": "common:34:move-js-optimizer-unfamiliar-sites.patch",
+      "patchSHA256": "f43fc7c1fb5e989df2c5621a0eca2b6aa2ab6356d182205aef870c89cbeac604"
+    },
+    {
+      "applyOutputSHA256": "f762b93db2319ca90e89c3a860f88203e1891a4b045d89e019e8add95c79cf7a",
+      "label": "common:35:build-with-wasm-rollup.patch",
+      "patchSHA256": "cfef4a4eeed2272b3101131af6c1bb63c7932a715c36634a1e027f770634e013"
+    },
+    {
+      "applyOutputSHA256": "bca198bc44ff2f1e12a0a7c98aa9c7a06bde325b71e048ab04858a1a04571140",
+      "label": "common:36:remove-navigation-source-param.patch",
+      "patchSHA256": "640eea992b89e8683b2717ae852ea288a6a29728a6333b2d5b3810de4a5bcf3d"
+    },
+    {
+      "applyOutputSHA256": "9b7635f1ef23a36873a9864db04872825be37e1351b10f941996a452cf9a546f",
+      "label": "common:37:disable-tos-dialog.patch",
+      "patchSHA256": "b8d1364f3b6aaf641827a23474338fa97358eda9738ba3df6e09c1e6f349c640"
+    },
+    {
+      "applyOutputSHA256": "9ea1aa24d415ba5e27d00dd328249d517d529c1342357537fc696c2e75dffa76",
+      "label": "common:38:disable-fetching-field-trials.patch",
+      "patchSHA256": "0be43b4c847db3dd9b34d8fc1e8fc4a4dc23ed6e7846377f9b380226aa1866f8"
+    },
+    {
+      "applyOutputSHA256": "6a914c058017ad01805327235d65af8eae4c32eae38c72fcd6da7c92e84c4957",
+      "label": "common:39:add-ungoogled-flag-headers.patch",
+      "patchSHA256": "86e9c7065e3c33463e639204f610109a9d40542439e042976426e2cb8588944e"
+    },
+    {
+      "applyOutputSHA256": "eebd96d22425d21d1f1efc43c5d4b39d9861a0b0d3a3784b5cc4f3922b41ef48",
+      "label": "common:40:0006-modify-default-prefs.patch",
+      "patchSHA256": "fed252c8b0018834b9282e5a6e11aef721fc44cd267f8a1a97dce9db6449c6e1"
+    },
+    {
+      "applyOutputSHA256": "1a8b1fc567418f69076f494e184863f8a72f3f59735f33af528890e6922f7982",
+      "label": "common:41:0008-restore-classic-ntp.patch",
+      "patchSHA256": "631a11deecce14dba44075abd5fb37a021fc1f1dff28a0f9b8e78b6951bce73c"
+    },
+    {
+      "applyOutputSHA256": "ebda03eae386514a4eefe22205cd79d2b1a78146863d6863a02e491855d9c812",
+      "label": "common:42:0013-disable-missing-key-warning.patch",
+      "patchSHA256": "edd43900b50b01327d1cc4253198a9759477ba1796dacca40e9666f3d2666a68"
+    },
+    {
+      "applyOutputSHA256": "05eedd9703206a9eed4a88a7e0ffaeea674fae8aa74a71f5a0c19d3c2d28460a",
+      "label": "common:43:0016-chromium-sandbox-pie.patch",
+      "patchSHA256": "76fe0544e492fb539279fea96f20d994acdb927ca9ead00aaee68476bd69eac2"
+    },
+    {
+      "applyOutputSHA256": "0aeae48a3ab526cedfa7424ace9e2a5ae76f21abaff266466f4cfe702fa8058a",
+      "label": "common:44:0019-disable-battery-status-service.patch",
+      "patchSHA256": "aa88071a85afede12dbb0c1e8abe52a13b41ecacf01f1f7f0bf3989da6181eac"
+    },
+    {
+      "applyOutputSHA256": "5233ebcc0d0d8cd6ec7663b742535dcc33f8a8cc364bddbe20f19dbedcc36dc8",
+      "label": "common:45:google-api-warning.patch",
+      "patchSHA256": "9e548b6b6008cb04b2091b1e3cad6531e493a674d40b5e5b01f8c467eff1f9f6"
+    },
+    {
+      "applyOutputSHA256": "c05f15ae4208e5f5ca58acd1db5f08ad87d9d952559f0d19b7dfc320593c856e",
+      "label": "common:46:mime_util-force-text-x-suse-ymp-to-be-downloaded.patch",
+      "patchSHA256": "8a883b1ce4461b61c2e969d872725bb771c439638502192932303321ac028c28"
+    },
+    {
+      "applyOutputSHA256": "e841d1f522479259f6afad8b5dd139af863bac859d95d560b15571c2d20ff796",
+      "label": "common:47:prefs-always-prompt-for-download-directory-by-defaul.patch",
+      "patchSHA256": "3dbc9b3e329333efef00b5ba4c0e09ba3e3eff638694c4d6007a9935caa8c12c"
+    },
+    {
+      "applyOutputSHA256": "e365341f5279719b4ff9a276fe307a3a3d7af8aba76d5b846dcd38cfd287aa90",
+      "label": "common:48:updater-disable-auto-update.patch",
+      "patchSHA256": "464ec3a0a9bdec56658dc5a58e3b50f4fd1b61d68a411bb83e42bfde2993a7d1"
+    },
+    {
+      "applyOutputSHA256": "a2e972fe03fbdc2223881f927c915bda728ae8f93dcfebb8d170a9ae04636ef4",
+      "label": "common:49:Remove-EV-certificates.patch",
+      "patchSHA256": "f156cc4717ae85c8344dc9579263fec5735eb0516b474963e43a7d00b26b512f"
+    },
+    {
+      "applyOutputSHA256": "63736e8042ecd3650805472b867906d25d3fd165edd556096d2e551f7dec5789",
+      "label": "common:50:browser-disable-profile-auto-import-on-first-run.patch",
+      "patchSHA256": "c20a6ad20dc5e44e7cc223c9dbd6486a71598e5e7b45f68b7dd6c3f4e31e87f1"
+    },
+    {
+      "applyOutputSHA256": "5f8025b45301fad755bc1f802c5071995ef85f68f24a857c4a577f47a5acfd69",
+      "label": "common:51:fingerprinting-flags-client-rects-and-measuretext.patch",
+      "patchSHA256": "bbd0aab015c962f103d9a4a8a9dca9539e3259f88dad6a4e9950b03190389d47"
+    },
+    {
+      "applyOutputSHA256": "ddd6a9a05145835adba3aa003b0a4adb8aa390196f79629bb337e1aaa9670845",
+      "label": "common:52:flag-max-connections-per-host.patch",
+      "patchSHA256": "c906e41439c2eda07776ef045b4875ab6d13a1a40d2f6e6844862149c902bb01"
+    },
+    {
+      "applyOutputSHA256": "8e340a232c062fdaa6bf2a78a7624c1694ca5b777bf5b00260aa8f534881ff75",
+      "label": "common:53:flag-fingerprinting-canvas-image-data-noise.patch",
+      "patchSHA256": "487987fd46b8a409c4a7dd22f9054f160dcc5de8befab6b81ed4a4ca34dabed5"
+    },
+    {
+      "applyOutputSHA256": "abbe252204fcd90a64c70b057918d226608be10a9d2d84f96811395efa6c2260",
+      "label": "common:54:add-components-ungoogled.patch",
+      "patchSHA256": "e9527032fe6efc0981e98c52c11c016854fbab07268f0ea8eb27d72fcb844d68"
+    },
+    {
+      "applyOutputSHA256": "f2adaf097733f27d9cadad8518a0aac307799a36f944ebdc6323499a91166726",
+      "label": "common:55:disable-formatting-in-omnibox.patch",
+      "patchSHA256": "83bfa47b85eb59ebcc88bfd810de5bcfc44c837bf7e643116a896462a5c4b064"
+    },
+    {
+      "applyOutputSHA256": "300b015352d2be543f6c5da1d7fd2336dc5525bdd07b6a045b9186e9580fd65f",
+      "label": "common:56:add-ipv6-probing-option.patch",
+      "patchSHA256": "3b27a09e0e1e966924be7cf866ee06a3aeadd1d611482c6da4a024a558c82c76"
+    },
+    {
+      "applyOutputSHA256": "2c98c3a7eaad87fc935bf189fe5ffa5ac7594ad3ad12646d18d6a0c2dfb264c5",
+      "label": "common:57:remove-disable-setuid-sandbox-as-bad-flag.patch",
+      "patchSHA256": "3aa2c529662ac81dfcdc27cb33e88219887461e05533e583ba5612bc31a76547"
+    },
+    {
+      "applyOutputSHA256": "0fa93c3863fabd0bbd48aae66b8aeb33155658155d5dddcdce5ee37b4bb3ff47",
+      "label": "common:58:disable-intranet-redirect-detector.patch",
+      "patchSHA256": "7e7106e0cacf438a7d97f7f5d337f691637423b8192da3e07697f8e56851165b"
+    },
+    {
+      "applyOutputSHA256": "72425ae9830fa5171e46795dc111a077c4aa99bbd2925edd8a9dbdcd549f8fed",
+      "label": "common:59:disable-download-quarantine.patch",
+      "patchSHA256": "5bcab10359a1b9227facae688364e639a6bdb5f1798450948fecf748507576ae"
+    },
+    {
+      "applyOutputSHA256": "d8698b3bf00a5d7495219bb91886855fd75544cf83020f82114c831fd8edc0ba",
+      "label": "common:60:fix-building-without-mdns-and-service-discovery.patch",
+      "patchSHA256": "77b56b96898e4d4b5278087a4867cabc29ecc282674bb824962e3a84ea255f66"
+    },
+    {
+      "applyOutputSHA256": "a65e067a42894904891cd4468c4d86a359914eaaf351060ea734d6eb3d353edc",
+      "label": "common:61:add-flag-to-configure-extension-downloading.patch",
+      "patchSHA256": "35506383dd004370652a753109cb4d3d1aefb117c3119440c250b65f1f12fa1b"
+    },
+    {
+      "applyOutputSHA256": "fc2d8a67599828dd4752486d70acbf6de0a6be9b6a485901aaf6ac6decd651ae",
+      "label": "common:62:add-flag-for-search-engine-collection.patch",
+      "patchSHA256": "6a5044f159d4aa3249d3261c70004dc20003ac03f16e80c1dbdda4d7616ef50a"
+    },
+    {
+      "applyOutputSHA256": "fbb2e41c2a007fd693364e977a30c3aff58d2fb7bac307e1fa89dd8d0819b549",
+      "label": "common:63:add-flag-to-disable-beforeunload.patch",
+      "patchSHA256": "4304444883e24d395fe43e9ddc5a6bc51cff4b55ac7bcf6bbf8dfa0b995b8c03"
+    },
+    {
+      "applyOutputSHA256": "51176a0d69052e709bdbc1b3e37004df361d43897f78b62b8b971e86399adb19",
+      "label": "common:64:add-flag-to-force-punycode-hostnames.patch",
+      "patchSHA256": "52480662769d166f2df93e37088e8ffcf94f1386d1c9aff238fc7ebb6a8b66fd"
+    },
+    {
+      "applyOutputSHA256": "6cd39ab5c519cfe465d588ada0d059fe484b291303721ee296acd6e594fe3436",
+      "label": "common:65:add-flag-to-show-avatar-button.patch",
+      "patchSHA256": "3afd450f21ececf0f5474b782cadfac5621e1ae4c8e2fa6e544490fdc40cf717"
+    },
+    {
+      "applyOutputSHA256": "0ad644c29109d030b4e19a0e4b573268cbf4cfaced9be6ae81354592fe8e9b4c",
+      "label": "common:66:add-suggestions-url-field.patch",
+      "patchSHA256": "47ff8550d91975100d48f87cc56fad76493d7e31881c93967bf27ff44dd5b8bf"
+    },
+    {
+      "applyOutputSHA256": "7ae3035cacadc60b299ddc13c8465e4c9001334012233e0ed226dd9c26434490",
+      "label": "common:67:add-flag-to-hide-crashed-bubble.patch",
+      "patchSHA256": "eee0fa345187edd691ea92acf2b7c2585d26e11b725f2dee3145f599633f287d"
+    },
+    {
+      "applyOutputSHA256": "f84448b69f80d0344dbc298bd9c59e5d3fb05ad0c1250b95c73c0f66ace4e57c",
+      "label": "common:68:add-flag-to-scroll-tabs.patch",
+      "patchSHA256": "6b52c0d999084cb0729b718ebf70f2340e0ef1ee9e86dcc72ac97fc7fd9af16a"
+    },
+    {
+      "applyOutputSHA256": "a1704b68d67e388f952c15ffe22f0d2557a44726572676d540d8bd11ce0d2688",
+      "label": "common:69:enable-paste-and-go-new-tab-button.patch",
+      "patchSHA256": "b5559d481f0b6d06f71f74ebc884f961f2c6e4f3d451b68185bcfd309d50ce22"
+    },
+    {
+      "applyOutputSHA256": "53c386658774fa18b9d9e48d337452c909d8674717d66d541c2aaff514ab09f7",
+      "label": "common:70:add-flag-for-bookmark-bar-ntp.patch",
+      "patchSHA256": "ebcd5c6da7c240a314698d505521bdca68f0f32842f4b468a9434d34241cde24"
+    },
+    {
+      "applyOutputSHA256": "53bc0afccbfaffe60cabb07995dd0c2f1fab4f71b169f569a1fdd3b3ec2f60ca",
+      "label": "common:71:enable-menu-on-reload-button.patch",
+      "patchSHA256": "f82fca9b9b8da8b2e8212945cb8ab65da3bcadedab1952315d3e0046754ad501"
+    },
+    {
+      "applyOutputSHA256": "056ec1ba8aba339355e98fcd751a3db9ae6c606c6d7eba404b20a735530f8df9",
+      "label": "common:72:add-flag-for-omnibox-autocomplete-filtering.patch",
+      "patchSHA256": "e631dd9d6f498bca74416a3cd3729c5ca8bf975d936ef1d038a1821090682cef"
+    },
+    {
+      "applyOutputSHA256": "cfccd800ff168fb3bce5a197dda00fd51492e804d89b5d0d5a14b503c1bc2d95",
+      "label": "common:73:disable-dial-repeating-discovery.patch",
+      "patchSHA256": "74ac795c6b5f734786b5dd9ae6e19360dfbed25083e643d521118ed8d19b1ff3"
+    },
+    {
+      "applyOutputSHA256": "44ad2288a1557cfd23f9abe1593f4e2e890a5edcae6b6d59e2cfdfa6832dc617",
+      "label": "common:74:remove-uneeded-ui.patch",
+      "patchSHA256": "1d61ad24b0dcd88a7c758665aadc86dc945ffe57099c0ddcae0e0f7f2e66695b"
+    },
+    {
+      "applyOutputSHA256": "6f9995b3eef377729d42cbb65b0105f9f48d73cbe4a454d6d3c519a665f6b5f2",
+      "label": "common:75:add-flag-to-close-window-with-last-tab.patch",
+      "patchSHA256": "81ab9bd4455def59d90288be44d6e399719ca767ffd2780a2948f6e81a159614"
+    },
+    {
+      "applyOutputSHA256": "60485956c0a2525b92554971f03fcab9f5cb05581b75ff511589a426595cef06",
+      "label": "common:76:add-flag-to-convert-popups-to-tabs.patch",
+      "patchSHA256": "22e459a91b634f9c4430dbbcfed6a73025bad0fab31186a862ac7fbac7cb2465"
+    },
+    {
+      "applyOutputSHA256": "590fe967d57f716ae3aafbb92b9cf86dd804d65b7e3f6a70177ae3158b5daa54",
+      "label": "common:77:add-flag-to-disable-local-history-expiration.patch",
+      "patchSHA256": "8314cb57e23313d55cb194856429238c089bafdb6e26fd54dfc360b3a3b86c79"
+    },
+    {
+      "applyOutputSHA256": "27307ffe47def4209905b0f33cc9b6608bd8de31450ebad7bd9fb0ef2eb1a86b",
+      "label": "common:78:add-extra-channel-info.patch",
+      "patchSHA256": "09f61f47469553c768f8eff48171529448af1f356a47fb42b3d9653c86a3c634"
+    },
+    {
+      "applyOutputSHA256": "c2fb40e60b41fa09c86fc5a762e717cf1e174a4d2f4b8c889bf78db690a32e9d",
+      "label": "common:79:prepopulated-search-engines.patch",
+      "patchSHA256": "7c688533edadd241895727382c53214ce68d7cf99c1a3d323079c1640b19b73a"
+    },
+    {
+      "applyOutputSHA256": "47da7be974600ee19eebbaadbc0ec7c3feaca82aa06c733840e2f6af2be2a844",
+      "label": "common:80:add-flag-to-clear-data-on-exit.patch",
+      "patchSHA256": "e0222e206a770c33d91150f34a30cbde8a5fef896b7a62baf3d6d81b9cab8552"
+    },
+    {
+      "applyOutputSHA256": "98acc41640d7bf5ffe50ed4e1bd7a3c9934d530726189dd5aa9dca0463d8d68b",
+      "label": "common:81:add-flag-for-qr-generator.patch",
+      "patchSHA256": "d9209b760847f676e74bc0dd748de3684c5af1d3f05c5aad80e415879757b4dc"
+    },
+    {
+      "applyOutputSHA256": "a8cb0c0a7b580d3e3db95d89e176c3a590cd185b9c7dfc25994111037f7f96e8",
+      "label": "common:82:add-flag-for-grab-handle.patch",
+      "patchSHA256": "dfe8f179f9702a8935c2085cbdde9185e396416d34da52d38d64a07de76ad75a"
+    },
+    {
+      "applyOutputSHA256": "515f0d80bcb5c9302ed69ace46bc8f6c460b94158e4585048479f1548d12cfbd",
+      "label": "common:83:add-flag-for-close-confirmation.patch",
+      "patchSHA256": "4ace681413df45407a3fa5db25c2cba8cfc86afa3d10ac927be1df16a86bbca7"
+    },
+    {
+      "applyOutputSHA256": "1f288b7e1893f3025e635b0d82e91a7429a004c351166500fdc73ec76d560205",
+      "label": "common:84:keep-expired-flags.patch",
+      "patchSHA256": "eb8bec5bb72053653d3e6a578affb3d62de2a85cd8e37913b1d9d5f8beb8cc4f"
+    },
+    {
+      "applyOutputSHA256": "86f589dfb8912939bc75fd4be00ef27c09825e72d04a7544c314f8052c0bf553",
+      "label": "common:85:add-flag-for-custom-ntp.patch",
+      "patchSHA256": "2e808985a9faf177b4abe9cd787e06907369790260364c142a311265c644ad8e"
+    },
+    {
+      "applyOutputSHA256": "4c6d870479dbc63c6fbdb7d9442daa5b3788249b3d274e375a0cb9d3e23dd640",
+      "label": "common:86:add-flag-for-tab-hover-cards.patch",
+      "patchSHA256": "11de1cfd542f91cca7875642f40dfeef0d546c1930426e6df3f787448251a181"
+    },
+    {
+      "applyOutputSHA256": "5d2b3d0a6cf2ae7e5d4f90da7efd635ed54fed333c600349e1e08fe74557f69a",
+      "label": "common:87:add-flag-to-hide-tab-close-buttons.patch",
+      "patchSHA256": "fa0f7547b82caee5ee3b6670250cf19fee35db715bef145d522af746cce65a3d"
+    },
+    {
+      "applyOutputSHA256": "6ad7d51e6cf52a263e5d5bbe08094fc66588d5e315c5c0ec6d987a691d3d3638",
+      "label": "common:88:add-flag-to-disable-tls-grease.patch",
+      "patchSHA256": "d3072f8f4bfd844efa2f37e5eddc13dc6eee07c4d4370161b7359b0b92702c65"
+    },
+    {
+      "applyOutputSHA256": "1381f5e9ca51c773618d0b7677f26f7f069f2df2ef5b38aee98b729abc9c70ae",
+      "label": "common:89:add-flag-to-change-http-accept-header.patch",
+      "patchSHA256": "c13eb210c1f00e66be33ec63b31c5909becd0de6b86dc46b4f0fd4b2b92be86f"
+    },
+    {
+      "applyOutputSHA256": "7c79b77066962be8fbb70c4a5c612962dabfcbd3e420cfe9290d15ff08a153de",
+      "label": "common:90:add-flag-for-disabling-link-drag.patch",
+      "patchSHA256": "c5ec74396f45074ddb2b6577d73c704a0cc2b34111ab7a9b3b450dc8d14993fe"
+    },
+    {
+      "applyOutputSHA256": "bef2fab67e9db952bc4bf2e397d14b7102ac57c4d6722088b0190239b9f8729a",
+      "label": "common:91:add-flag-to-hide-extensions-menu.patch",
+      "patchSHA256": "ccba49a55c12545990d5000513b4985256d15f9996687f6f472bfb2de04b3f63"
+    },
+    {
+      "applyOutputSHA256": "f864494680667cb23bb3359ee56ef608280eeef7a2ba4ff9f53d176efe0ada0d",
+      "label": "common:92:add-flag-to-hide-fullscreen-exit-ui.patch",
+      "patchSHA256": "635a3ba269465005cb27367caebb96966b8d5013964fb5eb99fcf6ff1dc3e307"
+    },
+    {
+      "applyOutputSHA256": "02ec6b210a4e7a6f5716ed223260f9eee651b7449389447f53aa110340bb4e06",
+      "label": "common:93:add-flag-for-incognito-themes.patch",
+      "patchSHA256": "d790ffbe78569d2ae4511eabe7942c5272bca91fb5a95b5634dddcbfcedcbb61"
+    },
+    {
+      "applyOutputSHA256": "ddbf7e3c2cd8a388947f651f7ec08759f60bfba2d78b1811e6ff430218989b04",
+      "label": "common:94:add-flags-for-referrer-customization.patch",
+      "patchSHA256": "5a57319d67830f52c5781ee0c1a8a8019739c0637a0eae943a362b8c5cc83ae4"
+    },
+    {
+      "applyOutputSHA256": "f22f45d2bdcce1b42c228ac73baf130996b36980766b185d3c17a13e20e121dd",
+      "label": "common:95:default-webrtc-ip-handling-policy.patch",
+      "patchSHA256": "9dd3275f38a1e31bd532b40e6ef0a5f185036863f26dd593c595c7d5c5c93a7e"
+    },
+    {
+      "applyOutputSHA256": "834a75ed2db8de1ca8b5898542fdd5f27f244e03c58dfc8b5bb11d937ed93dc9",
+      "label": "common:96:add-flags-for-existing-switches.patch",
+      "patchSHA256": "78333d41678615e8ddda202d658f823564c10d1012cb134b43817bbf262ec975"
+    },
+    {
+      "applyOutputSHA256": "9d4c4c620b2e6b0f9f1ed3ff23a273ab43a3dad0cefde07652f732c6c6e3480f",
+      "label": "common:97:first-run-page.patch",
+      "patchSHA256": "dd653df6b37dae3345b169ffcaa1900985d741a7a947e607751f8a59aa20fc8e"
+    },
+    {
+      "applyOutputSHA256": "ef75675c8e61ea11314292a1b95379ba2b783550c625474ebb3823149849c4a8",
+      "label": "common:98:add-flag-to-reduce-system-info.patch",
+      "patchSHA256": "ffcc646e86113f2546b1adbe122a14078309e7a51799519243e2b386d445cd52"
+    },
+    {
+      "applyOutputSHA256": "ce37c6614107ee81645b786dbceaa08d4640c57d5b12d7f51d9ad2e9af257815",
+      "label": "common:99:add-flag-to-remove-client-hints.patch",
+      "patchSHA256": "1c0674ebda6137e3ac7dcfe9264c030ebe3a46a7d7921bdf9cedef6ef40018bc"
+    },
+    {
+      "applyOutputSHA256": "1db36e0284d5172cb21843ff4e949d68a8db650c062f4af2f1da731f2e61ff71",
+      "label": "common:100:enable-extra-locales.patch",
+      "patchSHA256": "2b597f8db5b811a1ffefb86638539583799f06f2dfbd5b5f04cd8088dd0d65b2"
+    },
+    {
+      "applyOutputSHA256": "4fd728a33d3c6a3c0006b9d58cf3438c0f2e12434aa2be60384deb723872fdda",
+      "label": "common:101:remove-pac-size-limit.patch",
+      "patchSHA256": "437dfe711214144b0df4138d5eb34cf4c86c43ac12ed7fc881b4568c06380bee"
+    },
+    {
+      "applyOutputSHA256": "3959554613e48a91efde6e4306cbc18cfde526a63d72423d09c758431fd36c19",
+      "label": "common:102:enable-certificate-transparency-and-add-flag.patch",
+      "patchSHA256": "84684e6d90d5675858c96a90af8483d2e79c10d403cd6fb89c194e4acec74fce"
+    },
+    {
+      "applyOutputSHA256": "2057a8ca35741279f1296dbb01a5e59fd9e164328f82bcc809d71cea20ca2dde",
+      "label": "common:103:add-flag-to-spoof-webgl-renderer-info.patch",
+      "patchSHA256": "d89ec1d5e5209b442b806550165694cd0044378287e5ddc8e4f97d0099d8852d"
+    },
+    {
+      "applyOutputSHA256": "b9fb0817f222d5bf9a0c697eede845f7292c96563c2ace3bc5900b846efaaa85",
+      "label": "common:104:add-flag-to-increase-incognito-storage-quota.patch",
+      "patchSHA256": "0c4c7b98868a35ef25e8f2e1a0a0c6c7a72118762096729d6d2a8fb54e9920df"
+    },
+    {
+      "applyOutputSHA256": "298c5cc7a79bc5de5d1c33ceef67adc1112be4d3876cde2d736af8d772074391",
+      "label": "common:105:add-credits.patch",
+      "patchSHA256": "9804fd81ace177b532a910618db0323e2c217416a3ea6333a895e3c9cdb8ac31"
+    },
+    {
+      "applyOutputSHA256": "eb4d9fbe4ca99f4bfa5185ae4aa9321a6a2ce192276b2bf1df969786a2dcd9c0",
+      "label": "common:106:disable-ai-search-shortcuts.patch",
+      "patchSHA256": "4fa40ab6927754efb04a028006fe02dbda55fd7560133fa0934a99d84dff1aca"
+    },
+    {
+      "applyOutputSHA256": "e303846c0ad11675ea31fb5e29073aca30dc6f16e1387072d01395d307775998",
+      "label": "common:107:disable-fedcm-by-default.patch",
+      "patchSHA256": "68d087c1036584ef4ca74dfaf7e5de9c395280251485d354a9cd7cb5f57e84e5"
+    },
+    {
+      "applyOutputSHA256": "6e1027f8021dcee7e8fd10345dce17eab0becd6193b8e36e15ebc52e28471699",
+      "label": "common:108:bundle-hyphenation-patterns.patch",
+      "patchSHA256": "4f6628073c5cc7e7d22943483921fddc42ed19cb0979d06014c8aa52cc2dea27"
+    },
+    {
+      "applyOutputSHA256": "8bcd6200731574e1baf0cb5a52592455cd8a71f4236c6d7ecd7de76c8d65dd0a",
+      "label": "common:109:add-flag-for-disabling-jit.patch",
+      "patchSHA256": "95c9075c224736a2be979a8a1b4d15d48290d172fcb7259a09155c4566b666df"
+    },
+    {
+      "applyOutputSHA256": "ed4279de221ddab045fe811d7b7eba58ca2725c6458fc94d0e84f54b9027f75f",
+      "label": "mac:1:build-bindgen.patch",
+      "patchSHA256": "f4a3b542d338cc0976286fb2f71a39d7a686ba6db3a7f123253e7fe3cf1aa9da"
+    },
+    {
+      "applyOutputSHA256": "a1a105eb5af8b9dc3e0a8d005f48f67d86069ff8b42155f7bb53d2fcec9bc16d",
+      "label": "mac:2:disable-clang-version-check.patch",
+      "patchSHA256": "1ec9d36202a5627f462305f7dd9e2857bfcbae203f24be154cd719b38800171d"
+    },
+    {
+      "applyOutputSHA256": "4c65d8e17258ac12779d48204679b8dae909aa80154dd48ce5011438381f7bd9",
+      "label": "mac:3:disable-crashpad-handler.patch",
+      "patchSHA256": "c398174bb146e6f4e5f28ac79d3019e1886bb0d383c4c7c549ecb69f25fc821b"
+    },
+    {
+      "applyOutputSHA256": "5914c794e93ddf7e3b58a847b3c37cd75a9e1aa781c0142fb9e4954b29d8449a",
+      "label": "mac:4:disable-symbol-order-verification.patch",
+      "patchSHA256": "4880cde4c84e0bca67e96b77ff2bb93b64b7ee3b5f53dbf05839473b72ac9da7"
+    },
+    {
+      "applyOutputSHA256": "a9fbcbfafb596bfcb8a7b3ed855d4a0d8fbb420c77d24fe50c1b5a8b627140bc",
+      "label": "mac:5:fix-build-with-rust.patch",
+      "patchSHA256": "92c2627e253cabc8b678981f14619744ba5853c7302f15d7606cf6912249b958"
+    },
+    {
+      "applyOutputSHA256": "1af7f978ff737e8a21b1362c9c4a17bc7b0e0775eabb8998e530a5174d3bc894",
+      "label": "mac:6:fix-clang-format-path.patch",
+      "patchSHA256": "9c17ec553026025ba994cf8c4395e1249751a49e7dd554165d2cc5af25fda644"
+    },
+    {
+      "applyOutputSHA256": "7435b4a3638572c220c402702f5238e8c061a2f24c1a06b8ea1fa2246324fede",
+      "label": "mac:7:fix-disabling-safebrowsing.patch",
+      "patchSHA256": "cdf94a992c21e466d439fdb2a04c64ef11bd7a1b543473353d3dc06db5ae70e6"
+    },
+    {
+      "applyOutputSHA256": "fe9dc5233cb64b84ae01e63358f433411858f36e8d90e6776566bef3b706374a",
+      "label": "mac:8:fix-dsymutil.patch",
+      "patchSHA256": "c2ce394fdcb1b22328ab5cf161f9b72a76da537fc3ddb6fbb3229617191a0f2c"
+    },
+    {
+      "applyOutputSHA256": "5fdf7fe0d14cf1634c637f967f3fa3818e9ae3037bb548858857fc77661d2903",
+      "label": "mac:9:no-unknown-warnings.patch",
+      "patchSHA256": "fe1734ec4bef5b7eb7ca2d772b04afd93e7a8c738e309f0eaaf47380a4bcf6e1"
+    },
+    {
+      "applyOutputSHA256": "f34ae7e9eafc7701818b4e4b77fee5ad29ba1483888b790cfda2c64f0a1469e3",
+      "label": "mac:10:build-bindgen-target-override.patch",
+      "patchSHA256": "a34d9f345974f2a53214fe782b72efd4ccc449c9624674f18da0db3919efa26c"
+    },
+    {
+      "applyOutputSHA256": "ed4279de221ddab045fe811d7b7eba58ca2725c6458fc94d0e84f54b9027f75f",
+      "label": "mac:11:bindgen-disable-static.patch",
+      "patchSHA256": "92ab8ef8a9bfd63b49bc431554daaae832ea90db4410bc4b8c024d06c543805a"
+    },
+    {
+      "applyOutputSHA256": "580d377a18d4dae91906ab4b0c7254c207880a9b13157ad8c08825b28c9bbaeb",
+      "label": "mac:12:set-rustc-nightly-capability.patch",
+      "patchSHA256": "0c02a139dc5db01a167fe4740dbd4eeffec748ad7b83bce2136934a340137ea8"
+    },
+    {
+      "applyOutputSHA256": "60fbe6f954c8de24845f8944423fee7eca0481d02dc430b7e45c4454f2c26ac7",
+      "label": "mac:13:revert-v8-sanitizer-changes.patch",
+      "patchSHA256": "d5e9d1a096d0939a02332afd970e466f836cc77826c5029bd1cc10ff77415996"
+    },
+    {
+      "applyOutputSHA256": "7eb0c9e8881939b8815b1f23b4eefa56f655157a4fc60f0f96bc2d9109d5901a",
+      "label": "mac:14:fix-nasm-build-config.patch",
+      "patchSHA256": "7edab94489ce48ceac4d1c682c698e8663df563aa319d709abfe7f9afc277297"
+    },
+    {
+      "applyOutputSHA256": "addca65c8093031514da0225fba6fabc01e6571982b6fe197d9a8e92ae24ce21",
+      "label": "mac:15:fix-anyappleos-availability.patch",
+      "patchSHA256": "242ecabba4db1f799aaef4f5db953e80bed29d9b5d62ad349c83aa6f1243931e"
+    },
+    {
+      "applyOutputSHA256": "ee8fda24b3696b9cd905b8621a70df243d57d54f295da625080c9cf446c9c72f",
+      "label": "mac:16:fix-build-without-crubit.patch",
+      "patchSHA256": "9e650d883ef34e1f526476054d5f67472705e5cf8f661ac97aaa59be854348d3"
+    },
+    {
+      "applyOutputSHA256": "8e13f88fb44416bfaecbb2c3e2c251dcf0aa10c53f9a1ddb5872b62c8cac3378",
+      "label": "mac:17:use-system-python.patch",
+      "patchSHA256": "2a79214f80cd0d1851dc7b759bf87029a0c00affa8213a02f002df2ae7a5f65a"
+    },
+    {
+      "applyOutputSHA256": "0ee14e2dbe40d788b1193c5d1ed3021fc53378f5d80dedebbd4266fa2a5ba360",
+      "label": "mac:18:fix-disable-verification-token.patch",
+      "patchSHA256": "89133df06c62adcbc7dff04e6164ecf9bbe807dbf1363106fd66eb671d14da2a"
+    },
+    {
+      "applyOutputSHA256": "e3e59150ad20bcc426c546fe239c6fa87f97b55e83bb5688872cbb09c97ba580",
+      "label": "mac:19:fix-esbuild.patch",
+      "patchSHA256": "db050704d0beaa1da438e91a03275a7a511ad734614716c3df4aeb2f179f90bd"
+    },
+    {
+      "applyOutputSHA256": "41a79293d39697dcd1d69421d9412cf73057a5ebc3aa1cc660cddd7c86fb86ed",
+      "label": "mac:20:fix-typescript.patch",
+      "patchSHA256": "48176806bc7822099940fe75bba5c79bce6c46d66a7824b5cb04cea077df8679"
+    },
+    {
+      "applyOutputSHA256": "6159560b257e19b0b99ecfce85576dcbe669a3a52ed7d71a170429f9e3f3e24a",
+      "label": "owned:1:profile-seed-contract",
+      "patchSHA256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4"
+    },
+    {
+      "applyOutputSHA256": "da599796d1eb524b891093686b142995cfa2ac3b26457e6eb56138e4c8cfe6a0",
+      "label": "owned:2:deterministic-rendered-surfaces",
+      "patchSHA256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e"
+    },
+    {
+      "applyOutputSHA256": "382da647f220a43c402dea553e9c3090062eb45c393a0bd78335bb0a49f0f948",
+      "label": "owned:3:deterministic-offline-audio",
+      "patchSHA256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652"
+    },
+    {
+      "applyOutputSHA256": "c66140bc49376ccf9a9dc2b8c3f79d975f1e518f5960257b36169aa1ebe53de6",
+      "label": "owned:4:deterministic-webgl-pixels",
+      "patchSHA256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0"
+    },
+    {
+      "applyOutputSHA256": "2584f8131d37bfd40d25b8e1462ac7bf778e795b07308e3ffd2b164fec1c3fb8",
+      "label": "owned:5:timezone-locale-network-context",
+      "patchSHA256": "b90aab37047d35e0c0e4bbe1938eaac965779bc7b241f534d27b9debf930985b"
+    },
+    {
+      "applyOutputSHA256": "64fd542edb805965f6f36f266815394ee713d42c26c1343095daeb42b387cd94",
+      "label": "owned:6:real-browser-version-contract",
+      "patchSHA256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce"
+    },
+    {
+      "applyOutputSHA256": "8ea2b783a419a5ccc9ee4f0905b804060dfe4ef56c4f24a948f7d2816445f845",
+      "label": "owned:7:minimal-apple-device-tuple",
+      "patchSHA256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7"
+    },
+    {
+      "applyOutputSHA256": "d5edd9675abf5ab15bb54a82d4d66d6f001dd46ce5d7e51a700bca80cc8df38e",
+      "label": "owned:8:neantik-branding-and-source-lock",
+      "patchSHA256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87"
+    },
+    {
+      "applyOutputSHA256": "0b37b68bdfbfbcf4e7be84232592f5b0eb79ccbf22558aecf37d53fddb7a998e",
+      "label": "owned:9:official-lite-archive-build-contract",
+      "patchSHA256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3"
+    },
+    {
+      "applyOutputSHA256": "fc1dbfc2c8b4a01c38b9d3a6a7c3281ea1f7f1d32c78c267a259f9e609533223",
+      "label": "owned:10:private-runtime-config-environment",
+      "patchSHA256": "30881d9440c3c02f32d340595f7b3d1c07f11010921337482dcef65348dd4fd1"
+    },
+    {
+      "applyOutputSHA256": "b6f52882086ab49843347278331f0a30d8e9c44e7436def1fcabb3caddd3db90",
+      "label": "owned:11:cached-runtime-profile-seed",
+      "patchSHA256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b"
+    },
+    {
+      "applyOutputSHA256": "1bf91b25230387ac998b59c8ebd12df426afe652594a2155894aac81db632613",
+      "label": "owned:12:m154-unused-signin-helpers",
+      "patchSHA256": "05e16c61c527b40f21d59784504387d43ad191b4d1a654907777f26b65abde92"
+    },
+    {
+      "applyOutputSHA256": "42dc65ad0d27d1bdb23bc4291665b1c0646d7b2c84523b44d0cb1c4eb9115daa",
+      "label": "owned:13:m154-remove-unreachable-disabled-gcm-body",
+      "patchSHA256": "39c2fac5ab57d17e07d830b03969fa262c2b36773ce8f4229d6f8c0f550e553b"
+    },
+    {
+      "applyOutputSHA256": "6be33888d439949b91aa3c3d320aaa70e8c8f78e98ee4e1af022e30e99fcf187",
+      "label": "owned:14:m154-remove-unreachable-domain-reliability-upload-body",
+      "patchSHA256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428"
+    },
+    {
+      "applyOutputSHA256": "2ff952a0286f2c36cf7d4a23abac261c3dec31334f8104d32cfee843686359f4",
+      "label": "owned:15:m154-template-url-service-init-order",
+      "patchSHA256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032"
+    },
+    {
+      "applyOutputSHA256": "2f79190d8069bf4e0d52908b7997cfd1a68b95c0229becca224985a88969a3ee",
+      "label": "owned:16:enterprise-cloud-archive-analysis-mode0-common-overlay",
+      "patchSHA256": "06e2ca25388163e3300b05cb50ee90ca3a7c2ed2939f85f13de9ac07e2d3df75"
+    },
+    {
+      "applyOutputSHA256": "fd8a2ced642c7fce32128d1ff75cf2252dd10929fd93f9c989ea8b8c0f18ce60",
+      "label": "owned:17:m154-remove-unreachable-assist-ranker-body",
+      "patchSHA256": "3a6a19a56acd5709d3431614da1c0ecebdaba5e76c9ef7463c40c91642b76c92"
+    },
+    {
+      "applyOutputSHA256": "b3292a43c9309da6df7807662c04318432b863c2d6b066954c45472494ee1282",
+      "label": "owned:18:m154-remove-unreachable-translate-ranker-body",
+      "patchSHA256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4"
+    },
+    {
+      "applyOutputSHA256": "f93b7dea259c585d59a175ae2755c847ca32d322b475050724b55f3e7ceea4ce",
+      "label": "owned:19:m154-prune-disabled-autofill-network-helpers",
+      "patchSHA256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d"
+    },
+    {
+      "applyOutputSHA256": "b9eb13c6e9039e2bc3a48c05b89cc05b37bca4e0b7a7a5f2616b46c2332e3b8c",
+      "label": "owned:20:m154-remove-disabled-safe-move-activation-field",
+      "patchSHA256": "5e84a629c25a599c172abc7e621f7f97b573b3749db29b0f8ef4587a4432452e"
+    },
+    {
+      "applyOutputSHA256": "72425ae9830fa5171e46795dc111a077c4aa99bbd2925edd8a9dbdcd549f8fed",
+      "label": "owned:21:restore-download-quarantine-provenance",
+      "patchSHA256": "e46f0c1beb8af118faa78b845edf484a75f836fb3cff0218800ac5957ab5668b"
+    },
+    {
+      "applyOutputSHA256": "40916b03da929628265f37b4c55176fcb45206f6c92fab6bf3cae54828a54136",
+      "label": "owned:22:m154-file-system-access-quarantine-provenance-test",
+      "patchSHA256": "35ac40363df829f2899d792921278f0801d142932ff722b2e36a5143f17b64d7"
+    },
+    {
+      "applyOutputSHA256": "6247d7f30e498ab44b575276c31be54e043a9d6ede57a05580b57bb7e730963d",
+      "label": "owned:23:m154-prune-disabled-ssl-interstitial-prefs-helper",
+      "patchSHA256": "b6a35a6ec88459461f2d1c7368f1c9db40264f72d96099b2ea5061b13599ec3f"
+    },
+    {
+      "applyOutputSHA256": "ba4efb4fb93a01ad7b7c567f3d6522d29dff45ba3f7c5cb46adfa2c2fe52c6ed",
+      "label": "owned:24:m154-disable-nonlinux-crashpad-unreachable-body",
+      "patchSHA256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd"
+    },
+    {
+      "applyOutputSHA256": "263426eb32a27cf32ccc67714b9be22b89fba505a6817d2de591ca270f77ea0d",
+      "label": "owned:25:m154-prune-disabled-safe-browsing-metrics-helpers",
+      "patchSHA256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd"
+    },
+    {
+      "applyOutputSHA256": "58beab813f330b1123409d15ecb444f030706709402f35ef8135201e348b6d5f",
+      "label": "owned:26:m154-restore-safe-browsing-prefs-declarations-include",
+      "patchSHA256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749"
+    },
+    {
+      "applyOutputSHA256": "73299610525d34c344c40c90f19816d1f0b01f02f985e27a18ed743eaa924143",
+      "label": "owned:27:m154-prune-disabled-webstore-download-helper",
+      "patchSHA256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4"
+    },
+    {
+      "applyOutputSHA256": "f7039d23609e5cf99a85e8b8bd976ef46b2971ca35e332341ac712d08b948e17",
+      "label": "owned:28:m154-prune-disabled-omaha-action-flag",
+      "patchSHA256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd"
+    },
+    {
+      "applyOutputSHA256": "9be3bf90cb5a4acbd2bd0662dbd5ce35ccd645a8eab0b8df46e001f287fc8c94",
+      "label": "owned:29:m154-prune-disabled-bound-session-helper-state",
+      "patchSHA256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63"
+    },
+    {
+      "applyOutputSHA256": "0961a5e8bdc07f3347aedd118a9d9fd86fd6aaf89727dc066db6644f1920a136",
+      "label": "owned:30:m154-prune-disabled-signin-promo-metric-state",
+      "patchSHA256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c"
+    },
+    {
+      "applyOutputSHA256": "7dff0dc58af0ca218791ab90253ab80507f770dd31359e93fde80efa144c0043",
+      "label": "owned:31:m154-prune-disabled-mdns-helpers-and-client-init",
+      "patchSHA256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773"
+    },
+    {
+      "applyOutputSHA256": "f460f2e53e1de88104093be9b1d7517c0a89309739a454a70c5c5b7c5d9d2929",
+      "label": "owned:32:m154-mark-disabled-advanced-protection-branch-intentional",
+      "patchSHA256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5"
+    },
+    {
+      "applyOutputSHA256": "5d9db4afb5e58bf28b0e865458821e993dcdac4fbb642321f5036bcbdbbe66b2",
+      "label": "owned:33:m154-include-enterprise-file-type-policy-resource",
+      "patchSHA256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab"
+    },
+    {
+      "applyOutputSHA256": "6ea6dac29580cdb0851326fec7b07e091c565ff8020ae9b1f5bfe19c7c335e06",
+      "label": "owned:34:m154-remove-dead-ntp-collection-fetch-body",
+      "patchSHA256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd"
+    },
+    {
+      "applyOutputSHA256": "1fcf599d345c86bcaaa4f0f13a439b58b1586f6f10ca3a67df2fd53c41c4ea3d",
+      "label": "owned:35:m154-include-safe-browsing-prefs-in-enterprise-upload",
+      "patchSHA256": "a507447c8353ce7c4bc14bb5bb975c721219f65c7b33d3eded47c6456a08d961"
+    },
+    {
+      "applyOutputSHA256": "1a8b1fc567418f69076f494e184863f8a72f3f59735f33af528890e6922f7982",
+      "label": "owned:36:m154-prune-disabled-supervised-ntp-helpers",
+      "patchSHA256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5"
+    },
+    {
+      "applyOutputSHA256": "fe5736e563341a5fcdd17c46188ea2a26fe572d40d87275f810adf283deb8ced",
+      "label": "owned:37:m154-prune-disabled-sync-builder-helpers",
+      "patchSHA256": "8a7f111ad1a320cdd9060030c14efed591076e18f16b48ed97014beaed54df75"
+    },
+    {
+      "applyOutputSHA256": "fe5736e563341a5fcdd17c46188ea2a26fe572d40d87275f810adf283deb8ced",
+      "label": "owned:38:m154-prune-disabled-sync-service-helpers",
+      "patchSHA256": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac"
+    },
+    {
+      "applyOutputSHA256": "d0097f8484812238c16f05fa6dad88e1f6a746aec7871a528c21db83fce925c7",
+      "label": "owned:39:m154-prune-disabled-offstore-safety-helper",
+      "patchSHA256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b"
+    },
+    {
+      "applyOutputSHA256": "483ba0d5011134e786e1d5c24f023424106046aa4cc29e34fc70401ea84c6b17",
+      "label": "owned:40:m154-guard-force-save-cloud-helper",
+      "patchSHA256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4"
+    },
+    {
+      "applyOutputSHA256": "6054c44f2fb201c39c8da26b2bc1593de66bb3b440c8e2747cbcf933c5af6df5",
+      "label": "owned:41:m154-prune-disabled-download-warning-surface-local",
+      "patchSHA256": "54aaa31d472f478d274874d0756f02ef7124bcf41a75ddbd313c0ad6bf68a8d1"
+    },
+    {
+      "applyOutputSHA256": "6054c44f2fb201c39c8da26b2bc1593de66bb3b440c8e2747cbcf933c5af6df5",
+      "label": "owned:42:m154-prune-disabled-warning-action-serializer",
+      "patchSHA256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15"
+    },
+    {
+      "applyOutputSHA256": "6e220ce1f6591fd121e1baea2b1ce5c2120df84baae76ee36555dd231e9410d6",
+      "label": "owned:43:m154-restore-enterprise-context-realtime-url-mode",
+      "patchSHA256": "d698f7e1ebd3657435e77d9c39f37f8e08709cd7d0008b1461387abdd8468b85"
+    },
+    {
+      "applyOutputSHA256": "63ef37c2d2628f488377eb1835ffdafc3e7a28dc57d39ce3f1f1e0126b5a94be",
+      "label": "owned:44:m154-populate-enterprise-profile-id",
+      "patchSHA256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa"
+    },
+    {
+      "applyOutputSHA256": "e695920937b49c37a983c28c65ccb7570bb84b505effacd173417c4edad9f54c",
+      "label": "owned:45:m154-honor-download-bypass-justification-policy",
+      "patchSHA256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93"
+    },
+    {
+      "applyOutputSHA256": "0fb7c128d33bab9781ac642224fb557af5da11b7bf1a8d8243583600a5bfb452",
+      "label": "owned:46:m154-complete-disabled-one-google-bar-callback",
+      "patchSHA256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683"
+    },
+    {
+      "applyOutputSHA256": "afd4fbe0575a4568c4b5dab9e3040ae308b7d79acaec70f926c24215f157e4d7",
+      "label": "owned:47:m154-prune-disabled-one-google-account-consistency-state",
+      "patchSHA256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c"
+    },
+    {
+      "applyOutputSHA256": "2f311b49ad140afdcb3a45b297dc2f0721bf97872b960ad8cc5cbdf755ac3336",
+      "label": "owned:48:m154-prune-disabled-page-annotation-helpers",
+      "patchSHA256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66"
+    },
+    {
+      "applyOutputSHA256": "8593bd8cf14d39152cd0a925b3895e6ba33591bcc3dc25b6e59839bd804d49e5",
+      "label": "owned:49:m154-prune-disabled-avatar-url-constant",
+      "patchSHA256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d"
+    },
+    {
+      "applyOutputSHA256": "f4f88015ea33bac43bc314d415af99146d2e45bca0942700266037e5570541c9",
+      "label": "owned:50:m154-prune-disabled-account-consistency-entry",
+      "patchSHA256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50"
+    },
+    {
+      "applyOutputSHA256": "6bfedc648d6e2fee2e1cec6cd1249b0685d4429dd4dd7c076d777a97eea36626",
+      "label": "owned:51:m154-prune-disabled-signin-promo-helpers",
+      "patchSHA256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560"
+    },
+    {
+      "applyOutputSHA256": "6bfedc648d6e2fee2e1cec6cd1249b0685d4429dd4dd7c076d777a97eea36626",
+      "label": "owned:52:m154-prune-inactive-signin-promo-helper-chain",
+      "patchSHA256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e"
+    },
+    {
+      "applyOutputSHA256": "9eb7c9d76b0efa7b631b72b751ad952b916a59d3d71e89346eb57af5fdaacbc6",
+      "label": "owned:53:m154-prune-unused-https-first-pref-local",
+      "patchSHA256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367"
+    },
+    {
+      "applyOutputSHA256": "be2b673003a9b5851a927b0f5a76d979ea0f6c2e7f6469a79b469aa77d23d00a",
+      "label": "owned:54:m154-rename-shadowed-extension-anchor-view",
+      "patchSHA256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae"
+    },
+    {
+      "applyOutputSHA256": "4c0ac72b2c233368a27ea4eebcef17a2365c26a63a08e9ecdac3a11bf049c99b",
+      "label": "owned:55:m154-prune-disabled-signout-sync-lookup",
+      "patchSHA256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5"
+    },
+    {
+      "applyOutputSHA256": "26728fedf4f130d1f9d8c64799e95c4c91d070f7dd6c7b56ed02ddbea79e65ce",
+      "label": "owned:56:m154-prune-disabled-sync-menu-title-helper",
+      "patchSHA256": "c408f47d246022f3ec2ad83f3d0514597380db9962e73aa46e1c1d66019d1e4a"
+    },
+    {
+      "applyOutputSHA256": "a6af57a4b7ce61ddbb2b8a3396f9c2156efd495febc0a55b57dee10c7b1ec21e",
+      "label": "owned:57:m154-prune-disabled-signin-status-chip-helper",
+      "patchSHA256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7"
+    },
+    {
+      "applyOutputSHA256": "b01c71e66beabfa92ea726692e68eaaec22e93e7447ac5f0111d0fd1f4c2f6ac",
+      "label": "owned:58:m154-handle-safe-browsing-settings-command",
+      "patchSHA256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0"
+    },
+    {
+      "applyOutputSHA256": "b01c71e66beabfa92ea726692e68eaaec22e93e7447ac5f0111d0fd1f4c2f6ac",
+      "label": "owned:59:m154-include-safe-browsing-command-prefs",
+      "patchSHA256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562"
+    },
+    {
+      "applyOutputSHA256": "8faa4159ff13c68d3d54556c16796e795b3fbe6afb0fb14375231f4f65e948db",
+      "label": "owned:60:m154-remove-unused-read-anything-screen-ai-parameter",
+      "patchSHA256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9"
+    },
+    {
+      "applyOutputSHA256": "c791daf1870cb9ae129d378edbda67ce2dd6ae2af4410ad04d7471edeec17f74",
+      "label": "owned:61:m154-remove-remaining-read-anything-screen-ai-parameter",
+      "patchSHA256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1"
+    },
+    {
+      "applyOutputSHA256": "b0afdb68ba56cfeab3a910eeaa2cb86b4f50cdb5b32b4b2de0a75f1b5feb9f95",
+      "label": "owned:62:m154-remove-unreferenced-protego-sampling-constant",
+      "patchSHA256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6"
+    },
+    {
+      "applyOutputSHA256": "5db1a1387c4bc9300740f278e1ccc71c38b409227214c5399459cd280236900e",
+      "label": "owned:63:m154-guard-enterprise-analysis-include-with-enterprise-buildflag",
+      "patchSHA256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328"
+    },
+    {
+      "applyOutputSHA256": "9dc923a5d3f700621f7cf8408e2a809d6d85d71e6ee106193f59b879ded482b1",
+      "label": "owned:64:m154-prune-unreferenced-navigation-predictor-helpers",
+      "patchSHA256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157"
+    },
+    {
+      "applyOutputSHA256": "568d56e39afcd9c5ddb60de6fe2fc0b09deef650e65e95a954b51435703372d3",
+      "label": "owned:65:m154-restore-safe-browsing-prefs-plumbing",
+      "patchSHA256": "51ffee29032e0f3a311d16316a230df1aa6317b54717fd9eb5ee07d3158f2bef"
+    },
+    {
+      "applyOutputSHA256": "eb2cf964de74c1aa478734a8a77a236b027b664130b6ded5ec96ce47162b8b60",
+      "label": "owned:66:m154-include-content-settings-prefs-in-js-optimizer-tests",
+      "patchSHA256": "cff2b738b6ef49cb25e08fe31ff6b1e7c7bf07fab9fc12e605e3cee820398afd"
+    },
+    {
+      "applyOutputSHA256": "fb086bce7a5f1391c1872dbdd3eff4bf75452b38b82c137e7431f1db2acab145",
+      "label": "owned:67:m154-fix-blocklist-state-fetcher-test-seam",
+      "patchSHA256": "b87023e10c4f4e2cdb221c8ee2727640447f0bb286edb948102ef8bb8133ca7c"
+    },
+    {
+      "applyOutputSHA256": "0fc8d3878b131161d0038a67491269c74b845ac02e97e5412bf6fd8b62dd0c72",
+      "label": "owned:68:m154-prune-disabled-testing-browser-process-members",
+      "patchSHA256": "794361e5f6a09e4c07c43e6f77261b2937d3230e14548edbf2828d95d38794d9"
+    },
+    {
+      "applyOutputSHA256": "50b5c29738ecd3a5b9f8c0d56de2d0a43c45e1ccac5e987b037e20b59e438ce0",
+      "label": "owned:69:m154-include-safe-browsing-prefs-in-notification-telemetry-test",
+      "patchSHA256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c"
+    },
+    {
+      "applyOutputSHA256": "92880cf129905ea76a3de35d86baf42e552dab5c438f1afd61f042a05cfe8463",
+      "label": "owned:70:m154-include-safe-browsing-prefs-in-advanced-protection-test",
+      "patchSHA256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d"
+    },
+    {
+      "applyOutputSHA256": "a612aeb425a9382751c94bfbd71cb31e9968225f10546bf9e6a999beafe76752",
+      "label": "owned:71:m154-resolve-sdkroot-symlink-for-apple-build-tools",
+      "patchSHA256": "712fd430b3090969330b4100d56ffba237a371f2d893a2c3a4f527ecb0569d2c"
+    },
+    {
+      "applyOutputSHA256": "a30c4677f12e0f82d6bd6b825800df8213b607c5df0a324b30b0496bd1cabfd1",
+      "label": "owned:72:m154-use-deps-pinned-devtools-node-tools",
+      "patchSHA256": "15452c59a6657a6408d8e42ef8d3fba71035012219247bef6bcd04228e8f2b33"
+    },
+    {
+      "applyOutputSHA256": "122faa37b0be3147a4cd8238a8502e30e4eaf56ca4b1a7f6adb18d96a37518a5",
+      "label": "owned:73:m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them",
+      "patchSHA256": "66dec147745b26d5b5346c7752ac086a7674e5d6d57f65a6a458b29cac8d5293"
+    }
+  ],
+  "inputTargetDigest": "aaac8942e065860c809a47ad2650911ff84a4f6a9b57a4fcbc7e071af4b72807",
+  "nestedInputRepositories": [
+    {
+      "commit": "66df492aaa0129d090937e933dd44c5389ab24d2",
+      "path": "third_party/devtools-frontend/src",
+      "tree": "9dfe06a988abf527c91630847d3dbd5a38734040"
+    },
+    {
+      "commit": "525a09a813be0f75b646ee93fc2a31c27b87d722",
+      "path": "third_party/nasm",
+      "tree": "d6d4d137fd4e885d7efe55b38308c7b0b4495784"
+    },
+    {
+      "commit": "b9f48dc46a8172cbdd9c3923bd5a85c04458e49f",
+      "path": "third_party/search_engines_data/resources",
+      "tree": "e923b80a1685663a1b9aa274a7299df27671bc62"
+    },
+    {
+      "commit": "b3d6849efaf11696198e15b32290e6d6b0d540c1",
+      "path": "v8",
+      "tree": "7f69c3dcadfb90d6b8ed2ea6ffafc97b7b3aa598"
+    }
+  ],
+  "postimageTargetDigest": "f1472de15d98bdfa0d30c014bc6c56209c6d740174a1a5f434ae2c6b2c4c207f",
+  "presentPruningCount": 3476,
+  "presentPruningSHA256": "013449da0b295e0f763ac09d20cd1808d11da88538471882aa2924a13c2c2496",
+  "pruningSourceSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+  "qualificationLimit": "Patch-command result only; full source snapshot, build and runtime qualification remain separate.",
+  "rejectedArtifactsInTargets": [],
+  "releaseReady": false,
+  "replayComplete": true,
+  "schemaVersion": 1,
+  "sourceCommit": "b859317bf11f6be47f9b7799ec690a0a42a1fb33",
+  "sourceTree": "e3eac82f3bb5479e80ab245c514083b5db4fedf3",
+  "status": "diagnostic-replay",
+  "targetCount": 798,
+  "targetVersion": "154.0.8037.98"
+}

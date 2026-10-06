@@ -103,10 +103,15 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     lock = load_json(runtime_lock)
     chromium = required_mapping(lock.get("fingerprintChromium"), "fingerprintChromium")
     version = chromium.get("chromiumVersion")
-    if version != "154.0.8037.93":
-        raise RuntimeNoticesError("explicit candidate notices require Chromium 154.0.8037.93")
-    contract_path = project_root / "runtime/chromium-154-source-contract.json"
-    if lock.get("sourceContract") != "runtime/chromium-154-source-contract.json":
+    contract_names = {
+        "154.0.8037.93": "chromium-154-source-contract.json",
+        "154.0.8037.98": "chromium-15498-source-contract.json",
+    }
+    if version not in contract_names:
+        raise RuntimeNoticesError("explicit candidate notices require a reviewed M154 version")
+    contract_name = contract_names[version]
+    contract_path = project_root / "runtime" / contract_name
+    if lock.get("sourceContract") != f"runtime/{contract_name}":
         raise RuntimeNoticesError("candidate must reference the exact M154 source contract")
     if lock.get("sourceContractSHA256") != sha256_file(contract_path):
         raise RuntimeNoticesError("candidate source contract SHA-256 mismatch")
@@ -144,7 +149,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
         lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
     lines.extend(["", "The fingerprint-chromium license is retained for historical attribution.",
                   "The owned M154 port is recorded under",
-                  "`runtime/nevision-patches/ports/chromium-154.0.8037.93/`.", "",
+                  f"`runtime/nevision-patches/ports/chromium-{version}/`.", "",
                   "## Distribution boundary", "",
                   "These notices identify source references and bundled license bytes only.",
                   "They do not attest runtime behavior, security checks, signing, notarization,",
@@ -155,7 +160,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
 def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
-    if lock.get("fingerprintChromium", {}).get("chromiumVersion") == "154.0.8037.93":
+    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98"}:
         return render_m154_notices(
             project_root=project_root,
             runtime_lock=project_root / "runtime/fingerprint-chromium.lock.json",
@@ -359,7 +364,7 @@ def main() -> int:
     output = args.output or DEFAULT_OUTPUT
     if args.output is None and not args.runtime_lock:
         current_lock = load_json(project_root / "runtime/fingerprint-chromium.lock.json")
-        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") == "154.0.8037.93":
+        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98"}:
             output = project_root / "docs/RUNTIME_INTEGRATION_NOTICES_154.md"
     if not output.is_absolute():
         output = project_root / output

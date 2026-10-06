@@ -46,6 +46,7 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         self.assertIn('[[ "$LOCK_VERSION" == 153.* ]]', script)
         self.assertIn('[[ "$LOCK_VERSION" == 152.* ]]', script)
         self.assertIn('[[ "$LOCK_VERSION" == "154.0.8037.93" ]]', script)
+        self.assertIn('[[ "$LOCK_VERSION" == "154.0.8037.98" ]]', script)
         self.assertIn(
             'SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-154-source-contract.json"',
             script,
@@ -55,6 +56,7 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
             script,
         )
         self.assertIn("IS_CHROMIUM_154 == 1", script)
+        self.assertIn("IS_CHROMIUM_15498 == 1", script)
         self.assertIn("verify-chromium-154-source-snapshot.py", script)
         self.assertIn("M154_SOURCE_SNAPSHOT_VERIFIED=1", script)
         self.assertIn(
@@ -63,7 +65,7 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
 
     def test_m154_cannot_skip_live_source_snapshot_verification(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
-        branch_start = script.index("elif (( IS_CHROMIUM_154 == 1 )); then", script.index("SOURCE_POSTIMAGES_VERIFIED=0"))
+        branch_start = script.index("elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 )); then", script.index("SOURCE_POSTIMAGES_VERIFIED=0"))
         branch_end = script.index("elif [[ -f \"$SOURCE_ROOT/components/ungoogled/BUILD.gn\" ]]", branch_start)
         branch = script[branch_start:branch_end]
 

@@ -100,6 +100,9 @@ export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-chromium-154-unsigned-candidate.py" \
     "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15498-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
 fi
 "$PROJECT_DIR/scripts/sign-runtime.sh" \
   "$RUNTIME_APP" \
@@ -118,7 +121,8 @@ python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
   "$BUILD_ARGS" \
   "$RUNTIME_REPORT" \
   --confirm-promote-source-lock
-if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ]]; then
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ||
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ]]; then
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
     --runtime-lock "$CANDIDATE_LOCK" \
     --output "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_154.md"

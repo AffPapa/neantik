@@ -22,6 +22,7 @@ SHA_B = "b" * 64
 class VerifyGuiFingerprintReportTests(unittest.TestCase):
     def test_m154_embedded_contract_uses_exact_version(self):
         self.assertEqual(MODULE.source_contract_name("154.0.8037.93"), "chromium-154-source-contract.json")
+        self.assertEqual(MODULE.source_contract_name("154.0.8037.98"), "chromium-154-source-contract.json")
         with self.assertRaises(MODULE.FingerprintReportError):
             MODULE.source_contract_name("154.0.8037.58")
 

@@ -105,6 +105,11 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-154-source-contract.json"
   SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-154-port-candidate.json"
   CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-154.lock.json"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15498-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-154-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-15498-port-candidate.json"
+  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-15498.lock.json"
 else
   echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
   exit 65
@@ -143,6 +148,23 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
       exit 65
     fi
   done
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+  for evidence_name in chromium-15498-source-input-manifest.json chromium-15498-source-snapshot.json chromium-15498-rebase-plan.json; do
+    if [[ ! -f "$EVIDENCE/$evidence_name" || -L "$EVIDENCE/$evidence_name" ]] ||
+       ! cmp -s "$PROJECT_DIR/runtime/$evidence_name" "$EVIDENCE/$evidence_name"; then
+      echo "Integrated M154.98 evidence differs from reviewed source: $evidence_name" >&2
+      exit 65
+    fi
+  done
+  for evidence_name in device-memory-hotfix.json external-build-inputs.json ordered-patch-replay.json port-compatibility.json; do
+    if [[ ! -f "$EVIDENCE/chromium-15498-source-evidence/$evidence_name" ||
+          -L "$EVIDENCE/chromium-15498-source-evidence/$evidence_name" ]] ||
+       ! cmp -s "$PROJECT_DIR/runtime/chromium-15498-source-evidence/$evidence_name" \
+         "$EVIDENCE/chromium-15498-source-evidence/$evidence_name"; then
+      echo "Integrated M154.98 source evidence differs: $evidence_name" >&2
+      exit 65
+    fi
+  done
 fi
 
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
@@ -157,7 +179,8 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
     exit 65
   fi
 elif [[ "$EXPECTED_RUNTIME_VERSION" == 152.* ||
-        "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+        "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ||
+        "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$EVIDENCE/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
@@ -220,7 +243,8 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.58" ]]; then
   exit 65
 fi
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ||
-      "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+      "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ||
+      "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   VERIFY_BUILT_RUNTIME_ARGS+=(
     ""
     "$EVIDENCE/args.gn"

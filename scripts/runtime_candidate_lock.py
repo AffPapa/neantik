@@ -25,6 +25,10 @@ from chromium_154_release_evidence import (
     M154EvidenceError,
     verify_candidate_lock as verify_chromium_154_candidate_lock,
 )
+from chromium_15498_release_evidence import (
+    M15498EvidenceError,
+    verify_candidate_lock as verify_chromium_15498_candidate_lock,
+)
 
 
 DEFAULT_PATCH_MANIFEST = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
@@ -80,6 +84,12 @@ def expected_candidate_lock(
         return load_object(
             project_root / "runtime" / "fingerprint-chromium-154.lock.json",
             "Chromium 154 candidate runtime lock",
+        )
+    elif version == "154.0.8037.98":
+        verify_document(provenance, project_root=project_root)
+        return load_object(
+            project_root / "runtime" / "fingerprint-chromium-15498.lock.json",
+            "Chromium 154.98 candidate runtime lock",
         )
     else:
         contract_path, rebase_plan_path = contract_paths_for_version(
@@ -179,6 +189,16 @@ def verify_candidate_lock(
                 project_root=project_root,
             )
         except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return actual
+    if provenance.get("targetChromiumVersion") == "154.0.8037.98":
+        try:
+            verify_chromium_15498_candidate_lock(
+                actual,
+                provenance=provenance,
+                project_root=project_root,
+            )
+        except M15498EvidenceError as error:
             raise SourceProvenanceError(str(error)) from error
         return actual
     if provenance.get("targetChromiumVersion") == CHROMIUM_153_VERSION:

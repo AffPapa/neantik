@@ -1,0 +1,20 @@
+{
+  "patches": [
+    {
+      "name": "restore-upstream-clang-24.patch",
+      "postimageSHA256": "924cfc2b735e8cfa96c71b213a87e130ec675997ca6ca968b4769cfd855a16fe",
+      "sha256": "fc823b367c2bb8d65d8a7329792237b39c93d06d05b00335a1c62c5b7fee960f",
+      "sourcePath": "build/toolchain/toolchain.gni"
+    },
+    {
+      "name": "restore-pinned-devtools-esbuild.patch",
+      "postimageSHA256": "7bb109092f20864461819d3fc61e137dcbe9d82775324789b3c06d85b3b0bb18",
+      "sha256": "d9a150964a47a7850b983392af13f6b807f91b0630fae090e68c1ec99573dd8f",
+      "sourcePath": "third_party/devtools-frontend/src/scripts/build/esbuild.js"
+    }
+  ],
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "status": "source-compatibility-overlay",
+  "targetVersion": "154.0.8037.98"
+}
