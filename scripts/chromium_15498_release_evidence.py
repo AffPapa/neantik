@@ -203,6 +203,17 @@ def verify_contract(project_root: Path) -> tuple[dict[str, Any], dict[str, Any]]
             or sum(label.startswith("owned:") for label in labels) != 73
             or not all(HEX64.fullmatch(str(item.get("patchSHA256", ""))) for item in groups)):
         raise M15498EvidenceError("M154.98 patch group identity is incomplete")
+    for key in ("inputTargetDigest", "postimageTargetDigest", "pruningSourceSHA256", "presentPruningSHA256"):
+        require_hash(replay.get(key), f"M154.98 replay {key}")
+    owned_patches = plan["ownedPort"]["patches"]
+    owned_replay = groups[129:]
+    for item, recorded in zip(owned_patches, owned_replay, strict=True):
+        path = runtime / "nevision-patches/ports/chromium-154.0.8037.93" / item["path"]
+        if (path.is_symlink() or not path.is_file()
+                or sha256_file(path) != item["sha256"]
+                or recorded.get("label") != f"owned:{item['order']}:{item['id']}"
+                or recorded.get("patchSHA256") != item["sha256"]):
+            raise M15498EvidenceError("M154.98 owned patch bytes or replay order differ")
     hotfix = read_object(evidence_root / "device-memory-hotfix.json", "M154.98 Device Memory hotfix")
     if (hotfix.get("targetVersion") != VERSION or hotfix.get("releaseReady") is not False
             or len(hotfix.get("files", [])) != 2

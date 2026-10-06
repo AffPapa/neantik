@@ -48,6 +48,10 @@ class M15498EvidenceTests(unittest.TestCase):
         source_patches = PROJECT / "runtime/nevision-patches/ports/chromium-154.0.8037.98/patches"
         for name in ("restore-upstream-clang-24.patch", "restore-pinned-devtools-esbuild.patch"):
             shutil.copy2(source_patches / name, patches / name)
+        shutil.copytree(
+            PROJECT / "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches",
+            self.runtime / "nevision-patches/ports/chromium-154.0.8037.93/patches",
+        )
         (self.project / "scripts").mkdir()
         for name in ("replay-chromium-15498.py", "apply-owned-runtime-device-tuples-15498.py",
                      "apply-device-memory-hotfix-15498.py"):
@@ -105,6 +109,12 @@ class M15498EvidenceTests(unittest.TestCase):
         patch = self.runtime / "nevision-patches/ports/chromium-154.0.8037.98/patches/restore-upstream-clang-24.patch"
         patch.write_bytes(patch.read_bytes() + b"\n")
         with self.assertRaisesRegex(M15498EvidenceError, "patch digest"):
+            verify_contract(self.project)
+
+    def test_owned_patch_tamper_fails(self):
+        patch = self.runtime / "nevision-patches/ports/chromium-154.0.8037.93/patches/profile-seed-contract.patch"
+        patch.write_bytes(patch.read_bytes() + b"\n")
+        with self.assertRaisesRegex(M15498EvidenceError, "owned patch bytes"):
             verify_contract(self.project)
 
     def test_unreviewed_evidence_fails(self):
