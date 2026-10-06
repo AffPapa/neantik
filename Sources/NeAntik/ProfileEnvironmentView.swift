@@ -548,6 +548,13 @@ private struct EnvironmentSeverityRollup: View {
         ProfileEnvironmentPresentation.hasAutomaticLaunchFix(in: snapshot)
     }
 
+    private var presentedSeverity: DiagnosticFindingSeverity {
+        ProfileEnvironmentPresentation.rollupSeverity(
+            highestSeverity: highestSeverity,
+            hasAutomaticLaunchFix: hasAutomaticLaunchFix
+        )
+    }
+
     var body: some View {
         HStack(spacing: 10) {
             Label(
@@ -558,11 +565,11 @@ private struct EnvironmentSeverityRollup: View {
                     hasAutomaticLaunchFix: hasAutomaticLaunchFix
                 ),
                 systemImage: DiagnosticSeverityPresentation.systemImage(
-                    for: highestSeverity
+                    for: presentedSeverity
                 )
             )
             .foregroundStyle(
-                DiagnosticSeverityPresentation.color(for: highestSeverity)
+                DiagnosticSeverityPresentation.color(for: presentedSeverity)
             )
 
             if attentionCount > 0,
@@ -1021,13 +1028,24 @@ enum ProfileEnvironmentPresentation {
             return "Нужно проверить"
         case .success:
             return hasAutomaticLaunchFix
-                ? "Готово · прокси проверится при запуске"
+                ? "Настроено · проверка прокси при запуске"
                 : "Среда готова"
         case .neutral:
             return hasAutomaticLaunchFix
-                ? "Готово · прокси проверится при запуске"
+                ? "Настроено · проверка прокси при запуске"
                 : "Среда готова"
         }
+    }
+
+    static func rollupSeverity(
+        highestSeverity: DiagnosticFindingSeverity,
+        hasAutomaticLaunchFix: Bool
+    ) -> DiagnosticFindingSeverity {
+        if hasAutomaticLaunchFix,
+           highestSeverity == .success || highestSeverity == .neutral {
+            return .neutral
+        }
+        return highestSeverity
     }
 
     static func hasAutomaticLaunchFix(

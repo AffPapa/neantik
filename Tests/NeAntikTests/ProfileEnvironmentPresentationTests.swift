@@ -333,7 +333,19 @@ struct ProfileEnvironmentPresentationTests {
                 failureCount: 0,
                 attentionCount: 0,
                 hasAutomaticLaunchFix: true
-            ) == "Готово · прокси проверится при запуске"
+            ) == "Настроено · проверка прокси при запуске"
+        )
+        #expect(
+            ProfileEnvironmentPresentation.rollupSeverity(
+                highestSeverity: .success,
+                hasAutomaticLaunchFix: true
+            ) == .neutral
+        )
+        #expect(
+            ProfileEnvironmentPresentation.rollupSeverity(
+                highestSeverity: .failure,
+                hasAutomaticLaunchFix: true
+            ) == .failure
         )
     }
 

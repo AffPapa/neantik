@@ -254,11 +254,12 @@ struct WorkspaceCommandMenu: Commands {
                 .disabled(!resolved.isEnabled)
 
             Button(
-                "Экспортировать конфигурацию…",
+                "Экспортировать настройки профилей…",
                 systemImage: "square.and.arrow.up",
                 action: resolved.exportProfiles
             )
             .disabled(!resolved.isEnabled)
+            .help("Сохранить настройки профилей в файл. BrowserData, cookies и пароли не входят.")
 
             Button(
                 "Экспортировать безопасную диагностику…",
@@ -268,41 +269,46 @@ struct WorkspaceCommandMenu: Commands {
             .disabled(!resolved.isEnabled)
 
             Button(
-                "Сохранить локальный snapshot",
+                "Сохранить локальный снимок настроек",
                 systemImage: "clock.arrow.circlepath",
                 action: resolved.saveSnapshot
             )
             .disabled(!resolved.isEnabled)
+            .help("Локальная точка восстановления настроек остановленных профилей. Это не резервная копия BrowserData, cookies или паролей.")
 
             Button(
-                "Восстановить локальный snapshot…",
+                "Восстановить локальный снимок настроек…",
                 systemImage: "arrow.counterclockwise",
                 action: resolved.restoreSnapshot
             )
             .disabled(!resolved.isEnabled)
+            .help("Создать новые профили из снимка настроек. Данные сайтов и авторизация не восстановятся.")
 
             Button(
-                "Импортировать конфигурацию…",
+                "Импортировать настройки профилей…",
                 systemImage: "square.and.arrow.down",
                 action: resolved.importProfiles
             )
             .disabled(!resolved.isEnabled)
+            .help("Импортировать настройки как новые профили без данных сайтов и паролей.")
 
             Divider()
 
             Button(
-                "Зашифровать конфигурацию…",
+                "Экспортировать зашифрованные настройки…",
                 systemImage: "lock.doc",
                 action: resolved.exportEncryptedProfiles
             )
             .disabled(!resolved.isEnabled)
+            .help("Зашифровать настройки профилей. BrowserData, cookies и пароли прокси не входят.")
 
             Button(
-                "Открыть зашифрованную конфигурацию…",
+                "Импортировать зашифрованные настройки…",
                 systemImage: "lock.open",
                 action: resolved.importEncryptedProfiles
             )
             .disabled(!resolved.isEnabled)
+            .help("Создать новые профили из зашифрованного файла настроек без данных сайтов.")
         }
 
         CommandMenu("Папка") {

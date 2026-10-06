@@ -31,6 +31,22 @@ struct ManagerLibraryTests {
         #expect(try JSONDecoder().decode(SavedWorkspaceFilter.self, from: JSONEncoder().encode(filter)) == filter)
     }
 
+    @Test func renameTargetsSelectedFilterAndRejectsInvalidInput() throws {
+        let first = try SavedWorkspaceFilter(name: "First", query: .default, search: "")
+        let second = try SavedWorkspaceFilter(name: "Second", query: .default, search: "")
+        var document = ManagerLibraryDocument()
+        document.filters = [first, second]
+        try document.renameFilter(id: second.id, to: "Updated")
+        #expect(document.filters.map(\.name) == ["First", "Updated"])
+        #expect(document.filters.map(\.id) == [first.id, second.id])
+        #expect(throws: ManagerLibraryError.self) {
+            try document.renameFilter(id: UUID(), to: "Absent")
+        }
+        #expect(throws: ManagerLibraryError.self) {
+            try document.renameFilter(id: second.id, to: "   ")
+        }
+    }
+
     @Test func repositoryFailurePreservesCommittedDocumentAndRestart() async throws {
         let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
         let paths = AppPaths(rootDirectory: directory)

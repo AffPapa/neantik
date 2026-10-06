@@ -72,8 +72,8 @@ def verify(
         fail("Runtime security baseline has no publishedAt date.")
     if not isinstance(maximum_age, int) or isinstance(maximum_age, bool):
         fail("Runtime security baseline maximumAgeDays must be an integer.")
-    if maximum_age < 1 or maximum_age > 31:
-        fail("Runtime security baseline maximumAgeDays must be between 1 and 31.")
+    if maximum_age < 0 or maximum_age > 31:
+        fail("Runtime security baseline maximumAgeDays must be between 0 and 31.")
     if not isinstance(reference, str) or not reference.startswith("https://"):
         fail("Runtime security baseline must include an HTTPS primary-source reference.")
     if reference_title != "Stable Channel Update for Desktop":

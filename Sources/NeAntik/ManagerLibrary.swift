@@ -106,6 +106,13 @@ struct ManagerLibraryDocument: Codable, Equatable, Sendable {
     static let maximumEvents = 200
     static let maximumBytes = 256 * 1024
 
+    mutating func renameFilter(id: UUID, to proposedName: String) throws {
+        guard let name = ProfileFolder.normalizedName(proposedName),
+              let index = filters.firstIndex(where: { $0.id == id })
+        else { throw ManagerLibraryError.invalidDocument }
+        filters[index].name = name
+    }
+
     func validate() throws {
         guard schemaVersion == 1,
               templates.count <= Self.maximumItems, filters.count <= Self.maximumItems,

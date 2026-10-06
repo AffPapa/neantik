@@ -90,6 +90,19 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
                 self.baseline(checked_at="2026-07-17", published_at="2026-07-17"),
             )
 
+    def test_zero_day_release_policy_requires_same_day_review(self) -> None:
+        baseline = self.baseline(
+            checked_at="2026-07-25",
+            published_at="2026-07-23",
+            maximum_age=0,
+        )
+        self.assertIn(
+            "baseline age 0 day(s)",
+            self.verify("150.0.7871.187", baseline, today=date(2026, 7, 25)),
+        )
+        with self.assertRaisesRegex(SystemExit, "baseline is stale"):
+            self.verify("150.0.7871.187", baseline, today=date(2026, 7, 26))
+
     def test_future_baseline_is_rejected(self) -> None:
         with self.assertRaisesRegex(SystemExit, "in the future"):
             self.verify(

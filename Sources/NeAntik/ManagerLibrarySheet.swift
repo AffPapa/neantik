@@ -30,6 +30,7 @@ struct ManagerLibrarySheet: View {
     @State private var preview: UserProfileTemplate?
     @State private var localError: String?
     @State private var deletionTarget: LibraryDeletionTarget?
+    @State private var renamingFilter: SavedWorkspaceFilter?
     @FocusState private var nameFocused: Bool
 
     private func later(_ action: @escaping () -> Void) {
@@ -59,7 +60,7 @@ struct ManagerLibrarySheet: View {
                     if library.document.templates.isEmpty { Text("Нет пользовательских шаблонов. Выбери профиль и задай название.") }
                     ForEach(library.document.templates) { template in
                         HStack {
-                            Text(template.name).lineLimit(1)
+                            Text(template.name).lineLimit(2).help(template.name)
                             Spacer()
                             Button("Состав / создать") { preview = template }
                             Button("Удалить") { deletionTarget = .template(template.id) }
@@ -71,16 +72,13 @@ struct ManagerLibrarySheet: View {
                     ForEach(library.document.filters) { filter in
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(filter.name).lineLimit(1)
-                                Text(filter.query.scope.title + " • " + (filter.search.isEmpty ? "Без поискового запроса" : filter.search)).font(.caption).lineLimit(1)
+                                Text(filter.name).lineLimit(2).help(filter.name)
+                                Text(filter.query.scope.title + " • " + (filter.search.isEmpty ? "Без поискового запроса" : filter.search)).font(.caption).lineLimit(1).help(filter.search.isEmpty ? "Без поискового запроса" : filter.search)
                             }
                             Spacer()
                             Button("Применить") { later { apply(filter) } }
                             Button("Переименовать") {
-                                guard let newName = ProfileFolder.normalizedName(name) else { localError = "Введи новое название в поле сверху."; return }
-                                Task { await library.update(operation: .filter) { document in
-                                    if let index = document.filters.firstIndex(where: { $0.id == filter.id }) { document.filters[index].name = newName }
-                                } }
+                                renamingFilter = filter
                             }
                             Button("Удалить") { deletionTarget = .filter(filter.id) }
                         }
@@ -123,6 +121,16 @@ struct ManagerLibrarySheet: View {
             Button("Отмена", role: .cancel) { deletionTarget = nil }
         } message: {
             Text(deletionTarget?.message ?? "")
+        }
+        .sheet(item: $renamingFilter) { filter in
+            FilterRenameSheet(initialName: filter.name) { proposedName in
+                renamingFilter = nil
+                Task {
+                    await library.update(operation: .filter) { document in
+                        try document.renameFilter(id: filter.id, to: proposedName)
+                    }
+                }
+            }
         }
         .sheet(item: $preview) { template in
             VStack(alignment: .leading, spacing: 14) {
@@ -182,5 +190,39 @@ struct ManagerLibrarySheet: View {
         case .events:
             Task { await library.update { $0.events = [] } }
         }
+    }
+}
+
+private struct FilterRenameSheet: View {
+    let onSave: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var name: String
+    @FocusState private var nameFocused: Bool
+
+    init(initialName: String, onSave: @escaping (String) -> Void) {
+        self.onSave = onSave
+        _name = State(initialValue: initialName)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Переименовать фильтр").font(.title2.bold())
+            TextField("Название фильтра", text: $name)
+                .textFieldStyle(.roundedBorder)
+                .focused($nameFocused)
+            Text("Изменится только название выбранного фильтра.")
+                .font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("Отмена", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Сохранить") { onSave(name) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(ProfileFolder.normalizedName(name) == nil)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 380, idealWidth: 460, maxWidth: 540)
+        .onAppear { nameFocused = true }
     }
 }

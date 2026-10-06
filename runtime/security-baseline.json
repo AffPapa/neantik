@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-09-30",
-  "publishedAt": "2026-09-29",
-  "maximumAgeDays": 7,
-  "minimumPublicChromiumVersion": "154.0.8037.93",
+  "checkedAt": "2026-10-06",
+  "publishedAt": "2026-10-01",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "154.0.8037.98",
   "alsoObservedPublicChromiumVersions": [
-    "154.0.8037.92"
+    "154.0.8037.97"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 32,
-  "reference": "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01807488085.html",
+  "securityFixCount": 11,
+  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
-  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference before every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
-  "policy": "A public NeAntik Direct build must not ship an older Chromium version than the latest security-patched macOS Stable version recorded here. The official 2026-09-29 desktop Stable update lists macOS 154.0.8037.92/.93; this project targets the Mac build .93. Refresh this checked-in baseline before every release."
+  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
+  "policy": "A public NeAntik Direct build must not ship an older Chromium version than the latest security-patched macOS Stable version recorded here. The official 2026-10-01 desktop Stable update lists macOS 154.0.8037.97/.98 with 11 security fixes, including Critical CVE-2026-103628 in WebGL. The qualified NeAntik runtime .93 is below this baseline and must not be repackaged into a new public release. Refresh this checked-in baseline before every release."
 }

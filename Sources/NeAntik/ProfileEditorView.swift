@@ -151,6 +151,7 @@ struct ProfileEditorView: View {
   @State private var proxyEntryMode: ProxyEntryMode
   @State private var proxyImportOrder: ProxyImportOrder = .automatic
   @State private var proxyImportMessage: String?
+  @State private var proxyImportFailed = false
   @State private var isApplyingProxyImport = false
   @State private var detectedProxy: ProxyConfiguration?
   @State private var detectedTimezone: String?
@@ -490,7 +491,7 @@ struct ProfileEditorView: View {
             if let proxyImportMessage {
               Text(proxyImportMessage)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundColor(proxyImportFailed ? .red : .secondary)
                 .accessibilityLabel(proxyImportMessage)
             }
 
@@ -866,6 +867,7 @@ struct ProfileEditorView: View {
     }
     .onChange(of: proxyImportOrder) { _, _ in
       proxyImportMessage = nil
+      proxyImportFailed = false
     }
     .onChange(of: tags) { _, _ in
       hasUnsavedChanges = true
@@ -1282,6 +1284,7 @@ struct ProfileEditorView: View {
       proxyImportMessage =
         "Прокси распознан: \(draft.redactedSummary). " +
         "Соединение ещё не проверено; сверь тип и порт с провайдером."
+      proxyImportFailed = false
       proxyEntryMode = .manual
       errorMessage = nil
 
@@ -1293,6 +1296,7 @@ struct ProfileEditorView: View {
     } catch {
       isApplyingProxyImport = false
       proxyImportMessage = error.localizedDescription
+      proxyImportFailed = true
     }
   }
 
@@ -1357,6 +1361,7 @@ struct ProfileEditorView: View {
   private func proxyInputDidChange() {
     guard !isApplyingProxyImport else { return }
     proxyImportMessage = nil
+    proxyImportFailed = false
     invalidateProxyEvidence()
   }
 

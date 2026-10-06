@@ -59,24 +59,44 @@ struct ProfileQuickCommandsSheet: View {
                 }
             List(matches, selection: $selection) { command in
                 VStack(alignment: .leading) {
-                    Text(command.title).lineLimit(1)
-                    Text(command.subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(command.title)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .help(command.title)
+                    Text(command.subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2).help(command.subtitle)
                 }
                 .opacity(command.enabled ? 1 : 0.5)
                 .tag(command.id)
             }
             .overlay { if matches.isEmpty { Text("Ничего не найдено. Измени запрос.").foregroundStyle(.secondary) } }
-            HStack {
-                Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
-                    .disabled(selected?.enabled != true)
+            ViewThatFits(in: .horizontal) {
+                footer
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Spacer()
+                        Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+                        Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
+                            .disabled(selected?.enabled != true)
+                    }
+                }
             }
         }
-        .padding(20).frame(width: 580, height: 460)
+        .padding(20)
+        .frame(minWidth: 460, idealWidth: 620, maxWidth: 800,
+               minHeight: 360, idealHeight: 480, maxHeight: 640)
         .onAppear { searchFocused = true; selection = matches.first?.id }
         .onChange(of: search) { _, _ in selection = matches.first?.id }
+    }
+
+    private var footer: some View {
+        HStack {
+            Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+            Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
+                .disabled(selected?.enabled != true)
+        }
     }
 }
 
