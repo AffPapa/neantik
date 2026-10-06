@@ -4,6 +4,7 @@ enum ProfileDiagnosticsStatus: Equatable, Sendable {
     case ready
     case attention
     case checking
+    case partial
     case unavailable
 
     var title: String {
@@ -14,6 +15,8 @@ enum ProfileDiagnosticsStatus: Equatable, Sendable {
             "Требует внимания"
         case .checking:
             "Считается размер…"
+        case .partial:
+            "Проверено частично"
         case .unavailable:
             "Проверка недоступна"
         }
@@ -157,23 +160,23 @@ struct ProfileDiagnosticsSummary: Equatable, Sendable {
             )
         }
 
+        if runtimeProvenance.publicReleaseStatus.contains("заблокирован") {
+            return Self(
+                status: .attention,
+                detail: "Версия встроенного движка ниже принятого Direct baseline.",
+                nextStep: .runtimeNeedsAttention
+            )
+        }
+
         if runtimeProvenance.architecture == "Не проверена" ||
             runtimeProvenance.signature == "Не проверена" ||
             runtimeProvenance.executableDigest == "Не измерен" ||
             runtimeProvenance.frameworkDigest == "Не измерен"
         {
             return Self(
-                status: .unavailable,
-                detail: "Происхождение встроенного движка проверено не полностью.",
-                nextStep: .retryInspection
-            )
-        }
-
-        if runtimeProvenance.publicReleaseStatus.contains("заблокирован") {
-            return Self(
-                status: .attention,
-                detail: "Версия встроенного движка ниже принятого Direct baseline.",
-                nextStep: .runtimeNeedsAttention
+                status: .partial,
+                detail: "Быстрая проверка запуска не измеряет хэши встроенного движка. Полная проверка выполняется отдельно перед выпуском.",
+                nextStep: .inspectDetails
             )
         }
 

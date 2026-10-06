@@ -192,6 +192,23 @@ struct UpdateManifestTests {
     }
 
     @Test
+    func rejectsPreviouslyQualifiedRuntimeBelowCurrentBaseline() throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let configuration = configuredChannel(publicKey: key.publicKey)
+        let payload = validPayload(chromiumVersion: "154.0.8037.93")
+
+        #expect(throws: UpdateManifestError.invalidReleaseContract) {
+            try UpdateManifestVerifier.verify(
+                signedEnvelope(payload: payload, key: key),
+                configuration: configuration,
+                installedVersion: "0.3.12",
+                installedBuild: 15,
+                now: now
+            )
+        }
+    }
+
+    @Test
     func currentReleaseCanBeVerifiedWithoutBeingReportedAsNewer() throws {
         let key = Curve25519.Signing.PrivateKey()
         let configuration = configuredChannel(publicKey: key.publicKey)
@@ -243,7 +260,7 @@ struct UpdateManifestTests {
         issuedAt: Date? = nil,
         expiresAt: Date? = nil,
         downloadURL: String? = nil,
-        chromiumVersion: String = "153.0.8010.52"
+        chromiumVersion: String = "154.0.8037.98"
     ) -> UpdateManifestPayload {
         UpdateManifestPayload(
             schemaVersion: 1,

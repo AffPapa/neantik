@@ -221,7 +221,9 @@ struct ProfileDiagnosticsSummaryTests {
             runtimeProvenance: runtime
         )
 
-        #expect(summary.status == .unavailable)
+        #expect(summary.status == .partial)
+        #expect(summary.detail.contains("не измеряет хэши"))
+        #expect(summary.nextStep == .inspectDetails)
     }
 
     private func healthyLifecycle() -> ProfileLifecycleHealthSnapshot {

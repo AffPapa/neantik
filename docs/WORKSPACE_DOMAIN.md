@@ -52,11 +52,14 @@ The initial supported MCP methods are `initialize`, `ping`, `tools/list` and
 stdio protocol. Messages are newline-delimited and requests are limited to
 64 KiB; metadata input is limited to 16 MiB. A malformed or unsafe metadata
 file yields a generic error. Standard output contains protocol messages only.
+Malformed JSON, invalid request IDs and non-object parameters receive distinct
+JSON-RPC errors. These checks do not grant any write or launch capability.
 Configure the client to execute the absolute path of the signed
 `NeAntik.app/Contents/MacOS/NeAntik` binary with these arguments and a
 deliberately selected, already initialized local data root. A missing
-`profiles.json` is an error rather than an apparently empty workspace. Local stdio support varies by chat
-client; compatibility with Claude, ChatGPT or Grok has not yet been certified.
+`profiles.json` is an error rather than an apparently empty workspace. Local
+stdio support varies by chat client; compatibility with Claude, ChatGPT or
+Grok has not yet been certified.
 
 Future create/edit/launch tools require a separate threat model, revision
 checks, process reconciliation and a user-visible confirmation model. The

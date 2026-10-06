@@ -513,10 +513,8 @@ struct ProfileEditorView: View {
                   } label: {
                     Label("Проверить прокси", systemImage: "network")
                   }
-                  .disabled(proxyEntryMode == .paste)
-                  .help(proxyEntryMode == .paste
-                    ? "Сначала заполни поля из строки"
-                    : "Проверить настроенный прокси")
+                  .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
+                  .help("Разобрать введённую строку при необходимости и проверить прокси")
                 }
               }
               if let testMessage {
@@ -810,7 +808,6 @@ struct ProfileEditorView: View {
       ) { folderID in
         selectedFolderID = folderID
       }
-      .accessibilityHidden(true)
     }
     .interactiveDismissDisabled(hasUnsavedChanges)
     .alert(
@@ -1247,6 +1244,9 @@ struct ProfileEditorView: View {
   }
 
   private func testProxy() {
+    if proxyEntryMode == .paste {
+      guard importProxy(source: proxyImportText) else { return }
+    }
     do {
       guard let proxy = try makeProxy() else { return }
       startProxyTest(

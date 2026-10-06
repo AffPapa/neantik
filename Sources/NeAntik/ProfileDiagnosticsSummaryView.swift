@@ -87,6 +87,8 @@ struct ProfileDiagnosticsSummaryView: View {
             .orange
         case .checking:
             .secondary
+        case .partial:
+            .secondary
         case .unavailable:
             .secondary
         }

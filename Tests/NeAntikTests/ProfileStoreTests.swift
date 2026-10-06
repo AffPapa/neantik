@@ -62,6 +62,100 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func missingPrimaryRestoresProfilesBeforeAnotherSave() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstStore = ProfileStore(paths: paths)
+        let original = try firstStore.upsert(BrowserProfile(name: "Original"))
+        let backupData = try Data(contentsOf: paths.profilesBackupFile)
+        let marker = paths.browserDataDirectory(for: original.id)
+            .appendingPathComponent("session-marker")
+        try Data("keep".utf8).write(to: marker)
+        try FileManager.default.removeItem(at: paths.profilesFile)
+
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.hasTrustedMetadata)
+        #expect(recovered.profile(withID: original.id) != nil)
+        #expect(recovered.recoveryNotice?.profileMetadataRecovered == true)
+        #expect(try Data(contentsOf: paths.profilesFile) == backupData)
+        _ = try recovered.upsert(BrowserProfile(name: "Second"))
+        #expect(ProfileStore(paths: paths).profile(withID: original.id) != nil)
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+    }
+
+    @Test
+    func missingPrimaryRestoresFolderAssignmentsBeforeAnotherSave() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstStore = ProfileStore(paths: paths)
+        let profile = try firstStore.upsert(BrowserProfile(name: "Assigned"))
+        let folder = try firstStore.createFolder(named: "Original folder")
+        try firstStore.assignProfile(profile.id, toFolderID: folder.id)
+        let backupData = try Data(contentsOf: paths.profileOrganizationFile)
+        try paths.writePrivateFile(
+            backupData,
+            to: paths.profileOrganizationBackupFile
+        )
+        try FileManager.default.removeItem(at: paths.profileOrganizationFile)
+
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.hasTrustedOrganization)
+        #expect(recovered.folderID(forProfileID: profile.id) == folder.id)
+        #expect(recovered.recoveryNotice?.folderMetadataRecovered == true)
+        #expect(try Data(contentsOf: paths.profileOrganizationFile) == backupData)
+        _ = try recovered.createFolder(named: "Second folder")
+        #expect(ProfileStore(paths: paths).folderID(forProfileID: profile.id) == folder.id)
+    }
+
+    @Test
+    func missingPrimaryWithInvalidBackupFailsClosed() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let invalid = Data("{broken".utf8)
+        try paths.writePrivateFile(invalid, to: paths.profilesBackupFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(!store.hasTrustedMetadata)
+        #expect(throws: (any Error).self) {
+            try store.upsert(BrowserProfile(name: "Must not save"))
+        }
+        #expect(try Data(contentsOf: paths.profilesBackupFile) == invalid)
+        #expect(try paths.privateFileEntryKind(paths.profilesFile) == .missing)
+    }
+
+    @Test
+    func missingOrganizationWithInvalidBackupPreservesProfilesAndBlocksFolderWrites() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstStore = ProfileStore(paths: paths)
+        let profile = try firstStore.upsert(BrowserProfile(name: "Keep profile"))
+        let invalid = Data("{broken".utf8)
+        try paths.writePrivateFile(invalid, to: paths.profileOrganizationBackupFile)
+        if try paths.privateFileEntryKind(paths.profileOrganizationFile) == .regular {
+            try FileManager.default.removeItem(at: paths.profileOrganizationFile)
+        }
+
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(!store.hasTrustedOrganization)
+        #expect(store.profile(withID: profile.id) != nil)
+        #expect(throws: (any Error).self) {
+            try store.createFolder(named: "Must not save")
+        }
+        #expect(try Data(contentsOf: paths.profileOrganizationBackupFile) == invalid)
+        #expect(try paths.privateFileEntryKind(paths.profileOrganizationFile) == .missing)
+    }
+
+    @Test
     func readsLegacyV1EnvelopeAndPreservesItAsRecoverySnapshotOnWrite() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

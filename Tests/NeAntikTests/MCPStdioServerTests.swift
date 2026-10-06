@@ -54,6 +54,33 @@ struct MCPStdioServerTests {
         #expect(call("tools/call", params: ["name": "profile_launch"], root: root)["error"] != nil)
     }
 
+    @Test func malformedRequestsDoNotReceiveSuccessfulResponses() throws {
+        let root = URL(fileURLWithPath: "/private/tmp/missing-neantik-mcp-root")
+        func response(_ request: [String: Any]) throws -> [String: Any] {
+            let data = try JSONSerialization.data(withJSONObject: request)
+            let reply = try #require(MCPStdioServer.handle(data, dataRoot: root))
+            return try #require(JSONSerialization.jsonObject(with: reply) as? [String: Any])
+        }
+        func errorCode(_ reply: [String: Any]) -> Int? {
+            (reply["error"] as? [String: Any])?["code"] as? Int
+        }
+        #expect(try errorCode(response([
+            "jsonrpc": "2.0", "id": ["bad": true], "method": "ping"
+        ])) == -32600)
+        #expect(try errorCode(response([
+            "jsonrpc": "2.0", "id": true, "method": "ping"
+        ])) == -32600)
+        #expect(try errorCode(response([
+            "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": []
+        ])) == -32602)
+        #expect(try errorCode(response([
+            "jsonrpc": "2.0", "id": 1, "method": "ping", "params": "bad"
+        ])) == -32602)
+        let malformed = try #require(MCPStdioServer.handle(Data("{".utf8), dataRoot: root))
+        let parsed = try #require(JSONSerialization.jsonObject(with: malformed) as? [String: Any])
+        #expect(errorCode(parsed) == -32700)
+    }
+
     @Test func missingMetadataDoesNotMasqueradeAsAnEmptyWorkspace() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

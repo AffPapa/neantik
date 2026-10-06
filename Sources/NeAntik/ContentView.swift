@@ -638,13 +638,11 @@ struct ContentView: View {
                 }, apply: applySavedFilter, performAction: { action in
                     pendingManagerAction = action; showingManagerLibrary = false
                 })
-                .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
             ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, organization: store.organization, profileCommand: quickProfileCommand, performAction: { action in
                 pendingManagerAction = action; showingQuickCommands = false
             })
-            .accessibilityHidden(true)
         }
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
@@ -666,7 +664,6 @@ struct ContentView: View {
                     normalizeSelection()
                 }
             }
-            .accessibilityHidden(true)
         }
         .sheet(item: $profileFolderPickerRequest) { request in
             if let profile = store.profile(withID: request.profileID) {
@@ -679,12 +676,10 @@ struct ContentView: View {
                 ) { folderID in
                     moveProfile(profile, toFolderID: folderID)
                 }
-                .accessibilityHidden(true)
             } else {
                 ProfileFolderPickerUnavailableSheet {
                     profileFolderPickerRequest = nil
                 }
-                .accessibilityHidden(true)
             }
         }
         .sheet(item: $bulkProxyImportRequest) { request in
@@ -699,7 +694,6 @@ struct ContentView: View {
                     targetFolderID: request.targetFolderID
                 )
             }
-            .accessibilityHidden(true)
         }
         .sheet(item: $transferPassphraseMode) { mode in
             ProfileConfigurationPassphraseSheet(
@@ -721,7 +715,6 @@ struct ContentView: View {
                     transferPassphraseMode = nil
                 }
             )
-            .accessibilityHidden(true)
         }
         .sheet(item: $pendingSnapshotRestore) { request in
             ProfileSnapshotRestorePreviewSheet(
@@ -733,7 +726,6 @@ struct ContentView: View {
                 onCancel: { pendingSnapshotRestore = nil },
                 onRestore: { confirmLocalSnapshotRestore(request.payload) }
             )
-            .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -748,7 +740,6 @@ struct ContentView: View {
                     paths: store.paths,
                     releaseContext: fingerprintEvidenceReleaseContext
                 )
-                .accessibilityHidden(true)
             } else {
                 ContentUnavailableView(
                     "Служебная проверка выпуска недоступна",
@@ -758,7 +749,6 @@ struct ContentView: View {
                     )
                 )
                 .frame(width: 520, height: 360)
-                .accessibilityHidden(true)
             }
         }
         .sheet(item: $fingerprintAuditRequest) { request in
@@ -793,7 +783,6 @@ struct ContentView: View {
                     }
                 }
             )
-            .accessibilityHidden(true)
         }
     }
 
@@ -1363,14 +1352,16 @@ struct ContentView: View {
     }
 
     private func quickProfileCommand(_ profile: BrowserProfile) -> ProfileQuickCommand {
-        let state = presentedProcessState(for: profile)
-        let action = BrowserLaunchActionPresentation.resolve(processState: state,
-            isArchived: profile.isArchived, runtimeAvailability: runtimeAvailability,
-            isProxyTesting: isProxyTestInFlight(profileID: profile.id),
-            isLaunchPreparation: launchPreparingProfileIDs.contains(profile.id))
-        return ProfileQuickCommand(id: profile.id.uuidString, title: profile.name,
-            subtitle: state == .stopped && action.isEnabled ? "Открыть профиль" : "Показать в менеджере • " + action.help,
-            enabled: true, action: { openOrShowProfile(profile.id) })
+        ProfileQuickCommand(
+            id: profile.id.uuidString,
+            title: profile.name,
+            subtitle: "Показать в менеджере",
+            enabled: true,
+            action: {
+                guard let current = store.profile(withID: profile.id) else { return }
+                revealSavedProfile(current)
+            }
+        )
     }
 
     private func completeManagerSheetAction() {

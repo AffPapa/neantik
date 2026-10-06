@@ -1483,6 +1483,24 @@ final class ProfileStore: ObservableObject {
         // entry. The metadata guard coordinates NeAntik instances; this check
         // also protects against unrelated local path replacement.
         try paths.validatePrivateFile(paths.profilesFile)
+        if try paths.privateFileEntryKind(paths.profilesFile) == .missing {
+            switch try paths.privateFileEntryKind(paths.profilesBackupFile) {
+            case .missing:
+                return ([], nil, false)
+            case .unsafe:
+                throw POSIXError(.EFTYPE)
+            case .regular:
+                try paths.validatePrivateFile(paths.profilesBackupFile)
+                let backupData = try Data(contentsOf: paths.profilesBackupFile)
+                let recovered = try decodeProfiles(backupData)
+                try paths.writePrivateFile(backupData, to: paths.profilesFile)
+                return (
+                    recovered,
+                    "Основной файл профилей отсутствовал. NeAntik восстановил предыдущую локальную версию; данные браузеров не изменялись.",
+                    true
+                )
+            }
+        }
         do {
             return (
                 try readProfiles(from: paths.profilesFile),
@@ -1517,12 +1535,38 @@ final class ProfileStore: ObservableObject {
             paths.profileOrganizationFile
         ) {
         case .missing:
-            return ProfileOrganizationLoad(
-                state: .empty,
-                changed: false,
-                warning: nil,
-                recovered: false
-            )
+            switch try paths.privateFileEntryKind(
+                paths.profileOrganizationBackupFile
+            ) {
+            case .missing:
+                return ProfileOrganizationLoad(
+                    state: .empty,
+                    changed: false,
+                    warning: nil,
+                    recovered: false
+                )
+            case .unsafe:
+                throw POSIXError(.EFTYPE)
+            case .regular:
+                try paths.validatePrivateFile(paths.profileOrganizationBackupFile)
+                let backupData = try Data(
+                    contentsOf: paths.profileOrganizationBackupFile
+                )
+                let recovered = try decodeOrganization(
+                    backupData,
+                    knownProfileIDs: knownProfileIDs
+                )
+                try paths.writePrivateFile(
+                    backupData,
+                    to: paths.profileOrganizationFile
+                )
+                return ProfileOrganizationLoad(
+                    state: recovered.state,
+                    changed: recovered.changed,
+                    warning: "Основной файл папок отсутствовал. NeAntik восстановил предыдущую организацию; профили и данные браузеров не изменялись.",
+                    recovered: true
+                )
+            }
         case .unsafe:
             throw POSIXError(.EFTYPE)
         case .regular:

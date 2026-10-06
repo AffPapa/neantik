@@ -1,4 +1,5 @@
 import Darwin
+import CoreFoundation
 import Foundation
 
 /// Local, opt-in MCP transport. No socket, listener, account, or browser action.
@@ -47,12 +48,20 @@ enum MCPStdioServer {
 
     static func handle(_ line: Data, dataRoot: URL) -> Data? {
         guard line.count <= maximumRequestBytes,
-              let object = try? JSONSerialization.jsonObject(with: line),
+              let object = try? JSONSerialization.jsonObject(with: line)
+        else { return response(id: NSNull(), error: (-32700, "Parse error")) }
+        guard
               let request = object as? [String: Any],
               request["jsonrpc"] as? String == "2.0",
               let method = request["method"] as? String
-        else { return response(id: NSNull(), error: (-32700, "Invalid JSON-RPC request")) }
+        else { return response(id: NSNull(), error: (-32600, "Invalid request")) }
+        if let id = request["id"], !isValidRequestID(id) {
+            return response(id: NSNull(), error: (-32600, "Invalid request id"))
+        }
         guard let id = request["id"] else { return nil }
+        guard request["params"] == nil || request["params"] is [String: Any] else {
+            return response(id: id, error: (-32602, "Invalid params"))
+        }
         let params = request["params"] as? [String: Any] ?? [:]
         switch method {
         case "initialize":
@@ -103,6 +112,12 @@ enum MCPStdioServer {
         default:
             return response(id: id, error: (-32601, "Method not found"))
         }
+    }
+
+    private static func isValidRequestID(_ id: Any) -> Bool {
+        if id is String || id is NSNull { return true }
+        guard let number = id as? NSNumber else { return false }
+        return CFGetTypeID(number) != CFBooleanGetTypeID()
     }
 
     private static func readProfiles(dataRoot: URL) throws -> [BrowserProfile] {

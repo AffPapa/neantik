@@ -33,7 +33,7 @@ struct RuntimeProvenanceCardTests {
         #expect(snapshot.preflight == "Готов к запуску")
         #expect(
             snapshot.publicReleaseStatus.contains(
-                "Ниже baseline 153.0.8010.52"
+                "Ниже baseline 154.0.8037.98"
             )
         )
         #expect(!snapshot.source.contains("/private"))
@@ -60,7 +60,7 @@ struct RuntimeProvenanceCardTests {
             source: "Встроен",
             flavor: .fingerprintChromium,
             inspection: BrowserRuntimeInspection(
-                version: "153.0.8010.52",
+                version: "154.0.8037.98",
                 architectures: ["arm64"],
                 codeSignatureValid: true
             )
@@ -72,5 +72,28 @@ struct RuntimeProvenanceCardTests {
         )
 
         #expect(snapshot.publicReleaseStatus == "Соответствует baseline")
+    }
+
+    @Test
+    func bundledChromiumBelowCurrentReleaseGateIsFlagged() {
+        let runtime = BrowserRuntime(
+            name: "NeAntik Browser",
+            executableURL: URL(fileURLWithPath: "/private/runtime/Browser"),
+            source: "Встроен",
+            flavor: .fingerprintChromium,
+            inspection: BrowserRuntimeInspection(
+                version: "154.0.8037.93",
+                architectures: ["arm64"],
+                codeSignatureValid: true
+            )
+        )
+
+        let snapshot = RuntimeProvenanceSnapshot.inspect(
+            runtime: runtime,
+            preflight: BrowserRuntimePreflight(errors: [], warnings: [])
+        )
+
+        #expect(snapshot.publicReleaseStatus.contains("154.0.8037.98"))
+        #expect(snapshot.publicReleaseStatus.contains("заблокирован"))
     }
 }
