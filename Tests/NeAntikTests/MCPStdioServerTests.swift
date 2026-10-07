@@ -3,6 +3,46 @@ import Testing
 @testable import NeAntik
 
 struct MCPStdioServerTests {
+    @Test func invalidIDsAndIncompleteInitializationAreRejected() throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-mcp-unread")
+        for id: Any in [NSNull(), 1.5, true] {
+            let request: [String: Any] = ["jsonrpc": "2.0", "method": "ping", "id": id]
+            let line = try JSONSerialization.data(withJSONObject: request)
+            let reply = try #require(MCPStdioServer.handle(line, dataRoot: root))
+            let result = try #require(JSONSerialization.jsonObject(with: reply) as? [String: Any])
+            #expect((result["error"] as? [String: Any])?["code"] as? Int == -32600)
+        }
+        #expect((call("initialize", root: root)["error"] as? [String: Any])?["code"] as? Int == -32602)
+        for version in MCPStdioServer.supportedProtocolVersions + ["unknown"] {
+            let result = try #require(call("initialize", params: ["protocolVersion": version, "capabilities": [:], "clientInfo": ["name": "test", "version": "1"]], root: root)["result"] as? [String: Any])
+            #expect(result["protocolVersion"] as? String == (version == "unknown" ? MCPStdioServer.protocolVersion : version))
+            #expect((result["instructions"] as? String)?.contains("untrusted") == true)
+        }
+    }
+
+    @Test func toolSchemasAndStructuredContentAgreeAndCombinedPayloadIsBounded() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profiles = (0..<100).map { BrowserProfile(name: "Synthetic \($0)", tags: ["qa"], note: "PRIVATE_NOTE") }
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(profiles).write(to: root.appendingPathComponent("profiles.json"))
+        let tools = try #require((call("tools/list", root: root)["result"] as? [String: Any])?["tools"] as? [[String: Any]])
+        #expect(tools.count == 2)
+        for tool in tools {
+            #expect((tool["annotations"] as? [String: Any])?["readOnlyHint"] as? Bool == true)
+            let result = try #require(call("tools/call", params: ["name": tool["name"]!, "arguments": ["limit": 100]].merging(tool["name"] as? String == "workspace_list_profiles" ? ["arguments": [:]] : [:], uniquingKeysWith: { _, new in new }), root: root)["result"] as? [String: Any])
+            let payload = try #require(result["structuredContent"] as? [String: Any])
+            let content = try #require(result["content"] as? [[String: Any]])
+            let text = try #require(content.first?["text"] as? String)
+            let decoded = try #require(JSONSerialization.jsonObject(with: Data(text.utf8)) as? NSDictionary)
+            #expect(decoded.isEqual(to: payload))
+            let schema = try #require(tool["outputSchema"] as? [String: Any])
+            #expect(Set(schema["required"] as? [String] ?? []) == Set(payload.keys))
+            #expect(try JSONSerialization.data(withJSONObject: result).count <= MCPStdioServer.maximumToolPayloadBytes)
+            #expect(!text.contains("PRIVATE_NOTE"))
+        }
+    }
     private func call(_ method: String, id: Int = 1, params: [String: Any] = [:], root: URL) -> [String: Any] {
         let request: [String: Any] = ["jsonrpc": "2.0", "id": id, "method": method, "params": params]
         let data = try! JSONSerialization.data(withJSONObject: request)
@@ -42,6 +82,32 @@ struct MCPStdioServerTests {
         #expect(try page(cursor: cursor)["error"] != nil)
     }
 
+    @Test func largeUnicodePagesShrinkWithoutLosingRecordsOrExceedingCombinedLimit() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let tags = (0..<8).map { String(repeating: "👩‍💻", count: 23) + "\($0)" }
+        let profiles = (0..<100).map { BrowserProfile(name: String(repeating: "👩‍💻", count: 118) + "\($0)", tags: tags) }
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(profiles).write(to: root.appendingPathComponent("profiles.json"))
+        var cursor: String?
+        var seen = Set<String>()
+        repeat {
+            var arguments: [String: Any] = ["limit": 100]
+            if let cursor { arguments["cursor"] = cursor }
+            let result = try #require(call("tools/call", params: ["name": "workspace_list_profiles_page", "arguments": arguments], root: root)["result"] as? [String: Any])
+            #expect(try JSONSerialization.data(withJSONObject: result).count <= MCPStdioServer.maximumToolPayloadBytes)
+            let payload = try #require(result["structuredContent"] as? [String: Any])
+            let page = try #require(payload["profiles"] as? [[String: Any]])
+            #expect(!page.isEmpty && page.count < 100)
+            for profile in page { #expect(seen.insert(try #require(profile["id"] as? String)).inserted) }
+            cursor = payload["nextCursor"] as? String
+        } while cursor != nil
+        #expect(seen == Set(profiles.map { $0.id.uuidString }))
+        let full = try #require(call("tools/call", params: ["name": "workspace_list_profiles"], root: root)["result"] as? [String: Any])
+        #expect(full["isError"] as? Bool == true)
+    }
+
     @Test func listsOnlyAllowlistedMetadataAndNeverClaimsRunningState() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -79,7 +145,7 @@ struct MCPStdioServerTests {
 
     @Test func protocolMethodsAreConstrained() {
         let root = URL(fileURLWithPath: "/private/tmp/missing-neantik-mcp-root")
-        #expect(call("initialize", root: root)["result"] != nil)
+        #expect(call("initialize", params: ["protocolVersion": MCPStdioServer.protocolVersion, "capabilities": [:], "clientInfo": ["name": "test", "version": "1"]], root: root)["result"] != nil)
         let tools = call("tools/list", root: root)
         #expect(String(describing: tools).contains("workspace_list_profiles"))
         #expect(call("profile_delete", root: root)["error"] != nil)

@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct NeAntikApp: App {
+    @StateObject private var helpNavigation = HelpNavigation()
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
     @StateObject private var telemetry: TelemetryController
@@ -134,6 +135,7 @@ struct NeAntikApp: App {
                 fingerprintEvidenceReleaseContext:
                     fingerprintEvidenceReleaseContext
             )
+            .environmentObject(helpNavigation)
             .preferredColorScheme(uiSmokeColorScheme)
             .background {
                 WindowMinimumSizeEnforcer(
@@ -160,7 +162,20 @@ struct NeAntikApp: App {
         .commands {
             WorkspaceCommandMenu()
             ProfileCommandMenu()
+            NeAntikHelpCommands(navigation: helpNavigation)
         }
+
+        Window("Справка NeAntik", id: "help") {
+            NeAntikHelpWindow(
+                navigation: helpNavigation,
+                connection: MCPConnectionConfiguration(
+                    executable: Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0]),
+                    dataRoot: store.paths.rootDirectory
+                )
+            )
+        }
+        .defaultSize(width: 980, height: 720)
+        .windowResizability(.contentMinSize)
     }
 
     private static func runFingerprintEnrollmentAndExit(

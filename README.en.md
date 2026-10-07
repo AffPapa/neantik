@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The latest published Direct release is NeAntik `0.7.12` (build `75`).
+The manager version in this branch is NeAntik `0.7.21` (build `84`).
 
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `154.0.8037.93`, ARM64, Metal;
-- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.12](https://github.com/AffPapa/neantik/releases/tag/v0.7.12).
+- Chromium `154.0.8037.98`, ARM64, Metal;
+- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.21](https://github.com/AffPapa/neantik/releases/tag/v0.7.21).
 
-`0.7.12` rebuilds and updates Chromium and fixes manager packaging. Public `0.7.11` remains the rollback point. Safe Browsing remains disabled in this distribution.
+`0.7.21` updates the manager and local MCP using the same qualified Chromium. Keep `0.7.20` for rollback. Safe Browsing remains disabled in this distribution.
 
 Direct downloads: [browser.free](https://browser.free).
 
@@ -64,15 +64,26 @@ Keychain and never enters the browser command line. Copied values carry the
 transient/concealed pasteboard hints and an unchanged clipboard is cleared
 after 60 seconds; another app can still read it during that interval.
 
+## In-app help and local MCP
+
+Open **Help → NeAntik Help** (⌘?) for searchable profile, proxy, organization,
+library, recovery, diagnostics and keyboard instructions. **Connect MCP to AI…**
+copies configuration using the actual executable and resolved workspace root.
+Claude Desktop JSON and Codex TOML are provided. Tools `workspace_list_profiles`
+and `workspace_list_profiles_page` only read metadata. No create/start/write
+or browsing automation is provided. Your AI client can send profile names/tags
+to its model; credentials, notes, cookies and BrowserData are excluded. No network
+listener or web bridge is included. [Setup and examples](docs/MCP_GUIDE.md).
+
 ## Security and scope
 
 NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-Public `0.7.8` is published for public-alpha profile isolation. Strict
-production fingerprint coherence across every browser and network surface
-remains incomplete and is tracked as a limitation.
+Releases qualify defined isolation and coherence scenarios on the exact runtime.
+This does not guarantee all external checker results or every host configuration.
+See release notes for measured evidence and limitations.
 
 The bundled privacy-oriented Chromium is built without Google Safe Browsing.
 NeAntik does not send browsing history to Google, but it is not a replacement

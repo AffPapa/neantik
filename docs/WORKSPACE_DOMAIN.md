@@ -48,10 +48,14 @@ notes, proxy details, exact network observations, BrowserData or fingerprint
 material. The mode cannot launch/stop browsers or mutate profiles.
 
 The initial supported MCP methods are `initialize`, `ping`, `tools/list` and
-`tools/call` for `workspace_list_profiles` or `workspace_list_profiles_page`, using the 2025-11-25 JSON-RPC
+`tools/call` for `workspace_list_profiles` or `workspace_list_profiles_page`, using the 2025-11-25 or 2025-06-18 JSON-RPC
 stdio protocol. Messages are newline-delimited and requests are limited to
 64 KiB; metadata input is limited to 64 MiB. A malformed or unsafe metadata
 file yields a generic error. Standard output contains protocol messages only.
+Initialize requires protocolVersion, capabilities and clientInfo name/version.
+IDs must be strings or integers, never null/fractions/booleans. Tools declare
+read-only annotations and output schemas; structuredContent matches text JSON.
+Names/tags are untrusted data, never instructions.
 Malformed JSON, invalid request IDs and non-object parameters receive distinct
 JSON-RPC errors. These checks do not grant any write or launch capability.
 Configure the client to execute the absolute path of the signed
@@ -71,8 +75,13 @@ current adapter is a foundation for those tools, not browser RPA.
 The adapter reads at most 64 MiB of metadata. Pages accept `limit` (1–100,
 default 50) and an optional `cursor`. The response includes `totalCount` and
 `nextCursor`; pass the cursor unchanged. A metadata change invalidates it,
-so restart from the first page. The legacy full-list tool refuses responses
+so restart from the first page. Both text and structured representations are
+bounded together to 256 KiB. The legacy full-list tool refuses responses
 over 256 KiB and directs the client to pagination. Pages may be smaller than
 the requested limit to stay within that bound. Notes, proxy configuration,
 credentials and browser data remain excluded. Very large workspaces beyond
 the file cap require a separate adapter design rather than an unbounded read.
+
+User-facing setup and troubleshooting: [MCP guide](MCP_GUIDE.md). The in-app
+Help copies the actual executable and resolved workspace root; it never creates
+a second store. The selected AI client may transmit names/tags to its model.

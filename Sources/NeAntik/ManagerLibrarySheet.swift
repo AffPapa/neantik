@@ -41,7 +41,13 @@ struct ManagerLibrarySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Шаблоны, фильтры и журнал").font(.title2.bold())
+            HStack {
+                Text("Шаблоны, фильтры и журнал").font(.title2.bold())
+                Spacer()
+                HelpLink(topic: .library)
+            }
+            Text("Шаблон берёт настройки выбранного профиля без паролей и данных сайтов. Фильтр сохраняет текущий поиск и область списка.")
+                .font(.callout).foregroundStyle(.secondary)
             if let error = localError ?? library.error {
                 Text(error).foregroundStyle(.red).font(.callout)
             }

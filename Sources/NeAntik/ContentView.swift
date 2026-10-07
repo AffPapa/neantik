@@ -1148,6 +1148,9 @@ struct ContentView: View {
     @ToolbarContentBuilder
     private var workspaceToolbar: some ToolbarContent {
         ToolbarItem(placement: .automatic) {
+            HelpLink(topic: .profiles)
+        }
+        ToolbarItem(placement: .automatic) {
             Button {
                 beginCreatingProfile()
             } label: {
@@ -1349,7 +1352,7 @@ struct ContentView: View {
         [
             ProfileQuickCommand(id: "library", title: "Шаблоны, фильтры и журнал", subtitle: "Локальная библиотека", enabled: true, action: { showingManagerLibrary = true }),
             ProfileQuickCommand(id: "create", title: "Новый профиль", subtitle: "Открыть форму создания", enabled: true, action: beginCreatingProfile),
-            ProfileQuickCommand(id: "diagnostics", title: "Безопасная диагностика", subtitle: "Экспортировать существующий redacted support bundle", enabled: true, action: exportRedactedSupportBundle)
+            ProfileQuickCommand(id: "diagnostics", title: "Безопасная диагностика", subtitle: "Сохранить отчёт без паролей и данных сайтов", enabled: true, action: exportRedactedSupportBundle)
         ]
     }
 
@@ -4164,7 +4167,7 @@ struct ProfileDetailView: View {
                 Text(
                     proxy.username.isEmpty
                         ? "Без авторизации"
-                        : "Логин и пароль сохранены в Связке ключей"
+                        : "Авторизация настроена · пароль в Связке ключей"
                 )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

@@ -307,6 +307,7 @@ struct ProfileEditorView: View {
           .font(.title3.weight(.semibold))
           .accessibilityHeading(.h1)
         Spacer()
+        HelpLink(topic: .profiles)
       }
       .padding(.horizontal, 20)
       .padding(.top, 16)
@@ -405,6 +406,7 @@ struct ProfileEditorView: View {
         }
 
         Section("Сеть") {
+          HelpLink(topic: .proxy)
           Toggle("Использовать прокси", isOn: $usesProxy)
           if usesProxy {
             Picker("Ввод прокси", selection: $proxyEntryMode) {

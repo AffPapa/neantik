@@ -105,6 +105,8 @@ struct ProfileEnvironmentView: View {
                 Label("Среда профиля", systemImage: "checklist.checked")
                     .font(.headline)
 
+                HelpLink(topic: .environment)
+
                 Button {
                     showingLimitations.toggle()
                 } label: {
