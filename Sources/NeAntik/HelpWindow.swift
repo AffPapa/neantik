@@ -42,6 +42,8 @@ struct NeAntikHelpWindow: View {
     let connection: MCPConnectionConfiguration
     @State private var search = ""
     @State private var configurationFormat = 0
+    @State private var allowsManagement = false
+    private var selectedConnection: MCPConnectionConfiguration { var value = connection; value.allowsManagement = allowsManagement; return value }
     @State private var copied = false
     @FocusState private var searchFocused: Bool
 
@@ -101,6 +103,7 @@ struct NeAntikHelpWindow: View {
         }
         .frame(minWidth: 740, minHeight: 480)
         .onChange(of: navigation.topic) { _, _ in search = ""; copied = false }
+        .onChange(of: allowsManagement) { _, _ in copied = false }
         .onChange(of: configurationFormat) { _, _ in copied = false }
         .toolbar {
             Button("Найти в справке") { searchFocused = true }
@@ -112,19 +115,23 @@ struct NeAntikHelpWindow: View {
         GroupBox("Настройка этого workspace") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Скопируй блок в настройки клиента, сохранив остальные серверы. Он содержит локальные пути этого приложения.")
+                Picker("Доступ клиента", selection: $allowsManagement) {
+                    Text("Чтение").tag(false)
+                    Text("Управление профилями").tag(true)
+                }.pickerStyle(.segmented)
                 Picker("Формат клиента", selection: $configurationFormat) {
                     Text("Claude Desktop / JSON").tag(0)
                     Text("Codex / TOML").tag(1)
                 }.pickerStyle(.segmented)
-                Text(configurationFormat == 0 ? connection.claudeJSON : connection.codexTOML)
+                Text(configurationFormat == 0 ? selectedConnection.claudeJSON : selectedConnection.codexTOML)
                     .font(.system(size: 13, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button(copied ? "Настройка скопирована" : "Скопировать настройку MCP") {
                     NSPasteboard.general.clearContents()
-                    copied = NSPasteboard.general.setString(configurationFormat == 0 ? connection.claudeJSON : connection.codexTOML, forType: .string)
+                    copied = NSPasteboard.general.setString(configurationFormat == 0 ? selectedConnection.claudeJSON : selectedConnection.codexTOML, forType: .string)
                 }
-                Text("Чтение названий и тегов — осознанный доступ выбранного AI-клиента. Этот блок не включает пароли или данные сайтов.")
+                Text("Управление разрешает записи и запуск. Настройка не содержит паролей; если вводишь их в чат, клиент может сохранить их или отправить модели.")
                     .font(.callout).foregroundStyle(.secondary)
             }.padding(8)
         }

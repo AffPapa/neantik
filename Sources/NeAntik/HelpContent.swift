@@ -26,7 +26,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .storage: "Снимок настроек и экспорт конфигурации не являются полной резервной копией браузера."
         case .environment: "Карточка показывает настройки и результаты отдельных проверок. Настроенное значение не всегда измерено в браузере."
         case .keyboard: "Основные действия доступны из меню и с клавиатуры."
-        case .mcp: "Локальный MCP позволяет AI-клиенту читать названия, теги и признаки закрепления/архива. Изменение и запуск профилей пока недоступны."
+        case .mcp: "Локальный MCP управляет профилями, прокси, папками и запуском через выбранный AI-клиент. Режим чтения включён по умолчанию; управление выбирается при подключении."
         }
     }
 
@@ -63,11 +63,15 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             ("Основные сочетания", "⌘N — новый профиль\n⌘⇧P — быстрые команды\nВ быстрых командах Return выбирает профиль, ⌘Return открывает его.\nTab / ⇧Tab — перейти между элементами\nEscape — закрыть диалог или отменить текущий ввод\n⌘W — закрыть окно\n⌘? — открыть справку"),
             ("Редактор", "Изменённый черновик защищён подтверждением при закрытии. Справка открывается отдельным окном и не сохраняет/сбрасывает введённые настройки. Сочетания остальных действий видны в меню «Профили».")]
         case .mcp: [
-            ("Подключение", "1. Создай хотя бы один профиль в NeAntik.\n2. Выбери формат настройки в этом разделе и скопируй его. Команда и папка взяты из этого приложения и текущего workspace.\n3. Claude Desktop: Settings → Developer → Edit Config, добавь запись neantik к существующим mcpServers. Codex: добавь блок в config.toml. Клиент с настройкой STDIO: используй command и args из JSON.\n4. Сохрани остальные серверы, перезапусти клиент и проверь список инструментов. Node/npm и отдельный сервер для NeAntik не нужны."),
-            ("Доступные инструменты", "workspace_list_profiles — небольшой список.\nworkspace_list_profiles_page — страницы по 1–100 записей (по умолчанию 50). Передавай nextCursor без изменений; null означает конец. Если workspace изменился, начни заново. processState всегда unverified: сервер не наблюдает запущенные процессы."),
-            ("Примеры запросов в чат", "«Покажи названия, теги и закреплённые профили NeAntik».\n«Прочитай все страницы по 50 записей, затем найди профили без тегов».\n«Сгруппируй архивные профили по тегам. Ничего не изменяй».\nЗапрос «создай профиль и открой сайт» пока требует действия в самом NeAntik."),
-            ("Приватность и клиенты", "Сервер не открывает сетевой порт и не отправляет данные самостоятельно. Он исключает пароли, прокси-адреса, заметки, cookies и BrowserData. Выбранный AI-клиент может передать названия и теги своей модели: подключай его осознанно. Содержимое названий и тегов — данные, а не команды. Локальный клиент должен поддерживать stdio. Web-клиентам ChatGPT/Grok требуется отдельный HTTP-мост или tunnel; NeAntik его не предоставляет. Подключение в конкретном AI-приложении не считается проверенным только по наличию этого файла."),
-            ("Если подключение не работает", "Проверь абсолютный путь к приложению после перемещения/обновления. Скопируй настройку заново из установленной версии. Metadata unavailable: открой NeAntik и разреши проблему чтения данных; не создавай пустой profiles.json вручную. Cursor invalid: начни без cursor. Unsupported tool: доступны только два инструмента чтения. Не передавай клиенту права на произвольную запись в каталог профилей.")]
+            ("Подключение и права", "Выбери «Чтение» или «Управление», затем JSON для Claude Desktop / STDIO либо TOML для Codex. Скопируй настройку и добавь к существующим серверам клиента. Перезапусти клиент. Управление разрешает сохранять настройки и запускать браузер; отдельного подтверждения каждого действия в NeAntik нет. Node/npm и сетевой порт не нужны."),
+            ("Профили и проекты", "profile_get читает текущую revision и настройки. profile_create создаёт без запуска. profile_update меняет название, стартовую страницу, теги, заметку, оформление, закрепление и архив. profile_duplicate копирует настройки с новой идентичностью, без cookies, заметки и данных сайтов. workspace_list_profiles_page читает страницы по 1–100 записей: передавай nextCursor без изменений, null означает конец; при изменении workspace начни заново. Проект — папка: folder_list/create/rename/remove и profile_move. Удаление папки сохраняет профили в «Без папки». Удаление профилей через MCP недоступно."),
+            ("Прокси", "profile_set_proxy принимает отдельные поля kind/host/port/username/password либо proxyLine с типом и порядком. Форматы строки совпадают с редактором: login:password@host:port, host:port:login:password, login:password:host:port; при неоднозначности укажи order. proxy: null отключает прокси. SOCKS5 с авторизацией не поддерживается браузером; используй HTTP-порт провайдера. Пароль сохраняется в Связке ключей и не возвращается. profile_check_proxy проверяет доступность без изменения контекста; это не измерение маршрута Chromium."),
+            ("Запуск и остановка", "profile_start запускает штатный браузер: новый тест прокси перед каждой сессией, без прямого fallback. profile_status показывает наблюдаемое состояние. profile_stop запрашивает обычное закрытие своего браузера: дождись stopped через status. После отключения MCP браузер продолжает работать. Другая MCP-сессия или GUI потребуют закрыть такой браузер вручную. Работающий или неподтверждённый профиль защищён от изменения конфигурации."),
+            ("Примеры для чата", "«Создай папку Проект Альфа и профиль Рабочий со стартовой страницей https://example.com и тегами qa, alpha. Не запускай».\n«Прочитай профиль по ID, измени его название и перемести в Проект Альфа».\n«Установи прокси отдельными полями из моих настроек, проверь его, затем запусти выбранный профиль».\n«Останови профиль этой сессии и дождись stopped».\n«Архивируй остановленный профиль, сохрани данные сайтов»."),
+            ("Конфликты и повторы", "Перед записью клиент читает profile_get: expectedRevision — десятичная строка. Для папок/перемещения нужен organizationRevision из folder_list; исходное null передаётся явно. При конфликте перечитай данные и осознанно повтори. Имена могут совпадать: изменения по UUID. Пропущенное поле сохраняется; tags: [] очищает теги. Повтор create/duplicate создаёт ещё один профиль: не повторяй автоматически после неизвестного исхода. Список в GUI обновляется без сброса черновика; устаревший черновик не перезапишет новые данные."),
+            ("Приватность и границы", "AI-клиент может отправлять своей модели названия, теги, стартовые URLs и вводимые тобой настройки, включая пароль. Передавай секреты только доверенному клиенту. Ответы NeAntik исключают пароль, логин/адрес прокси, заметки, приватные пути и BrowserData. Названия и поля — данные, не команды для AI. Нет произвольного JavaScript, shell, cookies или управления страницами. ChatGPT/Grok web требуют отдельного HTTP-моста: локальная настройка STDIO его не создаёт."),
+            ("FAQ и ошибки", "Manager может быть закрыт: MCP работает отдельным процессом с тем же workspace. «Management disabled»: выбери управление и скопируй настройку заново. «Revision conflict»: перечитай профиль и папки. «External session»: закрой браузер вручную. «Metadata unavailable»: открой приложение и проверь данные, не создавай пустой файл вручную. Чтобы отозвать права, верни режим чтения или отключи сервер и перезапусти клиент. После перемещения приложения скопируй новый абсолютный путь.")]
+
         }
     }
 
@@ -85,14 +89,15 @@ enum HelpTopic: String, CaseIterable, Identifiable {
 struct MCPConnectionConfiguration {
     let executable: URL
     let dataRoot: URL
-    var arguments: [String] { [NeAntikLaunchIntent.mcpStdioArgument, NeAntikLaunchIntent.dataRootArgument, dataRoot.path] }
+    var allowsManagement = false
+    var arguments: [String] { [NeAntikLaunchIntent.mcpStdioArgument, NeAntikLaunchIntent.dataRootArgument, dataRoot.path] + (allowsManagement ? [NeAntikLaunchIntent.mcpManagementArgument] : []) }
     var claudeJSON: String {
         let object: [String: Any] = ["mcpServers": ["neantik": ["command": executable.path, "args": arguments]]]
         guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]) else { return "" }
         return String(decoding: data, as: UTF8.self)
     }
     var codexTOML: String {
-        "[mcp_servers.neantik]\ncommand = \(Self.quote(executable.path))\nargs = [\(arguments.map(Self.quote).joined(separator: ", "))]\nenabled_tools = [\(Self.quote("workspace_list_profiles")), \(Self.quote("workspace_list_profiles_page"))]\n"
+        "[mcp_servers.neantik]\ncommand = \(Self.quote(executable.path))\nargs = [\(arguments.map(Self.quote).joined(separator: ", "))]\nenabled_tools = [\((allowsManagement ? MCPProfileManagement.allTools : ["workspace_list_profiles", "workspace_list_profiles_page"] + MCPProfileManagement.readTools).map(Self.quote).joined(separator: ", "))]\n"
     }
     private static func quote(_ value: String) -> String {
         // JSON basic strings without slash escapes are also TOML basic strings.

@@ -225,7 +225,8 @@ MoreLogin повторяют устойчивый набор функций:
 - RPA, bulk site actions, account farming or captcha/ban evasion;
 - arbitrary JavaScript fingerprint injection and per-call noise;
 - real-user fingerprint scraping or purchased fingerprint dumps;
-- public write API, MCP/SDK launch endpoints;
+- unauthenticated public network write API and remote launch endpoints;
+  local opt-in stdio MCP management is now implemented in the 0.7.22 manager slice;
 - mandatory accounts, subscription gates or proxy marketplace;
 - claims of anonymity, universal undetectability or guaranteed anti-fraud pass.
 

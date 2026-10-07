@@ -8,6 +8,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     static let candidateManifestArgument = "--candidate-manifest"
     static let outputArgument = "--output"
     static let mcpStdioArgument = "--neantik-mcp-stdio"
+    static let mcpManagementArgument = "--allow-profile-management"
     static let dataRootArgument = "--data-root"
 
     enum Mode: Equatable, Sendable {
@@ -16,6 +17,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         )
         case fingerprintEnrollment(outputURL: URL)
         case mcpStdio(dataRoot: URL)
+        case mcpManagement(dataRoot: URL)
         case invalidControlArguments
     }
 
@@ -59,6 +61,11 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     }
 
     static func parse(arguments: [String]) -> Self {
+        if arguments.count == 5, arguments[4] == mcpManagementArgument,
+           isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == mcpStdioArgument,
+           arguments[2] == dataRootArgument, isSafeAbsoluteMCPRoot(arguments[3]) {
+            return Self(mode: .mcpManagement(dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true)))
+        }
         if arguments.count == 4,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
            arguments[1] == mcpStdioArgument,
@@ -113,7 +120,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
             )
         }
         if arguments.contains(where: {
-            $0 == outputArgument ||
+            $0.hasPrefix(mcpManagementArgument) ||
+                $0 == outputArgument ||
                 $0 == dataRootArgument ||
                 $0.hasPrefix(mcpStdioArgument) ||
                 $0 == candidateManifestArgument ||

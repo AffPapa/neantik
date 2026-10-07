@@ -951,6 +951,12 @@ struct ContentView: View {
 
     private var workspaceNotifications: some View {
         workspaceStateObservers
+        .task {
+            while !Task.isCancelled {
+                try? await store.refreshExternalMetadata()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
         .onReceive(
             NotificationCenter.default.publisher(
                 for: NSApplication.willResignActiveNotification
@@ -963,7 +969,10 @@ struct ContentView: View {
                 for: NSApplication.didBecomeActiveNotification
             )
         ) { _ in
-            processes.reconcile(profiles: store.profiles)
+            Task { @MainActor in
+                try? await store.refreshExternalMetadata(force: true)
+                processes.reconcile(profiles: store.profiles)
+            }
         }
         .onReceive(
             NSWorkspace.shared.notificationCenter.publisher(
@@ -3397,85 +3406,11 @@ struct ContentView: View {
         previous: ProxyHealthState?,
         commitsLaunchContext: Bool
     ) async throws -> ProxyHealthTestCommit {
-        var didCommitContext = false
-        let checkedAt = Date()
-        let next: ProxyHealthState
-        let password = try keychain.proxyPassword(
-            profileID: profileID
-        ) ?? ""
-        do {
-            let observation = try await ProxyTester().probe(
-                configuration: expectedProxy,
-                password: password
-            )
-            try Task.checkCancellation()
-            let currentPassword = try keychain.proxyPassword(
-                profileID: profileID
-            ) ?? ""
-            guard let currentProfile = store.profile(withID: profileID),
-                  ProxyTestCommitPolicy.matchesSnapshot(
-                      expectedProxy: expectedProxy,
-                      currentProxy: currentProfile.proxy,
-                      expectedRevision: expectedRevision,
-                      currentRevision: currentProfile.revision,
-                      credentialsMatch: currentPassword == password
-                  )
-            else {
-                throw CancellationError()
-            }
-            if commitsLaunchContext {
-                var prepared = currentProfile
-                prepared.identity = prepared.identity.replacingProxyContext(
-                    timezoneIdentifier: observation.result.timezoneIdentifier,
-                    localeIdentifier: observation.result.localeIdentifier,
-                    evidence: .from(observation.source, observedAt: observation.observedAt))
-                _ = try store.upsert(prepared)
-                didCommitContext = true
-                fingerprintObservationStore.remove(profileID: profileID)
-            }
-            // Manual checks record observations only. The launch preparation
-            // owns route-derived profile context. Keeping this operation in one
-            // health file makes cancellation rollback complete and predictable.
-            next = ProxyHealthUpdatePolicy.success(observation)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch let error as ProxyProbeError {
-            let currentPassword = try keychain.proxyPassword(
-                profileID: profileID
-            ) ?? ""
-            guard let currentProfile = store.profile(withID: profileID),
-                  ProxyTestCommitPolicy.matchesSnapshot(
-                      expectedProxy: expectedProxy,
-                      currentProxy: currentProfile.proxy,
-                      expectedRevision: expectedRevision,
-                      currentRevision: currentProfile.revision,
-                      credentialsMatch: currentPassword == password
-                  )
-            else {
-                throw CancellationError()
-            }
-            next = ProxyHealthUpdatePolicy.failure(
-                error,
-                checkedAt: checkedAt,
-                previous: previous
-            )
-        } catch {
-            throw error
-        }
-
-        guard let currentProfile = store.profile(withID: profileID),
-              currentProfile.proxy == expectedProxy,
-              let currentIdentity = ProxyHealthIdentity(
-                  profile: currentProfile
-              )
-        else {
-            throw CancellationError()
-        }
-        return ProxyHealthTestCommit(
-            state: next,
-            currentIdentity: currentIdentity,
-            hasDurableProfileCommit: didCommitContext
-        )
+        try await ProfileProxyOperations(store: store, keychain: keychain,
+            invalidateObservation: { fingerprintObservationStore.remove(profileID: $0) })
+            .commit(profileID: profileID, expectedProxy: expectedProxy,
+                    expectedRevision: expectedRevision, previous: previous,
+                    commitsLaunchContext: commitsLaunchContext)
     }
 
     @MainActor

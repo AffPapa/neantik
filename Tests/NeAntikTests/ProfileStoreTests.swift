@@ -516,6 +516,11 @@ struct ProfileStoreTests {
         #expect(throws: ProfileMetadataMutationInProgressError.self) {
             try secondWindowStore.createFolder(named: "Concurrent folder")
         }
+        // Admission belongs to this workspace, not to every isolated Dev/test root.
+        let otherRoot = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: otherRoot) }
+        let otherStore = ProfileStore(paths: AppPaths(rootDirectory: otherRoot))
+        #expect(throws: Never.self) { try otherStore.upsert(BrowserProfile(name: "Independent workspace")) }
         continueOrganizationPersist.signal()
         let saved = try await importTask.value
         #expect(saved.count == 1)

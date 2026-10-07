@@ -38,6 +38,8 @@ struct NeAntikApp: App {
         switch launchIntent.mode {
         case let .mcpStdio(dataRoot):
             MCPStdioServer.runAndExit(dataRoot: dataRoot)
+        case let .mcpManagement(dataRoot):
+            MCPStdioServer.runAndExit(dataRoot: dataRoot, allowsManagement: true)
         case let .fingerprintEnrollment(outputURL):
             Self.runFingerprintEnrollmentAndExit(outputURL: outputURL)
         case .invalidControlArguments:

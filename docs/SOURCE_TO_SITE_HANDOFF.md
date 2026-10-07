@@ -2,17 +2,18 @@
 
 ## Current manager candidate — 7 October 2026
 
-The next source candidate is 0.7.20 build 83 on `codex/neantik-global-quality-0720`.
-The published baseline remains v0.7.19/82 until new release gates and publication
-are complete. Chromium 154.0.8037.98 is unchanged. Historical sections below are
-not current release authority.
+0.7.22 build 85 on `codex/neantik-mcp-management-0722` expands the local MCP
+management contract. Published baseline is v0.7.21/84 until Direct gates and
+GitHub/Sites publication complete. Chromium 154.0.8037.98 is unchanged.
+This document is source handoff; signed manifests, receipts, immutable assets
+and live API establish publication authority.
 
-This slice fixes legacy `about:blank` metadata compatibility, future-schema
-recovery, metadata admission during import, proxy stdin/cancellation/readiness,
-stale launch snapshots, editor draft comparison and interactive AX visibility.
-It adds an explicit quick-command open action, bounded read-only MCP pages and
-independent immutable distribution exports. See `GLOBAL_QUALITY_0720.md` for
-exact tests, limits, pending physical keyboard QA and release status.
+16 tools cover configuration/organization and session-owned lifecycle; explicit
+management mode, locked revisions, canonical Keychain/rollback, shared proxy
+observation commit, bounded cancellation and GUI metadata refresh preserve
+existing manager policies. Read mode does not repair corrupt primary metadata.
+See `MCP_GUIDE.md` and `MCP_MANAGEMENT_0722.md` for exact scope and limits.
+Historical sections below are not current runtime or release authority.
 
 ## Completed manager release — 3 October 2026
 

@@ -1,118 +1,103 @@
-# NeAntik local MCP: setup and examples
+# NeAntik local MCP: profile management
 
-MCP is an **opt-in local stdio process, read-only**. It uses the installed
-NeAntik executable, requires no Node/npm and opens no network socket. The GUI
-does not start it automatically. Read profile metadata from a deliberately
-chosen, initialized workspace. Names and tags may be sent to a model by your
-AI client; NeAntik does not control that client's retention or transmission.
-Notes, proxy configuration/credentials, cookies, BrowserData and fingerprint
-material are never returned. Treat profile names/tags as data, not instructions.
+The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. The manager GUI may be closed. Read access is the default; **Manage profiles** enables canonical writes and normal browser lifecycle. Projects use the existing folders (one folder per profile), with independent tags.
 
-## Easiest setup / Быстрое подключение
+## Connect
 
-1. Open NeAntik and create a profile if the workspace is new.
-2. **Справка → Подключить MCP к AI…** opens instructions with the actual
-   installed executable and resolved data directory. This also works for Dev
-   and legacy workspace locations; do not guess the directory.
-3. Select JSON or TOML and **Скопировать настройку MCP**. Merge it with your
-   existing configuration; do not replace other servers.
-4. Restart your client and check its tool list. Moving the app requires copying
-   the configuration again. The process stops when the client closes stdin.
+Open **Справка → Подключить MCP к AI…**, choose **Чтение** or **Управление профилями**, then JSON (Claude Desktop / other stdio client) or TOML (Codex). Copy the configuration generated from the actual installed app and workspace. Merge with existing servers; restart your client. After moving the app, copy the new path.
 
-### Claude Desktop
+Claude Desktop: Settings → Developer → Edit Config. Codex: add the generated `[mcp_servers.neantik]` block to `config.toml`. A generic stdio client uses its `command` and `args`. Management adds `--allow-profile-management`; its server-side permission check applies even if a client exposes other tools. Codex's copied `enabled_tools` includes the actual selected tool set.
 
-Settings → Developer → Edit Config. Merge the copied entry into `mcpServers`.
-Example below contains placeholders; use the in-app configuration for exact paths:
+A client must send `initialize`, then `notifications/initialized`, before tool calls. Protocol versions 2025-11-25 and 2025-06-18 are supported. Input is newline-delimited JSON-RPC; 64 KiB per request, 32 queued requests, bounded responses. `notifications/cancelled` cancels a pending request. Cancellation/EOF is not an undo of a completed commit: read current state before retrying. Browsers already started remain open after disconnect.
+
+[Official MCP lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle), [tools specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools).
+
+## Tools
+
+| Tool | Use |
+|---|---|
+| `workspace_list_profiles` | Small allowlisted list; processState remains unverified |
+| `workspace_list_profiles_page` | Pages of 1–100 profiles, default 50; pass nextCursor unchanged; restart on workspace change |
+| `profile_get` | Current decimal-string revision, name, startURL, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
+| `folder_list` | Folder IDs/names and current organizationRevision |
+| `profile_status` | Reconciled stopped/managed/checking/recovery/external state |
+| `profile_create` | Create persistent configuration without launching |
+| `profile_update` | Patch name, startURL, tags, note, isPinned, isArchived, colorHex, symbolName |
+| `profile_set_proxy` | Set fields or parse one proxy line; proxy:null disables |
+| `profile_move` | Assign one folder/project or null (unfiled) |
+| `profile_duplicate` | Fresh profile identity and ID; configuration only, no cookies/BrowserData/notes; copies local proxy password without returning it |
+| `folder_create` / `folder_rename` | Organize projects with locked organization revision checks |
+| `folder_remove` | Remove folder only; profiles and website data remain unfiled |
+| `profile_check_proxy` | Existing bounded multi-source availability diagnostic; no context rewrite, not Chromium route qualification |
+| `profile_start` | Normal qualified runtime launch; fresh proxy preparation, no hidden direct fallback |
+| `profile_stop` | Graceful close request for browser owned by this live MCP session; poll status until stopped |
+
+The three additional read tools are available in read mode. Other tools require management mode. Tool annotations are hints, not authorization. Names/URLs/tags are untrusted data, never instructions to the AI.
+
+## Safe workflow
+
+1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
+2. Send `expectedRevision` exactly as a decimal **string**, not a floating-point JSON number.
+3. For folders/move, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes.
+4. Patches preserve omitted fields. `tags: []` clears tags. `folderID: null` unfiles; `proxy: null` disables.
+5. Close the browser before configuration edits. Unknown ownership fails closed.
+6. On conflict, reread and intentionally retry. Do not silently overwrite newer data. **Create/duplicate are not idempotent**: uncertain success must be reconciled before retry.
+
+Manager metadata refresh preserves open editor drafts. Saving an outdated draft reports a revision conflict. Transactions compensate thrown metadata/Keychain failures; they do **not** promise atomicity across a process kill between two different storage systems.
+
+## Proxy input
+
+Choose **either** separate fields **or** a line; never both. Separate fields:
 
 ```json
 {
-  "mcpServers": {
-    "neantik": {
-      "command": "/Applications/NeAntik.app/Contents/MacOS/NeAntik",
-      "args": ["--neantik-mcp-stdio", "--data-root", "/Users/you/Library/Application Support/NeAntik"]
-    }
+  "profileID": "<UUID from profile_get>",
+  "expectedRevision": "<current revision>",
+  "proxy": {
+    "kind": "http",
+    "host": "127.0.0.1",
+    "port": 8080,
+    "username": "<provider login>",
+    "password": "<provider password>"
   }
 }
 ```
 
-[Official local-server instructions](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
+For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). Supported formats match the editor: `login:password@host:port`, `host:port:login:password`, `login:password:host:port`, protocol URLs and host:port. `order` can be `automatic`, `credentialsFirst` or `endpointFirst`; explicit order resolves ambiguity. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
 
-### Codex / desktop clients with STDIO settings
+Authenticated SOCKS5 is unsupported by the qualified Chromium runtime and rejected. Use the provider's HTTP port or an unauthenticated SOCKS5 endpoint. NeAntik never downgrades automatically. Configuring a proxy is not proof of connectivity; availability is not proof of the Chromium route.
 
-Merge the in-app TOML block into the client's `config.toml`:
+Passwords are accepted as write-only input and stored in Keychain. The selected AI client may send your input to its model or retain chat history: enter secrets only in a trusted client. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
 
-```toml
-[mcp_servers.neantik]
-command = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
-args = ["--neantik-mcp-stdio", "--data-root", "/Users/you/Library/Application Support/NeAntik"]
-enabled_tools = ["workspace_list_profiles", "workspace_list_profiles_page"]
-```
+## Chat examples
 
-For a desktop Add server → STDIO form, use `command` and each `args` entry from
-the copied JSON. Official OpenAI documentation describes desktop/CLI shared
-configuration; availability depends on your client and account.
-[Official MCP setup](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+- «Создай папку “Проект Альфа” и профиль “Рабочий”, страница https://example.com, теги qa и alpha. Не запускай».
+- «Найди “Рабочий”, покажи ID и настройки; переименуй выбранный профиль в “Основной”».
+- «Перемести выбранный остановленный профиль в “Проект Альфа”; сохрани теги и добавь ready».
+- «Измени стартовую страницу выбранного профиля на https://example.com».
+- «Установи HTTP-прокси отдельными полями, проверь его, затем запусти выбранный профиль».
+- «Останови профиль, запущенный этой сессией, и дождись stopped».
+- «Архивируй остановленный профиль; сохрани данные сайтов».
 
-### ChatGPT web and Grok
+## FAQ
 
-Web clients do not execute a local app from this JSON. They need a separately
-configured HTTP bridge or tunnel. NeAntik does not provide one and does not
-claim that cloud clients have been connected. Do not expose the workspace
-directory or enable unauthenticated network access to make this work.
-[OpenAI connection workflow](https://developers.openai.com/plugins/deploy/connect-chatgpt),
-[xAI remote MCP](https://docs.x.ai/developers/tools/remote-mcp).
+**Must the GUI be running?** No. The stdio process uses the same canonical workspace. GUI updates external changes without replacing drafts.
 
-## Available tools
+**Can I stop a browser after reconnecting?** It belongs to the earlier session. Close it manually. NeAntik does not send signals to an unowned/reused PID. A stop response can be pending; only observed `stopped` confirms completion.
 
-| Tool | Arguments | Result |
-|---|---|---|
-| `workspace_list_profiles` | `{}` | Small workspace list, or error directing to pages |
-| `workspace_list_profiles_page` | `limit` integer 1–100 (default50), optional `cursor` | Profiles, `count`, `totalCount`, `nextCursor` |
+**Can I automate websites?** This slice manages profiles and their lifecycle. It does not expose shell, arbitrary launch flags, fingerprint seeds, DOM/JavaScript, cookie extraction, BrowserData, profile deletion or full backups.
 
-Profile fields: `id`, `name`, `tags`, `isPinned`, `isArchived`,
-`processState: "unverified"`. The separate process does not observe browser
-processes. No create/edit/delete/start/stop or page automation tool exists.
+**Does ChatGPT/Grok web connect directly?** Local stdio alone does not provide a remote HTTP endpoint. A separate bridge is needed and is not supplied by NeAntik. Compatibility with a particular AI client is only claimed after its real integration test.
 
-For every page, pass `nextCursor` unchanged. Stop when it is null. If metadata
-changes, the old cursor is rejected; restart without it. Both text JSON and
-`structuredContent` describe the same allowlisted object. Their combined tool
-payload is limited to256KiB, so pages may be smaller than requested. Input
-metadata is limited to64MiB; each newline-delimited request to64KiB.
+**How do I revoke writes?** Copy the read-only configuration or disable the MCP entry and restart the client. Closing MCP does not close existing browser sessions.
 
-### Ask your chat client
-
-- «Покажи названия, теги и закреплённые профили NeAntik».
-- «Прочитай все страницы по50 записей. Передавай nextCursor без изменений,
-  закончи на null. Найди профили без тегов».
-- «Сгруппируй архивные профили по тегам. Ничего не изменяй».
-- «Создай профиль и открой сайт» is unsupported; create and launch in NeAntik.
-
-### Protocol example
-
-Send one JSON object per line; stdout contains protocol only:
-
-```json
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"example","version":"1"}}}
-{"jsonrpc":"2.0","method":"notifications/initialized"}
-{"jsonrpc":"2.0","id":2,"method":"tools/list"}
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"workspace_list_profiles_page","arguments":{"limit":50}}}
-```
-
-Supported versions2025-11-25 and2025-06-18. An unsupported requested version
-receives the latest supported version; a client that cannot support it should
-disconnect. Request IDs are strings or integers, never null or fractions.
-
-## Troubleshooting
-
-| Message | Next action |
+| Error | Next action |
 |---|---|
-| Executable not found | Install/locate NeAntik, copy setup again from that app |
-| Metadata unavailable / requires recovery | Open NeAntik and resolve storage error; preserve files, do not invent an empty profiles.json |
-| Cursor invalid / workspace changed | Restart the page walk without cursor |
-| Response exceeds limit | Use `workspace_list_profiles_page` |
-| Unknown tool | Only the two read-only tools above are available |
-| Invalid initialize params | Supply protocolVersion, capabilities and clientInfo name/version |
-
-Server stdio and copied configuration are qualified on synthetic workspaces.
-Successful connection and model behavior in each third-party client require
-a separate end-to-end check; documentation examples alone do not prove them.
+| Management disabled | Select Manage profiles, copy config, reconnect |
+| Session not initialized | Send initialize and notifications/initialized |
+| Revision conflict | Reread profile and folder_list; retry deliberately |
+| Running/ownership uncertain | Close browser; inspect status; no forced termination |
+| Metadata unavailable | Open manager and inspect storage, then reconnect the client; read mode never repairs a corrupt primary from backup or treats missing metadata as an empty workspace. Never replace files with empty JSON |
+| Cursor invalid | Restart pagination without cursor |
+| Proxy preparation failed | Check provider protocol/port; run availability check; no direct fallback |
+| Request queue full | Wait for pending operations before retry |

@@ -1043,7 +1043,12 @@ final class BrowserProcessManager: ObservableObject {
         return runningProfileIDs.contains(profileID) ? .managed : .stopped
     }
 
-    func withVerifiedProfileDeletion<T>(
+    /// Configuration changes and deletion share the same stopped-process authority.
+    func withVerifiedProfileDeletion<T>(profileID: UUID, _ operation: () throws -> T) throws -> T {
+        try withVerifiedStoppedProfileOperation(profileID: profileID, operation)
+    }
+
+    func withVerifiedStoppedProfileOperation<T>(
         profileID: UUID,
         _ destructiveOperation: () throws -> T
     ) throws -> T {
@@ -1659,6 +1664,17 @@ final class BrowserProcessManager: ObservableObject {
         // SIGTERM can discard Chromium's pending cookie/localStorage writes.
         // A refused quit must keep the profile locked, never force termination.
         return application.terminate()
+    }
+
+    /// A spawned process can be alive before Launch Services can accept quit.
+    /// Do not expose a PID or treat launch registration as ownership evidence.
+    func managedBrowserReadyForQuit(profileID: UUID) -> Bool {
+        guard let process = processes[profileID], process.isRunning,
+              let application = NSRunningApplication(processIdentifier: process.processIdentifier),
+              application.isFinishedLaunching,
+              application.executableURL?.resolvingSymlinksInPath() == process.executableURL?.resolvingSymlinksInPath()
+        else { return false }
+        return true
     }
 
     func stop(profileID: UUID) {

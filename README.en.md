@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The manager version in this branch is NeAntik `0.7.21` (build `84`).
+The manager version in this branch is NeAntik `0.7.22` (build `84`).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `154.0.8037.98`, ARM64, Metal;
-- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.21](https://github.com/AffPapa/neantik/releases/tag/v0.7.21).
+- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.22](https://github.com/AffPapa/neantik/releases/tag/v0.7.22).
 
-`0.7.21` updates the manager and local MCP using the same qualified Chromium. Keep `0.7.20` for rollback. Safe Browsing remains disabled in this distribution.
+`0.7.22` updates the manager and local MCP using the same qualified Chromium. Keep `0.7.21` for rollback. Safe Browsing remains disabled in this distribution.
 
 Direct downloads: [browser.free](https://browser.free).
 
@@ -66,14 +66,14 @@ after 60 seconds; another app can still read it during that interval.
 
 ## In-app help and local MCP
 
-Open **Help → NeAntik Help** (⌘?) for searchable profile, proxy, organization,
-library, recovery, diagnostics and keyboard instructions. **Connect MCP to AI…**
-copies configuration using the actual executable and resolved workspace root.
-Claude Desktop JSON and Codex TOML are provided. Tools `workspace_list_profiles`
-and `workspace_list_profiles_page` only read metadata. No create/start/write
-or browsing automation is provided. Your AI client can send profile names/tags
-to its model; credentials, notes, cookies and BrowserData are excluded. No network
-listener or web bridge is included. [Setup and examples](docs/MCP_GUIDE.md).
+Searchable in-app help covers profiles, proxies, organization, storage and MCP.
+**Help → Connect MCP to AI…** copies workspace-specific JSON/TOML settings.
+Read access is the default; management enables 16 tools for profile creation,
+editing, duplication, proxy settings, project folders, tags, pins, archive and
+normal launch/stop. Profile and folder revisions prevent stale writes; passwords
+are write-only. Stop is graceful and owned by the live MCP session; reconnect
+requires manual browser close. No arbitrary JS, cookie/BrowserData access or
+cloud bridge is exposed. See [setup, examples and FAQ](docs/MCP_GUIDE.md).
 
 ## Security and scope
 

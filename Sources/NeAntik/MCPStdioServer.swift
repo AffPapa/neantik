@@ -12,27 +12,25 @@ enum MCPStdioServer {
     static let protocolVersion = "2025-11-25"
     static let supportedProtocolVersions = ["2025-11-25", "2025-06-18"]
 
-    static func runAndExit(dataRoot: URL) -> Never {
-        var pending = Data()
-        var buffer = [UInt8](repeating: 0, count: 4_096)
-        while true {
-            let count = buffer.withUnsafeMutableBytes {
-                Darwin.read(STDIN_FILENO, $0.baseAddress, $0.count)
-            }
-            if count == 0 { Darwin.exit(EXIT_SUCCESS) }
-            if count < 0 {
-                if errno == EINTR { continue }
-                Darwin.exit(EX_IOERR)
-            }
-            guard let lines = framedLines(
-                pending: &pending, incoming: Data(buffer.prefix(count))
-            ) else { Darwin.exit(EX_DATAERR) }
-            for line in lines {
-                if let response = handle(line, dataRoot: dataRoot) {
-                    write(response)
-                }
+    @MainActor
+    static func runAndExit(dataRoot: URL, allowsManagement: Bool = false) -> Never {
+        signal(SIGPIPE, SIG_IGN)
+        let session = MCPManagementSession(root: dataRoot, allowsManagement: allowsManagement)
+        Thread.detachNewThread {
+            var pending = Data()
+            var buffer = [UInt8](repeating: 0, count: 4_096)
+            while true {
+                let count = buffer.withUnsafeMutableBytes { Darwin.read(STDIN_FILENO, $0.baseAddress, $0.count) }
+                if count == 0 { DispatchQueue.main.async { session.eof() }; return }
+                if count < 0 { if errno == EINTR { continue }; Darwin.exit(EX_IOERR) }
+                guard let lines = framedLines(pending: &pending, incoming: Data(buffer.prefix(count))) else { Darwin.exit(EX_DATAERR) }
+                for line in lines { DispatchQueue.main.sync { session.receive(line) } }
             }
         }
+        // Retained timer keeps an otherwise empty headless runloop alive.
+        let keepalive = Timer(timeInterval: 3_600, repeats: true) { _ in }
+        RunLoop.main.add(keepalive, forMode: .default)
+        while true { RunLoop.main.run(until: .distantFuture) }
     }
 
     /// The cap belongs to each JSON-RPC line, not to a batch of valid lines.
@@ -171,7 +169,7 @@ enum MCPStdioServer {
         }
     }
 
-    private static func isValidRequestID(_ id: Any) -> Bool {
+    static func isValidRequestID(_ id: Any) -> Bool {
         if id is String { return true }
         guard let number = id as? NSNumber else { return false }
         return CFGetTypeID(number) != CFBooleanGetTypeID() &&
@@ -205,7 +203,7 @@ enum MCPStdioServer {
         return ["type": "object", "properties": properties, "required": required, "additionalProperties": false]
     }
 
-    private static func toolError(id: Any, message: String) -> Data? {
+    static func toolError(id: Any, message: String) -> Data? {
         response(id: id, result: ["isError": true, "content": [["type": "text", "text": message]]])
     }
 
@@ -234,7 +232,7 @@ enum MCPStdioServer {
         return (profiles, revision)
     }
 
-    private static func response(
+    static func response(
         id: Any,
         result: [String: Any]? = nil,
         error: (Int, String)? = nil
@@ -247,7 +245,7 @@ enum MCPStdioServer {
         return data + Data([0x0A])
     }
 
-    private static func write(_ data: Data) {
+    static func write(_ data: Data) {
         data.withUnsafeBytes { bytes in
             guard let base = bytes.baseAddress else { return }
             var offset = 0
