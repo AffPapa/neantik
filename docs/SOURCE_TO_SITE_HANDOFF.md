@@ -1,5 +1,19 @@
 # NeAntik Direct source-to-site handoff
 
+## Current manager candidate — 7 October 2026
+
+The next source candidate is 0.7.20 build 83 on `codex/neantik-global-quality-0720`.
+The published baseline remains v0.7.19/82 until new release gates and publication
+are complete. Chromium 154.0.8037.98 is unchanged. Historical sections below are
+not current release authority.
+
+This slice fixes legacy `about:blank` metadata compatibility, future-schema
+recovery, metadata admission during import, proxy stdin/cancellation/readiness,
+stale launch snapshots, editor draft comparison and interactive AX visibility.
+It adds an explicit quick-command open action, bounded read-only MCP pages and
+independent immutable distribution exports. See `GLOBAL_QUALITY_0720.md` for
+exact tests, limits, pending physical keyboard QA and release status.
+
 ## Completed manager release — 3 October 2026
 
 0.7.13 build 76 is published at GitHub and browser.free (Sites version 106).

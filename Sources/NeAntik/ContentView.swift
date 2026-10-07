@@ -512,9 +512,11 @@ struct ContentView: View {
             )
         }
         if let storeError = store.lastError {
+            let title = !store.hasTrustedMetadata ? "Не удалось загрузить профили"
+                : (!store.hasTrustedOrganization ? "Не удалось загрузить папки" : "Не удалось сохранить данные")
             return WorkspaceAlertPresentation(
                 source: .storage,
-                title: "Не удалось сохранить данные",
+                title: title,
                 message: storeError
             )
         }
@@ -638,13 +640,11 @@ struct ContentView: View {
                 }, apply: applySavedFilter, performAction: { action in
                     pendingManagerAction = action; showingManagerLibrary = false
                 })
-                .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
             ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, organization: store.organization, profileCommand: quickProfileCommand, performAction: { action in
                 pendingManagerAction = action; showingQuickCommands = false
             })
-            .accessibilityHidden(true)
         }
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
@@ -666,7 +666,6 @@ struct ContentView: View {
                     normalizeSelection()
                 }
             }
-            .accessibilityHidden(true)
         }
         .sheet(item: $profileFolderPickerRequest) { request in
             if let profile = store.profile(withID: request.profileID) {
@@ -679,12 +678,10 @@ struct ContentView: View {
                 ) { folderID in
                     moveProfile(profile, toFolderID: folderID)
                 }
-                .accessibilityHidden(true)
             } else {
                 ProfileFolderPickerUnavailableSheet {
                     profileFolderPickerRequest = nil
                 }
-                .accessibilityHidden(true)
             }
         }
         .sheet(item: $bulkProxyImportRequest) { request in
@@ -699,7 +696,6 @@ struct ContentView: View {
                     targetFolderID: request.targetFolderID
                 )
             }
-            .accessibilityHidden(true)
         }
         .sheet(item: $transferPassphraseMode) { mode in
             ProfileConfigurationPassphraseSheet(
@@ -721,7 +717,6 @@ struct ContentView: View {
                     transferPassphraseMode = nil
                 }
             )
-            .accessibilityHidden(true)
         }
         .sheet(item: $pendingSnapshotRestore) { request in
             ProfileSnapshotRestorePreviewSheet(
@@ -733,7 +728,6 @@ struct ContentView: View {
                 onCancel: { pendingSnapshotRestore = nil },
                 onRestore: { confirmLocalSnapshotRestore(request.payload) }
             )
-            .accessibilityHidden(true)
         }
         .sheet(isPresented: $showingReleaseFingerprintAudit) {
             if let runtime,
@@ -748,7 +742,6 @@ struct ContentView: View {
                     paths: store.paths,
                     releaseContext: fingerprintEvidenceReleaseContext
                 )
-                .accessibilityHidden(true)
             } else {
                 ContentUnavailableView(
                     "Служебная проверка выпуска недоступна",
@@ -758,7 +751,6 @@ struct ContentView: View {
                     )
                 )
                 .frame(width: 520, height: 360)
-                .accessibilityHidden(true)
             }
         }
         .sheet(item: $fingerprintAuditRequest) { request in
@@ -793,7 +785,6 @@ struct ContentView: View {
                     }
                 }
             )
-            .accessibilityHidden(true)
         }
     }
 
@@ -1371,7 +1362,9 @@ struct ContentView: View {
             action: {
                 guard let current = store.profile(withID: profile.id) else { return }
                 revealSavedProfile(current)
-            }
+            },
+            openAction: { openOrShowProfile(profile.id) },
+            openEnabled: presentedProcessState(for: profile) != .stopped || profileCommandSet(for: profile).presentation.launchIsEnabled
         )
     }
 
@@ -3083,6 +3076,7 @@ struct ContentView: View {
             return
         }
         do {
+            try store.validateLaunchSnapshot(profile)
             let runtime = try launchReadyRuntime()
             switch BrowserLaunchPreparationPolicy.resolveForUserStart(
                 profile: profile
@@ -3198,7 +3192,8 @@ struct ContentView: View {
             let state = await executeProxyTest(
                 profile,
                 token: token,
-                clearsDedicatedTask: false
+                clearsDedicatedTask: false,
+                commitsLaunchContext: true
             )
             guard !Task.isCancelled else {
                 return
@@ -3354,7 +3349,8 @@ struct ContentView: View {
     private func executeProxyTest(
         _ profile: BrowserProfile,
         token: ProxyTestOperationToken,
-        clearsDedicatedTask: Bool
+        clearsDedicatedTask: Bool,
+        commitsLaunchContext: Bool = false
     ) async -> ProxyHealthState? {
         defer {
             if proxyTestOperations.complete(token) {
@@ -3377,7 +3373,8 @@ struct ContentView: View {
                         profileID: profile.id,
                         expectedProxy: proxy,
                         expectedRevision: profile.revision,
-                        previous: previous
+                        previous: previous,
+                        commitsLaunchContext: commitsLaunchContext
                     )
                 }
             )
@@ -3394,8 +3391,10 @@ struct ContentView: View {
         profileID: UUID,
         expectedProxy: ProxyConfiguration,
         expectedRevision: UInt64,
-        previous: ProxyHealthState?
+        previous: ProxyHealthState?,
+        commitsLaunchContext: Bool
     ) async throws -> ProxyHealthTestCommit {
+        var didCommitContext = false
         let checkedAt = Date()
         let next: ProxyHealthState
         let password = try keychain.proxyPassword(
@@ -3410,7 +3409,7 @@ struct ContentView: View {
             let currentPassword = try keychain.proxyPassword(
                 profileID: profileID
             ) ?? ""
-            guard var currentProfile = store.profile(withID: profileID),
+            guard let currentProfile = store.profile(withID: profileID),
                   ProxyTestCommitPolicy.matchesSnapshot(
                       expectedProxy: expectedProxy,
                       currentProxy: currentProfile.proxy,
@@ -3421,18 +3420,19 @@ struct ContentView: View {
             else {
                 throw CancellationError()
             }
-            currentProfile.identity =
-                currentProfile.identity.replacingProxyContext(
-                    timezoneIdentifier:
-                        observation.result.timezoneIdentifier,
+            if commitsLaunchContext {
+                var prepared = currentProfile
+                prepared.identity = prepared.identity.replacingProxyContext(
+                    timezoneIdentifier: observation.result.timezoneIdentifier,
                     localeIdentifier: observation.result.localeIdentifier,
-                    evidence: .from(
-                        observation.source,
-                        observedAt: observation.observedAt
-                    )
-                )
-            _ = try store.upsert(currentProfile)
-            fingerprintObservationStore.remove(profileID: profileID)
+                    evidence: .from(observation.source, observedAt: observation.observedAt))
+                _ = try store.upsert(prepared)
+                didCommitContext = true
+                fingerprintObservationStore.remove(profileID: profileID)
+            }
+            // Manual checks record observations only. The launch preparation
+            // owns route-derived profile context. Keeping this operation in one
+            // health file makes cancellation rollback complete and predictable.
             next = ProxyHealthUpdatePolicy.success(observation)
         } catch is CancellationError {
             throw CancellationError()
@@ -3470,7 +3470,8 @@ struct ContentView: View {
         }
         return ProxyHealthTestCommit(
             state: next,
-            currentIdentity: currentIdentity
+            currentIdentity: currentIdentity,
+            hasDurableProfileCommit: didCommitContext
         )
     }
 

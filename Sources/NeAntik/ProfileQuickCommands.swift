@@ -8,6 +8,8 @@ struct ProfileQuickCommand: Identifiable {
     let subtitle: String
     let enabled: Bool
     let action: () -> Void
+    var openAction: (() -> Void)? = nil
+    var openEnabled: Bool = false
 }
 
 struct ProfileQuickCommandsSheet: View {
@@ -36,6 +38,20 @@ struct ProfileQuickCommandsSheet: View {
         guard !isPerforming, let selected, selected.enabled else { return }
         isPerforming = true
         performAction(selected.action)
+    }
+
+    private func openSelectedProfile() {
+        guard !isPerforming, let selected, selected.openEnabled,
+              let action = selected.openAction else { return }
+        isPerforming = true
+        performAction(action)
+    }
+
+    private var openProfileButton: some View {
+        Button("Открыть / показать профиль", action: openSelectedProfile)
+            .keyboardShortcut(.return, modifiers: .command)
+            .disabled(selected?.openEnabled != true)
+            .help("⌘Return — открыть остановленный профиль или показать работающий; Return — только выбрать в менеджере")
     }
 
     private func moveSelection(by offset: Int) {
@@ -78,6 +94,7 @@ struct ProfileQuickCommandsSheet: View {
                     Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Spacer()
+                        openProfileButton
                         Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
                         Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
                             .disabled(selected?.enabled != true)
@@ -96,6 +113,7 @@ struct ProfileQuickCommandsSheet: View {
         HStack {
             Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
             Spacer()
+            openProfileButton
             Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
             Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
                 .disabled(selected?.enabled != true)

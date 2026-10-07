@@ -3,6 +3,12 @@ import Testing
 @testable import NeAntik
 
 struct ProfileEditorPresentationTests {
+    @Test func incompleteProxyContextExplainsNextActionWithoutReadinessClaim() {
+        let message = ProfileProxyTestPresentation.successMessage(location: "", hasCompleteRouteContext: false)
+        #expect(message.contains("Прокси отвечает"))
+        #expect(message.contains("Повтори проверку перед запуском"))
+        #expect(!message.contains("прошла"))
+    }
     @Test
     func quickStartTemplatesOnlySuggestEditableNameAndTag() {
         let blank = ProfileQuickStartTemplate.blank.draft(
@@ -162,5 +168,15 @@ struct ProfileEditorPresentationTests {
         #expect(!withoutLocation.contains("203.0.113.77"))
         #expect(!withLocation.contains("203.0.113.77"))
         #expect(!withLocation.contains("ipAddress"))
+    }
+}
+
+struct ProfileEditorDraftTests {
+    @Test func pastedDraftAndRevertedFieldsHaveAccurateDiscardState() {
+        let initial = ProfileEditorDraft(values: ["Name", ""], tags: [], folderID: nil)
+        #expect(initial != ProfileEditorDraft(values: ["Name", "user:password@proxy.example:8080"], tags: [], folderID: nil))
+        let edited = ProfileEditorDraft(values: ["Changed", ""], tags: [], folderID: nil)
+        #expect(initial != edited)
+        #expect(initial == ProfileEditorDraft(values: ["Name", ""], tags: [], folderID: nil))
     }
 }

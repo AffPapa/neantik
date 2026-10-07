@@ -4,6 +4,31 @@ import Testing
 
 struct ProxyTesterTests {
     @Test
+    func largeConfigurationIsConsumedWithoutBlockingCaller() async throws {
+        let payload = Data(repeating: 0x78, count: 128 * 1024)
+        let result = try await ProxyTester.runCancellableProcess(
+            executableURL: URL(fileURLWithPath: "/bin/cat"), arguments: [],
+            standardInput: payload, maximumOutputBytes: payload.count)
+        #expect(result.output == payload)
+        #expect(!result.outputExceeded)
+    }
+
+    @Test
+    func cancellationUnblocksLargeInputToNonreadingChild() async {
+        let started = Date()
+        let task = Task {
+            try await ProxyTester.runCancellableProcess(
+                executableURL: URL(fileURLWithPath: "/bin/sleep"), arguments: ["10"],
+                standardInput: Data(repeating: 0x78, count: 128 * 1024))
+        }
+        try? await Task.sleep(for: .milliseconds(100))
+        task.cancel()
+        do { _ = try await task.value; Issue.record("Cancelled input writer succeeded") }
+        catch is CancellationError {} catch { Issue.record("Unexpected cancellation error") }
+        #expect(Date().timeIntervalSince(started) < 2)
+    }
+
+    @Test
     func passwordCompatibilityEnvelopeIsBoundedByUTF8Bytes() {
         func singleGrapheme(atUTF8Boundary byteCount: Int) -> String {
             "a\u{1AB0}" + String(

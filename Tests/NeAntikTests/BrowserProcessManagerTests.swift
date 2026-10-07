@@ -5,6 +5,31 @@ import Testing
 
 @MainActor
 struct BrowserProcessManagerTests {
+    @Test(arguments: ["proxy", "archive", "delete"])
+    func staleCapturedLaunchNeverStartsProcess(change: String) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let captured = try store.upsert(BrowserProfile(name: "Captured direct"))
+        let other = ProfileStore(paths: paths)
+        var changed = captured
+        if change == "proxy" {
+            changed.proxy = ProxyConfiguration(kind: .http, host: "proxy.example", port: 8080, username: "")
+        } else { changed.isArchived = true }
+        _ = try other.upsert(changed)
+        if change == "delete" { try paths.writePrivateFile(Data("[]".utf8), to: paths.profilesFile) }
+        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }, validatesPersistedProfiles: true)
+        let runtime = BrowserRuntime(name: "Fixture", executableURL: URL(fileURLWithPath: "/usr/bin/true"), source: "Fixture")
+        #expect(throws: (any Error).self) { try manager.launch(profile: captured, runtime: runtime) }
+        #expect(!manager.runningProfileIDs.contains(captured.id))
+        #expect(try paths.privateFileEntryKind(paths.lockFile(for: captured.id)) == .missing)
+        if change != "delete" {
+            #expect(try ProfileStore.readProfiles(from: paths.profilesFile).first?.proxy == changed.proxy)
+        }
+    }
+
     @Test
     func proxiedNormalLaunchRequiresPreparationReceipt() throws {
         let root = FileManager.default.temporaryDirectory

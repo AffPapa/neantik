@@ -10,6 +10,38 @@ struct MCPStdioServerTests {
         return try! JSONSerialization.jsonObject(with: response) as! [String: Any]
     }
 
+    @Test func largeWorkspacePagesRemainBoundedAndRevisionBound() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let profiles = (0..<5000).map { BrowserProfile(name: "Synthetic \($0)", note: String(repeating: "🙂", count: 1000)) }
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(profiles)
+        #expect(data.count > 16 * 1024 * 1024)
+        let file = root.appendingPathComponent("profiles.json")
+        try data.write(to: file)
+        func page(cursor: String? = nil) throws -> [String: Any] {
+            var arguments: [String: Any] = ["limit": 100]
+            if let cursor { arguments["cursor"] = cursor }
+            let reply = call("tools/call", params: ["name": "workspace_list_profiles_page", "arguments": arguments], root: root)
+            let result = try #require(reply["result"] as? [String: Any])
+            let content = try #require(result["content"] as? [[String: Any]])
+            let text = try #require(content.first?["text"] as? String)
+            #expect(text.utf8.count <= MCPStdioServer.maximumToolPayloadBytes)
+            if result["isError"] as? Bool == true { return ["error": text] }
+            return try #require(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        }
+        let first = try page()
+        #expect(first["count"] as? Int == 100)
+        #expect(first["totalCount"] as? Int == 5000)
+        let cursor = try #require(first["nextCursor"] as? String)
+        let second = try page(cursor: cursor)
+        #expect(second["count"] as? Int == 100)
+        #expect(try page(cursor: "bad")["error"] != nil)
+        try encoder.encode(Array(profiles.dropLast())).write(to: file)
+        #expect(try page(cursor: cursor)["error"] != nil)
+    }
+
     @Test func listsOnlyAllowlistedMetadataAndNeverClaimsRunningState() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

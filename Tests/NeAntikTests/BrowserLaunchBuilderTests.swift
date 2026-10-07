@@ -38,6 +38,13 @@ struct BrowserLaunchBuilderTests {
         )
     }
 
+    @Test func onlyInertBlankSpecialPageIsAccepted() {
+        #expect(BrowserLaunchBuilder.validatedStartURL("about:blank")?.absoluteString == "about:blank")
+        for value in ["about:config", "about:blank?script=1", "about:blank#x", "file:///etc/passwd", "javascript:alert(1)"] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value) == nil)
+        }
+    }
+
     @Test
     func createsIsolatedProfileArguments() {
         let profile = BrowserProfile(

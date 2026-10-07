@@ -5,6 +5,7 @@ import Foundation
 struct ProxyCheckSummary: Equatable, Sendable {
     enum Status: Equatable, Sendable {
         case neverChecked
+        case incompleteContext
         case currentSuccess
         case staleSuccess
         case latestCheckFailed
@@ -50,6 +51,10 @@ struct ProxyCheckSummary: Equatable, Sendable {
             self.status = .latestCheckFailed
             return
         }
+        guard record.state.hasCompleteRouteContext else {
+            self.status = .incompleteContext
+            return
+        }
         self.status = age <= Self.freshnessLifetime
             ? .currentSuccess
             : .staleSuccess
@@ -58,6 +63,7 @@ struct ProxyCheckSummary: Equatable, Sendable {
     var title: String {
         switch status {
         case .neverChecked: "Прокси ещё не проверялся"
+        case .incompleteContext: "Прокси отвечает; часовой пояс и язык не определены. Повтори проверку перед запуском."
         case .currentSuccess: "Проверка прокси прошла"
         case .staleSuccess: "Проверка прокси устарела"
         case .latestCheckFailed: "Последняя проверка не прошла"

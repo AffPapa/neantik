@@ -80,6 +80,21 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
         self.mutationRevision = mutationRevision
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, folders, assignments, mutationRevision
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
+        guard schemaVersion == Self.currentSchemaVersion else {
+            throw ProfileOrganizationDocumentError.unsupportedSchema
+        }
+        folders = try values.decode([ProfileFolder].self, forKey: .folders)
+        assignments = try values.decode([ProfileFolderAssignment].self, forKey: .assignments)
+        mutationRevision = try values.decodeIfPresent(UUID.self, forKey: .mutationRevision)
+    }
+
     init(state: ProfileOrganizationState) {
         schemaVersion = Self.currentSchemaVersion
         mutationRevision = state.mutationRevision
@@ -253,7 +268,7 @@ enum ProfileOrganizationError: LocalizedError, Equatable {
     }
 }
 
-private enum ProfileOrganizationDocumentError: LocalizedError {
+enum ProfileOrganizationDocumentError: LocalizedError {
     case unsupportedSchema
     case invalidFolder
     case duplicateFolderName

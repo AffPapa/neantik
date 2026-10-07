@@ -4,6 +4,24 @@ import Testing
 
 @MainActor
 struct ProfileOrganizationPersistenceTests {
+    @Test(arguments: ["[]", "{}", "null"])
+    func futureOrganizationDoesNotRecoverOlderBackup(payload: String) throws {
+        let fixture = try OrganizationFixture()
+        let profile = try fixture.store.upsert(BrowserProfile(name: "Preserved"))
+        _ = try fixture.store.createFolder(named: "Preserved folder")
+        let backup = try Data(contentsOf: fixture.paths.profileOrganizationFile)
+        let future = Data("{\"schemaVersion\":99,\"folders\":\(payload),\"assignments\":[]}".utf8)
+        try fixture.paths.writePrivateFile(backup, to: fixture.paths.profileOrganizationBackupFile)
+        try fixture.paths.writePrivateFile(future, to: fixture.paths.profileOrganizationFile)
+        let reloaded = ProfileStore(paths: fixture.paths)
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(reloaded.profile(withID: profile.id) != nil)
+        #expect(!reloaded.hasTrustedOrganization)
+        #expect(throws: (any Error).self) { try reloaded.createFolder(named: "Refused") }
+        #expect(try Data(contentsOf: fixture.paths.profileOrganizationFile) == future)
+        #expect(try Data(contentsOf: fixture.paths.profileOrganizationBackupFile) == backup)
+    }
+
     @Test
     func missingSidecarKeepsLegacyProfilesByteCompatible() throws {
         let fixture = try OrganizationFixture()

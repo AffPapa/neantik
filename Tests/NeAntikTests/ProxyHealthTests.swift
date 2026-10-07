@@ -506,7 +506,7 @@ struct ProxyHealthTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let fileURL = root.appendingPathComponent("proxy-health.json")
         let barrier = ProxyHealthCommitBoundaryBarrier()
-        let profile = BrowserProfile(
+        var profile = BrowserProfile(
             name: "Proxy",
             proxy: ProxyConfiguration(
                 kind: .http,
@@ -514,8 +514,12 @@ struct ProxyHealthTests {
                 port: 8_080,
                 username: "user"
             ),
-            revision: 30
+            revision: 0
         )
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("metadata"))
+        let profiles = ProfileStore(paths: paths)
+        profile = try profiles.upsert(profile)
+        let metadataBefore = try Data(contentsOf: paths.profilesFile)
         let identity = try #require(ProxyHealthIdentity(profile: profile))
         let state = Self.healthState(timestamp: 1_800_000_700.123_456)
         let coordinator = ProxyHealthCoordinator(
@@ -542,6 +546,7 @@ struct ProxyHealthTests {
         let reloaded = try ProxyHealthStore(fileURL: fileURL)
         #expect(await reloaded.state(for: profile.id) == nil)
         #expect(coordinator.healthByProfileID[profile.id] == nil)
+        #expect(try Data(contentsOf: paths.profilesFile) == metadataBefore)
     }
 
     @Test @MainActor
@@ -683,10 +688,55 @@ struct ProxyHealthTests {
     }
 }
 
+extension ProfileStoreTests {
+    @Test @MainActor
+    func durableLaunchContextCompletesHealthPairAfterCancellation() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-durable-launch-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let profile = try store.upsert(BrowserProfile(name: "First proxy launch", proxy: ProxyConfiguration(kind: .http, host: "proxy.example", port: 8080, username: "")))
+        let observed = Date()
+        let state = ProxyHealthState(latestAttempt: ProxyHealthAttempt(checkedAt: observed, outcome: .succeeded, responseTimeMilliseconds: 10),
+            lastSuccess: ProxyHealthSuccess(observedAt: observed, responseTimeMilliseconds: 10, exitAddressWasObserved: true,
+                city: nil, countryName: nil, countryCode: nil, timezoneIdentifier: "America/New_York", localeIdentifier: "en-US"))
+        let barrier = ProxyHealthCommitBoundaryBarrier()
+        let coordinator = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile, executionGate: ProxyTestExecutionGate(), commitBoundaryHook: { await barrier.suspendAtBoundary() })
+        let task = Task { @MainActor in
+            try await coordinator.run(profile: profile, operationWithCurrentIdentity: { _ in
+                var prepared = profile
+                prepared.identity = prepared.identity.replacingProxyContext(timezoneIdentifier: "America/New_York", localeIdentifier: "en-US", evidence: .ipAPI(observedAt: observed))
+                let saved = try store.upsert(prepared)
+                return ProxyHealthTestCommit(state: state, currentIdentity: try #require(ProxyHealthIdentity(profile: saved)), hasDurableProfileCommit: true)
+            })
+        }
+        for _ in 0..<200 where !(await barrier.hasReached()) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        guard await barrier.hasReached() else {
+            task.cancel()
+            await barrier.resume()
+            _ = try await task.value
+            Issue.record("Launch preparation did not reach its commit boundary")
+            return
+        }
+        task.cancel()
+        await barrier.resume()
+        #expect(try await task.value == state)
+        let saved = try #require(store.profile(withID: profile.id))
+        #expect(BrowserLaunchPreparationPolicy.resolve(profile: saved, proxyHealth: coordinator.state(for: saved)) == .launchImmediately)
+        try store.validateLaunchSnapshot(saved)
+        // The launch caller checks Task cancellation separately before process.run.
+    }
+
+}
+
 private actor ProxyHealthCommitBoundaryBarrier {
     private var reached = false
     private var reachWaiters: [CheckedContinuation<Void, Never>] = []
     private var releaseContinuation: CheckedContinuation<Void, Never>?
+
+    func hasReached() -> Bool { reached }
 
     func suspendAtBoundary() async {
         reached = true

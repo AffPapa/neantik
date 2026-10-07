@@ -14,6 +14,7 @@ SWIFT_SECURITY="$DEVELOPMENT_ROOT/security"
 CLANG_CACHE="$DEVELOPMENT_ROOT/clang-module-cache"
 SHOULD_OPEN=1
 REFRESH_RUNTIME=0
+USE_FRESH_FIXTURE=0
 
 # A `.command` file is launched by Terminal with the user's home directory as
 # the working directory. Keep every SwiftPM operation anchored to the project
@@ -25,16 +26,20 @@ export DEVELOPER_DIR="$(
 )"
 
 usage() {
-  echo "Использование: ./Develop-NeAntik.command [--no-open] [--refresh-runtime]"
+  echo "Использование: ./Develop-NeAntik.command [--no-open] [--refresh-runtime] [--fixture]"
   echo
   echo "  --no-open          собрать и проверить Dev.app, но не открывать"
   echo "  --refresh-runtime  заново клонировать встроенный runtime из dist/NeAntik.app"
+  echo "  --fixture          новый временный стенд для проверки, без чтения старых Dev-данных"
 }
 
 while (( $# > 0 )); do
   case "$1" in
     --no-open)
       SHOULD_OPEN=0
+      ;;
+    --fixture)
+      USE_FRESH_FIXTURE=1
       ;;
     --refresh-runtime)
       REFRESH_RUNTIME=1
@@ -115,6 +120,10 @@ if (( REFRESH_RUNTIME == 1 )) || \
 fi
 
 INFO_PLIST="$DEVELOPMENT_APP/Contents/Info.plist"
+DEVELOPMENT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
+DEVELOPMENT_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $DEVELOPMENT_VERSION" "$INFO_PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $DEVELOPMENT_BUILD" "$INFO_PLIST"
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleIdentifier app.neantik.desktop.dev" \
   "$INFO_PLIST"
@@ -215,6 +224,10 @@ if (( SHOULD_OPEN == 1 )); then
   /usr/bin/osascript \
     -e 'tell application id "app.neantik.desktop.dev" to quit' \
     >/dev/null 2>&1 || true
+  if (( USE_FRESH_FIXTURE == 1 )); then
+    export NEANTIK_DEVELOPMENT_DATA_ROOT="$(mktemp -d /private/tmp/neantik-dev-fixture.XXXXXXXX)"
+    echo "Открываю новый временный Dev-стенд. Существующие Dev-данные сохранены."
+  fi
   echo "Открываю изолированную локальную версию."
   exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"
 else

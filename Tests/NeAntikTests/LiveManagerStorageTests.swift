@@ -4,6 +4,7 @@ import Testing
 @testable import NeAntik
 
 @MainActor
+@Suite(.serialized)
 struct LiveManagerStorageTests {
     @Test func exactRuntimeSyntheticStorageLifecycle() async throws {
         let environment = ProcessInfo.processInfo.environment
@@ -14,9 +15,8 @@ struct LiveManagerStorageTests {
         try paths.prepareBaseDirectories()
         let server = try await FingerprintAuditLoopbackServer.start()
         defer { server.stop() }
-        let profile = BrowserProfile(name: "Synthetic storage", startURL: server.url.absoluteString)
         let store = ProfileStore(paths: paths)
-        _ = try store.upsert(profile)
+        let profile = try store.upsert(BrowserProfile(name: "Synthetic storage", startURL: server.url.absoluteString))
         let runtime = BrowserRuntime(name: "NeAntik Browser", executableURL: URL(fileURLWithPath: app).appendingPathComponent("Contents/Resources/NeAntik Browser.app/Contents/MacOS/NeAntik Browser"), source: "Exact runtime storage fixture", flavor: .fingerprintChromium)
         #expect(BrowserRuntimePreflightValidator.validate(runtime).isReady)
         var manager = BrowserProcessManager(paths: paths)
@@ -105,6 +105,72 @@ struct LiveManagerStorageTests {
         manager.stop(profileID: profile.id)
         try await stopped()
         try FileManager.default.removeItem(at: root)
+    }
+
+    @Test func preparedHTTPProxyUsesRuntimeAndFailsClosedWhenUnavailable() async throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["NEANTIK_RUN_LIVE_PROXY"] == "1",
+              let app = environment["NEANTIK_LIVE_AUDIT_APP"] else { return }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-proxy-fixture-\(UUID())")
+        let paths = AppPaths(rootDirectory: root)
+        let server = try await FingerprintAuditLoopbackServer.start()
+        defer { server.stop() }
+        let store = ProfileStore(paths: paths)
+        var draft = BrowserProfile(name: "Synthetic HTTP proxy", startURL: "http://neantik-proxy-fixture.invalid/",
+            proxy: ProxyConfiguration(kind: .http, host: "127.0.0.1", port: try #require(server.url.port), username: ""))
+        draft.identity = draft.identity.replacingProxyContext(timezoneIdentifier: "America/New_York", localeIdentifier: "en-US", evidence: .ipAPI(observedAt: Date()))
+        let profile = try store.upsert(draft)
+        let runtime = BrowserRuntime(name: "NeAntik Browser", executableURL: URL(fileURLWithPath: app).appendingPathComponent("Contents/Resources/NeAntik Browser.app/Contents/MacOS/NeAntik Browser"), source: "Exact runtime proxy fixture", flavor: .fingerprintChromium)
+        let manager = BrowserProcessManager(paths: paths)
+        defer { manager.stop(profileID: profile.id) }
+        let observedAt = try #require(profile.identity.proxyContextEvidence?.observedAt)
+        let health = ProxyHealthUpdatePolicy.success(ProxyTestObservation(observedAt: observedAt, responseTimeMilliseconds: 1,
+            result: ProxyTestResult(ipAddress: "127.0.0.1", city: nil, countryName: nil, countryCode: nil, timezoneIdentifier: "America/New_York", localeIdentifier: "en-US")))
+        let receipt = try #require(BrowserLaunchPreparationPolicy.receipt(profile: profile, proxyHealth: health))
+        try manager.launch(profile: profile, runtime: runtime, preparationReceipt: receipt, additionalArguments: [
+            "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+            "--disable-background-networking", "--disable-component-update", "--disable-sync"
+        ])
+        let portFile = paths.browserDataDirectory(for: profile.id).appendingPathComponent("DevToolsActivePort")
+        var page: URL?
+        for _ in 0..<100 where page == nil {
+            if let port = try? String(contentsOf: portFile, encoding: .utf8).split(separator: "\n").first,
+               let url = URL(string: "http://127.0.0.1:\(port)/json/list"),
+               let (data, _) = try? await URLSession.shared.data(from: url),
+               let targets = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+               let target = targets.first(where: { ($0["url"] as? String) == profile.startURL }),
+               let socket = target["webSocketDebuggerUrl"] as? String { page = URL(string: socket) }
+            if page == nil { try await Task.sleep(for: .milliseconds(100)) }
+        }
+        let socket = try #require(page)
+        // The .invalid destination cannot serve this loopback fixture directly.
+        var title = ""
+        for _ in 0..<100 where title != "Проверка отпечатка NeAntik" {
+            title = try await Self.evaluate("document.title", at: socket)
+            if title != "Проверка отпечатка NeAntik" { try await Task.sleep(for: .milliseconds(100)) }
+        }
+        try #require(title == "Проверка отпечатка NeAntik")
+        server.stop()
+        let navigation = try await Self.command("Page.navigate", params: ["url": profile.startURL + "unavailable-\(UUID())"], at: socket)
+        let result = try #require(navigation["result"] as? [String: Any])
+        #expect(result["errorText"] as? String == "net::ERR_PROXY_CONNECTION_FAILED")
+        let lockData = try JSONSerialization.jsonObject(with: Data(contentsOf: paths.lockFile(for: profile.id))) as? [String: Any]
+        let pid = try #require(lockData?["pid"] as? Int32)
+        for _ in 0..<100 where NSRunningApplication(processIdentifier: pid)?.isFinishedLaunching != true {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        try #require(NSRunningApplication(processIdentifier: pid)?.isFinishedLaunching == true)
+        manager.stop(profileID: profile.id)
+        for _ in 0..<150 where manager.processState(for: profile.id) != .stopped {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        if manager.processState(for: profile.id) != .stopped {
+            print("PROXY_FIXTURE stop_failed=\(manager.lastError ?? "none")")
+            _ = try? await Self.command("Browser.close", params: [:], at: socket)
+        }
+        try #require(manager.processState(for: profile.id) == .stopped)
+        if manager.processState(for: profile.id) == .stopped { try FileManager.default.removeItem(at: root) }
+        print("PROXY_FIXTURE route=loopback-http unavailable=fail-closed credentials=none")
     }
 
     private static func evaluate(_ expression: String, at url: URL) async throws -> String {

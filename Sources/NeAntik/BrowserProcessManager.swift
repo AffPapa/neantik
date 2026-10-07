@@ -400,6 +400,9 @@ enum BrowserLaunchBuilder {
 
     static func validatedStartURL(_ value: String) -> URL? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        // One inert built-in page is safe and was used by older fixtures.
+        // Do not generalize this exception to privileged or script schemes.
+        if trimmed == "about:blank" { return URL(string: trimmed) }
         if let url = URL(string: trimmed),
            let scheme = url.scheme?.lowercased(),
            scheme == "http" || scheme == "https",
@@ -507,6 +510,7 @@ final class BrowserProcessManager: ObservableObject {
     @Published var lastError: String?
 
     private let paths: AppPaths
+    private let validatesPersistedProfiles: Bool
     private let processIdentityInspector:
         (BrowserProcessLock) -> BrowserProcessIdentityInspection
     private let processLivenessValidator: (pid_t) -> Bool
@@ -549,6 +553,7 @@ final class BrowserProcessManager: ObservableObject {
 
     init(paths: AppPaths) {
         self.paths = paths
+        self.validatesPersistedProfiles = true
         self.processIdentityInspector = {
             BrowserProcessManager.inspectProcess($0)
         }
@@ -593,9 +598,11 @@ final class BrowserProcessManager: ObservableObject {
             },
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
+        validatesPersistedProfiles: Bool = false,
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
+        self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = {
             processIdentityValidator($0) ? .expected : .unrelated
         }
@@ -633,9 +640,11 @@ final class BrowserProcessManager: ObservableObject {
             (@Sendable () -> BrowserProcessInventory)? = nil,
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
+        validatesPersistedProfiles: Bool = false,
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
+        self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = processIdentityInspector
         self.processLivenessValidator = processLivenessValidator
         self.browserDataProcessInspector = browserDataProcessInspector
@@ -1530,6 +1539,7 @@ final class BrowserProcessManager: ObservableObject {
                 profileID: profile.id,
                 at: lockURL,
                 browserDataDirectory: browserDataDirectory,
+                expectedProfile: purpose == .normal && validatesPersistedProfiles ? profile : nil,
                 allowsUnknownBrowserDataInspection:
                     ownsFreshFingerprintAuditDirectory
             )
@@ -1544,6 +1554,7 @@ final class BrowserProcessManager: ObservableObject {
                     profileID: profile.id,
                     at: lockURL,
                     browserDataDirectory: browserDataDirectory,
+                    expectedProfile: purpose == .normal && validatesPersistedProfiles ? profile : nil,
                     allowsUnknownBrowserDataInspection:
                         ownsFreshFingerprintAuditDirectory
                 )
@@ -2243,9 +2254,11 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         at lockURL: URL,
         browserDataDirectory: URL,
+        expectedProfile: BrowserProfile? = nil,
         allowsUnknownBrowserDataInspection: Bool = false
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
+            let reserve = { [self] in
             switch try paths.privateFileEntryKind(
                 paths.profileDeletionTombstone(for: profileID)
             ) {
@@ -2293,6 +2306,10 @@ final class BrowserProcessManager: ObservableObject {
                 Self.encodeLock(lock),
                 at: lockURL
             )
+            }
+            if let expectedProfile {
+                try ProfileStore.withValidatedLaunchSnapshot(expectedProfile, paths: paths, operation: reserve)
+            } else { try reserve() }
         }
     }
 

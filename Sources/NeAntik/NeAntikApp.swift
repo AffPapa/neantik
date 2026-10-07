@@ -134,7 +134,6 @@ struct NeAntikApp: App {
                 fingerprintEvidenceReleaseContext:
                     fingerprintEvidenceReleaseContext
             )
-            .accessibilityHidden(true)
             .preferredColorScheme(uiSmokeColorScheme)
             .background {
                 WindowMinimumSizeEnforcer(

@@ -5,6 +5,35 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ProfileStoreTests {
+    @Test func launchSnapshotCanonicalizesNestedEvidenceDates() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        var profile = BrowserProfile(name: "Fractional context")
+        profile.identity = profile.identity.replacingProxyContext(timezoneIdentifier: "America/New_York", localeIdentifier: "en-US", evidence: .from(.ipAPI, observedAt: Date(timeIntervalSince1970: 1800000700.123456)))
+        let saved = try store.upsert(profile)
+        var reserved = false
+        try ProfileStore.withValidatedLaunchSnapshot(saved, paths: paths) { reserved = true }
+        #expect(reserved)
+    }
+
+    @Test
+    func persistedBlankStartPageRemainsReadableAcrossRestart() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let profile = BrowserProfile(name: "Synthetic blank", startURL: "about:blank")
+        let data = try encoder.encode([profile])
+        try paths.writePrivateFile(data, to: paths.profilesFile)
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(store.profile(withID: profile.id)?.startURL == "about:blank")
+        #expect(try Data(contentsOf: paths.profilesFile) == data)
+    }
+
     @Test
     func existingLegacyRevisionZeroCanReceiveProxyWithoutReplacingOtherData() throws {
         let root = FileManager.default.temporaryDirectory
@@ -186,14 +215,14 @@ struct ProfileStoreTests {
         #expect(reloaded.profile(withID: original.id) != nil)
     }
 
-    @Test
-    func unsupportedEnvelopeNeverFallsBackToOlderBackupOrOverwritesData() throws {
+    @Test(arguments: ["[]", "{}", "null"])
+    func unsupportedEnvelopeNeverFallsBackToOlderBackupOrOverwritesData(payload: String) throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let paths = AppPaths(rootDirectory: root)
         try paths.prepareBaseDirectories()
-        let future = Data("{\"schemaVersion\":99,\"profiles\":[]}".utf8)
+        let future = Data("{\"schemaVersion\":99,\"profiles\":\(payload)}".utf8)
         let backup = Data("[]".utf8)
         try paths.writePrivateFile(future, to: paths.profilesFile)
         try paths.writePrivateFile(backup, to: paths.profilesBackupFile)
@@ -492,6 +521,37 @@ struct ProfileStoreTests {
         #expect(saved.count == 1)
         #expect(store.profiles.map(\.id) == saved.map(\.id))
         #expect(store.organization.folders.map(\.name) == ["Gate"])
+    }
+
+    @Test(arguments: [false, true])
+    func moveAndFolderUndoFailFastDuringImport(undo: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let entered = DispatchSemaphore(value: 0)
+        let resume = DispatchSemaphore(value: 0)
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths, beforeBackgroundImportOrganizationPersist: {
+            entered.signal()
+            resume.wait()
+        })
+        let profile = try store.upsert(BrowserProfile(name: "Existing"))
+        let folder = try store.createFolder(named: "Existing folder")
+        _ = try store.moveProfileWithUndo(profile, toFolderID: folder.id)
+        let task = Task {
+            try await store.insertImportedProfilesOffMainActor([BrowserProfile(name: "Imported")], folderNames: ["Imported folder"])
+        }
+        await Task.detached { waitForProfileStoreTestSignal(entered) }.value
+        // Bound the unfixed lock wait so this regression can never deadlock QA.
+        let release = Task.detached {
+            try? await Task.sleep(for: .milliseconds(200))
+            resume.signal()
+        }
+        #expect(throws: ProfileMetadataMutationInProgressError.self) {
+            if undo { try store.undoLastMetadataChange() }
+            else { _ = try store.moveProfileWithUndo(profile, toFolderID: nil) }
+        }
+        await release.value
+        _ = try await task.value
     }
 
     @Test

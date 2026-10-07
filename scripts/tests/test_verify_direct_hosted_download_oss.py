@@ -1,7 +1,10 @@
 import hashlib
+import json
+import os
 import importlib.util
 import plistlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -22,6 +25,27 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DirectHostedDownloadOSSTests(unittest.TestCase):
+    def test_distribution_fifo_receipt_does_not_block_verification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self.make_fixture(root)
+            destination = root / "dist" / "distribution" / "fixture"
+            destination.mkdir(parents=True)
+            archive = destination / source.name
+            shutil.copyfile(source, archive)
+            os.mkfifo(destination / "distribution.json", 0o600)
+            script = """
+import importlib.util,sys
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('hosted_fifo',sys.argv[3])
+m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
+try: m._bound_distribution_digest(Path(sys.argv[1]),Path(sys.argv[2]),Path(sys.argv[2]).name)
+except m.HostedDownloadError: sys.exit(0)
+sys.exit(2)
+"""
+            result = subprocess.run([sys.executable, "-c", script, str(root), str(archive), str(SCRIPT)], timeout=2, capture_output=True)
+            self.assertEqual(result.returncode, 0)
+
     def make_fixture(
         self,
         root: Path,
@@ -44,6 +68,53 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             encoding="utf-8",
         )
         return archive
+
+    def test_independent_distribution_copy_is_bound_without_relaxing_snapshot(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self.make_fixture(root)
+            os.link(source, root / "retained-notary-output")
+            destination = root / "dist" / "distribution" / "fixture"
+            destination.mkdir(parents=True, mode=0o700)
+            archive = destination / source.name
+            shutil.copyfile(source, archive)
+            shutil.copyfile(source.with_suffix(".zip.sha256"), archive.with_suffix(".zip.sha256"))
+            digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            receipt = {"schemaVersion": 1, "files": [{"name": source.name, "sha256": digest, "bytes": source.stat().st_size}, {}, {}, {}]}
+            (destination / "distribution.json").write_text(json.dumps(receipt))
+            legacy_pair = (source.name, digest)
+            def downloader(_url, output, _expected_size): shutil.copyfile(source, output)
+            with mock.patch.object(MODULE, "LEGACY_ARCHIVE_ALLOWLIST", {legacy_pair}):
+                result = MODULE.verify_hosted_download(project_root=root, archive=archive,
+                    download_url="https://github.com/AffPapa/neantik/releases/download/v0.3.12/" + source.name,
+                    downloader=downloader, archive_verifier=lambda _: None, legacy_archive_only=True)
+            self.assertIn("verified", result["status"])
+            self.assertEqual(source.stat().st_nlink, 2)
+            self.assertEqual(archive.stat().st_nlink, 1)
+            def mutating_downloader(_url, output, _expected_size):
+                shutil.copyfile(archive, output)
+                source.write_bytes(b"changed after original binding")
+            with mock.patch.object(MODULE, "LEGACY_ARCHIVE_ALLOWLIST", {legacy_pair}):
+                with self.assertRaises(MODULE.HostedDownloadError):
+                    MODULE.verify_hosted_download(project_root=root, archive=archive,
+                        download_url="https://github.com/AffPapa/neantik/releases/download/v0.3.12/" + source.name,
+                        downloader=mutating_downloader, archive_verifier=lambda _: None, legacy_archive_only=True)
+            receipt["files"][0]["sha256"] = "0" * 64
+            (destination / "distribution.json").write_text(json.dumps(receipt))
+            with self.assertRaises(MODULE.HostedDownloadError):
+                MODULE._bound_distribution_digest(root, archive, source.name)
+
+    def test_distribution_receipt_is_bounded_and_requires_an_object(self):
+        for value in (b"x" * (64 * 1024 + 1), b"[]"):
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); source = self.make_fixture(root)
+                destination = root / "dist" / "distribution" / "fixture"
+                destination.mkdir(parents=True)
+                archive = destination / source.name
+                shutil.copyfile(source, archive)
+                (destination / "distribution.json").write_bytes(value)
+                with self.assertRaises(MODULE.HostedDownloadError):
+                    MODULE._bound_distribution_digest(root, archive, source.name)
 
     def test_download_is_byte_identical_and_reverified_from_fresh_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

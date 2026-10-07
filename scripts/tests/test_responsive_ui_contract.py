@@ -46,27 +46,12 @@ class ResponsiveUIContractTests(unittest.TestCase):
             for marker in forbidden:
                 self.assertNotIn(marker, text, f"{marker} remains in {path.name}")
 
-    def test_swiftui_voiceover_tree_is_hidden_for_owner_policy(self) -> None:
+    def test_interactive_workspace_and_sheets_remain_accessible(self) -> None:
         app = APP.read_text(encoding="utf-8")
         content = CONTENT.read_text(encoding="utf-8")
-
-        self.assertRegex(
-            app,
-            r"(?s)ContentView\(.*?\n\s{12}\)\n\s{12}\.accessibilityHidden\(true\)",
-        )
-
-        sheets = content.split("private var workspaceSheets", 1)[1].split(
-            "private var workspaceToolbar", 1
-        )[0]
-        sheet_segments = sheets.split(".sheet(")[1:]
-        self.assertGreater(len(sheet_segments), 0)
-        for index, segment in enumerate(sheet_segments, start=1):
-            segment = segment.split(".sheet(", 1)[0]
-            self.assertIn(
-                ".accessibilityHidden(true)",
-                segment,
-                f"workspace sheet {index} is exposed to VoiceOver",
-            )
+        self.assertNotRegex(app, r"(?s)ContentView\(.*?\n\s{12}\)\n\s{12}\.accessibilityHidden\(true\)")
+        sheets = content.split("private var workspaceSheets", 1)[1].split("private var workspaceToolbar", 1)[0]
+        self.assertNotIn(".accessibilityHidden(true)", sheets)
 
     def test_keyboard_focus_and_shortcuts_remain_available(self) -> None:
         content = CONTENT.read_text(encoding="utf-8")
@@ -275,10 +260,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("FirstProfileOnboardingView(", text)
         self.assertIn("onCreateAndOpen: createAndOpenFirstProfile", text)
 
-        self.assertIn('"Создать и открыть"', onboarding)
-        self.assertIn('Button("Настроить…"', onboarding)
+        self.assertIn('"Сразу создать и открыть без прокси"', onboarding)
+        self.assertIn('Text("Создать профиль с настройками…")', onboarding)
         self.assertIn("FirstProfileBootstrap.routeSummary", onboarding)
-        self.assertIn("ViewThatFits(in: .horizontal)", onboarding)
+        self.assertIn("VStack(spacing: 8)", onboarding)
         self.assertIn(".buttonStyle(.borderedProminent)", onboarding)
         create_button_start = onboarding.index(
             "private var createAndOpenButton: some View"
@@ -288,7 +273,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             create_button_start,
         )
         create_button = onboarding[create_button_start:configure_button_start]
-        self.assertIn(".keyboardShortcut(.defaultAction)", create_button)
+        self.assertIn(".keyboardShortcut(.defaultAction)", onboarding[configure_button_start:])
         self.assertIn(
             ".disabled(!presentation.primaryIsEnabled)",
             create_button,
@@ -346,11 +331,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         text = EDITOR.read_text(encoding="utf-8")
-        self.assertIn('Label("Вставить прокси"', text)
+        self.assertIn('Label("Заполнить из буфера"', text)
         self.assertIn('Label("Проверить прокси"', text)
-        self.assertIn("private func importProxy()", text)
+        self.assertIn("private func importProxy(source: String)", text)
         self.assertNotIn("importProxyAndTest", text)
-        import_start = text.index("private func importProxy()")
+        import_start = text.index("private func importProxy(source: String)")
         test_start = text.index("private func startProxyTest(")
         import_body = text[import_start:test_start]
         self.assertNotIn("startProxyTest(", import_body)
@@ -366,7 +351,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn(".contentShape(Rectangle())", advanced)
         self.assertIn(".accessibilityHidden(true)", advanced)
         self.assertIn(
-            '.accessibilityLabel("Дополнительные настройки профиля")',
+            '.accessibilityLabel("Организация и оформление профиля")',
             advanced,
         )
         self.assertIn(
@@ -384,11 +369,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         editor = EDITOR.read_text(encoding="utf-8")
-        organization_start = editor.index('Section("Организация")')
-        organization_end = editor.index(
-            "\n        Section {",
-            organization_start,
-        )
+        organization_start = editor.index('if showsAdvancedOptions {')
+        organization_end = editor.index('        .formStyle(.grouped)', organization_start)
         organization = editor[organization_start:organization_end]
         note_editor_start = editor.index("private var noteEditor")
         note_editor_end = editor.index(
@@ -550,8 +532,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         tools_start = text.index("private var diagnosticTools: some View")
         overview = text[overview_start:tools_start]
 
-        self.assertIn("if hasOverviewAction", overview)
-        self.assertIn("recommendedAction", overview)
+        self.assertIn("overviewFacts", overview)
+        self.assertIn("criticalFindings", overview)
         self.assertNotIn("snapshot.limitations.last", overview)
         self.assertNotIn("fingerprintDisabledReason", overview)
         self.assertIn('Text("Дополнительные проверки")', text)

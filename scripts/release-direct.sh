@@ -66,4 +66,4 @@ fi
   --release-gate
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"
 
-echo "Next: upload the versioned archive, then run scripts/verify-direct-hosted-download.py with --candidate-manifest, --release-channel, --fingerprint-evidence and --fingerprint-attestation."
+echo "Next: complete ZIP/DMG packaging with Release-NeAntik.command and use its independent dist/distribution upload files; run scripts/verify-direct-hosted-download.py with that --archive, --candidate-manifest, --release-channel, --fingerprint-evidence and --fingerprint-attestation."

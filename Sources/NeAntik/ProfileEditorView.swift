@@ -98,7 +98,10 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
 }
 
 enum ProfileProxyTestPresentation {
-  static func successMessage(location: String) -> String {
+  static func successMessage(location: String, hasCompleteRouteContext: Bool = true) -> String {
+    guard hasCompleteRouteContext else {
+      return "Прокси отвечает, но часовой пояс и язык не определены. Повтори проверку перед запуском."
+    }
     let cleanLocation = location.trimmingCharacters(
       in: .whitespacesAndNewlines
     )
@@ -111,6 +114,14 @@ enum ProfileProxyTestPresentation {
 private enum ProxyEntryMode: String, CaseIterable {
   case paste = "Вставить строку"
   case manual = "Поля"
+}
+
+/// Value comparison prevents both lost paste drafts and stale dirty flags
+/// after reverting an edit. Secrets remain transient and are never logged.
+struct ProfileEditorDraft: Equatable {
+  let values: [String]
+  let tags: [String]
+  let folderID: UUID?
 }
 
 struct ProfileEditorView: View {
@@ -128,6 +139,7 @@ struct ProfileEditorView: View {
   private let proxyPasswordReadFailed: Bool
   private let draftProfileID: UUID
   private let initialFocus: ProfileEditorField?
+  private let initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
@@ -165,7 +177,11 @@ struct ProfileEditorView: View {
   @State private var isTesting = false
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
-  @State private var hasUnsavedChanges = false
+  private var hasUnsavedChanges: Bool {
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL,
+      String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
+      proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
+  }
   @State private var showingDiscardConfirmation = false
   @State private var showingFolderPicker = false
   @FocusState private var focusedField: ProfileEditorField?
@@ -242,6 +258,11 @@ struct ProfileEditorView: View {
         )
       }
     }
+    initialDraft = ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
+      profile.note, profile.startURL, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
+      profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
+      folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil)
     _detectedProxy = State(
       initialValue: profile.identity.timezoneIdentifier == nil
         ? nil
@@ -346,7 +367,6 @@ struct ProfileEditorView: View {
                   : nil
               name = draft.name
               tags = draft.tags
-              if changed { hasUnsavedChanges = true }
             }
             Text("Заполняются только название и тег. Остальные параметры можно изменить перед сохранением.")
               .font(.caption)
@@ -365,7 +385,6 @@ struct ProfileEditorView: View {
               if value != generatedTemplateName {
                 generatedTemplateName = nil
               }
-              hasUnsavedChanges = true
               clearValidation(for: .name)
               if value.count > BrowserProfile.maximumNameLength {
                 name = String(
@@ -837,29 +856,23 @@ struct ProfileEditorView: View {
       proxyTestTask?.cancel()
     }
     .onChange(of: usesProxy) { _, _ in
-      hasUnsavedChanges = true
       proxyInputDidChange()
     }
     .onChange(of: proxyKind) { _, _ in
-      hasUnsavedChanges = true
       proxyInputDidChange()
     }
     .onChange(of: proxyHost) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .proxyHost)
       proxyInputDidChange()
     }
     .onChange(of: proxyPort) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .proxyPort)
       proxyInputDidChange()
     }
     .onChange(of: proxyUsername) { _, _ in
-      hasUnsavedChanges = true
       proxyInputDidChange()
     }
     .onChange(of: proxyPassword) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .proxyPassword)
       proxyInputDidChange()
     }
@@ -868,20 +881,14 @@ struct ProfileEditorView: View {
       proxyImportFailed = false
     }
     .onChange(of: tags) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .tags)
     }
     .onChange(of: note) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .note)
     }
-    .onChange(of: selectedFolderID) { _, _ in hasUnsavedChanges = true }
     .onChange(of: startURL) { _, _ in
-      hasUnsavedChanges = true
       clearValidation(for: .startURL)
     }
-    .onChange(of: colorHex) { _, _ in hasUnsavedChanges = true }
-    .onChange(of: symbolName) { _, _ in hasUnsavedChanges = true }
   }
 
   private func requestDismiss() {
@@ -1321,19 +1328,20 @@ struct ProfileEditorView: View {
           await MainActor.run {
             let result = observation.result
             let location = result.locationSummary
+            let hasCompleteRouteContext = ProxyHealthUpdatePolicy.success(observation).hasCompleteRouteContext
             testMessage = ProfileProxyTestPresentation.successMessage(
-              location: location
+              location: location, hasCompleteRouteContext: hasCompleteRouteContext
             )
             detectedProxy = proxy
             detectedTimezone = result.timezoneIdentifier
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
-            detectedProxyContextEvidence = .from(
+            detectedProxyContextEvidence = hasCompleteRouteContext ? .from(
               observation.source,
               observedAt: observation.observedAt
-            )
+            ) : nil
             isTesting = false
-            proxyTestSucceeded = true
+            proxyTestSucceeded = hasCompleteRouteContext
             proxyTestTask = nil
           }
         } catch {

@@ -378,8 +378,9 @@ struct ProxyTester: Sendable {
         runner.process.standardOutput = output
         runner.process.standardError = FileHandle.nullDevice
 
-        input.fileHandleForWriting.write(standardInput)
-        try input.fileHandleForWriting.close()
+        // Darwin pipes otherwise send SIGPIPE when a cancelled child closes
+        // stdin. Keep that failure local to this writer, not the manager.
+        _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
 
         return try await withTaskCancellationHandler {
             try Task.checkCancellation()
@@ -393,6 +394,17 @@ struct ProxyTester: Sendable {
                 }
                 do {
                     try runner.start()
+                    // Start the reader before filling its finite pipe. Large
+                    // valid credentials must never block the calling actor.
+                    DispatchQueue.global(qos: .utility).async {
+                        defer { try? input.fileHandleForWriting.close() }
+                        do { try input.fileHandleForWriting.write(contentsOf: standardInput) }
+                        catch {
+                            // A child may exit without consuming all config.
+                            // Its bounded output/status remains the authority.
+                            runner.cancel()
+                        }
+                    }
                     DispatchQueue.global(qos: .utility).async {
                         do {
                             while let chunk = try output
@@ -411,6 +423,7 @@ struct ProxyTester: Sendable {
                         }
                     }
                 } catch {
+                    try? input.fileHandleForWriting.close()
                     completion.fail(error)
                 }
             }

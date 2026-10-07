@@ -1199,6 +1199,9 @@ final class ProfileStore: ObservableObject {
     ) throws -> Result {
         try requireStorage()
         try requireOrganizationStorage()
+        // Fail before waiting on a worker-owned flock; UI mutations must not
+        // interleave with the import's disk commit and state publication.
+        try requireSynchronousMutationAdmission()
         return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             do {
@@ -1453,6 +1456,42 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    /// Reserve a launch while holding process -> metadata guards in that order.
+    /// A captured UI value is never authority for a route after another writer
+    /// changes its revision. Compare identity at the persisted ISO8601 precision.
+    static func withValidatedLaunchSnapshot<Result>(
+        _ expected: BrowserProfile, paths: AppPaths,
+        operation: () throws -> Result
+    ) throws -> Result {
+        guard !backgroundMetadataImportInProgress else {
+            throw ProfileMetadataMutationInProgressError()
+        }
+        return try paths.withProfilesMetadataGuard {
+            let profiles = try readProfilesWithRecovery(paths: paths).profiles
+            let normalized = try normalizedForIsolation(profiles)
+            guard !normalized.changed else { throw ProfileStorageUnavailableError() }
+            guard let current = profiles.first(where: { $0.id == expected.id }) else {
+                throw BrowserProfileDeletedError()
+            }
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            let persistedExpectedIdentity = try decoder.decode(BrowserIdentity.self, from: encoder.encode(expected.identity))
+            guard current.revision == expected.revision,
+                  current.proxy == expected.proxy,
+                  current.identity == persistedExpectedIdentity,
+                  current.startURL == expected.startURL,
+                  current.isArchived == expected.isArchived else {
+                throw BrowserProfileRevisionConflictError(profileID: expected.id)
+            }
+            return try operation()
+        }
+    }
+
+    func validateLaunchSnapshot(_ profile: BrowserProfile) throws {
+        try requireStorage()
+        try Self.withValidatedLaunchSnapshot(profile, paths: paths) {}
+    }
+
     nonisolated static func readProfiles(from url: URL) throws -> [BrowserProfile] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [] }
         return try decodeProfiles(Data(contentsOf: url))
@@ -1587,6 +1626,9 @@ final class ProfileStore: ObservableObject {
                 warning: nil,
                 recovered: false
             )
+        } catch ProfileOrganizationDocumentError.unsupportedSchema {
+            // A newer document is not corruption. Never downgrade it from backup.
+            throw ProfileOrganizationDocumentError.unsupportedSchema
         } catch let currentError {
             switch try paths.privateFileEntryKind(
                 paths.profileOrganizationBackupFile
@@ -1772,6 +1814,15 @@ struct ProfileOrganizationLoad: Sendable {
 private struct LegacyProfilesDocument: Decodable {
     let schemaVersion: Int
     let profiles: [BrowserProfile]
+
+    private enum CodingKeys: String, CodingKey { case schemaVersion, profiles }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
+        // Check the contract before interpreting an unknown payload shape.
+        guard schemaVersion == 1 else { throw UnsupportedProfilesSchemaError() }
+        profiles = try values.decode([BrowserProfile].self, forKey: .profiles)
+    }
 }
 
 private struct UnsupportedProfilesSchemaError: LocalizedError {

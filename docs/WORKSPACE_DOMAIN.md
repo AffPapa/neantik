@@ -48,9 +48,9 @@ notes, proxy details, exact network observations, BrowserData or fingerprint
 material. The mode cannot launch/stop browsers or mutate profiles.
 
 The initial supported MCP methods are `initialize`, `ping`, `tools/list` and
-`tools/call` for `workspace_list_profiles`, using the 2025-11-25 JSON-RPC
+`tools/call` for `workspace_list_profiles` or `workspace_list_profiles_page`, using the 2025-11-25 JSON-RPC
 stdio protocol. Messages are newline-delimited and requests are limited to
-64 KiB; metadata input is limited to 16 MiB. A malformed or unsafe metadata
+64 KiB; metadata input is limited to 64 MiB. A malformed or unsafe metadata
 file yields a generic error. Standard output contains protocol messages only.
 Malformed JSON, invalid request IDs and non-object parameters receive distinct
 JSON-RPC errors. These checks do not grant any write or launch capability.
@@ -64,3 +64,15 @@ Grok has not yet been certified.
 Future create/edit/launch tools require a separate threat model, revision
 checks, process reconciliation and a user-visible confirmation model. The
 current adapter is a foundation for those tools, not browser RPA.
+
+
+### Bounded workspace reads
+
+The adapter reads at most 64 MiB of metadata. Pages accept `limit` (1–100,
+default 50) and an optional `cursor`. The response includes `totalCount` and
+`nextCursor`; pass the cursor unchanged. A metadata change invalidates it,
+so restart from the first page. The legacy full-list tool refuses responses
+over 256 KiB and directs the client to pagination. Pages may be smaller than
+the requested limit to stay within that bound. Notes, proxy configuration,
+credentials and browser data remain excluded. Very large workspaces beyond
+the file cap require a separate adapter design rather than an unbounded read.

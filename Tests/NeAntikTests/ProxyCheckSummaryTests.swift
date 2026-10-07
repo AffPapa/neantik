@@ -17,6 +17,18 @@ struct ProxyCheckSummaryTests {
     }
 
     @Test
+    func ipOnlyObservationDoesNotClaimReadyForLaunch() {
+        var partial = record(at: now)
+        partial = ProxyHealthRecord(identity: identity, state: ProxyHealthState(
+            latestAttempt: partial.state.latestAttempt,
+            lastSuccess: ProxyHealthSuccess(observedAt: now, responseTimeMilliseconds: 10,
+                exitAddressWasObserved: true, city: nil, countryName: nil, countryCode: nil,
+                timezoneIdentifier: nil, localeIdentifier: nil)))
+        #expect(summary(record: partial).status == .incompleteContext)
+        #expect(summary(record: partial).title.contains("Повтори"))
+    }
+
+    @Test
     func distinguishesNeverCheckedFreshAndStale() {
         #expect(summary(record: nil).status == .neverChecked)
         #expect(summary(record: record(at: now.addingTimeInterval(-60))).status == .currentSuccess)
@@ -84,8 +96,8 @@ struct ProxyCheckSummaryTests {
             city: nil,
             countryName: nil,
             countryCode: nil,
-            timezoneIdentifier: nil,
-            localeIdentifier: nil
+            timezoneIdentifier: "America/New_York",
+            localeIdentifier: "en-US"
         )
         return ProxyHealthRecord(
             identity: identity,

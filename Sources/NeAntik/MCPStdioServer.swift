@@ -1,12 +1,14 @@
 import Darwin
 import CoreFoundation
 import Foundation
+import CryptoKit
 
 /// Local, opt-in MCP transport. No socket, listener, account, or browser action.
 /// The client explicitly selects a metadata root; output is an allowlist only.
 enum MCPStdioServer {
     static let maximumRequestBytes = 64 * 1_024
-    static let maximumProfilesFileBytes = 16 * 1_024 * 1_024
+    static let maximumProfilesFileBytes = 64 * 1_024 * 1_024
+    static let maximumToolPayloadBytes = 256 * 1_024
     static let protocolVersion = "2025-11-25"
 
     static func runAndExit(dataRoot: URL) -> Never {
@@ -73,41 +75,81 @@ enum MCPStdioServer {
         case "ping":
             return response(id: id, result: [:])
         case "tools/list":
-            return response(id: id, result: ["tools": [[
-                "name": "workspace_list_profiles",
-                "description": "List safe profile metadata from the selected local workspace. Running state, proxy endpoint, credentials, browser data, and fingerprint are unavailable.",
-                "inputSchema": ["type": "object", "properties": [:], "additionalProperties": false]
-            ]]])
+            let tools: [[String: Any]] = [
+                ["name": "workspace_list_profiles",
+                 "description": "List allowlisted local metadata for small workspaces. Use workspace_list_profiles_page for large workspaces. No credentials, notes, browser data or proven running state.",
+                 "inputSchema": ["type": "object", "properties": [:], "additionalProperties": false]],
+                ["name": "workspace_list_profiles_page",
+                 "description": "Read a bounded page of allowlisted metadata. Pass nextCursor unchanged; restart if the workspace changes.",
+                 "inputSchema": ["type": "object", "properties": [
+                    "limit": ["type": "integer", "minimum": 1, "maximum": 100],
+                    "cursor": ["type": "string"]], "additionalProperties": false]]
+            ]
+            return response(id: id, result: ["tools": tools])
         case "tools/call":
+            guard params["arguments"] == nil || params["arguments"] is [String: Any] else {
+                return response(id: id, error: (-32602, "Invalid arguments"))
+            }
             let arguments = params["arguments"] as? [String: Any] ?? [:]
-            guard params["name"] as? String == "workspace_list_profiles",
-                  params["arguments"] == nil || params["arguments"] is [String: Any],
-                  arguments.isEmpty
-            else { return response(id: id, error: (-32602, "Unknown tool or arguments")) }
-            do {
-                let profiles = try readProfiles(dataRoot: dataRoot)
-                let safeProfiles: [[String: Any]] = profiles.map { profile in
-                    ["id": profile.id.uuidString,
-                     "name": profile.name,
-                     "tags": profile.tags,
-                     "isPinned": profile.isPinned,
-                     "isArchived": profile.isArchived,
-                     "processState": "unverified"]
+            let paginated = params["name"] as? String == "workspace_list_profiles_page"
+            guard paginated || params["name"] as? String == "workspace_list_profiles" else {
+                return response(id: id, error: (-32602, "Unknown tool"))
+            }
+            var limit = 50
+            if paginated {
+                guard Set(arguments.keys).isSubset(of: ["limit", "cursor"]) else {
+                    return response(id: id, error: (-32602, "Invalid arguments"))
                 }
-                let payload: [String: Any] = [
-                    "schemaVersion": 1,
-                    "profiles": safeProfiles,
-                    "count": safeProfiles.count
-                ]
-                let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
-                let text = String(decoding: data, as: UTF8.self)
-                return response(id: id, result: ["content": [["type": "text", "text": text]]])
+                if let value = arguments["limit"] {
+                    guard let number = value as? NSNumber,
+                          CFGetTypeID(number) != CFBooleanGetTypeID(),
+                          number.doubleValue == Double(number.intValue),
+                          (1...100).contains(number.intValue) else {
+                        return response(id: id, error: (-32602, "Invalid limit"))
+                    }
+                    limit = number.intValue
+                }
+                guard arguments["cursor"] == nil || arguments["cursor"] is String else {
+                    return response(id: id, error: (-32602, "Invalid cursor"))
+                }
+            } else if !arguments.isEmpty {
+                return response(id: id, error: (-32602, "Invalid arguments"))
+            }
+            do {
+                let snapshot = try readProfiles(dataRoot: dataRoot)
+                var offset = 0
+                if let cursor = arguments["cursor"] as? String {
+                    let parts = cursor.split(separator: ":", omittingEmptySubsequences: false)
+                    guard parts.count == 2, parts[0] == snapshot.revision,
+                          let parsed = Int(parts[1]), parsed >= 0, parsed <= snapshot.profiles.count else {
+                        return toolError(id: id, message: "Cursor invalid or workspace changed. Restart without cursor.")
+                    }
+                    offset = parsed
+                }
+                var end = paginated ? min(offset + limit, snapshot.profiles.count) : snapshot.profiles.count
+                while true {
+                    let safeProfiles: [[String: Any]] = snapshot.profiles[offset..<end].map { profile in
+                        ["id": profile.id.uuidString, "name": profile.name, "tags": profile.tags,
+                         "isPinned": profile.isPinned, "isArchived": profile.isArchived,
+                         "processState": "unverified"]
+                    }
+                    var payload: [String: Any] = ["schemaVersion": 1, "profiles": safeProfiles, "count": safeProfiles.count]
+                    if paginated {
+                        payload["totalCount"] = snapshot.profiles.count
+                        payload["nextCursor"] = end < snapshot.profiles.count ? "\(snapshot.revision):\(end)" : NSNull()
+                    }
+                    let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+                    if data.count <= maximumToolPayloadBytes {
+                        return response(id: id, result: ["content": [["type": "text", "text": String(decoding: data, as: UTF8.self)]]])
+                    }
+                    guard paginated, end - offset > 1 else {
+                        return toolError(id: id, message: "Response exceeds limit. Use workspace_list_profiles_page.")
+                    }
+                    // Return an explicitly smaller page, never silently truncate.
+                    end = offset + (end - offset) / 2
+                }
             } catch {
-                // Never echo paths, file contents, or parser diagnostics to clients.
-                return response(id: id, result: [
-                    "isError": true,
-                    "content": [["type": "text", "text": "Workspace metadata unavailable or requires recovery in NeAntik."]]
-                ])
+                return toolError(id: id, message: "Workspace metadata unavailable or requires recovery in NeAntik.")
             }
         default:
             return response(id: id, error: (-32601, "Method not found"))
@@ -120,7 +162,11 @@ enum MCPStdioServer {
         return CFGetTypeID(number) != CFBooleanGetTypeID()
     }
 
-    private static func readProfiles(dataRoot: URL) throws -> [BrowserProfile] {
+    private static func toolError(id: Any, message: String) -> Data? {
+        response(id: id, result: ["isError": true, "content": [["type": "text", "text": message]]])
+    }
+
+    private static func readProfiles(dataRoot: URL) throws -> (profiles: [BrowserProfile], revision: String) {
         let paths = AppPaths(rootDirectory: dataRoot)
         try paths.validatePrivateDirectory(dataRoot)
         let file = paths.profilesFile
@@ -141,7 +187,8 @@ enum MCPStdioServer {
         let profiles = try ProfileStore.decodeProfiles(data)
         let normalized = try ProfileStore.normalizedForIsolation(profiles)
         guard !normalized.changed else { throw POSIXError(.EINVAL) }
-        return profiles
+        let revision = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        return (profiles, revision)
     }
 
     private static func response(

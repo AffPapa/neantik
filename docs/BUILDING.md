@@ -40,6 +40,18 @@ If an engineering or cached runtime is invalid, only the copy inside
 Developer ID signing or notarization. The command never creates or mutates a
 release candidate.
 
+Use `./Develop-NeAntik.command --fixture` for a new empty temporary workspace.
+This preserves previous Dev data and makes empty-state QA independent of it.
+Never replace a failed-read workspace with empty data or call that recovery.
+For populated UI QA, create an empty directory under
+`/private/tmp/neantik-dev-fixture.*`, set `NEANTIK_POPULATE_DEV_FIXTURE` to it,
+and run the targeted Swift test `populatedDevelopmentWorkspaceSurvivesRestart`.
+Then launch the Dev executable with `NEANTIK_DEVELOPMENT_DATA_ROOT` set to that
+same directory. The test creates eight synthetic profiles with tags, a folder,
+pinning, an archive and long names; no accounts or proxy credentials are used.
+The same fixture is validated and removed during ordinary tests. A preserved
+Dev workspace containing `about:blank` profiles is supported without migration.
+
 Live browser checks are deliberately separate from normal CI because they
 require a locally built `NeAntik-Dev.app` and an active macOS GUI session.
 After `./Develop-NeAntik.command --no-open`, run the quick launch-and-stop

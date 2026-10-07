@@ -69,7 +69,13 @@ echo "[2/2] Готовлю подписанный и notarized DMG из точн
 "$PROJECT_DIR/scripts/release-direct-dmg.sh"
 
 echo
+DISTRIBUTION_PARENT="$PROJECT_DIR/dist/distribution"
+mkdir -p "$DISTRIBUTION_PARENT"
+DISTRIBUTION_DIR="$DISTRIBUTION_PARENT/v$VERSION-$BUILD-$(date -u '+%Y%m%dT%H%M%SZ')-$$"
+python3 "$PROJECT_DIR/scripts/export-direct-distribution.py" \
+  --source-dir "$PROJECT_DIR/dist" --destination "$DISTRIBUTION_DIR" --version "$VERSION"
+echo "Distribution upload directory: $DISTRIBUTION_DIR"
 echo "PASS: локальный Direct release готов."
-echo "ZIP: $ZIP_PATH"
-echo "DMG: $DMG_PATH"
+echo "ZIP upload: $DISTRIBUTION_DIR/$(basename "$ZIP_PATH")"
+echo "DMG upload: $DISTRIBUTION_DIR/$(basename "$DMG_PATH")"
 echo "GitHub и сайт этим сценарием не изменялись."

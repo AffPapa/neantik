@@ -62,13 +62,16 @@ actor ProxyHealthRepository {
 struct ProxyHealthTestCommit: Equatable, Sendable {
     let state: ProxyHealthState
     let currentIdentity: ProxyHealthIdentity
+    let hasDurableProfileCommit: Bool
 
     init(
         state: ProxyHealthState,
-        currentIdentity: ProxyHealthIdentity
+        currentIdentity: ProxyHealthIdentity,
+        hasDurableProfileCommit: Bool = false
     ) {
         self.state = state
         self.currentIdentity = currentIdentity
+        self.hasDurableProfileCommit = hasDurableProfileCommit
     }
 }
 
@@ -224,7 +227,10 @@ final class ProxyHealthCoordinator: ObservableObject {
                 identity: initialIdentity
             )
             let commit = try await operation(previous)
-            try Task.checkCancellation()
+            // Launch preparation's durable profile save is the commit point.
+            // Complete its paired health record even if cancellation arrives
+            // afterward; the caller still checks cancellation before launching.
+            if !commit.hasDurableProfileCommit { try Task.checkCancellation() }
             guard commit.currentIdentity.proxy == initialIdentity.proxy else {
                 return ProxyHealthTestExecutionResult.stale
             }
@@ -244,7 +250,7 @@ final class ProxyHealthCoordinator: ObservableObject {
                 writtenRecord: persistedRecord
             )
             await commitBoundaryHook()
-            if Task.isCancelled {
+            if Task.isCancelled && !commit.hasDurableProfileCommit {
                 try await Self.restoreAfterCancellation(
                     receipt,
                     profileID: profileID,
@@ -260,7 +266,7 @@ final class ProxyHealthCoordinator: ObservableObject {
         guard case let .committed(result, receipt)? = executionResult else {
             return nil
         }
-        if Task.isCancelled {
+        if Task.isCancelled && !result.hasDurableProfileCommit {
             try await Self.restoreAfterCancellation(
                 receipt,
                 profileID: profileID,

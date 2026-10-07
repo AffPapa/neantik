@@ -40,11 +40,12 @@ struct LiveBrowserProcessManagerIntegrationTests {
         }
         let paths = AppPaths(rootDirectory: temporaryRoot)
         try paths.prepareBaseDirectories()
-        let profile = BrowserProfile(
+        var profile = BrowserProfile(
             name: "Ordinary manager smoke",
-            startURL: "http://127.0.0.1:9",
+            startURL: "about:blank",
             identity: BrowserIdentity(seed: 21)
         )
+        profile = try ProfileStore(paths: paths).upsert(profile)
         try paths.prepareProfileDirectories(for: profile.id)
 
         let runtime = BrowserRuntime(
