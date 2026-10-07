@@ -35,6 +35,16 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
+    def test_compiled_help_examples_pass_existing_binary_privacy_rules(self) -> None:
+        # Help strings ship in the executable. Apply the same opaque-binary
+        # scanner here, so illustrative credentials cannot block packaging.
+        help_source = SCRIPT.parents[1] / "Sources/NeAntik/HelpContent.swift"
+        entry = MODULE.ArtifactEntry(
+            name="Contents/MacOS/NeAntik",
+            payload=help_source.read_bytes(),
+        )
+        self.assertEqual(MODULE.inspect_binary(entry), [])
+
     def test_single_public_file_is_verified_without_parent_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
