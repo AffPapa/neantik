@@ -43,11 +43,11 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
         rendered = MODULE.render_notices(project_root=ROOT)
         runtime_lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium.lock.json")
-        if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "154.0.8037.93":
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] in {"154.0.8037.93", "154.0.8037.98"}:
             self.assertEqual(rendered, (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_154.md").read_text())
             self.assertEqual(rendered, MODULE.render_m154_notices(
                 project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
-            self.assertIn("Chromium: `154.0.8037.93`", rendered)
+            self.assertIn(f"Chromium: `{runtime_lock['fingerprintChromium']['chromiumVersion']}`", rendered)
             return
         checked_in = (
             ROOT / "docs" / "RUNTIME_INTEGRATION_NOTICES.md"

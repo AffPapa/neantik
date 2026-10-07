@@ -1,5 +1,9 @@
 # NeAntik: roadmap улучшений
 
+## Current bounded recheck0.7.24/87
+
+Storage refresh, bounded metadata contention, IP failure/fallback validation, complete streaming privacy scan, CI coverage and MCP workspace/help clarity. Fresh evidence and deferred hypotheses: [GLOBAL_RECHECK_0724.md](GLOBAL_RECHECK_0724.md). Public release gates recorded separately; qualified Chromium154.0.8037.98 unchanged.
+
 ## MCP AI coverage0.7.23/86 — accepted slice
 
 Modern + legacy stdio, strict initialization/cancellation, bounded folder catalog/receipts, query by project/tags, schemas/errors,3staticworkflowprompts and7clientconfigs. Local targeted31pass; full/realDev/signed/runtime/publication gates tracked separately in docs/MCP_AI_COVERAGE_0723.md. No Chromium changes or webbridge/pageautomation promises.

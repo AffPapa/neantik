@@ -1,5 +1,9 @@
 # NeAntik Direct source-to-site handoff
 
+## Current bounded recheck0.7.24/87
+
+Storage refresh, bounded metadata contention, IP failure/fallback validation, complete streaming privacy scan, CI coverage and MCP workspace/help clarity. Fresh evidence and deferred hypotheses: [GLOBAL_RECHECK_0724.md](GLOBAL_RECHECK_0724.md). Public release gates recorded separately; qualified Chromium154.0.8037.98 unchanged.
+
 ## Current MCP AI slice0.7.23/86
 
 Manager changes modern/legacy interoperability, queries, folder response bounds, errors, prompts and7client onboarding formats. Sites has17toolguide + client selector + prominent AI section preserving traditional profile browser positioning. Qualification/publication evidence: docs/MCP_AI_COVERAGE_0723.md and release manifest/API, not old handoffs.0.7.22/85 and Sites116 retained for rollback. Affpapa doctor still reports unavailable deploy credential; no alternate server route.

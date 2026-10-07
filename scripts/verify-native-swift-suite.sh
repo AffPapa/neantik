@@ -81,6 +81,14 @@ case "$SUITE" in
   WorkspaceQueryStateTests|\
   RuntimePreferenceStoreTests|\
   TelemetryTests|\
+  DevelopmentWorkspaceFixtureTests|\
+  HelpContentTests|\
+  MCPInteroperabilityTests|\
+  MCPProfileManagementTests|\
+  MCPStdioServerTests|\
+  MCPWorkspaceQueryTests|\
+  ProfileQuickCommandProjectionTests|\
+  ProxyTesterLiveFixtureTests|\
   UpdateManifestTests)
     ;;
   *)
@@ -123,6 +131,8 @@ TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
   SWIFTPM_HOME="$SWIFT_TEST_ROOT/swiftpm-home" \
   CLANG_MODULE_CACHE_PATH="$SWIFT_TEST_ROOT/module-cache" \
     swift test \
+      --build-system native \
+      --jobs 2 \
       --disable-sandbox \
       --scratch-path "$SWIFT_TEST_ROOT/build" \
       --filter "$SUITE"

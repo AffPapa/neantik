@@ -198,4 +198,20 @@ struct AppPathsTests {
             isDirectory: true
         )
     }
+
+    @Test
+    func contendedMetadataGuardFailsPromptlyWithoutRunningMutation() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        var ran = false
+        _ = try paths.withProfilesMetadataGuard {
+            #expect(throws: ProfileMetadataBusyError.self) {
+                try paths.withProfilesMetadataGuard { ran = true }
+            }
+        }
+        #expect(!ran)
+        try paths.withProfilesMetadataGuard { ran = true }
+        #expect(ran)
+    }
 }

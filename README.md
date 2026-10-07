@@ -14,13 +14,13 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Direct-версия менеджера этой ветки — NeAntik `0.7.23` (build `86`).
+Direct-версия менеджера этой ветки — NeAntik `0.7.24` (build `87`).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `154.0.8037.98`, ARM64, Metal;
-- текущие публичные ZIP/DMG и SHA-256 указаны в [релизе 0.7.23](https://github.com/AffPapa/neantik/releases/tag/v0.7.23).
+- текущие публичные ZIP/DMG и SHA-256 указаны в [релизе 0.7.24](https://github.com/AffPapa/neantik/releases/tag/v0.7.24).
 
-`0.7.23` обновляет менеджер и локальный MCP с прежним квалифицированным Chromium. `0.7.22` сохраняется для rollback. Safe Browsing в этой сборке отключён.
+`0.7.24` исправляет обновление папок, ограничивает ожидание metadata guard и усиливает проверку IP-ответов. Chromium не менялся; `0.7.23` сохраняется для rollback. Safe Browsing в этой сборке отключён.
 
 Скачать напрямую: [browser.free](https://browser.free).
 

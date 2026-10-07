@@ -51,6 +51,7 @@ struct ProxyProcessResult: Sendable {
 }
 
 struct ProxyTester: Sendable {
+    typealias ProcessRunner = @Sendable (URL, [String], Data, Int) async throws -> ProxyProcessResult
     static let maximumResponseBytes = 16_384
     static let maximumProbeOutputBytes = maximumResponseBytes + 256
     static let metricsPrefix = "\nNEANTIK_METRICS_V1:"
@@ -96,7 +97,8 @@ struct ProxyTester: Sendable {
     func probe(
         configuration: ProxyConfiguration,
         password: String,
-        observedAt: @Sendable () -> Date = { Date() }
+        observedAt: @Sendable () -> Date = { Date() },
+        runProcess: ProcessRunner = ProxyTester.runCancellableProcess
     ) async throws -> ProxyTestObservation {
         guard configuration.isValid else {
             throw ProxyProbeError(outcome: .invalidConfiguration)
@@ -117,7 +119,8 @@ struct ProxyTester: Sendable {
         do {
             return try await crossCheckedProbe(
                 inputData: inputData,
-                observedAt: observedAt
+                observedAt: observedAt,
+                runProcess: runProcess
             )
         } catch is CancellationError {
             throw CancellationError()
@@ -132,11 +135,11 @@ struct ProxyTester: Sendable {
         }
         let result: ProxyProcessResult
         do {
-            result = try await Self.runCancellableProcess(
-                executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
-                arguments: Self.curlArguments,
-                standardInput: inputData,
-                maximumOutputBytes: Self.maximumProbeOutputBytes
+            result = try await runProcess(
+                URL(fileURLWithPath: "/usr/bin/curl"),
+                Self.curlArguments,
+                inputData,
+                Self.maximumProbeOutputBytes
             )
         } catch is CancellationError {
             throw CancellationError()
@@ -168,19 +171,20 @@ struct ProxyTester: Sendable {
 
     private func crossCheckedProbe(
         inputData: Data,
-        observedAt: @Sendable () -> Date
+        observedAt: @Sendable () -> Date,
+        runProcess: ProcessRunner
     ) async throws -> ProxyTestObservation {
         var responses: [Data] = []
         var responseTime = 0
-        for url in Self.crossCheckURLs {
+        for (service, url) in Self.crossCheckURLs.enumerated() {
             let arguments = Self.curlArguments.dropLast() + [url]
             let process: ProxyProcessResult
             do {
-                process = try await Self.runCancellableProcess(
-                    executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
-                    arguments: Array(arguments),
-                    standardInput: inputData,
-                    maximumOutputBytes: Self.maximumProbeOutputBytes
+                process = try await runProcess(
+                    URL(fileURLWithPath: "/usr/bin/curl"),
+                    Array(arguments),
+                    inputData,
+                    Self.maximumProbeOutputBytes
                 )
             } catch is CancellationError {
                 throw CancellationError()
@@ -197,6 +201,7 @@ struct ProxyTester: Sendable {
             }
             do {
                 let parsed = try Self.splitProbeOutput(process.output)
+                try Self.validateCrossCheckBody(parsed.body, service: service)
                 responses.append(parsed.body)
                 responseTime += parsed.responseTimeMilliseconds
             } catch {
@@ -336,6 +341,26 @@ struct ProxyTester: Sendable {
         )
     }
 
+    private static func validateCrossCheckBody(_ data: Data, service: Int) throws {
+        guard let body = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ProxyProbeError(outcome: .invalidResponse)
+        }
+        if service == 0 {
+            guard body["success"] as? Bool == true,
+                  let ip = body["ip"] as? String, isIPAddress(ip),
+                  safeCountryCode(body["country_code"]) != nil,
+                  let zone = (body["timezone"] as? [String: Any])?["id"] as? String,
+                  TimeZone(identifier: zone) != nil else { throw ProxyProbeError(outcome: .invalidResponse) }
+        } else {
+            guard let ip = body["ipAddress"] as? String, isIPAddress(ip),
+                  safeCountryCode(body["countryCode"]) != nil,
+                  let zones = body["timeZones"] as? [String], !zones.isEmpty,
+                  zones.allSatisfy({ TimeZone(identifier: $0) != nil }),
+                  let languages = body["languages"] as? [String],
+                  let first = languages.first, normalizedLocale(first) != nil else { throw ProxyProbeError(outcome: .invalidResponse) }
+        }
+    }
+
     private static func safeCountryCode(_ value: Any?) -> String? {
         guard let text = value as? String,
               text.utf8.count == 2,
@@ -444,6 +469,7 @@ struct ProxyTester: Sendable {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
         guard let dictionary = object as? [String: Any],
+              dictionary["error"] as? Bool != true,
               let ipAddress = dictionary["ip"] as? String,
               isIPAddress(ipAddress)
         else {

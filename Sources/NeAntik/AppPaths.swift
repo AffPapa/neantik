@@ -10,6 +10,12 @@ enum PrivateFileEntryKind: Equatable, Sendable {
     case unsafe
 }
 
+struct ProfileMetadataBusyError: LocalizedError {
+    var errorDescription: String? {
+        "Данные профилей заняты другим действием. Дождись его завершения и повтори."
+    }
+}
+
 struct PrivateFileEntryIdentity: Equatable, Sendable {
     let device: dev_t
     let inode: ino_t
@@ -397,6 +403,7 @@ struct AppPaths: Sendable {
     ) throws -> T {
         try withPrivateFileGuard(
             at: profilesMetadataGuardFile,
+            nonBlocking: true,
             operation
         )
     }
@@ -433,6 +440,7 @@ struct AppPaths: Sendable {
 
     private func withPrivateFileGuard<T>(
         at guardURL: URL,
+        nonBlocking: Bool = false,
         _ operation: () throws -> T
     ) throws -> T {
         try createPrivateDirectory(guardURL.deletingLastPathComponent())
@@ -450,7 +458,18 @@ struct AppPaths: Sendable {
         }
         defer { _ = Darwin.close(descriptor) }
 
-        while neantikFlock(descriptor, LOCK_EX) != 0 {
+        let lockDeadline = DispatchTime.now().uptimeNanoseconds + 50_000_000
+        // Metadata entry points include synchronous UI/MCP initialization.
+        // Never park their actor behind another process's long operation.
+        while neantikFlock(descriptor, LOCK_EX | (nonBlocking ? LOCK_NB : 0)) != 0 {
+            if nonBlocking && errno == EWOULDBLOCK {
+                guard DispatchTime.now().uptimeNanoseconds < lockDeadline else {
+                    throw ProfileMetadataBusyError()
+                }
+                try Task.checkCancellation()
+                usleep(500)
+                continue
+            }
             guard errno == EINTR else {
                 throw POSIXError(
                     POSIXErrorCode(rawValue: errno) ?? .EIO

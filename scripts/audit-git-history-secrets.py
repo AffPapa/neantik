@@ -11,7 +11,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MAXIMUM_SCANNED_BLOB_BYTES = 4 * 1024 * 1024
+SCAN_CHUNK_BYTES = 1024 * 1024
+SCAN_OVERLAP_BYTES = 1024
 FORBIDDEN_NAMES = {".env", "credentials.json", "service-account.json"}
 FORBIDDEN_SUFFIXES = {
     ".key",
@@ -109,8 +110,23 @@ def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
             process.stdin.write(requested_oid.encode("ascii") + b"\n")
             process.stdin.flush()
             actual_oid, object_type, size = read_batch_header(process.stdout)
-            payload = process.stdout.read(size)
-            if len(payload) != size or process.stdout.read(1) != b"\n":
+            # Scan large blobs as well; a size ceiling must not silently turn
+            # unexamined public bytes into a passing privacy verdict.
+            remaining = size
+            tail = b""
+            matched_labels: set[str] = set()
+            while remaining:
+                chunk = process.stdout.read(min(remaining, SCAN_CHUNK_BYTES))
+                if not chunk:
+                    raise HistorySecretAuditError("git cat-file returned truncated data")
+                remaining -= len(chunk)
+                if object_type == "blob":
+                    window = tail + chunk
+                    for label, pattern in SECRET_PATTERNS.items():
+                        if pattern.search(window):
+                            matched_labels.add(label)
+                    tail = window[-SCAN_OVERLAP_BYTES:]
+            if process.stdout.read(1) != b"\n":
                 raise HistorySecretAuditError("git cat-file returned truncated data")
             if actual_oid != requested_oid or object_type != "blob":
                 continue
@@ -120,11 +136,8 @@ def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
                 if reason := unsafe_path_reason(path):
                     findings.append(f"{requested_oid} {display_path}: {reason}")
                     break
-            if size > MAXIMUM_SCANNED_BLOB_BYTES:
-                continue
-            for label, pattern in SECRET_PATTERNS.items():
-                if pattern.search(payload):
-                    findings.append(f"{requested_oid} {display_path}: {label}")
+            for label in matched_labels:
+                findings.append(f"{requested_oid} {display_path}: {label}")
         process.stdin.close()
         return_code = process.wait(timeout=30)
         if return_code != 0:

@@ -195,6 +195,7 @@ final class MCPManagementSession {
             let message: String
             let code: String
             switch error {
+            case is ProfileMetadataBusyError: code = "storage_busy"; message = "Profile metadata is busy in another operation. Wait for it to finish, re-read current state, then retry intentionally."
             case let error as ManagerLaunchAdmissionError: code = "launch_busy"; message = error.localizedDescription
             case is CancellationError: code = "cancelled"; message = "Operation cancelled. Re-read current state before retry; a completed disk commit may remain."
             case MCPProfileManagement.Failure.invalid, is ProxyImportError: code = "invalid_fields"; message = "Invalid fields. Check the tool schema, URL, tags and proxy protocol/port. Authenticated SOCKS5 is unsupported."

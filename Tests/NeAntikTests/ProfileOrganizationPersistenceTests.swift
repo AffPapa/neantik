@@ -278,7 +278,7 @@ struct ProfileOrganizationPersistenceTests {
     }
 
     @Test
-    func unrecoverableFolderCorruptionDoesNotBlockProfileStorage() throws {
+    func unrecoverableFolderCorruptionDoesNotBlockProfileStorage() async throws {
         let fixture = try OrganizationFixture()
         let first = BrowserProfile(name: "First")
         try fixture.store.upsert(first)
@@ -299,6 +299,12 @@ struct ProfileOrganizationPersistenceTests {
         #expect(reloaded.organization.folders.isEmpty)
         #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
         #expect(reloaded.organization.mutationRevision == nil)
+        do {
+            try await reloaded.refreshExternalMetadata(force: true)
+            Issue.record("Corrupted folders must remain unavailable")
+        } catch {}
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(!reloaded.hasTrustedOrganization)
         #expect(throws: ProfileOrganizationError.self) {
             try reloaded.createFolder(named: "Blocked")
         }
@@ -328,7 +334,7 @@ struct ProfileOrganizationPersistenceTests {
     }
 
     @Test
-    func symlinkedSidecarFailsClosedWithoutBlockingProfiles() throws {
+    func symlinkedSidecarFailsClosedWithoutBlockingProfiles() async throws {
         let fixture = try OrganizationFixture()
         let first = BrowserProfile(name: "First")
         try fixture.store.upsert(first)
@@ -342,6 +348,12 @@ struct ProfileOrganizationPersistenceTests {
 
         let reloaded = ProfileStore(paths: fixture.paths)
 
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(!reloaded.hasTrustedOrganization)
+        do {
+            try await reloaded.refreshExternalMetadata(force: true)
+            Issue.record("Symlinked folders must remain unavailable")
+        } catch {}
         #expect(reloaded.hasTrustedMetadata)
         #expect(!reloaded.hasTrustedOrganization)
         #expect(throws: ProfileOrganizationError.self) {

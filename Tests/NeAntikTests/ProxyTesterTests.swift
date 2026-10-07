@@ -3,6 +3,29 @@ import Testing
 @testable import NeAntik
 
 struct ProxyTesterTests {
+    private actor ProbeSequence {
+        var count = 0
+        func next() -> ProxyProcessResult {
+            count += 1
+            if count == 1 { return .init(status: 0, output: Data("broken\nNEANTIK_METRICS_V1:0.01\n".utf8), outputExceeded: false) }
+            if count == 2 { return .init(status: 22, output: Data(), outputExceeded: false) }
+            return .init(status: 0, output: Data("{\"ip\":\"203.0.113.12\",\"timezone\":\"Europe/Berlin\",\"languages\":\"de-DE\"}\nNEANTIK_METRICS_V1:0.01\n".utf8), outputExceeded: false)
+        }
+    }
+
+    @Test
+    func malformedEvidenceIsNotOverriddenByLaterService429AndFallback() async throws {
+        let sequence = ProbeSequence()
+        let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration
+        do {
+            _ = try await ProxyTester().probe(configuration: proxy, password: "", runProcess: { _, _, _, _ in await sequence.next() })
+            Issue.record("Malformed evidence must not be replaced with a success")
+        } catch let error as ProxyProbeError {
+            #expect(error.outcome == .invalidResponse)
+        }
+        #expect(await sequence.count == 1)
+    }
+
     @Test
     func largeConfigurationIsConsumedWithoutBlockingCaller() async throws {
         let payload = Data(repeating: 0x78, count: 128 * 1024)
@@ -285,6 +308,12 @@ struct ProxyTesterTests {
         #expect(evidence.source == "ipwho.is+freeipapi.com")
         #expect(evidence.isValid)
         #expect(evidence.isFresh(relativeTo: observedAt))
+    }
+
+    @Test
+    func rejectsExplicitFailureEvenWithCompleteContext() {
+        let data = Data("{\"error\":true,\"ip\":\"203.0.113.12\",\"timezone\":\"Europe/Berlin\",\"languages\":\"de-DE\"}".utf8)
+        #expect(throws: (any Error).self) { try ProxyTester.parseResponse(data) }
     }
 
     @Test

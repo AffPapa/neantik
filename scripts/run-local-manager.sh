@@ -196,6 +196,14 @@ if ! /usr/bin/codesign \
     "$DEVELOPMENT_RUNTIME_APP"
 fi
 
+if (( USE_FRESH_FIXTURE == 1 )); then
+  DEVELOPMENT_FIXTURE_ROOT="$(mktemp -d /private/tmp/neantik-dev-fixture.XXXXXXXX)"
+  /usr/libexec/PlistBuddy -c 'Delete :NeAntikDevelopmentFixtureRoot' "$INFO_PLIST" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c "Add :NeAntikDevelopmentFixtureRoot string $DEVELOPMENT_FIXTURE_ROOT" "$INFO_PLIST"
+else
+  /usr/libexec/PlistBuddy -c 'Delete :NeAntikDevelopmentFixtureRoot' "$INFO_PLIST" >/dev/null 2>&1 || true
+fi
+
 /usr/bin/codesign \
   --verify \
   --deep \
@@ -227,7 +235,7 @@ if (( SHOULD_OPEN == 1 )); then
     -e 'tell application id "app.neantik.desktop.dev" to quit' \
     >/dev/null 2>&1 || true
   if (( USE_FRESH_FIXTURE == 1 )); then
-    export NEANTIK_DEVELOPMENT_DATA_ROOT="$(mktemp -d /private/tmp/neantik-dev-fixture.XXXXXXXX)"
+    export NEANTIK_DEVELOPMENT_DATA_ROOT="$DEVELOPMENT_FIXTURE_ROOT"
     echo "Открываю новый временный Dev-стенд. Существующие Dev-данные сохранены."
   fi
   echo "Открываю изолированную локальную версию."

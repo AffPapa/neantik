@@ -115,10 +115,11 @@ struct NeAntikHelpWindow: View {
         GroupBox("Настройка этого workspace") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Скопируй блок в настройки клиента, сохранив остальные серверы. Он содержит локальные пути этого приложения.")
+                Text("Доступ клиента").font(.callout)
                 Picker("Доступ клиента", selection: $allowsManagement) {
                     Text("Чтение").tag(false)
                     Text("Управление профилями").tag(true)
-                }.pickerStyle(.segmented)
+                }.pickerStyle(.segmented).labelsHidden()
                 Picker("AI-клиент", selection: $client) {
                     ForEach(MCPClient.allCases) { Text($0.title).tag($0) }
                 }.pickerStyle(.menu)
@@ -132,7 +133,7 @@ struct NeAntikHelpWindow: View {
                     copied = NSPasteboard.general.setString(selectedConnection.configuration(for: client), forType: .string)
                 }
                 Link("Официальная инструкция клиента", destination: client.source)
-                Text("После подключения попроси: «Найди профили проекта QA с тегом ready». Доступны 17 инструментов и 3 готовых MCP-сценария. Наличие настройки не доказывает работу каждой версии стороннего клиента.")
+                Text("После подключения попроси: «Найди профили проекта QA с тегом ready». В режиме чтения доступны 6 инструментов, в режиме управления — 17. Есть 3 готовых MCP-сценария. Наличие настройки не доказывает работу каждой версии стороннего клиента.")
                     .font(.callout)
                 Text("Управление разрешает записи и запуск. Настройка не содержит паролей; если вводишь их в чат, клиент может сохранить их или отправить модели.")
                     .font(.callout).foregroundStyle(.secondary)

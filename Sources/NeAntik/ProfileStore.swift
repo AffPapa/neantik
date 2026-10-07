@@ -188,33 +188,50 @@ final class ProfileStore: ObservableObject {
         let hadOrganization = organization != .empty
         Self.refreshingRoots.insert(rootKey)
         defer { Self.refreshingRoots.remove(rootKey) }
+        let snapshot: ([BrowserProfile], Result<ProfileOrganizationState, Error>)
         do {
-            let snapshot = try await Task.detached {
+            snapshot = try await Task.detached {
                 try paths.withProfilesMetadataGuard {
                     let profileData = try Self.boundedMetadata(paths.profilesFile)
                     guard profileData != nil || !hadProfiles else { throw POSIXError(.ENOENT) }
                     let decoded = try profileData.map(Self.decodeProfiles) ?? []
                     let normalized = try Self.normalizedForIsolation(decoded)
                     guard !normalized.changed else { throw POSIXError(.EINVAL) }
-                    let organizationData = try Self.boundedMetadata(paths.profileOrganizationFile)
-                    guard organizationData != nil || !hadOrganization else { throw POSIXError(.ENOENT) }
-                    let organization = try organizationData.map {
-                        try Self.decodeOrganization($0, knownProfileIDs: Set(decoded.map(\.id)))
-                    } ?? (state: ProfileOrganizationState.empty, changed: false)
-                    guard !organization.changed else { throw POSIXError(.EINVAL) }
-                    return (decoded, organization.state)
+                    // Folder metadata has its own availability contract. A bad
+                    // sidecar must not disable independently validated profiles.
+                    let organization = Result<ProfileOrganizationState, Error> {
+                        let organizationData = try Self.boundedMetadata(paths.profileOrganizationFile)
+                        guard organizationData != nil || !hadOrganization else { throw POSIXError(.ENOENT) }
+                        let decodedOrganization = try organizationData.map {
+                            try Self.decodeOrganization($0, knownProfileIDs: Set(decoded.map(\.id)))
+                        } ?? (state: ProfileOrganizationState.empty, changed: false)
+                        guard !decodedOrganization.changed else { throw POSIXError(.EINVAL) }
+                        return decodedOrganization.state
+                    }
+                    return (decoded, organization)
                 }
             }.value
-            if profiles != snapshot.0 { profiles = snapshot.0 }
-            if organization != snapshot.1 { organization = snapshot.1 }
-            storageIsAvailable = true
-            organizationStorageIsAvailable = true
-            externalMetadataStamp = stamp
+        } catch is ProfileMetadataBusyError {
+            // Contention is not corrupted metadata. Retain last-good trust and
+            // let the caller retry once the other transaction finishes.
+            throw ProfileMetadataBusyError()
         } catch {
             // Preserve last-good UI data and prohibit writes until a trusted read.
             storageIsAvailable = false
             organizationStorageIsAvailable = false
             lastError = "Профили временно недоступны. Сохранённые данные не заменены. Проверь файлы данных и повтори открытие приложения."
+            throw error
+        }
+        if profiles != snapshot.0 { profiles = snapshot.0 }
+        storageIsAvailable = true
+        switch snapshot.1 {
+        case .success(let refreshedOrganization):
+            if organization != refreshedOrganization { organization = refreshedOrganization }
+            organizationStorageIsAvailable = true
+            externalMetadataStamp = stamp
+        case .failure(let error):
+            organizationStorageIsAvailable = false
+            lastError = "Папки временно недоступны. Профили и данные браузеров не изменены. Проверь файл папок и повтори открытие приложения."
             throw error
         }
     }

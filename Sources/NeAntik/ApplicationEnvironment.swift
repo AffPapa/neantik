@@ -34,10 +34,11 @@ struct NeAntikApplicationEnvironment: Equatable, Sendable {
 
     func applicationSupportRoot(
         fileManager: FileManager = .default,
-        environment: [String: String] = ProcessInfo.processInfo.environment
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        developmentFixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String
     ) -> URL {
         // Explicit disposable engineering root; production ignores this hook.
-        if isDevelopment, let root = environment["NEANTIK_DEVELOPMENT_DATA_ROOT"] {
+        if isDevelopment, let root = environment["NEANTIK_DEVELOPMENT_DATA_ROOT"] ?? developmentFixtureRoot {
             let url = URL(fileURLWithPath: root, isDirectory: true).standardizedFileURL
             if ["/private/tmp", "/tmp"].contains(url.deletingLastPathComponent().path),
                url.lastPathComponent.hasPrefix("neantik-") { return url }

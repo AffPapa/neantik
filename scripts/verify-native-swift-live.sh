@@ -58,6 +58,7 @@ run_live_suite() {
       NEANTIK_LIVE_AUDIT_APP="$APP_PATH" \
       "$opt_in_variable=1" \
       swift test \
+      --build-system native \
         --jobs 2 \
         --disable-sandbox \
         --scratch-path "$LIVE_TEST_ROOT/build" \

@@ -68,6 +68,20 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             self.assertIn("signing.p8", message)
             self.assertNotIn("never-print-this-value", message)
 
+    def test_large_blob_and_chunk_boundary_secrets_are_not_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_repo(root)
+            marker = ("gh" + "p_" + "x" * 30).encode()
+            # Beyond the old 4MiB skip, with the token split across a chunk.
+            padding = b" " * (5 * MODULE.SCAN_CHUNK_BYTES - 7)
+            (root / "large.txt").write_bytes(padding + marker + b"\n")
+            self.commit_all(root, "large synthetic leak")
+            with self.assertRaises(MODULE.HistorySecretAuditError) as context:
+                MODULE.audit(root)
+            self.assertIn("GitHub token", str(context.exception))
+            self.assertNotIn(marker.decode(), str(context.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

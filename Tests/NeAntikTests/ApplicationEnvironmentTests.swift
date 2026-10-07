@@ -37,6 +37,15 @@ struct ApplicationEnvironmentTests {
         #expect(production.applicationSupportRoot(environment: values).path != values["NEANTIK_DEVELOPMENT_DATA_ROOT"])
     }
 
+    @Test func disposableBundleRootSurvivesRelaunchWithoutEnvironment() {
+        let root = "/private/tmp/neantik-ui-relaunch"
+        let dev = NeAntikApplicationEnvironment.resolve(bundleIdentifier: nil)
+        let production = NeAntikApplicationEnvironment.resolve(bundleIdentifier: NeAntikApplicationEnvironment.productionBundleIdentifier)
+        #expect(dev.applicationSupportRoot(environment: [:], developmentFixtureRoot: root).path == root)
+        #expect(production.applicationSupportRoot(environment: [:], developmentFixtureRoot: root).path != root)
+        #expect(dev.applicationSupportRoot(environment: [:], developmentFixtureRoot: "/var/lib/production-data").path != "/var/lib/production-data")
+    }
+
     @Test func releaseAuditStorageBelongsToValidatedAttempt() {
         let request = FingerprintEvidenceReleaseRequest(
             candidateManifestURL: URL(fileURLWithPath: "/private/tmp/neantik-attempt/manifest.json"),
