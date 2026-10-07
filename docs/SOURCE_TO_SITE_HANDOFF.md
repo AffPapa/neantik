@@ -1,3 +1,5 @@
+> Current0.7.24/build87 is an unpublished source/Dev candidate. Fresh official Stable155.0.8059.39/.40 blocks public packaging with unchanged154.0.8037.98; no notarized0.7.24 assets or new download links. Immutable0.7.23 retained. See GLOBAL_RECHECK_0724.md.
+
 # NeAntik Direct source-to-site handoff
 
 ## Current bounded recheck0.7.24/87
