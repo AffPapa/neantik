@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct NeAntikApp: App {
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var helpNavigation = HelpNavigation()
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
@@ -165,6 +166,17 @@ struct NeAntikApp: App {
             WorkspaceCommandMenu()
             ProfileCommandMenu()
             NeAntikHelpCommands(navigation: helpNavigation)
+        }
+        // Audit entry is explicit: do not depend on macOS restoring a main
+        // scene after a previous stdio-only or closed-window session.
+        .onChange(of: launchIntent.opensFingerprintAudit, initial: true) {
+            if launchIntent.opensFingerprintAudit {
+                Task { @MainActor in
+                    await Task.yield() // Let SwiftUI register the named scene.
+                    openWindow(id: "main")
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+            }
         }
 
         Window("Справка NeAntik", id: "help") {
