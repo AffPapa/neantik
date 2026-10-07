@@ -65,8 +65,12 @@ Swift projections, not full GUI latency.
 
 Physical editor, quick-command, Tab, Escape, Return and window QA is incomplete:
 Codex native UI transport closed. A full AX tree and Cmd+N were observed before
-the connection failed; that is a partial pass. Signed exact-candidate audits,
-notarization, hosted bytes and the public Sites rollout are still required.
+the connection failed; that is a partial pass. Source candidate `528c201` passed
+signed runtime audit, Developer ID, notarization, stapling and Gatekeeper. The
+later documentation checkpoint adds this release's CHANGELOG section and must
+be included in a final source-bound candidate after physical QA. Previously
+qualified artifacts are retained; their qualification is not transferred to a
+new source commit. Hosted bytes and the public Sites rollout are still required.
 No new public download is advertised.
 
 Other Macs and external chat clients are untested. There is no anti-fraud bypass
