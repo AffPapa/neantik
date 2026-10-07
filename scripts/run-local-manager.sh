@@ -80,6 +80,7 @@ CLANG_MODULE_CACHE_PATH="$CLANG_CACHE" \
 SWIFTPM_MODULECACHE_OVERRIDE="$CLANG_CACHE" \
 TMPDIR="$DEVELOPMENT_ROOT" \
 swift build \
+  --build-system native \
   --jobs 2 \
   --disable-sandbox \
   --disable-dependency-cache \
@@ -94,6 +95,7 @@ BUILD_SECONDS=$SECONDS
 
 BIN_PATH="$(
   swift build \
+    --build-system native \
     --disable-sandbox \
     --disable-dependency-cache \
     --manifest-cache local \

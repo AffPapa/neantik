@@ -228,6 +228,7 @@ export SWIFTPM_MODULECACHE_OVERRIDE="$BUILD_SUPPORT_DIR/swiftpm"
 
 cd "$PROJECT_DIR"
 swift build \
+  --build-system native \
   --jobs 1 \
   -c release \
   --arch arm64 \
@@ -249,6 +250,7 @@ swift build \
 
 BIN_PATH="$(
   swift build \
+  --build-system native \
     --jobs 1 \
     -c release \
     --arch arm64 \

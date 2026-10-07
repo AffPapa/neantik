@@ -1,5 +1,9 @@
 # NeAntik — глобальный план продукта и следующего цикла
 
+## MCP AI coverage0.7.23/86 — accepted slice
+
+Modern + legacy stdio, strict initialization/cancellation, bounded folder catalog/receipts, query by project/tags, schemas/errors,3staticworkflowprompts and7clientconfigs. Local targeted31pass; full/realDev/signed/runtime/publication gates tracked separately in docs/MCP_AI_COVERAGE_0723.md. No Chromium changes or webbridge/pageautomation promises.
+
 Дата исходной ревизии: 25 сентября 2026 года.
 
 **Обновление выпуска, 2 октября 2026:** runtime/release-срез завершён и опубликован: NeAntik0.7.12 build75, Chromium154.0.8037.93, notarized ZIP/DMG и прямые загрузки browser.free. Точные evidence и ограничения — `releases/v0.7.12.json`, текущий handoff — `docs/SOURCE_TO_SITE_HANDOFF.md`. Старые gate-записи ниже являются историей; это не означает выполнения всего исследовательского roadmap. Safe Browsing остаётся отключён, физический keyboard/VoiceOver проход не заявляется.

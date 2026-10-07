@@ -1,5 +1,22 @@
 # NeAntik changelog
 
+## Direct 0.7.23 (86) — 7 октября 2026
+
+- MCP поддерживает современный 2026-07-28 через metadata каждого запроса и server/discover, сохраняя 2025-11-25/2025-06-18 handshake. Исправлены malformed initialized и ответы после принятой cancellation.
+- 17 инструментов: новый workspace_query_profiles ищет по имени, тегам, проектам, закреплению и архиву; заметки исключены. Cursor связан с metadata и фильтром.
+- Папки читаются страницами; изменения возвращают компактный receipt. Лимит учитывает text и structuredContent вместе, включая современный resultType.
+- Все management-инструменты получили outputSchema; ошибки — стабильный код и следующий шаг. Три MCP prompts предлагают безопасные workflows без выполнения операций.
+- Встроенная справка генерирует настройки семи клиентов: Claude Desktop/Code, ChatGPT Desktop/Codex, Grok CLI, Cursor, VS Code/Copilot, Gemini CLI. Web-транспорт и документационная совместимость описаны отдельно.
+- Обновлены MCP cookbook, FAQ и browser.free: традиционный антидетект с дополнительным управлением профилями через AI.
+- Chromium 154.0.8037.98 сохранён. Safe Browsing остаётся отключённым. Физический VoiceOver/сторонние AI-клиенты не квалифицированы.
+
+## Direct 0.7.22 (85) — 7 октября 2026
+
+- 16 MCP-инструментов управления профилями, прокси, папками, metadata и штатным запуском/остановкой. Read-only по умолчанию; управление включается явно.
+- UUID/revision checks, Keychain и process ownership; GUI обновляет внешние metadata, сохраняя черновики.
+- 731 Swift/82 suites, 29 privacy, 27 Site tests; реальный Dev/stdIO, cookies/LS/IDB persistence/isolation, cancellation/EOF/reconnect и keyboard. Direct signing/notary/stapling/Gatekeeper и hosted ZIP/DMG проверены.
+- Chromium 154.0.8037.98 без пересборки. Ограничения: session-owned stop, нет DOM/JS/shell, удаления BrowserData, полного backup или remote bridge.
+
 ## Direct 0.7.21 (84) — 7 октября 2026
 
 - Встроенная локальная справка с поиском по восьми темам; контекстные кнопки в редакторе, среде и библиотеке, без сброса черновика.

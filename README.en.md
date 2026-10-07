@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The manager version in this branch is NeAntik `0.7.22` (build `84`).
+The manager version in this branch is NeAntik `0.7.23` (build `86`).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `154.0.8037.98`, ARM64, Metal;
-- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.22](https://github.com/AffPapa/neantik/releases/tag/v0.7.22).
+- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.23](https://github.com/AffPapa/neantik/releases/tag/v0.7.23).
 
-`0.7.22` updates the manager and local MCP using the same qualified Chromium. Keep `0.7.21` for rollback. Safe Browsing remains disabled in this distribution.
+`0.7.23` updates the manager and local MCP using the same qualified Chromium. Keep `0.7.22` for rollback. Safe Browsing remains disabled in this distribution.
 
 Direct downloads: [browser.free](https://browser.free).
 
@@ -68,7 +68,7 @@ after 60 seconds; another app can still read it during that interval.
 
 Searchable in-app help covers profiles, proxies, organization, storage and MCP.
 **Help → Connect MCP to AI…** copies workspace-specific JSON/TOML settings.
-Read access is the default; management enables 16 tools for profile creation,
+Read access is the default; management enables 17 tools for profile creation,
 editing, duplication, proxy settings, project folders, tags, pins, archive and
 normal launch/stop. Profile and folder revisions prevent stale writes; passwords
 are write-only. Stop is graceful and owned by the live MCP session; reconnect
@@ -154,3 +154,5 @@ configuration, or real audit reports.
 NeAntik-owned source files are licensed under MPL-2.0. Chromium-derived files
 retain their upstream licenses and notices. The NeAntik name and logo are
 subject to [TRADEMARKS.md](TRADEMARKS.md).
+
+MCP 0.7.23 adds modern 2026-07-28 plus legacy handshake, project/tag queries, 17 tool schemas, 3 static prompts and 7 client formats: [cookbook](docs/MCP_GUIDE.md). Official configuration compatibility is distinct from end-to-end qualification of each AI client.

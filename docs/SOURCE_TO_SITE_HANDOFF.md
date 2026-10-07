@@ -1,5 +1,9 @@
 # NeAntik Direct source-to-site handoff
 
+## Current MCP AI slice0.7.23/86
+
+Manager changes modern/legacy interoperability, queries, folder response bounds, errors, prompts and7client onboarding formats. Sites has17toolguide + client selector + prominent AI section preserving traditional profile browser positioning. Qualification/publication evidence: docs/MCP_AI_COVERAGE_0723.md and release manifest/API, not old handoffs.0.7.22/85 and Sites116 retained for rollback. Affpapa doctor still reports unavailable deploy credential; no alternate server route.
+
 ## Current manager candidate — 7 October 2026
 
 0.7.22 build 85 on `codex/neantik-mcp-management-0722` expands the local MCP

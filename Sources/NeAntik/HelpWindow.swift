@@ -41,7 +41,7 @@ struct NeAntikHelpWindow: View {
     @ObservedObject var navigation: HelpNavigation
     let connection: MCPConnectionConfiguration
     @State private var search = ""
-    @State private var configurationFormat = 0
+    @State private var client = MCPClient.claudeDesktop
     @State private var allowsManagement = false
     private var selectedConnection: MCPConnectionConfiguration { var value = connection; value.allowsManagement = allowsManagement; return value }
     @State private var copied = false
@@ -104,7 +104,7 @@ struct NeAntikHelpWindow: View {
         .frame(minWidth: 740, minHeight: 480)
         .onChange(of: navigation.topic) { _, _ in search = ""; copied = false }
         .onChange(of: allowsManagement) { _, _ in copied = false }
-        .onChange(of: configurationFormat) { _, _ in copied = false }
+        .onChange(of: client) { _, _ in copied = false }
         .toolbar {
             Button("Найти в справке") { searchFocused = true }
                 .keyboardShortcut("f", modifiers: .command)
@@ -119,18 +119,21 @@ struct NeAntikHelpWindow: View {
                     Text("Чтение").tag(false)
                     Text("Управление профилями").tag(true)
                 }.pickerStyle(.segmented)
-                Picker("Формат клиента", selection: $configurationFormat) {
-                    Text("Claude Desktop / JSON").tag(0)
-                    Text("Codex / TOML").tag(1)
-                }.pickerStyle(.segmented)
-                Text(configurationFormat == 0 ? selectedConnection.claudeJSON : selectedConnection.codexTOML)
-                    .font(.system(size: 13, design: .monospaced))
+                Picker("AI-клиент", selection: $client) {
+                    ForEach(MCPClient.allCases) { Text($0.title).tag($0) }
+                }.pickerStyle(.menu)
+                Text(client.steps).font(.system(size: 14)).textSelection(.enabled)
+                Text(selectedConnection.configuration(for: client))
+                    .font(.system(size: 14, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button(copied ? "Настройка скопирована" : "Скопировать настройку MCP") {
                     NSPasteboard.general.clearContents()
-                    copied = NSPasteboard.general.setString(configurationFormat == 0 ? selectedConnection.claudeJSON : selectedConnection.codexTOML, forType: .string)
+                    copied = NSPasteboard.general.setString(selectedConnection.configuration(for: client), forType: .string)
                 }
+                Link("Официальная инструкция клиента", destination: client.source)
+                Text("После подключения попроси: «Найди профили проекта QA с тегом ready». Доступны 17 инструментов и 3 готовых MCP-сценария. Наличие настройки не доказывает работу каждой версии стороннего клиента.")
+                    .font(.callout)
                 Text("Управление разрешает записи и запуск. Настройка не содержит паролей; если вводишь их в чат, клиент может сохранить их или отправить модели.")
                     .font(.callout).foregroundStyle(.secondary)
             }.padding(8)

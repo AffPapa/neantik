@@ -1,5 +1,9 @@
 # NeAntik: roadmap улучшений
 
+## MCP AI coverage0.7.23/86 — accepted slice
+
+Modern + legacy stdio, strict initialization/cancellation, bounded folder catalog/receipts, query by project/tags, schemas/errors,3staticworkflowprompts and7clientconfigs. Local targeted31pass; full/realDev/signed/runtime/publication gates tracked separately in docs/MCP_AI_COVERAGE_0723.md. No Chromium changes or webbridge/pageautomation promises.
+
 ## Срез MCP 0.7.22/85 — 7 октября 2026
 
 Реализованы 16 локальных tools: конфигурации профилей, прокси, папки как проекты,

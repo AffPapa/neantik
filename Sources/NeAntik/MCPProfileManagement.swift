@@ -22,9 +22,9 @@ final class MCPProfileManagement {
         self.allowsManagement = allowsManagement
     }
 
-    enum Failure: Error { case invalid, conflict, unavailable, running, proxyFailed, manualClose, denied, stopRefused }
+    enum Failure: Error { case invalid, conflict, unavailable, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
 
-    nonisolated static let readTools = ["profile_get", "folder_list", "profile_status"]
+    nonisolated static let readTools = ["profile_get", "folder_list", "profile_status", "workspace_query_profiles"]
     nonisolated static let writeTools = ["profile_create", "profile_update", "profile_set_proxy", "profile_move", "profile_duplicate", "folder_create", "folder_rename", "folder_remove", "profile_check_proxy", "profile_start", "profile_stop"]
     nonisolated static var allTools: [String] { ["workspace_list_profiles", "workspace_list_profiles_page"] + readTools + writeTools }
 
@@ -41,7 +41,8 @@ final class MCPProfileManagement {
             "port": ["type": "integer", "minimum": 1, "maximum": 65535], "username": text, "password": text]]
         let specs: [(String, String, [String: Any], [String])] = [
             ("profile_get", "Read profile revision, start page and organization; proxy endpoint and credentials excluded; note excluded.", ["profileID": uuid], ["profileID"]),
-            ("folder_list", "List project folders and organizationRevision; projects are folders, one per profile.", [:], []),
+            ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
+            ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Reconcile profile ownership. External sessions require manual close.", ["profileID": uuid], ["profileID"]),
             ("profile_create", "Create a persistent profile without starting it. No automatic retry: a repeat creates another profile.", ["name": text, "changes": changes, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
@@ -56,7 +57,8 @@ final class MCPProfileManagement {
             ("profile_stop", "Request graceful close of a browser owned by this live session. Poll profile_status; pending is not stopped.", ["profileID": uuid], ["profileID"])
         ]
         return specs.filter { allowsManagement || readTools.contains($0.0) }.map { name, description, properties, required in
-            ["name": name, "description": description,
+            ["name": name, "title": name.replacingOccurrences(of: "_", with: " "), "description": description,
+             "outputSchema": MCPOutputSchemas.schema(for: name),
              "inputSchema": ["type": "object", "properties": properties, "required": required, "additionalProperties": false],
              "annotations": ["readOnlyHint": readTools.contains(name), "destructiveHint": !readTools.contains(name),
                              "idempotentHint": readTools.contains(name), "openWorldHint": ["profile_start", "profile_check_proxy"].contains(name)]]
@@ -73,16 +75,34 @@ final class MCPProfileManagement {
         try await store.refreshExternalMetadata()
         guard store.hasTrustedMetadata, store.hasTrustedOrganization else { throw Failure.unavailable }
         try Task.checkCancellation()
-        if name == "folder_list" { return folders() }
+        if name == "workspace_query_profiles" {
+            let query = try MCPWorkspaceQuery(arguments: args)
+            let profiles = store.profiles, organization = store.organization
+            return try await Task.detached(priority: .userInitiated) {
+                try query.page(profiles: profiles, organization: organization)
+            }.value
+        }
+        if name == "folder_list" { return try folderPage(args) }
         if name.hasPrefix("folder_") {
             let orgRevision = try organizationRevision(args)
+            let affectedID: UUID
+            var affected: ProfileFolder?
             switch name {
-            case "folder_create": _ = try store.createFolder(named: string(args, "name"), expectedOrganizationRevision: .some(orgRevision))
-            case "folder_rename": _ = try store.renameFolder(withID: id(args, "folderID"), to: string(args, "name"), expectedOrganizationRevision: .some(orgRevision))
-            case "folder_remove": _ = try store.deleteFolder(withID: id(args, "folderID"), expectedOrganizationRevision: .some(orgRevision))
+            case "folder_create":
+                affected = try store.createFolder(named: string(args, "name"), expectedOrganizationRevision: .some(orgRevision)); affectedID = affected!.id
+            case "folder_rename":
+                affectedID = try id(args, "folderID")
+                affected = try store.renameFolder(withID: affectedID, to: string(args, "name"), expectedOrganizationRevision: .some(orgRevision))
+            case "folder_remove":
+                affectedID = try id(args, "folderID")
+                _ = try store.deleteFolder(withID: affectedID, expectedOrganizationRevision: .some(orgRevision))
             default: throw Failure.invalid
             }
-            return folders()
+            // Mutation receipts contain only the affected folder, never the entire
+            // catalog: a large workspace cannot turn a committed write into an error.
+            return ["organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(),
+                    "affectedFolderID": affectedID.uuidString,
+                    "folders": affected.map { [["id": $0.id.uuidString, "name": $0.name]] } ?? []]
         }
         if name == "profile_create" {
             var profile = BrowserProfile(name: try string(args, "name"))
@@ -254,8 +274,17 @@ final class MCPProfileManagement {
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()]
     }
-    private func folders() -> [String: Any] {
-        ["organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "folders": store.organization.folders.map { ["id": $0.id.uuidString, "name": $0.name] }]
+    private func folderPage(_ args: [String: Any]) throws -> [String: Any] {
+        let query = try MCPWorkspaceQuery(arguments: args)
+        let revision = store.organization.mutationRevision?.uuidString ?? "initial"
+        let offset = try query.offset(snapshot: revision)
+        let folders = store.organization.folders
+        guard offset <= folders.count else { throw Failure.cursor }
+        let end = min(offset + query.limit, folders.count)
+        return ["organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(),
+                "folders": folders[offset..<end].map { ["id": $0.id.uuidString, "name": $0.name] },
+                "count": end - offset, "totalCount": folders.count,
+                "nextCursor": end < folders.count ? query.cursor(snapshot: revision, offset: end) as Any : NSNull()]
     }
     /// Production inventory is asynchronous. A newly queued check is not proof
     /// that a stopped browser is running. Await it, bounded and cancellable.

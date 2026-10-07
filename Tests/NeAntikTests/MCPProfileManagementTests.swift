@@ -142,7 +142,7 @@ struct MCPProfileManagementTests {
         config.allowsManagement = true
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments).mode == .mcpManagement(dataRoot: config.dataRoot))
         for tool in MCPProfileManagement.allTools { #expect(config.codexTOML.contains(tool)) }
-        #expect(MCPProfileManagement.allTools.count == 16)
+        #expect(MCPProfileManagement.allTools.count == 17)
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments + ["--untrusted"]).mode == .invalidControlArguments)
     }
 

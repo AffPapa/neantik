@@ -3,7 +3,7 @@ import CoreFoundation
 import Foundation
 import CryptoKit
 
-/// Local, opt-in MCP transport. No socket, listener, account, or browser action.
+/// Local, opt-in MCP transport. No socket, listener or mandatory account.
 /// The client explicitly selects a metadata root; output is an allowlist only.
 enum MCPStdioServer {
     static let maximumRequestBytes = 64 * 1_024
@@ -201,6 +201,17 @@ enum MCPStdioServer {
             required += ["totalCount", "nextCursor"]
         }
         return ["type": "object", "properties": properties, "required": required, "additionalProperties": false]
+    }
+
+    static func toolResultObject(_ payload: [String: Any]) throws -> [String: Any] {
+        let bytes = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+        return ["isError": false, "structuredContent": payload,
+                "content": [["type": "text", "text": String(decoding: bytes, as: UTF8.self)]]]
+    }
+    static func toolResult(_ payload: [String: Any]) throws -> Data {
+        var result = try toolResultObject(payload)
+        result["resultType"] = "complete" // Include the larger modern representation in the cap.
+        return try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys])
     }
 
     static func toolError(id: Any, message: String) -> Data? {
