@@ -381,7 +381,6 @@ struct ProfileTagEditor: View {
     }
     .padding(14)
     .frame(width: 330)
-    .accessibilityHidden(true)
     .onAppear {
       Task { @MainActor in
         await Task.yield()

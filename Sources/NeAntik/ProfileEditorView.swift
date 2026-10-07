@@ -137,9 +137,11 @@ struct ProfileEditorView: View {
   private let onClose: (() -> Void)?
   private let originalProxyPassword: String?
   private let proxyPasswordReadFailed: Bool
-  private let draftProfileID: UUID
+  @State private var draftProfileID: UUID
   private let initialFocus: ProfileEditorField?
-  private let initialDraft: ProfileEditorDraft
+  // SwiftUI rebuilds this view value while retaining its edited state. Keep
+  // the original snapshot and ID in the same storage lifetime as those fields.
+  @State private var initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
@@ -215,7 +217,7 @@ struct ProfileEditorView: View {
     )
 
     let profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(name: "")
-    draftProfileID = profile.id
+    _draftProfileID = State(initialValue: profile.id)
     _name = State(initialValue: profile.name)
     _colorHex = State(initialValue: profile.colorHex)
     _symbolName = State(initialValue: profile.displaySymbolName)
@@ -258,11 +260,11 @@ struct ProfileEditorView: View {
         )
       }
     }
-    initialDraft = ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
+    _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
       profile.note, profile.startURL, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
-      folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil)
+      folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
     _detectedProxy = State(
       initialValue: profile.identity.timezoneIdentifier == nil
         ? nil
@@ -827,7 +829,6 @@ struct ProfileEditorView: View {
       ) { folderID in
         selectedFolderID = folderID
       }
-      .accessibilityHidden(true)
     }
     .interactiveDismissDisabled(hasUnsavedChanges)
     .alert(

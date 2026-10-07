@@ -151,7 +151,7 @@ struct ManagerLibrarySheet: View {
                         }.keyboardShortcut(.defaultAction)
                     }
                 }
-            }.padding(24).frame(width: 530).accessibilityHidden(true)
+            }.padding(24).frame(width: 530)
         }
     }
 

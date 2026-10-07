@@ -18,8 +18,10 @@ Qualified Chromium 154.0.8037.98 is unchanged. Direct Distribution only.
   does not promise an atomic transaction across both files.
 - Partial proxy observations explain the missing timezone and language without
   claiming launch readiness. The editor compares complete drafts, including
-  unparsed proxy paste; reverting an edit removes the unsaved-change flag.
-- Interactive AX controls are exposed. System VoiceOver is not enabled.
+  unparsed proxy paste. Its baseline and profile ID retain the same SwiftUI
+  State lifetime as the edited fields, avoiding false dirty state on re-init.
+- Interactive AX controls are exposed, including presented folder/tag/template
+  controls and limitations text. System VoiceOver is not enabled.
   Quick commands have a separate Open/Show button and Cmd+Return action;
   ordinary Return selects the profile in the manager.
 - Read-only MCP pages have revision-bound cursors, a 64 MiB metadata cap and a
@@ -63,12 +65,21 @@ Swift projections, not full GUI latency.
 
 ## Pending gates and limits
 
-Physical editor, quick-command, Tab, Escape, Return and window QA is incomplete:
-Codex native UI transport closed. A full AX tree and Cmd+N were observed before
-the connection failed; that is a partial pass. Source candidate `528c201` passed
+Physical QA remains partial. On an isolated archived-hidden fixture, Cmd+N,
+Name focus, paste, Tab, advanced options and Escape were observed. A real
+regression confirmed that exact Name revert closes without a false warning;
+an unparsed synthetic proxy string still triggers confirmation after disabling
+proxy, and discard does not persist it. Quick commands open the local Library
+with Return, and Escape closes it. Showing a selected profile row/card crashes
+the Codex SkyComputerUseService helper in Array.remove(at:); that does not
+establish a NeAntik process crash. Removing row AX grouping did not fix the
+helper and was reverted. Populated-card, existing-profile edit, profile Return
+versus Cmd+Return, nested dialogs and narrow-window acceptance remain pending.
+
+Source candidate `528c201` passed
 signed runtime audit, Developer ID, notarization, stapling and Gatekeeper. The
-later documentation checkpoint adds this release's CHANGELOG section and must
-be included in a final source-bound candidate after physical QA. Previously
+later documentation and editor/accessibility corrections must be included in
+a final source-bound candidate after physical QA. Previously
 qualified artifacts are retained; their qualification is not transferred to a
 new source commit. Hosted bytes and the public Sites rollout are still required.
 No new public download is advertised.
