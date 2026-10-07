@@ -3967,7 +3967,7 @@ struct ProfileDetailView: View {
 
             ScrollView {
                 detailContent
-                    .frame(maxWidth: 1_160, alignment: .leading)
+                    .frame(maxWidth: 900, alignment: .leading)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -3988,49 +3988,40 @@ struct ProfileDetailView: View {
     }
 
     private var detailContent: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            if profile.proxy != nil {
-                GroupBox("Прокси") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        networkSummary
-                    }
+        VStack(alignment: .leading, spacing: 18) {
+            GroupBox {
+                networkSummary
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 4)
-                }
+            } label: {
+                Label("Подключение", systemImage: "network")
+                    .font(.headline)
             }
 
             if let environmentSnapshot {
                 ProfileEnvironmentView(
                     snapshot: environmentSnapshot,
-                    proxyCheckSummary: proxyCheckSummary,
                     hasProxy: profile.proxy != nil,
-                    isTestingProxy: isTestingProxy,
-                    canTestProxy: processState == .stopped,
-                    canCancelProxyTest: canCancelProxyTest,
                     canRunFingerprintAudit: canRunFingerprintAudit,
-                    onTestProxy: onTestProxy,
-                    onCancelProxy: onCancelProxyTest,
-                    onEditProxy: onEditProxy,
                     onRunFingerprintAudit: onRunFingerprintAudit
                 )
                 .id(environmentSnapshot.profileID)
-            } else if profile.proxy == nil {
-                GroupBox("Сеть") {
-                    networkSummary
-                        .padding(.vertical, 4)
-                }
             }
 
-            GroupBox("Стартовая страница") {
-                LabeledContent("URL", value: profile.startURL)
+            GroupBox("Основное") {
+                VStack(alignment: .leading, spacing: 10) {
+                    LabeledContent(
+                        "Стартовая страница",
+                        value: profile.startURL
+                    )
                     .textSelection(.enabled)
-                    .padding(.vertical, 4)
-            }
-
-            GroupBox("Профиль") {
-                Label(
-                    "Cookies, настройки и данные сайтов хранятся отдельно",
-                    systemImage: "person.crop.rectangle.stack"
-                )
+                    Divider()
+                    Label(
+                        "Cookies, настройки и данные сайтов хранятся отдельно",
+                        systemImage: "person.crop.rectangle.stack"
+                    )
+                }
+                .font(.subheadline)
                 .padding(.vertical, 4)
             }
 
@@ -4157,22 +4148,39 @@ struct ProfileDetailView: View {
     private var networkSummary: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let proxy = profile.proxy {
-                LabeledContent("Тип", value: proxy.kind.title)
-                LabeledContent("Сервер", value: proxy.displayEndpoint)
-                LabeledContent(
-                    "Авторизация",
-                    value: proxy.username.isEmpty ? "Нет" : "Настроена"
+                Label {
+                    Text("\(proxy.kind.title) · \(proxy.displayEndpoint)")
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "network")
+                }
+                .font(.body.weight(.medium))
+                .accessibilityLabel(
+                    "Прокси \(proxy.kind.title), сервер \(proxy.displayEndpoint)"
                 )
-                if !proxy.username.isEmpty {
-                    ViewThatFits(in: .horizontal) {
-                        HStack {
-                            credentialButtons
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            credentialButtons
-                        }
+
+                Text(
+                    proxy.username.isEmpty
+                        ? "Без авторизации"
+                        : "Логин и пароль сохранены в Связке ключей"
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+                if let proxyCheckSummary {
+                    ProxyCheckSummaryView(summary: proxyCheckSummary)
+                }
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        connectionActions(hasCredentials: !proxy.username.isEmpty)
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        connectionActions(hasCredentials: !proxy.username.isEmpty)
                     }
                 }
+
                 if let clipboardNotice {
                     Label(
                         clipboardNotice,
@@ -4184,8 +4192,70 @@ struct ProfileDetailView: View {
                     .accessibilityLabel(clipboardNotice)
                 }
             } else {
-                LabeledContent("Подключение", value: "Без прокси")
+                Label("Без прокси · прямое подключение", systemImage: "network")
+                    .font(.body)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func connectionActions(hasCredentials: Bool) -> some View {
+        Button(
+            action: isTestingProxy && canCancelProxyTest
+                ? onCancelProxyTest : onTestProxy
+        ) {
+            Label(
+                isTestingProxy
+                    ? (
+                        canCancelProxyTest
+                            ? "Отменить проверку"
+                            : "Проверка в другом окне…"
+                    )
+                    : "Проверить прокси",
+                systemImage: isTestingProxy
+                    ? "stop.circle"
+                    : "network.badge.shield.half.filled"
+            )
+        }
+        .buttonStyle(.bordered)
+        .disabled(
+            (isTestingProxy && !canCancelProxyTest) ||
+                (!isTestingProxy && processState != .stopped)
+        )
+        .help(
+            isTestingProxy
+                ? (
+                    canCancelProxyTest
+                        ? "Отменить проверку прокси"
+                        : "Проверка запущена в другом окне NeAntik"
+                )
+                : (
+                    processState == .stopped
+                        ? "Проверяет доступность и контекст выхода прокси"
+                        : "Сначала останови профиль"
+                )
+        )
+
+        Button(action: onEditProxy) {
+            Label("Изменить прокси…", systemImage: "slider.horizontal.3")
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(processState != .stopped)
+        .help(
+            processState == .stopped
+                ? "Исправить адрес, порт, логин или пароль прокси"
+                : "Сначала останови профиль"
+        )
+        .accessibilityHint("Открывает настройки прокси текущего профиля")
+
+        if hasCredentials {
+            Menu {
+                credentialButtons
+            } label: {
+                Label("Учётные данные", systemImage: "key")
+            }
+            .menuStyle(.borderlessButton)
+            .help("Скопировать логин или пароль прокси")
         }
     }
 
@@ -4196,7 +4266,6 @@ struct ProfileDetailView: View {
                 "Копировать логин",
                 systemImage: "person.text.rectangle"
             )
-            .frame(minHeight: 28)
         }
         .help("Скопировать логин прокси на 60 секунд")
         .accessibilityHint(
@@ -4205,7 +4274,6 @@ struct ProfileDetailView: View {
 
         Button(action: onCopyProxyPassword) {
             Label("Копировать пароль", systemImage: "key")
-                .frame(minHeight: 28)
         }
         .help("Скопировать пароль из Связки ключей на 60 секунд")
         .accessibilityHint(

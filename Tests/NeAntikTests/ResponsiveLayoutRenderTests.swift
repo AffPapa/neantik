@@ -163,11 +163,7 @@ struct ResponsiveLayoutRenderTests {
                     siteCompatibility: compatibility
                 ),
                 hasProxy: false,
-                isTestingProxy: false,
-                canTestProxy: false,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "site-compatibility-report",
@@ -383,11 +379,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealth: nil
                 ),
                 hasProxy: false,
-                isTestingProxy: false,
-                canTestProxy: false,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "profile-environment-direct-ready",
@@ -401,11 +393,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealth: nil
                 ),
                 hasProxy: false,
-                isTestingProxy: false,
-                canTestProxy: false,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "profile-environment-direct-ready-light",
@@ -420,11 +408,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealth: nil
                 ),
                 hasProxy: true,
-                isTestingProxy: false,
-                canTestProxy: true,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "profile-environment-proxy-auto-light",
@@ -449,7 +433,13 @@ struct ResponsiveLayoutRenderTests {
             name: "Рабочий профиль",
             tags: ["Работа", "Клиент"],
             note:
-                "Это длинная заметка профиля для проверки трёхстрочного превью. Она содержит рабочий контекст, следующий шаг и напоминание о том, что полный текст остаётся доступным по отдельной кнопке без перегрузки основного экрана."
+                "Это длинная заметка профиля для проверки трёхстрочного превью. Она содержит рабочий контекст, следующий шаг и напоминание о том, что полный текст остаётся доступным по отдельной кнопке без перегрузки основного экрана.",
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "192.0.2.10",
+                port: 8_080,
+                username: "fixture"
+            )
         )
         for (name, size) in [
             (
@@ -471,6 +461,11 @@ struct ResponsiveLayoutRenderTests {
                     processState: .stopped,
                     browserDataPath:
                         "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                    environmentSnapshot: ProfileEnvironmentInspector.snapshot(
+                        profile: profile,
+                        runtime: nil,
+                        proxyHealth: nil
+                    ),
                     clipboardNotice: nil,
                     onCopyProxyUsername: {},
                     onCopyProxyPassword: {}

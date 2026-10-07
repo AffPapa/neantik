@@ -8,15 +8,8 @@ struct ProfileEnvironmentView: View {
     @State private var showingDetails = false
 
     let snapshot: ProfileEnvironmentSnapshot
-    var proxyCheckSummary: ProxyCheckSummary? = nil
     let hasProxy: Bool
-    let isTestingProxy: Bool
-    let canTestProxy: Bool
-    let canCancelProxyTest: Bool
     let canRunFingerprintAudit: Bool
-    let onTestProxy: () -> Void
-    var onCancelProxy: () -> Void = {}
-    var onEditProxy: () -> Void = {}
     let onRunFingerprintAudit: () -> Void
 
     var body: some View {
@@ -250,23 +243,7 @@ struct ProfileEnvironmentView: View {
 
     private var overview: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 18) {
-                    overviewFacts
-                    if hasOverviewAction {
-                        Spacer(minLength: 12)
-                        environmentActions
-                    }
-                }
-                .frame(minWidth: 650, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    overviewFacts
-                    if hasOverviewAction {
-                        environmentActions
-                    }
-                }
-            }
+            overviewFacts
 
             ForEach(
                 ProfileEnvironmentPresentation.criticalFindings(in: snapshot)
@@ -278,63 +255,56 @@ struct ProfileEnvironmentView: View {
 
     private var overviewFacts: some View {
         VStack(alignment: .leading, spacing: 5) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: 16) {
-                    EnvironmentOverviewFact(
-                        title: "Маршрут",
-                        value: ProfileEnvironmentPresentation.routeSummary(
-                            in: snapshot
-                        )
+            if hasProxy {
+                EnvironmentOverviewFact(
+                    title: "Движок",
+                    value: ProfileEnvironmentPresentation.runtimeSummary(
+                        in: snapshot
                     )
-                    EnvironmentOverviewFact(
-                        title: "Движок",
-                        value: ProfileEnvironmentPresentation.runtimeSummary(
-                            in: snapshot
+                )
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        EnvironmentOverviewFact(
+                            title: "Маршрут",
+                            value: ProfileEnvironmentPresentation.routeSummary(
+                                in: snapshot
+                            )
                         )
-                    )
-                }
-                .frame(minWidth: 420, alignment: .leading)
+                        EnvironmentOverviewFact(
+                            title: "Движок",
+                            value: ProfileEnvironmentPresentation.runtimeSummary(
+                                in: snapshot
+                            )
+                        )
+                    }
+                    .frame(minWidth: 420, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    EnvironmentOverviewFact(
-                        title: "Маршрут",
-                        value: ProfileEnvironmentPresentation.routeSummary(
-                            in: snapshot
+                    VStack(alignment: .leading, spacing: 4) {
+                        EnvironmentOverviewFact(
+                            title: "Маршрут",
+                            value: ProfileEnvironmentPresentation.routeSummary(
+                                in: snapshot
+                            )
                         )
-                    )
-                    EnvironmentOverviewFact(
-                        title: "Движок",
-                        value: ProfileEnvironmentPresentation.runtimeSummary(
-                            in: snapshot
+                        EnvironmentOverviewFact(
+                            title: "Движок",
+                            value: ProfileEnvironmentPresentation.runtimeSummary(
+                                in: snapshot
+                            )
                         )
-                    )
+                    }
                 }
             }
 
             EnvironmentSeverityRollup(snapshot: snapshot)
-            if hasProxy, let proxyCheckSummary {
-                ProxyCheckSummaryView(summary: proxyCheckSummary)
-                    .padding(.top, 2)
-            }
-        }
-    }
-
-    private var hasOverviewAction: Bool {
-        hasProxy
-    }
-
-    @ViewBuilder
-    private var environmentActions: some View {
-        if hasProxy {
-            proxyTestButton
-            editProxyButton
         }
     }
 
     private var diagnosticTools: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Дополнительные проверки")
-                .font(.caption.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             ViewThatFits(in: .horizontal) {
@@ -353,46 +323,6 @@ struct ProfileEnvironmentView: View {
         }
     }
 
-    private var proxyTestButton: some View {
-        Button(
-            action:
-                isTestingProxy && canCancelProxyTest
-                    ? onCancelProxy
-                    : onTestProxy
-        ) {
-            Label(
-                isTestingProxy
-                    ? (
-                        canCancelProxyTest
-                            ? "Отменить"
-                            : "Проверка в другом окне…"
-                    )
-                    : "Проверить прокси",
-                systemImage: isTestingProxy
-                    ? "stop.circle"
-                    : "network.badge.shield.half.filled"
-            )
-        }
-        .buttonStyle(.bordered)
-        .disabled(
-            (isTestingProxy && !canCancelProxyTest) ||
-                (!isTestingProxy && !canTestProxy)
-        )
-        .help(
-            isTestingProxy
-                ? (
-                    canCancelProxyTest
-                        ? "Отменить проверку прокси"
-                        : "Проверка запущена в другом окне NeAntik"
-                )
-                : (
-                    canTestProxy
-                        ? "Проверяет доступность и контекст выхода прокси"
-                        : "Сначала останови профиль"
-                )
-        )
-    }
-
     private var fingerprintAuditButton: some View {
         Button(action: onRunFingerprintAudit) {
             Label("Сравнить отпечатки…", systemImage: "viewfinder")
@@ -409,18 +339,6 @@ struct ProfileEnvironmentView: View {
                 ? "Запускает локальное сравнение профилей " +
                     "A, B и снова A"
                 : fingerprintDisabledReason
-        )
-    }
-
-    private var editProxyButton: some View {
-        Button(action: onEditProxy) {
-            Label("Изменить прокси…", systemImage: "slider.horizontal.3")
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(!canTestProxy)
-        .help(canTestProxy ? "Исправить адрес, порт, логин или пароль прокси" : "Сначала останови профиль")
-        .accessibilityHint(
-            "Открывает настройки прокси текущего профиля"
         )
     }
 
@@ -489,10 +407,10 @@ private struct EnvironmentOverviewFact: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 5) {
             Text(title)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(.subheadline)
+                .font(.body)
                 .fontWeight(.medium)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -559,7 +477,7 @@ private struct EnvironmentSeverityRollup: View {
                 .foregroundStyle(.orange)
             }
         }
-        .font(.caption)
+        .font(.subheadline)
         .fontWeight(.medium)
         .accessibilityElement(children: .combine)
     }
@@ -580,7 +498,7 @@ private struct EnvironmentCriticalFindingSummary: View {
             )
             .accessibilityHidden(true)
         }
-        .font(.caption)
+        .font(.subheadline)
         .foregroundStyle(
             DiagnosticSeverityPresentation.color(for: field.severity)
         )
@@ -611,11 +529,11 @@ private struct EnvironmentSectionHeader: View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(displayTitle)
-                    .font(.subheadline)
+                    .font(.body)
                     .fontWeight(.semibold)
                     .layoutPriority(1)
                 Text(summary)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -627,13 +545,13 @@ private struct EnvironmentSectionHeader: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(displayTitle)
-                        .font(.subheadline)
+                        .font(.body)
                         .fontWeight(.semibold)
                     Spacer(minLength: 6)
                     EnvironmentSeverityMark(severity: severity)
                 }
                 Text(summary)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -687,7 +605,7 @@ private struct EnvironmentFieldRow: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             wideRow
-                .frame(minWidth: 620, alignment: .leading)
+                .frame(minWidth: 700, alignment: .leading)
             compactRow
         }
         .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
@@ -699,7 +617,7 @@ private struct EnvironmentFieldRow: View {
     private var wideRow: some View {
         HStack(alignment: .top, spacing: 12) {
             Text(field.title)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(width: 150, alignment: .leading)
 
@@ -715,7 +633,7 @@ private struct EnvironmentFieldRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(field.title)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 6)
                 EnvironmentFieldStatus(field: field)
@@ -727,14 +645,14 @@ private struct EnvironmentFieldRow: View {
     private var valueAndDetail: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(field.value)
-                .font(.subheadline)
+                .font(.body)
                 .fontWeight(.medium)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let detail = field.detail {
                 Text(detail)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -764,40 +682,32 @@ private struct EnvironmentFieldStatus: View {
     let field: EnvironmentDiagnosticField
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Label(
-                field.state.title,
-                systemImage: EvidenceBadgePresentation.systemImage(
-                    for: field.state
-                )
-            )
-            .foregroundStyle(.secondary)
-
-            if field.severity != .neutral {
-                Label(
-                    DiagnosticSeverityPresentation.title(
-                        for: field.severity
-                    ),
-                    systemImage: DiagnosticSeverityPresentation.systemImage(
-                        for: field.severity
-                    )
-                )
-                .foregroundStyle(
-                    DiagnosticSeverityPresentation.color(
-                        for: field.severity
-                    )
-                )
-            }
-
-            if let observedAt = field.observedAt {
-                Text(
-                    observedAt.neAntikDisplayDateTime
-                )
-                .foregroundStyle(.tertiary)
-            }
-        }
-        .font(.caption2)
+        Label(
+            field.severity == .neutral
+                ? field.state.title
+                : DiagnosticSeverityPresentation.title(for: field.severity),
+            systemImage: field.severity == .neutral
+                ? EvidenceBadgePresentation.systemImage(for: field.state)
+                : DiagnosticSeverityPresentation.systemImage(for: field.severity)
+        )
+        .font(.subheadline)
+        .foregroundStyle(
+            DiagnosticSeverityPresentation.color(for: field.severity)
+        )
+        .fixedSize(horizontal: false, vertical: true)
+        .help(statusHelp)
         .accessibilityHidden(true)
+    }
+
+    private var statusHelp: String {
+        var parts = [
+            "Источник: \(field.state.title.lowercased())",
+            "Результат: \(DiagnosticSeverityPresentation.title(for: field.severity).lowercased())",
+        ]
+        if let observedAt = field.observedAt {
+            parts.append("Измерено \(observedAt.neAntikDisplayDateTime)")
+        }
+        return parts.joined(separator: ". ")
     }
 }
 
