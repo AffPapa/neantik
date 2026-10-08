@@ -137,13 +137,32 @@ struct MCPProfileManagementTests {
 
     @Test func managementConfigurationIncludesOnlySelectedServerPermissions() throws {
         var config = MCPConnectionConfiguration(executable: URL(fileURLWithPath: "/private/tmp/QA.app/Contents/MacOS/NeAntik"), dataRoot: URL(fileURLWithPath: "/private/tmp/synthetic-mcp", isDirectory: true))
-        #expect(!config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))
-        #expect(!config.codexTOML.contains("profile_create"))
-        config.allowsManagement = true
+        #expect(config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments).mode == .mcpManagement(dataRoot: config.dataRoot))
         for tool in MCPProfileManagement.allTools { #expect(config.codexTOML.contains(tool)) }
         #expect(MCPProfileManagement.allTools.count == 17)
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments + ["--untrusted"]).mode == .invalidControlArguments)
+        config.allowsManagement = false
+        #expect(!config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))
+        #expect(!config.codexTOML.contains("profile_create"))
+        #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments).mode == .mcpStdio(dataRoot: config.dataRoot))
+    }
+
+    @Test func folderCorruptionDoesNotPreventStatusOrGracefulStop() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try await create(engine)
+        let paths = AppPaths(rootDirectory: root)
+        let corrupt = Data("{broken".utf8)
+        try corrupt.write(to: paths.profileOrganizationFile)
+        let status = try await engine.call("profile_status", ["profileID": profile["id"]!])
+        #expect(status["processState"] as? String == "stopped")
+        let stop = try await engine.call("profile_stop", ["profileID": profile["id"]!])
+        #expect(stop["stopRequested"] as? Bool == false)
+        await #expect(throws: (any Error).self) { try await engine.call("folder_list", [:]) }
+        #expect(try Data(contentsOf: paths.profileOrganizationFile) == corrupt)
+        try Data("{broken".utf8).write(to: paths.profilesFile)
+        await #expect(throws: (any Error).self) { try await engine.call("profile_stop", ["profileID": profile["id"]!]) }
     }
 
     @Test func readModeAndProtocolRequireExplicitManagementInitialization() async throws {

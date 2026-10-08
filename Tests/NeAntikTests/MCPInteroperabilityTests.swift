@@ -64,16 +64,27 @@ struct MCPInteroperabilityTests {
     }
     @Test func allClientJSONVariantsPreserveArgvAndPermissions() throws {
         var config = MCPConnectionConfiguration(executable: URL(fileURLWithPath: "/private/tmp/QA 'quoted'.app/Contents/MacOS/NeAntik"), dataRoot: URL(fileURLWithPath: "/private/tmp/synthetic root"))
-        config.allowsManagement = true
-        for client in [MCPClient.claudeDesktop, .cursor, .vscode, .geminiCLI] {
-            let root = try #require(JSONSerialization.jsonObject(with: Data(config.configuration(for: client).utf8)) as? [String: [String: [String: Any]]])
-            let server = try #require(root[client == .vscode ? "servers" : "mcpServers"]?["neantik"])
-            #expect(server["command"] as? String == config.executable.path)
-            #expect(server["args"] as? [String] == config.arguments)
-            if client == .vscode { #expect(server["type"] as? String == "stdio") }
-            if client == .geminiCLI { #expect(server["trust"] as? Bool == false) }
+        for manage in [true, false] {
+            config.allowsManagement = manage
+            for client in [MCPClient.claudeDesktop, .cursor, .vscode, .geminiCLI] {
+                let root = try #require(JSONSerialization.jsonObject(with: Data(config.configuration(for: client).utf8)) as? [String: [String: [String: Any]]])
+                let server = try #require(root[client == .vscode ? "servers" : "mcpServers"]?["neantik"])
+                #expect(server["command"] as? String == config.executable.path)
+                let arguments = try #require(server["args"] as? [String])
+                #expect(arguments == config.arguments)
+                #expect(arguments.contains(NeAntikLaunchIntent.mcpManagementArgument) == manage)
+                if client == .vscode { #expect(server["type"] as? String == "stdio") }
+                if client == .geminiCLI { #expect(server["trust"] as? Bool == false) }
+            }
+            for client in [MCPClient.claudeCode, .grokCLI] {
+                let command = config.configuration(for: client)
+                #expect(command.contains("'\\''quoted'\\''"))
+                #expect(command.contains(NeAntikLaunchIntent.mcpManagementArgument) == manage)
+            }
+            let toml = config.configuration(for: .chatGPTCodex)
+            #expect(toml.contains("workspace_query_profiles"))
+            #expect(toml.contains("profile_create") == manage)
+            #expect(toml.contains(NeAntikLaunchIntent.mcpManagementArgument) == manage)
         }
-        #expect(config.configuration(for: .claudeCode).contains("'\\''quoted'\\''"))
-        #expect(config.configuration(for: .chatGPTCodex).contains("workspace_query_profiles"))
     }
 }

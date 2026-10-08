@@ -21,7 +21,7 @@ struct HelpContentTests {
         let command = try #require(server["command"] as? String)
         let args = try #require(server["args"] as? [String])
         #expect(command == executable.path)
-        #expect(NeAntikLaunchIntent.parse(arguments: [command] + args).mode == .mcpStdio(dataRoot: root))
+        #expect(NeAntikLaunchIntent.parse(arguments: [command] + args).mode == .mcpManagement(dataRoot: root))
         #expect(configuration.codexTOML.contains("\\\"QA\\\""))
         #expect(configuration.codexTOML.contains("\\\"root\\\""))
         #expect(!configuration.codexTOML.contains("password"))

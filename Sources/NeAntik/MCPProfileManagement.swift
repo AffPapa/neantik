@@ -71,9 +71,17 @@ final class MCPProfileManagement {
               Set(args.keys).isSubset(of: Set(properties.keys)),
               (schema["required"] as? [String] ?? []).allSatisfy({ args[$0] != nil }) else { throw Failure.invalid }
         guard Self.readTools.contains(name) || allowsManagement else { throw Failure.denied }
-        if !allowsManagement, (!store.hasTrustedMetadata || !store.hasTrustedOrganization) { throw Failure.unavailable }
-        try await store.refreshExternalMetadata()
-        guard store.hasTrustedMetadata, store.hasTrustedOrganization else { throw Failure.unavailable }
+        let lifecycleOnly = name == "profile_status" || name == "profile_stop"
+        if !allowsManagement, (!store.hasTrustedMetadata || (!lifecycleOnly && !store.hasTrustedOrganization)) { throw Failure.unavailable }
+        do {
+            try await store.refreshExternalMetadata()
+        } catch {
+            // These operations use independently validated profile IDs and process
+            // ownership, never folder assignments. A broken sidecar must not
+            // prevent gracefully closing a browser owned by this session.
+            guard lifecycleOnly, store.hasTrustedMetadata, !store.hasTrustedOrganization else { throw error }
+        }
+        guard store.hasTrustedMetadata, lifecycleOnly || store.hasTrustedOrganization else { throw Failure.unavailable }
         try Task.checkCancellation()
         if name == "workspace_query_profiles" {
             let query = try MCPWorkspaceQuery(arguments: args)

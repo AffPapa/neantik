@@ -42,7 +42,7 @@ struct NeAntikHelpWindow: View {
     let connection: MCPConnectionConfiguration
     @State private var search = ""
     @State private var client = MCPClient.claudeDesktop
-    @State private var allowsManagement = false
+    @State private var allowsManagement = true
     private var selectedConnection: MCPConnectionConfiguration { var value = connection; value.allowsManagement = allowsManagement; return value }
     @State private var copied = false
     @FocusState private var searchFocused: Bool
@@ -115,11 +115,13 @@ struct NeAntikHelpWindow: View {
         GroupBox("Настройка этого workspace") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Скопируй блок в настройки клиента, сохранив остальные серверы. Он содержит локальные пути этого приложения.")
-                Text("Доступ клиента").font(.callout)
-                Picker("Доступ клиента", selection: $allowsManagement) {
-                    Text("Чтение").tag(false)
-                    Text("Управление профилями").tag(true)
-                }.pickerStyle(.segmented).labelsHidden()
+                Text(allowsManagement
+                     ? "AI может создавать, изменять и запускать профили."
+                     : "AI может только просматривать профили.").font(.callout)
+                DisclosureGroup("Дополнительная настройка доступа") {
+                    Toggle("Только просмотр — без изменений и запуска", isOn: Binding(
+                        get: { !allowsManagement }, set: { allowsManagement = !$0 }))
+                }
                 Picker("AI-клиент", selection: $client) {
                     ForEach(MCPClient.allCases) { Text($0.title).tag($0) }
                 }.pickerStyle(.menu)

@@ -1631,3 +1631,9 @@ patch-applicability result only. The complete downstream source still has 23
 postimage mismatches, including five unregistered test includes and one
 unregistered Safe Browsing prefs removal; no M154 source contract or qualified
 build/runtime/release follows from the applicability check.
+
+## 8 октября: доступность опубликованных файлов и MCP
+
+Browser.free Sites121 (source009d80e8fc193943d00b21ec73e440cf84ef8f87) сохраняет DownloadZIP/DMG для настоящего immutable0.7.23 при незавершённой квалификации нового runtime. canDownload отражает проверенный опубликованный артефакт; canPublishNewRelease отдельно отражает runtime/security/Direct readiness. Не менять latestRelease на исходники кандидата.
+
+В manager-кандидате0.7.24 новые MCPconfigs включают --allow-profile-management; дополнительная опция только просмотра сохраняет 6tools и отсутствие флага. Старые клиенты не получают новые права автоматически. Полное текущее управление имеет17tools/3prompts, не означает произвольныйDOM/JS/shell или доступ к BrowserData. Изолированный Stable155.0.8059.40 port в работе; signing/notary нового runtime пока не квалифицированы.

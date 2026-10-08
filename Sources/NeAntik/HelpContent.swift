@@ -26,7 +26,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .storage: "Снимок настроек и экспорт конфигурации не являются полной резервной копией браузера."
         case .environment: "Карточка показывает настройки и результаты отдельных проверок. Настроенное значение не всегда измерено в браузере."
         case .keyboard: "Основные действия доступны из меню и с клавиатуры."
-        case .mcp: "Локальный MCP управляет профилями, прокси, папками и запуском через выбранный AI-клиент. Режим чтения включён по умолчанию; управление выбирается при подключении."
+        case .mcp: "Локальный MCP управляет профилями, прокси, папками и запуском через выбранный AI-клиент. Новая настройка включает все действия с профилями. Только просмотр доступен в дополнительных настройках подключения."
         }
     }
 
@@ -63,7 +63,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             ("Основные сочетания", "⌘N — новый профиль\n⌘⇧P — быстрые команды\nВ быстрых командах Return выбирает профиль, ⌘Return открывает его.\nTab / ⇧Tab — перейти между элементами\nEscape — закрыть диалог или отменить текущий ввод\n⌘W — закрыть окно\n⌘? — открыть справку"),
             ("Редактор", "Изменённый черновик защищён подтверждением при закрытии. Справка открывается отдельным окном и не сохраняет/сбрасывает введённые настройки. Сочетания остальных действий видны в меню «Профили».")]
         case .mcp: [
-            ("Подключение и права", "Выбери «Чтение» или «Управление», затем выбери клиента: Claude Desktop/Code, ChatGPT Desktop/Codex, Grok CLI, Cursor, VS Code/Copilot или Gemini CLI. Скопируй настройку и добавь к существующим серверам клиента. Перезапусти клиент. Управление разрешает сохранять настройки и запускать браузер; отдельного подтверждения каждого действия в NeAntik нет. Node/npm и сетевой порт не нужны."),
+            ("Подключение и права", "Выбери клиента: Claude Desktop/Code, ChatGPT Desktop/Codex, Grok CLI, Cursor, VS Code/Copilot или Gemini CLI. Скопируй настройку и добавь к существующим серверам клиента. Перезапусти клиент. Управление разрешает сохранять настройки и запускать браузер; отдельного подтверждения каждого действия в NeAntik нет. Node/npm и сетевой порт не нужны."),
             ("Профили и проекты", "profile_get читает текущую revision и настройки. profile_create создаёт без запуска. profile_update меняет название, стартовую страницу, теги, заметку, оформление, закрепление и архив. profile_duplicate копирует настройки с новой идентичностью, без cookies, заметки и данных сайтов. workspace_query_profiles ищет по имени, тегам (AND), папке и закреплению. По умолчанию только активные профили; isArchived:true выбирает архив, folderID:null — без папки. Заметки не участвуют в поиске. workspace_list_profiles_page читает страницы по 1–100 записей: передавай nextCursor без изменений, null означает конец; при изменении workspace начни заново. Проект — папка: folder_list/create/rename/remove и profile_move. folder_list отдаёт страницы; create/rename/remove возвращают только затронутую папку и affectedFolderID, полный каталог нужно прочитать отдельно. Удаление папки сохраняет профили в «Без папки». Удаление профилей через MCP недоступно."),
             ("Прокси", "profile_set_proxy принимает отдельные поля kind/host/port/username/password либо proxyLine с типом и порядком. Форматы строки совпадают с редактором: login:password@host:port, host:port:login:password, login:password:host:port; при неоднозначности укажи order. proxy: null отключает прокси. SOCKS5 с авторизацией не поддерживается браузером; используй HTTP-порт провайдера. Пароль сохраняется в Связке ключей и не возвращается. profile_check_proxy проверяет доступность без изменения контекста; это не измерение маршрута Chromium."),
             ("Запуск и остановка", "profile_start запускает штатный браузер: новый тест прокси перед каждой сессией, без прямого fallback. profile_status показывает наблюдаемое состояние. profile_stop запрашивает обычное закрытие своего браузера: дождись stopped через status. После отключения MCP браузер продолжает работать. Другая MCP-сессия или GUI потребуют закрыть такой браузер вручную. Работающий или неподтверждённый профиль защищён от изменения конфигурации."),
@@ -90,7 +90,9 @@ enum HelpTopic: String, CaseIterable, Identifiable {
 struct MCPConnectionConfiguration {
     let executable: URL
     let dataRoot: URL
-    var allowsManagement = false
+    // New connection snippets opt in to the complete profile toolset. Existing
+    // configs without the management flag retain their server-enforced read access.
+    var allowsManagement = true
     var arguments: [String] { [NeAntikLaunchIntent.mcpStdioArgument, NeAntikLaunchIntent.dataRootArgument, dataRoot.path] + (allowsManagement ? [NeAntikLaunchIntent.mcpManagementArgument] : []) }
     var claudeJSON: String {
         let object: [String: Any] = ["mcpServers": ["neantik": ["command": executable.path, "args": arguments]]]

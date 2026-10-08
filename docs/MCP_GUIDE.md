@@ -1,10 +1,10 @@
 # NeAntik local MCP: profile management
 
-The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. The manager GUI may be closed. Read access is the default; **Manage profiles** enables canonical writes and normal browser lifecycle. Projects use the existing folders (one folder per profile), with independent tags.
+The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. The manager GUI may be closed. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
 ## Connect (official client formats checked 7 October 2026)
 
-Open **Справка → Подключить MCP к AI…**, choose **Чтение** or **Управление профилями**, then select the actual client. Copy the generated configuration containing this installed app and workspace. Merge it with existing servers, preserve other settings, then restart the client. No Node/npm or network listener is required. Configuration format compatibility is verified; third-party AI clients/models have not all been run end-to-end.
+Open **Справка → Подключить MCP к AI…**, select the actual client and copy the full-management setting. To restrict access, expand **Дополнительная настройка доступа** and enable **Только просмотр — без изменений и запуска**. Copy the generated configuration containing this installed app and workspace. Merge it with existing servers, preserve other settings, then restart the client. No Node/npm or network listener is required. Configuration format compatibility is verified; third-party AI clients/models have not all been run end-to-end.
 
 | Client | Generated format / setup | Official documentation |
 |---|---|---|
