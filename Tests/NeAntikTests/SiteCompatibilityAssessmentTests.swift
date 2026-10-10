@@ -4,6 +4,17 @@ import Testing
 
 struct SiteCompatibilityAssessmentTests {
     @Test
+    func enumerationMustSucceedBeforeShowingAvailability() {
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available"]) == .notChecked)
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available", "media_device_count": "-1"]) == .notChecked)
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available", "media_device_count": "0", "media_device_observation": "observed"]) == .observed)
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available", "media_device_count": "unavailable", "media_device_observation": "error"]) == .failed)
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available", "media_device_observation": "timeout"]) == .timedOut)
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "unavailable", "media_device_observation": "api-absent"]) == .unavailable)
+        #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available", "media_device_count": "1", "media_device_observation": "invented"]) == .notChecked)
+    }
+
+    @Test
     func unknownOrMalformedObservationsFailClosed() {
         #expect(SiteCompatibilityAssessment.state(nil) == .notChecked)
         #expect(SiteCompatibilityAssessment.state("not-probed") == .notChecked)

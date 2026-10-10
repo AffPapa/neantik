@@ -627,13 +627,13 @@ struct FingerprintAuditView: View {
                         )
                         if report.isProductionReleaseQualified {
                             statusLabel(
-                                "Строгая согласованность production подтверждена",
+                                "Базовая согласованность page/worker подтверждена",
                                 systemImage: "checkmark.shield.fill",
                                 color: .green
                             )
                         } else {
                             statusLabel(
-                                "Строгая согласованность production пока не подтверждена",
+                                "Базовая согласованность page/worker не подтверждена",
                                 systemImage: "exclamationmark.shield.fill",
                                 color: .orange
                             )
@@ -662,6 +662,9 @@ struct FingerprintAuditView: View {
                         .foregroundStyle(.secondary)
                     }
                     Divider()
+                    Text("Это базовое сравнение страницы и Web Worker. Девять контекстов, реальные медиаоперации и другие проверки входят в отдельную квалификацию версии; этот экран не подтверждает весь план 1.0.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     LabeledContent(
                         "Фактический HTTP-маршрут",
                         value: "Не измерялся"
@@ -772,6 +775,9 @@ struct FingerprintAuditView: View {
     }
 
     private func localizedIssue(_ issue: String) -> String {
+        if issue.contains("Font rendering evidence") {
+            return "Нужна новая проверка шрифтов по измерениям DOM и Canvas. Старый список названий не подтверждает отображение и fallback."
+        }
         if issue.contains("browser mode") ||
             issue.contains("diagnostic mode") {
             return "Отчёт получен не в обычном режиме браузера."

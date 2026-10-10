@@ -5,6 +5,16 @@ import Testing
 
 struct FingerprintAuditTests {
     @Test
+    func fontNamesAndMalformedControlsCannotQualifyRenderingEvidence() {
+        #expect(FingerprintAuditReport.isFontMetricEvidence("metrics-v1:a1b2c3d4:fallback-control-pass"))
+        for value in ["Arial,Menlo", "metrics-v1:a1b2c3d4:fallback-control-fail",
+                      "metrics-v1:abcdefgh:fallback-control-pass", "unavailable", ""] {
+            #expect(!FingerprintAuditReport.isFontMetricEvidence(value))
+        }
+        #expect(!FingerprintAuditReport.isFontMetricEvidence(nil))
+    }
+
+    @Test
     func auditUsesFreshProcessProfileWithoutChangingIdentity() {
         let sourceID = UUID()
         let processID = UUID()
@@ -2283,7 +2293,7 @@ struct FingerprintAuditTests {
             "hardware_concurrency": "8",
             "device_memory": "8",
             "touch_points": "0",
-            "fonts": "Arial,Menlo",
+            "fonts": "metrics-v1:a1b2c3d4:fallback-control-pass",
             "languages": "en-US,en",
             "timezone": "Europe/Berlin",
             "intl_locale": "en-US",

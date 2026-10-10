@@ -7,6 +7,23 @@ import Testing
 
 struct FingerprintEvidenceReleaseContextTests {
     @Test
+    func legacyFontListCannotConsumeReleaseAuthority() {
+        let fixture = makeContext()
+        let report = qualifiedReport()
+        var values = report.second.values
+        values["fonts"] = "Arial,Menlo"
+        let legacy = FingerprintCapture(
+            profileID: report.second.profileID, profileName: report.second.profileName,
+            identityCode: report.second.identityCode, capturedAt: report.second.capturedAt,
+            values: values
+        )
+        #expect(throws: FingerprintEvidenceReleaseError.reportNotQualified) {
+            try fixture.context.persist(report: replacing(report, second: legacy))
+        }
+        #expect(fixture.claimStore.claimCount == 0)
+        #expect(fixture.output.commitCount == 0)
+    }
+    @Test
     func manifestAcceptsExactM154ContractAndRejectsUnknownPaths() throws {
         let fixture = makeContext()
         var root = try #require(JSONSerialization.jsonObject(with: fixture.manifest) as? [String: Any])
@@ -926,7 +943,7 @@ struct FingerprintEvidenceReleaseContextTests {
             "hardware_concurrency": String(cores),
             "device_memory": "8",
             "touch_points": "0",
-            "fonts": "Arial,Menlo",
+            "fonts": "metrics-v1:a1b2c3d4:fallback-control-pass",
             "languages": "en-US,en",
             "timezone": "Europe/Berlin",
             "intl_locale": "en-US",

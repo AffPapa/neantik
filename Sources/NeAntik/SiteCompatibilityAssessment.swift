@@ -4,12 +4,16 @@ enum SiteFeatureObservation: Equatable, Sendable {
     case observed
     case unavailable
     case notChecked
+    case failed
+    case timedOut
 
     var title: String {
         switch self {
         case .observed: "Доступно в проверенной среде"
         case .unavailable: "Недоступно в проверенной среде"
         case .notChecked: "Не проверено"
+        case .failed: "Не удалось прочитать список устройств"
+        case .timedOut: "Устройства не ответили вовремя"
         }
     }
 }
@@ -52,7 +56,7 @@ struct SiteCompatibilityAssessment: Equatable, Sendable {
             canvas: Self.state(captured["canvas"]),
             webGL: Self.state(captured["webgl_pixels"]),
             audio: Self.state(captured["audio"]),
-            mediaDevices: Self.state(captured["media_devices"]),
+            mediaDevices: Self.mediaState(captured),
             limitations: "Проверяет только доступность функций в локальном Chromium. Не проверяет выбранный сайт, его интерфейс, вход, сценарии или решения его защиты. Сводка действует 24 часа."
         )
     }
@@ -91,5 +95,24 @@ struct SiteCompatibilityAssessment: Equatable, Sendable {
             return .notChecked
         }
         return .notChecked
+    }
+
+    /// API presence does not prove that enumeration succeeded. Old captures
+    /// remain readable, but must include a valid count before showing success.
+    static func mediaState(_ values: [String: String]) -> SiteFeatureObservation {
+        switch values["media_device_observation"] {
+        case "error": return .failed
+        case "timeout": return .timedOut
+        case "api-absent":
+            return values["media_devices"] == "unavailable" ? .unavailable : .notChecked
+        case "observed", nil: break
+        default: return .notChecked
+        }
+        guard values["media_devices"] == "available",
+              let count = values["media_device_count"].flatMap(Int.init),
+              (0...256).contains(count) else {
+            return values["media_devices"] == "unavailable" ? .unavailable : .notChecked
+        }
+        return .observed
     }
 }

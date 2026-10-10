@@ -4,6 +4,8 @@ enum ProfilePrivacyAvailability: String, Equatable, Sendable {
     case available
     case unavailable
     case unknown
+    case failed
+    case timedOut
 
     var title: String {
         switch self {
@@ -13,6 +15,10 @@ enum ProfilePrivacyAvailability: String, Equatable, Sendable {
             "Недоступно"
         case .unknown:
             "Не проверено"
+        case .failed:
+            "Ошибка чтения"
+        case .timedOut:
+            "Истекло время ожидания"
         }
     }
 }
@@ -63,14 +69,23 @@ struct ProfilePrivacyPanelSnapshot: Equatable, Sendable {
         Self(
             profileID: capture.profileID,
             observedAt: capture.capturedAt,
-            mediaDevices: availability(capture.values["media_devices"]),
-            mediaDeviceCount: boundedCount(
-                capture.values["media_device_count"]
-            ),
+            mediaDevices: mediaAvailability(capture.values),
+            mediaDeviceCount: SiteCompatibilityAssessment.mediaState(capture.values) == .observed
+                ? boundedCount(capture.values["media_device_count"]) : nil,
             permissionsAPI: availability(capture.values["permissions_api"]),
             camera: permission(capture.values["permission_camera"]),
             microphone: permission(capture.values["permission_microphone"])
         )
+    }
+
+    private static func mediaAvailability(_ values: [String: String]) -> ProfilePrivacyAvailability {
+        switch SiteCompatibilityAssessment.mediaState(values) {
+        case .observed: .available
+        case .unavailable: .unavailable
+        case .failed: .failed
+        case .timedOut: .timedOut
+        case .notChecked: .unknown
+        }
     }
 
     private static func availability(_ value: String?)

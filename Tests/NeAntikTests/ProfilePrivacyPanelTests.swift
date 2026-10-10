@@ -4,6 +4,20 @@ import Testing
 
 struct ProfilePrivacyPanelTests {
     @Test
+    func failedEnumerationDoesNotDisplaySuccessfulCount() {
+        for outcome in ["error", "timeout"] {
+            let capture = FingerprintCapture(
+                profileID: UUID(), profileName: "Fixture", identityCode: "fixture",
+                capturedAt: Date(), values: ["media_devices": "available",
+                    "media_device_count": "3", "media_device_observation": outcome]
+            )
+            let snapshot = ProfilePrivacyPanelSnapshot.from(capture: capture)
+            #expect(snapshot.mediaDevices == (outcome == "error" ? .failed : .timedOut))
+            #expect(snapshot.mediaDeviceCount == nil)
+        }
+    }
+
+    @Test
     func panelMapsOnlyBoundedMediaAndPermissionFacts() throws {
         let profileID = UUID()
         let capture = FingerprintCapture(

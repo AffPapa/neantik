@@ -307,6 +307,16 @@ def is_packaged_app_entry(name: str) -> bool:
 
 def validate_safe_binary(name: str, payload: bytes) -> None:
     suffix = PurePosixPath(name).suffix.lower()
+    # The public source archive includes one attributed, immutable test font.
+    # Pin its complete bytes rather than permitting arbitrary opaque fonts.
+    if suffix == ".woff2":
+        path = PurePosixPath(name)
+        expected = ("scripts", "runtime-platform", "fixtures", "vector-semantics", "own-ahem.woff2")
+        if (path.parts[-len(expected):] == expected and len(payload) == 1684
+                and payload.startswith(b"wOF2")
+                and hashlib.sha256(payload).hexdigest() == "d8a849ee88febbe343f153a61b105aa542b997b8cd5c4e0839d468477aa17fb0"):
+            return
+        raise PublicArtifactPrivacyError("Unrecognized or altered public test font: " + name)
     signatures = SAFE_BINARY_SIGNATURES.get(suffix)
     if signatures is None:
         raise PublicArtifactPrivacyError(

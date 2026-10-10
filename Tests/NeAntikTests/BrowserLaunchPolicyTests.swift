@@ -135,7 +135,7 @@ struct BrowserLaunchPolicyTests {
 
         #expect(policy.fingerprintSeedConfigured)
         #expect(!policy.fingerprintIdentityConfigured)
-        #expect(policy.fingerprintNoiseArgumentsEnabled)
+        #expect(!policy.fingerprintNoiseArgumentsEnabled)
         #expect(environment["NEANTIK_PROFILE_SEED"] != nil)
     }
 }

@@ -11,11 +11,11 @@ struct ProfilePrivacyPanelView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 LabeledContent(
-                    "MediaDevices API",
+                    "Чтение списка устройств",
                     value: snapshot.mediaDevices.title
                 )
                 LabeledContent(
-                    "Устройства",
+                    "Устройств в списке",
                     value: snapshot.mediaDeviceCount.map(String.init)
                         ?? "Не показывается"
                 )
@@ -37,7 +37,7 @@ struct ProfilePrivacyPanelView: View {
                         .foregroundStyle(.secondary)
                 }
                 Text(
-                    "Панель хранит только агрегированные статусы и ограниченное количество устройств. ID, названия и сырые значения не выводятся."
+                    "Список устройств не доказывает, что камера или микрофон работают: для этого сайт запрашивает разрешение и открывает устройство. ID и названия устройств не сохраняются в отчёте."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

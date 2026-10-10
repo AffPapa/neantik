@@ -35,6 +35,20 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
+    def test_only_pinned_attributed_font_is_accepted(self) -> None:
+        relative = "scripts/runtime-platform/fixtures/vector-semantics/own-ahem.woff2"
+        payload = (SCRIPT.parents[1] / relative).read_bytes()
+        MODULE.validate_safe_binary(relative, payload)
+        MODULE.validate_safe_binary("neantik-source/" + relative, payload)
+        for name, data in [(relative, payload[:-1]),
+                           (relative, payload + b"secret"),
+                           (relative, b"fake" + payload[4:]),
+                           (relative.replace("own-ahem", "other"), payload),
+                           ("uploads/own-ahem.woff2", payload)]:
+            with self.subTest(name=name, size=len(data)):
+                with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+                    MODULE.validate_safe_binary(name, data)
+
     def test_large_text_is_scanned_completely_and_still_bounded(self) -> None:
         prefix = b" " * (20 * 1024 * 1024)
         clean = MODULE.ArtifactEntry(name="projection.json", payload=prefix + b'{"schemaVersion":1}')

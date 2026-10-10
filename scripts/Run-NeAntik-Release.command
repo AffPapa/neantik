@@ -404,6 +404,15 @@ python3 "$PROJECT_DIR/scripts/direct-candidate-source-binding.py" verify \
   --manifest "$CANDIDATE_MANIFEST" \
   --binding "$CANDIDATE_SOURCE_BINDING"
 
+if [[ -n "${NEANTIK_PLATFORM_LAUNCH_RECEIPT:-}" ]]; then
+  run_logged_stage \
+    "Проверяю Web Platform на точном подписанном кандидате…" \
+    "$ATTEMPT_STATE_ROOT/platform-qualification.log" \
+    python3 "$PROJECT_DIR/scripts/runtime-platform/qualify-candidate.py" \
+      --app "$APP_PATH" --manifest "$CANDIDATE_MANIFEST" \
+      --launch-receipt "$NEANTIK_PLATFORM_LAUNCH_RECEIPT" \
+      --output "$ATTEMPT_STATE_ROOT/platform-qualification"
+fi
 echo "[3/4] Отправляю кандидат в Apple notarization…"
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"
 

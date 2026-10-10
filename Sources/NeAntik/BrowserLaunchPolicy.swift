@@ -80,7 +80,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             dns: dns,
             fingerprintSeedConfigured: fingerprintSeedConfigured,
             fingerprintIdentityConfigured: fingerprintIdentityConfigured,
-            fingerprintNoiseArgumentsEnabled: fingerprintSeedConfigured,
+            fingerprintNoiseArgumentsEnabled: false,
             webGPUDisabled: fingerprintSeedConfigured,
             proxyContextIsFresh: proxyContextIsFresh,
             appliedLocaleIdentifier:

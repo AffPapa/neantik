@@ -159,6 +159,9 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     /// with older reports and never become release qualification requirements.
     static let optionalPrivacyDiagnosticKeys = [
         "media_devices",
+        "media_device_observation",
+        "permission_camera_observation",
+        "permission_microphone_observation",
         "media_device_count",
         "permissions_api",
         "permission_camera",
@@ -285,7 +288,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             "Сетевое доказательство: настроенный маршрут и WebRTC-контроль",
             "Фактический HTTP-маршрут: не измерялся",
             "Публичное тестирование: \(isPublicAlphaReleaseQualified ? "PASS" : "FAIL")",
-            "Строгая проверка: \(isProductionReleaseQualified ? "PASS" : "FAIL")"
+            "Базовая согласованность page/worker: \(isProductionReleaseQualified ? "PASS" : "FAIL")"
         ].joined(separator: "\n")
     }
 
@@ -541,6 +544,12 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                     publicAlphaUnstableKeys.joined(separator: ", ") + "."
             )
         }
+        for capture in [firstInitial, second, firstRepeat] {
+            if !Self.isFontMetricEvidence(capture.values["fonts"]) {
+                issues.append("Font rendering evidence is missing or uses the legacy font-list format.")
+                break
+            }
+        }
         issues.append(contentsOf: crossRealmConsistencyIssues)
         issues.append(contentsOf: deviceTupleConsistencyIssues)
         issues.append(contentsOf: privacyDiagnosticIssues)
@@ -641,6 +650,16 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 Self.isAvailable(second.values[key]) &&
                 Self.isAvailable(firstRepeat.values[key])
         }
+    }
+
+    /// Rendering evidence includes a repeatable digest and an absent-family
+    /// fallback control. A historical list of names proves neither property.
+    static func isFontMetricEvidence(_ value: String?) -> Bool {
+        guard let value else { return false }
+        return value.range(
+            of: #"^metrics-v1:[0-9a-f]{8}:fallback-control-pass$"#,
+            options: .regularExpression
+        ) != nil
     }
 
     private static func isAvailable(_ value: String?) -> Bool {
@@ -1289,6 +1308,45 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         checkEnum("permissions_api", allowed: availabilityValues)
         checkEnum("permission_camera", allowed: stateValues)
         checkEnum("permission_microphone", allowed: stateValues)
+        let nativeOutcomes: Set<String> = ["observed", "api-absent", "timeout", "error"]
+        checkEnum("media_device_observation", allowed: nativeOutcomes)
+        checkEnum("permission_camera_observation", allowed: nativeOutcomes)
+        checkEnum("permission_microphone_observation", allowed: nativeOutcomes)
+        if let outcome = values["media_device_observation"] {
+            let count = values["media_device_count"]
+            let consistent: Bool
+            switch outcome {
+            case "observed":
+                consistent = values["media_devices"] == "available" &&
+                    count.flatMap(Int.init).map { (0...256).contains($0) } == true
+            case "api-absent":
+                consistent = values["media_devices"] == "unavailable" && count == "unavailable"
+            case "error", "timeout":
+                consistent = values["media_devices"] == "available" && count == "unavailable"
+            default: consistent = false
+            }
+            if !consistent {
+                issues.append("The \(label) media observation disagrees with its count or availability.")
+            }
+        }
+        for key in ["permission_camera", "permission_microphone"] {
+            if let outcome = values[key + "_observation"] {
+                let consistent: Bool
+                switch outcome {
+                case "observed":
+                    consistent = values["permissions_api"] == "available" &&
+                        ["granted", "denied", "prompt"].contains(values[key] ?? "")
+                case "api-absent":
+                    consistent = values["permissions_api"] == "unavailable" && values[key] == "unavailable"
+                case "error", "timeout":
+                    consistent = values["permissions_api"] == "available" && values[key] == "unknown"
+                default: consistent = false
+                }
+                if !consistent {
+                    issues.append("The \(label) \(key) observation disagrees with its state or API availability.")
+                }
+            }
+        }
         checkEnum("speech_synthesis", allowed: availabilityValues)
         checkCount("speech_voice_count")
         checkEnum("speech_voice_observation", allowed: Set([
@@ -2452,34 +2510,60 @@ final class FingerprintAuditCoordinator: ObservableObject {
         audioRepeatHash = await renderAudioHash();
       } catch (_) {}
 
-      const permissionState = async name => {
-        if (!navigator.permissions ||
-            typeof navigator.permissions.query !== 'function') {
-          return 'unavailable';
-        }
+      const boundedNativeObservation = async (operation, timeoutMilliseconds = 2000) => {
+        // Promise cancellation cannot stop a native API. Ignore late completion
+        // and always release our timer; export only a bounded outcome.
+        let timer;
         try {
-          const result = await navigator.permissions.query({ name });
-          return ['granted', 'denied', 'prompt'].includes(result.state) ?
-            result.state : 'unknown';
+          return await Promise.race([
+            Promise.resolve().then(operation).then(value => ({ observation: 'observed', value })),
+            new Promise(resolve => {
+              timer = setTimeout(() => resolve({ observation: 'timeout' }), timeoutMilliseconds);
+            })
+          ]);
         } catch (_) {
-          return 'unavailable';
+          return { observation: 'error' };
+        } finally {
+          if (timer !== undefined) clearTimeout(timer);
         }
       };
-      let mediaDevices = 'unavailable';
-      let mediaDeviceCount = 'unavailable';
-      try {
-        if (navigator.mediaDevices &&
-            typeof navigator.mediaDevices.enumerateDevices === 'function') {
-          mediaDevices = 'available';
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          mediaDeviceCount = String(Math.min(devices.length, 256));
+      const permissionState = async name => {
+        if (!navigator.permissions || typeof navigator.permissions.query !== 'function') {
+          return { state: 'unavailable', observation: 'api-absent' };
         }
-      } catch (_) {}
-      const permissionsAPI = navigator.permissions &&
-        typeof navigator.permissions.query === 'function' ?
+        const result = await boundedNativeObservation(async () => {
+          const status = await navigator.permissions.query({ name });
+          if (!status || !['granted', 'denied', 'prompt'].includes(status.state)) {
+            throw new Error('Invalid permission state');
+          }
+          return status.state;
+        });
+        return { state: result.value || 'unknown', observation: result.observation };
+      };
+      const observeMediaDevices = async () => {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') {
+          return { availability: 'unavailable', count: 'unavailable', observation: 'api-absent' };
+        }
+        const result = await boundedNativeObservation(async () => {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          if (!Array.isArray(devices)) throw new Error('Invalid device list');
+          // Labels and IDs never leave this native observation.
+          return String(Math.min(devices.length, 256));
+        });
+        return { availability: 'available', count: result.value || 'unavailable', observation: result.observation };
+      };
+      const [mediaObservation, cameraObservation, microphoneObservation] = await Promise.all([
+        observeMediaDevices(), permissionState('camera'), permissionState('microphone')
+      ]);
+      const mediaDevices = mediaObservation.availability;
+      const mediaDeviceCount = mediaObservation.count;
+      const mediaDeviceObservation = mediaObservation.observation;
+      const permissionsAPI = navigator.permissions && typeof navigator.permissions.query === 'function' ?
         'available' : 'unavailable';
-      const permissionCamera = await permissionState('camera');
-      const permissionMicrophone = await permissionState('microphone');
+      const permissionCamera = cameraObservation.state;
+      const permissionMicrophone = microphoneObservation.state;
+      const permissionCameraObservation = cameraObservation.observation;
+      const permissionMicrophoneObservation = microphoneObservation.observation;
       const observeSpeechVoices = async (timeoutMilliseconds = 2000) => {
         // Native lists load asynchronously. Keep only a bounded count; never
         // return voice names, identifiers, locales, or synthesise speech.
@@ -2529,17 +2613,32 @@ final class FingerprintAuditCoordinator: ObservableObject {
       rectHost.innerHTML =
         '<span>NeAntik fingerprint rectangle probe with wrapping text</span>';
       document.body.appendChild(rectHost);
-      const rectValues = Array.from(
-        rectHost.firstChild.getClientRects()
-      ).map(rect => [
-        rect.x, rect.y, rect.width, rect.height
-      ].map(value => value.toFixed(6)).join(',')).join('|');
-      const rectRepeatValues = Array.from(
-        rectHost.firstChild.getClientRects()
-      ).map(rect => [
-        rect.x, rect.y, rect.width, rect.height
-      ].map(value => value.toFixed(6)).join(',')).join('|');
-      rectHost.remove();
+      const readRectMetrics = () => {
+        const rects = Array.from(rectHost.firstChild.getClientRects());
+        if (!rects.length || rects.length > 256) throw new Error('Missing rectangle metrics');
+        return rects.map(rect => {
+          const values = [rect.x, rect.y, rect.width, rect.height,
+            rect.top, rect.right, rect.bottom, rect.left];
+          if (!values.every(Number.isFinite) || rect.width <= 0 || rect.height <= 0 ||
+              Math.abs(rect.left - rect.x) > 0.000001 || Math.abs(rect.top - rect.y) > 0.000001 ||
+              Math.abs(rect.right - rect.x - rect.width) > 0.000001 ||
+              Math.abs(rect.bottom - rect.y - rect.height) > 0.000001) {
+            throw new Error('Inconsistent rectangle metrics');
+          }
+          return values.slice(0, 4).map(value => value.toFixed(6)).join(',');
+        }).join('|');
+      };
+      let rectHash = 'unavailable';
+      let rectRepeatHash = 'unavailable';
+      try {
+        rectHash = hashText(readRectMetrics());
+        rectRepeatHash = hashText(readRectMetrics());
+      } catch (_) {
+        rectHash = 'unavailable';
+        rectRepeatHash = 'unavailable';
+      } finally {
+        rectHost.remove();
+      }
 
       const fontCandidates = [
         'Arial', 'Helvetica Neue', 'Times New Roman', 'Courier New',
@@ -2548,7 +2647,6 @@ final class FingerprintAuditCoordinator: ObservableObject {
       // FontFaceSet.check reports load readiness, including fallback. It is
       // not installed-font evidence. Observe DOM and Canvas rendering against
       // several fallback families, and retain an intentionally absent control.
-      await document.fonts.ready;
       const fontFallbacks = ['monospace', 'serif', 'sans-serif'];
       const fontTexts = ['mmmmWWWWiiii1111', 'Text 0123456789', 'ЖЩДяй', '漢字かな'];
       const absentFont = 'NeAntikAbsentFont_8b243f21';
@@ -2577,6 +2675,14 @@ final class FingerprintAuditCoordinator: ObservableObject {
       };
       let fonts = 'unavailable';
       try {
+        const fontDeadline = performance.now() + 5000;
+        const waitForFonts = async operation => {
+          const remaining = fontDeadline - performance.now();
+          if (remaining <= 0) throw new Error('Font observation timed out');
+          const result = await boundedNativeObservation(operation, remaining);
+          if (result.observation !== 'observed') throw new Error('Font observation incomplete');
+        };
+        await waitForFonts(() => document.fonts.ready);
         const baseline = new Map();
         const observations = [];
         for (const fallback of fontFallbacks) {
@@ -2593,7 +2699,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
           for (const fallback of fontFallbacks) {
             for (const text of fontTexts) {
               const family = `"${font}", ${fallback}`;
-              await document.fonts.load(`48px ${family}`, text);
+              await waitForFonts(() => document.fonts.load(`48px ${family}`, text));
               const first = measureFont(family, text);
               const repeated = measureFont(family, text);
               if (JSON.stringify(first) !== JSON.stringify(repeated)) {
@@ -2949,14 +3055,17 @@ final class FingerprintAuditCoordinator: ObservableObject {
         audio_repeat: audioRepeatHash,
         media_devices: mediaDevices,
         media_device_count: mediaDeviceCount,
+        media_device_observation: mediaDeviceObservation,
         permissions_api: permissionsAPI,
         permission_camera: permissionCamera,
         permission_microphone: permissionMicrophone,
+        permission_camera_observation: permissionCameraObservation,
+        permission_microphone_observation: permissionMicrophoneObservation,
         speech_synthesis: speechSynthesis,
         speech_voice_count: speechVoiceCount,
         speech_voice_observation: speechObservation.observation,
-        client_rects: hashText(rectValues),
-        client_rects_repeat: hashText(rectRepeatValues),
+        client_rects: rectHash,
+        client_rects_repeat: rectRepeatHash,
         user_agent: navigator.userAgent,
         platform: navigator.platform,
         languages: (navigator.languages || []).join(','),
