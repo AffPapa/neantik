@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.26 (89), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.26). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.26.json).
+Latest published release: [NeAntik 0.7.27 (90), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.27). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.27.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.26` corrects error and timeout handling for permissions and media-device observations, bounds font waits and validates ClientRects. The first 15 areas of the major plan passed 18 headed scenarios on the exact signed app; limitations remain explicit in the release report. The runtime is retained without rebuilding. Safe Browsing is disabled; full production hardware-cohort qualification and major1.0 remain open. Keep immutable `0.7.25` for rollback. Metadata snapshots are not BrowserData backups.
+`0.7.27` improves diagnostic freshness, proxy cancellation, command names and additive settings snapshot import. The runtime is retained without rebuilding. Exact checks and limitations are recorded in the release report. Safe Browsing is disabled; full production hardware-cohort qualification and major 1.0 remain open. Keep immutable `0.7.26` for rollback. Settings snapshots are not BrowserData backups.
 
 Direct downloads: [browser.free](https://browser.free).
 

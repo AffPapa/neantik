@@ -1,4 +1,4 @@
-> Current public release: 0.7.26/build89 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.26.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+> Current public release: 0.7.27/build90 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.27.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
 
 # NeAntik: roadmap улучшений
 

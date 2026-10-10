@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.27",
+  "version": "0.7.27",
+  "build": 90,
+  "releasedAt": "2026-10-10",
+  "channel": "public-alpha",
+  "sourceCommit": "f9b390e10150c1803026d65e0ff167ea55e97677",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.27-arm64-notarized.zip",
+    "sizeBytes": 187928172,
+    "sha256": "1b84275bdd5ab4ca7b0d3ef2c2d5d8ad809a50827b3ba6cd27a44ed1a9b90ee6"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.27-arm64-notarized.dmg",
+    "sizeBytes": 212370740,
+    "sha256": "1ea31e78d78e4aa9dd61d0a1b5972f3c470cf800acd30349f71cdc9fb227585a"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "6a1a1ae3-8467-4a66-b65d-9e2b18e44698",
+    "dmgNotarySubmissionId": "c936c1e1-69b9-472c-8e07-1b71ea950eae",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "fresh ZIP/DMG SHA256, size, signing, notarization, candidate and evidence gates passed",
+    "fingerprint": "fresh authenticated headed run of downloaded signed app, with new one-time enrollment; all criticalFiles identical to qualified candidate",
+    "first15Platform": {
+      "cases": 18,
+      "status": "prior v0.7.26 headed qualification of identical runtime; not rerun for this manager-only slice"
+    },
+    "swiftTests": {
+      "tests": 1016,
+      "suites": 116,
+      "optionalFixturesSkipped": 23,
+      "status": "passed",
+      "execution": "no-parallel; jobs2"
+    },
+    "pythonTests": {
+      "uiDocsHistory": 32,
+      "releasePrivacy": 62,
+      "devLauncher": 4,
+      "status": "passed",
+      "fullSuiteRerun": false
+    },
+    "siteTests": {
+      "tests": 32,
+      "status": "passed"
+    },
+    "privacy": "recognized-format exact artifacts/new source and complete reachable Git history scans passed; site placeholder classified separately; no guarantee for unknown credential formats",
+    "physicalKeyboard": "LaunchServices Dev Cmd+N/name/Tab and dirty cancel confirmation observed; full sequence/native snapshot picker commit/cache busy UI not qualified",
+    "sessionPersistence": "Synthetic profile A about:blank graceful start/stop observed; no new independent cookie/IndexedDB durability qualification"
+  },
+  "siteVersion": 129,
+  "siteSourceCommit": "29e525a69d5d5bca805dc0704ea7598e3b6a2a56",
+  "siteDeploymentId": "appgdep_6aca274725708191884c4c05d9b44347",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.27",
+  "affpapa": "unchanged: restricted deploy credential unavailable; validated six-file package prepared",
+  "rollbackRelease": "v0.7.26",
+  "candidateManifestSHA256": "98f92b0295f088e0857a93669ba3e9c43a0c1727f82d4a8b21c75801df42a6c2",
+  "candidateSourceBindingSHA256": "447094f69df3f8c32320b37778918122ba5c87c4a176a7ada5894c9a21d1df04",
+  "limitations": [
+    "Major1.0 and full production hardware-cohort qualification remain open.",
+    "Second physical display, actual network/power changes and all Mac/OS combinations were not tested.",
+    "Media operations used synthetic camera/microphone only.",
+    "Identity endpoint used loopback HTTP; external HTTPS/proxy route is a separate network gate.",
+    "WebGPU remains disabled in configured profiles; native compute was tested as a separate control.",
+    "Safe Browsing remains disabled. No anonymity, CAPTCHA or site-rule bypass guarantee.",
+    "Recognized-format scans cannot prove absence of every unknown secret.",
+    "Production relay, full BrowserData backup, extension installation, updater and new MCP observations remain open.",
+    "Native file picker import completion and cache busy dismissal were not physically qualified; core regression/fault controls passed."
+  ],
+  "changes": [
+    "Shared diagnostic freshness and periodic memory-only projection",
+    "Source-aware configured/derived/observed labels",
+    "Additive snapshot import without stopping other browsers",
+    "Cache dismissal guard and cancellation explanation",
+    "DNS and timeout explanations",
+    "Cancellation before fallback/providers/success",
+    "Shared launch and manager selection command names",
+    "Current roadmap/help semantic drift checks"
+  ]
+}

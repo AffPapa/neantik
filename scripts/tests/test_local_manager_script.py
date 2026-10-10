@@ -35,10 +35,11 @@ class LocalManagerScriptTests(unittest.TestCase):
         )
         self.assertIn('cd "$PROJECT_DIR"', text)
         self.assertIn(
-            'exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"',
+            'exec /usr/bin/open -n "$DEVELOPMENT_APP"',
             text,
         )
-        self.assertNotIn("/usr/bin/open -n", text)
+        self.assertNotIn('exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"', text)
+        self.assertIn("NeAntikDevelopmentFixtureRoot", text)
 
         for forbidden in (
             "notarytool",

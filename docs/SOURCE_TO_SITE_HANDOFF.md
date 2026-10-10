@@ -1,16 +1,16 @@
-> Current0.7.24/build87 is an unpublished source/Dev candidate. Fresh official Stable155.0.8059.39/.40 blocks public packaging with unchanged154.0.8037.98; no notarized0.7.24 assets or new download links. Immutable0.7.23 retained. See GLOBAL_RECHECK_0724.md.
+> Current public release: 0.7.27/build90 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.27.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
 
 # NeAntik Direct source-to-site handoff
 
-## Current bounded recheck0.7.24/87
+## Historical bounded recheck 0.7.24/87
 
 Storage refresh, bounded metadata contention, IP failure/fallback validation, complete streaming privacy scan, CI coverage and MCP workspace/help clarity. Fresh evidence and deferred hypotheses: [GLOBAL_RECHECK_0724.md](GLOBAL_RECHECK_0724.md). Public release gates recorded separately; qualified Chromium154.0.8037.98 unchanged.
 
-## Current MCP AI slice0.7.23/86
+## Historical MCP AI slice 0.7.23/86
 
 Manager changes modern/legacy interoperability, queries, folder response bounds, errors, prompts and7client onboarding formats. Sites has17toolguide + client selector + prominent AI section preserving traditional profile browser positioning. Qualification/publication evidence: docs/MCP_AI_COVERAGE_0723.md and release manifest/API, not old handoffs.0.7.22/85 and Sites116 retained for rollback. Affpapa doctor still reports unavailable deploy credential; no alternate server route.
 
-## Current manager candidate — 7 October 2026
+## Historical manager candidate — 7 October 2026
 
 0.7.22 build 85 on `codex/neantik-mcp-management-0722` expands the local MCP
 management contract. Published baseline is v0.7.21/84 until Direct gates and

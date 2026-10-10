@@ -245,7 +245,9 @@ if (( SHOULD_OPEN == 1 )); then
     echo "Открываю новый временный Dev-стенд. Существующие Dev-данные сохранены."
   fi
   echo "Открываю изолированную локальную версию."
-  exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"
+  # LaunchServices attaches app/scene command focus consistently with Finder.
+  # The synthetic root is embedded in Dev Info.plist; no production data is read.
+  exec /usr/bin/open -n "$DEVELOPMENT_APP"
 else
   echo "Открытие пропущено (--no-open)."
 fi
