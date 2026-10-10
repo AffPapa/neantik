@@ -81,7 +81,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
             !username.contains(":") &&
             username.count <= Self.maximumUsernameLength &&
             username.utf8.count <= Self.maximumUsernameUTF8Bytes &&
-            (kind != .socks5 || username.isEmpty) &&
+            (kind != .socks5 || username.utf8.count <= 255) &&
             (1...65_535).contains(port)
     }
 

@@ -94,6 +94,7 @@ case "$SUITE" in
   ProxyTesterLiveFixtureTests|\
   DirectUpdateArchiveIntegrityTests|\
   BackupCompatibilityScopeStoreTests|\
+  BackupScopeQualificationTests|\
   BookmarkImportTests|\
   BrowserDataBackupStorageTests|\
   BrowserDataRestoreTransactionTests|\
@@ -109,6 +110,11 @@ case "$SUITE" in
   ProxyRelayClientWireCodecTests|\
   ProxyRelayControlPeerInspectorTests|\
   ProxyRelayLiveCodeVerifierTests|\
+  ProxyRelaySessionAuthorityTests|\
+  ProxyRelayBindingGateTests|\
+  ProxyRelayPrivatePipeTests|\
+  ProxyRelayOwnerProtocolTests|ProxyRelayLeaseReceiptTests|\
+  ProxyRelayOwnerQualificationTests|\
   ProxyRelayLoopbackServerTests|\
   ProxyRelaySocketOwnerInspectorTests|\
   ProxyRelayWireCodecTests|\

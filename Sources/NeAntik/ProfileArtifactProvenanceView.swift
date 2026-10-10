@@ -4,7 +4,7 @@ struct ProfileArtifactProvenanceView: View {
     let snapshot: ProfileArtifactProvenanceSnapshot
 
     var body: some View {
-        GroupBox("Файлы и расширения") {
+        ProfileDetailCard("Файлы и расширения") {
             VStack(alignment: .leading, spacing: 8) {
                 LabeledContent("Загрузки", value: snapshot.downloads.title)
                 LabeledContent("Каталоги расширений", value: snapshot.extensions.title)

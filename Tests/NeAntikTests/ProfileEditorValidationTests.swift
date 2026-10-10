@@ -199,13 +199,20 @@ struct ProfileEditorValidationTests {
     }
 
     @Test
-    func socksCredentialsRequireExplicitRemoval() {
+    func socksPasswordWithoutLoginRequiresCredentials() {
         let issue = firstIssue(
             usesProxy: true,
             proxyKind: .socks5,
             proxyPassword: "secret"
         )
         #expect(issue?.field == .proxyPassword)
-        #expect(issue?.message.contains("не поддерживается") == true)
+        #expect(issue?.message.contains("логин и пароль") == true)
     }
+
+    @Test func socksCredentialsCanBeEnteredInFields() {
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: "secret") == nil)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: "")?.field == .proxyPassword)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: String(repeating: "é", count: 128))?.field == .proxyPassword)
+    }
+
 }

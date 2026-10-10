@@ -113,7 +113,7 @@ Choose **either** separate fields **or** a line; never both. Separate fields:
 
 For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). Supported formats match the editor: `login:password@host:port`, `host:port:login:password`, `login:password:host:port`, protocol URLs and host:port. `order` can be `automatic`, `credentialsFirst` or `endpointFirst`; explicit order resolves ambiguity. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
 
-Authenticated SOCKS5 is unsupported by the qualified Chromium runtime and rejected. Use the provider's HTTP port or an unauthenticated SOCKS5 endpoint. NeAntik never downgrades automatically. Configuring a proxy is not proof of connectivity; availability is not proof of the Chromium route.
+Authenticated HTTP and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS proxy authentication remains the native Chromium path and may show a login prompt. NeAntik never downgrades automatically. Configuring a proxy is not proof of connectivity; availability is not proof of the Chromium route.
 
 Passwords are accepted as write-only input and stored in Keychain. The selected AI client may send your input to its model or retain chat history: enter secrets only in a trusted client. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
 
@@ -159,3 +159,7 @@ Passwords are accepted as write-only input and stored in Keychain. The selected 
 Save a template in NeAntik first. Ask the client to call `template_list`, choose its UUID, then call `profile_create` with an explicit name, `templateID` and the returned `expectedOrganizationRevision` (including explicit null). `changes` and `folderID` override template metadata; an absent old folder resolves to unfiled. A stale organization revision rejects the whole creation. An absent/corrupt template rejects creation without profile writes. Each successful call creates fresh identity; it does not copy cookies, notes, credentials or BrowserData and never starts the browser. Total toolset: 18 management / 7 read tools. Creation is not idempotent: inspect uncertain outcomes before retrying.
 
 Example request: “Покажи сохранённые шаблоны. По выбранному мной ID создай профиль QA со страницей https://example.com. Не запускай.”
+
+## Separate workspace credentials
+
+The normal application library retains its existing Keychain service and legacy migration. An explicit custom `--data-root` uses a separate credential namespace derived from that directory. Matching profile IDs in different directories do not share or overwrite proxy passwords. Reopening the same directory retains its credentials. After upgrading an old custom workspace or moving its directory, enter proxy passwords again; credentials from the main library are not imported automatically. Proxy preflight remains separate from observing the Chromium network route.

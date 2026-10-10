@@ -18,6 +18,7 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     private let upstream: ProxyRelayDestination
     private let credentials: ProxyRelayCredentials?
     private let admit: @Sendable (Peer) throws -> Bool
+    private let waitForBinding: @Sendable () async throws -> Void
     private let limit: Int
     private var sessions: [UUID: Task<Void, Never>] = [:]
     private var port: UInt16?
@@ -28,10 +29,13 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     private var startDeadline: DispatchWorkItem?
 
     init(upstreamKind: ProxyKind, upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
-         maximumConnections: Int = 8, admit: @escaping @Sendable (Peer) throws -> Bool) throws {
+         maximumConnections: Int = 8,
+         waitForBinding: @escaping @Sendable () async throws -> Void = {},
+         admit: @escaping @Sendable (Peer) throws -> Bool) throws {
         guard (1...64).contains(maximumConnections) else { throw Failure.invalidLimit }
         self.upstreamKind = upstreamKind; self.upstream = upstream; self.credentials = credentials
         limit = maximumConnections; self.admit = admit
+        self.waitForBinding = waitForBinding
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .init("127.0.0.1"), port: .any)
         listener = try NWListener(using: parameters)
@@ -106,6 +110,9 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
                         guard value > 0 else { throw ProxyRelayTransportError.timeout }
                         return value
                     }
+                    try await waitForBinding()
+                    _ = try remaining()
+                    try Task.checkCancellation()
                     guard try admit(peer) else { throw Failure.refused }
                     try await front.open(timeout: remaining())
                     var buffer = Data()

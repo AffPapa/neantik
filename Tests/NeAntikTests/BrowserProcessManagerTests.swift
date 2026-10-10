@@ -5,6 +5,33 @@ import Testing
 
 @MainActor
 struct BrowserProcessManagerTests {
+    @Test func sharedExtensionsLaunchUsesSelectedDataRootAndDoesNotChangeStartURL() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fake = root.appendingPathComponent("owned-browser")
+        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.arguments\"\nsleep 0.2\n".utf8).write(to: fake)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: fake.path)
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations() }
+        let profile = BrowserProfile(name: "Owned extensions", startURL: "https://owned.test/start")
+        let runtime = BrowserRuntime(name: "Owned fixture", executableURL: fake, source: "Synthetic")
+        let keychain = KeychainStore(backend: DevelopmentFixtureKeychain(), service: "owned-test", legacyService: nil)
+        try await manager.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: nil, keychain: keychain, target: .extensions)
+        let captured = fake.appendingPathExtension("arguments")
+        for _ in 0..<100 {
+            if FileManager.default.fileExists(atPath: captured.path) { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        let arguments = try String(contentsOf: captured, encoding: .utf8).split(separator: "\n").map(String.init)
+        #expect(arguments.last == "chrome://extensions/")
+        #expect(arguments.contains("--user-data-dir=" + paths.browserDataDirectory(for: profile.id).path))
+        #expect(profile.startURL == "https://owned.test/start")
+        try await Task.sleep(for: .milliseconds(250))
+        manager.reconcile(profiles: [profile])
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+    }
     @Test
     func contendedLaunchPreservesRetryReasonWithoutStartingBrowser() throws {
         let root = FileManager.default.temporaryDirectory
@@ -992,7 +1019,8 @@ struct BrowserProcessManagerTests {
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
-            browserDataProcessInspector: { _ in inspection }
+            browserDataProcessInspector: { _ in inspection },
+            potentialRelayOwnerInspector: { .absent }
         )
 
         manager.reconcile(profiles: [profile])
@@ -1041,7 +1069,8 @@ struct BrowserProcessManagerTests {
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
-            browserDataProcessInspector: { _ in inspection }
+            browserDataProcessInspector: { _ in inspection },
+            potentialRelayOwnerInspector: { .absent }
         )
 
         manager.reconcile(profiles: [profile])
@@ -1144,7 +1173,8 @@ struct BrowserProcessManagerTests {
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
+            browserDataProcessInspector: { _ in .absent },
+            potentialRelayOwnerInspector: { .absent }
         )
 
         manager.reconcile(profiles: [profile])
@@ -1518,7 +1548,8 @@ struct BrowserProcessManagerTests {
             processIdentityInspector: { _ in .expected },
             processLivenessValidator: { _ in true },
             observationIntervalNanoseconds: 20_000_000,
-            browserDataProcessInspector: { _ in firstInspection }
+            browserDataProcessInspector: { _ in firstInspection },
+            potentialRelayOwnerInspector: { .absent }
         )
         first.reconcile(profiles: [profile])
         #expect(
@@ -1529,7 +1560,8 @@ struct BrowserProcessManagerTests {
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
+            browserDataProcessInspector: { _ in .absent },
+            potentialRelayOwnerInspector: { .absent }
         )
         second.reconcile(profiles: [profile])
         #expect(
@@ -1554,7 +1586,8 @@ struct BrowserProcessManagerTests {
         let third = BrowserProcessManager(
             paths: paths,
             processIdentityValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
+            browserDataProcessInspector: { _ in .absent },
+            potentialRelayOwnerInspector: { .absent }
         )
         let runtime = BrowserRuntime(
             name: "Fake Chromium",

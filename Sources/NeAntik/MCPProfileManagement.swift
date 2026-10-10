@@ -47,7 +47,7 @@ final class MCPProfileManagement {
             ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
             ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. No automatic retry: a repeat creates another profile.", ["name": text, "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
-            ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only; input may enter AI history. SOCKS5 authentication unsupported. Configuration is not a route test.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
+            ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only; input may enter AI history. HTTP/SOCKS5 authentication uses the local relay; HTTPS may request credentials in Chromium. Configuration is not a route test.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
             ("profile_duplicate", "Copy configuration into a fresh identity; never copy cookies, notes or BrowserData. Copies proxy password via local Keychain without returning it.", ["profileID": uuid, "expectedRevision": revision, "name": text], ["profileID", "expectedRevision", "name"]),
             ("folder_create", "Create a project folder.", ["name": text, "expectedOrganizationRevision": optionalUUID], ["name", "expectedOrganizationRevision"]),
@@ -222,7 +222,7 @@ final class MCPProfileManagement {
             case "profile_update":
                 guard let changes = args["changes"] as? [String: Any], !changes.isEmpty else { throw Failure.invalid }
                 let original = profile
-                try apply(changes, to: &profile); try validate(profile)
+                try apply(changes, to: &profile); try validateMetadata(profile)
                 if original != profile { profile = try store.upsert(profile) }
             case "profile_move":
                 profile = try store.upsert(profile, toFolderID: nullableID(args, "folderID"), expectedOrganizationRevision: .some(organizationRevision(args)))
@@ -286,7 +286,7 @@ final class MCPProfileManagement {
             receipt = BrowserLaunchPreparationPolicy.receipt(profile: current, proxyHealth: currentHealth)
         }
         try Task.checkCancellation()
-        try processes.launch(profile: profile, runtime: runtime, preparationReceipt: receipt)
+        try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
         guard store.markLaunched(profile.id) else { processes.stop(profileID: profile.id); throw Failure.unavailable }
         launched = true
         store.managerLibrary.record(.launch, .succeeded)
@@ -307,6 +307,16 @@ final class MCPProfileManagement {
             default: throw Failure.invalid
             }
         }
+    }
+
+    /// Metadata edits retain the existing proxy and never read its write-only
+    /// password. Credential admission belongs to set-proxy/duplicate/launch.
+    private func validateMetadata(_ profile: BrowserProfile) throws {
+        guard profile.normalizedForPersistence() != nil,
+              ProfileEditorValidation.firstIssue(name: profile.name, tags: profile.tags,
+                  note: profile.note, startURL: profile.startURL, usesProxy: false,
+                  proxyKind: .http, proxyHost: "", proxyPort: "0", proxyUsername: "") == nil
+        else { throw Failure.invalid }
     }
 
     private func validate(_ profile: BrowserProfile, password: String = "") throws {

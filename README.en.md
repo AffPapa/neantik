@@ -1,5 +1,7 @@
 # NeAntik
 
+In development: `0.7.28 (91)` — development preview. Relay and MCP are undergoing final Direct gates; the public release remains 0.7.27.
+
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
 source-pinned Chromium runtime. It does not require Electron, an account, a
@@ -41,8 +43,8 @@ the exact public binary contents are defined by its release notes and assets.
   inactive profiles without deleting data, and duplicates settings into a
   profile with a new UUID, fingerprint seed, and BrowserData; the proxy
   configuration is copied too;
-- supports direct connections, authenticated HTTP/HTTPS through Chromium's
-  native prompt, and SOCKS5 without credentials;
+- supports direct connections and authenticated HTTP/SOCKS5 through a separate
+  local relay per profile; HTTPS proxies use Chromium's native prompt;
 - locally parses a proxy list and creates up to 100 separate profiles without
   automatic network requests; a failed import does not save profiles, and any
   unfinished password cleanup is marked for retry on the next launch;

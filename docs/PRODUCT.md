@@ -39,7 +39,7 @@ Direct before the click; the full editor remains a secondary action.
   folder always kept in the quick list.
 - One-click first-profile bootstrap that persists before launch and leaves the
   profile available when runtime launch fails.
-- HTTP and HTTPS proxy settings; unauthenticated SOCKS5 in Direct.
+- HTTP and SOCKS5 proxy authentication through a separate local relay per profile; HTTPS proxies retain native Chromium authentication. Availability preflight is separate from Chromium route evidence.
 - Proxy verification through `curl` with credentials supplied over stdin.
 - Explicit single and bounded three-at-a-time bulk proxy health checks with a
   timestamp, response time and sanitized outcome. Persisted health never

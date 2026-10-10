@@ -14,7 +14,7 @@ struct ProfileEnvironmentView: View {
     var now: Date = .now
 
     var body: some View {
-        GroupBox {
+        ProfileDetailCard("Среда профиля") {
             VStack(alignment: .leading, spacing: 0) {
                 overview
 
@@ -118,6 +118,11 @@ struct ProfileEnvironmentView: View {
                 }
             }
         }
+        // The heading contains independent Help/info buttons. Give the native
+        // group its own title instead of deriving it from those controls;
+        // retain each child for keyboard and accessibility navigation.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Среда профиля")
         .onAppear {
             resetExpansion(for: snapshot)
         }

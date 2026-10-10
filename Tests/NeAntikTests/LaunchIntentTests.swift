@@ -3,6 +3,15 @@ import Testing
 @testable import NeAntik
 
 struct LaunchIntentTests {
+    @Test func relayOwnerRequiresExactReservedModeWithoutUserParameters() {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let flag = NeAntikLaunchIntent.proxyRelayOwnerArgument
+        #expect(NeAntikLaunchIntent.parse(arguments: [executable, flag]).mode == .proxyRelayOwner)
+        for arguments in [[executable, flag, "extra"], [executable, flag + "=data"],
+                          [executable, flag, "--neantik-mcp-stdio"], ["relative/NeAntik", flag]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: arguments).mode == .invalidControlArguments)
+        }
+    }
     @Test
     func regularLaunchDoesNotOpenReleaseAudit() {
         let intent = NeAntikLaunchIntent.parse(

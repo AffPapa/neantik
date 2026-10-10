@@ -1651,6 +1651,16 @@ final class ProfileStore: ObservableObject {
         guard !importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             throw ProfileMetadataMutationInProgressError()
         }
+        return try withPersistedLaunchSnapshot(expected, paths: paths, operation: operation)
+    }
+
+    /// Disk-only snapshot guard for relay activation on its executor. The
+    /// metadata guard is held through the bounded commit acknowledgement so a
+    /// concurrent writer cannot publish a new route between validation and
+    /// activation. UI mutation admission remains in the MainActor wrapper.
+    nonisolated static func withPersistedLaunchSnapshot<Result>(
+        _ expected: BrowserProfile, paths: AppPaths, operation: () throws -> Result
+    ) throws -> Result {
         return try paths.withProfilesMetadataGuard {
             let profiles = try readProfilesWithRecovery(paths: paths).profiles
             let normalized = try normalizedForIsolation(profiles)

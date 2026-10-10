@@ -10,6 +10,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     static let mcpStdioArgument = "--neantik-mcp-stdio"
     static let mcpManagementArgument = "--allow-profile-management"
     static let dataRootArgument = "--data-root"
+    static let proxyRelayOwnerArgument = "--neantik-proxy-relay-owner-v1"
 
     enum Mode: Equatable, Sendable {
         case interactive(
@@ -18,6 +19,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         case fingerprintEnrollment(outputURL: URL)
         case mcpStdio(dataRoot: URL)
         case mcpManagement(dataRoot: URL)
+        case proxyRelayOwner
         case invalidControlArguments
     }
 
@@ -61,6 +63,9 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     }
 
     static func parse(arguments: [String]) -> Self {
+        if arguments.count == 2, isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == proxyRelayOwnerArgument {
+            return Self(mode: .proxyRelayOwner)
+        }
         if arguments.count == 5, arguments[4] == mcpManagementArgument,
            isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == mcpStdioArgument,
            arguments[2] == dataRootArgument, isSafeAbsoluteMCPRoot(arguments[3]) {
@@ -120,7 +125,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
             )
         }
         if arguments.contains(where: {
-            $0.hasPrefix(mcpManagementArgument) ||
+            $0.hasPrefix("--neantik-qualify-backup-scope") || $0.hasPrefix("--neantik-qualify-relay-owner") || $0.hasPrefix(proxyRelayOwnerArgument) || $0.hasPrefix(mcpManagementArgument) ||
                 $0 == outputArgument ||
                 $0 == dataRootArgument ||
                 $0.hasPrefix(mcpStdioArgument) ||

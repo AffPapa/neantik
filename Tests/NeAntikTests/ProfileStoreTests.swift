@@ -63,6 +63,28 @@ struct ProfileStoreTests {
         #expect(reserved)
     }
 
+    @Test func relayCommitSnapshotRefusesStaleRevisionAndKeepsWritersOut() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let original = try store.upsert(BrowserProfile(name: "Relay activation"))
+        let snapshot = original
+        let excludedWriter = try await Task.detached {
+            try ProfileStore.withPersistedLaunchSnapshot(snapshot, paths: paths) {
+                do { try paths.withProfilesMetadataGuard {}; return false }
+                catch { return true }
+            }
+        }.value
+        #expect(excludedWriter)
+        var changed = original; changed.startURL = "https://example.com/changed"
+        _ = try store.upsert(changed)
+        let refused = await Task.detached {
+            do { try ProfileStore.withPersistedLaunchSnapshot(snapshot, paths: paths) { return true }; return false }
+            catch { return error is BrowserProfileRevisionConflictError }
+        }.value
+        #expect(refused)
+    }
+
     @Test
     func persistedBlankStartPageRemainsReadableAcrossRestart() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

@@ -97,6 +97,23 @@ import Testing
         #expect(BrowserProcessInventory(processes: [:], unreadableLiveProcessExists: true).inspectOtherManagerProcesses() == .unknown)
     }
 
+    @Test func onlyExactVerifiedRelayRoleIsExcludedFromOtherManagers() {
+        let identity = BrowserProcessKernelIdentity(startSeconds: 100, startMicroseconds: 10)
+        let path = "/private/tmp/Owned.app/Contents/MacOS/NeAntik"
+        let argument = NeAntikLaunchIntent.proxyRelayOwnerArgument
+        func inspect(_ arguments: [String], verified: Bool = true, changed: Bool = false) -> BrowserDataProcessInspection {
+            BrowserProcessInventory(processes: [4567: .init(executablePath: path, arguments: arguments)],
+                kernelIdentities: [4567: identity], kernelIdentityRevalidator: { _ in changed ? nil : identity },
+                relayOwnerCodeValidator: { _, _, _ in verified }).inspectOtherManagerProcesses()
+        }
+        #expect(inspect([path, argument]) == .absent)
+        #expect(inspect([path, argument], verified: false) == .found)
+        #expect(inspect([path, argument], changed: true) == .unknown)
+        for args in [[path], [path, argument, "--extra"], [path, "--neantik-mcp-stdio"], ["spoof", argument]] {
+            #expect(inspect(args) == .found)
+        }
+    }
+
     @Test func foreignRetainedPathAndAbsentProviderDoNotCreateAuthority() async throws {
         let (paths, id, retained) = try fixture(); defer { try? fs.removeItem(at: paths.rootDirectory) }
         let manager = BrowserProcessManager(paths: paths, processIdentityInspector: { _ in .unrelated }, processLivenessValidator: { _ in false }, processInventoryProvider: { BrowserProcessInventory(processes: [:]) })

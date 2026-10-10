@@ -87,12 +87,13 @@ enum BrowserDataRestoreTransaction {
     /// profile and retained tree from the authenticated stage/journal.
     static func commit(paths: AppPaths, stage: PreparedBrowserDataBackup,
                        expectedMain: Data, nextDocument: Data, authority: StoppedProfileRestoreAuthority,
-                       validateContext: () throws -> Void = {}) throws -> Result {
+                       validateContext: () throws -> Void = {},
+                       fault: ((BrowserDataRestorePoint) throws -> Void)? = nil) throws -> Result {
         try commit(paths: paths, stage: stage, expectedMain: expectedMain, nextDocument: nextDocument,
             validateAuthority: { id, tree in
                 try authority.validate(paths: paths, profileID: id, retainedTree: tree)
                 try validateContext()
-            })
+            }, fault: fault)
     }
 
     static func recover(paths: AppPaths, expectedContext: EncryptedBackupArchive.Manifest,

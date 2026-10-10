@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import CryptoKit
 
 /// Disposable Dev GUI fixtures must not read or write the system Keychain.
 /// This backend is compiled out of release builds. Credentials are deliberately
@@ -41,14 +42,35 @@ extension KeychainStore {
 
     static func applicationStore(
         environment: NeAntikApplicationEnvironment, paths: AppPaths,
-        fixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String
+        fixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String,
+        backend: (any KeychainBackend)? = nil
     ) -> KeychainStore {
         #if DEBUG
-        if usesDisposableDevelopmentBackend(environment: environment, paths: paths, fixtureRoot: fixtureRoot) {
+        if backend == nil, usesDisposableDevelopmentBackend(environment: environment, paths: paths, fixtureRoot: fixtureRoot) {
             return KeychainStore(backend: DevelopmentFixtureKeychain(), service: environment.keychainService, legacyService: nil)
         }
         #endif
-        return KeychainStore(service: environment.keychainService, legacyService: environment.legacyKeychainService)
+        let defaultRoot = environment.applicationSupportRoot(environment: [:], developmentFixtureRoot: nil)
+        let scope = workspaceCredentialScope(environment: environment, root: paths.rootDirectory, defaultRoot: defaultRoot)
+        return KeychainStore(backend: backend ?? SecurityKeychainBackend(), service: scope.service, legacyService: scope.legacyService)
+    }
+
+    /// The normal library keeps its existing credentials and migration path.
+    /// An explicit workspace is keyed by its path, never by editable profile
+    /// metadata. It must not read, migrate or delete credentials from another
+    /// library with the same profile UUID. Renamed workspaces need a new password.
+    static func workspaceCredentialScope(
+        environment: NeAntikApplicationEnvironment, root: URL, defaultRoot: URL
+    ) -> (service: String, legacyService: String?) {
+        let path = root.standardizedFileURL.path
+        let legacyRoot = defaultRoot.deletingLastPathComponent().appendingPathComponent(["Ne", "Vision"].joined(), isDirectory: true)
+        let isHistoricalProductionRoot = environment.bundleIdentifier == NeAntikApplicationEnvironment.productionBundleIdentifier &&
+            path == legacyRoot.standardizedFileURL.path
+        if path == defaultRoot.standardizedFileURL.path || isHistoricalProductionRoot {
+            return (environment.keychainService, environment.legacyKeychainService)
+        }
+        let digest = SHA256.hash(data: Data(path.utf8)).map { String(format: "%02x", $0) }.joined()
+        return (environment.keychainService + ".workspaces.v1." + digest, nil)
     }
 
     static func usesDisposableDevelopmentBackend(

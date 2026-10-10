@@ -4,7 +4,7 @@ struct ProfilePrivacyPanelView: View {
     let snapshot: ProfilePrivacyPanelSnapshot
 
     var body: some View {
-        GroupBox("Медиа в тестовом окружении") {
+        ProfileDetailCard("Медиа в тестовом окружении") {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Результат временной проверки браузера. Разрешения сайтов рабочего профиля могут отличаться.")
                     .font(.caption)

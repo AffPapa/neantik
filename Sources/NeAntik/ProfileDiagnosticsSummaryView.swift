@@ -17,7 +17,7 @@ struct ProfileDiagnosticsSummaryView: View {
     }
 
     var body: some View {
-        GroupBox {
+        ProfileDetailCard(accessibilityTitle: "Диагностика профиля") {
             VStack(alignment: .leading, spacing: 8) {
                 Button {
                     isExpanded.toggle()
@@ -77,6 +77,8 @@ struct ProfileDiagnosticsSummaryView: View {
             }
             .padding(.vertical, 4)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Диагностика профиля")
     }
 
     private var statusColor: Color {

@@ -17,7 +17,7 @@ enum BulkProxyImportRowIssue: Equatable, Sendable {
         case .tooLong:
             "Строка слишком длинная."
         case .unsupportedAuthentication:
-            "SOCKS5 поддерживается только без логина и пароля."
+            "Проверь логин и пароль SOCKS5: до 255 байт UTF-8 каждый."
         }
     }
 
@@ -27,7 +27,7 @@ enum BulkProxyImportRowIssue: Equatable, Sendable {
             .ambiguous
         case .tooLong:
             .tooLong
-        case .socksAuthenticationUnsupported:
+        case .invalidSOCKSCredentials:
             .unsupportedAuthentication
         default:
             .invalid
@@ -528,7 +528,7 @@ struct BulkProxyImportView: View {
                         }
                     }
                     Text(
-                        "Сверь тип и соответствующий ему порт с кабинетом провайдера: порты HTTP и SOCKS5 могут различаться. HTTP-прокси подходит для HTTPS-сайтов, а HTTPS-прокси требует TLS до самого прокси. Строка без схемы использует выбранный тип. SOCKS5 с логином и паролем Chromium не поддерживает."
+                        "Сверь тип и соответствующий ему порт с кабинетом провайдера: порты HTTP и SOCKS5 могут различаться. HTTP-прокси подходит для HTTPS-сайтов, а HTTPS-прокси требует TLS до самого прокси. Строка без схемы использует выбранный тип. Прокси с авторизацией подключается через отдельный локальный relay профиля."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)

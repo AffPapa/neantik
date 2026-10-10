@@ -9,10 +9,12 @@ import Foundation
     private let paths: AppPaths
     private let processes: BrowserProcessManager
     private let scope: BackupCompatibilityScopeStore
+    private let restoreFault: (@Sendable (BrowserDataRestorePoint) throws -> Void)?
     private let inspectRuntime: @Sendable () throws -> BrowserRuntimeInspection
     init(paths: AppPaths, processes: BrowserProcessManager, scope: BackupCompatibilityScopeStore,
-         inspectRuntime: @escaping @Sendable () throws -> BrowserRuntimeInspection) {
-        self.paths = paths; self.processes = processes; self.scope = scope; self.inspectRuntime = inspectRuntime
+         inspectRuntime: @escaping @Sendable () throws -> BrowserRuntimeInspection,
+         restoreFault: (@Sendable (BrowserDataRestorePoint) throws -> Void)? = nil) {
+        self.paths = paths; self.processes = processes; self.scope = scope; self.inspectRuntime = inspectRuntime; self.restoreFault = restoreFault
     }
 
     func export(profileID: UUID, expectedRevision: UInt64, destination: URL, password: String) async throws -> EncryptedBackupArchive.Manifest {
@@ -40,7 +42,7 @@ import Foundation
     }
 
     func restore(profileID: UUID, expectedRevision: UInt64, archive: URL, password: String) async throws -> BrowserDataRestoreTransaction.Result {
-        let paths = paths, scope = scope, inspect = inspectRuntime
+        let paths = paths, scope = scope, inspect = inspectRuntime, restoreFault = restoreFault
         let retained = paths.profileDirectory(for: profileID).appendingPathComponent(".neantik-backup-restore-" + UUID().uuidString.lowercased())
         return try await processes.withVerifiedStoppedProfileRestore(profileID: profileID, retainedTree: retained) { authority in
             let runtime = try Self.validRuntime(inspect())
@@ -71,7 +73,7 @@ import Foundation
                     nextDocument: encoder.encode(profiles), authority: authority, validateContext: {
                         guard try Self.validRuntime(inspect()) == runtime,
                               try scope.digest(createForExport: false) == localScope else { throw BrowserDataBackupStorageError.incompatibleContext }
-                    })
+                    }, fault: restoreFault)
             }
             try stage.discard()
             return result

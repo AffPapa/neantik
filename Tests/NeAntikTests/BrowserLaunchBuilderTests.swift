@@ -25,6 +25,41 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test func extensionsTargetPreservesProfileDataAndProxyIsolation() {
+        let directory = URL(fileURLWithPath: "/private/tmp/neantik-owned-extension-data")
+        for kind in [nil, ProxyKind.http, .https, .socks5] as [ProxyKind?] {
+            let proxy = kind.map { ProxyConfiguration(kind: $0, host: "owned-upstream.test", port: 1080, username: "fixture-user") }
+            let profile = BrowserProfile(name: "Owned extension fixture", startURL: "https://owned.test/start", proxy: proxy)
+            for relay in [nil, UInt16(4321)] as [UInt16?] {
+                let normal = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory, proxyTransportOverride: relay)
+                let extensions = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory,
+                    startURLOverride: BrowserUserLaunchTarget.extensions.startURLOverride, proxyTransportOverride: relay)
+                #expect(extensions.last == "chrome://extensions/")
+                #expect(Array(extensions.dropLast()) == Array(normal.dropLast()))
+                #expect(extensions.contains("--user-data-dir=" + directory.path))
+                #expect(!extensions.joined().contains("fixture-user"))
+                #expect(profile.startURL == "https://owned.test/start")
+            }
+        }
+        #expect(BrowserLaunchBuilder.validatedStartURL("chrome://extensions/") == nil)
+    }
+    @Test func relayChangesOnlyTransportAndPreservesFailClosedProfilePolicy() {
+        for kind in [ProxyKind.http, .https, .socks5] {
+            let profile = BrowserProfile(name: "Synthetic relay", startURL: "http://owned.test/",
+                proxy: .init(kind: kind, host: "upstream.test", port: 1234, username: "fixture-user"))
+            let arguments = BrowserLaunchBuilder.arguments(profile: profile,
+                browserDataDirectory: URL(fileURLWithPath: "/tmp/owned-relay-fixture"), proxyTransportOverride: 4321)
+            #expect(arguments.filter { $0.hasPrefix("--proxy-server=") } == ["--proxy-server=socks5://127.0.0.1:4321"])
+            #expect(arguments.contains("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"))
+            #expect(arguments.contains("--proxy-bypass-list=<-loopback>"))
+            #expect(arguments.contains("--disable-quic"))
+            #expect(arguments.contains("--webrtc-ip-handling-policy=disable_non_proxied_udp"))
+            #expect(!arguments.contains("--no-proxy-server"))
+            #expect(!arguments.joined().contains("fixture-user"))
+            #expect(!arguments.joined().contains("upstream.test"))
+            #expect(arguments.last == "http://owned.test/")
+        }
+    }
     private func testRuntimeLocator() -> BrowserRuntimeLocator {
         BrowserRuntimeLocator(
             runtimeInspector: { _ in
@@ -781,9 +816,11 @@ struct BrowserLaunchBuilderTests {
             kind: .socks5,
             host: "proxy.example",
             port: 1_080,
-            username: "unsupported"
+            username: "synthetic-user"
         )
-        #expect(!authenticatedSOCKS.isValid)
+        #expect(authenticatedSOCKS.isValid)
+        var tooLongSOCKS = authenticatedSOCKS; tooLongSOCKS.username = String(repeating: "é", count: 128)
+        #expect(!tooLongSOCKS.isValid)
 
         let ambiguousHTTPUsername = ProxyConfiguration(
             kind: .http,

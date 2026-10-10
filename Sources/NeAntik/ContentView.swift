@@ -79,15 +79,6 @@ private struct ProfileLifecycleScanID: Hashable {
     let isRunning: Bool
 }
 
-private struct LaunchPreparationFailure: Identifiable, Equatable {
-    let profileID: UUID
-    let message: String
-    var title: String = "Прокси не готов"
-    var offersProxyEdit = true
-
-    var id: UUID { profileID }
-}
-
 @MainActor
 private final class ProfileListStateResolver {
     private var revision: UInt64?
@@ -980,7 +971,7 @@ struct ContentView: View {
             Button("Повторить") {
                 launchPreparationFailure = nil
                 if let profile = store.profile(withID: failure.profileID) {
-                    launch(profile)
+                    launch(profile, target: failure.target)
                 }
             }
             if failure.offersProxyEdit {
@@ -1110,7 +1101,8 @@ struct ContentView: View {
     private var workspaceLifecycle: some View {
         workspaceNotifications
         .task(id: store.hasTrustedMetadata) {
-            guard allowsDevelopmentBrowserDataBackup else { backupRecoveryRequired = false; return }
+            // Existing restore journals require attention even when new backup
+            // operations are unavailable in this build. Never hide the fence.
             let paths = store.paths
             let trusted = store.hasTrustedMetadata
             let required = await Task.detached(priority: .utility) {
@@ -2889,6 +2881,8 @@ struct ContentView: View {
             action: commands.toggleRunning
         )
         .disabled(!commands.presentation.launchIsEnabled)
+        Button("Расширения профиля…", systemImage: "puzzlepiece.extension", action: commands.openExtensions)
+            .disabled(!commands.presentation.extensionsIsEnabled)
         Divider()
         Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
             .disabled(!commands.presentation.editIsEnabled)
@@ -2980,12 +2974,15 @@ struct ContentView: View {
             folders: store.organization.folders,
             currentFolderID: currentFolderID
         )
-        return ProfileCommandSet(
-            presentation: ProfileCommandPresentation.resolve(
+        var presentation = ProfileCommandPresentation.resolve(
                 profile: profile,
                 processState: processState,
                 launchAction: launchAction
-            ),
+            )
+        presentation.extensionsIsEnabled = presentation.extensionsIsEnabled && store.hasTrustedMetadata &&
+            !isWorkspaceModalPresented && !isImportingProfileConfigurations && !isRestoringLocalSnapshot
+        return ProfileCommandSet(
+            presentation: presentation,
             folderOptions: folderProjection.options,
             hasMoreFolderOptions: folderProjection.hasMore,
             openOrShow: { openOrShowProfile(profile.id) },
@@ -3011,7 +3008,8 @@ struct ContentView: View {
             toggleArchived: { toggleArchived(profile) },
             revealInFinder: { revealProfile(profile) },
             delete: { requestProfileDeletion(profile) },
-            clearCache: { cacheMaintenanceProfile = profile }
+            clearCache: { cacheMaintenanceProfile = profile },
+            openExtensions: { openProfileExtensions(profileID: profile.id) }
         )
     }
 
@@ -3107,7 +3105,9 @@ struct ContentView: View {
                 },
                 onRunFingerprintAudit: {
                     beginFingerprintAudit()
-                }
+                },
+                canOpenExtensions: profileCommandSet(for: profile).presentation.extensionsIsEnabled,
+                onOpenExtensions: { openProfileExtensions(profileID: profile.id) }
             )
             .id(profile.id)
         } else {
@@ -3118,7 +3118,7 @@ struct ContentView: View {
     private var emptyDetail: some View {
         Group {
             if !store.hasTrustedMetadata {
-                if allowsDevelopmentBrowserDataBackup && backupRecoveryRequired {
+                if backupRecoveryRequired {
                     ContentUnavailableView {
                         Label("Заверши восстановление данных", systemImage: "externaldrive.badge.exclamationmark")
                     } description: {
@@ -3235,7 +3235,13 @@ struct ContentView: View {
         }
     }
 
-    private func launch(_ profile: BrowserProfile) {
+    private func openProfileExtensions(profileID: UUID) {
+        guard let current = store.profile(withID: profileID),
+              profileCommandSet(for: current).presentation.extensionsIsEnabled else { return }
+        launch(current, target: .extensions)
+    }
+
+    private func launch(_ profile: BrowserProfile, target: BrowserUserLaunchTarget = .profileStart) {
         guard !isImportingProfileConfigurations,
               !isRestoringLocalSnapshot
         else {
@@ -3255,7 +3261,8 @@ struct ContentView: View {
                 try launchPreparedProfile(
                     profile,
                     runtime: runtime,
-                    preparationReceipt: nil
+                    preparationReceipt: nil,
+                    target: target
                 )
                 launched = true
             case .prepareProxyContext:
@@ -3266,7 +3273,8 @@ struct ContentView: View {
                 startAutomaticLaunchPreparation(
                     profile,
                     runtime: runtime,
-                    admissionToken: admissionToken
+                    admissionToken: admissionToken,
+                    target: target
                 )
             }
         } catch {
@@ -3275,7 +3283,8 @@ struct ContentView: View {
                 profileID: profile.id,
                 message: error.localizedDescription,
                 title: "Браузер не запустился",
-                offersProxyEdit: false
+                offersProxyEdit: false,
+                target: target
             )
         }
     }
@@ -3296,12 +3305,14 @@ struct ContentView: View {
     private func launchPreparedProfile(
         _ profile: BrowserProfile,
         runtime: BrowserRuntime,
-        preparationReceipt: BrowserLaunchPreparationReceipt?
+        preparationReceipt: BrowserLaunchPreparationReceipt?,
+        target: BrowserUserLaunchTarget = .profileStart
     ) throws {
         try processes.launch(
             profile: profile,
             runtime: runtime,
-            preparationReceipt: preparationReceipt
+            preparationReceipt: preparationReceipt,
+            startURLOverride: target.startURLOverride
         )
         guard store.markLaunched(profile.id) else {
             processes.stop(profileID: profile.id)
@@ -3314,11 +3325,24 @@ struct ContentView: View {
         )
     }
 
+    private func launchPreparedProxyProfile(_ profile: BrowserProfile, runtime: BrowserRuntime,
+                                            preparationReceipt: BrowserLaunchPreparationReceipt?, target: BrowserUserLaunchTarget) async throws {
+        try await processes.launchUserProfile(profile: profile, runtime: runtime,
+                                              preparationReceipt: preparationReceipt, keychain: keychain, target: target)
+        guard store.markLaunched(profile.id) else {
+            processes.stop(profileID: profile.id)
+            throw NeAntikError.profileLaunchStateNotPersisted
+        }
+        store.managerLibrary.record(.launch, .succeeded)
+        telemetry.record(.browserLaunched, snapshot: telemetrySnapshot)
+    }
+
     @MainActor
     private func startAutomaticLaunchPreparation(
         _ profile: BrowserProfile,
         runtime: BrowserRuntime,
-        admissionToken: UUID
+        admissionToken: UUID,
+        target: BrowserUserLaunchTarget
     ) {
         guard launchPreparationTasks[profile.id] == nil else {
             ManagerLaunchAdmission.shared.finish(token: admissionToken)
@@ -3329,7 +3353,8 @@ struct ContentView: View {
             launchPreparationFailure = LaunchPreparationFailure(
                 profileID: profile.id,
                 message:
-                    "Прокси уже проверяется в другом окне. Дождись завершения или отмени проверку там."
+                    "Прокси уже проверяется в другом окне. Дождись завершения или отмени проверку там.",
+                target: target
             )
             return
         }
@@ -3352,7 +3377,8 @@ struct ContentView: View {
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: profile.id,
                     message:
-                        "Не удалось начать подготовку прокси. Повтори запуск."
+                        "Не удалось начать подготовку прокси. Повтори запуск.",
+                    target: target
                 )
                 return
             }
@@ -3371,7 +3397,8 @@ struct ContentView: View {
                 localError = nil
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: profile.id,
-                    message: message
+                    message: message,
+                    target: target
                 )
                 return
             }
@@ -3380,7 +3407,8 @@ struct ContentView: View {
                     profileID: profile.id,
                     message: NeAntikError.proxyTestFailed(
                         state.latestAttempt.outcome.userSummary
-                    ).localizedDescription
+                    ).localizedDescription,
+                    target: target
                 )
                 return
             }
@@ -3390,7 +3418,8 @@ struct ContentView: View {
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: profile.id,
                     message:
-                        "Профиль изменился во время подготовки. Проверь прокси и повтори запуск."
+                        "Профиль изменился во время подготовки. Проверь прокси и повтори запуск.",
+                    target: target
                 )
                 return
             }
@@ -3405,19 +3434,21 @@ struct ContentView: View {
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: profile.id,
                     message:
-                        "Прокси отвечает, но его часовой пояс и язык не удалось безопасно согласовать с профилем."
+                        "Прокси отвечает, но его часовой пояс и язык не удалось безопасно согласовать с профилем.",
+                    target: target
                 )
                 return
             }
             do {
-                try launchPreparedProfile(
+                try await launchPreparedProxyProfile(
                     currentProfile,
                     runtime: runtime,
                     preparationReceipt:
                         BrowserLaunchPreparationPolicy.receipt(
                             profile: currentProfile,
                             proxyHealth: currentHealth
-                        )
+                        ),
+                    target: target
                 )
                 launched = true
             } catch {
@@ -3427,7 +3458,8 @@ struct ContentView: View {
                         "Прокси подготовлен, но браузер не запустился. " +
                         error.localizedDescription,
                     title: "Браузер не запустился",
-                    offersProxyEdit: false
+                    offersProxyEdit: false,
+                    target: target
                 )
             }
         }
@@ -3982,6 +4014,7 @@ private struct ProfileRow: View {
         .padding(.vertical, 6)
         .frame(minHeight: 48)
         .accessibilityElement(children: .contain)
+        .accessibilityLabel(profile.name)
     }
 
     private func secondaryMetadata(
@@ -4048,6 +4081,8 @@ struct ProfileDetailView: View {
     var onCustomProxyDiagnostic: () -> Void = {}
     var onChangeNote: () -> Void = {}
     var onRunFingerprintAudit: () -> Void = {}
+    var canOpenExtensions = false
+    var onOpenExtensions: () -> Void = {}
 
     private var isRunning: Bool {
         processState.isRunning
@@ -4086,28 +4121,9 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                let projection = diagnosticProjection?(context.date) ?? (environmentSnapshot, proxyCheckSummary)
-                GroupBox {
-                    networkSummary(summary: projection.1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 4)
-                } label: {
-                    Label("Подключение", systemImage: "network").font(.headline)
-                }
-                if let snapshot = projection.0 {
-                    ProfileEnvironmentView(
-                        snapshot: snapshot,
-                        hasProxy: profile.proxy != nil,
-                        canRunFingerprintAudit: canRunFingerprintAudit,
-                        onRunFingerprintAudit: onRunFingerprintAudit,
-                        now: context.date
-                    )
-                    .id(snapshot.profileID)
-                }
-            }
+            networkAndEnvironment
 
-            GroupBox("Основное") {
+            ProfileDetailCard("Основное") {
                 VStack(alignment: .leading, spacing: 10) {
                     LabeledContent(
                         "Стартовая страница",
@@ -4119,13 +4135,16 @@ struct ProfileDetailView: View {
                         "Cookies, настройки и данные сайтов хранятся отдельно",
                         systemImage: "person.crop.rectangle.stack"
                     )
+                    Button("Расширения профиля…", systemImage: "puzzlepiece.extension", action: onOpenExtensions)
+                        .disabled(!canOpenExtensions)
+                        .help("Сначала останови профиль. Откроется встроенная страница Chromium с версией, разрешениями и переключателями расширений.")
                 }
                 .font(.subheadline)
                 .padding(.vertical, 4)
             }
 
             if !profile.note.isEmpty {
-                GroupBox {
+                ProfileDetailCard("Заметка профиля") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(profile.note)
                             .lineLimit(
@@ -4220,6 +4239,29 @@ struct ProfileDetailView: View {
         }
     }
 
+    private var networkAndEnvironment: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            let projection = diagnosticProjection?(context.date) ?? (environmentSnapshot, proxyCheckSummary)
+            ProfileDetailCard("Подключение") {
+                networkSummary(summary: projection.1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 4)
+            } label: {
+                Label("Подключение", systemImage: "network").font(.headline)
+            }
+            if let snapshot = projection.0 {
+                ProfileEnvironmentView(
+                    snapshot: snapshot,
+                    hasProxy: profile.proxy != nil,
+                    canRunFingerprintAudit: canRunFingerprintAudit,
+                    onRunFingerprintAudit: onRunFingerprintAudit,
+                    now: context.date
+                )
+                .id(snapshot.profileID)
+            }
+        }
+    }
+
     @ViewBuilder
     private var noteActions: some View {
         if notePresentation.shouldOfferExpansion {
@@ -4271,13 +4313,9 @@ struct ProfileDetailView: View {
                     ProxyCheckSummaryView(summary: summary)
                 }
 
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        connectionActions(hasCredentials: !proxy.username.isEmpty)
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        connectionActions(hasCredentials: !proxy.username.isEmpty)
-                    }
+                // Render each action once while adapting to available width.
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 210, maximum: 280), alignment: .leading)], alignment: .leading, spacing: 8) {
+                    connectionActions(hasCredentials: !proxy.username.isEmpty)
                 }
 
                 if let clipboardNotice {

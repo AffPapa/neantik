@@ -9,6 +9,7 @@ struct BrowserProcessArguments: Equatable, Sendable {
 fileprivate struct BrowserProcessInventoryEntry: Sendable {
     let executablePath: String
     let browserDataPaths: Set<String>
+    let relayOwnerIntent: Bool
 
     var retainedByteCount: Int {
         executablePath.utf8.count +
@@ -110,6 +111,7 @@ struct BrowserProcessInventory: Sendable {
         @Sendable (pid_t) -> BrowserProcessKernelIdentity?
     private let unreadableLiveProcessExists: Bool
     private let available: Bool
+    private let relayOwnerCodeValidator: @Sendable (pid_t, String, BrowserProcessKernelIdentity) -> Bool
     private let riskSources: [String]
 
     var diagnostics: (
@@ -134,7 +136,8 @@ struct BrowserProcessInventory: Sendable {
             @escaping @Sendable
                 (pid_t) -> BrowserProcessKernelIdentity? = { _ in nil },
         unreadableLiveProcessExists: Bool = false,
-        available: Bool = true
+        available: Bool = true,
+        relayOwnerCodeValidator: @escaping @Sendable (pid_t, String, BrowserProcessKernelIdentity) -> Bool = { _, _, _ in false }
     ) {
         var reduced: [pid_t: BrowserProcessInventoryEntry] = [:]
         var unsafePathExists = false
@@ -146,7 +149,8 @@ struct BrowserProcessInventory: Sendable {
                 executablePath: URL(
                     fileURLWithPath: process.executablePath
                 ).standardizedFileURL.path,
-                browserDataPaths: extraction.paths
+                browserDataPaths: extraction.paths,
+                relayOwnerIntent: Self.isRelayOwnerIntent(process)
             )
             unsafePathExists =
                 unsafePathExists || extraction.unsafePathExists
@@ -157,6 +161,7 @@ struct BrowserProcessInventory: Sendable {
         self.unreadableLiveProcessExists =
             unreadableLiveProcessExists || unsafePathExists
         self.available = available
+        self.relayOwnerCodeValidator = relayOwnerCodeValidator
         riskSources = self.unreadableLiveProcessExists
             ? ["synthetic-unreadable-process"]
             : []
@@ -171,13 +176,15 @@ struct BrowserProcessInventory: Sendable {
                 (pid_t) -> BrowserProcessKernelIdentity?,
         unreadableLiveProcessExists: Bool,
         available: Bool,
-        riskSources: [String] = []
+        riskSources: [String] = [],
+        relayOwnerCodeValidator: @escaping @Sendable (pid_t, String, BrowserProcessKernelIdentity) -> Bool = { _, _, _ in false }
     ) {
         processes = reducedProcesses
         self.kernelIdentities = kernelIdentities
         self.kernelIdentityRevalidator = kernelIdentityRevalidator
         self.unreadableLiveProcessExists = unreadableLiveProcessExists
         self.available = available
+        self.relayOwnerCodeValidator = relayOwnerCodeValidator
         self.riskSources = riskSources
     }
 
@@ -239,6 +246,15 @@ struct BrowserProcessInventory: Sendable {
         return unreadableLiveProcessExists ? .unknown : .absent
     }
 
+    /// An unclassifiable lease may have lost its relay PID. A complete fresh
+    /// inventory must prove absence of every possible owner before cleanup.
+    /// This is deliberately conservative and does not exempt signed owners.
+    func inspectPotentialRelayOwnerProcesses() -> BrowserDataProcessInspection {
+        guard available else { return .unknown }
+        if processes.values.contains(where: \.relayOwnerIntent) { return .found }
+        return unreadableLiveProcessExists ? .unknown : .absent
+    }
+
     /// Covers GUI and headless MCP managers. Another window in this PID is
     /// allowed; another same-user manager must be closed before data restore.
     /// Unknown kernel identity is never treated as proof of absence.
@@ -246,9 +262,17 @@ struct BrowserProcessInventory: Sendable {
         guard available else { return .unknown }
         for (pid, process) in processes where pid != currentPID && Self.isManagerExecutable(process.executablePath) {
             guard let identity = kernelIdentities[pid], kernelIdentityRevalidator(pid) == identity else { return .unknown }
+            if process.relayOwnerIntent,
+               relayOwnerCodeValidator(pid, process.executablePath, identity),
+               kernelIdentityRevalidator(pid) == identity { continue }
             return .found
         }
         return unreadableLiveProcessExists ? .unknown : .absent
+    }
+
+    private static func isRelayOwnerIntent(_ process: BrowserProcessArguments) -> Bool {
+        process.arguments.count == 2 && process.arguments.first == process.executablePath &&
+            NeAntikLaunchIntent.parse(arguments: process.arguments).mode == .proxyRelayOwner
     }
 
     static func isManagerExecutable(_ path: String) -> Bool {
@@ -270,7 +294,8 @@ struct BrowserProcessInventory: Sendable {
                 executablePath: URL(
                     fileURLWithPath: process.executablePath
                 ).standardizedFileURL.path,
-                browserDataPaths: extraction.paths
+                browserDataPaths: extraction.paths,
+                relayOwnerIntent: isRelayOwnerIntent(process)
             ),
             extraction.unsafePathExists
         )
@@ -420,8 +445,22 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
             },
             unreadableLiveProcessExists: unreadableLiveProcessExists,
             available: true,
-            riskSources: riskSources
+            riskSources: riskSources,
+            relayOwnerCodeValidator: { pid, path, generation in Self.isCurrentSignedRelayOwner(pid, path, generation) }
         )
+    }
+
+    /// Role text alone is never a restore exemption. Old/unsigned images
+    /// remain conservative blockers; parent may legitimately be launchd.
+    private static func isCurrentSignedRelayOwner(_ pid: pid_t, _ path: String, _ generation: BrowserProcessKernelIdentity) -> Bool {
+        guard let ownExecutable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier,
+              ownExecutable.standardizedFileURL.path == path,
+              let identity = ProxyRelaySocketOwnerInspector.processIdentity(pid),
+              identity.generation == generation, identity.userID == geteuid(),
+              let pin = try? ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+        else { return false }
+        return ProxyRelayLiveCodeVerifier.matches(processID: pid, expectedProcess: identity, expectedCode: pin) &&
+            Self.currentProcessIdentity(pid) == generation
     }
 
     static func isProcessAlive(_ pid: pid_t) -> Bool {

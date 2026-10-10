@@ -9,7 +9,7 @@ enum BrowserProcessLockPhase: String, Codable, Equatable, Sendable {
 }
 
 struct BrowserProcessLock: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
 
     let schemaVersion: Int
     let ownerToken: UUID?
@@ -19,6 +19,8 @@ struct BrowserProcessLock: Codable, Equatable, Sendable {
     let executablePath: String
     let browserDataPath: String
     let createdAt: Date
+    let relay: ProxyRelayLeaseReceipt?
+    let pendingRelayOwner: ProxyRelayPendingOwnerFence?
 
     init(
         pid: pid_t,
@@ -28,7 +30,9 @@ struct BrowserProcessLock: Codable, Equatable, Sendable {
         schemaVersion: Int = 1,
         ownerToken: UUID? = nil,
         managerPID: pid_t? = nil,
-        phase: BrowserProcessLockPhase = .running
+        phase: BrowserProcessLockPhase = .running,
+        relay: ProxyRelayLeaseReceipt? = nil,
+        pendingRelayOwner: ProxyRelayPendingOwnerFence? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.ownerToken = ownerToken
@@ -38,6 +42,8 @@ struct BrowserProcessLock: Codable, Equatable, Sendable {
         self.executablePath = executablePath
         self.browserDataPath = browserDataPath
         self.createdAt = createdAt
+        self.relay = relay
+        self.pendingRelayOwner = pendingRelayOwner
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -49,6 +55,8 @@ struct BrowserProcessLock: Codable, Equatable, Sendable {
         case executablePath
         case browserDataPath
         case createdAt
+        case relay
+        case pendingRelayOwner
     }
 
     init(from decoder: Decoder) throws {
@@ -78,6 +86,16 @@ struct BrowserProcessLock: Codable, Equatable, Sendable {
             forKey: .browserDataPath
         )
         createdAt = try container.decode(Date.self, forKey: .createdAt)
+        relay = try container.decodeIfPresent(ProxyRelayLeaseReceipt.self, forKey: .relay)
+        pendingRelayOwner = try container.decodeIfPresent(ProxyRelayPendingOwnerFence.self, forKey: .pendingRelayOwner)
+        if let pendingRelayOwner {
+            guard schemaVersion == 3, phase == .starting, pid == 0, relay == nil else { throw ProfileProcessBusyError() }
+            try pendingRelayOwner.validate(ownerToken: ownerToken)
+        }
+        if let relay {
+            guard schemaVersion == 3 else { throw ProfileProcessBusyError() }
+            try relay.validate(ownerToken: ownerToken)
+        }
     }
 }
 
@@ -271,6 +289,7 @@ enum BrowserLaunchBuilder {
         runtimeCapabilities: BrowserRuntimeCapabilities = [],
         additionalArguments: [String] = [],
         startURLOverride: URL? = nil,
+        proxyTransportOverride: UInt16? = nil,
         now: Date = Date(),
         purpose: BrowserLaunchPurpose = .normal
     ) -> [String] {
@@ -296,7 +315,10 @@ enum BrowserLaunchBuilder {
         }
 
         if let proxy = profile.proxy {
-            arguments.append("--proxy-server=\(proxy.chromiumServer)")
+            let transportHost = proxyTransportOverride == nil ? proxy.host : "127.0.0.1"
+            let transportServer = proxyTransportOverride.map { "socks5://127.0.0.1:\($0)" } ?? proxy.chromiumServer
+            precondition(proxyTransportOverride != 0)
+            arguments.append("--proxy-server=\(transportServer)")
             arguments.append(
                 "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
@@ -306,7 +328,7 @@ enum BrowserLaunchBuilder {
             // defense in depth so a future resolver path cannot silently
             // bypass them.
             arguments.append(
-                "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
+                "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(transportHost)"
             )
             let bypass: String
             switch purpose {
@@ -538,6 +560,7 @@ final class BrowserProcessManager: ObservableObject {
         (URL) -> BrowserDataProcessInspection
     private let processInventoryProvider:
         (@Sendable () -> BrowserProcessInventory)?
+    private let potentialRelayOwnerInspector: () -> BrowserDataProcessInspection
     private let processSignaler: (pid_t, Int32) -> Int32
     private let managedProcessTerminator: (Process) -> Bool
     private let allowsExternalProcessSignaling: Bool
@@ -548,6 +571,18 @@ final class BrowserProcessManager: ObservableObject {
     private var managedLeaseOwners: [UUID: UUID] = [:]
     private var managedBrowserDataDirectories: [UUID: URL] = [:]
     private var managedSessionReceipts: [UUID: ManagedBrowserSessionReceipt] = [:]
+    private struct PreparedRelayLaunch {
+        let profile: BrowserProfile
+        let executableURL: URL
+        let lock: BrowserProcessLock
+        let port: UInt16
+    }
+    private var preparedRelayLaunches: [UUID: PreparedRelayLaunch] = [:]
+    private var pendingRelayLaunchTokens: [UUID: UUID] = [:]
+    // A failed durable write must not make an unconfirmed child disappear
+    // from this manager's cleanup authority. Cleared only on proven absence.
+    private var unconfirmedRelayOwnerFences: [UUID: ProxyRelayPendingOwnerFence] = [:]
+    private var activeRelayOwners: [UUID: ProxyRelayOwnerClient] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
     private var externalLocks: [UUID: BrowserProcessLock] = [:]
     private var externalUnverifiedProfileIDs = Set<UUID>()
@@ -591,6 +626,7 @@ final class BrowserProcessManager: ObservableObject {
         self.processInventoryProvider = {
             coordinator.capture()
         }
+        self.potentialRelayOwnerInspector = { .unknown }
         self.processSignaler = { Darwin.kill($0, $1) }
         self.managedProcessTerminator = Self.requestGracefulQuit
         self.allowsExternalProcessSignaling = false
@@ -617,6 +653,7 @@ final class BrowserProcessManager: ObservableObject {
             (URL) -> BrowserDataProcessInspection = {
                 BrowserProcessManager.inspectBrowserDataProcess($0)
             },
+        potentialRelayOwnerInspector: @escaping () -> BrowserDataProcessInspection = { .unknown },
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
@@ -630,6 +667,7 @@ final class BrowserProcessManager: ObservableObject {
         self.processLivenessValidator = processLivenessValidator
         self.browserDataProcessInspector = browserDataProcessInspector
         self.processInventoryProvider = nil
+        self.potentialRelayOwnerInspector = potentialRelayOwnerInspector
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
         self.allowsExternalProcessSignaling =
@@ -659,6 +697,7 @@ final class BrowserProcessManager: ObservableObject {
             },
         processInventoryProvider:
             (@Sendable () -> BrowserProcessInventory)? = nil,
+        potentialRelayOwnerInspector: @escaping () -> BrowserDataProcessInspection = { .unknown },
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
@@ -680,6 +719,7 @@ final class BrowserProcessManager: ObservableObject {
         } else {
             self.processInventoryProvider = nil
         }
+        self.potentialRelayOwnerInspector = potentialRelayOwnerInspector
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
         self.allowsExternalProcessSignaling =
@@ -708,6 +748,7 @@ final class BrowserProcessManager: ObservableObject {
                 profiles: [],
                 processIdentityInspector: { _ in .unknown },
                 browserDataProcessInspector: { _ in .unknown },
+                relayOwnerInspection: potentialRelayOwnerInspector(),
                 expectedLeaseAnchors: [:]
             )
             return
@@ -717,6 +758,7 @@ final class BrowserProcessManager: ObservableObject {
                 profiles: profiles,
                 processIdentityInspector: processIdentityInspector,
                 browserDataProcessInspector: browserDataProcessInspector,
+                relayOwnerInspection: potentialRelayOwnerInspector(),
                 expectedLeaseAnchors: [:]
             )
             return
@@ -824,6 +866,7 @@ final class BrowserProcessManager: ObservableObject {
                         evidence.inventory.inspectProcess,
                     browserDataProcessInspector:
                         evidence.inventory.inspectBrowserDataProcess,
+                    relayOwnerInspection: evidence.inventory.inspectPotentialRelayOwnerProcesses(),
                     expectedLeaseAnchors: evidence.leaseAnchors
                 )
             } else if passiveObservationsEnabled,
@@ -861,6 +904,7 @@ final class BrowserProcessManager: ObservableObject {
                         browserDataProcessInspector:
                             evidence.inventory
                                 .inspectBrowserDataProcess,
+                        relayOwnerInspection: evidence.inventory.inspectPotentialRelayOwnerProcesses(),
                         expectedLeaseAnchors:
                             evidence.leaseAnchors.filter {
                                 anchorValidation
@@ -916,6 +960,7 @@ final class BrowserProcessManager: ObservableObject {
             (BrowserProcessLock) -> BrowserProcessIdentityInspection,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection,
+        relayOwnerInspection: BrowserDataProcessInspection,
         expectedLeaseAnchors:
             [UUID: BrowserLeaseInventoryAnchor]
     ) {
@@ -946,6 +991,7 @@ final class BrowserProcessManager: ObservableObject {
                 processIdentityInspector: processIdentityInspector,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 expectedLeaseAnchor:
                     expectedLeaseAnchors[profile.id]
             )
@@ -1314,6 +1360,7 @@ final class BrowserProcessManager: ObservableObject {
             profileID: profileID,
             processIdentityInspector: processIdentityInspector,
             browserDataProcessInspector: browserDataProcessInspector,
+            relayOwnerInspection: potentialRelayOwnerInspector(),
             expectedLeaseAnchor: nil
         )
     }
@@ -1324,8 +1371,22 @@ final class BrowserProcessManager: ObservableObject {
             (BrowserProcessLock) -> BrowserProcessIdentityInspection,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection,
+        relayOwnerInspection: BrowserDataProcessInspection,
         expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
     ) {
+        // An async relay preparation owns a durable starting lease before
+        // creating Process. Passive reconciliation must not adopt it as an
+        // external recovery session while its own task is still responsible.
+        if let token = pendingRelayLaunchTokens[profileID],
+           managedLeaseOwners[profileID] == token, processes[profileID] == nil { return }
+        if !unconfirmedRelayOwnersAreAbsent(profileID: profileID) {
+            registerRecovery(profileID: profileID, lockURL: paths.lockFile(for: profileID),
+                expectedBrowserDataDirectory: paths.browserDataDirectory(for: profileID),
+                removableSnapshot: try? Data(contentsOf: paths.lockFile(for: profileID)),
+                blockingManagerPID: nil, deferInitialResolution: true,
+                message: "Не удалось подтвердить остановку прокси. Повторный запуск заблокирован до безопасной проверки.")
+            return
+        }
         tombstoneObservationTasks[profileID]?.cancel()
         tombstoneObservationTasks.removeValue(forKey: profileID)
         if let message = tombstoneRecoveryMessages.removeValue(
@@ -1393,6 +1454,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Папка данных профиля не прошла проверку безопасности. Профиль заблокирован, чтобы не повредить данные браузера."
             )
@@ -1414,6 +1476,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска недоступен. Профиль заблокирован до безопасной проверки."
             )
@@ -1445,6 +1508,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска имеет небезопасный тип. NeAntik не будет запускать этот профиль повторно."
             )
@@ -1458,6 +1522,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска нельзя прочитать. Профиль заблокирован до безопасной проверки."
             )
@@ -1478,6 +1543,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска повреждён. NeAntik проверяет, закрыт ли браузер, прежде чем разблокировать профиль."
             )
@@ -1488,6 +1554,8 @@ final class BrowserProcessManager: ObservableObject {
             browserDataDirectory.standardizedFileURL.path
         guard lock.schemaVersion >= 1,
               lock.schemaVersion <= BrowserProcessLock.currentSchemaVersion,
+              lock.relay == nil || lock.relay?.profileID == profileID,
+              lock.pendingRelayOwner == nil || lock.pendingRelayOwner?.profileID == profileID,
               URL(fileURLWithPath: lock.browserDataPath)
                 .standardizedFileURL.path == expectedPath
         else {
@@ -1499,6 +1567,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска не соответствует этому профилю. Профиль остаётся заблокированным для защиты данных."
             )
@@ -1517,6 +1586,7 @@ final class BrowserProcessManager: ObservableObject {
                     startingCreatedAt: lock.createdAt,
                     browserDataProcessInspector:
                         browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                     deferInitialResolution: true,
                     message:
                         "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
@@ -1540,6 +1610,7 @@ final class BrowserProcessManager: ObservableObject {
                 startingCreatedAt: lock.createdAt,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
             )
@@ -1555,6 +1626,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска содержит неверный процесс. Профиль остаётся заблокированным до безопасной проверки."
             )
@@ -1596,6 +1668,7 @@ final class BrowserProcessManager: ObservableObject {
                         blockingManagerPID: nil,
                         browserDataProcessInspector:
                             browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                         message:
                             "Файл состояния запуска изменился во время проверки. Профиль остаётся заблокированным."
                     )
@@ -1609,12 +1682,196 @@ final class BrowserProcessManager: ObservableObject {
                     blockingManagerPID: nil,
                     browserDataProcessInspector:
                         browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                     message:
                         "NeAntik не может доказать, что данные профиля свободны. Повторный запуск заблокирован."
                 )
             }
         }
     }
+
+    /// Ordinary UI and MCP starts share this transport selection. Native
+    /// Chromium retains HTTPS-proxy auth until its TLS relay gate is complete.
+    func launchUserProfile(profile: BrowserProfile, runtime: BrowserRuntime,
+                           preparationReceipt: BrowserLaunchPreparationReceipt?, keychain: KeychainStore,
+                           target: BrowserUserLaunchTarget = .profileStart) async throws {
+        if let proxy = profile.proxy, !proxy.username.isEmpty, proxy.kind != .https {
+            guard let preparationReceipt else { throw NeAntikError.proxyPreparationRequired }
+            try await launchWithAuthenticatedRelay(profile: profile, runtime: runtime,
+                                                   preparationReceipt: preparationReceipt, keychain: keychain, target: target)
+        } else {
+            try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, startURLOverride: target.startURLOverride)
+        }
+    }
+
+    /// Starting ownership is
+    /// acquired before either Keychain/IPC await. Browser sockets remain held
+    /// until the running lease is durable and the parent commits activation.
+    func launchWithAuthenticatedRelay(
+        profile: BrowserProfile, runtime: BrowserRuntime,
+        preparationReceipt: BrowserLaunchPreparationReceipt,
+        keychain: KeychainStore, target: BrowserUserLaunchTarget = .profileStart
+    ) async throws {
+        try ManagerLaunchAdmission.shared.requireSafePressure()
+        guard let proxy = profile.proxy, proxy.isValid, !proxy.username.isEmpty,
+              !profile.isArchived, !runningProfileIDs.contains(profile.id),
+              preparedRelayLaunches[profile.id] == nil,
+              preparationReceipt.authorizes(profile), let managerExecutable = Bundle.main.executableURL
+        else { throw NeAntikError.invalidProxy }
+        let inspectionTask = Task.detached(priority: .utility) {
+            BrowserRuntimeInspector.inspect(executableURL: runtime.executableURL)
+        }
+        let inspection = await withTaskCancellationHandler(operation: { await inspectionTask.value }, onCancel: { inspectionTask.cancel() })
+        try Task.checkCancellation()
+        guard inspection.codeSignatureValid == true, inspection.supportsAppleSilicon,
+              inspection.version == runtime.inspection.version, let version = inspection.version,
+              let executableHash = inspection.executableSHA256, let frameworkHash = inspection.frameworkSHA256
+        else { throw NeAntikError.runtimeValidationFailed("Не удалось подтвердить движок для прокси.") }
+        let dataDirectory = paths.browserDataDirectory(for: profile.id), token = UUID()
+        let provisional = BrowserProcessLock(pid: 0, executablePath: runtime.executableURL.standardizedFileURL.path,
+            browserDataPath: dataDirectory.standardizedFileURL.path, createdAt: Date(),
+            schemaVersion: BrowserProcessLock.currentSchemaVersion, ownerToken: token, managerPID: getpid(), phase: .starting)
+        do {
+            try acquireLease(provisional, profileID: profile.id, at: paths.lockFile(for: profile.id),
+                browserDataDirectory: dataDirectory, expectedProfile: validatesPersistedProfiles ? profile : nil)
+        } catch where Self.isExistingPathError(error) {
+            reconcileProfile(profileID: profile.id)
+            guard !runningProfileIDs.contains(profile.id) else { throw NeAntikError.profileAlreadyRunning }
+            try acquireLease(provisional, profileID: profile.id, at: paths.lockFile(for: profile.id),
+                browserDataDirectory: dataDirectory, expectedProfile: validatesPersistedProfiles ? profile : nil)
+        }
+        managedLeaseOwners[profile.id] = token; managedBrowserDataDirectories[profile.id] = dataDirectory
+        pendingRelayLaunchTokens[profile.id] = token
+        var owner: ProxyRelayOwnerClient?
+        defer {
+            if pendingRelayLaunchTokens[profile.id] == token { pendingRelayLaunchTokens[profile.id] = nil }
+            if preparedRelayLaunches[profile.id]?.lock.ownerToken == token { preparedRelayLaunches[profile.id] = nil }
+        }
+        do {
+            let passwordTask = Task.detached(priority: .utility) { try keychain.proxyPassword(profileID: profile.id) }
+            let savedPassword = try await withTaskCancellationHandler(operation: { try await passwordTask.value }, onCancel: { passwordTask.cancel() })
+            try Task.checkCancellation()
+            guard let password = savedPassword else { throw NeAntikError.invalidProxy }
+            let bootstrap = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profile.id,
+                sessionGeneration: token, profileRevision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port,
+                username: proxy.username, password: password, runtimeVersion: version,
+                runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
+                configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profile.id,
+                    revision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port, username: proxy.username))
+            let relayPaths = paths
+            let prepared = try await ProxyRelayOwnerClient.prepare(executable: managerExecutable, bootstrap: bootstrap,
+                registerChild: { fence in try fence.persist(paths: relayPaths, expected: provisional) })
+            owner = prepared; try Task.checkCancellation()
+            let relayReceipt = ProxyRelayLeaseReceipt(profileID: profile.id, sessionGeneration: token, ownerPID: prepared.processID,
+                ownerStartSeconds: prepared.processIdentity.generation.startSeconds,
+                ownerStartMicroseconds: prepared.processIdentity.generation.startMicroseconds, ownerUID: prepared.processIdentity.userID,
+                loopbackPort: prepared.port, runtimeExecutableSHA256: executableHash,
+                runtimeFrameworkSHA256: frameworkHash, configurationSHA256: bootstrap.configurationSHA256)
+            try relayReceipt.validate(ownerToken: token)
+            let ownedStarting = BrowserProcessLock(pid: 0, executablePath: provisional.executablePath,
+                browserDataPath: provisional.browserDataPath, createdAt: provisional.createdAt,
+                schemaVersion: 3, ownerToken: token, managerPID: getpid(), phase: .starting, relay: relayReceipt)
+            try writeOwnedLease(ownedStarting, profileID: profile.id, ownerToken: token, at: paths.lockFile(for: profile.id))
+            preparedRelayLaunches[profile.id] = PreparedRelayLaunch(profile: profile, executableURL: runtime.executableURL,
+                lock: try Self.decodeLock(Self.encodeLock(ownedStarting)), port: prepared.port)
+            #if DEBUG
+            let fixtureArguments = ProxyRelayOwnerQualification.browserArguments(paths: paths)
+            #else
+            let fixtureArguments: [String] = []
+            #endif
+            try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, additionalArguments: fixtureArguments, startURLOverride: target.startURLOverride)
+            guard let process = processes[profile.id], process.isRunning else { throw NeAntikError.processLaunchFailed("") }
+            try await prepared.bind(browserPID: process.processIdentifier)
+            try Task.checkCancellation()
+            // launch() has already committed its running lease. Recheck that
+            // no termination/reconcile replaced it across the binding await.
+            guard let receipt = managedSessionReceipts[profile.id], receipt.generation == token,
+                  receipt.matches(try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id)), process.isRunning
+            else { throw NeAntikError.processLaunchFailed("") }
+            #if DEBUG
+            try await ProxyRelayOwnerQualification.pauseBeforeActivationIfRequested(process: process, owner: prepared, runtime: inspection, paths: paths)
+            try ProxyRelayOwnerQualification.mutateBeforeActivationIfRequested(profile: profile, paths: paths)
+            #endif
+            guard preparationReceipt.authorizes(profile) else { throw NeAntikError.invalidProxy }
+            try await prepared.activate(profile: validatesPersistedProfiles ? profile : nil,
+                                        paths: validatesPersistedProfiles ? paths : nil,
+                                        expectedLease: validatesPersistedProfiles ? receipt.lock : nil)
+            try Task.checkCancellation()
+            #if DEBUG
+            try await ProxyRelayOwnerQualification.terminateAfterActivationIfRequested(process: process, paths: paths)
+            #endif
+            // The activation await can resume after stop/termination consumed
+            // this session. Never publish success or retain a stale owner then.
+            guard process.isRunning, processes[profile.id] === process,
+                  managedLeaseOwners[profile.id] == token,
+                  let currentReceipt = managedSessionReceipts[profile.id], currentReceipt.generation == token,
+                  currentReceipt.lock == receipt.lock else { throw NeAntikError.processLaunchFailed("") }
+            try paths.withProcessLockGuard(for: profile.id) {
+                guard currentReceipt.matches(try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id))
+                else { throw NeAntikError.processLaunchFailed("") }
+            }
+            activeRelayOwners[profile.id] = prepared
+        } catch {
+            let cleanupConfirmed: Bool
+            if let owner { cleanupConfirmed = await owner.abandon() }
+            else { cleanupConfirmed = (error as? ProxyRelayOwnerClient.Failure)?.requiresCleanupRecovery != true }
+            if !cleanupConfirmed, let owner { activeRelayOwners[profile.id] = owner }
+            if managedLeaseOwners[profile.id] == token {
+                if processes[profile.id]?.isRunning == true { stop(profileID: profile.id) }
+                else if cleanupConfirmed {
+                    removeLockIfOwned(profileID: profile.id, ownerToken: token)
+                    managedLeaseOwners[profile.id] = nil; managedBrowserDataDirectories[profile.id] = nil
+                }
+            }
+            guard cleanupConfirmed else {
+                if let fence = (error as? ProxyRelayOwnerClient.Failure)?.pendingFence {
+                    await retainUnconfirmedRelayStartup(fence, expectedLease: provisional)
+                }
+                let message = "Не удалось подтвердить остановку прокси. Профиль заблокирован; закрой его браузер и перезапусти NeAntik."
+                registerRecovery(profileID: profile.id, lockURL: paths.lockFile(for: profile.id),
+                    expectedBrowserDataDirectory: dataDirectory,
+                    removableSnapshot: currentLeaseSnapshot(profileID: profile.id, managedOwner: token, externalLock: nil),
+                    blockingManagerPID: nil, cleanupAuthority: .managedOwner(token),
+                    deferInitialResolution: true, message: message)
+                throw ProxyRelayOwnerClient.Failure.cleanupUnconfirmed((error as? ProxyRelayOwnerClient.Failure)?.pendingFence)
+            }
+            if error is CancellationError { throw CancellationError() }
+            throw NeAntikError.processLaunchFailed("")
+        }
+    }
+
+    private func unconfirmedRelayOwnersAreAbsent(profileID: UUID) -> Bool {
+        let owned = unconfirmedRelayOwnerFences.filter { $0.value.profileID == profileID }
+        guard owned.values.allSatisfy({ $0.ownerIsAbsent(inspect: ProxyRelaySocketOwnerInspector.processIdentity,
+                                                      isAlive: processLivenessValidator) }) else { return false }
+        for token in owned.keys { unconfirmedRelayOwnerFences[token] = nil }
+        return true
+    }
+
+    /// Preserve cleanup ownership even when the pre-secret durable write
+    /// fails. A transient failure is retried; recovery never assumes absence.
+    func retainUnconfirmedRelayStartup(_ fence: ProxyRelayPendingOwnerFence, expectedLease: BrowserProcessLock) async {
+        guard expectedLease.phase == .starting, expectedLease.pid == 0,
+              expectedLease.ownerToken == fence.sessionGeneration,
+              expectedLease.browserDataPath == paths.browserDataDirectory(for: fence.profileID).standardizedFileURL.path,
+              (try? fence.validate(ownerToken: expectedLease.ownerToken)) != nil else { return }
+        unconfirmedRelayOwnerFences[fence.sessionGeneration] = fence
+        let relayPaths = paths
+        _ = try? await Task.detached { try fence.persist(paths: relayPaths, expected: expectedLease) }.value
+    }
+
+    #if DEBUG
+    func relayQualificationHasAdopted(profileID: UUID) -> Bool {
+        Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification" && reconcileTask == nil &&
+            externalLocks[profileID] != nil && !externalUnverifiedProfileIDs.contains(profileID) && runningProfileIDs.contains(profileID)
+    }
+    func relayQualificationReceipt(profileID: UUID) -> (browserPID: pid_t, ownerPID: pid_t, port: UInt16)? {
+        guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+              let browser = processes[profileID], browser.isRunning, let owner = activeRelayOwners[profileID]
+        else { return nil }
+        return (browser.processIdentifier, owner.processID, owner.port)
+    }
+    #endif
 
     func launch(
         profile: BrowserProfile,
@@ -1634,6 +1891,10 @@ final class BrowserProcessManager: ObservableObject {
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
         }
+        // Chromium's native SOCKS transport cannot authenticate. Only the
+        // prepared, owned relay path may launch this configuration.
+        if profile.proxy?.kind == .socks5, profile.proxy?.username.isEmpty == false,
+           preparedRelayLaunches[profile.id] == nil { throw NeAntikError.invalidProxy }
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived
         }
@@ -1695,6 +1956,7 @@ final class BrowserProcessManager: ObservableObject {
             runtimeCapabilities: runtime.capabilities,
             additionalArguments: additionalArguments,
             startURLOverride: startURLOverride,
+            proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
             now: launchNow,
             purpose: purpose
         ) + KeychainStore.disposableBrowserArguments(
@@ -1723,9 +1985,10 @@ final class BrowserProcessManager: ObservableObject {
             }
         }
 
-        let ownerToken = UUID()
+        let preparedRelay = preparedRelayLaunches[profile.id]
+        let ownerToken = preparedRelay?.lock.ownerToken ?? UUID()
         let lockURL = paths.lockFile(for: profile.id)
-        let createdAt = Date()
+        let createdAt = preparedRelay?.lock.createdAt ?? Date()
         let provisionalLock = BrowserProcessLock(
             pid: 0,
             executablePath: runtime.executableURL.standardizedFileURL.path,
@@ -1734,9 +1997,21 @@ final class BrowserProcessManager: ObservableObject {
             schemaVersion: BrowserProcessLock.currentSchemaVersion,
             ownerToken: ownerToken,
             managerPID: getpid(),
-            phase: .starting
+            phase: .starting,
+            relay: preparedRelay?.lock.relay
         )
         do {
+            if let preparedRelay {
+                guard purpose == .normal, browserDataDirectoryOverride == nil,
+                      preparedRelay.profile == profile,
+                      preparedRelay.executableURL == runtime.executableURL,
+                      managedLeaseOwners[profile.id] == ownerToken,
+                      try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id) == preparedRelay.lock
+                else { throw NeAntikError.processLaunchFailed("") }
+                if validatesPersistedProfiles {
+                    try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths, operation: {})
+                }
+            } else {
             try acquireLease(
                 provisionalLock,
                 profileID: profile.id,
@@ -1746,6 +2021,7 @@ final class BrowserProcessManager: ObservableObject {
                 allowsUnknownBrowserDataInspection:
                     ownsFreshFingerprintAuditDirectory
             )
+            }
         } catch where Self.isExistingPathError(error) {
             reconcileProfile(profileID: profile.id)
             guard !runningProfileIDs.contains(profile.id) else {
@@ -1804,7 +2080,8 @@ final class BrowserProcessManager: ObservableObject {
                 schemaVersion: BrowserProcessLock.currentSchemaVersion,
                 ownerToken: ownerToken,
                 managerPID: getpid(),
-                phase: .running
+                phase: .running,
+                relay: preparedRelay?.lock.relay
             )
             try writeOwnedLease(
                 lock,
@@ -2039,6 +2316,7 @@ final class BrowserProcessManager: ObservableObject {
         }
         managedStopRequests.removeValue(forKey: profileID)
         managedSessionReceipts.removeValue(forKey: profileID)
+        activeRelayOwners.removeValue(forKey: profileID)
         managedStopWarnings.removeValue(forKey: profileID)?.cancel()
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
@@ -2192,6 +2470,7 @@ final class BrowserProcessManager: ObservableObject {
         cleanupAuthority: BrowserLeaseCleanupAuthority? = nil,
         browserDataProcessInspector:
             ((URL) -> BrowserDataProcessInspection)? = nil,
+        relayOwnerInspection: BrowserDataProcessInspection? = nil,
         deferInitialResolution: Bool = false,
         surfaceMessage: Bool = true,
         message: String
@@ -2227,7 +2506,8 @@ final class BrowserProcessManager: ObservableObject {
                 profileID: profileID,
                 record: record,
                 browserDataProcessInspector:
-                    effectiveBrowserDataProcessInspector
+                    effectiveBrowserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection
             ) {
                 return
             }
@@ -2339,7 +2619,8 @@ final class BrowserProcessManager: ObservableObject {
                         profileID: profileID,
                         record: record,
                         browserDataProcessInspector:
-                            inventory.inspectBrowserDataProcess
+                            inventory.inspectBrowserDataProcess,
+                        relayOwnerInspection: inventory.inspectPotentialRelayOwnerProcesses()
                     )
                 }
             }
@@ -2384,11 +2665,13 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         record: BrowserProcessRecoveryRecord,
         browserDataProcessInspector:
-            ((URL) -> BrowserDataProcessInspection)? = nil
+            ((URL) -> BrowserDataProcessInspection)? = nil,
+        relayOwnerInspection: BrowserDataProcessInspection? = nil
     ) -> Bool {
         let effectiveBrowserDataProcessInspector =
             browserDataProcessInspector ??
             self.browserDataProcessInspector
+        guard unconfirmedRelayOwnersAreAbsent(profileID: profileID) else { return false }
         switch recoveryEntryChange(
             profileID: profileID,
             record: record
@@ -2440,7 +2723,8 @@ final class BrowserProcessManager: ObservableObject {
         guard removeRecoveryEntryIfSafe(
             profileID: profileID,
             record: record,
-            browserDataProcessInspector: effectiveBrowserDataProcessInspector
+            browserDataProcessInspector: effectiveBrowserDataProcessInspector,
+            relayOwnerInspection: relayOwnerInspection ?? potentialRelayOwnerInspector()
         ) else {
             return false
         }
@@ -2551,7 +2835,8 @@ final class BrowserProcessManager: ObservableObject {
     private func removeRecoveryEntryIfSafe(
         profileID: UUID,
         record: BrowserProcessRecoveryRecord,
-        browserDataProcessInspector: (URL) -> BrowserDataProcessInspection
+        browserDataProcessInspector: (URL) -> BrowserDataProcessInspection,
+        relayOwnerInspection: BrowserDataProcessInspection
     ) -> Bool {
         do {
             return try paths.withProcessLockGuard(for: profileID) {
@@ -2574,14 +2859,14 @@ final class BrowserProcessManager: ObservableObject {
                                   try paths.privateFileEntryIdentity(record.lockURL) == record.entryIdentity
                             else { return false }
                         }
-                        return removeLockIfSnapshotMatchesWhileGuardHeld(lockURL: record.lockURL, snapshot: data)
+                        return removeLockIfSnapshotMatchesWhileGuardHeld(profileID: profileID, lockURL: record.lockURL, snapshot: data, relayOwnerInspection: relayOwnerInspection)
                     }
                     guard let snapshot = record.removableSnapshot else {
                         return false
                     }
                     return removeLockIfSnapshotMatchesWhileGuardHeld(
-                        lockURL: record.lockURL,
-                        snapshot: snapshot
+                        profileID: profileID, lockURL: record.lockURL,
+                        snapshot: snapshot, relayOwnerInspection: relayOwnerInspection
                     )
                 }
             }
@@ -2599,6 +2884,7 @@ final class BrowserProcessManager: ObservableObject {
         allowsUnknownBrowserDataInspection: Bool = false
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
+            guard unconfirmedRelayOwnersAreAbsent(profileID: profileID) else { throw ProfileProcessBusyError() }
             let reserve = { [self] in
             switch try paths.privateFileEntryKind(
                 paths.profileDeletionTombstone(for: profileID)
@@ -2685,7 +2971,7 @@ final class BrowserProcessManager: ObservableObject {
                     guard let lock = try? Self.decodeLock(data) else { return .retryRequired }
                     guard lock.ownerToken == ownerToken else { return .replacementPresent }
                     return removeLockIfSnapshotMatchesWhileGuardHeld(
-                    lockURL: lockURL,
+                    profileID: profileID, lockURL: lockURL,
                     snapshot: data
                     ) ? .removedOrMissing : .retryRequired
                 }
@@ -2710,7 +2996,7 @@ final class BrowserProcessManager: ObservableObject {
                     guard let current = try? Self.decodeLock(data) else { return .retryRequired }
                     guard current == expected else { return .replacementPresent }
                     return removeLockIfSnapshotMatchesWhileGuardHeld(
-                    lockURL: lockURL,
+                    profileID: profileID, lockURL: lockURL,
                     snapshot: data
                     ) ? .removedOrMissing : .retryRequired
                 }
@@ -2735,7 +3021,7 @@ final class BrowserProcessManager: ObservableObject {
                     return false
                 }
                 return removeLockIfSnapshotMatchesWhileGuardHeld(
-                    lockURL: lockURL,
+                    profileID: profileID, lockURL: lockURL,
                     snapshot: snapshot
                 )
             }
@@ -2745,14 +3031,33 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func removeLockIfSnapshotMatchesWhileGuardHeld(
+        profileID: UUID,
         lockURL: URL,
-        snapshot: Data
+        snapshot: Data,
+        relayOwnerInspection: BrowserDataProcessInspection = .unknown
     ) -> Bool {
-        guard (try? paths.privateFileEntryKind(lockURL)) == .regular,
+        guard unconfirmedRelayOwnersAreAbsent(profileID: profileID),
+              (try? paths.privateFileEntryKind(lockURL)) == .regular,
               let current = try? Data(contentsOf: lockURL),
               current == snapshot
         else {
             return false
+        }
+        // A browser can exit just before its independent owner drains. Keep
+        // the durable fence until that exact owner generation is absent too.
+        if let lock = try? Self.decodeLock(current) {
+            if let relay = lock.relay {
+                guard relay.ownerIsAbsent(inspect: ProxyRelaySocketOwnerInspector.processIdentity,
+                                          isAlive: processLivenessValidator) else { return false }
+            }
+            if let pending = lock.pendingRelayOwner {
+                guard pending.ownerIsAbsent(inspect: ProxyRelaySocketOwnerInspector.processIdentity,
+                                            isAlive: processLivenessValidator) else { return false }
+            }
+        } else {
+            // Truncation may hide schema3 fields. BrowserData absence alone
+            // cannot prove that an independent relay has drained.
+            guard relayOwnerInspection == .absent else { return false }
         }
         do {
             try FileManager.default.removeItem(at: lockURL)

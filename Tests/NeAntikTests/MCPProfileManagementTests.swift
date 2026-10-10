@@ -74,6 +74,29 @@ struct MCPProfileManagementTests {
     func create(_ engine: MCPProfileManagement) async throws -> [String: Any] { try await engine.call("profile_create", ["name": "Synthetic", "changes": ["startURL": "https://example.com", "tags": ["qa"]]]) }
     func request(_ dto: [String: Any]) -> [String: Any] { ["profileID": dto["id"]!, "expectedRevision": dto["revision"]!] }
 
+    @Test func metadataEditKeepsAuthenticatedSOCKSProxyAndWriteOnlyPassword() async throws {
+        let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await create(engine)
+        var args = request(created)
+        args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080,
+                         "username": "qualification-user", "password": "qualification-password"]
+        let configured = try await engine.call("profile_set_proxy", args)
+        let id = try #require(UUID(uuidString: configured["id"] as! String))
+        let original = try #require(engine.store.profile(withID: id)), secrets = backend.values
+        args = request(configured); args["changes"] = ["name": "Renamed", "tags": ["ready"], "startURL": "https://example.com/changed"]
+        let edited = try await engine.call("profile_update", args)
+        let actual = try #require(engine.store.profile(withID: id))
+        #expect(actual.name == "Renamed" && actual.tags == ["ready"])
+        #expect(actual.proxy == original.proxy && actual.identity == original.identity && backend.values == secrets)
+        let encoded = String(decoding: try JSONSerialization.data(withJSONObject: edited), as: UTF8.self)
+        #expect(!encoded.contains("qualification-password") && !encoded.contains("qualification-user"))
+        let persisted = try Data(contentsOf: engine.store.paths.profilesFile)
+        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080, "username": "qualification-user", "password": ""]
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
+        #expect(try Data(contentsOf: engine.store.paths.profilesFile) == persisted)
+        #expect(engine.store.profile(withID: id)?.proxy == actual.proxy && backend.values == secrets)
+    }
+
     @Test func profilePatchNormalizationAndNoopPreserveUnrelatedFields() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let profile = try await create(engine)
@@ -151,14 +174,18 @@ struct MCPProfileManagementTests {
         profile = try await engine.call("profile_set_proxy", args)
         #expect(profile["proxyKind"] is NSNull); #expect(backend.values.isEmpty)
     }
-    @Test func socksAuthenticationAndInvalidURLNeverPersist() async throws {
+    @Test func socksAuthenticationPersistsWithoutExposingSecretAndInvalidURLNeverPersists() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let profile = try await create(engine); let before = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
         var args = request(profile); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080, "username": "synthetic", "password": "secret"]
-        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
-        args = request(profile); args["changes"] = ["startURL": "file:///etc/passwd"]
+        let saved = try await engine.call("profile_set_proxy", args)
+        #expect(saved["proxyKind"] as? String == "socks5")
+        #expect(!String(describing: saved).contains("secret"))
+        let after = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
+        #expect(after != before)
+        args = request(saved); args["changes"] = ["startURL": "file:///etc/passwd"]
         await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_update", args) }
-        #expect(try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile) == before)
+        #expect(try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile) == after)
     }
     @Test func duplicateHasFreshIdentityAndNoWebsiteData() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }

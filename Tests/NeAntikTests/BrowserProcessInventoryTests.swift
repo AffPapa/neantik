@@ -194,6 +194,15 @@ private final class PassiveInventoryGate: @unchecked Sendable {
 }
 
 struct BrowserProcessInventoryTests {
+    @Test func malformedLeaseRecoveryDoesNotExemptSignedRelayOwners() {
+        let owner = BrowserProcessArguments(executablePath: "/owned/NeAntik.app/Contents/MacOS/NeAntik", arguments: ["/owned/NeAntik.app/Contents/MacOS/NeAntik", "--neantik-proxy-relay-owner-v1"])
+        let inventory = BrowserProcessInventory(processes: [123: owner], relayOwnerCodeValidator: { _, _, _ in true })
+        #expect(inventory.inspectPotentialRelayOwnerProcesses() == .found)
+        #expect(BrowserProcessInventory(processes: [:]).inspectPotentialRelayOwnerProcesses() == .absent)
+        #expect(BrowserProcessInventory(processes: [:], unreadableLiveProcessExists: true).inspectPotentialRelayOwnerProcesses() == .unknown)
+        #expect(BrowserProcessInventory(processes: [:], available: false).inspectPotentialRelayOwnerProcesses() == .unknown)
+    }
+
     @Test
     func managerExecutableKeysIncludeHistoricalCaseVariantsAndExcludeHelpers() {
         for name in ["NeAntik", "NeVision", "NEANTIK", "nevision"] {

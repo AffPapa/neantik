@@ -31,7 +31,7 @@ struct ProfileLifecycleHealthView: View {
     var recoveryNotice: ProfileRecoveryNotice? = nil
 
     var body: some View {
-        GroupBox("Центр состояния") {
+        ProfileDetailCard("Центр состояния") {
             VStack(alignment: .leading, spacing: 8) {
                 LabeledContent("Блокировка", value: snapshot.lock.title)
                 LabeledContent("BrowserData", value: snapshot.browserData.title)

@@ -14,6 +14,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     let archiveSystemImage: String
     let archiveIsEnabled: Bool
     let deleteIsEnabled: Bool
+    var extensionsIsEnabled = false
 
     static let unavailable = ProfileCommandPresentation(
         profileName: nil,
@@ -56,7 +57,8 @@ struct ProfileCommandPresentation: Equatable, Sendable {
                     ? "arrow.uturn.backward"
                     : "archivebox",
             archiveIsEnabled: !processState.isRunning,
-            deleteIsEnabled: !processState.isRunning
+            deleteIsEnabled: !processState.isRunning,
+            extensionsIsEnabled: processState == .stopped && !profile.isArchived && launchAction.isEnabled
         )
     }
 }
@@ -139,6 +141,7 @@ struct ProfileCommandSet {
     let revealInFinder: () -> Void
     let delete: () -> Void
     var clearCache: () -> Void = {}
+    var openExtensions: () -> Void = {}
 
     static let unavailable = ProfileCommandSet(
         presentation: .unavailable,
@@ -375,6 +378,10 @@ struct ProfileCommandMenu: Commands {
                 action: resolved.edit
             )
             .disabled(!resolved.presentation.editIsEnabled)
+
+            Button("Расширения профиля…", systemImage: "puzzlepiece.extension", action: resolved.openExtensions)
+                .disabled(!resolved.presentation.extensionsIsEnabled)
+                .help("Запустить выбранный профиль на странице управления расширениями Chromium")
 
             Divider()
 

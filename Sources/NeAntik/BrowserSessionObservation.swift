@@ -40,7 +40,7 @@ struct ManagedBrowserSessionReceipt: Sendable {
     /// Bound a receipt to the exact, still-owned launch lease. Never adopt an
     /// external process or expose its PID, paths, owner token, or credentials.
     func matches(_ current: BrowserProcessLock) -> Bool {
-        current == lock && current.schemaVersion == BrowserProcessLock.currentSchemaVersion &&
+        current == lock && (2...BrowserProcessLock.currentSchemaVersion).contains(current.schemaVersion) &&
             current.phase == .running && current.ownerToken != nil &&
             current.managerPID == getpid()
     }

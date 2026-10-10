@@ -25,6 +25,28 @@ final class ProxyRelayExpectedCode: @unchecked Sendable {
               let requirement else { throw Failure.invalidRequirement }
         self.requirement = requirement
     }
+
+    /// Called only for a helper/main inside an already hash-qualified runtime.
+    /// Static inspection supplies a pin; admission still validates live code.
+    /// This does not substitute for runtime payload provenance/notarization.
+    static func qualifiedPin(at url: URL, expectedIdentifier: String,
+                             expectedTeamIdentifier: String) throws -> ProxyRelayExpectedCode {
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(url as CFURL, SecCSFlags(), &code) == errSecSuccess,
+              let code else { throw Failure.invalidIdentity }
+        var information: CFDictionary?
+        guard SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &information) == errSecSuccess,
+              let info = information as? [String: Any],
+              info[kSecCodeInfoIdentifier as String] as? String == expectedIdentifier,
+              info[kSecCodeInfoTeamIdentifier as String] as? String == expectedTeamIdentifier,
+              let hash = info[kSecCodeInfoUnique as String] as? Data
+        else { throw Failure.invalidIdentity }
+        let pin = try ProxyRelayExpectedCode(identifier: expectedIdentifier,
+                                             teamIdentifier: expectedTeamIdentifier, cdHash: hash)
+        guard SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), pin.requirement) == errSecSuccess
+        else { throw Failure.invalidIdentity }
+        return pin
+    }
 }
 
 /// Validates the running guest of the kernel. SecCodeCopyStaticCode/path

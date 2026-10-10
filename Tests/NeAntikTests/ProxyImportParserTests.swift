@@ -56,19 +56,16 @@ struct ProxyImportParserTests {
         #expect(socks.configuration.kind == .socks5)
     }
 
-    @Test func unknownSchemeAndAuthenticatedSocksFailClosed() {
+    @Test func unknownSchemeFailsClosedAndAuthenticatedSocksParses() throws {
         #expect(throws: ProxyImportError.invalid) {
             try ProxyImportParser.parse(
                 "ftp://proxy.example:21",
                 kind: .http
             )
         }
-        #expect(throws: ProxyImportError.socksAuthenticationUnsupported) {
-            try ProxyImportParser.parse(
-                "socks5://user:secret@proxy.example:1080",
-                kind: .http
-            )
-        }
+        let socks = try ProxyImportParser.parse("socks5://user:secret@proxy.example:1080", kind: .http)
+        #expect(socks.configuration.kind == .socks5 && socks.configuration.username == "user")
+        #expect(socks.password == "secret")
     }
 
     @Test func bracketedIPv6IsSupported() throws {
@@ -156,15 +153,13 @@ struct ProxyImportParserTests {
         }
     }
 
-    @Test func socksCredentialsHaveClearFailure() {
-        #expect(
-            throws: ProxyImportError.socksAuthenticationUnsupported
-        ) {
-            try ProxyImportParser.parse(
-                "user:secret@proxy.example:1080",
-                kind: .socks5
-            )
+    @Test func socksCredentialsRespectRFC1929ByteBoundaries() throws {
+        let boundary = String(repeating: "a", count: 255)
+        #expect(try ProxyImportParser.parse("user:\(boundary)@proxy.example:1080", kind: .socks5).password == boundary)
+        for password in ["", boundary + "a", String(repeating: "é", count: 128)] {
+            #expect(throws: (any Error).self) { try ProxyImportParser.parse("user:\(password)@proxy.example:1080", kind: .socks5) }
         }
+        #expect(throws: (any Error).self) { try ProxyImportParser.parse("\(boundary)a:secret@proxy.example:1080", kind: .socks5) }
     }
 
     @Test func summariesAndErrorsNeverRevealPassword() throws {

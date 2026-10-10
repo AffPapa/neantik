@@ -33,10 +33,22 @@ struct NeAntikApp: App {
     }
 
     init() {
+        #if DEBUG
+        if CommandLine.arguments.count == 2,
+           CommandLine.arguments[1] == BackupScopeQualification.argument {
+            BackupScopeQualification.runAndExit()
+        }
+        if CommandLine.arguments.count == 2,
+           CommandLine.arguments[1] == ProxyRelayOwnerQualification.argument {
+            ProxyRelayOwnerQualification.runAndExit()
+        }
+        #endif
         let launchIntent = NeAntikLaunchIntent.parse(
             arguments: CommandLine.arguments
         )
         switch launchIntent.mode {
+        case .proxyRelayOwner:
+            ProxyRelayOwner.runAndExit()
         case let .mcpStdio(dataRoot):
             MCPStdioServer.runAndExit(dataRoot: dataRoot)
         case let .mcpManagement(dataRoot):

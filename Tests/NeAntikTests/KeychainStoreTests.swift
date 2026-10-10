@@ -3,6 +3,101 @@ import Testing
 @testable import NeAntik
 
 struct KeychainStoreTests {
+    @Test func customWorkspaceCannotReadOrMutateDefaultCredentials() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let backend = MemoryKeychainBackend()
+        let id = UUID()
+        backend.set("owned-default-current", service: environment.keychainService, profileID: id)
+        backend.set("owned-default-legacy", service: try #require(environment.legacyKeychainService), profileID: id)
+        let custom = KeychainStore.applicationStore(environment: environment,
+            paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/neantik-mcp-scope-a")),
+            fixtureRoot: nil, backend: backend)
+        #expect(try custom.proxyPassword(profileID: id) == nil)
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+        try custom.saveProxyPassword("owned-custom", profileID: id)
+        #expect(try custom.proxyPassword(profileID: id) == "owned-custom")
+        try custom.deleteProxyPassword(profileID: id)
+        #expect(backend.string(service: environment.keychainService, profileID: id) == "owned-default-current")
+        #expect(backend.string(service: try #require(environment.legacyKeychainService), profileID: id) == "owned-default-legacy")
+    }
+
+    @Test func customWorkspacesPersistSeparatelyDespiteMatchingProfileID() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let backend = MemoryKeychainBackend()
+        let id = UUID()
+        func workspace(_ name: String) -> KeychainStore {
+            KeychainStore.applicationStore(environment: environment,
+                paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/" + name)),
+                fixtureRoot: nil, backend: backend)
+        }
+        let first = workspace("neantik-mcp-scope-a"), second = workspace("neantik-mcp-scope-b")
+        try first.saveProxyPassword("owned-first", profileID: id)
+        #expect(try second.proxyPassword(profileID: id) == nil)
+        try second.saveProxyPassword("owned-second", profileID: id)
+        #expect(try workspace("neantik-mcp-scope-a").proxyPassword(profileID: id) == "owned-first")
+        #expect(try second.proxyPassword(profileID: id) == "owned-second")
+    }
+
+    @Test func workspaceScopeNormalizesURLAliasesWithoutExposingPath() {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let defaultRoot = URL(fileURLWithPath: "/private/tmp/neantik-default-test")
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-custom-test")
+        let first = KeychainStore.workspaceCredentialScope(environment: environment, root: root, defaultRoot: defaultRoot)
+        let alias = KeychainStore.workspaceCredentialScope(environment: environment,
+            root: root.appendingPathComponent("unused/.."), defaultRoot: defaultRoot)
+        #expect(first.service == alias.service)
+        #expect(first.legacyService == nil)
+        #expect(!first.service.contains(root.path))
+        #expect(first.service.hasPrefix(environment.keychainService + ".workspaces.v1."))
+    }
+
+    @Test func historicalLibraryFallbacksRetainCredentialCompatibility() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        for hasEmptyCurrent in [false, true] {
+            let support = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: support) }
+            let legacy = support.appendingPathComponent(["Ne", "Vision"].joined(), isDirectory: true)
+            let current = support.appendingPathComponent("NeAntik", isDirectory: true)
+            try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
+            try Data("[]".utf8).write(to: legacy.appendingPathComponent("profiles.json"))
+            if hasEmptyCurrent { try FileManager.default.createDirectory(at: current, withIntermediateDirectories: true) }
+            let paths = AppPaths(applicationSupportDirectory: support, moveLegacy: { _, _ in throw MemoryKeychainError() })
+            #expect(paths.rootDirectory.standardizedFileURL == legacy.standardizedFileURL)
+            let scope = KeychainStore.workspaceCredentialScope(environment: environment, root: paths.rootDirectory, defaultRoot: current)
+            #expect(scope.service == environment.keychainService)
+            #expect(scope.legacyService == environment.legacyKeychainService)
+            let backend = MemoryKeychainBackend(), id = UUID()
+            backend.set("owned-historical", service: try #require(scope.legacyService), profileID: id)
+            #expect(try KeychainStore(backend: backend, service: scope.service, legacyService: scope.legacyService).proxyPassword(profileID: id) == "owned-historical")
+        }
+    }
+
+    @Test func arbitraryLegacyNamesAndDevelopmentSiblingRemainIsolated() {
+        let production = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let development = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop.dev")
+        let defaultRoot = URL(fileURLWithPath: "/private/tmp/neantik-synthetic-support/NeAntik")
+        for (environment, root) in [(production, URL(fileURLWithPath: "/private/tmp/neantik-other-support/NeVision")),
+                                   (development, defaultRoot.deletingLastPathComponent().appendingPathComponent("NeVision"))] {
+            let scope = KeychainStore.workspaceCredentialScope(environment: environment, root: root, defaultRoot: defaultRoot)
+            #expect(scope.service != environment.keychainService)
+            #expect(scope.legacyService == nil)
+        }
+    }
+
+    @Test func defaultWorkspaceRetainsExistingLegacyMigration() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let backend = MemoryKeychainBackend()
+        let id = UUID()
+        backend.set("owned-legacy", service: try #require(environment.legacyKeychainService), profileID: id)
+        let defaultRoot = environment.applicationSupportRoot(environment: [:], developmentFixtureRoot: nil)
+        let store = KeychainStore.applicationStore(environment: environment,
+            paths: AppPaths(rootDirectory: defaultRoot), fixtureRoot: nil, backend: backend)
+        #expect(try store.proxyPassword(profileID: id) == "owned-legacy")
+        #expect(backend.string(service: environment.keychainService, profileID: id) == "owned-legacy")
+        #expect(backend.string(service: try #require(environment.legacyKeychainService), profileID: id) == nil)
+    }
+
     @Test
     func legacyReadMigratesSecretAndRemovesFallback() throws {
         let backend = MemoryKeychainBackend()

@@ -132,7 +132,9 @@ enum ProxyImportParser {
         }
         let result = unique[0]
         if effectiveKind == .socks5 && !result.configuration.username.isEmpty {
-            throw ProxyImportError.socksAuthenticationUnsupported
+            guard !result.password.isEmpty, result.password.utf8.count <= 255 else {
+                throw ProxyImportError.invalidSOCKSCredentials
+            }
         }
         return result
     }
@@ -310,18 +312,6 @@ enum ProxyImportParser {
         if configuration.isValid {
             return configuration
         }
-        // Validate the endpoint and credentials independently so callers can
-        // produce the specific SOCKS5-authentication error below instead of a
-        // misleading generic parser failure.
-        if kind == .socks5, !username.isEmpty {
-            let credentialValidation = ProxyConfiguration(
-                kind: .http,
-                host: rawHost,
-                port: port,
-                username: username
-            )
-            return credentialValidation.isValid ? configuration : nil
-        }
         return nil
     }
 
@@ -374,7 +364,7 @@ enum ProxyImportError: LocalizedError, Equatable {
     case tooLong
     case invalid
     case ambiguous
-    case socksAuthenticationUnsupported
+    case invalidSOCKSCredentials
 
     var errorDescription: String? {
         switch self {
@@ -386,8 +376,8 @@ enum ProxyImportError: LocalizedError, Equatable {
             "Не удалось распознать прокси. Проверь адрес, порт и формат."
         case .ambiguous:
             "Неясно, где адрес прокси. Выбери «Адрес прокси слева» или «Адрес прокси справа»."
-        case .socksAuthenticationUnsupported:
-            "SOCKS5 в Chromium поддерживается только без логина и пароля."
+        case .invalidSOCKSCredentials:
+            "Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый."
         }
     }
 }

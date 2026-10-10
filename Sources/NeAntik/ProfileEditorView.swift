@@ -488,20 +488,10 @@ struct ProfileEditorView: View {
             validationLabel(for: .proxyHost)
             validationLabel(for: .proxyPort)
             if proxyKind == .socks5 {
-              Text(
-                "Chromium поддерживает SOCKS5 только без логина и пароля. DNS для сайтов будет идти через прокси."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              if !proxyUsername.isEmpty || !proxyPassword.isEmpty {
-                Button("Очистить логин и пароль SOCKS5") {
-                  proxyUsername = ""
-                  proxyPassword = ""
-                }
-                validationLabel(for: .proxyPassword)
-              }
-            } else {
-              TextField(
+              Text("DNS сайтов передаётся SOCKS5-прокси. Для авторизации используются логин и пароль из Связки ключей.")
+                .font(.caption).foregroundStyle(.secondary)
+            }
+            TextField(
                 "Логин (необязательно)",
                 text: $proxyUsername
               )
@@ -512,7 +502,6 @@ struct ProfileEditorView: View {
               .focused($focusedField, equals: .proxyPassword)
               .id(ProfileEditorField.proxyPassword)
               validationLabel(for: .proxyPassword)
-            }
             }
 
             if let proxyImportMessage {
@@ -568,7 +557,7 @@ struct ProfileEditorView: View {
               .foregroundStyle(.secondary)
               if !proxyUsername.isEmpty {
                 Text(
-                  "Chromium может запросить логин и пароль при первом запуске. Они доступны в карточке профиля; пароль хранится в Связке ключей."
+                  "HTTP и SOCKS5 используют сохранённые данные автоматически. Для HTTPS-прокси браузер может запросить логин и пароль; их можно скопировать из карточки профиля."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

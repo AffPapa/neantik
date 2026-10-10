@@ -4,7 +4,7 @@ struct RuntimeProvenanceCardView: View {
     let snapshot: RuntimeProvenanceSnapshot
 
     var body: some View {
-        GroupBox("Происхождение движка") {
+        ProfileDetailCard("Происхождение движка") {
             VStack(alignment: .leading, spacing: 8) {
                 LabeledContent("Движок", value: snapshot.name)
                 LabeledContent("Версия", value: snapshot.version)
