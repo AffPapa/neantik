@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.25",
+  "version": "0.7.25",
+  "build": 88,
+  "releasedAt": "2026-10-10",
+  "channel": "public-alpha",
+  "sourceCommit": "e7284393d9cdba3dfff4ced7d8bb8a4281e453d7",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.25-arm64-notarized.zip",
+    "sizeBytes": 187918504,
+    "sha256": "99638701bd8a830f8929167f8fb6ec6315d865540a55f1f5d4ae32c56d2a6c21"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.25-arm64-notarized.dmg",
+    "sizeBytes": 212324427,
+    "sha256": "358c658cfbb5e161fd736127d661b751c4c84b880e98ae0f4520863cfb35c6a2"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "Accepted ZIP and DMG",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "privacy": "recognized-format scans passed for source, complete public Git history, exact app, ZIP, mounted DMG, site source/build",
+    "fingerprint": "fresh authenticated headed runs of signed candidate and public downloaded app; identical criticalFiles",
+    "hostedDownload": "fresh ZIP and DMG downloads matched SHA256/size and passed artifact gates",
+    "swiftTests": {
+      "reported": 1004,
+      "suites": 114,
+      "optionalFixturesSkipped": 23,
+      "status": "passed"
+    },
+    "pythonTests": {
+      "tests": 1184,
+      "skipped": 19,
+      "status": "passed"
+    },
+    "siteTests": {
+      "tests": 32,
+      "status": "passed"
+    },
+    "MCP": "actual Dev and exact signed native stdio; 10 controls passed; 18 management/7 read tools",
+    "sessionPersistence": "no new independent cookie/IndexedDB persistence qualification in this manager-only scope",
+    "physicalKeyboard": "Dev Cmd+N/Tab/disclosure observed; durable create verified; full Help/Escape/Return path limited by native automation pipe failure"
+  },
+  "siteVersion": 123,
+  "siteSourceCommit": "52f078c84c4986aae554310395fa9ba41cc62a2a",
+  "siteDeploymentId": "appgdep_6aca01122278819193b539df82f2479f",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.25",
+  "affpapa": "unchanged: restricted deploy credential unavailable; validated six-file package prepared",
+  "rollbackRelease": "v0.7.24",
+  "candidateManifestSHA256": "9fdd18b05284f6bb4e3e0dba0125fe6cc1e35f3ed53e467c5d0237cbda4cd8e3",
+  "candidateSourceBindingSHA256": "819a24a9007cf0c8cadf74515fe7c36160b6628f8a2675e739d566e71d7788ec",
+  "limitations": [
+    "Full production hardware-cohort qualification and major1.0 remain open.",
+    "Safe Browsing remains disabled. No anonymity, CAPTCHA or site-rule bypass guarantee.",
+    "Authenticated SOCKS5 relay, full encrypted BrowserData backup and atomic updater not introduced in this release.",
+    "Real third-party AI clients and all Mac/OS combinations were not qualified.",
+    "Recognized-format secret scans cannot prove absence of every unknown credential format."
+  ]
+}

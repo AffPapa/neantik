@@ -14,7 +14,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Next candidate: NeAntik `0.7.25 (88)` — development preview until its own Direct gates pass. Latest published release: [0.7.24/87 public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.24).
+Latest published release: [NeAntik 0.7.25 (88), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.25). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.25.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;

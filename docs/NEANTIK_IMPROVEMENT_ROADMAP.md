@@ -1,4 +1,4 @@
-> Current public release: 0.7.24/build87 public alpha, qualified M156.0.8078.12; GitHub immutable ZIP/DMG published. Next 0.7.25/build88 is a development candidate until its own Direct gates pass. Major1.0 qualification remains open.
+> Current public release: 0.7.25/build88 public alpha, unchanged qualified M156.0.8078.12. GitHub ZIP/DMG and browser.free version123 published; signing/notarization/stapling/Gatekeeper, hosted bytes and fresh published-app headed gates passed. Major1.0 qualification remains open. affpapa publication is limited by unavailable restricted deploy credential.
 
 # NeAntik: roadmap улучшений
 

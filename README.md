@@ -14,7 +14,7 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Следующий кандидат — NeAntik `0.7.25 (88)` — development preview до прохождения его собственных Direct-гейтов. Последний опубликованный выпуск: [0.7.24/87 public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.24).
+Последний опубликованный выпуск: [NeAntik 0.7.25 (88), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.25). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.25.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
