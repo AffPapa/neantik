@@ -24,6 +24,10 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReleaseSourceReceiptTests(unittest.TestCase):
+    def test_production_source_closure_is_sorted_and_unique(self) -> None:
+        paths = [path for path, _ in MODULE.RELEASE_SOURCE_CLOSURE]
+        self.assertEqual(paths, sorted(set(paths)))
+
     closure = (
         ("policy.json", "reviewed-policy"),
         ("scripts/release.py", "orchestrator"),
