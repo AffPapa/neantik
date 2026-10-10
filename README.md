@@ -1,7 +1,5 @@
 # NeAntik
 
-В разработке: `0.7.28 (91)` — development preview. Relay и MCP проходят заключительные Direct-проверки; публичным выпуском остаётся 0.7.27.
-
 NeAntik — открытый локальный менеджер изолированных браузерных профилей для
 Mac с Apple Silicon. Менеджер написан на SwiftUI и запускает встроенный
 Chromium runtime, собранный из зафиксированных исходников. Electron, отдельная
@@ -16,13 +14,13 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.7.27 (90), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.27). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.27.json).
+Последний опубликованный выпуск: [NeAntik 0.7.28 (91), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.28). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.28.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-`0.7.27` уточняет свежесть диагностики, отмену проверок прокси, команды запуска и импорт снимков настроек. Runtime сохранён без пересборки. Подробные результаты и ограничения — в отчёте релиза. Safe Browsing отключён; полная production-квалификация аппаратных когорт и major 1.0 ещё не завершены. `0.7.26` сохранён для отката. Снимки настроек не являются backup BrowserData.
+`0.7.28` добавляет отдельный relay для HTTP/SOCKS5 с авторизацией, изоляцию паролей MCP-библиотек и доступные карточки профилей. Runtime сохранён без пересборки. Safe Browsing отключён; full backup, центр расширений, атомарный updater и major 1.0 остаются в работе. `0.7.27` сохранён для отката. Снимки настроек не являются backup BrowserData.
 
 Скачать напрямую: [browser.free](https://browser.free).
 

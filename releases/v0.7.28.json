@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.28",
+  "version": "0.7.28",
+  "build": 91,
+  "releasedAt": "2026-10-10",
+  "channel": "public-alpha",
+  "sourceCommit": "ddab326ce196fce9544841c06493f0a55d41ccc2",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.28-arm64-notarized.zip",
+    "sizeBytes": 188121104,
+    "sha256": "b269e1ce8c3b7c5e36271dbd22e0ee63cce0c648ea26b3a0348561757693b726"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.28-arm64-notarized.dmg",
+    "sizeBytes": 213024226,
+    "sha256": "ff2a74100845c91fee441d4420f9590ff30f190e59600d2364f938ceb4adafc0"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "28707663-6190-46e9-b350-db575eda2dde",
+    "dmgNotarySubmissionId": "248ddf46-6733-4d4b-83e1-102e1fc73916",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "fresh ZIP/DMG hash, size, signing/notary/Gatekeeper; ZIP candidate and authenticated evidence binding passed",
+    "fingerprint": "fresh authenticated headed run of downloaded app with new one-time enrollment; all criticalFiles equal to qualified candidate; owned processes drained",
+    "first15Platform": {
+      "cases": 18,
+      "status": "prior v0.7.26 headed qualification of identical runtime, not rerun for this manager slice"
+    },
+    "swiftTests": {
+      "reportedTests": 1071,
+      "suites": 125,
+      "optionalFixturesSkipped": 26,
+      "seconds": 49.653,
+      "status": "passed",
+      "execution": "explicit no-parallel; jobs2; permitted context"
+    },
+    "sourceFreezeChecks": {
+      "checks": 13,
+      "status": "passed"
+    },
+    "siteTests": {
+      "tests": 32,
+      "status": "passed",
+      "execution": "12 release-contract tests and20 remaining tests, same final source"
+    },
+    "privacy": "recognized-format source and reachable Git history scans passed (4609 unique blobs/7743 objects after source commit); no proof for every unknown secret format",
+    "exactCandidateMCP": "signed release stdio metadata create/update/folder, stale revision refusal, reconnect persistence and readonly denial passed; no browser/Keychain operations",
+    "physicalKeyboard": "separate Developer ID QA v13 populated UI; CmdN/name/Tab/Return create, expanded details, dirty Escape/discard passed; macOS27beta only; no physical VoiceOver pass",
+    "authenticatedRelay": "separately signed QA manager + exact unchanged runtime: HTTP/SOCKS, two sessions, streaming and17s idle across manager EOF, remote DNS, upstream failure, signed foreign peer refusal, Task cancellation and lease/restart controls passed. Not exact final manager relay qualification.",
+    "backup": "development gated. Separate approved QA DP group and production service passed synthetic cookies/LS/IDB restore, wrong password/tamper, missing scope and real process interruptions. Production GUI/tabs/OS-encrypted auth not qualified.",
+    "extensions": "own unpacked fixture actual install/popup/disable/remove on native Chromium page passed in signed QA; full center/CRX integration and simultaneous A/B isolation remain open"
+  },
+  "siteVersion": 130,
+  "siteSourceCommit": "5c0099dfcb8d85adafa185986cfa4e581a90d6df",
+  "siteDeploymentId": "appgdep_6aca5e4e24e88191a334e1c1cb4447f5",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.28",
+  "affpapa": "unchanged: restricted doctor deploy credential unavailable; no alternative transport",
+  "rollbackRelease": "v0.7.27",
+  "candidateManifestSHA256": "9b0b3dd9ca3cf2ec4f583a31644d76ec73f697d36af18886e0022621e63e9ad6",
+  "candidateSourceBindingSHA256": "49ac8f7f273dbe13ec1688267d2a87e223618ffb1e6d673c6abd2f9868ec0e95",
+  "limitations": [
+    "Public alpha; major1.0/full production hardware-cohort qualification remain open.",
+    "macOS27beta ARM64 QA, not all Mac/OS combinations; no second display or actual network/power transition qualification.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Detailed relay controls use separately signed QA source binding; exact final release browser route observation remains notObserved.",
+    "HTTPS proxy uses native authentication path; TLS upstream relay not delivered.",
+    "Full encrypted BrowserData backup remains gated pending production composition/signing/UI; tabs and OS-encrypted auth portability not qualified.",
+    "Native extensions page delivered; read-only center, complete installation provenance and cross-profile extension controls remain open.",
+    "Atomic updater remains disabled; verified offline primitives are not an installer.",
+    "Recognized-format secret scans cannot prove absence of all unknown secrets."
+  ],
+  "changes": [
+    "Per-profile HTTP/SOCKS5 auth relay lifecycle and fail-closed owner",
+    "MCP custom workspace credential isolation with historical main-library compatibility",
+    "Accessible plain profile detail cards and keyboard paths",
+    "Native profile extensions destination preserves startURL",
+    "Current proxy/MCP help and public release metadata"
+  ]
+}

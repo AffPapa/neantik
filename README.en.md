@@ -1,7 +1,5 @@
 # NeAntik
 
-In development: `0.7.28 (91)` — development preview. Relay and MCP are undergoing final Direct gates; the public release remains 0.7.27.
-
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
 source-pinned Chromium runtime. It does not require Electron, an account, a
@@ -16,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.27 (90), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.27). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.27.json).
+Latest published release: [NeAntik 0.7.28 (91), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.28). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.28.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.27` improves diagnostic freshness, proxy cancellation, command names and additive settings snapshot import. The runtime is retained without rebuilding. Exact checks and limitations are recorded in the release report. Safe Browsing is disabled; full production hardware-cohort qualification and major 1.0 remain open. Keep immutable `0.7.26` for rollback. Settings snapshots are not BrowserData backups.
+`0.7.28` adds per-profile authenticated HTTP/SOCKS5 relay, MCP workspace credential isolation and accessible profile cards. The runtime is retained without rebuilding. Safe Browsing is disabled; full backup, extension center, atomic updater and major1.0 remain in progress. Keep immutable `0.7.27` for rollback. Settings snapshots are not BrowserData backups.
 
 Direct downloads: [browser.free](https://browser.free).
 
