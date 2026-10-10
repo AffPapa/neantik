@@ -252,9 +252,10 @@ struct BrowserProcessInventory: Sendable {
     }
 
     static func isManagerExecutable(_ path: String) -> Bool {
-        // Historical installed/standalone GUI and stdio builds share these
-        // executable names. Runtime helpers have different names.
-        ["NeAntik", "NeVision"].contains(URL(fileURLWithPath: path).lastPathComponent)
+        // Compare canonical executable keys, including the historical manager.
+        // This is a conservative data-restore guard, never a displayed label.
+        // Case variants on a case-insensitive macOS volume must also block restore.
+        ["neantik", "nevision"].contains(URL(fileURLWithPath: path).lastPathComponent.lowercased())
     }
 
     fileprivate static func reducedEntry(

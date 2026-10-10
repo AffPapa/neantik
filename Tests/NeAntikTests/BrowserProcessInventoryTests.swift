@@ -195,6 +195,15 @@ private final class PassiveInventoryGate: @unchecked Sendable {
 
 struct BrowserProcessInventoryTests {
     @Test
+    func managerExecutableKeysIncludeHistoricalCaseVariantsAndExcludeHelpers() {
+        for name in ["NeAntik", "NeVision", "NEANTIK", "nevision"] {
+            #expect(BrowserProcessInventory.isManagerExecutable("/Applications/Fixture.app/Contents/MacOS/" + name))
+        }
+        for name in ["NeAntik Browser", "NeAntik Browser Helper", "Other", "NeAntik-Dev"] {
+            #expect(!BrowserProcessInventory.isManagerExecutable("/Applications/Fixture.app/Contents/MacOS/" + name))
+        }
+    }
+    @Test
     func liveProviderCanProveUnusedTemporaryPathWhenRequested() {
         guard ProcessInfo.processInfo.environment[
             "NEANTIK_RUN_LIVE_PROCESS_INVENTORY"
