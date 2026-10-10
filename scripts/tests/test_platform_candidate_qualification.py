@@ -12,6 +12,11 @@ SPEC.loader.exec_module(MODULE)
 
 
 class PlatformQualificationTests(unittest.TestCase):
+    def test_canvas_cli_is_invoked_with_its_actual_supported_contract(self):
+        command = MODULE.verifier_command(Path("fixtures"), "verify.py", Path("capture.json"))
+        self.assertEqual(command[1:], ["fixtures/verify.py", "capture.json"])
+        self.assertEqual(MODULE.verifier_command(Path("fixtures"), "verify-webgl.py", Path("capture.json"))[-1], "--negative-controls")
+
     def test_success_exit_does_not_replace_a_verdict_or_negative_controls(self):
         self.assertFalse(MODULE.verdict_passes({"exitCode": 0}))
         self.assertFalse(MODULE.verdict_passes({"passed": False}))

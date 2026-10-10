@@ -77,6 +77,16 @@ def verdict_passes(report):
     return passed and all(item.get("rejected") is True for item in controls)
 
 
+def verifier_command(vector, verifier, observation):
+    command = ["node" if verifier.endswith(".mjs") else sys.executable,
+               str(vector / verifier), str(observation)]
+    # Canvas always runs its independent numeric/PNG controls and has no
+    # optional negative-controls CLI switch. Preserve each oracle's contract.
+    if verifier != "verify.py":
+        command.append("--negative-controls")
+    return command
+
+
 def capture_binding_matches(document, binding):
     return all(document.get(field) == binding[field] for field in (
         "runtimeVersion", "runtimeFrameworkSHA256"
@@ -317,8 +327,7 @@ def main():
         if not capture_binding_matches(document, binding) or document.get("candidateBindingSHA256") != digest(binding_path) or document.get("mode") != mode or not source_binding_matches(document, working):
             raise ValueError("Observation belongs to different candidate or lacks lifecycle/document proof")
         if verifier:
-            code, log = run(["node" if verifier.endswith(".mjs") else sys.executable,
-                str(vector / verifier), str(observation), "--negative-controls"], name + "-verify")
+            code, log = run(verifier_command(vector, verifier, observation), name + "-verify")
             lines = log.read_text().splitlines()
             reports = []
             for line in lines:
