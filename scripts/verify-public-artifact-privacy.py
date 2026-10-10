@@ -157,7 +157,10 @@ SAFE_SECRET_MARKERS = {
     "null",
     "redacted",
 }
-MAX_TEXT_FILE_BYTES = 16 * 1024 * 1024
+# The authenticated M156 origin-proof projection is 25 MiB. Scan its complete
+# UTF-8/JSON content under a bounded 32 MiB ceiling; never skip large receipts.
+# The aggregate 128 MiB text limit and all secret checks remain independent.
+MAX_TEXT_FILE_BYTES = 32 * 1024 * 1024
 MAX_BINARY_FILE_BYTES = 64 * 1024 * 1024
 MAX_PACKAGED_BINARY_FILE_BYTES = 512 * 1024 * 1024
 MAX_TOTAL_TEXT_BYTES = 128 * 1024 * 1024

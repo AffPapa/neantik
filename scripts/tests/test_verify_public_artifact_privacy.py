@@ -35,6 +35,16 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
+    def test_large_text_is_scanned_completely_and_still_bounded(self) -> None:
+        prefix = b" " * (20 * 1024 * 1024)
+        clean = MODULE.ArtifactEntry(name="projection.json", payload=prefix + b'{"schemaVersion":1}')
+        self.assertEqual(MODULE.inspect_entry(clean), [])
+        secret = MODULE.ArtifactEntry(name="projection.json", payload=prefix + b'{"proxyPassword":"late-fixture-secret"}')
+        self.assertTrue(MODULE.inspect_entry(secret))
+        oversized = MODULE.ArtifactEntry(name="projection.json", payload=b" " * (MODULE.MAX_TEXT_FILE_BYTES + 1))
+        with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+            MODULE.inspect_entry(oversized)
+
     def test_compiled_help_examples_pass_existing_binary_privacy_rules(self) -> None:
         # Help strings ship in the executable. Apply the same opaque-binary
         # scanner here, so illustrative credentials cannot block packaging.
