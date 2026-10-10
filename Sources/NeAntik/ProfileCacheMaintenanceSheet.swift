@@ -46,14 +46,17 @@ struct ProfileCacheMaintenanceSheet: View {
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Divider()
             HStack {
-                if busy { Button("Отменить") { task?.cancel() } }
+                if busy {
+                    Button("Отменить") { task?.cancel() }
+                        .help("До удаления операция отменяется. Если удаление уже началось, дождись результата: уже удалённый кэш не восстанавливается.")
+                }
                 if recoveryAvailable {
                     Button("Вернуть оставшийся кэш") { perform(clear: false, recover: true) }
                         .disabled(busy)
                         .help("Проверяется журнал незавершённой операции. Уже удалённые байты не восстанавливаются; данные сайтов не меняются.")
                 }
                 Spacer()
-                Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
                 if !completed {
                     Button("Очистить кэш") { perform(clear: true) }
                         .disabled(busy || estimate == nil || estimate?.files == 0)
@@ -63,6 +66,7 @@ struct ProfileCacheMaintenanceSheet: View {
         }
         .padding(24).frame(minWidth: 480, idealWidth: 560, maxWidth: 680)
         .task { perform(clear: false) }
+        .interactiveDismissDisabled(busy)
         .onDisappear { requestID = nil; task?.cancel() }
     }
 

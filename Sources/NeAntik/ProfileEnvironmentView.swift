@@ -11,6 +11,7 @@ struct ProfileEnvironmentView: View {
     let hasProxy: Bool
     let canRunFingerprintAudit: Bool
     let onRunFingerprintAudit: () -> Void
+    var now: Date = .now
 
     var body: some View {
         GroupBox {
@@ -19,12 +20,7 @@ struct ProfileEnvironmentView: View {
 
                 if let compatibility = snapshot.siteCompatibility {
                     Divider().padding(.vertical, 8)
-                    TimelineView(.periodic(from: .now, by: 60)) { context in
-                        compatibilitySummary(
-                            compatibility,
-                            now: context.date
-                        )
-                    }
+                    compatibilitySummary(compatibility, now: now)
                 }
 
                 Divider()
@@ -505,7 +501,7 @@ private struct EnvironmentCriticalFindingSummary: View {
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            "\(DiagnosticSeverityPresentation.title(for: field.severity)). " +
+            "\(EnvironmentFieldPresentation.title(for: field)). " +
                 "\(field.title): \(field.value)"
         )
     }
@@ -665,7 +661,7 @@ private struct EnvironmentFieldRow: View {
             field.title,
             field.value,
             field.state.title,
-            DiagnosticSeverityPresentation.title(for: field.severity),
+            EnvironmentFieldPresentation.title(for: field),
         ]
         if let detail = field.detail {
             parts.append(detail)
@@ -684,9 +680,7 @@ private struct EnvironmentFieldStatus: View {
 
     var body: some View {
         Label(
-            field.severity == .neutral
-                ? field.state.title
-                : DiagnosticSeverityPresentation.title(for: field.severity),
+            EnvironmentFieldPresentation.title(for: field),
             systemImage: field.severity == .neutral
                 ? EvidenceBadgePresentation.systemImage(for: field.state)
                 : DiagnosticSeverityPresentation.systemImage(for: field.severity)
@@ -703,7 +697,7 @@ private struct EnvironmentFieldStatus: View {
     private var statusHelp: String {
         var parts = [
             "Источник: \(field.state.title.lowercased())",
-            "Результат: \(DiagnosticSeverityPresentation.title(for: field.severity).lowercased())",
+            "Результат: \(EnvironmentFieldPresentation.title(for: field).lowercased())",
         ]
         if let observedAt = field.observedAt {
             parts.append("Измерено \(observedAt.neAntikDisplayDateTime)")
@@ -1086,5 +1080,15 @@ enum DiagnosticSeverityPresentation {
         case .attention: .orange
         case .failure, .blocking: .red
         }
+    }
+}
+
+/// A configured or calculated value must not claim independent observation.
+enum EnvironmentFieldPresentation {
+    static func title(for field: EnvironmentDiagnosticField) -> String {
+        if field.severity == .neutral || (field.severity == .success && field.state != .observed) {
+            return field.state.title
+        }
+        return DiagnosticSeverityPresentation.title(for: field.severity)
     }
 }

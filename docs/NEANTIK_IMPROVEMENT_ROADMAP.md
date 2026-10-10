@@ -1,4 +1,4 @@
-> Current public release: 0.7.25/build88 public alpha, unchanged qualified M156.0.8078.12. GitHub ZIP/DMG and browser.free version123 published; signing/notarization/stapling/Gatekeeper, hosted bytes and fresh published-app headed gates passed. Major1.0 qualification remains open. affpapa publication is limited by unavailable restricted deploy credential.
+> Current public release: 0.7.26/build89 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.26.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
 
 # NeAntik: roadmap улучшений
 

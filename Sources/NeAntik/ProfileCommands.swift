@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileCommandPresentation: Equatable, Sendable {
     let profileName: String?
+    var openTitle = "Показать в менеджере"
     let launchTitle: String
     let launchSystemImage: String
     let launchHelp: String
@@ -29,6 +30,10 @@ struct ProfileCommandPresentation: Equatable, Sendable {
         deleteIsEnabled: false
     )
 
+    static func openTitle(for state: BrowserProfileProcessState) -> String {
+        state == .stopped ? "Запустить профиль" : "Показать в менеджере"
+    }
+
     static func resolve(
         profile: BrowserProfile,
         processState: BrowserProfileProcessState,
@@ -36,6 +41,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     ) -> Self {
         ProfileCommandPresentation(
             profileName: profile.name,
+            openTitle: openTitle(for: processState),
             launchTitle: launchAction.title,
             launchSystemImage: launchAction.systemImage,
             launchHelp: launchAction.help,
@@ -353,7 +359,7 @@ struct ProfileCommandMenu: Commands {
 
     var body: some Commands {
         CommandMenu("Профиль") {
-            Button("Открыть / показать профиль", action: resolved.openOrShow)
+            Button(resolved.presentation.openTitle, action: resolved.openOrShow)
                 .disabled(!resolved.hasProfile)
 
             Button(

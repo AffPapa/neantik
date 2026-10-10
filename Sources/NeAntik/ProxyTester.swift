@@ -142,6 +142,7 @@ struct ProxyTester: Sendable {
         observedAt: @Sendable () -> Date = { Date() },
         runProcess: ProcessRunner = ProxyTester.runCancellableProcess
     ) async throws -> ProxyTestObservation {
+        try Task.checkCancellation()
         guard configuration.isValid else {
             throw ProxyProbeError(outcome: .invalidConfiguration)
         }
@@ -159,11 +160,13 @@ struct ProxyTester: Sendable {
         let inputData = Data(config.utf8)
         config.removeAll(keepingCapacity: false)
         do {
-            return try await crossCheckedProbe(
+            let observation = try await crossCheckedProbe(
                 inputData: inputData,
                 observedAt: observedAt,
                 runProcess: runProcess
             )
+            try Task.checkCancellation()
+            return observation
         } catch is CancellationError {
             throw CancellationError()
         } catch let error as ProxyProbeError {
@@ -176,6 +179,7 @@ struct ProxyTester: Sendable {
                 throw error
             }
         }
+        try Task.checkCancellation()
         let result: ProxyProcessResult
         do {
             result = try await runProcess(
@@ -189,6 +193,7 @@ struct ProxyTester: Sendable {
         } catch {
             throw ProxyProbeError(outcome: .internalFailure)
         }
+        try Task.checkCancellation()
         guard !result.outputExceeded else {
             throw ProxyProbeError(outcome: .invalidResponse)
         }
@@ -200,6 +205,7 @@ struct ProxyTester: Sendable {
 
         do {
             let parsed = try Self.parseProbeOutput(result.output)
+            try Task.checkCancellation()
             return ProxyTestObservation(
                 observedAt: observedAt(),
                 responseTimeMilliseconds: parsed.responseTimeMilliseconds,
@@ -220,6 +226,7 @@ struct ProxyTester: Sendable {
         var responses: [Data] = []
         var responseTime = 0
         for (service, url) in Self.crossCheckURLs.enumerated() {
+            try Task.checkCancellation()
             let arguments = Self.curlArguments.dropLast() + [url]
             let process: ProxyProcessResult
             do {
@@ -234,6 +241,7 @@ struct ProxyTester: Sendable {
             } catch {
                 throw ProxyProbeError(outcome: .internalFailure)
             }
+            try Task.checkCancellation()
             guard !process.outputExceeded else {
                 throw ProxyProbeError(outcome: .invalidResponse)
             }
@@ -252,6 +260,7 @@ struct ProxyTester: Sendable {
                 throw ProxyProbeError(outcome: .invalidResponse)
             }
         }
+        try Task.checkCancellation()
         guard responses.count == 2 else {
             throw ProxyProbeError(outcome: .internalFailure)
         }

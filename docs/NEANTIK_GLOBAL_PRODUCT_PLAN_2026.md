@@ -1,4 +1,4 @@
-> Current0.7.24/build87 is an unpublished source/Dev candidate. Fresh official Stable155.0.8059.39/.40 blocks public packaging with unchanged154.0.8037.98; no notarized0.7.24 assets or new download links. Immutable0.7.23 retained. See GLOBAL_RECHECK_0724.md.
+> Current public release: 0.7.26/build89 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.26.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
 
 # NeAntik — глобальный план продукта и следующего цикла
 

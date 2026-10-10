@@ -27,9 +27,9 @@ enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
         case .invalidConfiguration:
             "Проверь тип, адрес и порт прокси."
         case .nameResolutionFailed:
-            "Не удалось найти адрес прокси."
+            "Не удалось разрешить адрес прокси или сервиса проверки. Проверь адрес прокси и доступность DNS."
         case .timedOut:
-            "Прокси не ответил за 12 секунд."
+            "Время проверки истекло. Ответ не получен от прокси или сервиса проверки; повтори проверку позже."
         case .connectionFailed:
             "Соединение с прокси не установлено."
         case .authenticationRejected:

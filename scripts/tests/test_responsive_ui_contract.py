@@ -406,7 +406,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             detail_start,
         )
         detail_content_end = content.index(
-            "private var networkSummary: some View",
+            "private func networkSummary(summary: ProxyCheckSummary?) -> some View",
             detail_content_start,
         )
         detail = content[detail_content_start:detail_content_end]

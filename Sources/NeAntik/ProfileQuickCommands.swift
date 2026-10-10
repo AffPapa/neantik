@@ -10,6 +10,7 @@ struct ProfileQuickCommand: Identifiable {
     let action: () -> Void
     var openAction: (() -> Void)? = nil
     var openEnabled: Bool = false
+    var openTitle: String = "Запустить профиль"
 }
 
 struct ProfileQuickCommandsSheet: View {
@@ -48,10 +49,10 @@ struct ProfileQuickCommandsSheet: View {
     }
 
     private var openProfileButton: some View {
-        Button("Открыть / показать профиль", action: openSelectedProfile)
+        Button(selected?.openTitle ?? "Запустить профиль", action: openSelectedProfile)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(selected?.openEnabled != true)
-            .help("⌘Return — открыть остановленный профиль или показать работающий; Return — только выбрать в менеджере")
+            .help("⌘Return — запустить остановленный профиль или выбрать его в менеджере; Return — только выбрать в менеджере")
     }
 
     private func moveSelection(by offset: Int) {

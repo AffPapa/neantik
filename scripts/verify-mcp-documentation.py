@@ -36,7 +36,26 @@ def verify(root: Path = ROOT) -> dict:
         raise ValueError('Product MCP permission counts differ from native catalog')
     if 'secret access or write API' in product:
         raise ValueError('Product still excludes supported MCP management')
+    verify_current_product_claims(root)
     return expected
+
+
+def verify_current_product_claims(root: Path) -> None:
+    reports = [json.loads(path.read_text()) for path in (root / 'releases').glob('v*.json')]
+    if not reports:
+        raise ValueError('Published release evidence is missing')
+    latest = max(reports, key=lambda item: tuple(int(v) for v in item['version'].split('.')))
+    for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md'):
+        header = (root / 'docs' / filename).read_text().splitlines()[0]
+        if (f"Current public release: {latest['version']}/build{latest['build']}" not in header
+                or latest['runtime']['chromiumVersion'] not in header
+                or f"releases/{latest['tag']}.json" not in header):
+            raise ValueError('Current roadmap release claim differs from published evidence')
+    help_text = (root / 'Sources/NeAntik/HelpContent.swift').read_text()
+    if 'прокси с авторизацией требует собственного пароля' in help_text:
+        raise ValueError('Help incorrectly claims templates copy proxy configuration')
+    if 'работающие профили закрывать не нужно' not in help_text:
+        raise ValueError('Help omits additive snapshot import semantics')
 
 
 if __name__ == '__main__':

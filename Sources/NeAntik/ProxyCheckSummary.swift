@@ -42,22 +42,16 @@ struct ProxyCheckSummary: Equatable, Sendable {
         self.checkedAt = attempt.checkedAt
         self.lastSuccessfulCheckAt = record.state.lastSuccess?.observedAt
 
-        let age = now.timeIntervalSince(attempt.checkedAt)
-        guard age >= -Self.toleratedFutureSkew else {
-            self.status = .clockUncertain
-            return
-        }
-        guard attempt.outcome == .succeeded else {
-            self.status = .latestCheckFailed
-            return
-        }
-        guard record.state.hasCompleteRouteContext else {
-            self.status = .incompleteContext
-            return
-        }
-        self.status = age <= Self.freshnessLifetime
-            ? .currentSuccess
-            : .staleSuccess
+        self.status = Self.status(for: record.state, now: now)
+    }
+
+    /// UI projections share one clock policy. No network or disk work is performed.
+    static func status(for state: ProxyHealthState, now: Date) -> Status {
+        let age = now.timeIntervalSince(state.latestAttempt.checkedAt)
+        guard age.isFinite, age >= -toleratedFutureSkew else { return .clockUncertain }
+        guard state.latestAttempt.outcome == .succeeded else { return .latestCheckFailed }
+        guard state.hasCompleteRouteContext else { return .incompleteContext }
+        return age <= freshnessLifetime ? .currentSuccess : .staleSuccess
     }
 
     var title: String {

@@ -491,7 +491,7 @@ struct ContentView: View {
             )
     }
 
-    private var selectedEnvironmentSnapshot: ProfileEnvironmentSnapshot? {
+    private func selectedEnvironmentSnapshot(now: Date) -> ProfileEnvironmentSnapshot? {
         guard let selectedProfile else { return nil }
         return WorkspaceDomain.environmentSnapshot(
             profile: selectedProfile,
@@ -505,17 +505,19 @@ struct ContentView: View {
                 ),
             siteCompatibility: siteCompatibilityByProfileID[
                 selectedProfile.id
-            ]
+            ],
+            now: now
         )
     }
 
-    private var selectedProxyCheckSummary: ProxyCheckSummary? {
+    private func selectedProxyCheckSummary(now: Date) -> ProxyCheckSummary? {
         guard let profile = selectedProfile, profile.proxy != nil else {
             return nil
         }
         return ProxyCheckSummary(
             record: proxyHealthCoordinator.healthByProfileID[profile.id],
-            currentIdentity: ProxyHealthIdentity(profile: profile)
+            currentIdentity: ProxyHealthIdentity(profile: profile),
+            now: now
         )
     }
 
@@ -1501,7 +1503,8 @@ struct ContentView: View {
                 revealSavedProfile(current)
             },
             openAction: { openOrShowProfile(profile.id) },
-            openEnabled: presentedProcessState(for: profile) != .stopped || profileCommandSet(for: profile).presentation.launchIsEnabled
+            openEnabled: presentedProcessState(for: profile) != .stopped || profileCommandSet(for: profile).presentation.launchIsEnabled,
+            openTitle: ProfileCommandPresentation.openTitle(for: presentedProcessState(for: profile))
         )
     }
 
@@ -1755,26 +1758,14 @@ struct ContentView: View {
 
     private func restoreLocalSnapshot() {
         guard !isRestoringLocalSnapshot else { return }
-        guard processes.runningProfileIDs.isEmpty else {
-            localError = "Сначала останови все профили, потом восстанавливай snapshot."
-            return
-        }
         isRestoringLocalSnapshot = true
         runBackgroundFileOperation {
             defer { isRestoringLocalSnapshot = false }
             do {
                 try Task.checkCancellation()
-                guard let url = try ProfileSnapshotFileCoordinator.chooseSnapshot(
-                    paths: store.paths
-                ) else { return }
-                let prepared = try await ProfileSnapshotFileService
-                    .prepareRestore(from: url, paths: store.paths)
+                guard let url = try ProfileSnapshotFileCoordinator.chooseSnapshot(paths: store.paths) else { return }
+                let prepared = try await ProfileSnapshotFileService.prepareRestore(from: url, paths: store.paths)
                 try Task.checkCancellation()
-                guard processes.runningProfileIDs.isEmpty else {
-                    localError =
-                        "Восстановление отменено: сначала закрой все профили."
-                    return
-                }
                 pendingSnapshotRestore = SnapshotRestoreRequest(payload: prepared)
             } catch is CancellationError {
                 return
@@ -1788,19 +1779,9 @@ struct ContentView: View {
         _ prepared: ProfileSnapshotRestorePayload
     ) {
         guard !isRestoringLocalSnapshot else { return }
-        guard processes.runningProfileIDs.isEmpty else {
-            pendingSnapshotRestore = nil
-            localError = "Восстановление отменено: сначала закрой все профили."
-            return
-        }
         isRestoringLocalSnapshot = true
         runBackgroundFileOperation {
             defer { isRestoringLocalSnapshot = false }
-            guard processes.runningProfileIDs.isEmpty else {
-                pendingSnapshotRestore = nil
-                localError = "Восстановление отменено: сначала закрой все профили."
-                return
-            }
             do {
                 let saved = try await store.insertImportedProfilesOffMainActor(
                     prepared.profiles,
@@ -1811,7 +1792,7 @@ struct ContentView: View {
                     revealSavedProfile(first)
                 }
                 showWorkspaceSuccessNotice(
-                    "Восстановлено профилей: \(saved.count), с новыми identity."
+                    "Создано профилей из снимка: \(saved.count), с отдельными данными и новой конфигурацией среды."
                 )
             } catch {
                 pendingSnapshotRestore = nil
@@ -3063,8 +3044,11 @@ struct ContentView: View {
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
-                environmentSnapshot: selectedEnvironmentSnapshot,
-                proxyCheckSummary: selectedProxyCheckSummary,
+                environmentSnapshot: selectedEnvironmentSnapshot(now: .now),
+                proxyCheckSummary: selectedProxyCheckSummary(now: .now),
+                diagnosticProjection: { date in
+                    (selectedEnvironmentSnapshot(now: date), selectedProxyCheckSummary(now: date))
+                },
                 isTestingProxy: isProxyTestInFlight(profileID: profile.id),
                 canCancelProxyTest:
                     proxyTestingProfileIDs.contains(profile.id) ||
@@ -4050,6 +4034,8 @@ struct ProfileDetailView: View {
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var proxyCheckSummary: ProxyCheckSummary? = nil
+    // Only cached, in-memory diagnostic values are refreshed by the clock.
+    var diagnosticProjection: (@MainActor (Date) -> (ProfileEnvironmentSnapshot?, ProxyCheckSummary?))? = nil
     var isTestingProxy: Bool = false
     var canCancelProxyTest: Bool = false
     var canRunFingerprintAudit: Bool = false
@@ -4100,23 +4086,25 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            GroupBox {
-                networkSummary
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
-            } label: {
-                Label("Подключение", systemImage: "network")
-                    .font(.headline)
-            }
-
-            if let environmentSnapshot {
-                ProfileEnvironmentView(
-                    snapshot: environmentSnapshot,
-                    hasProxy: profile.proxy != nil,
-                    canRunFingerprintAudit: canRunFingerprintAudit,
-                    onRunFingerprintAudit: onRunFingerprintAudit
-                )
-                .id(environmentSnapshot.profileID)
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                let projection = diagnosticProjection?(context.date) ?? (environmentSnapshot, proxyCheckSummary)
+                GroupBox {
+                    networkSummary(summary: projection.1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                } label: {
+                    Label("Подключение", systemImage: "network").font(.headline)
+                }
+                if let snapshot = projection.0 {
+                    ProfileEnvironmentView(
+                        snapshot: snapshot,
+                        hasProxy: profile.proxy != nil,
+                        canRunFingerprintAudit: canRunFingerprintAudit,
+                        onRunFingerprintAudit: onRunFingerprintAudit,
+                        now: context.date
+                    )
+                    .id(snapshot.profileID)
+                }
             }
 
             GroupBox("Основное") {
@@ -4256,7 +4244,7 @@ struct ProfileDetailView: View {
         )
     }
 
-    private var networkSummary: some View {
+    private func networkSummary(summary: ProxyCheckSummary?) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if let proxy = profile.proxy {
                 Label {
@@ -4279,8 +4267,8 @@ struct ProfileDetailView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-                if let proxyCheckSummary {
-                    ProxyCheckSummaryView(summary: proxyCheckSummary)
+                if let summary {
+                    ProxyCheckSummaryView(summary: summary)
                 }
 
                 ViewThatFits(in: .horizontal) {
