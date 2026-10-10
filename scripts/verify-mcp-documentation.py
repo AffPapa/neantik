@@ -2,6 +2,7 @@
 """Keep public MCP capabilities tied to the actual native tool catalog."""
 from __future__ import annotations
 import json
+import plistlib
 import re
 from pathlib import Path
 
@@ -51,6 +52,10 @@ def verify_current_product_claims(root: Path) -> None:
                 or latest['runtime']['chromiumVersion'] not in header
                 or f"releases/{latest['tag']}.json" not in header):
             raise ValueError('Current roadmap release claim differs from published evidence')
+    info = plistlib.loads((root / 'Resources/Info.plist').read_bytes())
+    heading = f"## Direct {info['CFBundleShortVersionString']} ({info['CFBundleVersion']})"
+    if heading not in (root / 'CHANGELOG.md').read_text():
+        raise ValueError('Current app version has no release changelog entry')
     help_text = (root / 'Sources/NeAntik/HelpContent.swift').read_text()
     if 'прокси с авторизацией требует собственного пароля' in help_text:
         raise ValueError('Help incorrectly claims templates copy proxy configuration')

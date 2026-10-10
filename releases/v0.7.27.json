@@ -65,7 +65,7 @@
   "siteDeploymentStatus": "succeeded",
   "siteUrl": "https://browser.free",
   "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.27",
-  "affpapa": "unchanged: restricted deploy credential unavailable; validated six-file package prepared",
+  "affpapa": "unchanged: restricted credential unavailable; pinned build source f9b390e has no Direct0.7.27 CHANGELOG stanza, six-file snapshot rejected; no alternate transport or tag/asset replacement",
   "rollbackRelease": "v0.7.26",
   "candidateManifestSHA256": "98f92b0295f088e0857a93669ba3e9c43a0c1727f82d4a8b21c75801df42a6c2",
   "candidateSourceBindingSHA256": "447094f69df3f8c32320b37778918122ba5c87c4a176a7ada5894c9a21d1df04",
