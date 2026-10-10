@@ -21,7 +21,7 @@ struct MCPInteroperabilityTests {
         #expect(discover["resultType"] as? String == "complete")
         #expect((discover["supportedVersions"] as? [String])?.contains("2026-07-28") == true)
         let list = try await request(session, "tools/list", modern: true)["result"] as! [String: Any]
-        #expect((list["tools"] as? [[String: Any]])?.count == 6)
+        #expect((list["tools"] as? [[String: Any]])?.count == 7)
         #expect(list["cacheScope"] as? String == "private")
         #expect(try await request(session, "tools/list")["error"] != nil)
         #expect(!FileManager.default.fileExists(atPath: root.path))

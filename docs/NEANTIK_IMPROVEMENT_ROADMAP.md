@@ -1,8 +1,8 @@
-> Current0.7.24/build87 is an unpublished source/Dev candidate. Fresh official Stable155.0.8059.39/.40 blocks public packaging with unchanged154.0.8037.98; no notarized0.7.24 assets or new download links. Immutable0.7.23 retained. See GLOBAL_RECHECK_0724.md.
+> Current public release: 0.7.24/build87 public alpha, qualified M156.0.8078.12; GitHub immutable ZIP/DMG published. Next 0.7.25/build88 is a development candidate until its own Direct gates pass. Major1.0 qualification remains open.
 
 # NeAntik: roadmap улучшений
 
-## Current bounded recheck0.7.24/87
+## Historical bounded recheck0.7.24/87 before M156 packaging
 
 Storage refresh, bounded metadata contention, IP failure/fallback validation, complete streaming privacy scan, CI coverage and MCP workspace/help clarity. Fresh evidence and deferred hypotheses: [GLOBAL_RECHECK_0724.md](GLOBAL_RECHECK_0724.md). Public release gates recorded separately; qualified Chromium154.0.8037.98 unchanged.
 
@@ -16,7 +16,7 @@ Modern + legacy stdio, strict initialization/cancellation, bounded folder catalo
 теги/архив/закрепление, duplicate с новой идентичностью, штатный launch/stop/status.
 Проверены locked revisions и rollback, живой stdio, GUI refresh с сохранением
 черновика, синтетические cookies/localStorage/IndexedDB и cancellation/EOF.
-Режим чтения остаётся default; управление выбирается в справке. Полный контракт:
+Исторически режим чтения был default; новые настройки подключения включают управление, а просмотр доступен отдельно. Полный контракт:
 [MCP_GUIDE.md](MCP_GUIDE.md), результаты и границы: [MCP_MANAGEMENT_0722.md](MCP_MANAGEMENT_0722.md).
 Публикация определяется release manifests/API, а не этой отметкой реализации.
 

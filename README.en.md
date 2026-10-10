@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The unpublished manager candidate in this branch is NeAntik `0.7.24` (build `87`).
+Next candidate: NeAntik `0.7.25 (88)` — development preview until its own Direct gates pass. Latest published release: [0.7.24/87 public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.24).
 
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `154.0.8037.98`, ARM64, Metal;
-- current public ZIP/DMG assets and SHA-256 values are listed in [release 0.7.23](https://github.com/AffPapa/neantik/releases/tag/v0.7.23).
+- Chromium `156.0.8078.12`, ARM64, Metal;
+- signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.24` repairs folder refresh, bounds metadata guard waits and validates IP-service responses using the same qualified Chromium. Keep `0.7.23` for rollback. Safe Browsing remains disabled in this distribution. New packaging is blocked by the security gate: official macOS Stable on October6 is `155.0.8059.39/.40`, above the unchanged qualified runtime `154.0.8037.98`.
+`0.7.25` adds saved-template reuse through MCP, fixes proxy cancellation and external-launch status, strengthens complete Git-history checks and clarifies help. The runtime is retained without rebuilding. Safe Browsing is disabled; full production hardware-cohort qualification and major1.0 remain open. Keep immutable `0.7.24` for rollback. Metadata snapshots are not BrowserData backups.
 
 Direct downloads: [browser.free](https://browser.free).
 

@@ -1033,6 +1033,9 @@ struct ContentView: View {
             normalizeSelection(preferred: preferredProfileSelection)
         }
         .onChange(of: store.profileListRevision) { _, _ in
+            if NSApplication.shared.isActive {
+                processes.refreshAfterExternalMetadataChange(profiles: store.profiles)
+            }
             if let selectedProfileTag,
                currentProfileListIndex.displayName(for: selectedProfileTag)
                     == nil

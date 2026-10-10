@@ -3,6 +3,57 @@ import Testing
 @testable import NeAntik
 
 struct ProxyHealthTests {
+    @MainActor
+    @Test(arguments: [false, true])
+    func proxyCommitRejectsCancellationDuringMetadataRefresh(failedProbe: Bool) async throws {
+        try await checkSuspendedProxyCommit(failedProbe: failedProbe, cancel: true)
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func proxyCommitRejectsCredentialsChangedDuringMetadataRefresh(failedProbe: Bool) async throws {
+        try await checkSuspendedProxyCommit(failedProbe: failedProbe, cancel: false)
+    }
+
+    @MainActor
+    private func checkSuspendedProxyCommit(failedProbe: Bool, cancel: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("proxy-commit-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let backend = MCPProfileManagementTests.Backend()
+        let keychain = KeychainStore(backend: backend, service: "synthetic-commit", legacyService: nil)
+        let proxy = ProxyConfiguration(kind: .http, host: "example.invalid", port: 8080, username: "fixture")
+        let saved = try store.upsert(BrowserProfile(name: "Fixture", proxy: proxy))
+        try await store.refreshExternalMetadata(force: true)
+        let profile = try #require(store.profile(withID: saved.id))
+        try keychain.saveProxyPassword("synthetic-original", profileID: profile.id)
+        let before = try Data(contentsOf: paths.profilesFile)
+        let gate = ProxyCommitRefreshGate()
+        var invalidated = false
+        let operations = ProfileProxyOperations(store: store, keychain: keychain,
+            invalidateObservation: { _ in invalidated = true },
+            probe: { _, _ in
+                if failedProbe { throw ProxyProbeError(outcome: .timedOut) }
+                return ProxyTestObservation(observedAt: Date(), responseTimeMilliseconds: 10,
+                    result: ProxyTestResult(ipAddress: "203.0.113.9", city: nil, countryName: "Germany", countryCode: "DE", timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE"))
+            }, refreshMetadata: { currentStore in
+                await withCheckedContinuation { gate.continuation = $0 }
+                try await currentStore.refreshExternalMetadata(force: true)
+            })
+        let task = Task { try await operations.commit(profileID: profile.id, expectedProxy: proxy,
+            expectedRevision: profile.revision, previous: nil, commitsLaunchContext: true) }
+        while gate.continuation == nil { await Task.yield() }
+        if cancel { task.cancel() }
+        else { try keychain.saveProxyPassword("synthetic-replacement", profileID: profile.id) }
+        gate.continuation?.resume()
+        do { _ = try await task.value; Issue.record("Stale/cancelled observation was committed") }
+        catch is CancellationError {}
+        #expect(store.profile(withID: profile.id) == profile)
+        #expect(try Data(contentsOf: paths.profilesFile) == before)
+        #expect(!invalidated)
+        #expect(!FileManager.default.fileExists(atPath: paths.proxyHealthFile.path))
+    }
     @Test
     func successKeepsOnlyCoarsePersistableObservation() throws {
         let observedAt = Date(timeIntervalSince1970: 1_800_000_000)
@@ -773,4 +824,9 @@ private func expectProxyHealthCancellation(
     case let .failure(error):
         #expect(error is CancellationError)
     }
+}
+
+@MainActor
+private final class ProxyCommitRefreshGate {
+    var continuation: CheckedContinuation<Void, Never>?
 }

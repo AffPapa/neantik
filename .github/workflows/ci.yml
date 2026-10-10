@@ -136,6 +136,8 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract
@@ -156,6 +158,8 @@ jobs:
         run: python3 scripts/verify-open-source-tree.py
       - name: Reachable Git history secret audit
         run: python3 scripts/audit-git-history-secrets.py
+      - name: MCP public capability documentation
+        run: python3 scripts/verify-mcp-documentation.py
       - name: Public workflow dependency closure
         run: python3 scripts/verify-public-workflow-references.py
       - name: Authenticated fingerprint evidence contract

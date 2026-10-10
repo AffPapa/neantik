@@ -42,6 +42,7 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 |---|---|
 | `workspace_list_profiles` | Small allowlisted list; processState remains unverified |
 | `workspace_list_profiles_page` | Pages of 1–100 profiles, default 50; pass nextCursor unchanged; restart on workspace change |
+| `template_list` | Read up to 50 saved templates: id/name/startURL/tags/resolved folderID and organizationRevision; no identity, notes, proxy or BrowserData |
 | `profile_get` | Current decimal-string revision, name, startURL, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
 | `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
 | `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
@@ -152,3 +153,9 @@ Passwords are accepted as write-only input and stored in Keychain. The selected 
 | Cursor invalid | Restart pagination without cursor |
 | Proxy preparation failed | Check provider protocol/port; run availability check; no direct fallback |
 | Request queue full | Wait for pending operations before retry |
+
+## Saved templates — 0.7.25
+
+Save a template in NeAntik first. Ask the client to call `template_list`, choose its UUID, then call `profile_create` with an explicit name, `templateID` and the returned `expectedOrganizationRevision` (including explicit null). `changes` and `folderID` override template metadata; an absent old folder resolves to unfiled. A stale organization revision rejects the whole creation. An absent/corrupt template rejects creation without profile writes. Each successful call creates fresh identity; it does not copy cookies, notes, credentials or BrowserData and never starts the browser. Total toolset: 18 management / 7 read tools. Creation is not idempotent: inspect uncertain outcomes before retrying.
+
+Example request: “Покажи сохранённые шаблоны. По выбранному мной ID создай профиль QA со страницей https://example.com. Не запускай.”

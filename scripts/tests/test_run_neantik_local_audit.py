@@ -29,6 +29,15 @@ class LocalAuditTests(unittest.TestCase):
         self.assertEqual(check["status"], "failed")
         self.assertEqual(check["exitCode"], 3)
 
+    def test_unqualified_cohort_is_a_release_blocker_not_a_crash(self):
+        check = MODULE.run_check(
+            "baseline",
+            [sys.executable, "-c", "print('Public Direct release blocked: coherent Apple device tuples are not verified'); raise SystemExit(1)"],
+            expected_blocker="Public Direct release blocked:",
+        )
+        self.assertEqual(check["status"], "blocked")
+        self.assertEqual(check["exitCode"], 1)
+
     def test_local_audit_keeps_release_blocked(self):
         report = MODULE.run_audit()
         self.assertEqual(report["schemaVersion"], 1)

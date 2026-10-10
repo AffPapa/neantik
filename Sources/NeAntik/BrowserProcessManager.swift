@@ -690,7 +690,15 @@ final class BrowserProcessManager: ObservableObject {
         self.now = now
     }
 
-    func reconcile(profiles: [BrowserProfile]) {
+    /// A supported external launch changes metadata. Observe that change without
+    /// briefly presenting every unrelated stopped profile as checking/running.
+    /// Unchanged payloads (including folder-only changes) need no process scan.
+    func refreshAfterExternalMetadataChange(profiles: [BrowserProfile]) {
+        guard passiveObservationsEnabled, profiles != lastReconciledProfiles else { return }
+        reconcile(profiles: profiles, preservesKnownStates: true)
+    }
+
+    func reconcile(profiles: [BrowserProfile], preservesKnownStates: Bool = false) {
         lastReconciledProfiles = profiles
         if profiles.isEmpty {
             reconcileGeneration &+= 1
@@ -718,8 +726,10 @@ final class BrowserProcessManager: ObservableObject {
         passiveObservationsEnabled = true
         cancelPassiveObservationTasks()
         let profileIDs = Set(profiles.map(\.id))
-        pendingReconciliationProfileIDs.formUnion(profileIDs)
-        runningProfileIDs.formUnion(profileIDs)
+        if !preservesKnownStates {
+            pendingReconciliationProfileIDs.formUnion(profileIDs)
+            runningProfileIDs.formUnion(profileIDs)
+        }
         if reconcileTask != nil {
             queuedReconcile = QueuedBrowserReconcile(
                 profiles: profiles,

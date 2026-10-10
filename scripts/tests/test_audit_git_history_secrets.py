@@ -51,6 +51,33 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             self.assertGreaterEqual(objects, 3)
             self.assertEqual(blobs, 1)
 
+    def test_shallow_clone_cannot_claim_complete_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            root = base / "source"
+            self.make_repo(root)
+            (root / "README.md").write_text("gh" + "p_" + "s" * 30)
+            self.commit_all(root, "synthetic historical secret")
+            (root / "README.md").write_text("clean tip")
+            self.commit_all(root, "remove synthetic secret")
+            clone = base / "shallow"
+            subprocess.run(["git", "clone", "-q", "--depth=1", root.as_uri(), str(clone)], check=True)
+            with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "shallow"):
+                MODULE.audit(clone)
+            with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "GitHub token"):
+                MODULE.audit(root)
+
+    def test_historical_forbidden_filename_survives_identical_blob_rename(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_repo(root)
+            (root / ".env").write_text("unrecognized-provider-fixture\n")
+            self.commit_all(root, "historical forbidden filename")
+            (root / ".env").rename(root / "README.md")
+            self.commit_all(root, "same bytes under allowed name")
+            with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "credential-bearing filename"):
+                MODULE.audit(root)
+
     def test_deleted_private_key_still_fails_without_printing_value(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

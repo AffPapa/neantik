@@ -24,7 +24,7 @@ final class MCPProfileManagement {
 
     enum Failure: Error { case invalid, conflict, unavailable, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
 
-    nonisolated static let readTools = ["profile_get", "folder_list", "profile_status", "workspace_query_profiles"]
+    nonisolated static let readTools = ["profile_get", "folder_list", "profile_status", "workspace_query_profiles", "template_list"]
     nonisolated static let writeTools = ["profile_create", "profile_update", "profile_set_proxy", "profile_move", "profile_duplicate", "folder_create", "folder_rename", "folder_remove", "profile_check_proxy", "profile_start", "profile_stop"]
     nonisolated static var allTools: [String] { ["workspace_list_profiles", "workspace_list_profiles_page"] + readTools + writeTools }
 
@@ -40,11 +40,12 @@ final class MCPProfileManagement {
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
             "port": ["type": "integer", "minimum": 1, "maximum": 65535], "username": text, "password": text]]
         let specs: [(String, String, [String: Any], [String])] = [
+            ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
             ("profile_get", "Read profile revision, start page and organization; proxy endpoint and credentials excluded; note excluded.", ["profileID": uuid], ["profileID"]),
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
-            ("profile_create", "Create a persistent profile without starting it. No automatic retry: a repeat creates another profile.", ["name": text, "changes": changes, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
+            ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. No automatic retry: a repeat creates another profile.", ["name": text, "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
             ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only; input may enter AI history. SOCKS5 authentication unsupported. Configuration is not a route test.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
@@ -83,6 +84,19 @@ final class MCPProfileManagement {
         }
         guard store.hasTrustedMetadata, lifecycleOnly || store.hasTrustedOrganization else { throw Failure.unavailable }
         try Task.checkCancellation()
+        if name == "template_list" {
+            let library = try await ManagerLibraryRepository(paths: store.paths).load()
+            try Task.checkCancellation()
+            try await store.refreshExternalMetadata(force: true)
+            try Task.checkCancellation()
+            return ["templates": library.templates.map { template -> [String: Any] in
+                ["id": template.id.uuidString, "name": template.name, "startURL": template.startURL,
+                 "tags": template.tags, "folderID": template.folderID.flatMap {
+                     store.organization.folder(withID: $0)?.id.uuidString
+                 } as Any? ?? NSNull()]
+            }, "count": library.templates.count,
+            "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull()]
+        }
         if name == "workspace_query_profiles" {
             let query = try MCPWorkspaceQuery(arguments: args)
             let profiles = store.profiles, organization = store.organization
@@ -113,11 +127,26 @@ final class MCPProfileManagement {
                     "folders": affected.map { [["id": $0.id.uuidString, "name": $0.name]] } ?? []]
         }
         if name == "profile_create" {
-            var profile = BrowserProfile(name: try string(args, "name"))
+            var template: UserProfileTemplate?
+            if args["templateID"] != nil {
+                let templateID = try id(args, "templateID")
+                let library = try await ManagerLibraryRepository(paths: store.paths).load()
+                try Task.checkCancellation()
+                guard let found = library.templates.first(where: { $0.id == templateID }),
+                      args["expectedOrganizationRevision"] != nil else { throw Failure.invalid }
+                template = found
+                try await store.refreshExternalMetadata(force: true)
+                try Task.checkCancellation()
+            }
+            let requestedName = try string(args, "name")
+            var profile = template?.makeProfile() ?? BrowserProfile(name: requestedName)
+            profile.name = requestedName
             try apply(args["changes"] as? [String: Any] ?? [:], to: &profile)
             try validate(profile)
             if let value = args["changes"], !(value is [String: Any]) { throw Failure.invalid }
-            let folder = try nullableID(args, "folderID", required: false)
+            let folder = args["folderID"] != nil ? try nullableID(args, "folderID") : template?.folderID.flatMap {
+                store.organization.folder(withID: $0)?.id
+            }
             let expected: UUID?? = args["expectedOrganizationRevision"] == nil ? nil : .some(try organizationRevision(args))
             if folder != nil && expected == nil { throw Failure.invalid }
             let saved = try store.upsert(profile, toFolderID: folder, expectedOrganizationRevision: expected)

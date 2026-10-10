@@ -84,8 +84,11 @@ Direct before the click; the full editor remains a secondary action.
   context is described as automatic, while observed failures expose one
   relevant action.
 - One immutable workspace projection and an allowlisted read-only DTO for the
-  native UI. An opt-in local MCP stdio mode lists safe profile metadata; it
-  has no listener, process control, secret access or write API.
+  native UI. An opt-in local MCP stdio mode provides 18 management tools (7 in
+  read mode), including saved-template reuse and owned browser lifecycle.
+  Generated connections enable management; legacy configurations retain read
+  permissions. No network listener, BrowserData or credential output, arbitrary
+  shell/JS execution, or page automation is provided. See MCP_GUIDE.md.
 
 ## Explicitly excluded
 
@@ -94,7 +97,8 @@ Direct before the click; the full editor remains a secondary action.
 - Cloud accounts and team sync.
 - Browser automation and RPA.
 - Network-accessible, automatically enabled or unauthenticated APIs.
-- API/MCP/SDK methods that launch browsers or mutate/delete profiles.
+- MCP profile deletion, arbitrary page automation, credential extraction and
+  adopting another session's browser for termination.
 - Mobile emulation.
 - Claims of being undetectable or anonymous against every service.
 - JavaScript-based fingerprint injection.

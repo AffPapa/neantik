@@ -6,6 +6,12 @@ struct ProfileProxyOperations {
     let store: ProfileStore
     let keychain: KeychainStore
     let invalidateObservation: (UUID) -> Void
+    var probe: (ProxyConfiguration, String) async throws -> ProxyTestObservation = { configuration, password in
+        try await ProxyTester().probe(configuration: configuration, password: password)
+    }
+    var refreshMetadata: (ProfileStore) async throws -> Void = { store in
+        try await store.refreshExternalMetadata(force: true)
+    }
 
     func commit(profileID: UUID, expectedProxy: ProxyConfiguration, expectedRevision: UInt64,
                 previous: ProxyHealthState?, commitsLaunchContext: Bool) async throws -> ProxyHealthTestCommit {
@@ -16,15 +22,15 @@ struct ProfileProxyOperations {
             profileID: profileID
         ) ?? ""
         do {
-            let observation = try await ProxyTester().probe(
-                configuration: expectedProxy,
-                password: password
-            )
+            let observation = try await probe(expectedProxy, password)
+            try Task.checkCancellation()
+            try await refreshMetadata(store)
+            // Refresh can suspend while cancellation or a credential edit is
+            // delivered. No context is durable yet: recheck both before writing.
             try Task.checkCancellation()
             let currentPassword = try keychain.proxyPassword(
                 profileID: profileID
             ) ?? ""
-            try await store.refreshExternalMetadata(force: true)
             guard let currentProfile = store.profile(withID: profileID),
                   ProxyTestCommitPolicy.matchesSnapshot(
                       expectedProxy: expectedProxy,
@@ -53,10 +59,11 @@ struct ProfileProxyOperations {
         } catch is CancellationError {
             throw CancellationError()
         } catch let error as ProxyProbeError {
+            try await refreshMetadata(store)
+            try Task.checkCancellation()
             let currentPassword = try keychain.proxyPassword(
                 profileID: profileID
             ) ?? ""
-            try await store.refreshExternalMetadata(force: true)
             guard let currentProfile = store.profile(withID: profileID),
                   ProxyTestCommitPolicy.matchesSnapshot(
                       expectedProxy: expectedProxy,

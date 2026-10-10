@@ -12,6 +12,12 @@ enum MCPOutputSchemas {
         let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "externalManualOnly", "externalUnverified", "recoveryRequired"]]
         let folder = object(["id": uuid, "name": text])
         let folders: [String: Any] = ["type": "array", "items": folder, "maxItems": 100]
+        if name == "template_list" {
+            return object(["templates": ["type": "array", "maxItems": ManagerLibraryDocument.maximumItems,
+                "items": object(["id": uuid, "name": text, "startURL": text,
+                    "tags": ["type": "array", "maxItems": 8, "items": text], "folderID": nullable])],
+                "count": count, "organizationRevision": nullable])
+        }
         if name == "folder_list" { return object(["organizationRevision": nullable, "folders": folders, "count": count, "totalCount": count, "nextCursor": nullable]) }
         if name.hasPrefix("folder_") { return object(["organizationRevision": nullable, "folders": ["type": "array", "items": folder, "maxItems": 1], "affectedFolderID": uuid]) }
         if name == "workspace_query_profiles" {

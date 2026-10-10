@@ -94,8 +94,24 @@ def read_batch_header(stream: object) -> tuple[str, str, int]:
 
 def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
     repo = repo.resolve()
+    if git_output(repo, "rev-parse", "--is-shallow-repository").strip() != b"false":
+        raise HistorySecretAuditError(
+            "Cannot audit complete history from a shallow repository. Fetch full history first."
+        )
     objects = reachable_objects(repo)
     findings: list[str] = []
+    # rev-list deduplicates objects and retains only one traversal path for a
+    # blob. Check names independently, including both sides of every rename
+    # and merge, so moving identical bytes cannot hide an earlier secret file.
+    historical_paths = git_output(
+        repo, "log", "--all", "--format=", "--name-only", "-z", "--no-renames", "--root", "-m"
+    )
+    for raw_path in sorted(set(historical_paths.split(b"\0"))):
+        if not raw_path:
+            continue
+        path = raw_path.decode("utf-8", errors="surrogateescape")
+        if reason := unsafe_path_reason(path):
+            findings.append(f"historical path {path}: {reason}")
     scanned_blobs = 0
     process = subprocess.Popen(
         ["git", "-C", str(repo), "cat-file", "--batch"],

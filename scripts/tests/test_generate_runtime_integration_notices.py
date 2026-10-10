@@ -61,7 +61,7 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
         rendered = MODULE.render_notices(project_root=ROOT)
         runtime_lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium.lock.json")
-        if runtime_lock["fingerprintChromium"]["chromiumVersion"] in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40"}:
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
             self.assertEqual(rendered, (ROOT / ("docs/RUNTIME_INTEGRATION_NOTICES_"+runtime_lock["fingerprintChromium"]["chromiumVersion"].split(".")[0]+".md")).read_text())
             self.assertEqual(rendered, MODULE.render_m154_notices(
                 project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
@@ -145,6 +145,13 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)
             shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            # M154 binds its license in the lock. M156 instead verifies the
+            # bundled license against the preserved built-source proof during
+            # packaging; it does not declare a license hash in this lock.
+            shutil.copyfile(
+                fixture / "runtime/fingerprint-chromium-154.lock.json",
+                fixture / "runtime/fingerprint-chromium.lock.json",
+            )
             chromium_license = fixture / "runtime" / "licenses" / "Chromium-LICENSE"
             chromium_license.write_text(
                 chromium_license.read_text(encoding="utf-8") + "\ndrift\n",

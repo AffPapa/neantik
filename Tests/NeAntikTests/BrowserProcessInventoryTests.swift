@@ -455,6 +455,48 @@ struct BrowserProcessInventoryTests {
 
     @MainActor
     @Test
+    func changedMetadataObservationPreservesStoppedRowsAndSkipsUnchangedPayloads() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("metadata-observation-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let first = try store.upsert(BrowserProfile(name: "External"))
+        let unrelated = try store.upsert(BrowserProfile(name: "Unrelated"))
+        try paths.prepareProfileDirectories(for: first.id)
+        try paths.prepareProfileDirectories(for: unrelated.id)
+        let dataPath = paths.browserDataDirectory(for: first.id).path
+        let process = BrowserProcessArguments(executablePath: "/Applications/NeAntik Browser",
+            arguments: ["/Applications/NeAntik Browser", "--user-data-dir=\(dataPath)"])
+        let gate = MetadataObservationInventoryGate(inventory: BrowserProcessInventory(processes: [getpid(): process]))
+        let manager = BrowserProcessManager(paths: paths,
+            processIdentityInspector: { _ in .unknown }, processLivenessValidator: { _ in false },
+            browserDataProcessInspector: { _ in .unknown }, processInventoryProvider: { gate.capture() })
+        manager.reconcile(profiles: store.profiles)
+        #expect(await waitUntil { manager.processState(for: first.id) == .stopped })
+        let otherStore = ProfileStore(paths: paths)
+        _ = otherStore.markLaunched(first.id)
+        let foreignLease = BrowserProcessLock(pid: getpid(), executablePath: process.executablePath,
+            browserDataPath: dataPath, createdAt: Date())
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(encoder.encode(foreignLease), to: paths.lockFile(for: first.id))
+        try await store.refreshExternalMetadata(force: true)
+        manager.refreshAfterExternalMetadataChange(profiles: store.profiles)
+        #expect(await waitUntil { gate.captureCount == 2 })
+        #expect(manager.processState(for: unrelated.id) == .stopped)
+        manager.refreshAfterExternalMetadataChange(profiles: store.profiles)
+        #expect(gate.captureCount == 2)
+        gate.releaseObservation.signal()
+        #expect(await waitUntil { manager.processState(for: first.id) != .stopped })
+        #expect(manager.processState(for: unrelated.id) == .stopped)
+        _ = try store.createFolder(named: "Folder only")
+        manager.refreshAfterExternalMetadataChange(profiles: store.profiles)
+        #expect(gate.captureCount == 2)
+        manager.suspendPassiveObservations()
+    }
+
+    @MainActor
+    @Test
     func transientLeaseContentionRetriesFreshInventory() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -940,5 +982,20 @@ struct BrowserProcessInventoryTests {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
         return false
+    }
+}
+
+private final class MetadataObservationInventoryGate: @unchecked Sendable {
+    let releaseObservation = DispatchSemaphore(value: 0)
+    private let lock = NSLock()
+    private var count = 0
+    private let inventory: BrowserProcessInventory
+    init(inventory: BrowserProcessInventory) { self.inventory = inventory }
+    var captureCount: Int { lock.lock(); defer { lock.unlock() }; return count }
+    func capture() -> BrowserProcessInventory {
+        lock.lock(); count += 1; let n = count; lock.unlock()
+        if n == 1 { return BrowserProcessInventory(processes: [:]) }
+        releaseObservation.wait()
+        return inventory
     }
 }

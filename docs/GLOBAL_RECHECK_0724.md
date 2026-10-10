@@ -1,6 +1,10 @@
 # Full release recheck — 0.7.24 / 87
 
-## Publication status
+## Historical manager recheck before the M156 release
+
+The paragraphs below describe the pre-M156 checkpoint, not current publication. Release0.7.24/87 was subsequently published as public alpha with Chromium156.0.8078.12 after its Direct gates; see releases/v0.7.24.json. Major1.0 remains open.
+
+### Pre-M156 publication status
 
 0.7.24/build87 is a verified manager source/Dev candidate, not a published or notarized release. Release preflight stopped first on yesterday's pinned security check date. A fresh independent official check confirms macOS Stable155.0.8059.39/.40, announced October6, above the existing M154.98. The current baseline verifier rejects that runtime. No contract, runtime, threshold or gate was changed; no new ZIP/DMG exists. Public0.7.23 is retained immutable; its older runtime is disclosed on the Site.
 

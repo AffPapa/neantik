@@ -693,6 +693,9 @@ struct ProfileEditorView: View {
               .accessibilityLabel("Стартовая страница")
               .focused($focusedField, equals: .startURL)
               .id(ProfileEditorField.startURL)
+            Text("Этот адрес открывается при запуске профиля. Для пустой страницы укажи about:blank.")
+              .font(.callout)
+              .foregroundStyle(.secondary)
             validationLabel(for: .startURL)
 
             Text("Иконка")

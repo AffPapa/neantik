@@ -131,7 +131,7 @@ def run_audit() -> dict[str, object]:
                 "--today",
                 datetime.now(timezone.utc).date().isoformat(),
             ],
-            expected_blocker="below the security baseline",
+            expected_blocker="Public Direct release blocked:",
         ),
         run_check(
             "runtime-rebase-preflight",

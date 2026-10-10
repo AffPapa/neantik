@@ -4,6 +4,56 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func savedTemplateCreatesFreshProfileWithoutSecretOrBrowserDataCopies() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try await create(engine)
+        let folder = try engine.store.createFolder(named: "QA")
+        let original = BrowserProfile(name: "Private original", tags: ["qa"], note: "synthetic-private-note", startURL: "https://example.com/qa")
+        let template = try UserProfileTemplate(name: "QA template", profile: original, folderID: folder.id)
+        _ = try await ManagerLibraryRepository(paths: engine.store.paths).update { $0.templates.append(template) }
+        let read = MCPProfileManagement(root: root, allowsManagement: false)
+        let list = try await read.call("template_list", [:])
+        let rows = try #require(list["templates"] as? [[String: Any]])
+        #expect(rows.count == 1 && rows[0]["id"] as? String == template.id.uuidString)
+        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "tags", "folderID"])
+        #expect(!(String(decoding: try JSONSerialization.data(withJSONObject: list), as: UTF8.self)).contains("synthetic-private-note"))
+        let args: [String: Any] = ["name": "New QA", "templateID": template.id.uuidString,
+            "expectedOrganizationRevision": list["organizationRevision"]!]
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await read.call("profile_create", args) }
+        let first = try await engine.call("profile_create", args)
+        let refreshed = try await engine.call("template_list", [:])
+        let second = try await engine.call("profile_create", args.merging(["name": "Second", "folderID": NSNull(), "expectedOrganizationRevision": refreshed["organizationRevision"]!, "changes": ["tags": ["other"]]]) { _, new in new })
+        let a = try #require(engine.store.profile(withID: UUID(uuidString: first["id"] as! String)!))
+        let b = try #require(engine.store.profile(withID: UUID(uuidString: second["id"] as! String)!))
+        #expect(a.id != b.id && a.identity != b.identity && a.identity != original.identity)
+        #expect(a.startURL == template.startURL && a.tags == template.tags)
+        #expect(a.note.isEmpty && a.proxy == nil && a.lastLaunchedAt == nil)
+        #expect(first["folderID"] as? String == folder.id.uuidString)
+        #expect(second["folderID"] is NSNull && b.tags == ["other"])
+        #expect(engine.processes.processState(for: a.id) == .stopped)
+    }
+
+    @Test func savedTemplateRejectsMissingCorruptAndStaleInputsWithoutPartialWrites() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = ManagerLibraryRepository(paths: engine.store.paths)
+        let template = try UserProfileTemplate(name: "Fixture", profile: BrowserProfile(name: "Original"), folderID: UUID())
+        _ = try await repository.update { $0.templates.append(template) }
+        let list = try await engine.call("template_list", [:])
+        #expect((list["templates"] as? [[String: Any]])?.first?["folderID"] is NSNull)
+        let args: [String: Any] = ["name": "Fixture", "templateID": template.id.uuidString,
+            "expectedOrganizationRevision": list["organizationRevision"]!]
+        _ = try engine.store.createFolder(named: "Concurrent change")
+        await #expect(throws: Error.self) { try await engine.call("profile_create", args) }
+        #expect(engine.store.profiles.isEmpty)
+        await #expect(throws: Error.self) { try await engine.call("profile_create", ["name": "Missing", "templateID": UUID().uuidString, "expectedOrganizationRevision": NSNull()]) }
+        #expect(engine.store.profiles.isEmpty)
+        try engine.store.paths.writePrivateFile(Data("bad-library".utf8), to: root.appendingPathComponent("manager-library.json"))
+        await #expect(throws: Error.self) { try await engine.call("template_list", [:]) }
+        await #expect(throws: Error.self) { try await engine.call("profile_create", args) }
+        #expect(engine.store.profiles.isEmpty)
+    }
     final class Backend: KeychainBackend, @unchecked Sendable {
         var values: [UUID: Data] = [:]
         var fail = false
@@ -162,7 +212,7 @@ struct MCPProfileManagementTests {
         #expect(config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments).mode == .mcpManagement(dataRoot: config.dataRoot))
         for tool in MCPProfileManagement.allTools { #expect(config.codexTOML.contains(tool)) }
-        #expect(MCPProfileManagement.allTools.count == 17)
+        #expect(MCPProfileManagement.allTools.count == 18)
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments + ["--untrusted"]).mode == .invalidControlArguments)
         config.allowsManagement = false
         #expect(!config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))

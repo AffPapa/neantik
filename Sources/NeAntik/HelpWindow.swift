@@ -112,9 +112,10 @@ struct NeAntikHelpWindow: View {
     }
 
     private var connectionPanel: some View {
-        GroupBox("Настройка этого workspace") {
+        GroupBox("Подключение профилей этого Mac") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Скопируй блок в настройки клиента, сохранив остальные серверы. Он содержит локальные пути этого приложения.")
+                Text("1. Выбери AI-клиент ниже.\n2. Скопируй настройку и добавь её к остальным серверам клиента.\n3. Перезапусти клиент и попроси: «Покажи мои профили. Ничего не изменяй».")
+                    .font(.system(size: 14)).lineSpacing(4)
                 Text(allowsManagement
                      ? "AI может создавать, изменять и запускать профили."
                      : "AI может только просматривать профили.").font(.callout)
@@ -135,7 +136,7 @@ struct NeAntikHelpWindow: View {
                     copied = NSPasteboard.general.setString(selectedConnection.configuration(for: client), forType: .string)
                 }
                 Link("Официальная инструкция клиента", destination: client.source)
-                Text("После подключения попроси: «Найди профили проекта QA с тегом ready». В режиме чтения доступны 6 инструментов, в режиме управления — 17. Есть 3 готовых MCP-сценария. Наличие настройки не доказывает работу каждой версии стороннего клиента.")
+                Text("Найти профиль, создать его по сохранённому шаблону, поменять стартовую страницу или открыть браузер — можно обычным запросом в чате. Управление: \(MCPProfileManagement.allTools.count) инструментов; только просмотр: \(MCPProfileManagement.readTools.count + 2). Работа каждой версии стороннего клиента отдельно не подтверждена.")
                     .font(.callout)
                 Text("Управление разрешает записи и запуск. Настройка не содержит паролей; если вводишь их в чат, клиент может сохранить их или отправить модели.")
                     .font(.callout).foregroundStyle(.secondary)
