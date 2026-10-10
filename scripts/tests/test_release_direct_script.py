@@ -42,12 +42,15 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             self.assertNotIn(stale_path, text)
 
     def test_manager_debug_paths_are_removed_before_signing(self) -> None:
-        text = PACKAGE_APP.read_text(encoding="utf-8")
-        self.assertIn('xcrun strip -S "$MACOS_DIR/NeAntik"', text)
-        self.assertLess(
-            text.index('xcrun strip -S "$MACOS_DIR/NeAntik"'),
-            text.index('codesign --force'),
-        )
+        for script, binary, signature in (
+            (PACKAGE_APP, '$MACOS_DIR/NeAntik', 'codesign --force'),
+            (PREPARE_MANAGER, '$CANDIDATE_APP/Contents/MacOS/NeAntik', 'codesign \\\n'),
+        ):
+            with self.subTest(script=script.name):
+                text = script.read_text(encoding="utf-8")
+                strip = f'xcrun strip -S "{binary}"'
+                self.assertIn(strip, text)
+                self.assertLess(text.index(strip), text.index(signature))
 
     def test_prepare_builds_and_binds_one_exact_candidate(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")

@@ -302,6 +302,9 @@ rm -rf "$CANDIDATE_APP"
 ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"
 cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
+# SwiftPM can retain DWARF source/object paths even with prefix maps. Match
+# package-app.sh: strip only manager debug sections before its public signature.
+xcrun strip -S "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
 cp "$PROJECT_DIR/Resources/NeAntik.icns" \
