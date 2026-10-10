@@ -1,0 +1,58 @@
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -1195,17 +1195,6 @@
+       font, direction, state.GetTextBaseline(), state.GetTextAlign(), text,
+       host->GetPlainTextPainter());
+ 
+-  // Scale text metrics if enabled
+-  if (RuntimeEnabledFeatures::FingerprintingCanvasMeasureTextNoiseEnabled()) {
+-    if (HostAsOffscreenCanvas()) {
+-      if (auto* window = DynamicTo<LocalDOMWindow>(GetTopExecutionContext())) {
+-        if (window->GetFrame() && window->GetFrame()->GetDocument())
+-          text_metrics->Shuffle(window->GetFrame()->GetDocument()->GetNoiseFactorX());
+-      }
+-    } else if (canvas) {
+-      text_metrics->Shuffle(canvas->GetDocument().GetNoiseFactorX());
+-    }
+-  }
+   return text_metrics;
+ }
+ 
+--- a/third_party/blink/renderer/core/html/canvas/text_metrics.cc
++++ b/third_party/blink/renderer/core/html/canvas/text_metrics.cc
+@@ -90,24 +90,6 @@
+                          PlainTextPainter& text_painter)
+     : TextMetrics() {
+   Update(font, direction, baseline, align, text, text_painter);
+-}
+-
+-void TextMetrics::Shuffle(const double factor) {
+-  // x-direction
+-  width_ *= factor;
+-  actual_bounding_box_left_ *= factor;
+-  actual_bounding_box_right_ *= factor;
+-
+-  // y-direction
+-  font_bounding_box_ascent_ *= factor;
+-  font_bounding_box_descent_ *= factor;
+-  actual_bounding_box_ascent_ *= factor;
+-  actual_bounding_box_descent_ *= factor;
+-  em_height_ascent_ *= factor;
+-  em_height_descent_ *= factor;
+-  baselines_->setAlphabetic(baselines_->alphabetic() * factor);
+-  baselines_->setHanging(baselines_->hanging() * factor);
+-  baselines_->setIdeographic(baselines_->ideographic() * factor);
+ }
+ 
+ void TextMetrics::Update(const Font* font,
+--- a/third_party/blink/renderer/core/html/canvas/text_metrics.h
++++ b/third_party/blink/renderer/core/html/canvas/text_metrics.h
+@@ -110,8 +110,6 @@
+     float x_position_;
+   };
+ 
+-  void Shuffle(const double factor);
+-
+  private:
+   void Update(const Font*,
+               const TextDirection& direction,

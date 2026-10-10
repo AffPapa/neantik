@@ -72,9 +72,15 @@ if (( METAL_TRUE_COUNT != 1 || METAL_FALSE_COUNT != 0 )); then
   exit 65
 fi
 
-"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
+    --built-source-root "$SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+else
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
   "$SOURCE_PROVENANCE" \
   --source-root "$SOURCE_ROOT"
+fi
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
   "$SOURCE_PROVENANCE"
@@ -103,6 +109,12 @@ if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDAT
 elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-chromium-15498-unsigned-candidate.py" \
     "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "155.0.8059.40" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15540-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15612-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
 fi
 "$PROJECT_DIR/scripts/sign-runtime.sh" \
   "$RUNTIME_APP" \
@@ -121,11 +133,15 @@ python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
   "$BUILD_ARGS" \
   "$RUNTIME_REPORT" \
   --confirm-promote-source-lock
+RUNTIME_NOTICES_MAJOR="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")"
+RUNTIME_NOTICES_MAJOR="${RUNTIME_NOTICES_MAJOR%%.*}"
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ||
-      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ]]; then
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ||
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "155.0.8059.40" ||
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
     --runtime-lock "$CANDIDATE_LOCK" \
-    --output "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_154.md"
+    --output "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_${RUNTIME_NOTICES_MAJOR}.md"
 else
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
 fi

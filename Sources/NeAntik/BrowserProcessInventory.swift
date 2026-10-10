@@ -239,6 +239,24 @@ struct BrowserProcessInventory: Sendable {
         return unreadableLiveProcessExists ? .unknown : .absent
     }
 
+    /// Covers GUI and headless MCP managers. Another window in this PID is
+    /// allowed; another same-user manager must be closed before data restore.
+    /// Unknown kernel identity is never treated as proof of absence.
+    func inspectOtherManagerProcesses(currentPID: pid_t = getpid()) -> BrowserDataProcessInspection {
+        guard available else { return .unknown }
+        for (pid, process) in processes where pid != currentPID && Self.isManagerExecutable(process.executablePath) {
+            guard let identity = kernelIdentities[pid], kernelIdentityRevalidator(pid) == identity else { return .unknown }
+            return .found
+        }
+        return unreadableLiveProcessExists ? .unknown : .absent
+    }
+
+    static func isManagerExecutable(_ path: String) -> Bool {
+        // Historical installed/standalone GUI and stdio builds share these
+        // executable names. Runtime helpers have different names.
+        ["NeAntik", "NeVision"].contains(URL(fileURLWithPath: path).lastPathComponent)
+    }
+
     fileprivate static func reducedEntry(
         from process: BrowserProcessArguments
     ) -> (
@@ -469,7 +487,7 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
             // fail-closed behavior.
             return true
         }
-        return executableCanUseNeAntikProfile(executablePath)
+        return executableCanUseNeAntikProfile(executablePath) || BrowserProcessInventory.isManagerExecutable(executablePath)
     }
 
     private static func executablePath(pid: pid_t) -> String? {

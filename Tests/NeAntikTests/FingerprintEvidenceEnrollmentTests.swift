@@ -46,8 +46,8 @@ struct FingerprintEvidenceEnrollmentTests {
                     "algorithm",
                     "authorityKeyID",
                     "publicKeyX963",
-                    "sessionID",
-                    "challenge"
+                    "sessionID", "challenge", "evidenceSchemaVersion",
+                    "auditSchemaVersion", "payloadSchemaVersion", "semanticPolicyID"
                 ]
             )
             #expect(object["sessionID"] as? String == sessionID.uuidString)
@@ -55,6 +55,11 @@ struct FingerprintEvidenceEnrollmentTests {
                 object["challenge"] as? String ==
                     challenge.base64EncodedString()
             )
+            #expect(binding.schemaVersion == 2)
+            #expect(binding.evidenceSchemaVersion == 9)
+            #expect(binding.auditSchemaVersion == 8)
+            #expect(binding.payloadSchemaVersion == 2)
+            #expect(binding.semanticPolicyID == "repeatable-critical-observations-v1")
             #expect(binding.sessionID == sessionID)
             #expect(status.st_mode & mode_t(0o777) == mode_t(0o600))
             #expect(status.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG))

@@ -1,0 +1,11 @@
+--- a/v8/src/debug/debug-wasm-objects.cc
++++ b/v8/src/debug/debug-wasm-objects.cc
+@@ -798,6 +798,8 @@
+ 
+   ScopeType GetType() override { return type_; }
+ 
++  bool DeclaresLocals() override { return true; }
++
+   v8::Local<v8::Object> GetObject() override {
+     Isolate* isolate = frame_->isolate();
+     switch (type_) {

@@ -18,10 +18,12 @@ case "$SUITE" in
   BrowserLaunchPolicyTests|\
   BrowserProcessInventoryTests|\
   BrowserProcessManagerTests|\
+  BrowserSessionObservationTests|\
   BrowserRuntimeInspectorTests|\
   BrowserRuntimePreflightTests|\
   BulkProxyActionProjectionTests|\
   BulkProxyImportTests|\
+  CRX3SignatureVerifierTests|\
   DisplayDateFormattingTests|\
   EnvironmentDiagnosticAssessmentTests|\
   FingerprintAuditReadinessPolicyTests|\
@@ -70,6 +72,7 @@ case "$SUITE" in
   ManagerSearchBenchmarkTests|\
   ProfileMetadataUndoTests|\
   ProfileStoreTests|\
+  PrivateGuardLeaseTests|\
   ProxyHealthTests|\
   ProxyImportParserTests|\
   ProxyTestOperationRegistryTests|\
@@ -89,6 +92,27 @@ case "$SUITE" in
   MCPWorkspaceQueryTests|\
   ProfileQuickCommandProjectionTests|\
   ProxyTesterLiveFixtureTests|\
+  DirectUpdateArchiveIntegrityTests|\
+  BackupCompatibilityScopeStoreTests|\
+  BookmarkImportTests|\
+  BrowserDataBackupStorageTests|\
+  BrowserDataRestoreTransactionTests|\
+  DevelopmentFixtureBackupScopeTests|\
+  DevelopmentFixtureKeychainTests|\
+  EncryptedBackupArchiveTests|\
+  EncryptedBackupFramingTests|\
+  OwnedProfileDirectoryTests|\
+  ProfileBrowserDataBackupServiceTests|\
+  ProfileCacheMaintenanceTests|\
+  ProxyDiagnosticTests|\
+  ProxyRelayBrowserRoleDecoderTests|\
+  ProxyRelayClientWireCodecTests|\
+  ProxyRelayControlPeerInspectorTests|\
+  ProxyRelayLiveCodeVerifierTests|\
+  ProxyRelayLoopbackServerTests|\
+  ProxyRelaySocketOwnerInspectorTests|\
+  ProxyRelayWireCodecTests|\
+  StoppedProfileRestoreAuthorityTests|\
   UpdateManifestTests)
     ;;
   *)

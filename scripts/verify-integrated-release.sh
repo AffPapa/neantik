@@ -110,6 +110,17 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-154-source-contract.json"
   SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-15498-port-candidate.json"
   CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-15498.lock.json"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ]]; then
+  M155_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15540_variant.py" "$EVIDENCE/fingerprint-chromium.lock.json")"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/${M155_EVIDENCE_PREFIX}-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/${M155_EVIDENCE_PREFIX}-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/${M155_EVIDENCE_PREFIX}-port-candidate.json"
+  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-${M155_EVIDENCE_PREFIX}.lock.json"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15612-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-15612-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-15612-port-candidate.json"
+  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-15612.lock.json"
 else
   echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
   exit 65
@@ -165,6 +176,10 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
       exit 65
     fi
   done
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ]]; then
+  python3 "$PROJECT_DIR/scripts/chromium_15540_packaged_evidence.py" "$EVIDENCE/fingerprint-chromium.lock.json" "$EVIDENCE"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$EVIDENCE/fingerprint-chromium.lock.json" "$EVIDENCE"
 fi
 
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
@@ -180,7 +195,9 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
   fi
 elif [[ "$EXPECTED_RUNTIME_VERSION" == 152.* ||
         "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ||
-        "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+        "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ||
+        "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ||
+        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$EVIDENCE/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
@@ -244,7 +261,9 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.58" ]]; then
 fi
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ||
       "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ||
-      "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+      "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ||
+        "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ||
+        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   VERIFY_BUILT_RUNTIME_ARGS+=(
     ""
     "$EVIDENCE/args.gn"

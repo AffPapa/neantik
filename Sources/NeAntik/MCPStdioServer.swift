@@ -221,6 +221,12 @@ enum MCPStdioServer {
     private static func readProfiles(dataRoot: URL) throws -> (profiles: [BrowserProfile], revision: String) {
         let paths = AppPaths(rootDirectory: dataRoot)
         try paths.validatePrivateDirectory(dataRoot)
+        return try paths.withProfilesMetadataGuard {
+            try readProfilesWhileMetadataGuardHeld(paths: paths)
+        }
+    }
+
+    private static func readProfilesWhileMetadataGuardHeld(paths: AppPaths) throws -> (profiles: [BrowserProfile], revision: String) {
         let file = paths.profilesFile
         let descriptor = file.path.withCString { Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC) }
         if descriptor < 0 {

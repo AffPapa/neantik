@@ -1,0 +1,42 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "397175ca56297e1e24c98ff9002b7f9a0e36973fe5ee64fb399217735e1d1892",
+  "payload": {
+    "createdAt": "2026-10-08T22:58:32.815766+00:00",
+    "exactObjectCompileVerified": false,
+    "failedBuildStateSHA256": "608de3a1341e43fdea2e43cb158c2964ba3fdecc699f516bc5eef3aba0c983e0",
+    "fingerprintPolicyChanged": false,
+    "nativeFlagsChanged": false,
+    "patchSHA256": "8f774fa4d2c1aa1481174594dd481abbdd6aed148d7ee4defc892653edb81408",
+    "postimages": {
+      "v8/src/debug/debug-wasm-objects.cc": "9e749bc9fb40f56f27a3ae54eb8408c3e5597e0a2942e45d7e00767a582e069d"
+    },
+    "preimages": {
+      "v8/src/debug/debug-wasm-objects.cc": "f28deeca4901748475dd843b543e669bb40cf680717655401d8d112c5015a490"
+    },
+    "reason": "Pinned native V8 interpreter ScopeIterator omitted newly required pure virtual method; no owned semantic patch removed it. Its module GetObject always populates instance+module; true matches compiled-Wasm iterator and prevents hiding populated scope.",
+    "releaseReady": false,
+    "runtimeScopeBehaviorVerified": false,
+    "schemaVersion": 1,
+    "sourceVersion": "156.0.8078.12",
+    "status": "source-correction-applied-runtime-unqualified",
+    "v8Commit": "4b33f15d4d172248a95629d6aa9917b20a79ad76"
+  },
+  "payloadType": "json",
+  "receipt": "native-v8-interpreter-scope-declaration-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

@@ -83,6 +83,17 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "Public Direct release blocked"):
             self.verify("144.0.7559.132")
 
+    def test_historical_provenance_never_exempts_current_public_release_gate(self) -> None:
+        project = SCRIPT.parents[1]
+        baseline_path = project / "runtime" / "security-baseline.json"
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+        reviewed_day = date.fromisoformat(baseline["checkedAt"])
+        for name in ("fingerprint-chromium-153.lock.json", "fingerprint-chromium-15498.lock.json"):
+            for allow_alpha in (False, True):
+                with self.subTest(lock=name, allow_alpha=allow_alpha), self.assertRaisesRegex(SystemExit, "is below the security baseline"):
+                    MODULE.verify(project / "runtime" / name, baseline_path, reviewed_day,
+                                  allow_public_alpha_tuples=allow_alpha)
+
     def test_stale_baseline_is_release_blocked(self) -> None:
         with self.assertRaisesRegex(SystemExit, "baseline is stale"):
             self.verify(

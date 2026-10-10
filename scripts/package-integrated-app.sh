@@ -35,9 +35,19 @@ elif [[ "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15498-source-contract.json"
   # The bundled evidence schema pins this public path for M154 contracts.
   SOURCE_CONTRACT_NAME="chromium-154-source-contract.json"
-else
+elif [[ "$RUNTIME_VERSION" == "155.0.8059.40" ]]; then
+  M155_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15540_variant.py" "$CANDIDATE_LOCK")"
+  SOURCE_CONTRACT_NAME="${M155_EVIDENCE_PREFIX}-source-contract.json"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  SOURCE_CONTRACT_NAME="chromium-15612-source-contract.json"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
+else
+  echo "Unsupported Chromium runtime version for packaging: $RUNTIME_VERSION" >&2
+  exit 65
 fi
 
 if [[ "$RUNTIME_APP" != /* || ! -d "$RUNTIME_APP" ]]; then
@@ -70,9 +80,15 @@ if [[ "$CANDIDATE_LOCK" != /* ||
   echo "Chromium candidate lock must be an absolute regular file." >&2
   exit 66
 fi
-"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
+    --built-source-root "$SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+else
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
   "$SOURCE_PROVENANCE" \
   --source-root "$SOURCE_ROOT"
+fi
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
   "$SOURCE_PROVENANCE"
@@ -90,11 +106,15 @@ if [[ "$RUNTIME_BUNDLE_ID" != "app.neantik.runtime" ||
   exit 65
 fi
 if [[ "$RUNTIME_VERSION" != "154.0.8037.93" &&
-      "$RUNTIME_VERSION" != "154.0.8037.98" ]]; then
+      "$RUNTIME_VERSION" != "154.0.8037.98" &&
+      "$RUNTIME_VERSION" != "155.0.8059.40" &&
+      "$RUNTIME_VERSION" != "156.0.8078.12" ]]; then
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
 fi
 if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
-      "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+      "$RUNTIME_VERSION" == "154.0.8037.98" ||
+      "$RUNTIME_VERSION" == "155.0.8059.40" ||
+      "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   # Generated below in temporary compliance storage from this exact candidate.
   RUNTIME_NOTICES_FILE=""
 elif [[ "$RUNTIME_VERSION" == 153.* ]]; then
@@ -114,8 +134,10 @@ cleanup() {
 }
 trap cleanup EXIT
 if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
-      "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
-  RUNTIME_NOTICES_FILE="$COMPLIANCE_DIR/RUNTIME_INTEGRATION_NOTICES_154.md"
+      "$RUNTIME_VERSION" == "154.0.8037.98" ||
+      "$RUNTIME_VERSION" == "155.0.8059.40" ||
+      "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  RUNTIME_NOTICES_FILE="$COMPLIANCE_DIR/RUNTIME_INTEGRATION_NOTICES_${RUNTIME_VERSION%%.*}.md"
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
     --runtime-lock "$CANDIDATE_LOCK" --output "$RUNTIME_NOTICES_FILE"
 fi
@@ -172,6 +194,10 @@ elif [[ "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
   mkdir -p "$EVIDENCE/chromium-15498-source-evidence"
   ditto "$PROJECT_DIR/runtime/chromium-15498-source-evidence" \
     "$EVIDENCE/chromium-15498-source-evidence"
+elif [[ "$RUNTIME_VERSION" == "155.0.8059.40" ]]; then
+  python3 "$PROJECT_DIR/scripts/chromium_15540_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --copy
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --copy
 fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"

@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
 SCRIPT = ROOT / "scripts/verify-packaged-runtime-report.py"
 SPEC = importlib.util.spec_from_file_location(
     "verify_packaged_runtime_report",
@@ -19,6 +20,19 @@ SPEC.loader.exec_module(MODULE)
 
 
 class VerifyPackagedRuntimeReportTests(unittest.TestCase):
+    def test_semantic_variant_uses_its_exact_lock_and_contract(self):
+        prefix = "chromium-15540-semantic-v3"
+        candidate = {"semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-v3",
+                     "sourceContract": "runtime/" + prefix + "-source-contract.json",
+                     "sourceProvenance": "runtime/" + prefix + "-port-candidate.json"}
+        lock, contract = MODULE.source_evidence_paths("155.0.8059.40", Path("/evidence"), Path("/project"), candidate)
+        self.assertEqual(lock.name, "fingerprint-" + prefix + ".lock.json")
+        self.assertEqual(contract.name, prefix + "-source-contract.json")
+        for changes in ({"sourceContract": "runtime/chromium-15540-source-contract.json"},
+                        {"semanticCorrectionSet": "unknown"}, {"semanticCorrectionSet": None}):
+            with self.assertRaises(ValueError):
+                MODULE.source_evidence_paths("155.0.8059.40", Path("/evidence"), Path("/project"), {**candidate, **changes})
+
     def test_historical_m154_diagnostic_candidate_stays_blocked(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -74,6 +88,15 @@ class VerifyPackagedRuntimeReportTests(unittest.TestCase):
             self.assertEqual(
                 contract, root / "evidence/chromium-154-source-contract.json"
             )
+
+    def test_m155_selects_exact_new_contract_and_rejects_unknown_version(self):
+        lock, contract = MODULE.source_evidence_paths(
+            "155.0.8059.40", Path("/evidence"), Path("/project"))
+        self.assertEqual(lock.name, "fingerprint-chromium-15540.lock.json")
+        self.assertEqual(contract.name, "chromium-15540-source-contract.json")
+        for version in ("155.0.8059.26", "155.0.8059.41"):
+            with self.assertRaises(MODULE.PackagedRuntimeReportError):
+                MODULE.source_evidence_paths(version, Path("/evidence"), Path("/project"))
 
     def test_m153_uses_only_m153_lock_and_contract(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

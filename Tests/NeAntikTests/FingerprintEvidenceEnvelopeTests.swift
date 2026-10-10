@@ -5,6 +5,74 @@ import Testing
 
 struct FingerprintEvidenceEnvelopeTests {
     @Test
+    func versionNineBindsSemanticPolicyAndAcceptsStableSameWebGL() throws {
+        let fixture = makeFixture()
+        var object = try #require(JSONSerialization.jsonObject(with: fixture.payload) as? [String: Any])
+        object["criticalSurfaces"] = ["canvas": "stable-same", "webgl_pixels": "stable-same",
+                                      "audio": "stable-same", "client_rects": "stable-same"]
+        object["changedCriticalKeys"] = [String]()
+        object["verdict"] = "unchanged"
+        let bytes = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys, .withoutEscapingSlashes])
+        let envelope = try FingerprintEvidenceEnvelopeCodec.make(payload: bytes, candidateManifest: fixture.manifest, signer: fixture.signer)
+        #expect(envelope.schemaVersion == 9)
+        #expect(try FingerprintEvidenceEnvelopeCodec.verify(encoded(envelope), candidateManifest: fixture.manifest) == bytes)
+        for (key, value) in [("semanticPolicyID", "unknown" as Any), ("criticalObservationsStable", false),
+                             ("auditSchemaVersion", 7), ("verdict", "verified"), ("profileSequenceValid", false)] {
+            var bad = object; bad[key] = value
+            let input = try JSONSerialization.data(withJSONObject: bad, options: [.sortedKeys, .withoutEscapingSlashes])
+            #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
+                try FingerprintEvidenceEnvelopeCodec.make(payload: input, candidateManifest: fixture.manifest, signer: fixture.signer)
+            }
+        }
+        for state in ["unavailable", "unstable"] {
+            var bad = object
+            var surfaces = try #require(bad["criticalSurfaces"] as? [String: String]); surfaces["webgl_pixels"] = state
+            bad["criticalSurfaces"] = surfaces
+            let input = try JSONSerialization.data(withJSONObject: bad, options: [.sortedKeys, .withoutEscapingSlashes])
+            #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
+                try FingerprintEvidenceEnvelopeCodec.make(payload: input, candidateManifest: fixture.manifest, signer: fixture.signer)
+            }
+        }
+    }
+
+    @Test
+    func publicAlphaCannotCarryContradictoryProductionQualification() throws {
+        let fixture = makeFixture()
+        var object = try #require(JSONSerialization.jsonObject(with: fixture.payload) as? [String: Any])
+        object["productionQualified"] = true
+        object["crossRealmConsistent"] = true
+        object["deviceTupleConsistent"] = true
+        object["networkPrivacyControlled"] = true
+        object["unavailableRequiredKeys"] = [String]()
+        object["limitations"] = [String]()
+        for (key, value) in [("crossRealmConsistent", false as Any),
+                             ("deviceTupleConsistent", false), ("networkPrivacyControlled", false),
+                             ("unavailableRequiredKeys", ["worker_canvas"]),
+                             ("unstableRequiredKeys", ["webgl_pixels"])] {
+            var bad = object; bad[key] = value
+            let input = try JSONSerialization.data(withJSONObject: bad, options: [.sortedKeys, .withoutEscapingSlashes])
+            #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
+                try FingerprintEvidenceEnvelopeCodec.make(payload: input, candidateManifest: fixture.manifest, signer: fixture.signer)
+            }
+        }
+    }
+
+    @Test
+    func versionNineRejectsUnknownRuntimeAndDuplicatedMissingMeasurements() throws {
+        let fixture = makeFixture()
+        let object = try #require(JSONSerialization.jsonObject(with: fixture.payload) as? [String: Any])
+        for (key, value) in [("runtimeFlavor", "unknown-runtime" as Any),
+                             ("unavailableRequiredKeys", ["worker_canvas", "worker_canvas"]),
+                             ("unstableRequiredKeys", ["worker_canvas", "worker_canvas"])] {
+            var bad = object; bad[key] = value
+            let input = try JSONSerialization.data(withJSONObject: bad, options: [.sortedKeys, .withoutEscapingSlashes])
+            #expect(throws: FingerprintEvidenceError.malformedEnvelope) {
+                try FingerprintEvidenceEnvelopeCodec.make(payload: input, candidateManifest: fixture.manifest, signer: fixture.signer)
+            }
+        }
+    }
+
+    @Test
     func signsAndVerifiesExactPayloadAgainstExternalManifest() throws {
         let fixture = makeFixture()
 
@@ -212,8 +280,34 @@ struct FingerprintEvidenceEnvelopeTests {
     }
 
     @Test
+    func swiftProducedVersionNineVerifiesInPython() throws {
+        let fixture = try schema9CrossLanguageFixture()
+        let manifest = try #require(Data(base64Encoded: fixture.manifestBase64))
+        let payload = try #require(Data(base64Encoded: fixture.payloadBase64))
+        let signer = try SoftwareP256FingerprintEvidenceSigner(rawRepresentation: Data(repeating: 0, count: 31) + Data([1]))
+        let envelope = try FingerprintEvidenceEnvelopeCodec.make(payload: payload, candidateManifest: manifest, signer: signer)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-schema9-cross-language-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manifestURL = root.appendingPathComponent("manifest.json"), envelopeURL = root.appendingPathComponent("envelope.json")
+        try manifest.write(to: manifestURL); try encoded(envelope).write(to: envelopeURL)
+        let project = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let process = Process(), output = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [project.appendingPathComponent("scripts/verify-fingerprint-evidence-envelope.py").path,
+                             "--manifest", manifestURL.path, "--envelope", envelopeURL.path, "--json"]
+        process.environment = ["PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C", "PYTHONDONTWRITEBYTECODE": "1"]
+        process.standardOutput = output; process.standardError = FileHandle.nullDevice
+        try process.run(); process.waitUntilExit()
+        #expect(process.terminationStatus == 0)
+        let summary = try #require(JSONSerialization.jsonObject(with: output.fileHandleForReading.readDataToEndOfFile()) as? [String: Any])
+        let expected = SHA256.hash(data: payload).map { String(format: "%02x", $0) }.joined()
+        #expect(summary["payloadSHA256"] as? String == expected)
+    }
+
+    @Test
     func opensslFixtureVerifiesInSwift() throws {
-        let fixture = try schema8CrossLanguageFixture()
+        let fixture = try schema9CrossLanguageFixture()
         let manifest = try #require(
             Data(base64Encoded: fixture.manifestBase64)
         )
@@ -365,8 +459,8 @@ struct FingerprintEvidenceEnvelopeTests {
         let raw = String(data: encoded(envelope), encoding: .utf8)!
         let unknownTopLevel = Data(
             raw.replacingOccurrences(
-                of: "\"schemaVersion\":8",
-                with: "\"unsignedSecret\":\"no\",\"schemaVersion\":8"
+                of: "\"schemaVersion\":9",
+                with: "\"unsignedSecret\":\"no\",\"schemaVersion\":9"
             ).utf8
         )
         let unknownAuthentication = Data(
@@ -585,7 +679,9 @@ struct FingerprintEvidenceEnvelopeTests {
     private func payload() -> Data {
         try! JSONSerialization.data(
             withJSONObject: [
-                "schemaVersion": 1,
+                "schemaVersion": 2,
+                "semanticPolicyID": "repeatable-critical-observations-v1",
+                "criticalObservationsStable": true,
                 "kind": "neantik-fingerprint-release-result",
                 "createdAt": "1970-01-01T00:00:03Z",
                 "releaseChannel": "public-alpha",
@@ -599,7 +695,7 @@ struct FingerprintEvidenceEnvelopeTests {
                     String(repeating: "a", count: 64),
                 "runtimeFrameworkSHA256":
                     String(repeating: "b", count: 64),
-                "auditSchemaVersion": 7,
+                "auditSchemaVersion": 8,
                 "identityCatalogVersion": 1,
                 "executionMode": "browser",
                 "verdict": "verified",
@@ -670,8 +766,8 @@ struct FingerprintEvidenceEnvelopeTests {
         try! FingerprintEvidenceEnvelopeCodec.encode(envelope)
     }
 
-    private func schema8CrossLanguageFixture() throws
-        -> Schema8CrossLanguageFixture
+    private func schema9CrossLanguageFixture() throws
+        -> Schema9CrossLanguageFixture
     {
         let projectRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -679,10 +775,10 @@ struct FingerprintEvidenceEnvelopeTests {
             .deletingLastPathComponent()
         let fixtureURL = projectRoot.appendingPathComponent(
             "scripts/tests/fixtures/" +
-                "fingerprint-evidence-schema8-swift.json"
+                "fingerprint-evidence-schema9-swift.json"
         )
         return try JSONDecoder().decode(
-            Schema8CrossLanguageFixture.self,
+            Schema9CrossLanguageFixture.self,
             from: Data(contentsOf: fixtureURL)
         )
     }
@@ -741,7 +837,7 @@ struct FingerprintEvidenceEnvelopeTests {
     }
 }
 
-private struct Schema8CrossLanguageFixture: Decodable {
+private struct Schema9CrossLanguageFixture: Decodable {
     let manifestBase64: String
     let envelopeBase64: String
     let payloadBase64: String

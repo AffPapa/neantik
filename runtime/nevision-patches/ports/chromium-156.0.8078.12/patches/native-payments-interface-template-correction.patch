@@ -1,0 +1,10 @@
+--- a/chrome/browser/resources/settings/autofill_page/payments/payments_page.ts
++++ b/chrome/browser/resources/settings/autofill_page/payments/payments_page.ts
+@@ -70,7 +70,6 @@
+     canMakePaymentToggle: SettingsToggleButtonElement,
+     creditCardSharedMenu: CrActionMenuElement,
+     ibanSharedActionMenu: CrLazyRenderLitElement<CrActionMenuElement>,
+-    manageLink: HTMLElement,
+     menuEditCreditCard: HTMLElement,
+     menuRemoveCreditCard: HTMLElement,
+     menuAddVirtualCard: HTMLElement,

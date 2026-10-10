@@ -167,6 +167,7 @@ final class ProfileStore: ObservableObject {
     }
 
     private var externalMetadataStamp: String?
+    private var metadataRefreshFailureWarning: String?
 
     /// Poll only inode/mtime/size; parsing runs off MainActor after a real change.
     /// Admission spans read and publication, preventing an older snapshot from
@@ -175,13 +176,27 @@ final class ProfileStore: ObservableObject {
         let rootKey = paths.rootDirectory.resolvingSymlinksInPath().path
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(rootKey) else { return }
         let paths = paths
-        let stamp = await Task.detached {
-            [paths.profilesFile, paths.profileOrganizationFile].map { url in
-                var info = stat()
-                guard lstat(url.path, &info) == 0 else { return "missing" }
-                return "\(info.st_ino):\(info.st_size):\(info.st_mtimespec.tv_sec):\(info.st_mtimespec.tv_nsec)"
-            }.joined(separator: "|")
-        }.value
+        let stamp: String
+        do {
+            stamp = try await Task.detached {
+                try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory)
+                return [paths.profilesFile, paths.profileOrganizationFile].map { url in
+                    var info = stat()
+                    guard lstat(url.path, &info) == 0 else { return "missing" }
+                    return "\(info.st_ino):\(info.st_size):\(info.st_mtimespec.tv_sec):\(info.st_mtimespec.tv_nsec)"
+                }.joined(separator: "|")
+            }.value
+        } catch {
+            // A fence can appear without changing metadata stamps. Preserve
+            // cached rows, but withdraw admission and force the next real read.
+            externalMetadataStamp = nil
+            storageIsAvailable = false
+            organizationStorageIsAvailable = false
+            lastError = error is BrowserDataRestoreError ? error.localizedDescription :
+                "Профили временно недоступны. Сохранённые данные не заменены. Повтори открытие приложения."
+            metadataRefreshFailureWarning = lastError
+            throw error
+        }
         guard force || stamp != externalMetadataStamp else { return }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(rootKey) else { return }
         let hadProfiles = !profiles.isEmpty
@@ -217,9 +232,11 @@ final class ProfileStore: ObservableObject {
             throw ProfileMetadataBusyError()
         } catch {
             // Preserve last-good UI data and prohibit writes until a trusted read.
+            externalMetadataStamp = nil
             storageIsAvailable = false
             organizationStorageIsAvailable = false
             lastError = "Профили временно недоступны. Сохранённые данные не заменены. Проверь файлы данных и повтори открытие приложения."
+            metadataRefreshFailureWarning = lastError
             throw error
         }
         if profiles != snapshot.0 { profiles = snapshot.0 }
@@ -229,9 +246,12 @@ final class ProfileStore: ObservableObject {
             if organization != refreshedOrganization { organization = refreshedOrganization }
             organizationStorageIsAvailable = true
             externalMetadataStamp = stamp
+            if let metadataRefreshFailureWarning, lastError == metadataRefreshFailureWarning { lastError = nil }
+            metadataRefreshFailureWarning = nil
         case .failure(let error):
             organizationStorageIsAvailable = false
             lastError = "Папки временно недоступны. Профили и данные браузеров не изменены. Проверь файл папок и повтори открытие приложения."
+            metadataRefreshFailureWarning = lastError
             throw error
         }
     }
@@ -475,84 +495,97 @@ final class ProfileStore: ObservableObject {
         try requireSynchronousMutationAdmission()
         return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
-            try requireOrganizationStorage()
-            do {
-                try reloadLatestOrganizationForMutation()
-            } catch {
-                organizationStorageIsAvailable = false
-                organization = .empty
-                lastError = Self.joinWarnings(
-                    lastError,
-                    "Папки временно недоступны. Профили и данные браузеров не изменены. \(error.localizedDescription)"
-                )
-                throw ProfileOrganizationError.storageUnavailable
-            }
-            if let folderID,
-               organization.folder(withID: folderID) == nil {
-                throw ProfileOrganizationError.folderNotFound
-            }
-
-            if let expectedOrganizationRevision,
-               expectedOrganizationRevision != organization.mutationRevision {
-                throw ProfileMetadataUndoConflict()
-            }
-            let previousProfiles = profiles
-            let previousOrganization = organization
-            let profileDirectory = paths.profileDirectory(for: profile.id)
-            let profileDirectoryExisted = FileManager.default.fileExists(
-                atPath: profileDirectory.path
+            return try upsertWithFolderAfterMetadataReload(
+                profile, toFolderID: folderID,
+                registerMetadataUndo: registerMetadataUndo,
+                expectedOrganizationRevision: expectedOrganizationRevision,
+                afterPersist: afterPersist
             )
-            let saved = try upsertAfterMetadataReload(
-                profile,
-                afterPersist: { _ in }
-            )
-            let committedProfiles = profiles
-            var committedOrganization = previousOrganization
-
-            do {
-                var nextOrganization = previousOrganization
-                nextOrganization.assign(
-                    profileIDs: [saved.id],
-                    toFolderID: folderID
-                )
-                if nextOrganization != previousOrganization {
-                    organization = nextOrganization
-                    try persistOrganization()
-                    committedOrganization = organization
-                }
-                try afterPersist(saved)
-            } catch {
-                let operationError = error
-                let createdDirectories = profileDirectoryExisted
-                    ? []
-                    : [profileDirectory]
-                do {
-                    try rollbackCompoundMutation(
-                        previousProfiles: previousProfiles,
-                        committedProfiles: committedProfiles,
-                        previousOrganization: previousOrganization,
-                        committedOrganization: committedOrganization,
-                        createdDirectories: createdDirectories,
-                        credentialCleanupRecovery: operationError as?
-                            any ProfileCredentialCleanupRecoveryProviding
-                    )
-                } catch {
-                    throw ProfileSaveRollbackError(
-                        operationError: operationError,
-                        rollbackError: error
-                    )
-                }
-                throw operationError
-            }
-            if registerMetadataUndo,
-               let before = previousProfiles.first(where: { $0.id == saved.id }),
-               ProfileMetadataUndo.onlyAllowedFieldsChanged(before: before, after: saved) {
-                metadataUndo = ProfileMetadataUndo(before: before, after: saved,
-                    folderID: previousOrganization.folderID(forProfileID: saved.id),
-                    organizationRevision: organization.mutationRevision)
-            }
-            return saved
         }
+    }
+
+    /// Caller owns the metadata guard and has reloaded the profile document.
+    /// Both ordinary saves and configuration copies share folder/credential rollback.
+    private func upsertWithFolderAfterMetadataReload(
+        _ profile: BrowserProfile,
+        toFolderID folderID: UUID?,
+        registerMetadataUndo: Bool = false,
+        expectedOrganizationRevision: UUID?? = nil,
+        afterPersist: (BrowserProfile) throws -> Void
+    ) throws -> BrowserProfile {
+        try requireOrganizationStorage()
+        do {
+            try reloadLatestOrganizationForMutation()
+        } catch {
+            organizationStorageIsAvailable = false
+            organization = .empty
+            lastError = Self.joinWarnings(
+                lastError,
+                "Папки временно недоступны. Профили и данные браузеров не изменены. \(error.localizedDescription)"
+            )
+            throw ProfileOrganizationError.storageUnavailable
+        }
+        if let folderID,
+           organization.folder(withID: folderID) == nil {
+            throw ProfileOrganizationError.folderNotFound
+        }
+
+        if let expectedOrganizationRevision,
+           expectedOrganizationRevision != organization.mutationRevision {
+            throw ProfileMetadataUndoConflict()
+        }
+        let previousProfiles = profiles
+        let previousOrganization = organization
+        var createdDirectory: OwnedProfileDirectory?
+        let saved = try upsertAfterMetadataReload(
+            profile,
+            afterPersist: { _ in },
+            createdDirectory: { createdDirectory = $0 }
+        )
+        let committedProfiles = profiles
+        var committedOrganization = previousOrganization
+
+        do {
+            var nextOrganization = previousOrganization
+            nextOrganization.assign(
+                profileIDs: [saved.id],
+                toFolderID: folderID
+            )
+            if nextOrganization != previousOrganization {
+                organization = nextOrganization
+                try persistOrganization()
+                committedOrganization = organization
+            }
+            try afterPersist(saved)
+        } catch {
+            let operationError = error
+            let createdDirectories = createdDirectory.map { [$0] } ?? []
+            do {
+                try rollbackCompoundMutation(
+                    previousProfiles: previousProfiles,
+                    committedProfiles: committedProfiles,
+                    previousOrganization: previousOrganization,
+                    committedOrganization: committedOrganization,
+                    createdDirectories: createdDirectories,
+                    credentialCleanupRecovery: operationError as?
+                        any ProfileCredentialCleanupRecoveryProviding
+                )
+            } catch {
+                throw ProfileSaveRollbackError(
+                    operationError: operationError,
+                    rollbackError: error
+                )
+            }
+            throw operationError
+        }
+        if registerMetadataUndo,
+           let before = previousProfiles.first(where: { $0.id == saved.id }),
+           ProfileMetadataUndo.onlyAllowedFieldsChanged(before: before, after: saved) {
+            metadataUndo = ProfileMetadataUndo(before: before, after: saved,
+                folderID: previousOrganization.folderID(forProfileID: saved.id),
+                organizationRevision: organization.mutationRevision)
+        }
+        return saved
     }
 
     @discardableResult
@@ -603,13 +636,23 @@ final class ProfileStore: ObservableObject {
         )
     }
 
+    /// Bookmarks enter only a newly minted profile, never an existing identity
+    /// or an open BrowserData tree. This operation does not start the browser.
+    func createProfileFromBookmarks(name: String, document: BookmarkImportDocument) async throws -> BrowserProfile {
+        let profile = BrowserProfile(name: name, startURL: "about:blank", proxy: nil)
+        let inserted = try await insertImportedProfilesOffMainActor([profile], folderNames: [nil], initialBookmarks: [profile.id: document])
+        guard inserted.count == 1, let saved = inserted.first else { throw NeAntikError.invalidProfile }
+        return saved
+    }
+
     /// Runs the import's complete metadata transaction away from the main
     /// actor. The synchronous mutation admission gate stays closed until the
     /// disk transaction finishes and its small in-memory publication occurs.
     @discardableResult
     func insertImportedProfilesOffMainActor(
         _ requestedProfiles: [BrowserProfile],
-        folderNames: [String?]
+        folderNames: [String?],
+        initialBookmarks: [UUID: BookmarkImportDocument] = [:]
     ) async throws -> [BrowserProfile] {
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             throw ProfileMetadataMutationInProgressError()
@@ -632,12 +675,13 @@ final class ProfileStore: ObservableObject {
                 paths: paths,
                 requestedProfiles: requestedProfiles,
                 folderNames: folderNames,
+                initialBookmarks: initialBookmarks,
                 beforeOrganizationPersist: beforeOrganizationPersist
             )
         }
         let result: ProfileMetadataImportResult
         do {
-            result = try await worker.value
+            result = try await withTaskCancellationHandler(operation: { try await worker.value }, onCancel: { worker.cancel() })
         } catch {
             let importError = error
             let reconciliation = Task.detached(priority: .userInitiated) {
@@ -692,6 +736,7 @@ final class ProfileStore: ObservableObject {
         targetFolderID: UUID?,
         afterPersist: ([BrowserProfile]) throws -> Void
     ) throws -> [BrowserProfile] {
+        try OwnedProfileDirectory.requireDescriptorBudget(profileCount: requestedProfiles.count)
         try requireSynchronousMutationAdmission()
         return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
@@ -750,7 +795,7 @@ final class ProfileStore: ObservableObject {
                 previousProfiles + prepared
             ).profiles
             let inserted = Array(normalized.suffix(prepared.count))
-            var createdDirectories: [URL] = []
+            var createdDirectories: [OwnedProfileDirectory] = []
             do {
                 for profile in inserted {
                     let directory = paths.profileDirectory(for: profile.id)
@@ -759,19 +804,20 @@ final class ProfileStore: ObservableObject {
                     ) else {
                         throw NeAntikError.invalidProfile
                     }
-                    try paths.prepareProfileDirectories(for: profile.id)
-                    createdDirectories.append(directory)
+                    let owned = try OwnedProfileDirectory(paths: paths, profileID: profile.id)
+                    createdDirectories.append(owned)
+                    try owned.prepareBrowserData()
                 }
 
                 profiles = normalized
                 sortProfiles()
                 try persist()
             } catch {
+                let operationError = error
                 profiles = previousProfiles
-                for directory in createdDirectories.reversed() {
-                    try? FileManager.default.removeItem(at: directory)
-                }
-                throw error
+                do { try removeNewProfileDirectories(createdDirectories) }
+                catch { throw ProfileSaveRollbackError(operationError: operationError, rollbackError: error) }
+                throw operationError
             }
 
             let persistedProfiles = profiles
@@ -856,13 +902,21 @@ final class ProfileStore: ObservableObject {
             }
             var copy = current.duplicated()
             copy.name = name
-            return try upsertAfterMetadataReload(copy, afterPersist: afterPersist)
+            // Read the source folder under the same guard as its revision.
+            // A copy has a fresh identity; this never copies BrowserData.
+            try requireOrganizationStorage()
+            try reloadLatestOrganizationForMutation()
+            let folderID = organization.folderID(forProfileID: current.id)
+            return try upsertWithFolderAfterMetadataReload(
+                copy, toFolderID: folderID, afterPersist: afterPersist
+            )
         }
     }
 
     private func upsertAfterMetadataReload(
         _ profile: BrowserProfile,
-        afterPersist: (BrowserProfile) throws -> Void
+        afterPersist: (BrowserProfile) throws -> Void,
+        createdDirectory: ((OwnedProfileDirectory?) -> Void)? = nil
     ) throws -> BrowserProfile {
         try requireStorage()
         switch try paths.privateFileEntryKind(
@@ -923,13 +977,22 @@ final class ProfileStore: ObservableObject {
         let profileDirectoryExisted = FileManager.default.fileExists(
             atPath: profileDirectory.path
         )
+        guard current != nil || !profileDirectoryExisted else { throw NeAntikError.invalidProfile }
+        var owned: OwnedProfileDirectory?
         do {
-            try paths.prepareProfileDirectories(for: value.id)
-        } catch {
-            if !profileDirectoryExisted {
-                try? FileManager.default.removeItem(at: profileDirectory)
+            if profileDirectoryExisted {
+                try paths.prepareProfileDirectories(for: value.id)
+            } else {
+                try OwnedProfileDirectory.requireDescriptorBudget(profileCount: 1)
+                owned = try OwnedProfileDirectory(paths: paths, profileID: value.id)
+                try owned!.prepareBrowserData()
             }
-            throw error
+            createdDirectory?(owned)
+        } catch {
+            let operationError = error
+            do { try owned?.removeEmptyOwnedDirectories() }
+            catch { throw ProfileSaveRollbackError(operationError: operationError, rollbackError: error) }
+            throw operationError
         }
 
         if let index = profiles.firstIndex(where: { $0.id == value.id }) {
@@ -941,11 +1004,11 @@ final class ProfileStore: ObservableObject {
         do {
             try persist()
         } catch {
+            let operationError = error
             profiles = previousProfiles
-            if !profileDirectoryExisted {
-                try? FileManager.default.removeItem(at: profileDirectory)
-            }
-            throw error
+            do { try owned?.removeEmptyOwnedDirectories() }
+            catch { throw ProfileSaveRollbackError(operationError: operationError, rollbackError: error) }
+            throw operationError
         }
         let persistedProfiles = profiles
         do {
@@ -964,9 +1027,8 @@ final class ProfileStore: ObservableObject {
                     rollbackError: error
                 )
             }
-            if !profileDirectoryExisted {
-                try? FileManager.default.removeItem(at: profileDirectory)
-            }
+            do { try owned?.removeEmptyOwnedDirectories() }
+            catch { throw ProfileSaveRollbackError(operationError: operationError, rollbackError: error) }
             throw operationError
         }
         return value
@@ -1198,17 +1260,10 @@ final class ProfileStore: ObservableObject {
     }
 
     private func removeNewProfileDirectories(
-        _ directories: [URL]
+        _ directories: [OwnedProfileDirectory]
     ) throws {
         for directory in directories.reversed() {
-            guard let identity = try paths.privateFileEntryIdentity(directory)
-            else {
-                continue
-            }
-            guard (identity.mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) else {
-                throw POSIXError(.EFTYPE)
-            }
-            try FileManager.default.removeItem(at: directory)
+            try directory.removeEmptyOwnedDirectories()
         }
     }
 
@@ -1217,7 +1272,7 @@ final class ProfileStore: ObservableObject {
         committedProfiles: [BrowserProfile],
         previousOrganization: ProfileOrganizationState,
         committedOrganization: ProfileOrganizationState,
-        createdDirectories: [URL],
+        createdDirectories: [OwnedProfileDirectory],
         credentialCleanupRecovery:
             (any ProfileCredentialCleanupRecoveryProviding)?
     ) throws {
@@ -1647,6 +1702,7 @@ final class ProfileStore: ObservableObject {
         warning: String?,
         recovered: Bool
     ) {
+        try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory)
         // Every caller, including mutation reloads, must fail before reading if
         // another process replaced metadata with a symlink or non-regular
         // entry. The metadata guard coordinates NeAntik instances; this check

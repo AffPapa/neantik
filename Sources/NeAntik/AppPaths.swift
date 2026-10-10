@@ -16,6 +16,12 @@ struct ProfileMetadataBusyError: LocalizedError {
     }
 }
 
+struct ProfileProcessBusyError: LocalizedError {
+    var errorDescription: String? {
+        "Профиль занят другим действием. Дождись его завершения и повтори."
+    }
+}
+
 struct PrivateFileEntryIdentity: Equatable, Sendable {
     let device: dev_t
     let inode: ino_t
@@ -47,14 +53,38 @@ final class PrivateFileGuardLease: @unchecked Sendable {
         self.descriptor = nil
     }
 
+    /// An async lease must refuse if a foreign writer replaced its lock name:
+    /// the old inode remains locked, while another manager could lock the new
+    /// one. Used at restore admission and immediately before its mutations.
+    func validateHeldFile(at url: URL) throws {
+        lock.lock(); defer { lock.unlock() }
+        guard let descriptor else { throw ProfileProcessBusyError() }
+        var held = stat(), named = stat()
+        guard fstat(descriptor, &held) == 0, lstat(url.path, &named) == 0,
+              held.st_dev == named.st_dev, held.st_ino == named.st_ino,
+              held.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              named.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              held.st_uid == geteuid(), named.st_uid == geteuid(),
+              held.st_nlink == 1, named.st_nlink == 1,
+              held.st_mode & 0o077 == 0, named.st_mode & 0o077 == 0 else { throw ProfileProcessBusyError() }
+    }
+
     deinit {
         release()
     }
 }
 
+/// Local fault-injection seams; production paths leave both hooks nil.
+/// They cannot be configured through metadata, environment or MCP inputs.
+struct PrivateGuardAcquisitionHooks: Sendable {
+    var onFirstContention: (@Sendable () -> Void)?
+    var lockAttempt: (@Sendable (Int32, Int32) -> Int32)?
+}
+
 struct AppPaths: Sendable {
     let rootDirectory: URL
     let migrationWarning: String?
+    var guardAcquisitionHooks = PrivateGuardAcquisitionHooks()
 
     init(rootDirectory: URL? = nil) {
         if let rootDirectory {
@@ -124,6 +154,10 @@ struct AppPaths: Sendable {
 
     var proxyHealthFile: URL {
         rootDirectory.appendingPathComponent("proxy-health.json")
+    }
+
+    var proxyDiagnosticPreferenceFile: URL {
+        rootDirectory.appendingPathComponent("proxy-diagnostic-endpoint.json")
     }
 
     var profilesDirectory: URL {
@@ -317,6 +351,7 @@ struct AppPaths: Sendable {
         // coordination parents are still created explicitly: launches must be
         // safe even when a caller constructs AppPaths before app startup.
         try createPrivateDirectory(rootDirectory)
+        try BrowserDataRestoreTransaction.requireNoPending(rootURL: rootDirectory)
         try createPrivateDirectory(profilesDirectory)
         try createPrivateDirectory(processLocksDirectory)
         try createPrivateDirectory(logsDirectory)
@@ -392,9 +427,23 @@ struct AppPaths: Sendable {
         for id: UUID,
         _ operation: () throws -> T
     ) throws -> T {
+        // Launch, recovery and metadata commands run synchronously from UI.
+        // A different manager may hold this authority during a disk operation;
+        // fail closed with a retry action instead of parking the main actor.
         try withPrivateFileGuard(
             at: lockGuardFile(for: id),
+            nonBlocking: true,
+            busyError: ProfileProcessBusyError(),
             operation
+        )
+    }
+
+    /// Kept across a stopped profile's off-main maintenance operation. Launch,
+    /// deletion and another manager use the same inode and fail while held.
+    func acquireProcessMaintenanceGuard(for id: UUID) throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(
+            at: lockGuardFile(for: id), waitPolicy: .cancellableOperation,
+            busyError: ProfileProcessBusyError()
         )
     }
 
@@ -403,51 +452,78 @@ struct AppPaths: Sendable {
     ) throws -> T {
         try withPrivateFileGuard(
             at: profilesMetadataGuardFile,
-            nonBlocking: true,
-            operation
-        )
+            nonBlocking: true
+        ) {
+            try BrowserDataRestoreTransaction.requireNoPending(rootURL: rootDirectory)
+            return try operation()
+        }
+    }
+
+    /// The sole pending-fence exception holds an unforgeable, borrowed stopped
+    /// process lease. Ordinary metadata consumers always use the fenced guard.
+    func withProfilesMetadataGuardForRestore<T>(
+        authority: StoppedProfileRestoreAuthority,
+        _ operation: () throws -> T
+    ) throws -> T {
+        try authority.validate(paths: self)
+        return try withPrivateFileGuard(at: profilesMetadataGuardFile, nonBlocking: true) {
+            try authority.validate(paths: self)
+            return try operation()
+        }
     }
 
     func withSnapshotsGuard<T>(_ operation: () throws -> T) throws -> T {
         try withPrivateFileGuard(at: snapshotsGuardFile, operation)
     }
 
-    func acquireBulkCredentialImportGuard() throws -> PrivateFileGuardLease {
-        try createPrivateDirectory(
-            bulkCredentialImportGuardFile.deletingLastPathComponent()
+    func withProxyDiagnosticGuard<T>(_ operation: () throws -> T) throws -> T {
+        try withPrivateFileGuard(
+            at: rootDirectory.appendingPathComponent(".proxy-diagnostic-endpoint.lock"),
+            operation
         )
-        let descriptor = bulkCredentialImportGuardFile.path.withCString {
-            Darwin.open(
-                $0,
-                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
-                mode_t(S_IRUSR | S_IWUSR)
-            )
-        }
-        guard descriptor >= 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EIO
-            )
-        }
-        guard neantikFlock(descriptor, LOCK_EX) == 0 else {
-            let lockError = errno
-            _ = Darwin.close(descriptor)
-            throw POSIXError(
-                POSIXErrorCode(rawValue: lockError) ?? .EIO
-            )
-        }
-        return PrivateFileGuardLease(descriptor: descriptor)
+    }
+
+    func acquireBulkCredentialImportGuard() throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(
+            at: bulkCredentialImportGuardFile,
+            waitPolicy: .cancellableOperation
+        )
     }
 
     private func withPrivateFileGuard<T>(
         at guardURL: URL,
         nonBlocking: Bool = false,
+        busyError: any Error = ProfileMetadataBusyError(),
         _ operation: () throws -> T
     ) throws -> T {
+        let lease = try acquirePrivateFileGuard(
+            at: guardURL,
+            waitPolicy: nonBlocking ? .boundedCommand : .cancellableOperation,
+            busyError: busyError
+        )
+        defer { lease.release() }
+        return try operation()
+    }
+
+    private enum PrivateGuardWaitPolicy: Equatable {
+        case boundedCommand
+        case cancellableOperation
+    }
+
+    /// Lock the opened inode, then verify that the pathname still names it.
+    /// Every guard uses this validation, including leases held across awaits.
+    /// Cancellation applies to preparation waits; an uncontended command may
+    /// still run in a cancelled task so credential rollback can finish.
+    private func acquirePrivateFileGuard(
+        at guardURL: URL,
+        waitPolicy: PrivateGuardWaitPolicy,
+        busyError: any Error = ProfileMetadataBusyError()
+    ) throws -> PrivateFileGuardLease {
         try createPrivateDirectory(guardURL.deletingLastPathComponent())
         let descriptor = guardURL.path.withCString {
             Darwin.open(
                 $0,
-                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK,
                 mode_t(S_IRUSR | S_IWUSR)
             )
         }
@@ -456,28 +532,74 @@ struct AppPaths: Sendable {
                 POSIXErrorCode(rawValue: errno) ?? .EIO
             )
         }
-        defer { _ = Darwin.close(descriptor) }
+        var leaseTransferred = false
+        defer {
+            if !leaseTransferred {
+                _ = neantikFlock(descriptor, LOCK_UN)
+                _ = Darwin.close(descriptor)
+            }
+        }
+
+        // Reject non-regular and multiply linked entries before waiting; never
+        // chmod a guard that aliases another file. Check again after flock,
+        // because a waiting descriptor can outlive a replaced pathname.
+        try validatePrivateGuard(descriptor, at: guardURL)
 
         let lockDeadline = DispatchTime.now().uptimeNanoseconds + 50_000_000
-        // Metadata entry points include synchronous UI/MCP initialization.
-        // Never park their actor behind another process's long operation.
-        while neantikFlock(descriptor, LOCK_EX | (nonBlocking ? LOCK_NB : 0)) != 0 {
-            if nonBlocking && errno == EWOULDBLOCK {
-                guard DispatchTime.now().uptimeNanoseconds < lockDeadline else {
-                    throw ProfileMetadataBusyError()
+        var contentionObserved = false
+        while true {
+            if waitPolicy == .cancellableOperation {
+                try Task.checkCancellation()
+            }
+            let lockResult = guardAcquisitionHooks.lockAttempt?(
+                descriptor, LOCK_EX | LOCK_NB
+            ) ?? neantikFlock(descriptor, LOCK_EX | LOCK_NB)
+            if lockResult == 0 { break }
+            let lockError = errno
+            if lockError == EWOULDBLOCK {
+                if !contentionObserved {
+                    contentionObserved = true
+                    guardAcquisitionHooks.onFirstContention?()
+                }
+                if waitPolicy == .boundedCommand {
+                    guard DispatchTime.now().uptimeNanoseconds < lockDeadline else {
+                        throw busyError
+                    }
                 }
                 try Task.checkCancellation()
                 usleep(500)
                 continue
             }
-            guard errno == EINTR else {
+            guard lockError == EINTR else {
                 throw POSIXError(
-                    POSIXErrorCode(rawValue: errno) ?? .EIO
+                    POSIXErrorCode(rawValue: lockError) ?? .EIO
                 )
             }
+            if waitPolicy == .boundedCommand,
+               DispatchTime.now().uptimeNanoseconds >= lockDeadline {
+                throw busyError
+            }
         }
-        defer { _ = neantikFlock(descriptor, LOCK_UN) }
+        try validatePrivateGuard(descriptor, at: guardURL)
+        if waitPolicy == .cancellableOperation {
+            try Task.checkCancellation()
+        }
+        guard Darwin.fchmod(
+            descriptor,
+            mode_t(S_IRUSR | S_IWUSR)
+        ) == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EACCES
+            )
+        }
+        leaseTransferred = true
+        return PrivateFileGuardLease(descriptor: descriptor)
+    }
 
+    private func validatePrivateGuard(
+        _ descriptor: Int32,
+        at guardURL: URL
+    ) throws {
         var openedStatus = stat()
         guard Darwin.fstat(descriptor, &openedStatus) == 0 else {
             throw POSIXError(
@@ -493,19 +615,11 @@ struct AppPaths: Sendable {
               (pathStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
               openedStatus.st_dev == pathStatus.st_dev,
               openedStatus.st_ino == pathStatus.st_ino,
-              openedStatus.st_nlink == 1
+              openedStatus.st_nlink == 1,
+              openedStatus.st_uid == geteuid()
         else {
             throw POSIXError(.ELOOP)
         }
-        guard Darwin.fchmod(
-            descriptor,
-            mode_t(S_IRUSR | S_IWUSR)
-        ) == 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EACCES
-            )
-        }
-        return try operation()
     }
 
     func privateFileEntryKind(_ url: URL) throws -> PrivateFileEntryKind {

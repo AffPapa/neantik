@@ -1,0 +1,21 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "125090427f9c6fe33f1cbeb1c5e58384852b7cc294b6e297b61aaf2e8aa9e161",
+  "payload": {
+    "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+    "status": "moved/obsolete requires separate patch decision; never inherit M155 bytes",
+    "targets": [
+      "third_party/devtools-frontend/src/scripts/build/build_inspector_overlay.py"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "m156-devtools-absent-targets.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

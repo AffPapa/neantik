@@ -1,0 +1,1951 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "30138553a2a91f803b476525e607cd8e0f5cee452c923617d4a24e57c4eb133b",
+  "payload": {
+    "DEPS_SHA256": "b4de748ba5abac43952bdc0945795d9c3a07238d18b37ae0f82231669f68fc94",
+    "cipd": 39,
+    "gclientOutputSHA256": "6f031cc476375245c93ac185ba97e2606f781b20fe0196d5b1f00f49b8c88681",
+    "gcs": 50,
+    "git": 151,
+    "hooksExecuted": false,
+    "nativeBuildStarted": false,
+    "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+    "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+    "processed": 240,
+    "records": {
+      "src/": {
+        "kind": "git",
+        "revision": "634b046faf2137b83af71c87baf362b533af9104",
+        "url": "https://chromium.googlesource.com/chromium/src.git"
+      },
+      "src/agents/shared/": {
+        "kind": "git",
+        "revision": "865684c4f7092e4ab05adcd3fcf068672ff28d27",
+        "url": "https://chromium.googlesource.com/chromium/agents.git@865684c4f7092e4ab05adcd3fcf068672ff28d27"
+      },
+      "src/base/tracing/test/data:test_data/chrome_5672_histograms.pftrace.gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/chrome_5672_histograms.pftrace.gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee"
+      },
+      "src/base/tracing/test/data:test_data/chrome_custom_navigation_trace.gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/chrome_custom_navigation_trace.gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939"
+      },
+      "src/base/tracing/test/data:test_data/chrome_fcp_lcp_navigations.pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/chrome_fcp_lcp_navigations.pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3"
+      },
+      "src/base/tracing/test/data:test_data/chrome_input_with_frame_view.pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/chrome_input_with_frame_view.pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975"
+      },
+      "src/base/tracing/test/data:test_data/chrome_input_with_frame_view_new.pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/chrome_input_with_frame_view_new.pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12"
+      },
+      "src/base/tracing/test/data:test_data/chrome_page_load_all_categories_not_extended.pftrace.gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/chrome_page_load_all_categories_not_extended.pftrace.gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493"
+      },
+      "src/base/tracing/test/data:test_data/cpu_powerups_1.pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/cpu_powerups_1.pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386"
+      },
+      "src/base/tracing/test/data:test_data/jetstream_3.pftrace.gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/jetstream_3.pftrace.gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda"
+      },
+      "src/base/tracing/test/data:test_data/loadline2_phone_perfetto_trace.pb.gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/loadline2_phone_perfetto_trace.pb.gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c"
+      },
+      "src/base/tracing/test/data:test_data/scroll_jank_with_pinch.pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_jank_with_pinch.pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45"
+      },
+      "src/base/tracing/test/data:test_data/scroll_m131.pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_m131.pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d"
+      },
+      "src/base/tracing/test/data:test_data/scroll_m132.pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_m132.pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe"
+      },
+      "src/base/tracing/test/data:test_data/scroll_m132_with_atrace.pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_m132_with_atrace.pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a"
+      },
+      "src/base/tracing/test/data:test_data/scroll_m133beta.pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_m133beta.pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19"
+      },
+      "src/base/tracing/test/data:test_data/scroll_m144.pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_m144.pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843"
+      },
+      "src/base/tracing/test/data:test_data/scroll_offsets.pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_offsets.pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98"
+      },
+      "src/base/tracing/test/data:test_data/scroll_offsets_trace_2.pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_offsets_trace_2.pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289"
+      },
+      "src/base/tracing/test/data:test_data/scroll_with_input_not_forwarded_to_renderer.pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/scroll_with_input_not_forwarded_to_renderer.pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf"
+      },
+      "src/base/tracing/test/data:test_data/speedometer_21.perfetto_trace.gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/speedometer_21.perfetto_trace.gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529"
+      },
+      "src/base/tracing/test/data:test_data/speedometer_3.perfetto_trace.gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/speedometer_3.perfetto_trace.gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02"
+      },
+      "src/base/tracing/test/data:test_data/top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a/": {
+        "kind": "gcs",
+        "markers": {
+          ".test_data_chrome_5672_histograms_pftrace_gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee_hash": "a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+          ".test_data_chrome_custom_navigation_trace_gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939_hash": "ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+          ".test_data_chrome_fcp_lcp_navigations_pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3_hash": "ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+          ".test_data_chrome_input_with_frame_view_new_pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12_hash": "e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+          ".test_data_chrome_input_with_frame_view_pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975_hash": "a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+          ".test_data_chrome_page_load_all_categories_not_extended_pftrace_gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493_hash": "6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+          ".test_data_cpu_powerups_1_pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386_hash": "70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+          ".test_data_jetstream_3_pftrace_gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda_hash": "8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+          ".test_data_loadline2_phone_perfetto_trace_pb_gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c_hash": "446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c",
+          ".test_data_scroll_jank_with_pinch_pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45_hash": "8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+          ".test_data_scroll_m131_pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d_hash": "14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+          ".test_data_scroll_m132_pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe_hash": "779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+          ".test_data_scroll_m132_with_atrace_pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a_hash": "b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+          ".test_data_scroll_m133beta_pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19_hash": "2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+          ".test_data_scroll_m144_pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843_hash": "6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+          ".test_data_scroll_offsets_pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98_hash": "62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+          ".test_data_scroll_offsets_trace_2_pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289_hash": "2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+          ".test_data_scroll_with_input_not_forwarded_to_renderer_pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf_hash": "ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+          ".test_data_speedometer_21_perfetto_trace_gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529_hash": "8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+          ".test_data_speedometer_3_perfetto_trace_gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02_hash": "b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+          ".test_data_top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a_hash": "8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+        },
+        "url": "gs://perfetto/test_data/top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a"
+      },
+      "src/buildtools/mac:gn/gn/mac-${arch}/": {
+        "instanceID": "pt5SZX89AaBzsAqpHbUS-F066dKywK1GlJzaToIE9ioC",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "2fa99e65c8bc2de147d811aa1d6d0bcc49e7722f02ff1e15d95b72165dc88d29",
+        "package": "gn/gn/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/gn/gn/mac-${arch}@git_revision:510ec7992c30f172205792f190e96111a896ba8f"
+      },
+      "src/buildtools/mac_arm64-format:945e45cbcb5443c3e569d5e0783fd012154fc4a7/": {
+        "kind": "gcs",
+        "markers": {
+          ".945e45cbcb5443c3e569d5e0783fd012154fc4a7_hash": "a1fb17260eda2971f52ed341501b93703b0fce69ffb43a179b891b66f6f63e5a"
+        },
+        "url": "gs://chromium-clang-format/945e45cbcb5443c3e569d5e0783fd012154fc4a7"
+      },
+      "src/chrome/test/data/perf/canvas_bench/": {
+        "kind": "git",
+        "revision": "a7b40ea5ae0239517d78845a5fc9b12976bfc732",
+        "url": "https://chromium.googlesource.com/chromium/canvas_bench.git@a7b40ea5ae0239517d78845a5fc9b12976bfc732"
+      },
+      "src/chrome/test/data/perf/frame_rate/content/": {
+        "kind": "git",
+        "revision": "c10272c88463efeef6bb19c9ec07c42bc8fe22b9",
+        "url": "https://chromium.googlesource.com/chromium/frame_rate/content.git@c10272c88463efeef6bb19c9ec07c42bc8fe22b9"
+      },
+      "src/chrome/test/data/safe_browsing/dmg:chromium/chrome/test/data/safe_browsing/dmg/": {
+        "instanceID": "03TLfNQgc59nHmyWtYWJfFaUrEW8QDJJzXwm-672m-QC",
+        "kind": "cipd",
+        "manifestFiles": 32,
+        "manifestSHA256": "73ad906fbc5b75515884f40dca69a90da0ba705f4e4cca2f6f8cd90a09e97d24",
+        "package": "chromium/chrome/test/data/safe_browsing/dmg",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/chrome/test/data/safe_browsing/dmg@03TLfNQgc59nHmyWtYWJfFaUrEW8QDJJzXwm-672m-QC"
+      },
+      "src/chrome/test/data/xr/webvr_info/": {
+        "kind": "git",
+        "revision": "c58ae99b9ff9e2aa4c524633519570bf33536248",
+        "url": "https://chromium.googlesource.com/external/github.com/toji/webvr.info.git@c58ae99b9ff9e2aa4c524633519570bf33536248"
+      },
+      "src/components/variations/test_data/cipd:chromium/chrome/test/data/variations/cipd/": {
+        "instanceID": "Voe8CwQHmgZRogp7bLS2Vd5XUPeVJzjJKNS_kxQJ5ZoC",
+        "kind": "cipd",
+        "manifestFiles": 8,
+        "manifestSHA256": "c123d549a08bcf907cd367401d3d6c7b78546d61f7bf5c53d984757f129738ab",
+        "package": "chromium/chrome/test/data/variations/cipd",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/chrome/test/data/variations/cipd@Voe8CwQHmgZRogp7bLS2Vd5XUPeVJzjJKNS_kxQJ5ZoC"
+      },
+      "src/content/test/data/gpu/meet_effects:meet-gpu-tests/989382331.tar.gz/": {
+        "kind": "gcs",
+        "markers": {
+          ".meet-gpu-tests_989382331_tar_gz_hash": "be3da8cf0ccaca852bfa465c6c9903b53d5ad89d39bec611a30a1b6ecc651301"
+        },
+        "url": "gs://meet-bundles/meet-gpu-tests/989382331.tar.gz"
+      },
+      "src/content/test/data/gpu/meet_effects_videos:chromium/testing/meet-effects-videos/": {
+        "instanceID": "I5ME8r-BP_A2lRn-c5E-9POZkrJwGS8BNnRdREhYbs8C",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "b619f3f6f56efaec4837f354d139db35b9ad065d35a1b6f88ea9263b5458517a",
+        "package": "chromium/testing/meet-effects-videos",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/testing/meet-effects-videos@I5ME8r-BP_A2lRn-c5E-9POZkrJwGS8BNnRdREhYbs8C"
+      },
+      "src/docs/website/": {
+        "kind": "git",
+        "revision": "70bb13377fed8671966ab9565b7627f2e73ae1a2",
+        "url": "https://chromium.googlesource.com/website.git@70bb13377fed8671966ab9565b7627f2e73ae1a2"
+      },
+      "src/media/cdm/api/": {
+        "kind": "git",
+        "revision": "d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4",
+        "url": "https://chromium.googlesource.com/chromium/cdm.git@d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4"
+      },
+      "src/net/third_party/quiche/src/": {
+        "kind": "git",
+        "revision": "a1628192cf32ba40d21e0dd80f485d68c24ff87a",
+        "url": "https://quiche.googlesource.com/quiche.git@a1628192cf32ba40d21e0dd80f485d68c24ff87a"
+      },
+      "src/testing/libfuzzer/fuzzers/wasm_corpus/": {
+        "kind": "git",
+        "revision": "1df5e50a45db9518a56ebb42cb020a94a090258b",
+        "url": "https://chromium.googlesource.com/v8/fuzzer_wasm_corpus.git@1df5e50a45db9518a56ebb42cb020a94a090258b"
+      },
+      "src/third_party/angle/": {
+        "kind": "git",
+        "revision": "d9c703d8031a570e9296837af14f8bf5708ddf07",
+        "url": "https://chromium.googlesource.com/angle/angle.git@d9c703d8031a570e9296837af14f8bf5708ddf07"
+      },
+      "src/third_party/angle/third_party/VK-GL-CTS/src/": {
+        "kind": "git",
+        "revision": "93bca01861b0e3ef3c387027a9791e6d065f900c",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/VK-GL-CTS@93bca01861b0e3ef3c387027a9791e6d065f900c"
+      },
+      "src/third_party/angle/third_party/glmark2/src/": {
+        "kind": "git",
+        "revision": "6edcf02205fd1e8979dc3f3964257a81959b80c8",
+        "url": "https://chromium.googlesource.com/external/github.com/glmark2/glmark2@6edcf02205fd1e8979dc3f3964257a81959b80c8"
+      },
+      "src/third_party/angle/third_party/rapidjson/src/": {
+        "kind": "git",
+        "revision": "24b5e7a8b27f42fa16b96fc70aade9106cf7102f",
+        "url": "https://chromium.googlesource.com/external/github.com/Tencent/rapidjson@24b5e7a8b27f42fa16b96fc70aade9106cf7102f"
+      },
+      "src/third_party/anonymous_tokens/src/": {
+        "kind": "git",
+        "revision": "1ae8df5e40bab28959cc182c2c0d88923059e278",
+        "url": "https://chromium.googlesource.com/external/github.com/google/anonymous-tokens.git@1ae8df5e40bab28959cc182c2c0d88923059e278"
+      },
+      "src/third_party/apache-mac-arm64:infra/3pp/tools/httpd-php/mac-arm64/": {
+        "instanceID": "SHR7sSVFDk9lgPj83FZ7ks8lMtfu1F4nPzW7FKwI20wC",
+        "kind": "cipd",
+        "manifestFiles": 32,
+        "manifestSHA256": "6db040dbb328eddc57a501871350cb870a1ad18903fba79de0ae278e8d2e98e3",
+        "package": "infra/3pp/tools/httpd-php/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/httpd-php/mac-arm64@version:2@httpd2.4.38.php7.3.31.chromium.3"
+      },
+      "src/third_party/apache-mac:infra/3pp/tools/httpd-php/mac-amd64/": {
+        "instanceID": "Eu8P7C8ZAybaPphLWwK2feNK8cTEAhQfYI6M9i3E7JcC",
+        "kind": "cipd",
+        "manifestFiles": 32,
+        "manifestSHA256": "6b2264899ae53aea52c1912bc8f9876ab9b5848f5ce68bd8b55e0ea8f03e65db",
+        "package": "infra/3pp/tools/httpd-php/mac-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/httpd-php/mac-amd64@version:2@httpd2.4.38.php7.3.31.chromium.3"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:031d5599c8a21118754e30dbea141be66104f556/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/031d5599c8a21118754e30dbea141be66104f556"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:314e4e0d5e89ea9e9e9a234c617b4413adf48aa9/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/314e4e0d5e89ea9e9e9a234c617b4413adf48aa9"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:3a19b42a7c46257b716d55d6733f070c87180b1e/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/3a19b42a7c46257b716d55d6733f070c87180b1e"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:756068da5e551516b23b0ba133e55c144f623d38/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/756068da5e551516b23b0ba133e55c144f623d38"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:7fc9338af75b7d9d185c91ddf262a356def5623d/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/7fc9338af75b7d9d185c91ddf262a356def5623d"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:8aac3db2a8c9e44babec81e539a3d60aeab4985c/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/8aac3db2a8c9e44babec81e539a3d60aeab4985c"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:c2d7e9ce67522dad138c7feb0a6911b828bfb130/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/c2d7e9ce67522dad138c7feb0a6911b828bfb130"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8"
+      },
+      "src/third_party/blink/renderer/core/css/perftest_data:fdc43ee18cbd65487249441849f58aa13484aaef/": {
+        "kind": "gcs",
+        "markers": {
+          ".031d5599c8a21118754e30dbea141be66104f556_hash": "8e7b765d72bb8e7742f5bf955f4bf64d5469f61197dad8b632304095a52322d7",
+          ".314e4e0d5e89ea9e9e9a234c617b4413adf48aa9_hash": "a721ada40011a286631baae6d76878f2023ff000151792228c83b1958ea8a197",
+          ".3a19b42a7c46257b716d55d6733f070c87180b1e_hash": "f203ff9e8c8a6a3b714f0a26db38cc940544a907435c62c79b21f4bd3f8bee8e",
+          ".756068da5e551516b23b0ba133e55c144f623d38_hash": "84ef87a8163335a95111d9709306596f96742539da0b34fbe7397f799946a168",
+          ".7fc9338af75b7d9d185c91ddf262a356def5623d_hash": "34e92acae8aade2a186abe79ed1f379c266f04f72f1eb54bd3a912e889bc5cc0",
+          ".8aac3db2a8c9e44babec81e539a3d60aeab4985c_hash": "6aeb0036dfafaf5e905abdb0ffe515a3952ffe35a7c59afb0fc8b233b27c6ce4",
+          ".c2d7e9ce67522dad138c7feb0a6911b828bfb130_hash": "95c6b148577b891310c024b2daa5d68faf644a37707ac0cb21501eefe8a399a3",
+          ".e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8_hash": "519019df16c628c6c0893df18928faeaa3150a9d8f26a787a16ce7c6b2cec2ad",
+          ".fdc43ee18cbd65487249441849f58aa13484aaef_hash": "0e92de92f49abc9a521f7175106c80744196f8cefc0263bc0f4a6b4f724a7d10"
+        },
+        "url": "gs://chromium-style-perftest/fdc43ee18cbd65487249441849f58aa13484aaef"
+      },
+      "src/third_party/boringssl/src/": {
+        "kind": "git",
+        "revision": "2ea3200c3a3ec176613ab7a0b9a4ffc6db846120",
+        "url": "https://boringssl.googlesource.com/boringssl.git@2ea3200c3a3ec176613ab7a0b9a4ffc6db846120"
+      },
+      "src/third_party/breakpad/breakpad/": {
+        "kind": "git",
+        "revision": "868abe6f016cfeabfb7208681e89031ae667c336",
+        "url": "https://chromium.googlesource.com/breakpad/breakpad.git@868abe6f016cfeabfb7208681e89031ae667c336"
+      },
+      "src/third_party/cast_core/public/src/": {
+        "kind": "git",
+        "revision": "f5ee589bdaea60418f670fa176be15ccb9a34942",
+        "url": "https://chromium.googlesource.com/cast_core/public@f5ee589bdaea60418f670fa176be15ccb9a34942"
+      },
+      "src/third_party/catapult/": {
+        "kind": "git",
+        "revision": "f411808cd159db5e47be79ebee59fffca3da1bd4",
+        "url": "https://chromium.googlesource.com/catapult.git@f411808cd159db5e47be79ebee59fffca3da1bd4"
+      },
+      "src/third_party/ced/src/": {
+        "kind": "git",
+        "revision": "d127078cedef9c6642cbe592dacdd2292b50bb19",
+        "url": "https://chromium.googlesource.com/external/github.com/google/compact_enc_det.git@d127078cedef9c6642cbe592dacdd2292b50bb19"
+      },
+      "src/third_party/chromium-bidi/node_modules:chromium-bidi/028c7baf9de02f6ae103b1911ab13d1aeb48f0ddd8fa702f9c150cdaf8cb5f5b/": {
+        "kind": "gcs",
+        "markers": {
+          ".chromium-bidi_028c7baf9de02f6ae103b1911ab13d1aeb48f0ddd8fa702f9c150cdaf8cb5f5b_hash": "028c7baf9de02f6ae103b1911ab13d1aeb48f0ddd8fa702f9c150cdaf8cb5f5b"
+        },
+        "url": "gs://chromium-nodejs/chromium-bidi/028c7baf9de02f6ae103b1911ab13d1aeb48f0ddd8fa702f9c150cdaf8cb5f5b"
+      },
+      "src/third_party/clang-format/script/": {
+        "kind": "git",
+        "revision": "9f796802e5d633c96dbe97e0b6683d5e62594f9f",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/clang/tools/clang-format.git@9f796802e5d633c96dbe97e0b6683d5e62594f9f"
+      },
+      "src/third_party/cld_3/src/": {
+        "kind": "git",
+        "revision": "b48dc46512566f5a2d41118c8c1116c4f96dc661",
+        "url": "https://chromium.googlesource.com/external/github.com/google/cld_3.git@b48dc46512566f5a2d41118c8c1116c4f96dc661"
+      },
+      "src/third_party/colorama/src/": {
+        "kind": "git",
+        "revision": "3de9f013df4b470069d03d250224062e8cf15c49",
+        "url": "https://chromium.googlesource.com/external/colorama.git@3de9f013df4b470069d03d250224062e8cf15c49"
+      },
+      "src/third_party/compiler-rt/src/": {
+        "kind": "git",
+        "revision": "627967b9c76e9a9d09a29e2c48a9283556f5a3a3",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/compiler-rt.git@627967b9c76e9a9d09a29e2c48a9283556f5a3a3"
+      },
+      "src/third_party/content_analysis_sdk/src/": {
+        "kind": "git",
+        "revision": "0a0e7ea516249e786d5a8884552bbd6e163d89cb",
+        "url": "https://chromium.googlesource.com/external/github.com/chromium/content_analysis_sdk.git@0a0e7ea516249e786d5a8884552bbd6e163d89cb"
+      },
+      "src/third_party/cpu_features/src/": {
+        "kind": "git",
+        "revision": "81d13c49649f0714dd41fb56bb246398b6584085",
+        "url": "https://chromium.googlesource.com/external/github.com/google/cpu_features.git@81d13c49649f0714dd41fb56bb246398b6584085"
+      },
+      "src/third_party/cpuinfo/src/": {
+        "kind": "git",
+        "revision": "66ee79c038d70dad9f08705b2c9b3e58f6d8f512",
+        "url": "https://chromium.googlesource.com/external/github.com/pytorch/cpuinfo.git@66ee79c038d70dad9f08705b2c9b3e58f6d8f512"
+      },
+      "src/third_party/cpython3/host:infra/3pp/tools/cpython3/${platform}/": {
+        "instanceID": "z6bO4Z5kwtk0uh9oxGXOd5O7LyZDAnmlO-e86nZLRiEC",
+        "kind": "cipd",
+        "manifestFiles": 2217,
+        "manifestSHA256": "da6c097005487ebc805ade9575865e21fb1eec1ac21802440669b511dbd213eb",
+        "package": "infra/3pp/tools/cpython3/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/cpython3/${platform}@version:3@3.11.9.chromium.38"
+      },
+      "src/third_party/cpython3/linux-amd64:infra/3pp/tools/cpython3/linux-amd64/": {
+        "instanceID": "t7igptFxuJGP2lGu4db_6wyKFMeR-x0LxddFTIydlJsC",
+        "kind": "cipd",
+        "manifestFiles": 2217,
+        "manifestSHA256": "b376b9bb9c4ee99db5114522d4bb4415394bde18b9a0867f8910c98ce5de5847",
+        "package": "infra/3pp/tools/cpython3/linux-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/cpython3/linux-amd64@version:3@3.11.9.chromium.38"
+      },
+      "src/third_party/crabbyavif/src/": {
+        "kind": "git",
+        "revision": "989bbc789a150f430f518b9edda995f677b78cd1",
+        "url": "https://chromium.googlesource.com/external/github.com/webmproject/CrabbyAvif.git@989bbc789a150f430f518b9edda995f677b78cd1"
+      },
+      "src/third_party/crc32c/src/": {
+        "kind": "git",
+        "revision": "2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07",
+        "url": "https://chromium.googlesource.com/external/github.com/google/crc32c.git@2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07"
+      },
+      "src/third_party/cros-components/src/": {
+        "kind": "git",
+        "revision": "0abb2efaa3d16db861c9710b193c39e657ac3bdf",
+        "url": "https://chromium.googlesource.com/external/google3/cros_components.git@0abb2efaa3d16db861c9710b193c39e657ac3bdf"
+      },
+      "src/third_party/crossbench-web-tests/": {
+        "kind": "git",
+        "revision": "4483f71db32259409d9c5f7c4c95e2605b7a3b13",
+        "url": "https://chromium.googlesource.com/chromium/web-tests.git@4483f71db32259409d9c5f7c4c95e2605b7a3b13"
+      },
+      "src/third_party/crossbench/": {
+        "kind": "git",
+        "revision": "043866e26bee4936f0a6a3cf87813fb928d7ea1f",
+        "url": "https://chromium.googlesource.com/crossbench.git@043866e26bee4936f0a6a3cf87813fb928d7ea1f"
+      },
+      "src/third_party/dav1d/libdav1d/": {
+        "kind": "git",
+        "revision": "bf5a8792744ee78c977dfb16503f9156dde6401d",
+        "url": "https://chromium.googlesource.com/external/github.com/videolan/dav1d.git@bf5a8792744ee78c977dfb16503f9156dde6401d"
+      },
+      "src/third_party/dawn/": {
+        "kind": "git",
+        "revision": "0a2c7df818e285d6db0f085135139cda04cee8bb",
+        "url": "https://dawn.googlesource.com/dawn.git@0a2c7df818e285d6db0f085135139cda04cee8bb"
+      },
+      "src/third_party/dawn/third_party/EGL-Registry/src/": {
+        "kind": "git",
+        "revision": "db3425b8246136faccb5e2782b5694960bd6edf1",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/EGL-Registry@db3425b8246136faccb5e2782b5694960bd6edf1"
+      },
+      "src/third_party/dawn/third_party/OpenGL-Registry/src/": {
+        "kind": "git",
+        "revision": "1cdd228e34966dd6b95bd203e9f84faba0f371a1",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/OpenGL-Registry@1cdd228e34966dd6b95bd203e9f84faba0f371a1"
+      },
+      "src/third_party/dawn/third_party/directx-headers/src/": {
+        "kind": "git",
+        "revision": "980971e835876dc0cde415e8f9bc646e64667bf7",
+        "url": "https://chromium.googlesource.com/external/github.com/microsoft/DirectX-Headers@980971e835876dc0cde415e8f9bc646e64667bf7"
+      },
+      "src/third_party/dawn/third_party/directx-shader-compiler/src/": {
+        "kind": "git",
+        "revision": "9757d44faa47de7e8d1bb731c30551ec608624f9",
+        "url": "https://chromium.googlesource.com/external/github.com/microsoft/DirectXShaderCompiler@9757d44faa47de7e8d1bb731c30551ec608624f9"
+      },
+      "src/third_party/dawn/third_party/glfw3/src/": {
+        "kind": "git",
+        "revision": "92dcf4ce74f2e2554a98fea09be7c705c17daa5a",
+        "url": "https://chromium.googlesource.com/external/github.com/glfw/glfw@92dcf4ce74f2e2554a98fea09be7c705c17daa5a"
+      },
+      "src/third_party/dawn/third_party/ninja:infra/3pp/tools/ninja/${platform}/": {
+        "instanceID": "xem0_6s7Lt77xBhJ_IHxFsjQR7JYkGvswGG-nsrwSv0C",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "437218a6088dc9efd483365ddb882fcf986cbcd9dce86a917210b890e33790ac",
+        "package": "infra/3pp/tools/ninja/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/ninja/${platform}@version:3@1.12.1.chromium.4"
+      },
+      "src/third_party/dawn/third_party/webgpu-cts/": {
+        "kind": "git",
+        "revision": "81aeeb49e5b15587ec6c1f59b2fdcb4074ffcf63",
+        "url": "https://chromium.googlesource.com/external/github.com/gpuweb/cts@81aeeb49e5b15587ec6c1f59b2fdcb4074ffcf63"
+      },
+      "src/third_party/dawn/third_party/webgpu-headers/src/": {
+        "kind": "git",
+        "revision": "0caa056b5c804e9219d5f8c668a7c29d4dd9c95b",
+        "url": "https://chromium.googlesource.com/external/github.com/webgpu-native/webgpu-headers@0caa056b5c804e9219d5f8c668a7c29d4dd9c95b"
+      },
+      "src/third_party/dawn/tools/golang/mac-amd64:infra/3pp/tools/go/mac-amd64/": {
+        "instanceID": "gmIDpM_WPwPcd-_j_qFgQF5KV_5GpxTYola19F7pIY8C",
+        "kind": "cipd",
+        "manifestFiles": 11509,
+        "manifestSHA256": "aeb486929bb9745ea5d0ee34e5f742268590c90e4604a9d4197430d39a7d670a",
+        "package": "infra/3pp/tools/go/mac-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/go/mac-amd64@version:3@1.26.6"
+      },
+      "src/third_party/dawn/tools/golang/mac-arm64:infra/3pp/tools/go/mac-arm64/": {
+        "instanceID": "GV753evfC30xSfiiI6ycB66mmNJupBAGnkcJo8F_mn4C",
+        "kind": "cipd",
+        "manifestFiles": 11509,
+        "manifestSHA256": "4f1ef10d6f049a75709a4dd11288e65c316355ee8e72be4df086a7da67d3c25e",
+        "package": "infra/3pp/tools/go/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/go/mac-arm64@version:3@1.26.6"
+      },
+      "src/third_party/depot_tools/": {
+        "kind": "git",
+        "revision": "a07c06fe67a1a9d64ac4728df3a11c1ceb0cf73e",
+        "url": "https://chromium.googlesource.com/chromium/tools/depot_tools.git@a07c06fe67a1a9d64ac4728df3a11c1ceb0cf73e"
+      },
+      "src/third_party/devtools-frontend/src/": {
+        "kind": "git",
+        "revision": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+        "url": "https://chromium.googlesource.com/devtools/devtools-frontend@2d671c506c4e5f8958b027e26047deb0acfbd7f9"
+      },
+      "src/third_party/devtools-frontend/src/third_party/esbuild:infra/3pp/tools/esbuild/${platform}/": {
+        "instanceID": "faF4X_ujxOEXHoLYZqpZRoN8oCfc6QYhuK1EObbgNBkC",
+        "kind": "cipd",
+        "manifestFiles": 1,
+        "manifestSHA256": "2bcd93b2efeedfb83f29becd06afc1deb7ab9bce147854a1c578e674f45e1cbf",
+        "package": "infra/3pp/tools/esbuild/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/esbuild/${platform}@version:3@0.28.2.chromium.2"
+      },
+      "src/third_party/disarm/src/": {
+        "kind": "git",
+        "revision": "2d960dae4b4fb29dba05cfc48210fbed423f3d2c",
+        "url": "https://chromium.googlesource.com/external/github.com/aengelke/disarm.git@2d960dae4b4fb29dba05cfc48210fbed423f3d2c"
+      },
+      "src/third_party/dom_distiller_js/dist/": {
+        "kind": "git",
+        "revision": "015cda307cf81e293889c0887cffff4f0aa090ce",
+        "url": "https://chromium.googlesource.com/chromium/dom-distiller/dist.git@015cda307cf81e293889c0887cffff4f0aa090ce"
+      },
+      "src/third_party/domato/src/": {
+        "kind": "git",
+        "revision": "fadff396cc45d521cc594d3e2396e27e887b1963",
+        "url": "https://chromium.googlesource.com/external/github.com/googleprojectzero/domato.git@fadff396cc45d521cc594d3e2396e27e887b1963"
+      },
+      "src/third_party/dragonbox/src/": {
+        "kind": "git",
+        "revision": "beeeef91cf6fef89a4d4ba5e95d47ca64ccb3a44",
+        "url": "https://chromium.googlesource.com/external/github.com/jk-jeon/dragonbox.git@beeeef91cf6fef89a4d4ba5e95d47ca64ccb3a44"
+      },
+      "src/third_party/ds_store/src/": {
+        "kind": "git",
+        "revision": "6f971c764a511f609615c6c4f5ae2a9403ff32cb",
+        "url": "https://chromium.googlesource.com/external/github.com/dmgbuild/ds_store.git@6f971c764a511f609615c6c4f5ae2a9403ff32cb"
+      },
+      "src/third_party/eigen3/src/": {
+        "kind": "git",
+        "revision": "04bfe22876d3bab4260f39491cce7a8df17daa40",
+        "url": "https://chromium.googlesource.com/external/gitlab.com/libeigen/eigen.git@04bfe22876d3bab4260f39491cce7a8df17daa40"
+      },
+      "src/third_party/emoji-segmenter/src/": {
+        "kind": "git",
+        "revision": "955936be8b391e00835257059607d7c5b72ce744",
+        "url": "https://chromium.googlesource.com/external/github.com/google/emoji-segmenter.git@955936be8b391e00835257059607d7c5b72ce744"
+      },
+      "src/third_party/enterprise_companion/chromium_mac_amd64/cipd:chromium/third_party/enterprise_companion/chromium_mac_amd64/": {
+        "instanceID": "rS1qtwKmH6SIUzWeONWFLRnru-VrY7ahLEw-gqHgcG0C",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "01c8597e8b3bad7f3ef9134520cc162cbaddd3bc738f0f6f03c9c616166a4ce7",
+        "package": "chromium/third_party/enterprise_companion/chromium_mac_amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/enterprise_companion/chromium_mac_amd64@rS1qtwKmH6SIUzWeONWFLRnru-VrY7ahLEw-gqHgcG0C"
+      },
+      "src/third_party/enterprise_companion/chromium_mac_arm64/cipd:chromium/third_party/enterprise_companion/chromium_mac_arm64/": {
+        "instanceID": "8Ycdju9pEwFGnOXO9wu3x_mvTMTvbiQQoTSpafwkvUoC",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "1caa7108bbba8f8915da2c072bd3f593e86537c91bd9c2c3784d9076da687f7d",
+        "package": "chromium/third_party/enterprise_companion/chromium_mac_arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/enterprise_companion/chromium_mac_arm64@8Ycdju9pEwFGnOXO9wu3x_mvTMTvbiQQoTSpafwkvUoC"
+      },
+      "src/third_party/expat/src/": {
+        "kind": "git",
+        "revision": "a851869e111c06fbcdc89edf639abf5fc2b6deba",
+        "url": "https://chromium.googlesource.com/external/github.com/libexpat/libexpat.git@a851869e111c06fbcdc89edf639abf5fc2b6deba"
+      },
+      "src/third_party/fadec/src/": {
+        "kind": "git",
+        "revision": "c9f78f532b9004de278489019ab2c6c28ae9746e",
+        "url": "https://chromium.googlesource.com/external/github.com/aengelke/fadec.git@c9f78f532b9004de278489019ab2c6c28ae9746e"
+      },
+      "src/third_party/farmhash/src/": {
+        "kind": "git",
+        "revision": "9d99331eb762e9ee22fd97d15a594525ad98310a",
+        "url": "https://chromium.googlesource.com/external/github.com/google/farmhash.git@9d99331eb762e9ee22fd97d15a594525ad98310a"
+      },
+      "src/third_party/fast_float/src/": {
+        "kind": "git",
+        "revision": "b0ab987b3dfdde13fa1915f65ef2a5c068d9208c",
+        "url": "https://chromium.googlesource.com/external/github.com/fastfloat/fast_float.git@b0ab987b3dfdde13fa1915f65ef2a5c068d9208c"
+      },
+      "src/third_party/federated_compute/src/": {
+        "kind": "git",
+        "revision": "f5241fb459426f88af484a909927044a71306209",
+        "url": "https://chromium.googlesource.com/external/github.com/google-parfait/federated-compute.git@f5241fb459426f88af484a909927044a71306209"
+      },
+      "src/third_party/ffmpeg/": {
+        "kind": "git",
+        "revision": "9db86ce5b5b454dfc96c435f9f0723012980c37f",
+        "url": "https://chromium.googlesource.com/chromium/third_party/ffmpeg.git@9db86ce5b5b454dfc96c435f9f0723012980c37f"
+      },
+      "src/third_party/flac/": {
+        "kind": "git",
+        "revision": "e7108e2ed031547c3759217819a032065c820d73",
+        "url": "https://chromium.googlesource.com/chromium/deps/flac.git@e7108e2ed031547c3759217819a032065c820d73"
+      },
+      "src/third_party/flatbuffers/src/": {
+        "kind": "git",
+        "revision": "a86afae9399bbe631d1ea0783f8816e780e236cc",
+        "url": "https://chromium.googlesource.com/external/github.com/google/flatbuffers.git@a86afae9399bbe631d1ea0783f8816e780e236cc"
+      },
+      "src/third_party/fp16/src/": {
+        "kind": "git",
+        "revision": "782eea126dc5c755827be751a099eb01826175cf",
+        "url": "https://chromium.googlesource.com/external/github.com/Maratyszcza/FP16.git@782eea126dc5c755827be751a099eb01826175cf"
+      },
+      "src/third_party/freetype/src/": {
+        "kind": "git",
+        "revision": "891f904e2e7b4289f615598cd4b69832f87d2f3a",
+        "url": "https://chromium.googlesource.com/chromium/src/third_party/freetype2.git@891f904e2e7b4289f615598cd4b69832f87d2f3a"
+      },
+      "src/third_party/fuzztest/src/": {
+        "kind": "git",
+        "revision": "7a8e9056de2a4f745082a4b3861a67ada47ced36",
+        "url": "https://chromium.googlesource.com/external/github.com/google/fuzztest.git@7a8e9056de2a4f745082a4b3861a67ada47ced36"
+      },
+      "src/third_party/fxdiv/src/": {
+        "kind": "git",
+        "revision": "63058eff77e11aa15bf531df5dd34395ec3017c8",
+        "url": "https://chromium.googlesource.com/external/github.com/Maratyszcza/FXdiv.git@63058eff77e11aa15bf531df5dd34395ec3017c8"
+      },
+      "src/third_party/gemmlowp/src/": {
+        "kind": "git",
+        "revision": "16e8662c34917be0065110bfcd9cc27d30f52fdf",
+        "url": "https://chromium.googlesource.com/external/github.com/google/gemmlowp.git@16e8662c34917be0065110bfcd9cc27d30f52fdf"
+      },
+      "src/third_party/glslang/src/": {
+        "kind": "git",
+        "revision": "2ff6f609379ce43c4291c732cf6a19dd2461a680",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/glslang@2ff6f609379ce43c4291c732cf6a19dd2461a680"
+      },
+      "src/third_party/google_benchmark/src/": {
+        "kind": "git",
+        "revision": "8abf1e701fbd88c8170f48fe0558247e2e5f8e7d",
+        "url": "https://chromium.googlesource.com/external/github.com/google/benchmark.git@8abf1e701fbd88c8170f48fe0558247e2e5f8e7d"
+      },
+      "src/third_party/googletest/src/": {
+        "kind": "git",
+        "revision": "4fe3307fb2d9f86d19777c7eb0e4809e9694dde7",
+        "url": "https://chromium.googlesource.com/external/github.com/google/googletest.git@4fe3307fb2d9f86d19777c7eb0e4809e9694dde7"
+      },
+      "src/third_party/harfbuzz/src/": {
+        "kind": "git",
+        "revision": "f5efbbef3841bdcdc6427bde7c2971f62ac8c8f1",
+        "url": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@f5efbbef3841bdcdc6427bde7c2971f62ac8c8f1"
+      },
+      "src/third_party/highway/src/": {
+        "kind": "git",
+        "revision": "2607d3b5b0113992fe84d3848859eae13b3b52c1",
+        "url": "https://chromium.googlesource.com/external/github.com/google/highway.git@2607d3b5b0113992fe84d3848859eae13b3b52c1"
+      },
+      "src/third_party/hunspell_dictionaries/": {
+        "kind": "git",
+        "revision": "cee14e319bb7603a1157bb4d1e216be64ee82b77",
+        "url": "https://chromium.googlesource.com/chromium/deps/hunspell_dictionaries.git@cee14e319bb7603a1157bb4d1e216be64ee82b77"
+      },
+      "src/third_party/icu/": {
+        "kind": "git",
+        "revision": "5aa526207171ecadf31597f0980a7b7ad8872f33",
+        "url": "https://chromium.googlesource.com/chromium/deps/icu.git@5aa526207171ecadf31597f0980a7b7ad8872f33"
+      },
+      "src/third_party/ink/src/": {
+        "kind": "git",
+        "revision": "1d5a871aefe0a401685cd4388b9b92f9b1c5cadb",
+        "url": "https://chromium.googlesource.com/external/github.com/google/ink.git@1d5a871aefe0a401685cd4388b9b92f9b1c5cadb"
+      },
+      "src/third_party/jetstream/main/": {
+        "kind": "git",
+        "revision": "c603c04db8505477867974a69789309ded2cc948",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/JetStream.git@c603c04db8505477867974a69789309ded2cc948"
+      },
+      "src/third_party/jetstream/v2.2/": {
+        "kind": "git",
+        "revision": "2145cedef4ca2777b792cb0059d3400ee2a6153c",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/JetStream.git@2145cedef4ca2777b792cb0059d3400ee2a6153c"
+      },
+      "src/third_party/jetstream/v3.0/": {
+        "kind": "git",
+        "revision": "06785cf861ac44855f168cbbe829278c2802e6de",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/JetStream.git@06785cf861ac44855f168cbbe829278c2802e6de"
+      },
+      "src/third_party/js_code_coverage/node_modules:js_code_coverage/e932c86d2d4f250416970dc270002a9cb6acecbec034998cdadf9a394d0f1abc/": {
+        "kind": "gcs",
+        "markers": {
+          ".js_code_coverage_e932c86d2d4f250416970dc270002a9cb6acecbec034998cdadf9a394d0f1abc_hash": "e932c86d2d4f250416970dc270002a9cb6acecbec034998cdadf9a394d0f1abc"
+        },
+        "url": "gs://chromium-nodejs/js_code_coverage/e932c86d2d4f250416970dc270002a9cb6acecbec034998cdadf9a394d0f1abc"
+      },
+      "src/third_party/jsoncpp/source/": {
+        "kind": "git",
+        "revision": "3347a4b86bb914cb565f0cbda19c06e109513300",
+        "url": "https://chromium.googlesource.com/external/github.com/open-source-parsers/jsoncpp.git@3347a4b86bb914cb565f0cbda19c06e109513300"
+      },
+      "src/third_party/leveldatabase/src/": {
+        "kind": "git",
+        "revision": "7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+        "url": "https://chromium.googlesource.com/external/leveldb.git@7ee830d02b623e8ffe0b95d59a74db1e58da04c5"
+      },
+      "src/third_party/libFuzzer/src/": {
+        "kind": "git",
+        "revision": "9951014982324338ea932dfdba259aeb1cca70f7",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/compiler-rt/lib/fuzzer.git@9951014982324338ea932dfdba259aeb1cca70f7"
+      },
+      "src/third_party/libaddressinput/src/": {
+        "kind": "git",
+        "revision": "81eb9628382b07d371d8ea0b11badf7de3857fd5",
+        "url": "https://chromium.googlesource.com/external/libaddressinput.git@81eb9628382b07d371d8ea0b11badf7de3857fd5"
+      },
+      "src/third_party/libaom/source/libaom/": {
+        "kind": "git",
+        "revision": "7b6197cb8fdc1ce555a03d23a9d25242c61d38e6",
+        "url": "https://aomedia.googlesource.com/aom.git@7b6197cb8fdc1ce555a03d23a9d25242c61d38e6"
+      },
+      "src/third_party/libc++/src/": {
+        "kind": "git",
+        "revision": "97b436da4c33663581d394f4ee0a5977fc38c2f4",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxx.git@97b436da4c33663581d394f4ee0a5977fc38c2f4"
+      },
+      "src/third_party/libc++abi/src/": {
+        "kind": "git",
+        "revision": "127292c11d332549ba1e0aebcece6d4c91de9239",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxxabi.git@127292c11d332549ba1e0aebcece6d4c91de9239"
+      },
+      "src/third_party/libgav1/src/": {
+        "kind": "git",
+        "revision": "085032331f60c10055d32ab52932bd7bd77e6f53",
+        "url": "https://chromium.googlesource.com/codecs/libgav1.git@085032331f60c10055d32ab52932bd7bd77e6f53"
+      },
+      "src/third_party/libjpeg_turbo/": {
+        "kind": "git",
+        "revision": "640f254ad0fa03f6b1f29f89b7dd9366f2f6e533",
+        "url": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo.git@640f254ad0fa03f6b1f29f89b7dd9366f2f6e533"
+      },
+      "src/third_party/libpfm4/src/": {
+        "kind": "git",
+        "revision": "995ad37079531b7c3a98cbd164b7619f3b0adc0d",
+        "url": "https://chromium.googlesource.com/external/git.code.sf.net/p/perfmon2/libpfm4.git@995ad37079531b7c3a98cbd164b7619f3b0adc0d"
+      },
+      "src/third_party/libphonenumber/src/": {
+        "kind": "git",
+        "revision": "0ae309f1940227efe688f5eb1815ef45a6fbee8d",
+        "url": "https://chromium.googlesource.com/external/libphonenumber.git@0ae309f1940227efe688f5eb1815ef45a6fbee8d"
+      },
+      "src/third_party/libprotobuf-mutator/src/": {
+        "kind": "git",
+        "revision": "c1c950eae0440c3808f2b8bd7c57d0c6a42c1a90",
+        "url": "https://chromium.googlesource.com/external/github.com/google/libprotobuf-mutator.git@c1c950eae0440c3808f2b8bd7c57d0c6a42c1a90"
+      },
+      "src/third_party/libsrtp/": {
+        "kind": "git",
+        "revision": "cd5d177bf1fde755ddb4c7f0d9ff7693f8b49e5e",
+        "url": "https://chromium.googlesource.com/chromium/deps/libsrtp.git@cd5d177bf1fde755ddb4c7f0d9ff7693f8b49e5e"
+      },
+      "src/third_party/libunwind/src/": {
+        "kind": "git",
+        "revision": "8d41badfccd4bc7dfd17817f65217f2868d69be8",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libunwind.git@8d41badfccd4bc7dfd17817f65217f2868d69be8"
+      },
+      "src/third_party/libva-fake-driver/src/": {
+        "kind": "git",
+        "revision": "04f902b9ba9f8083b19d22e7b55591bbcaae31c0",
+        "url": "https://chromium.googlesource.com/chromiumos/platform/libva-fake-driver.git@04f902b9ba9f8083b19d22e7b55591bbcaae31c0"
+      },
+      "src/third_party/libvpx/source/libvpx/": {
+        "kind": "git",
+        "revision": "5e680f30801d03c21078f8c4b772464752516211",
+        "url": "https://chromium.googlesource.com/webm/libvpx.git@5e680f30801d03c21078f8c4b772464752516211"
+      },
+      "src/third_party/libwebm/source/": {
+        "kind": "git",
+        "revision": "6184f4484a826724b5293837134ab9492261b941",
+        "url": "https://chromium.googlesource.com/webm/libwebm.git@6184f4484a826724b5293837134ab9492261b941"
+      },
+      "src/third_party/libwebp/src/": {
+        "kind": "git",
+        "revision": "b43b2caa710c0c997c066cb32c7fea1391fad70a",
+        "url": "https://chromium.googlesource.com/webm/libwebp.git@b43b2caa710c0c997c066cb32c7fea1391fad70a"
+      },
+      "src/third_party/libyuv/": {
+        "kind": "git",
+        "revision": "f1c9b5898619f2ced836030c023249f5a8b189d1",
+        "url": "https://chromium.googlesource.com/libyuv/libyuv.git@f1c9b5898619f2ced836030c023249f5a8b189d1"
+      },
+      "src/third_party/litert/src/": {
+        "kind": "git",
+        "revision": "4dac1538b76bc20bb7f2ba314bcc89dc57c0ee2b",
+        "url": "https://chromium.googlesource.com/external/github.com/google-ai-edge/LiteRT.git@4dac1538b76bc20bb7f2ba314bcc89dc57c0ee2b"
+      },
+      "src/third_party/llvm-build/Release+Asserts:Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz/": {
+        "kind": "gcs",
+        "markers": {
+          ".Mac_arm64_clang-llvmorg-24-init-7747-g62397f8b-53_tar_xz_hash": "7ce015cde974fc32bb80e1f48aa7dddbdcbe44fd6f8614de5e63cae4733960d5",
+          ".Mac_arm64_llvmobjdump-llvmorg-24-init-7747-g62397f8b-53_tar_xz_hash": "f93f89580341f51b80c713776a2f9645f090a971d82e459abbcc11fdd21b2ae4"
+        },
+        "url": "gs://chromium-browser-clang/Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz"
+      },
+      "src/third_party/llvm-build/Release+Asserts:Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-53.tar.xz/": {
+        "kind": "gcs",
+        "markers": {
+          ".Mac_arm64_clang-llvmorg-24-init-7747-g62397f8b-53_tar_xz_hash": "7ce015cde974fc32bb80e1f48aa7dddbdcbe44fd6f8614de5e63cae4733960d5",
+          ".Mac_arm64_llvmobjdump-llvmorg-24-init-7747-g62397f8b-53_tar_xz_hash": "f93f89580341f51b80c713776a2f9645f090a971d82e459abbcc11fdd21b2ae4"
+        },
+        "url": "gs://chromium-browser-clang/Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-53.tar.xz"
+      },
+      "src/third_party/llvm-libc/src/": {
+        "kind": "git",
+        "revision": "b8b28272d32b75f0ee71acd2fa1144c8b5b95460",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libc.git@b8b28272d32b75f0ee71acd2fa1144c8b5b95460"
+      },
+      "src/third_party/llvm-libclang:Mac_arm64/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz/": {
+        "kind": "gcs",
+        "markers": {
+          ".Mac_arm64_rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b_tar_xz_hash": "d330fd41100be52b4e804c9252b3f3bb34cfed16d2973934de0930b297f7201e"
+        },
+        "url": "gs://chromium-browser-clang/Mac_arm64/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+      },
+      "src/third_party/mac_alias/src/": {
+        "kind": "git",
+        "revision": "d0c076b4562541c1509d9874f42880378245d268",
+        "url": "https://chromium.googlesource.com/external/github.com/dmgbuild/mac_alias.git@d0c076b4562541c1509d9874f42880378245d268"
+      },
+      "src/third_party/material_color_utilities/src/": {
+        "kind": "git",
+        "revision": "5b3618b16fdc3825e21d5679bafd144662088ea1",
+        "url": "https://chromium.googlesource.com/external/github.com/material-foundation/material-color-utilities.git@5b3618b16fdc3825e21d5679bafd144662088ea1"
+      },
+      "src/third_party/nasm/": {
+        "kind": "git",
+        "revision": "525a09a813be0f75b646ee93fc2a31c27b87d722",
+        "url": "https://chromium.googlesource.com/chromium/deps/nasm.git@525a09a813be0f75b646ee93fc2a31c27b87d722"
+      },
+      "src/third_party/nearby/src/": {
+        "kind": "git",
+        "revision": "0bad8b0c9877f92eeeb550654f1ea51a71a085e4",
+        "url": "https://chromium.googlesource.com/external/github.com/google/nearby-connections.git@0bad8b0c9877f92eeeb550654f1ea51a71a085e4"
+      },
+      "src/third_party/neon_2_sse/src/": {
+        "kind": "git",
+        "revision": "183fc88bcb90dbfaefba33a292eae8a5ce94bd67",
+        "url": "https://chromium.googlesource.com/external/github.com/intel/ARM_NEON_2_x86_SSE.git@183fc88bcb90dbfaefba33a292eae8a5ce94bd67"
+      },
+      "src/third_party/ninja:infra/3pp/tools/ninja/${platform}/": {
+        "instanceID": "xem0_6s7Lt77xBhJ_IHxFsjQR7JYkGvswGG-nsrwSv0C",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "437218a6088dc9efd483365ddb882fcf986cbcd9dce86a917210b890e33790ac",
+        "package": "infra/3pp/tools/ninja/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/ninja/${platform}@version:3@1.12.1.chromium.4"
+      },
+      "src/third_party/nlohmann_json/src/": {
+        "kind": "git",
+        "revision": "55f93686c01528224f448c19128836e7df245f72",
+        "url": "https://chromium.googlesource.com/external/github.com/nlohmann/json.git@55f93686c01528224f448c19128836e7df245f72"
+      },
+      "src/third_party/node/linux:744e6926ffdd4a4fb2080ae2b9ce4575490261e7/": {
+        "kind": "gcs",
+        "markers": {
+          ".744e6926ffdd4a4fb2080ae2b9ce4575490261e7_hash": "bdea62a6857735d62165ec97242d79a693564c72d551890c4d009d2355abf14c"
+        },
+        "url": "gs://chromium-nodejs/744e6926ffdd4a4fb2080ae2b9ce4575490261e7"
+      },
+      "src/third_party/node/mac:9202c05a8e7c67cb2bb2fec1e50fb6188d26f281/": {
+        "kind": "gcs",
+        "markers": {
+          ".9202c05a8e7c67cb2bb2fec1e50fb6188d26f281_hash": "a25cd3ef35d8b4b5a59498a5a62b5b12cc271dc420ee809abaa76110d12c156e"
+        },
+        "url": "gs://chromium-nodejs/9202c05a8e7c67cb2bb2fec1e50fb6188d26f281"
+      },
+      "src/third_party/node/mac_arm64:6661e9b9bd7df6b45daf506c82d06d303597cb27/": {
+        "kind": "gcs",
+        "markers": {
+          ".6661e9b9bd7df6b45daf506c82d06d303597cb27_hash": "b1be502d1635330ebf51d85f8d32a0d3dd92b35c6700def56ae6f903906ea825"
+        },
+        "url": "gs://chromium-nodejs/6661e9b9bd7df6b45daf506c82d06d303597cb27"
+      },
+      "src/third_party/node/node_modules:44f845cd5bd9d805cb1c73a98d5726b38ed8662a/": {
+        "kind": "gcs",
+        "markers": {
+          ".44f845cd5bd9d805cb1c73a98d5726b38ed8662a_hash": "146cb2af600aa8cf80635592b65219fc94ff3deb384a46a41261405feb46c228"
+        },
+        "url": "gs://chromium-nodejs/44f845cd5bd9d805cb1c73a98d5726b38ed8662a"
+      },
+      "src/third_party/oak/src/": {
+        "kind": "git",
+        "revision": "14031232cec7d3d454e89bbae36404d74abf18dc",
+        "url": "https://chromium.googlesource.com/external/github.com/project-oak/oak.git@14031232cec7d3d454e89bbae36404d74abf18dc"
+      },
+      "src/third_party/openh264/src/": {
+        "kind": "git",
+        "revision": "9547f96ea5c47f4d465d97b07264b997ecc4b4b6",
+        "url": "https://chromium.googlesource.com/external/github.com/cisco/openh264@9547f96ea5c47f4d465d97b07264b997ecc4b4b6"
+      },
+      "src/third_party/openscreen/src/": {
+        "kind": "git",
+        "revision": "a515d3a249e7411fa251a27125815a06a2d73862",
+        "url": "https://chromium.googlesource.com/openscreen@a515d3a249e7411fa251a27125815a06a2d73862"
+      },
+      "src/third_party/openscreen/src/buildtools/": {
+        "kind": "git",
+        "revision": "4277578aa9c45906e51ad33cac1a5a7ad5288010",
+        "url": "https://chromium.googlesource.com/chromium/src/buildtools@4277578aa9c45906e51ad33cac1a5a7ad5288010"
+      },
+      "src/third_party/openscreen/src/buildtools/mac_arm64-format:945e45cbcb5443c3e569d5e0783fd012154fc4a7/": {
+        "kind": "gcs",
+        "markers": {
+          ".945e45cbcb5443c3e569d5e0783fd012154fc4a7_hash": "a1fb17260eda2971f52ed341501b93703b0fce69ffb43a179b891b66f6f63e5a"
+        },
+        "url": "gs://chromium-clang-format/945e45cbcb5443c3e569d5e0783fd012154fc4a7"
+      },
+      "src/third_party/openscreen/src/third_party/llvm-build/Release+Asserts:Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz/": {
+        "kind": "gcs",
+        "markers": {
+          ".Mac_arm64_clang-llvmorg-24-init-7747-g62397f8b-27_tar_xz_hash": "b1d5d53f8dba60834fc3287ff53276fbed4273eee6a8f31a1ff7825f91db77c1",
+          ".Mac_arm64_llvmobjdump-llvmorg-24-init-7747-g62397f8b-27_tar_xz_hash": "f2ea6f562955bbaca69358e83a194ee967886d36f8b5cf18fbae79d99450c4bd"
+        },
+        "url": "gs://chromium-browser-clang/Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz"
+      },
+      "src/third_party/openscreen/src/third_party/llvm-build/Release+Asserts:Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-27.tar.xz/": {
+        "kind": "gcs",
+        "markers": {
+          ".Mac_arm64_clang-llvmorg-24-init-7747-g62397f8b-27_tar_xz_hash": "b1d5d53f8dba60834fc3287ff53276fbed4273eee6a8f31a1ff7825f91db77c1",
+          ".Mac_arm64_llvmobjdump-llvmorg-24-init-7747-g62397f8b-27_tar_xz_hash": "f2ea6f562955bbaca69358e83a194ee967886d36f8b5cf18fbae79d99450c4bd"
+        },
+        "url": "gs://chromium-browser-clang/Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-27.tar.xz"
+      },
+      "src/third_party/openscreen/src/third_party/tinycbor/src/": {
+        "kind": "git",
+        "revision": "bac6648fed8c0ff3d34616e4fff7cdcca634a18e",
+        "url": "https://chromium.googlesource.com/external/github.com/intel/tinycbor.git@bac6648fed8c0ff3d34616e4fff7cdcca634a18e"
+      },
+      "src/third_party/opus/tests/resources:009a3ee778767c2402b1d2c920bc2449265f5a2c/": {
+        "kind": "gcs",
+        "markers": {
+          ".009a3ee778767c2402b1d2c920bc2449265f5a2c_hash": "34de3161f242895a682d9cdcbbf4ad50246742b6db46873386104cfde8a24332"
+        },
+        "url": "gs://chromium-webrtc-resources/009a3ee778767c2402b1d2c920bc2449265f5a2c"
+      },
+      "src/third_party/ots/src/": {
+        "kind": "git",
+        "revision": "46bea9879127d0ff1c6601b078e2ce98e83fcd33",
+        "url": "https://chromium.googlesource.com/external/github.com/khaledhosny/ots.git@46bea9879127d0ff1c6601b078e2ce98e83fcd33"
+      },
+      "src/third_party/pdfium/": {
+        "kind": "git",
+        "revision": "8ca5b735df4263f43c830479b78213854a392c22",
+        "url": "https://pdfium.googlesource.com/pdfium.git@8ca5b735df4263f43c830479b78213854a392c22"
+      },
+      "src/third_party/perfetto/": {
+        "kind": "git",
+        "revision": "403906f4adfbf287a02e5546f8430dcc9d56b649",
+        "url": "https://chromium.googlesource.com/external/github.com/google/perfetto.git@403906f4adfbf287a02e5546f8430dcc9d56b649"
+      },
+      "src/third_party/protobuf-javascript/src/": {
+        "kind": "git",
+        "revision": "e6d763860001ba1a76a63adcff5efb12b1c96024",
+        "url": "https://chromium.googlesource.com/external/github.com/protocolbuffers/protobuf-javascript@e6d763860001ba1a76a63adcff5efb12b1c96024"
+      },
+      "src/third_party/pthreadpool/src/": {
+        "kind": "git",
+        "revision": "15a6644ba1c45f1acc16ac1e883efc3e56c6bed2",
+        "url": "https://chromium.googlesource.com/external/github.com/google/pthreadpool.git@15a6644ba1c45f1acc16ac1e883efc3e56c6bed2"
+      },
+      "src/third_party/pywebsocket3/src/": {
+        "kind": "git",
+        "revision": "139224e0d71db84fe1922601cb92ec8c8f3885ba",
+        "url": "https://chromium.googlesource.com/external/github.com/GoogleChromeLabs/pywebsocket3.git@139224e0d71db84fe1922601cb92ec8c8f3885ba"
+      },
+      "src/third_party/quic_trace/src/": {
+        "kind": "git",
+        "revision": "6ecf6aa8e604655f1dfa72c4a1ae733c4c7fc883",
+        "url": "https://chromium.googlesource.com/external/github.com/google/quic-trace.git@6ecf6aa8e604655f1dfa72c4a1ae733c4c7fc883"
+      },
+      "src/third_party/re2/src/": {
+        "kind": "git",
+        "revision": "972a15cedd008d846f1a39b2e88ce48d7f166cbd",
+        "url": "https://chromium.googlesource.com/external/github.com/google/re2.git@972a15cedd008d846f1a39b2e88ce48d7f166cbd"
+      },
+      "src/third_party/readability/src/": {
+        "kind": "git",
+        "revision": "d7949dc47dd9ed9ee1d3b34ffdcf3bce28cde435",
+        "url": "https://chromium.googlesource.com/external/github.com/mozilla/readability.git@d7949dc47dd9ed9ee1d3b34ffdcf3bce28cde435"
+      },
+      "src/third_party/rust-toolchain:Mac_arm64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz/": {
+        "kind": "gcs",
+        "markers": {
+          ".Mac_arm64_rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b_tar_xz_hash": "5db21ffd4909ce82c0832df9d1eb06b01b15a54176b7341e39f7181f4b483dbc"
+        },
+        "url": "gs://chromium-browser-clang/Mac_arm64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+      },
+      "src/third_party/ruy/src/": {
+        "kind": "git",
+        "revision": "2264753777198e4393fb83c44c693462d57a2be1",
+        "url": "https://chromium.googlesource.com/external/github.com/google/ruy.git@2264753777198e4393fb83c44c693462d57a2be1"
+      },
+      "src/third_party/screen-ai/macos_amd64:chromium/third_party/screen-ai/mac-amd64/": {
+        "instanceID": "j1fwQ5IZ6LdBSTWgDxgQflyl_Az6EwIXS5pjOw9Do1AC",
+        "kind": "cipd",
+        "manifestFiles": 100,
+        "manifestSHA256": "09b64d200b32e36dff322ac588dafec12c35836dd01ce0b8ba7583a209b37db9",
+        "package": "chromium/third_party/screen-ai/mac-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/screen-ai/mac-amd64@version:153.03"
+      },
+      "src/third_party/screen-ai/macos_arm64:chromium/third_party/screen-ai/mac-arm64/": {
+        "instanceID": "P78NWFOz8Gdri_NwYTpnFg738Y-SN7K0HXsHCn41DvQC",
+        "kind": "cipd",
+        "manifestFiles": 100,
+        "manifestSHA256": "ed89d3d0132c4ceefb7e6cb475843fa9ad310e53b13be03d9785e333ce4ec6d5",
+        "package": "chromium/third_party/screen-ai/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/screen-ai/mac-arm64@version:153.03"
+      },
+      "src/third_party/search_engines_data/resources/": {
+        "kind": "git",
+        "revision": "5dc9f1afd38a8ac2b26b1972eb4fc1bbd5754e8c",
+        "url": "https://chromium.googlesource.com/external/search_engines_data.git@5dc9f1afd38a8ac2b26b1972eb4fc1bbd5754e8c"
+      },
+      "src/third_party/securemessage/src/": {
+        "kind": "git",
+        "revision": "fa07beb12babc3b25e0c5b1f38c16aa8cb6b8f84",
+        "url": "https://chromium.googlesource.com/external/github.com/google/securemessage.git@fa07beb12babc3b25e0c5b1f38c16aa8cb6b8f84"
+      },
+      "src/third_party/sframe/src/": {
+        "kind": "git",
+        "revision": "6a37f061f4eda0c6594c91ecf99b5ff498c8c124",
+        "url": "https://chromium.googlesource.com/external/github.com/cisco/sframe@6a37f061f4eda0c6594c91ecf99b5ff498c8c124"
+      },
+      "src/third_party/siso/cipd:build/siso/${platform}/": {
+        "instanceID": "CG2WefKwsr5qF6CeCCHuavTSzHvfrpnlHtbAUWB8rLEC",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "775460af81718ec15a73fb4203f8e8c5031b5acace67d711e8da47c1681eb2d7",
+        "package": "build/siso/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/build/siso/${platform}@git_revision:c574896b272b40aac6e44c228ee0b471ea7e3d7d"
+      },
+      "src/third_party/skia/": {
+        "kind": "git",
+        "revision": "95ee33d7ec7791ab9c071675710a14fe6408ae4f",
+        "url": "https://skia.googlesource.com/skia.git@95ee33d7ec7791ab9c071675710a14fe6408ae4f"
+      },
+      "src/third_party/smhasher/src/": {
+        "kind": "git",
+        "revision": "07bb4de10a63e8cc2e1724865454eba635742383",
+        "url": "https://chromium.googlesource.com/external/smhasher.git@07bb4de10a63e8cc2e1724865454eba635742383"
+      },
+      "src/third_party/snappy/src/": {
+        "kind": "git",
+        "revision": "32ded457c0b1fe78ceb8397632c416568d6714a0",
+        "url": "https://chromium.googlesource.com/external/github.com/google/snappy.git@32ded457c0b1fe78ceb8397632c416568d6714a0"
+      },
+      "src/third_party/speedometer/main/": {
+        "kind": "git",
+        "revision": "f866d2b077038bc85bea5edb7bff8e05cadef0b2",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/Speedometer.git@f866d2b077038bc85bea5edb7bff8e05cadef0b2"
+      },
+      "src/third_party/speedometer/v2.0/": {
+        "kind": "git",
+        "revision": "732af0dfe867f8815e662ac637357e55f285dbbb",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/Speedometer.git@732af0dfe867f8815e662ac637357e55f285dbbb"
+      },
+      "src/third_party/speedometer/v2.1/": {
+        "kind": "git",
+        "revision": "8bf7946e39e47c875c00767177197aea5727e84a",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/Speedometer.git@8bf7946e39e47c875c00767177197aea5727e84a"
+      },
+      "src/third_party/speedometer/v3.0/": {
+        "kind": "git",
+        "revision": "8d67f28d0281ac4330f283495b7f48286654ad7d",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/Speedometer.git@8d67f28d0281ac4330f283495b7f48286654ad7d"
+      },
+      "src/third_party/speedometer/v3.1/": {
+        "kind": "git",
+        "revision": "1386415be8fef2f6b6bbdbe1828872471c5d802a",
+        "url": "https://chromium.googlesource.com/external/github.com/WebKit/Speedometer.git@1386415be8fef2f6b6bbdbe1828872471c5d802a"
+      },
+      "src/third_party/spirv-cross/src/": {
+        "kind": "git",
+        "revision": "b8fcf307f1f347089e3c46eb4451d27f32ebc8d3",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/SPIRV-Cross@b8fcf307f1f347089e3c46eb4451d27f32ebc8d3"
+      },
+      "src/third_party/spirv-headers/src/": {
+        "kind": "git",
+        "revision": "cb42dec3830d3ac67fa449ecdc0c0f73d5e74498",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/SPIRV-Headers@cb42dec3830d3ac67fa449ecdc0c0f73d5e74498"
+      },
+      "src/third_party/spirv-tools/src/": {
+        "kind": "git",
+        "revision": "1d0401cd2b68ae34cda9ff625bedd1be4ed6214a",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/SPIRV-Tools@1d0401cd2b68ae34cda9ff625bedd1be4ed6214a"
+      },
+      "src/third_party/sqlite/src/": {
+        "kind": "git",
+        "revision": "ba8c54c83337618a9f15dd368a267e46b672fc84",
+        "url": "https://chromium.googlesource.com/chromium/deps/sqlite.git@ba8c54c83337618a9f15dd368a267e46b672fc84"
+      },
+      "src/third_party/subresource-filter-ruleset/data:22a0a5fc9e38d0de4e68eaf7e961dbbd2bebf234bebffbcd21bd496c0813fcde/": {
+        "kind": "gcs",
+        "markers": {
+          ".22a0a5fc9e38d0de4e68eaf7e961dbbd2bebf234bebffbcd21bd496c0813fcde_hash": "22a0a5fc9e38d0de4e68eaf7e961dbbd2bebf234bebffbcd21bd496c0813fcde"
+        },
+        "url": "gs://chromium-ads-detection/22a0a5fc9e38d0de4e68eaf7e961dbbd2bebf234bebffbcd21bd496c0813fcde"
+      },
+      "src/third_party/swift-format:infra/3pp/tools/swift-format/mac-${arch}/": {
+        "instanceID": "-Erm8SuaIiB_ErZXLgHq_3RGIqWA09xbafZgvCOVgSUC",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "8afa815b4b868675dcce490072c434625a8d986213c429c0d2a57f47e7bddc41",
+        "package": "infra/3pp/tools/swift-format/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/swift-format/mac-${arch}@version:2@505.chromium.1"
+      },
+      "src/third_party/swift-toolchain:chromium/tools/swift-toolchain/mac-amd64/": {
+        "instanceID": "n44SQgyPtxkYi3uHz82WkHUrFTmgjqxT7apUyEAj4m0C",
+        "kind": "cipd",
+        "manifestFiles": 2570,
+        "manifestSHA256": "62a7182eba6ae5dca6e0c73205532b5a2a2e1354fa9082df66d40bfe273e758c",
+        "package": "chromium/tools/swift-toolchain/mac-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/tools/swift-toolchain/mac-amd64@version:2@5.8-release"
+      },
+      "src/third_party/swiftshader/": {
+        "kind": "git",
+        "revision": "1e80438d2b93ef36a7c05f8d2b81233bac0e3d16",
+        "url": "https://swiftshader.googlesource.com/SwiftShader.git@1e80438d2b93ef36a7c05f8d2b81233bac0e3d16"
+      },
+      "src/third_party/test_fonts/test_fonts:9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9/": {
+        "kind": "gcs",
+        "markers": {
+          ".9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9_hash": "f0e9628f9e43e3f3476cde06a1849058de460e0e037b7449ce0d42b9a73c37d5"
+        },
+        "url": "gs://chromium-fonts/9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9"
+      },
+      "src/third_party/text-fragments-polyfill/src/": {
+        "kind": "git",
+        "revision": "abc6ed408b3f20e91d9cbda9977748459f5e3877",
+        "url": "https://chromium.googlesource.com/external/github.com/GoogleChromeLabs/text-fragments-polyfill.git@abc6ed408b3f20e91d9cbda9977748459f5e3877"
+      },
+      "src/third_party/tflite/src/": {
+        "kind": "git",
+        "revision": "9edd58f895c58c3db484a9e39ab2e953baca4bca",
+        "url": "https://chromium.googlesource.com/external/github.com/tensorflow/tensorflow.git@9edd58f895c58c3db484a9e39ab2e953baca4bca"
+      },
+      "src/third_party/typescript/linux-amd64/src:chromium/third_party/typescript/linux-amd64/": {
+        "instanceID": "hIyBmNWGJz0M1vIcZtUlEMJ73s0DlU2azFoMlYlKCnEC",
+        "kind": "cipd",
+        "manifestFiles": 118,
+        "manifestSHA256": "94cbb8a81752b77995682b6ac30819645d7e46a2b4faed14868909fb32cf696b",
+        "package": "chromium/third_party/typescript/linux-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/typescript/linux-amd64@version:2@7.0.2"
+      },
+      "src/third_party/typescript/mac-arm64/src:chromium/third_party/typescript/mac-arm64/": {
+        "instanceID": "63sEajfB6_MIU0PehstKopK1_P_yfUm21-o-zedkrz0C",
+        "kind": "cipd",
+        "manifestFiles": 117,
+        "manifestSHA256": "8fd07ebeafd710dcea74a381a977d00aab50c8c1ea709d48d22a0dd04cdbf168",
+        "package": "chromium/third_party/typescript/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/typescript/mac-arm64@version:2@7.0.2"
+      },
+      "src/third_party/ukey2/src/": {
+        "kind": "git",
+        "revision": "0275885d8e6038c39b8a8ca55e75d1d4d1727f47",
+        "url": "https://chromium.googlesource.com/external/github.com/google/ukey2.git@0275885d8e6038c39b8a8ca55e75d1d4d1727f47"
+      },
+      "src/third_party/updater/chrome_mac_universal/cipd:chromium/third_party/updater/chrome_mac_universal/": {
+        "instanceID": "8fBSldTqMhzPQgESICxjVPRxYLX2FpQjZfHD5DOaQhYC",
+        "kind": "cipd",
+        "manifestFiles": 11,
+        "manifestSHA256": "4ac7b5862af31674873316fa48f4b61d6509592984f29679cd98e21bbca44980",
+        "package": "chromium/third_party/updater/chrome_mac_universal",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chrome_mac_universal@version:2@156.0.8067.0"
+      },
+      "src/third_party/updater/chrome_mac_universal_prod/cipd:chromium/third_party/updater/chrome_mac_universal_prod/": {
+        "instanceID": "szWSOtT9y-pol4d1xOqUM7Fv-eEPK90WgozapzBboMEC",
+        "kind": "cipd",
+        "manifestFiles": 15,
+        "manifestSHA256": "025be675e81f011e49f1dface7239214dbc3599561c653534fb1f4ba551cf3ae",
+        "package": "chromium/third_party/updater/chrome_mac_universal_prod",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chrome_mac_universal_prod@version:2@152.0.7933.0"
+      },
+      "src/third_party/updater/chrome_mac_universal_prod_sans_iid/cipd:chromium/third_party/updater/chrome_mac_universal_prod/": {
+        "instanceID": "IrAigaqukp1GbaksroZcR3Jo0oOYKg9kzatjzNNbXKQC",
+        "kind": "cipd",
+        "manifestFiles": 15,
+        "manifestSHA256": "3515fe883a125efee213a8bcf0cf7b8123c06eb382e87a9ef90cc1e8d727311b",
+        "package": "chromium/third_party/updater/chrome_mac_universal_prod",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chrome_mac_universal_prod@IrAigaqukp1GbaksroZcR3Jo0oOYKg9kzatjzNNbXKQC"
+      },
+      "src/third_party/updater/chrome_mac_universal_sans_iid/cipd:chromium/third_party/updater/chrome_mac_universal/": {
+        "instanceID": "gzutuY-G7u8n5746jgmishm8uWjUR070TXdFc23Ea7YC",
+        "kind": "cipd",
+        "manifestFiles": 10,
+        "manifestSHA256": "e9d32cfa101db6092bced5ef62e74c966b07345bd11cef934b7ce7dd57e2e6ea",
+        "package": "chromium/third_party/updater/chrome_mac_universal",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chrome_mac_universal@gzutuY-G7u8n5746jgmishm8uWjUR070TXdFc23Ea7YC"
+      },
+      "src/third_party/updater/chromium_mac_amd64/cipd:chromium/third_party/updater/chromium_mac_amd64/": {
+        "instanceID": "RXB9UDarDToSEz4HTGJkii0qKGqvw3ksA58V8Z9U8NsC",
+        "kind": "cipd",
+        "manifestFiles": 11,
+        "manifestSHA256": "77f0217a86f83b1d8b416b3c6b6c295802f53a061baa0b5a72d4774e296b318d",
+        "package": "chromium/third_party/updater/chromium_mac_amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chromium_mac_amd64@version:2@1701051"
+      },
+      "src/third_party/updater/chromium_mac_amd64_sans_iid/cipd:chromium/third_party/updater/chromium_mac_amd64/": {
+        "instanceID": "zVv93X5XSClxTR1YejkQuBdSpye7JfPS_h6GcH1N4i4C",
+        "kind": "cipd",
+        "manifestFiles": 10,
+        "manifestSHA256": "c981d772816d10d1c7a96d4cb754fdf4c13212eeb04145752acbbc378fdc48fa",
+        "package": "chromium/third_party/updater/chromium_mac_amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chromium_mac_amd64@zVv93X5XSClxTR1YejkQuBdSpye7JfPS_h6GcH1N4i4C"
+      },
+      "src/third_party/updater/chromium_mac_arm64/cipd:chromium/third_party/updater/chromium_mac_arm64/": {
+        "instanceID": "SUd5G0wTXIlN_GUy_u_90EiuVyvWgL2ceodZTj8bjSwC",
+        "kind": "cipd",
+        "manifestFiles": 11,
+        "manifestSHA256": "f8f8b122ab71f3a21ead616a79f96dc6afdc41188c5e501f4b020ae9b58d70e0",
+        "package": "chromium/third_party/updater/chromium_mac_arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chromium_mac_arm64@version:2@1701045"
+      },
+      "src/third_party/updater/chromium_mac_arm64_sans_iid/cipd:chromium/third_party/updater/chromium_mac_arm64/": {
+        "instanceID": "Va20qxSst3lq4WfEZlWiwzXCpSo5XbhhuqJXyqzvhF8C",
+        "kind": "cipd",
+        "manifestFiles": 10,
+        "manifestSHA256": "6bfecb622567ff0e7697fee8a789dcb7087d408453ff7094d47d451bdeacd478",
+        "package": "chromium/third_party/updater/chromium_mac_arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/third_party/updater/chromium_mac_arm64@Va20qxSst3lq4WfEZlWiwzXCpSo5XbhhuqJXyqzvhF8C"
+      },
+      "src/third_party/vulkan-deps/": {
+        "kind": "git",
+        "revision": "f86e6c66b639c9a6b24640218931d30a9b0f1e3e",
+        "url": "https://chromium.googlesource.com/vulkan-deps@f86e6c66b639c9a6b24640218931d30a9b0f1e3e"
+      },
+      "src/third_party/vulkan-headers/src/": {
+        "kind": "git",
+        "revision": "3c65a01745e4a1134d32b9c2c456472212dba16d",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Headers@3c65a01745e4a1134d32b9c2c456472212dba16d"
+      },
+      "src/third_party/vulkan-loader/src/": {
+        "kind": "git",
+        "revision": "3270cf8a1349306f0ddee1b500ee2b0d552e1c82",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Loader@3270cf8a1349306f0ddee1b500ee2b0d552e1c82"
+      },
+      "src/third_party/vulkan-tools/src/": {
+        "kind": "git",
+        "revision": "69ca4d4b6590ab32e7a398725bfc90f81e6338e6",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Tools@69ca4d4b6590ab32e7a398725bfc90f81e6338e6"
+      },
+      "src/third_party/vulkan-utility-libraries/src/": {
+        "kind": "git",
+        "revision": "666fdaa0f87b9d49ae576473227b4b4cf428ba7e",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-Utility-Libraries@666fdaa0f87b9d49ae576473227b4b4cf428ba7e"
+      },
+      "src/third_party/vulkan-validation-layers/src/": {
+        "kind": "git",
+        "revision": "b0688753f1fc04a382ef0fd8c46ecb5a7c91486c",
+        "url": "https://chromium.googlesource.com/external/github.com/KhronosGroup/Vulkan-ValidationLayers@b0688753f1fc04a382ef0fd8c46ecb5a7c91486c"
+      },
+      "src/third_party/vulkan_memory_allocator/": {
+        "kind": "git",
+        "revision": "82a9d47e4f9d91f0e32d2b6acd9714fcee1933a0",
+        "url": "https://chromium.googlesource.com/external/github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git@82a9d47e4f9d91f0e32d2b6acd9714fcee1933a0"
+      },
+      "src/third_party/webdriver/pylib/": {
+        "kind": "git",
+        "revision": "1e954903022e9386b9acf452c24f4458dd4c4fc1",
+        "url": "https://chromium.googlesource.com/external/github.com/SeleniumHQ/selenium/py.git@1e954903022e9386b9acf452c24f4458dd4c4fc1"
+      },
+      "src/third_party/webgl/src/": {
+        "kind": "git",
+        "revision": "714857a28445e8f5d8d6ae1c78498578009534d8",
+        "url": "https://chromium.googlesource.com/external/khronosgroup/webgl.git@714857a28445e8f5d8d6ae1c78498578009534d8"
+      },
+      "src/third_party/webgpu-cts/src/": {
+        "kind": "git",
+        "revision": "a5e5d7440fa036b74ea13c3c5cb6b618a3c884e9",
+        "url": "https://chromium.googlesource.com/external/github.com/gpuweb/cts.git@a5e5d7440fa036b74ea13c3c5cb6b618a3c884e9"
+      },
+      "src/third_party/webpagereplay/": {
+        "kind": "git",
+        "revision": "219ee9a2bb0d0d1440832a0e1d44716833da1ff3",
+        "url": "https://chromium.googlesource.com/webpagereplay.git@219ee9a2bb0d0d1440832a0e1d44716833da1ff3"
+      },
+      "src/third_party/webpagereplay/buildtools/mac_arm64-format:8503422f469ae56cc74f0ea2c03f2d872f4a2303/": {
+        "kind": "gcs",
+        "markers": {
+          ".8503422f469ae56cc74f0ea2c03f2d872f4a2303_hash": "dabf93691361e8bd1d07466d67584072ece5c24e2b812c16458b8ff801c33e29"
+        },
+        "url": "gs://chromium-clang-format/8503422f469ae56cc74f0ea2c03f2d872f4a2303"
+      },
+      "src/third_party/webpagereplay/third_party/clang-format/script/": {
+        "kind": "git",
+        "revision": "9f796802e5d633c96dbe97e0b6683d5e62594f9f",
+        "url": "https://chromium.googlesource.com/external/github.com/llvm/llvm-project/clang/tools/clang-format.git@9f796802e5d633c96dbe97e0b6683d5e62594f9f"
+      },
+      "src/third_party/webpagereplay/third_party/golang/mac/arm64:infra/3pp/tools/go/mac-arm64/": {
+        "instanceID": "Vhas_H96K3CWyrj1QV9lbfAO5umBBVxe-RP_dspayfYC",
+        "kind": "cipd",
+        "manifestFiles": 11497,
+        "manifestSHA256": "e1134f388da6d9639e2290041a35c7d659ca1fb17d366889f38998c218321505",
+        "package": "infra/3pp/tools/go/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/go/mac-arm64@version:3@1.26.2"
+      },
+      "src/third_party/webpagereplay/third_party/golang/mac/x64:infra/3pp/tools/go/mac-amd64/": {
+        "instanceID": "v3TpiPsA1GhFqd-h0qV9Jq86lLtBIrL94hMsUM8krT4C",
+        "kind": "cipd",
+        "manifestFiles": 11497,
+        "manifestSHA256": "295f272335c156510579b11bb04d5e72be3bf30be67d570873f4a56a23b80c2d",
+        "package": "infra/3pp/tools/go/mac-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/go/mac-amd64@version:3@1.26.2"
+      },
+      "src/third_party/webrtc/": {
+        "kind": "git",
+        "revision": "3987dfb7b952b5c86cb7d93370d48416a81d6397",
+        "url": "https://webrtc.googlesource.com/src.git@3987dfb7b952b5c86cb7d93370d48416a81d6397"
+      },
+      "src/third_party/wuffs/src/": {
+        "kind": "git",
+        "revision": "7411f488fe2e2c205c3d3b3d28638b7356522930",
+        "url": "https://skia.googlesource.com/external/github.com/google/wuffs-mirror-release-c.git@7411f488fe2e2c205c3d3b3d28638b7356522930"
+      },
+      "src/third_party/xnnpack/src/": {
+        "kind": "git",
+        "revision": "b6d54fe94520ee6e1181ca1b402f71dbb5d50efa",
+        "url": "https://chromium.googlesource.com/external/github.com/google/XNNPACK.git@b6d54fe94520ee6e1181ca1b402f71dbb5d50efa"
+      },
+      "src/third_party/zstd/src/": {
+        "kind": "git",
+        "revision": "10da6ba6de05e29169261fa4b68eb99239f770dd",
+        "url": "https://chromium.googlesource.com/external/github.com/facebook/zstd.git@10da6ba6de05e29169261fa4b68eb99239f770dd"
+      },
+      "src/tools/luci-go:infra/tools/luci/cas/${platform}/": {
+        "instanceID": "qSMntHLU1CNujLV3MT0C0rRO8gTQapK_5zED3434Od4C",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "98c59813f78c4f52bac1a48435e8fd5d997621a1949b9cc19e1cd880c268305e",
+        "package": "infra/tools/luci/cas/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/tools/luci/cas/${platform}@git_revision:b5ab8c6e7688d99a5702022cfaa95e9f8ce464f2"
+      },
+      "src/tools/luci-go:infra/tools/luci/isolate/${platform}/": {
+        "instanceID": "oaxlFa2uvnxI6qdyShkqLyEEsDhrMydArOzJ_RyWtdoC",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "edff6d1923e6bceb587daa0cb4a80bfb167a7215281f3a1daa78c0e801ba7f51",
+        "package": "infra/tools/luci/isolate/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/tools/luci/isolate/${platform}@git_revision:b5ab8c6e7688d99a5702022cfaa95e9f8ce464f2"
+      },
+      "src/tools/luci-go:infra/tools/luci/swarming/${platform}/": {
+        "instanceID": "ohXdtTx62kNNmfpJlgU4fx7q_r22xPBHUdc5H2X5zSEC",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "dd15b63d61a6a2195d475b1e1bd838601694c4404090f885e1f0505f29df869e",
+        "package": "infra/tools/luci/swarming/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/tools/luci/swarming/${platform}@git_revision:b5ab8c6e7688d99a5702022cfaa95e9f8ce464f2"
+      },
+      "src/tools/perf/page_sets/maps_perf_test/dataset:e6bf26977c2fd80c18789d1f279d474096a7b0d1/": {
+        "kind": "gcs",
+        "markers": {
+          ".e6bf26977c2fd80c18789d1f279d474096a7b0d1_hash": "f5f7fe360ad2b9c3d9dda2612f17336c0541bac15b4e4992f2c167e059a190fa"
+        },
+        "url": "gs://chromium-telemetry/e6bf26977c2fd80c18789d1f279d474096a7b0d1"
+      },
+      "src/tools/resultdb:infra/tools/result_adapter/${platform}/": {
+        "instanceID": "UY2dOJAakoXf_MWODwoCVYoSoAw74W46X0CCs3ES6l0C",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "d8efb368ccf8ed3def6347e52ea52c48d67d4846f6f1ce8af0f963fac6980770",
+        "package": "infra/tools/result_adapter/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/infra/tools/result_adapter/${platform}@git_revision:5fb3ca203842fd691cab615453f8e5a14302a1d8"
+      },
+      "src/tools/skia_goldctl/mac_amd64:skia/tools/goldctl/mac-amd64/": {
+        "instanceID": "0uY46ZT5pC0z344dAzMC-uw1lvOILmzOzk7ixbRA2XYC",
+        "kind": "cipd",
+        "manifestFiles": 1,
+        "manifestSHA256": "5125ddb09fafcf7d1256b282efa36806fe963cb0ca4ce94564252da9f3f91927",
+        "package": "skia/tools/goldctl/mac-amd64",
+        "requested": "https://chrome-infra-packages.appspot.com/skia/tools/goldctl/mac-amd64@0uY46ZT5pC0z344dAzMC-uw1lvOILmzOzk7ixbRA2XYC"
+      },
+      "src/tools/skia_goldctl/mac_arm64:skia/tools/goldctl/mac-arm64/": {
+        "instanceID": "qtinrB1vxVUkZFUyxCPslWwaMO9FRH58pRXnuMeIflAC",
+        "kind": "cipd",
+        "manifestFiles": 1,
+        "manifestSHA256": "a2afe9474d2c54365f579053d41088b644bb7fc1b8795eaf1c6385d2b8d18322",
+        "package": "skia/tools/goldctl/mac-arm64",
+        "requested": "https://chrome-infra-packages.appspot.com/skia/tools/goldctl/mac-arm64@qtinrB1vxVUkZFUyxCPslWwaMO9FRH58pRXnuMeIflAC"
+      },
+      "src/ui/gl/resources/angle-metal:chromium/gpu/angle-metal-shader-libraries/": {
+        "instanceID": "S0FPOVKrgaiqyuR20SSHiPorLgYez29bfwEdKBobUMMC",
+        "kind": "cipd",
+        "manifestFiles": 1,
+        "manifestSHA256": "c2c42c62ba9e538614ad6a66ff275bc2523a1abec6d6af13bddbe5ddd059b503",
+        "package": "chromium/gpu/angle-metal-shader-libraries",
+        "requested": "https://chrome-infra-packages.appspot.com/chromium/gpu/angle-metal-shader-libraries@S0FPOVKrgaiqyuR20SSHiPorLgYez29bfwEdKBobUMMC"
+      },
+      "src/v8/": {
+        "kind": "git",
+        "revision": "4b33f15d4d172248a95629d6aa9917b20a79ad76",
+        "url": "https://chromium.googlesource.com/v8/v8.git@4b33f15d4d172248a95629d6aa9917b20a79ad76"
+      }
+    },
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "verifiedAt": "2026-10-08T20:18:45.416361+00:00"
+  },
+  "payloadType": "json",
+  "receipt": "m156-acquisition-exact-gates.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

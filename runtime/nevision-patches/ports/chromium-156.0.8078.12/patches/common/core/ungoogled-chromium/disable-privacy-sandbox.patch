@@ -1,0 +1,10 @@
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -1393,7 +1393,6 @@
+       ":swiftshader_binaries",
+       ":widevine_cdm_library",
+       "//chrome/browser/web_applications/isolated_web_apps/key_distribution/preload:component_bundle",
+-      "//components/privacy_sandbox/privacy_sandbox_attestations/preload:component_bundle",
+     ]
+ 
+     if (is_chrome_branded) {

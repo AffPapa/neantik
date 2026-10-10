@@ -1,0 +1,39 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "cc0255e0c267e8bb0c8ea94f8811362a6ddaafce86486068fc502d757ff8f798",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "correctionReceiptSHA256": "7da31c55093d99224e8b6b660db5077a1081c0b2ba617c4c8777f6aa2f3cf898",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T03:51:16.923262+00:00",
+    "jobs": 2,
+    "logSHA256": "d76b9d5df3f3aab40fcbc3dcb6e72aa1172ba55174a1b6f6366035f1199af2aa",
+    "logSizeBytes": 395,
+    "nativeNinjaSHA256": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "startedAt": "2026-10-09T03:50:57.671029+00:00",
+    "status": "exact-native-pvt-devtools-target-passed",
+    "targets": [
+      "obj/chrome/browser/devtools/devtools/storage_handler.o"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native-pvt-devtools-target.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

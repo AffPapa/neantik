@@ -36,6 +36,28 @@ struct MCPProfileManagementTests {
         #expect(try await engine.call("profile_update", args)["revision"] as? String == updated["revision"] as? String)
         #expect(try ProfileStore.decodeProfiles(Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)).count == 1)
     }
+    @Test func statusObservationRequiresRevisionAndDoesNotClaimStoppedBrowserEvidence() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try await create(engine), profileID = profile["id"]!
+        let legacy = try await engine.call("profile_status", ["profileID": profileID])
+        #expect(Set(legacy.keys) == ["profileID", "processState"])
+        var args = request(profile); args["includeObservation"] = true
+        let observed = try await engine.call("profile_status", args)
+        let value = try #require(observed["observation"] as? [String: Any])
+        #expect(value["state"] as? String == "unavailable")
+        #expect(value["ownership"] as? String == "notOwned")
+        #expect(value["chromiumRoute"] as? String == "notObserved")
+        #expect(observed["revision"] as? String == profile["revision"] as? String)
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_status", ["profileID": profileID, "includeObservation": true])
+        }
+        args["includeObservation"] = 1
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_status", args) }
+        args["includeObservation"] = true; args["expectedRevision"] = "18446744073709551615"
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_status", args) }
+        args = request(profile); args["includeObservation"] = false
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_status", args) }
+    }
     @Test func staleProfileRevisionDoesNotOverwriteAndUnknownFieldsFail() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let profile = try await create(engine)

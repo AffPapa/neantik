@@ -1,0 +1,39 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "d1919dd1b5d6915cedd248be2080a160e6aadd06c3de45b6a647c3187c362d2a",
+  "payload": {
+    "nativeBuildStarted": false,
+    "nativeInputsModified": false,
+    "packages": [
+      {
+        "archiveSHA256": "7ce015cde974fc32bb80e1f48aa7dddbdcbe44fd6f8614de5e63cae4733960d5",
+        "directory": "root:evidence/m156-pinned-toolchain/clang",
+        "files": 358,
+        "kind": "clang",
+        "size": 44452152,
+        "status": "verified-official-package-extracted",
+        "url": "https://commondatastorage.googleapis.com/chromium-browser-clang/Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz"
+      },
+      {
+        "archiveSHA256": "5db21ffd4909ce82c0832df9d1eb06b01b15a54176b7341e39f7181f4b483dbc",
+        "directory": "root:evidence/m156-pinned-toolchain/rust",
+        "files": 7259,
+        "kind": "rust",
+        "size": 248304876,
+        "status": "verified-official-package-extracted",
+        "url": "https://commondatastorage.googleapis.com/chromium-browser-clang/Mac_arm64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+      }
+    ],
+    "releaseReady": false
+  },
+  "payloadType": "json",
+  "receipt": "m156-pinned-toolchain-receipt.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

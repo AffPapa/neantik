@@ -18,7 +18,20 @@ enum MCPOutputSchemas {
             let profile = object(["id": uuid, "revision": revision, "name": text, "tags": ["type": "array", "items": text], "isPinned": boolean, "isArchived": boolean, "folderID": nullable, "processState": ["type": "string", "const": "unverified"]])
             return object(["profiles": ["type": "array", "items": profile, "maxItems": 100], "count": count, "totalCount": count, "organizationRevision": nullable, "nextCursor": nullable])
         }
-        if name == "profile_status" { return object(["profileID": uuid, "processState": state]) }
+        if name == "profile_status" {
+            let observation = object([
+                "state": ["type": "string", "enum": ["observed", "unavailable"]],
+                "ownership": ["type": "string", "enum": ["thisSession", "notOwned", "unverified"]],
+                "readyForGracefulQuit": ["type": ["boolean", "null"]],
+                "runtimeVersion": nullable,
+                "configuredRoute": ["type": "string", "enum": ["direct", "httpProxy", "httpsProxy", "socks5Proxy", "unknown"]],
+                "chromiumRoute": ["type": "string", "const": "notObserved"],
+                "pageObservation": ["type": "string", "const": "notSupported"],
+                "extensionsObservation": ["type": "string", "const": "notObserved"]
+            ])
+            return object(["profileID": uuid, "processState": state, "revision": revision,
+                           "observation": observation], optional: ["revision", "observation"])
+        }
         if name == "profile_stop" { return object(["profileID": uuid, "processState": state, "stopRequested": boolean]) }
         if name == "profile_start" { return object(["profileID": uuid, "processState": state, "revision": revision]) }
         if name == "profile_check_proxy" { return object(["profileID": uuid, "outcome": text, "chromiumRoute": ["type": "string", "const": "unverified"]]) }

@@ -1,0 +1,44 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "7ef8c581cce4612e6671f7da53eb2e251d42f3b43a2bea9d6bc244909f243bf1",
+  "payload": {
+    "binaryBindingVerified": false,
+    "elapsedSeconds": 15.804,
+    "finishedAt": "2026-10-09T00:54:36.803686+00:00",
+    "launchContractSHA256": "4283ce284ac9aa0d6ee9d8e5cdb7fa3cf343978dc9024c70417ab8b3f3fd63e0",
+    "launcherSHA256": "552129e0ef25fe586f3d8657b09b490921f792449989b6e743e77c33d970bce9",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "sourceMutation": false,
+    "sourcePrefix": "owned-M156-source",
+    "startedAt": "2026-10-09T00:54:20.999210+00:00",
+    "status": "actual-selected-tool-package-proof-source-only",
+    "toolClosureRegistrySHA256": "b909533259b077ddc4908612cfdaa5de2a37902299e459a875525766a21025d9",
+    "toolExecution": false,
+    "verifierSourcesBeforeAndAfterSHA256": {
+      "chromium_15612_generated_cache.py": "e47c18b7eb70891f9a72d7aec1079defc7a0965e07c984e55bd429dc15f54461",
+      "chromium_15612_input_lineage.py": "07d543a6d6918beeda590417deeff3471c1c866db318f23e11f4cfa2f9aa951c",
+      "chromium_15612_receipt_projection.py": "42466d4047fde867ff4f24d8208c5099155b37bc5b6dbf55349e6975241cb2bc",
+      "chromium_15612_supplemental.py": "87803472e7c9f3715e7c3b91c11445c153da5f7c54cd4c2992c2a8f61a055981",
+      "chromium_15612_tool_packages.py": "a2c066560b149c91ad7c4f65c2fcd168538691a1c6c3e01a744f3cb7f928992d"
+    }
+  },
+  "payloadType": "json",
+  "receipt": "native-tool-package-closure-actual-launch-v2.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

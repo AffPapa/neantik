@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "targetVersion": "155.0.8059.40",
+  "releaseReady": false,
+  "status": "reviewed-port-build-compatibility",
+  "files": [
+    {
+      "schemaVersion": 1,
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false,
+      "status": "reviewed-compatibility-fix",
+      "reason": "Fresh M155 PDF test dependencies referenced disabled ScreenAI utility target unconditionally; match existing C++ ENABLE_SCREEN_AI_BROWSERTESTS guard without enabling ScreenAI.",
+      "path": "chrome/browser/pdf/BUILD.gn",
+      "preimageSHA256": "cf04f0b7fffc6b1c104d106770be170ca277c55bd047696e66380dd658cb6a5c",
+      "postimageSHA256": "b5422af9c35c4f7556236d4e8aa4626b9f7220e36c85603c10bff43208af036a",
+      "patchSHA256": "965fc70de91a1111d8c4f746312eec2ba178c7f6d9d263e0ddc644962101f0be"
+    },
+    {
+      "schemaVersion": 1,
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false,
+      "status": "reviewed-build-resource-policy",
+      "path": "build/config/compiler/BUILD.gn",
+      "preimageSHA256": "7a01d14410fb3fc569d1033b0747cd3e17b04e6b61882963ea4691cdcf03a0ca",
+      "postimageSHA256": "79eeabdac760abebb208a456aa5462cef11f9ac41cfbd19ed1749f0c3223618f",
+      "patchSHA256": "54ade99fa16e0a9105d1597779128749b90750f4f8db37a1f281388ac4bfd41a",
+      "reason": "Ninja -j2 does not limit ThinLTO backend workers; cap LLVM linker workers at2 in this isolated build. Optimization and fingerprint policies unchanged; this does not guarantee absence of watchdog panic."
+    },
+    {
+      "path": "third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni",
+      "preimageSHA256": "dc7b1ffe789234cc343d7391e0cdc17a7d319dce4d8779aa8e39ad79144d68c7",
+      "postimageSHA256": "5b6c77c9dc9976d472c290b8a2ffad782a4fb51a454f9bf91f0bcd32f91041eb",
+      "patchSHA256": "bbb8c960855b77165545651bf667fa132f7dfc19aff6edf35bd05706368c0c73",
+      "patchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-use-pinned-native-devtools-typescript.patch",
+      "reason": "Exact failed ui-dts action passed with DEPS native TypeScript7.0.2; replace legacy forced npm6.0.2 compiler, preserving declaration/type checks.",
+      "status": "reviewed-build-toolchain-compatibility",
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false
+    },
+    {
+      "path": "third_party/devtools-frontend/src/third_party/typescript/typescript.py",
+      "preimageSHA256": "e00f6393532933d834496d51e9ca8f183ee232fd53dc1e37c71f9d478c789c65",
+      "postimageSHA256": "ef6417d77e1251888aeb356e2afffbd395e158b6ee06a13a59ca0788bebda636",
+      "patchSHA256": "bbb8c960855b77165545651bf667fa132f7dfc19aff6edf35bd05706368c0c73",
+      "patchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-use-pinned-native-devtools-typescript.patch",
+      "reason": "Exact failed ui-dts action passed with DEPS native TypeScript7.0.2; replace legacy forced npm6.0.2 compiler, preserving declaration/type checks.",
+      "status": "reviewed-build-toolchain-compatibility",
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false
+    },
+    {
+      "path": "chrome/browser/ui/toolbar/app_menu_model.cc",
+      "preimageSHA256": "be732185692086c7557ce355c944e0b30406c41fc27d9ff3959d2e38c75ee349",
+      "postimageSHA256": "51dc087b4f9c9d6b464c2440ef7e76179fd4ed247b262c25f75543764b3806df",
+      "patchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-prune-disabled-signin-section-info.patch",
+      "patchSHA256": "2d25279e7ae2e4ff93ee9526a1b11f3eb19219bfb2ff05b24073ce88ab0dbef0",
+      "targetVersion": "155.0.8059.40",
+      "status": "reviewed-owned-policy-compatibility",
+      "releaseReady": false,
+      "reason": "M155 added ComputeSigninSectionInfo calling GetSyncSectionTitle removed by the existing owned sync policy. Preserve disabled account integration and default local profile menu/avatar metadata; do not restore sync or alter fingerprint policy."
+    },
+    {
+      "path": "third_party/chromium-bidi/rollup.config.mjs",
+      "preimageSHA256": "e3e5755f2814757d03691a63ca21b9c0fbcca8d16c1ef5bbd53225f273b79fa3",
+      "postimageSHA256": "4c73aeddb7f90aa75a6a24a2d2eed29862ebc1a8c18b716e79eed944379c58ba",
+      "patchSHA256": "f7d4ff6849df13cff29b8c0677d461de00a5cc19c4889574ddcf0a9a56ec888c",
+      "patchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-pin-bidi-dependency-and-license-boundary.patch",
+      "reason": "Both ancestor bare-import resolution and generated package attribution escaped pinned BiDi boundary. Disable ancestor moduleDirectories; retain sole pinned modulePaths; GN-declared package/LICENSE copies establish generated-source boundary. License allowlist and fail/notices logic unchanged.",
+      "status": "reviewed-build-dependency-compatibility",
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false
+    },
+    {
+      "path": "third_party/chromium-bidi/src/BUILD.gn",
+      "preimageSHA256": "c7ee38506f5c080d495716f75b6797b9c7506afde5b34ef54a5f1723f7b9571c",
+      "postimageSHA256": "d47eacf20f1320bcecfe99cb5748254bbfd606b9d6079df73f82aed68e49a3b0",
+      "patchSHA256": "f7d4ff6849df13cff29b8c0677d461de00a5cc19c4889574ddcf0a9a56ec888c",
+      "patchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-pin-bidi-dependency-and-license-boundary.patch",
+      "reason": "Both ancestor bare-import resolution and generated package attribution escaped pinned BiDi boundary. Disable ancestor moduleDirectories; retain sole pinned modulePaths; GN-declared package/LICENSE copies establish generated-source boundary. License allowlist and fail/notices logic unchanged.",
+      "status": "reviewed-build-dependency-compatibility",
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false
+    },
+    {
+      "path": "chrome/browser/enterprise/connectors/analysis/content_analysis_info.cc",
+      "preimageSHA256": "31c7191106ee4f92eef67b9235fb06ae2d5abf29fb88d89680bf6041e9f8d7ed",
+      "postimageSHA256": "da89e97e5c94273efd9aee066eae3a606d8fea2be53de165478eb9ffdaab85c8",
+      "patchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-guard-enterprise-download-referrer.patch",
+      "patchSHA256": "ac4e7d04ba1ff40c5034d6e246c7b3ed70af3ae42d022427f9f58a7ba53fbd0c",
+      "targetVersion": "155.0.8059.40",
+      "releaseReady": false,
+      "status": "reviewed-owned-policy-compatibility",
+      "reason": "New M155 enterprise download referrer call references Safe Browsing implementation omitted at existing mode0. Compile call only when SAFE_BROWSING_AVAILABLE; preserve empty chain and remaining enterprise frame URLs without enabling disabled subsystem or changing fingerprint policy."
+    }
+  ]
+}

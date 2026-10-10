@@ -45,7 +45,7 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 | `profile_get` | Current decimal-string revision, name, startURL, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
 | `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
 | `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
-| `profile_status` | Reconciled stopped/managed/checking/recovery/external state |
+| `profile_status` | Reconciled stopped/managed/checking/recovery/external state; optional revision-bound observation of this session's owned browser |
 | `profile_create` | Create persistent configuration without launching |
 | `profile_update` | Patch name, startURL, tags, note, isPinned, isArchived, colorHex, symbolName |
 | `profile_set_proxy` | Set fields or parse one proxy line; proxy:null disables |
@@ -73,6 +73,24 @@ The four additional read tools are available in read mode. Other tools require m
 6. On conflict, reread and intentionally retry. Do not silently overwrite newer data. **Create/duplicate are not idempotent**: uncertain success must be reconciled before retry.
 
 Manager metadata refresh preserves open editor drafts. Saving an outdated draft reports a revision conflict. Transactions compensate thrown metadata/Keychain failures; they do **not** promise atomicity across a process kill between two different storage systems.
+
+### Observe a browser owned by this session
+
+In the development major candidate, `profile_status` accepts an explicit observation request:
+
+```json
+{
+  "profileID": "<UUID from profile_get>",
+  "includeObservation": true,
+  "expectedRevision": "<current decimal revision>"
+}
+```
+
+Read the current revision after `profile_start`: starting a profile advances its metadata revision. Observation can report the launched runtime version, configured route and whether the owned macOS application is ready for graceful close. It does not return PIDs, local paths, proxy endpoints, credentials, page content, or extension contents.
+
+`state: observed` requires this live manager session's matching launch lease and process identity. A stopped browser or a browser belonging to another session reports unavailable; it is not adopted. A revision conflict requires rereading the profile. A launch receipt saying `httpProxy` is configuration evidence: `chromiumRoute` stays `notObserved`. Page automation is `notSupported`; extension state is `notObserved`.
+
+Example AI request: “Check whether this session's profile is ready for graceful close, and show the runtime version it launched. Do not infer its network route.” Calling `profile_status` without observation retains the original compact response. This development capability still requires exact candidate stdio and headed acceptance before publication.
 
 ## Proxy input
 

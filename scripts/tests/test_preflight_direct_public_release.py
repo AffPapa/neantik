@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from unittest import mock
 
 
@@ -70,6 +72,28 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
                           contract_path=contract_path, provenance=provenance,
                           candidate_lock={}, project_root=root, args_gn=args)
             with mock.patch.object(chromium_15498_release_evidence, "verify_candidate_lock") as verifier:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
+    def test_m15540_preflight_uses_separate_candidate_verifier(self) -> None:
+        import chromium_15540_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion": 2}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            kwargs = dict(runtime_version="155.0.8059.40", contract={"schemaVersion": 2},
+                          contract_path=contract_path, provenance=provenance,
+                          candidate_lock={}, project_root=root, args_gn=args)
+            with mock.patch.object(chromium_15540_release_evidence, "verify_candidate_lock") as verifier:
                 MODULE.verify_source_contract_binding(**kwargs)
                 verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
                 args.write_text("angle_enable_metal=false\n")

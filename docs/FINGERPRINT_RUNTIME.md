@@ -4,6 +4,14 @@ NeAntik itself is a native profile and process manager. Browser-visible
 fingerprint values are implemented by a compatible Chromium runtime, not by
 JavaScript injected into pages.
 
+## Evidence policy status
+
+Current major development uses [audit8 / authenticated envelope9](FINGERPRINT_EVIDENCE_POLICY.md).
+This changes the interpretation of measurements, not the browser-visible
+runtime policy. The final integrated candidate, notarization and hosted bytes
+still require independent qualification. Historical release reports below
+remain historical evidence.
+
 ## Private launch protocol
 
 A compatible runtime must support:

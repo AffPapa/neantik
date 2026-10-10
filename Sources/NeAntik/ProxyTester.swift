@@ -55,6 +55,7 @@ struct ProxyTester: Sendable {
     static let maximumResponseBytes = 16_384
     static let maximumProbeOutputBytes = maximumResponseBytes + 256
     static let metricsPrefix = "\nNEANTIK_METRICS_V1:"
+    private static let routeMetricsPrefix = "\nNEANTIK_METRICS_V2:"
     private static let invalidResponseMessage =
         "IP-сервис вернул некорректный ответ."
 
@@ -67,13 +68,54 @@ struct ProxyTester: Sendable {
         "--max-filesize", "\(maximumResponseBytes)",
         "--noproxy", "",
         "--config", "-",
-        "--write-out", "\nNEANTIK_METRICS_V1:%{time_starttransfer}\n",
+        "--write-out", "\nNEANTIK_METRICS_V2:%{time_starttransfer}|%{http_connect}|%{response_code}\n",
         "https://ipapi.co/json/"
     ]
     static let crossCheckURLs = [
         "https://ipwho.is/",
         "https://free.freeipapi.com/api/v1/json"
     ]
+
+    /// A custom endpoint is an exclusive manual observation. It cannot silently
+    /// fall back, supply GeoIP fields, redirect, or qualify Chromium routing.
+    func diagnose(
+        endpoint: ProxyDiagnosticEndpoint,
+        configuration: ProxyConfiguration,
+        password: String,
+        consent: Bool,
+        runProcess: ProcessRunner = ProxyTester.runCancellableProcess
+    ) async throws -> ProxyDiagnosticObservation {
+        guard consent else { throw ProxyDiagnosticError.consentRequired }
+        guard configuration.isValid, Self.isValidPassword(password) else {
+            throw ProxyProbeError(outcome: .invalidConfiguration)
+        }
+        try Task.checkCancellation()
+        var config = "proxy = \"\(Self.escaped(configuration.curlServer))\"\n"
+        if !configuration.username.isEmpty {
+            config += "proxy-user = \"\(Self.escaped(configuration.username + ":" + password))\"\n"
+        }
+        config += "url = \"\(Self.escaped(endpoint.address))\"\n"
+        let input = Data(config.utf8)
+        config.removeAll(keepingCapacity: false)
+        let arguments = Array(Self.curlArguments.dropLast()) + ["--proto", "=https", "--max-redirs", "0"]
+        let result: ProxyProcessResult
+        do {
+            result = try await runProcess(URL(fileURLWithPath: "/usr/bin/curl"), arguments, input, Self.maximumProbeOutputBytes)
+        } catch is CancellationError { throw CancellationError() }
+        catch { throw ProxyProbeError(outcome: .internalFailure) }
+        try Task.checkCancellation()
+        guard !result.outputExceeded else { throw ProxyProbeError(outcome: .invalidResponse) }
+        guard result.status == 0 else { throw ProxyProbeError(outcome: Self.outcome(forProcess: result)) }
+        do {
+            let parsed = try Self.splitProbeOutput(result.output)
+            guard parsed.httpConnectStatus != nil, parsed.responseStatus == 200 else {
+                throw ProxyProbeError(outcome: .invalidResponse)
+            }
+            try Self.validateSuccessfulMetrics(parsed.httpConnectStatus, parsed.responseStatus)
+            let ip = try Self.parseResponse(parsed.body).ipAddress
+            return ProxyDiagnosticObservation(observedAt: Date(), responseTimeMilliseconds: parsed.responseTimeMilliseconds, ipAddress: ip)
+        } catch { throw ProxyProbeError(outcome: .invalidResponse) }
+    }
 
     func test(
         configuration: ProxyConfiguration,
@@ -129,7 +171,8 @@ struct ProxyTester: Sendable {
             // context, so another service must not override it. A service or
             // connection failure may use the legacy independent source.
             guard error.outcome != .invalidResponse,
-                  error.outcome != .authenticationRejected else {
+                  error.outcome != .authenticationRejected,
+                  error.outcome != .protocolFailed else {
                 throw error
             }
         }
@@ -151,7 +194,7 @@ struct ProxyTester: Sendable {
         }
         guard result.status == 0 else {
             throw ProxyProbeError(
-                outcome: Self.outcome(forCurlStatus: result.status)
+                outcome: Self.outcome(forProcess: result)
             )
         }
 
@@ -196,11 +239,12 @@ struct ProxyTester: Sendable {
             }
             guard process.status == 0 else {
                 throw ProxyProbeError(
-                    outcome: Self.outcome(forCurlStatus: process.status)
+                    outcome: Self.outcome(forProcess: process)
                 )
             }
             do {
                 let parsed = try Self.splitProbeOutput(process.output)
+                try Self.validateSuccessfulMetrics(parsed.httpConnectStatus, parsed.responseStatus)
                 try Self.validateCrossCheckBody(parsed.body, service: service)
                 responses.append(parsed.body)
                 responseTime += parsed.responseTimeMilliseconds
@@ -256,6 +300,18 @@ struct ProxyTester: Sendable {
         }
     }
 
+    private static func outcome(forProcess process: ProxyProcessResult) -> ProxyHealthOutcome {
+        // curl --fail uses exit 22 for both a refused CONNECT tunnel and an
+        // endpoint HTTP error. Only curl's separate CONNECT metric identifies
+        // the proxy stage; never inspect stderr, which may contain credentials.
+        if let parsed = try? splitProbeOutput(process.output),
+           let connectStatus = parsed.httpConnectStatus,
+           connectStatus != 0, connectStatus != 200 {
+            return connectStatus == 407 ? .authenticationRejected : .protocolFailed
+        }
+        return outcome(forCurlStatus: process.status)
+    }
+
     static func parseProbeOutput(
         _ data: Data
     ) throws -> (
@@ -263,6 +319,7 @@ struct ProxyTester: Sendable {
         responseTimeMilliseconds: Int
     ) {
         let parsed = try splitProbeOutput(data)
+        try validateSuccessfulMetrics(parsed.httpConnectStatus, parsed.responseStatus)
         return (
             try parseResponse(parsed.body),
             parsed.responseTimeMilliseconds
@@ -271,22 +328,27 @@ struct ProxyTester: Sendable {
 
     private static func splitProbeOutput(
         _ data: Data
-    ) throws -> (body: Data, responseTimeMilliseconds: Int) {
+    ) throws -> (body: Data, responseTimeMilliseconds: Int, httpConnectStatus: Int?, responseStatus: Int?) {
         guard data.count <= maximumProbeOutputBytes,
-              let text = String(data: data, encoding: .utf8),
-              let marker = text.range(
-                of: metricsPrefix,
-                options: .backwards
-              )
+              let text = String(data: data, encoding: .utf8)
         else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        let routeMarker = text.range(of: routeMetricsPrefix, options: .backwards)
+        let legacyMarker = text.range(of: metricsPrefix, options: .backwards)
+        guard let marker = [routeMarker, legacyMarker].compactMap({ $0 })
+            .max(by: { $0.lowerBound < $1.lowerBound }) else {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
         let bodyText = String(text[..<marker.lowerBound])
         let metricText = text[marker.upperBound...]
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let fields = metricText.split(separator: "|", omittingEmptySubsequences: false)
+        let isRouteMetric = marker == routeMarker
         guard !metricText.isEmpty,
               metricText.utf8.count <= 64,
-              let seconds = Double(metricText),
+              fields.count == (isRouteMetric ? 3 : 1),
+              let seconds = Double(fields[0]),
               seconds.isFinite,
               seconds >= 0,
               seconds <= 120
@@ -299,7 +361,30 @@ struct ProxyTester: Sendable {
         else {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
-        return (Data(bodyText.utf8), milliseconds)
+        var connectStatus: Int?
+        var responseStatus: Int?
+        if isRouteMetric {
+            func httpStatus(_ field: Substring) -> Int? {
+                guard field.utf8.count == 3,
+                      field.utf8.allSatisfy({ (48...57).contains($0) }),
+                      let value = Int(field), value == 0 || (100...599).contains(value)
+                else { return nil }
+                return value
+            }
+            guard let connect = httpStatus(fields[1]), let response = httpStatus(fields[2]) else {
+                throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+            }
+            connectStatus = connect
+            responseStatus = response
+        }
+        return (Data(bodyText.utf8), milliseconds, connectStatus, responseStatus)
+    }
+
+    private static func validateSuccessfulMetrics(_ connect: Int?, _ response: Int?) throws {
+        guard (connect == nil || connect == 0 || connect == 200),
+              (response == nil || response == 200) else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
     }
 
     static func parseCrossCheckedResponses(
@@ -699,6 +784,9 @@ private final class CancellableProcessRunner: @unchecked Sendable {
     init(executableURL: URL, arguments: [String]) {
         process.executableURL = executableURL
         process.arguments = arguments
+        // Do not inherit proxy overrides, custom trust roots, TLS key logging
+        // or loader injection. Explicit config and OS trust are authoritative.
+        process.environment = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "LANG": "C", "LC_ALL": "C"]
     }
 
     var wasCancelled: Bool {

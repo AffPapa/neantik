@@ -99,10 +99,9 @@ struct NeAntikApp: App {
         } else {
             paths = AppPaths()
         }
-        let keychain = KeychainStore(
-            service: auditRoot == nil ? environment.keychainService : "app.neantik.release-audit.proxy",
-            legacyService: auditRoot == nil ? environment.legacyKeychainService : nil
-        )
+        let keychain = auditRoot == nil
+            ? KeychainStore.applicationStore(environment: environment, paths: paths)
+            : KeychainStore(service: "app.neantik.release-audit.proxy", legacyService: nil)
         self.keychain = keychain
         credentialCleanup = DeletedProfileCredentialCleanup(
             paths: paths,

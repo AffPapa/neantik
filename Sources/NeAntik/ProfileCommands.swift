@@ -132,6 +132,7 @@ struct ProfileCommandSet {
     let toggleArchived: () -> Void
     let revealInFinder: () -> Void
     let delete: () -> Void
+    var clearCache: () -> Void = {}
 
     static let unavailable = ProfileCommandSet(
         presentation: .unavailable,
@@ -165,6 +166,7 @@ struct WorkspaceCommandSet {
     let saveSnapshot: () -> Void
     let restoreSnapshot: () -> Void
     let importProfiles: () -> Void
+    let importBookmarks: () -> Void
     let exportEncryptedProfiles: () -> Void
     let importEncryptedProfiles: () -> Void
     let canUndoMetadata: Bool
@@ -185,6 +187,7 @@ struct WorkspaceCommandSet {
         saveSnapshot: {},
         restoreSnapshot: {},
         importProfiles: {},
+        importBookmarks: {},
         exportEncryptedProfiles: {},
         importEncryptedProfiles: {},
         canUndoMetadata: false,
@@ -274,10 +277,10 @@ struct WorkspaceCommandMenu: Commands {
                 action: resolved.saveSnapshot
             )
             .disabled(!resolved.isEnabled)
-            .help("Локальная точка восстановления настроек остановленных профилей. Это не резервная копия BrowserData, cookies или паролей.")
+            .help("Снимок настроек остановленных профилей для создания новых профилей. Это не резервная копия BrowserData, cookies или паролей.")
 
             Button(
-                "Восстановить локальный снимок настроек…",
+                "Создать профили из снимка настроек…",
                 systemImage: "arrow.counterclockwise",
                 action: resolved.restoreSnapshot
             )
@@ -291,6 +294,10 @@ struct WorkspaceCommandMenu: Commands {
             )
             .disabled(!resolved.isEnabled)
             .help("Импортировать настройки как новые профили без данных сайтов и паролей.")
+
+            Button("Создать профиль из закладок…", systemImage: "bookmark", action: resolved.importBookmarks)
+                .disabled(!resolved.isEnabled)
+                .help("Перенести закладки HTML или Chromium JSON в новый профиль с новой identity. Cookies и пароли не импортируются.")
 
             Divider()
 
@@ -373,12 +380,13 @@ struct ProfileCommandMenu: Commands {
             .disabled(!resolved.hasProfile)
 
             Button(
-                "Дублировать",
+                "Копировать настройки",
                 systemImage: "plus.square.on.square",
                 action: resolved.duplicate
             )
             .keyboardShortcut("d")
             .disabled(!resolved.hasProfile)
+            .help("Создать отдельный профиль из настроек; данные сайтов и заметка не копируются")
 
             Menu("Переместить в папку", systemImage: "folder") {
                 ForEach(resolved.folderOptions) { option in
@@ -423,6 +431,10 @@ struct ProfileCommandMenu: Commands {
                 action: resolved.revealInFinder
             )
             .disabled(!resolved.hasProfile)
+
+            Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: resolved.clearCache)
+                .disabled(!resolved.presentation.editIsEnabled)
+                .help("Посчитать и удалить HTTP Cache и Code Cache остановленного профиля, сохранив данные сайтов.")
 
             Divider()
 

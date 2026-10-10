@@ -67,10 +67,26 @@ def verify(
     *,
     info_plist: Path = INFO_PLIST,
     swift_source: Path = SWIFT_SOURCE,
+    expected_info_plist: Path | None = None,
 ) -> str:
     with info_plist.open("rb") as handle:
         info = plistlib.load(handle)
     source = swift_source.read_text(encoding="utf-8")
+
+    if expected_info_plist is not None:
+        with expected_info_plist.open("rb") as handle:
+            expected = plistlib.load(handle)
+        # Read the candidate's actual packaged values, including exact types.
+        # Never print URLs/key material when reporting configuration drift.
+        for key in (
+            "NeAntikUpdateChannelEnabled", "NeAntikUpdateAutoDownload",
+            "NeAntikUpdateManifestURL", "NeAntikUpdatePublicKeyID",
+            "NeAntikUpdatePublicKeyBase64",
+        ):
+            if (key not in expected or key not in info
+                    or type(info[key]) is not type(expected[key])
+                    or info[key] != expected[key]):
+                raise UpdatePolicyError(f"packaged {key} does not match approved project metadata")
 
     enabled = info.get("NeAntikUpdateChannelEnabled")
     automatic_download = info.get("NeAntikUpdateAutoDownload")
@@ -148,12 +164,14 @@ def main() -> int:
     )
     parser.add_argument("--info-plist", type=Path, default=INFO_PLIST)
     parser.add_argument("--swift-source", type=Path, default=SWIFT_SOURCE)
+    parser.add_argument("--expected-info-plist", type=Path)
     args = parser.parse_args()
     try:
         print(
             verify(
                 info_plist=args.info_plist.resolve(),
                 swift_source=args.swift_source.resolve(),
+                expected_info_plist=args.expected_info_plist.resolve() if args.expected_info_plist else None,
             )
         )
     except (OSError, plistlib.InvalidFileException, UpdatePolicyError) as error:

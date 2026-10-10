@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "targetVersion": "155.0.8059.40",
+  "releaseReady": false,
+  "status": "reviewed-pruning-complete",
+  "pruningSourceSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+  "filteredListSHA256": "af9f3cb8073214a0ce634f915c7ce90708bd30feb8c8cdb134dc95fcb9b6e3b5",
+  "removedCount": 13832,
+  "keepContingentPaths": true,
+  "protectedRestoredFiles": [
+    {
+      "path": "components/safe_browsing/core/common/safe_browsing_prefs.cc",
+      "sha256": "e4bc21abdb54fd3b120c2b0beaca6ca82bdfe3e783f4cdab9d9e344fffb95ffb"
+    },
+    {
+      "path": "components/safe_browsing/core/common/safe_browsing_prefs.h",
+      "sha256": "18c5bc6604e7fb2e9b4f8774dab41790f81e5aebfcd0e3f092124bf899e72281"
+    }
+  ],
+  "utilitySHA256": "b60e3973aef2b0d51c8a7cfe997f710f7c728a6d12a2c63ee5dcec97cfa082e3"
+}

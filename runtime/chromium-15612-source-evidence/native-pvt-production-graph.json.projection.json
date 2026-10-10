@@ -1,0 +1,48 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "d7a459dcf687ef3ea5a3e4cd7eb34ee75e6c36210f87dd724ff000e52beec983",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "at": "2026-10-09T03:52:20.591245+00:00",
+    "gnSHA256": "8b50f57cfac9eba62f07ce5d9ad15d738c6bfeb6e58de33fe2b586800545bee6",
+    "harnessCorrection": "First diagnostic used nonexistent //chrome/test:chromedriver; corrected from native BUILD.gn target declaration",
+    "nativeBuildQualified": false,
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "status": "production-chrome-and-chromedriver-PVT-graph-absent",
+    "targets": [
+      {
+        "PVTOrATHMDependencyCount": 0,
+        "dependencyLines": 21132,
+        "dependencyOutputSHA256": "60695edae38f519ca5994d496cfbce3ecddea503c66975cbe4e25b7f48bf8fb3",
+        "exitCode": 0,
+        "target": "gn-source://chrome:chrome"
+      },
+      {
+        "PVTOrATHMDependencyCount": 0,
+        "dependencyLines": 5536,
+        "dependencyOutputSHA256": "8ac6d1fd0adc5c4a1605632e12e3a0a2a556fa0a19eaf111d115741c6cf01a33",
+        "exitCode": 0,
+        "target": "gn-source://chrome/test/chromedriver:chromedriver"
+      }
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native-pvt-production-graph.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": "d7a459dcf687ef3ea5a3e4cd7eb34ee75e6c36210f87dd724ff000e52beec983",
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

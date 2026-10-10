@@ -287,14 +287,9 @@ enum BrowserLaunchBuilder {
         ]
         let disabledFeatures = policy.disabledFeatures
 
-        if policy.fingerprintNoiseArgumentsEnabled {
-            arguments.append("--fingerprinting-client-rects-noise")
-            arguments.append("--fingerprinting-canvas-measuretext-noise")
-            arguments.append("--fingerprinting-canvas-image-data-noise")
-            // The runtime normalizes WebGL but not the WebGPU adapter surface.
-            // Keep WebGPU unavailable until it is part of the same reviewed
-            // Apple device tuple.
-        }
+        // Native Canvas, layout and text operations preserve their mathematical
+        // semantics. Profile identity and storage isolation are separate from
+        // perturbing pixels, CSS coordinates or shaped text metrics.
         if let locale = policy.appliedLocaleIdentifier {
             arguments.append("--lang=\(locale)")
             arguments.append("--accept-lang=\(locale)")
@@ -428,6 +423,24 @@ enum BrowserLaunchBuilder {
     }
 }
 
+private enum BrowserLeaseCleanupAuthority: Equatable, Sendable {
+    case managedOwner(UUID)
+    case external(BrowserProcessLock)
+
+    func matches(_ lock: BrowserProcessLock) -> Bool {
+        switch self {
+        case let .managedOwner(owner): return lock.ownerToken == owner
+        case let .external(expected): return lock == expected
+        }
+    }
+}
+
+private enum BrowserLeaseCleanupOutcome {
+    case removedOrMissing
+    case replacementPresent
+    case retryRequired
+}
+
 private struct BrowserProcessRecoveryRecord: Equatable, Sendable {
     let lockURL: URL
     let expectedBrowserDataDirectory: URL
@@ -436,6 +449,7 @@ private struct BrowserProcessRecoveryRecord: Equatable, Sendable {
     let startingCreatedAt: Date?
     let message: String
     let entryIdentity: PrivateFileEntryIdentity?
+    let cleanupAuthority: BrowserLeaseCleanupAuthority?
 }
 
 private enum BrowserLeaseEntrySnapshot: Sendable {
@@ -462,6 +476,7 @@ private enum BrowserLeaseEntryInventoryAnchor: Equatable, Sendable {
     case missing
     case present(PrivateFileEntryIdentity)
     case unavailable
+    case busy
 }
 
 private enum BrowserStartingOwnerInventoryAnchor:
@@ -481,6 +496,10 @@ private struct BrowserLeaseInventoryAnchor: Equatable, Sendable {
         entry: .unavailable,
         startingOwner: .unavailable
     )
+    static let busy = BrowserLeaseInventoryAnchor(
+        entry: .busy,
+        startingOwner: .unavailable
+    )
 }
 
 private struct BrowserProcessReconcileEvidence: Sendable {
@@ -492,10 +511,11 @@ private struct BrowserLeaseAnchorValidation {
     var matchingProfileIDs = Set<UUID>()
     var changedProfileIDs = Set<UUID>()
     var unavailableProfileIDs = Set<UUID>()
+    var busyProfileIDs = Set<UUID>()
 
     var isClean: Bool {
         changedProfileIDs.isEmpty &&
-            unavailableProfileIDs.isEmpty
+            unavailableProfileIDs.isEmpty && busyProfileIDs.isEmpty
     }
 }
 
@@ -527,6 +547,7 @@ final class BrowserProcessManager: ObservableObject {
     private var processes: [UUID: Process] = [:]
     private var managedLeaseOwners: [UUID: UUID] = [:]
     private var managedBrowserDataDirectories: [UUID: URL] = [:]
+    private var managedSessionReceipts: [UUID: ManagedBrowserSessionReceipt] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
     private var externalLocks: [UUID: BrowserProcessLock] = [:]
     private var externalUnverifiedProfileIDs = Set<UUID>()
@@ -781,7 +802,6 @@ final class BrowserProcessManager: ObservableObject {
             guard let self else {
                 return
             }
-            reconcileTask = nil
             let anchorValidation =
                 leaseAnchorValidation(evidence.leaseAnchors)
             if !Task.isCancelled,
@@ -799,14 +819,26 @@ final class BrowserProcessManager: ObservableObject {
             } else if passiveObservationsEnabled,
                       generation == reconcileGeneration {
                 if anchorValidation.unavailableProfileIDs.isEmpty,
-                   !anchorValidation.changedProfileIDs.isEmpty,
+                   (!anchorValidation.changedProfileIDs.isEmpty ||
+                    !anchorValidation.busyProfileIDs.isEmpty),
                    retryCount < 2
                 {
-                    reconcileGeneration &+= 1
-                    queuedReconcile = QueuedBrowserReconcile(
-                        profiles: profiles,
-                        retryCount: retryCount + 1
-                    )
+                    // A busy lease is temporary evidence unavailability, not
+                    // an absent process. Yield before recapturing both the
+                    // lease anchors and process inventory; never park the UI.
+                    if !anchorValidation.busyProfileIDs.isEmpty {
+                        try? await Task.sleep(nanoseconds:
+                            retryCount == 0 ? 100_000_000 : 250_000_000)
+                    }
+                    if !Task.isCancelled,
+                       generation == reconcileGeneration,
+                       passiveObservationsEnabled {
+                        reconcileGeneration &+= 1
+                        queuedReconcile = QueuedBrowserReconcile(
+                            profiles: profiles,
+                            retryCount: retryCount + 1
+                        )
+                    }
                 } else if !anchorValidation.isClean {
                     let stableProfiles = profiles.filter {
                         anchorValidation.matchingProfileIDs
@@ -830,14 +862,19 @@ final class BrowserProcessManager: ObservableObject {
                         anchorValidation.changedProfileIDs.union(
                             anchorValidation
                                 .unavailableProfileIDs
-                        )
+                        ).union(anchorValidation.busyProfileIDs)
                     markReconciliationUnavailable(
                         profiles: profiles.filter {
                             blockedProfileIDs.contains($0.id)
                         }
                     )
+                    if anchorValidation.unavailableProfileIDs.isEmpty,
+                       !anchorValidation.busyProfileIDs.isEmpty {
+                        lastError = "Другое действие с профилем ещё выполняется. Дождись его завершения и повтори проверку."
+                    }
                 }
             }
+            reconcileTask = nil
             startQueuedInventoryReconcileIfNeeded(
                 processInventoryProvider: processInventoryProvider
             )
@@ -949,6 +986,10 @@ final class BrowserProcessManager: ObservableObject {
     ) -> BrowserLeaseAnchorValidation {
         var validation = BrowserLeaseAnchorValidation()
         for (profileID, anchor) in expected {
+            if anchor == .busy {
+                validation.busyProfileIDs.insert(profileID)
+                continue
+            }
             guard anchor != BrowserLeaseInventoryAnchor.unavailable else {
                 validation.unavailableProfileIDs.insert(profileID)
                 continue
@@ -957,6 +998,10 @@ final class BrowserProcessManager: ObservableObject {
                 paths: paths,
                 profileID: profileID
             )
+            if current == .busy {
+                validation.busyProfileIDs.insert(profileID)
+                continue
+            }
             guard current != BrowserLeaseInventoryAnchor.unavailable else {
                 validation.unavailableProfileIDs.insert(profileID)
                 continue
@@ -1014,6 +1059,8 @@ final class BrowserProcessManager: ObservableObject {
                             : .dead(managerPID)
                 )
             }
+        } catch is ProfileProcessBusyError {
+            return .busy
         } catch {
             return .unavailable
         }
@@ -1104,6 +1151,8 @@ final class BrowserProcessManager: ObservableObject {
             throw error
         } catch let error as BrowserProfileDeletedError {
             throw error
+        } catch let error as ProfileProcessBusyError {
+            throw error
         } catch {
             if destructiveOperationStarted {
                 throw error
@@ -1112,6 +1161,142 @@ final class BrowserProcessManager: ObservableObject {
                 reason: .inspectionUnavailable
             )
         }
+    }
+
+    /// Disk maintenance keeps process authority across awaits. Production
+    /// inventory and the worker run off-main; unknown process evidence refuses
+    /// admission. A UI snapshot is checked again before the worker starts.
+    func withVerifiedStoppedProfileMaintenance<Result: Sendable>(
+        profile: BrowserProfile,
+        operation: @escaping @Sendable (StoppedProfileMaintenanceAuthority) throws -> Result
+    ) async throws -> Result {
+        guard processes[profile.id]?.isRunning != true else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        let savedPaths = paths
+        let acquire = Task.detached(priority: .utility) {
+            try savedPaths.acquireProcessMaintenanceGuard(for: profile.id)
+        }
+        let lease = try await withTaskCancellationHandler { try await acquire.value } onCancel: { acquire.cancel() }
+        defer { lease.release() }
+        try Task.checkCancellation()
+        guard processes[profile.id]?.isRunning != true else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        let inspection: BrowserDataProcessInspection
+        if let provider = processInventoryProvider {
+            inspection = await Task.detached(priority: .utility) {
+                provider().inspectBrowserDataProcess(savedPaths.browserDataDirectory(for: profile.id))
+            }.value
+        } else {
+            // Only injected test managers omit the production inventory.
+            inspection = browserDataProcessInspector(paths.browserDataDirectory(for: profile.id))
+        }
+        switch inspection {
+        case .found: throw BrowserProfileDeletionBlockedError(reason: .browserDataInUse)
+        case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+        case .absent: break
+        }
+        let check = Task.detached(priority: .utility) {
+            switch try savedPaths.privateFileEntryKind(savedPaths.profileDeletionTombstone(for: profile.id)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.lockFile(for: profile.id)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        try await check.value
+        try Task.checkCancellation()
+        if validatesPersistedProfiles {
+            try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {}
+        }
+        let provider = processInventoryProvider
+        let authority = StoppedProfileMaintenanceAuthority(browserData: savedPaths.browserDataDirectory(for: profile.id)) {
+            try lease.validateHeldFile(at: savedPaths.lockGuardFile(for: profile.id))
+            if let provider {
+                switch provider().inspectBrowserDataProcess(savedPaths.browserDataDirectory(for: profile.id)) {
+                case .found: throw BrowserProfileDeletionBlockedError(reason: .browserDataInUse)
+                case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+                case .absent: break
+                }
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.profileDeletionTombstone(for: profile.id)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.lockFile(for: profile.id)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        defer { authority.invalidate() }
+        let worker = Task.detached(priority: .utility) {
+            try authority.validate(browserData: savedPaths.browserDataDirectory(for: profile.id))
+            return try operation(authority)
+        }
+        return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
+    }
+
+    /// Recovery deliberately does not decode pending metadata. It acquires
+    /// process authority first and checks both journal-bound directory names.
+    /// The transaction then revalidates its immutable intent under metadata
+    /// guard. A found or unknown process, tombstone or lease refuses admission.
+    func withVerifiedStoppedProfileRestore<Result: Sendable>(
+        profileID: UUID, retainedTree: URL,
+        operation: @escaping @Sendable (StoppedProfileRestoreAuthority) throws -> Result
+    ) async throws -> Result {
+        let savedPaths = paths
+        let parent = savedPaths.profileDirectory(for: profileID)
+        guard retainedTree.deletingLastPathComponent() == parent,
+              retainedTree.lastPathComponent.hasPrefix(".neantik-backup-restore-"),
+              !retainedTree.lastPathComponent.contains("/") else { throw BrowserDataRestoreError.authorityRequired }
+        guard processes[profileID]?.isRunning != true else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+        let acquire = Task.detached(priority: .utility) { try savedPaths.acquireProcessMaintenanceGuard(for: profileID) }
+        let lease = try await withTaskCancellationHandler { try await acquire.value } onCancel: { acquire.cancel() }
+        var transferred = false
+        defer { if !transferred { lease.release() } }
+        try Task.checkCancellation()
+        guard processes[profileID]?.isRunning != true else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+        guard let provider = processInventoryProvider else { throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable) }
+        let inspect: @Sendable () throws -> Void = {
+            try lease.validateHeldFile(at: savedPaths.lockGuardFile(for: profileID))
+            let inventory = provider()
+            switch inventory.inspectOtherManagerProcesses() {
+            case .found: throw BrowserDataRestoreError.authorityRequired
+            case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+            case .absent: break
+            }
+            for root in [savedPaths.browserDataDirectory(for: profileID), retainedTree] {
+                let state = inventory.inspectBrowserDataProcess(root)
+                switch state {
+                case .found: throw BrowserProfileDeletionBlockedError(reason: .browserDataInUse)
+                case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+                case .absent: break
+                }
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.profileDeletionTombstone(for: profileID)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.lockFile(for: profileID)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        let authority = StoppedProfileRestoreAuthority(profileID: profileID, retainedTree: retainedTree, paths: savedPaths, lease: lease, inspection: inspect)
+        transferred = true
+        defer { authority.invalidate() }
+        let worker = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            try authority.validate(paths: savedPaths)
+            return try operation(authority)
+        }
+        return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
     }
 
     private func reconcileProfile(profileID: UUID) {
@@ -1502,6 +1687,9 @@ final class BrowserProcessManager: ObservableObject {
             startURLOverride: startURLOverride,
             now: launchNow,
             purpose: purpose
+        ) + KeychainStore.disposableBrowserArguments(
+            environment: NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier),
+            paths: paths
         )
         process.environment = BrowserLaunchBuilder.environment(
             profile: profile,
@@ -1566,6 +1754,8 @@ final class BrowserProcessManager: ObservableObject {
             } catch where Self.isExistingPathError(error) {
                 reconcileProfile(profileID: profile.id)
                 throw NeAntikError.profileAlreadyRunning
+            } catch let error as ProfileProcessBusyError {
+                throw error
             } catch {
                 // File-system errors can contain absolute paths or other
                 // implementation details. Keep them out of the user-facing
@@ -1574,6 +1764,8 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.processLaunchFailed("")
             }
         } catch let error as NeAntikError {
+            throw error
+        } catch let error as ProfileProcessBusyError {
             throw error
         } catch {
             throw NeAntikError.processLaunchFailed("")
@@ -1610,6 +1802,20 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken,
                 at: lockURL
             )
+            let route: BrowserSessionObservation.Route
+            switch profile.proxy?.kind {
+            case nil: route = .direct
+            case .some(.http): route = .httpProxy
+            case .some(.https): route = .httpsProxy
+            case .some(.socks5): route = .socks5Proxy
+            }
+            managedSessionReceipts[profile.id] = ManagedBrowserSessionReceipt(
+                // Lease JSON uses ISO8601 seconds. Bind to the actual encoded
+                // representation, not an in-memory Date with fractional time.
+                generation: ownerToken, lock: try Self.decodeLock(Self.encodeLock(lock)),
+                runtimeVersion: ManagedBrowserSessionReceipt.safeRuntimeVersion(runtime.inspection.version),
+                configuredRoute: route
+            )
         } catch {
             if process.isRunning {
                 _ = managedProcessTerminator(process)
@@ -1623,6 +1829,7 @@ final class BrowserProcessManager: ObservableObject {
             runningProfileIDs.remove(profile.id)
             managedLeaseOwners.removeValue(forKey: profile.id)
             managedBrowserDataDirectories.removeValue(forKey: profile.id)
+            managedSessionReceipts.removeValue(forKey: profile.id)
             removeLockIfOwned(
                 profileID: profile.id,
                 ownerToken: ownerToken
@@ -1673,6 +1880,51 @@ final class BrowserProcessManager: ObservableObject {
               let application = NSRunningApplication(processIdentifier: process.processIdentifier),
               application.isFinishedLaunching,
               application.executableURL?.resolvingSymlinksInPath() == process.executableURL?.resolvingSymlinksInPath()
+        else { return false }
+        return true
+    }
+
+    /// Observe only a session this manager launched. Disk reads and process
+    /// inventory run off MainActor; a changed generation never returns old data.
+    func observeManagedBrowserSession(profileID: UUID) async throws -> BrowserSessionObservation {
+        guard let process = processes[profileID], process.isRunning,
+              let receipt = managedSessionReceipts[profileID]
+        else { return .unavailable(.notOwned) }
+        let paths = paths
+        let task = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            return try paths.withProcessLockGuard(for: profileID) {
+                let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
+                guard receipt.matches(current) else { return false }
+                return Self.inspectProcess(current) == .expected
+            }
+        }
+        let verified: Bool
+        do {
+            verified = try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: { task.cancel() }
+        } catch is CancellationError { throw CancellationError() }
+        catch { return .unavailable(.unverified) }
+        try Task.checkCancellation()
+        guard verified, processes[profileID] === process, process.isRunning,
+              managedSessionReceipts[profileID]?.generation == receipt.generation,
+              managedLeaseOwners[profileID] == receipt.lock.ownerToken
+        else { return .unavailable(.unverified) }
+        return BrowserSessionObservation(
+            state: .observed, ownership: .thisSession,
+            readyForGracefulQuit: managedBrowserReadyForQuit(profileID: profileID),
+            runtimeVersion: receipt.runtimeVersion,
+            configuredRoute: receipt.configuredRoute,
+            sessionGeneration: receipt.generation
+        )
+    }
+
+    func sessionObservationIsCurrent(_ observation: BrowserSessionObservation, profileID: UUID) -> Bool {
+        guard observation.state == .observed, let generation = observation.sessionGeneration,
+              let process = processes[profileID], process.isRunning,
+              managedSessionReceipts[profileID]?.generation == generation,
+              managedLeaseOwners[profileID] == generation
         else { return false }
         return true
     }
@@ -1776,6 +2028,7 @@ final class BrowserProcessManager: ObservableObject {
             }
         }
         managedStopRequests.removeValue(forKey: profileID)
+        managedSessionReceipts.removeValue(forKey: profileID)
         managedStopWarnings.removeValue(forKey: profileID)?.cancel()
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
@@ -1801,23 +2054,47 @@ final class BrowserProcessManager: ObservableObject {
         externalUnverifiedProfileIDs.remove(profileID)
         recoveryProfileIDs.remove(profileID)
         recoveryRecords.removeValue(forKey: profileID)
-        runningProfileIDs.remove(profileID)
 
         switch browserDataProcessInspector(browserDataDirectory) {
         case .absent:
+            let authority: BrowserLeaseCleanupAuthority?
+            let outcome: BrowserLeaseCleanupOutcome
             if let managedOwner {
-                removeLockIfOwned(
+                authority = .managedOwner(managedOwner)
+                outcome = removeLockIfOwned(
                     profileID: profileID,
                     ownerToken: managedOwner
                 )
-                cleanupTransientProfileDirectoryIfSafe(
-                    profileID: profileID
-                )
             } else if let externalLock {
-                removeLockIfMatches(
+                authority = .external(externalLock)
+                outcome = removeLockIfMatches(
                     externalLock,
                     profileID: profileID,
                     at: lockURL
+                )
+            } else {
+                authority = nil
+                outcome = .removedOrMissing
+            }
+            switch outcome {
+            case .removedOrMissing:
+                runningProfileIDs.remove(profileID)
+                cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+            case .replacementPresent:
+                if processInventoryProvider != nil,
+                   lastReconciledProfiles.contains(where: { $0.id == profileID }) {
+                    reconcile(profiles: lastReconciledProfiles)
+                } else {
+                    reconcileProfile(profileID: profileID)
+                }
+            case .retryRequired:
+                registerRecovery(
+                    profileID: profileID, lockURL: lockURL,
+                    expectedBrowserDataDirectory: browserDataDirectory,
+                    removableSnapshot: removableSnapshot,
+                    blockingManagerPID: nil, cleanupAuthority: authority,
+                    deferInitialResolution: true, surfaceMessage: false,
+                    message: "Браузер завершён. NeAntik ожидает освобождения файла запуска и повторно проверит его владельца."
                 )
             }
         case .found, .unknown:
@@ -1902,6 +2179,7 @@ final class BrowserProcessManager: ObservableObject {
         removableSnapshot: Data?,
         blockingManagerPID: pid_t?,
         startingCreatedAt: Date? = nil,
+        cleanupAuthority: BrowserLeaseCleanupAuthority? = nil,
         browserDataProcessInspector:
             ((URL) -> BrowserDataProcessInspection)? = nil,
         deferInitialResolution: Bool = false,
@@ -1924,7 +2202,8 @@ final class BrowserProcessManager: ObservableObject {
             blockingManagerPID: blockingManagerPID,
             startingCreatedAt: startingCreatedAt,
             message: message,
-            entryIdentity: entryIdentity ?? nil
+            entryIdentity: entryIdentity ?? nil,
+            cleanupAuthority: cleanupAuthority
         )
         recoveryRecords[profileID] = record
         if surfaceMessage {
@@ -2106,7 +2385,8 @@ final class BrowserProcessManager: ObservableObject {
         ) {
         case .changed:
             clearRecoveryState(profileID: profileID, record: record)
-            if processInventoryProvider != nil {
+            if processInventoryProvider != nil,
+               lastReconciledProfiles.contains(where: { $0.id == profileID }) {
                 reconcile(profiles: lastReconciledProfiles)
             } else {
                 reconcileProfile(profileID: profileID)
@@ -2149,7 +2429,8 @@ final class BrowserProcessManager: ObservableObject {
         }
         guard removeRecoveryEntryIfSafe(
             profileID: profileID,
-            record: record
+            record: record,
+            browserDataProcessInspector: effectiveBrowserDataProcessInspector
         ) else {
             return false
         }
@@ -2220,6 +2501,25 @@ final class BrowserProcessManager: ObservableObject {
         } catch {
             return .unavailable
         }
+        // A contended termination can have no initial snapshot. Its original
+        // owner token is still authority; a replacement never acquires that
+        // authority merely because it occupies the same path.
+        if let authority = record.cleanupAuthority {
+            switch readResult.entry {
+            case .missing: return .missing
+            case .unsafe: return .unsafe
+            case .unreadable: return .unavailable
+            case let .data(data):
+                guard let current = try? Self.decodeLock(data),
+                      authority.matches(current),
+                      current.browserDataPath == record.expectedBrowserDataDirectory.standardizedFileURL.path
+                else { return .changed }
+                if let snapshot = record.removableSnapshot {
+                    return data == snapshot && readResult.identity == record.entryIdentity ? .unchanged : .changed
+                }
+                return .unchanged
+            }
+        }
         if readResult.identity != record.entryIdentity {
             return .changed
         }
@@ -2240,7 +2540,8 @@ final class BrowserProcessManager: ObservableObject {
 
     private func removeRecoveryEntryIfSafe(
         profileID: UUID,
-        record: BrowserProcessRecoveryRecord
+        record: BrowserProcessRecoveryRecord,
+        browserDataProcessInspector: (URL) -> BrowserDataProcessInspection
     ) -> Bool {
         do {
             return try paths.withProcessLockGuard(for: profileID) {
@@ -2251,6 +2552,20 @@ final class BrowserProcessManager: ObservableObject {
                 case .unsafe:
                     return false
                 case .regular:
+                    if let authority = record.cleanupAuthority {
+                        guard browserDataProcessInspector(record.expectedBrowserDataDirectory) == .absent,
+                              let data = try? Data(contentsOf: record.lockURL),
+                              let current = try? Self.decodeLock(data),
+                              authority.matches(current),
+                              current.browserDataPath == record.expectedBrowserDataDirectory.standardizedFileURL.path
+                        else { return false }
+                        if let snapshot = record.removableSnapshot {
+                            guard data == snapshot,
+                                  try paths.privateFileEntryIdentity(record.lockURL) == record.entryIdentity
+                            else { return false }
+                        }
+                        return removeLockIfSnapshotMatchesWhileGuardHeld(lockURL: record.lockURL, snapshot: data)
+                    }
                     guard let snapshot = record.removableSnapshot else {
                         return false
                     }
@@ -2345,49 +2660,53 @@ final class BrowserProcessManager: ObservableObject {
         }
     }
 
+    @discardableResult
     private func removeLockIfOwned(
         profileID: UUID,
         ownerToken: UUID
-    ) {
+    ) -> BrowserLeaseCleanupOutcome {
         let lockURL = paths.lockFile(for: profileID)
         do {
-            try paths.withProcessLockGuard(for: profileID) {
-                guard let data = try? Data(contentsOf: lockURL),
-                      let lock = try? Self.decodeLock(data),
-                      lock.ownerToken == ownerToken
-                else {
-                    return
-                }
-                _ = removeLockIfSnapshotMatchesWhileGuardHeld(
+            return try paths.withProcessLockGuard(for: profileID) {
+                switch try readLeaseEntryWhileGuardHeld(lockURL: lockURL) {
+                case .missing: return .removedOrMissing
+                case .unsafe, .unreadable: return .retryRequired
+                case let .data(data):
+                    guard let lock = try? Self.decodeLock(data) else { return .retryRequired }
+                    guard lock.ownerToken == ownerToken else { return .replacementPresent }
+                    return removeLockIfSnapshotMatchesWhileGuardHeld(
                     lockURL: lockURL,
                     snapshot: data
-                )
+                    ) ? .removedOrMissing : .retryRequired
+                }
             }
         } catch {
-            return
+            return .retryRequired
         }
     }
 
+    @discardableResult
     private func removeLockIfMatches(
         _ expected: BrowserProcessLock,
         profileID: UUID,
         at lockURL: URL
-    ) {
+    ) -> BrowserLeaseCleanupOutcome {
         do {
-            try paths.withProcessLockGuard(for: profileID) {
-                guard let data = try? Data(contentsOf: lockURL),
-                      let current = try? Self.decodeLock(data),
-                      current == expected
-                else {
-                    return
-                }
-                _ = removeLockIfSnapshotMatchesWhileGuardHeld(
+            return try paths.withProcessLockGuard(for: profileID) {
+                switch try readLeaseEntryWhileGuardHeld(lockURL: lockURL) {
+                case .missing: return .removedOrMissing
+                case .unsafe, .unreadable: return .retryRequired
+                case let .data(data):
+                    guard let current = try? Self.decodeLock(data) else { return .retryRequired }
+                    guard current == expected else { return .replacementPresent }
+                    return removeLockIfSnapshotMatchesWhileGuardHeld(
                     lockURL: lockURL,
                     snapshot: data
-                )
+                    ) ? .removedOrMissing : .retryRequired
+                }
             }
         } catch {
-            return
+            return .retryRequired
         }
     }
 
@@ -2571,4 +2890,57 @@ final class BrowserProcessManager: ObservableObject {
         return false
     }
 
+}
+/// Borrowed authority exists only while its manager retains the process lease.
+/// It cannot be constructed by a UI/MCP draft, persisted, or used after the
+/// worker returns. The production inventory also refuses another historical
+/// GUI/stdio manager or unknown inspection before each durable mutation.
+/// Borrowed authority remains valid only during the owning maintenance worker.
+/// The process guard blocks cooperating launches; fresh inventory catches a
+/// browser started outside the manager. This is not an atomic OS-wide lock.
+final class StoppedProfileMaintenanceAuthority: @unchecked Sendable {
+    private let browserData: URL
+    private let inspect: @Sendable () throws -> Void
+    private let stateLock = NSLock()
+    private var active = true
+    fileprivate init(browserData: URL, inspect: @escaping @Sendable () throws -> Void) {
+        self.browserData = browserData; self.inspect = inspect
+    }
+    func validate(browserData: URL) throws {
+        stateLock.lock(); defer { stateLock.unlock() }
+        guard active, browserData == self.browserData else { throw ProfileProcessBusyError() }
+        try inspect()
+    }
+    fileprivate func invalidate() { stateLock.lock(); active = false; stateLock.unlock() }
+}
+
+final class StoppedProfileRestoreAuthority: @unchecked Sendable {
+    let profileID: UUID
+    private let paths: AppPaths
+    private let retainedTree: URL
+    private let lease: PrivateFileGuardLease
+    private let inspection: @Sendable () throws -> Void
+    private let stateLock = NSLock()
+    private var active = true
+
+    fileprivate init(profileID: UUID, retainedTree: URL, paths: AppPaths, lease: PrivateFileGuardLease, inspection: @escaping @Sendable () throws -> Void) {
+        self.profileID = profileID; self.retainedTree = retainedTree; self.paths = paths; self.lease = lease; self.inspection = inspection
+    }
+    func validate(paths: AppPaths) throws {
+        stateLock.lock(); defer { stateLock.unlock() }
+        guard active, paths.rootDirectory == self.paths.rootDirectory else { throw BrowserDataRestoreError.authorityRequired }
+        try inspection()
+    }
+    func validate(paths: AppPaths, profileID: UUID, retainedTree: URL) throws {
+        guard profileID == self.profileID, retainedTree.path == self.retainedTree.path else {
+            throw BrowserDataRestoreError.authorityRequired
+        }
+        try validate(paths: paths)
+    }
+
+    fileprivate func invalidate() {
+        stateLock.lock(); defer { stateLock.unlock() }
+        active = false; lease.release()
+    }
+    deinit { invalidate() }
 }

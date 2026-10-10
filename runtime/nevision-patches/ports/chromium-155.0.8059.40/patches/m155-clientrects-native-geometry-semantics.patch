@@ -1,0 +1,46 @@
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -3446,9 +3446,6 @@
+   }
+   Vector<gfx::RectF> result;
+   for (auto& quad : quads) {
+-    if (RuntimeEnabledFeatures::FingerprintingClientRectsNoiseEnabled()) {
+-      quad.Scale(GetDocument().GetNoiseFactorX(), GetDocument().GetNoiseFactorY());
+-    }
+     result.emplace_back(quad.BoundingBox());
+   }
+   return result;
+@@ -3478,9 +3475,6 @@
+   DCHECK(element_layout_object);
+   GetDocument().AdjustRectForScrollAndAbsoluteZoom(result,
+                                                    *element_layout_object);
+-  if (RuntimeEnabledFeatures::FingerprintingClientRectsNoiseEnabled()) {
+-    result.Scale(GetDocument().GetNoiseFactorX(), GetDocument().GetNoiseFactorY());
+-  }
+   return result;
+ }
+ 
+--- a/third_party/blink/renderer/core/dom/range.cc
++++ b/third_party/blink/renderer/core/dom/range.cc
+@@ -1689,11 +1689,6 @@
+   Vector<gfx::QuadF> quads;
+   GetBorderAndTextQuads(quads);
+ 
+-  if (RuntimeEnabledFeatures::FingerprintingClientRectsNoiseEnabled()) {
+-    for (gfx::QuadF& quad : quads) {
+-      quad.Scale(owner_document_->GetNoiseFactorX(), owner_document_->GetNoiseFactorY());
+-    }
+-  }
+ 
+   return MakeGarbageCollected<DOMRectList>(quads);
+ }
+@@ -1703,9 +1698,6 @@
+   // impact is understood.
+   SyncScrollAttemptHeuristic::DidAccessScrollOffset();
+   auto rect = BoundingRect();
+-  if (RuntimeEnabledFeatures::FingerprintingClientRectsNoiseEnabled()) {
+-    rect.Scale(owner_document_->GetNoiseFactorX(), owner_document_->GetNoiseFactorY());
+-  }
+   return DOMRect::FromRectF(rect);
+ }
+ 

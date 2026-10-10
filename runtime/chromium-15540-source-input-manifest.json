@@ -1,0 +1,60 @@
+{
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "chromiumVersion": "155.0.8059.40",
+  "evidence": [
+    {
+      "path": "ordered-patch-replay.json",
+      "sha256": "c936de57c8cf27ee00e3220a2c5a8bb69d3c6194a93c1405d53f921fb79b69a0"
+    },
+    {
+      "path": "reviewed-source-overlay.json",
+      "sha256": "006ccc15cd346a3b429b9f1d6e712ed203cac08cb39293acf83406d0a4533226"
+    },
+    {
+      "path": "overlay-applied.json",
+      "sha256": "7bfe77f141661bb29e44767095909a42f76522f0d0e88dd5c49f6f4f28ba737f"
+    },
+    {
+      "path": "partial-port-decisions.json",
+      "sha256": "ee478b7c3c46386165dcddd920d48866e294d8ea2b9c99641e63aeb4a121edc8"
+    },
+    {
+      "path": "upstream-superseded-decisions.json",
+      "sha256": "14ca7be4aea14a509ed10b727f1227399b27f323ed3f53bde8eba81883ee9b57"
+    },
+    {
+      "path": "pruning.json",
+      "sha256": "15b6505129a0fc5f9e0823f5ba7f0861e2b465b366b76ef6365e1420728ebced"
+    },
+    {
+      "path": "domain-substitution.json",
+      "sha256": "e210aef7506d1f0c7ecb27e8f170759380f996a237be023cadf82b21c4fe4c4f"
+    },
+    {
+      "path": "domain-substitution-inventory.json",
+      "sha256": "6ed61e967bc1dc85a2098db43a87a4a5c76df1e69ed03183f3bd8a99252538a2"
+    },
+    {
+      "path": "pinned-build-inputs.json",
+      "sha256": "c437b17da3791cd2b3046fc4f558b40d49fdf721de4f9fd1f35b7e1ff4e2b2e5"
+    },
+    {
+      "path": "generated-deps-hooks.json",
+      "sha256": "0ad2b226737deb9e5506f1b94be368d1b869ab8ba02fccf46ab28174338cb46c"
+    },
+    {
+      "path": "port-compatibility.json",
+      "sha256": "378460ea1d5428a705177076be9c9ae3b1273286898d312dfd91a42cc99b3a48"
+    },
+    {
+      "path": "deps-revisions.json",
+      "sha256": "c94509b32024e5a7b2ec7e5616e0f26d68334bcfb742f1a6ed9bb71554f04bea"
+    }
+  ],
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceInputSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+  "sourceInputsReady": true,
+  "sourceSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+  "status": "source-reconstructed"
+}

@@ -1,0 +1,23 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "1c17ae041f3a2865748fb04735c0c3d50921d5b9ffcb5a0b1f7cf36b72672d14",
+  "payload": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "path": "chrome/browser/safe_browsing/cloud_content_scanning/cloud_binary_upload_service.cc",
+    "preimages": {
+      "chrome/browser/safe_browsing/cloud_content_scanning/cloud_binary_upload_service.cc": "66763f03f7a6ea85a9676016bd462650dec8e2965d8e9049b5a6906c3b9bcdf8"
+    },
+    "pristineSHA256": "66763f03f7a6ea85a9676016bd462650dec8e2965d8e9049b5a6906c3b9bcdf8",
+    "reason": "Official native M156 already includes safe_browsing_prefs.h exactly once; this include-only compatibility input is superseded, preserve upload APIs and current policy."
+  },
+  "payloadType": "json",
+  "receipt": "m156-enterprise-upload-native-include-supersession.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

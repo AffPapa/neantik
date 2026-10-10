@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Darwin
 
 /// A local, metadata-only restore point. It is deliberately not a browser
 /// backup: BrowserData, cookies, notes, identity seeds and Keychain values
@@ -164,33 +165,15 @@ enum ProfileSnapshotStore {
 
     static func document(
         from url: URL,
-        paths: AppPaths
+        paths: AppPaths,
+        afterFileOpened: () throws -> Void = {}
     ) throws -> ProfileSnapshotDocument {
         guard isInsideSnapshots(url, paths: paths) else {
             throw ProfileSnapshotError.unsafeLocation
         }
-        do {
-            try paths.validatePrivateFile(url)
-            let values = try url.resourceValues(forKeys: [.fileSizeKey])
-            if let fileSize = values.fileSize, fileSize > maximumFileBytes {
-                throw ProfileSnapshotError.fileTooLarge
-            }
-        } catch let error as ProfileSnapshotError {
-            throw error
-        } catch {
-            // Keep filesystem paths and low-level errors out of the UI. An
-            // unsafe or unreadable snapshot is simply not a valid snapshot.
-            throw ProfileSnapshotError.invalidFile
-        }
-        let data: Data
-        do {
-            data = try Data(contentsOf: url, options: [.mappedIfSafe])
-        } catch {
-            throw ProfileSnapshotError.invalidFile
-        }
-        guard data.count <= maximumFileBytes else {
-            throw ProfileSnapshotError.fileTooLarge
-        }
+        let data = try readSnapshot(
+            from: url, paths: paths, afterFileOpened: afterFileOpened
+        )
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         do {
@@ -205,6 +188,77 @@ enum ProfileSnapshotStore {
         } catch {
             throw ProfileSnapshotError.invalidFile
         }
+    }
+
+    /// Anchor each directory with no-follow descriptors. A final-file lstat
+    /// alone cannot protect against a replaced parent or a growing input.
+    private static func readSnapshot(
+        from url: URL,
+        paths: AppPaths,
+        afterFileOpened: () throws -> Void
+    ) throws -> Data {
+        try Task.checkCancellation()
+        // Darwin's fixed system aliases are allowed; application-controlled
+        // components below them are opened one by one without symlink traversal.
+        var directoryPath = paths.profileSnapshotsDirectory.standardizedFileURL.path
+        if directoryPath.hasPrefix("/var/") {
+            directoryPath = "/private" + directoryPath
+        } else if directoryPath.hasPrefix("/tmp/") {
+            directoryPath = "/private" + directoryPath
+        }
+        var directory = Darwin.open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC)
+        guard directory >= 0 else { throw ProfileSnapshotError.invalidFile }
+        defer { _ = Darwin.close(directory) }
+        for component in directoryPath.split(separator: "/") {
+            let next = String(component).withCString {
+                Darwin.openat(directory, $0, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+            }
+            guard next >= 0 else { throw ProfileSnapshotError.invalidFile }
+            _ = Darwin.close(directory)
+            directory = next
+        }
+        var directoryInfo = stat()
+        guard Darwin.fstat(directory, &directoryInfo) == 0,
+              directoryInfo.st_uid == geteuid(),
+              directoryInfo.st_mode & mode_t(0o077) == 0 else {
+            throw ProfileSnapshotError.invalidFile
+        }
+        let file = url.lastPathComponent.withCString {
+            Darwin.openat(directory, $0, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard file >= 0 else { throw ProfileSnapshotError.invalidFile }
+        defer { _ = Darwin.close(file) }
+        var before = stat()
+        guard Darwin.fstat(file, &before) == 0,
+              before.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              before.st_uid == geteuid(), before.st_nlink == 1,
+              before.st_size >= 0 else { throw ProfileSnapshotError.invalidFile }
+        guard before.st_size <= maximumFileBytes else { throw ProfileSnapshotError.fileTooLarge }
+        try afterFileOpened()
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 64 * 1_024)
+        while data.count <= maximumFileBytes {
+            try Task.checkCancellation()
+            let capacity = min(buffer.count, maximumFileBytes + 1 - data.count)
+            let count = Darwin.read(file, &buffer, capacity)
+            if count < 0 {
+                if errno == EINTR { continue }
+                throw ProfileSnapshotError.invalidFile
+            }
+            if count == 0 { break }
+            data.append(contentsOf: buffer.prefix(count))
+        }
+        guard data.count <= maximumFileBytes else { throw ProfileSnapshotError.fileTooLarge }
+        var after = stat()
+        guard Darwin.fstat(file, &after) == 0,
+              before.st_dev == after.st_dev, before.st_ino == after.st_ino,
+              before.st_size == after.st_size, before.st_nlink == after.st_nlink,
+              before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec,
+              before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec,
+              before.st_ctimespec.tv_sec == after.st_ctimespec.tv_sec,
+              before.st_ctimespec.tv_nsec == after.st_ctimespec.tv_nsec,
+              data.count == before.st_size else { throw ProfileSnapshotError.invalidFile }
+        return data
     }
 
     static func restore(
@@ -255,9 +309,12 @@ enum ProfileSnapshotStore {
     }
 
     private static func isInsideSnapshots(_ url: URL, paths: AppPaths) -> Bool {
+        guard url.isFileURL, paths.rootDirectory.isFileURL else { return false }
         let root = paths.profileSnapshotsDirectory.standardizedFileURL.path
-        let candidate = url.standardizedFileURL.path
-        return candidate.hasPrefix(root + "/")
+        let candidate = url.standardizedFileURL
+        return candidate.deletingLastPathComponent().path == root &&
+            candidate.pathExtension == "json" &&
+            candidate.lastPathComponent.hasPrefix("snapshot-")
     }
 }
 
@@ -276,7 +333,7 @@ enum ProfileSnapshotFileCoordinator {
     static func chooseSnapshot(paths: AppPaths) throws -> URL? {
         try paths.prepareBaseDirectories()
         let panel = NSOpenPanel()
-        panel.title = "Восстановить локальный snapshot"
+        panel.title = "Создать профили из снимка настроек"
         panel.message =
             "Будут добавлены новые профили без BrowserData, cookies, identity и Keychain-секретов."
         panel.directoryURL = paths.profileSnapshotsDirectory

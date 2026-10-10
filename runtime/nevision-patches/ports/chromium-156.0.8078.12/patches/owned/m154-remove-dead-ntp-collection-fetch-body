@@ -1,0 +1,86 @@
+--- a/components/themes/ntp_background_service.cc
++++ b/components/themes/ntp_background_service.cc
+@@ -91,82 +91,7 @@
+ 
+ void NtpBackgroundService::FetchCollectionInfo(
+     const std::string& filtering_label) {
+-  // If a request is currently in progress, drop the new request.
+-    return;
+-  collection_error_info_.ClearError();
+-
+-  net::NetworkTrafficAnnotationTag traffic_annotation =
+-      net::DefineNetworkTrafficAnnotation("backdrop_collection_names_download",
+-                                          R"(
+-        semantics {
+-          sender: "Desktop NTP Background Selector"
+-          description:
+-            "The Chrome Desktop New Tab Page background selector displays a "
+-            "rich set of wallpapers for users to choose from. Each wallpaper "
+-            "belongs to a collection (e.g. Arts, Landscape etc.). The list of "
+-            "all available collections is obtained from the Backdrop wallpaper "
+-            "service."
+-          trigger:
+-            "Clicking the customize (pencil) icon on the New Tab page."
+-          data:
+-            "The Backdrop protocol buffer messages. No user data is included."
+-          destination: GOOGLE_OWNED_SERVICE
+-          internal {
+-            contacts {
+-            email: "chrome-desktop-ntp@google.com"
+-            }
+-          }
+-          user_data {
+-            type: NONE
+-          }
+-          last_reviewed: "2023-06-13"
+-        }
+-        policy {
+-          cookies_allowed: NO
+-          setting:
+-            "Users can control this feature by selecting a non-Google default "
+-            "search engine in Chrome settings under 'Search Engine'."
+-          chrome_policy {
+-            DefaultSearchProviderEnabled {
+-              policy_options {mode: MANDATORY}
+-              DefaultSearchProviderEnabled: false
+-            }
+-          }
+-        })");
+-
+-  ntp::background::GetCollectionsRequest request;
+-  // The language field may include the country code (e.g. "en-US").
+-  request.set_language(application_locale_storage_->GetTag().tag_string());
+-  request.add_filtering_label(filtering_label);
+-  // Add some extra filtering information in case we need to target a specific
+-  // milestone post release.
+-  request.add_filtering_label(base::StrCat(
+-      {filtering_label, ".M", version_info::GetMajorVersionNumber()}));
+-  // Add filtering for Panorama feature.
+-  request.add_filtering_label(base::StrCat({filtering_label, ".panorama"}));
+-  request.add_filtering_label(base::StrCat({filtering_label, ".gm3"}));
+-  if (base::FeatureList::IsEnabled(
+-          ntp_features::kNtpBackgroundImageErrorDetection)) {
+-    request.add_filtering_label(
+-        base::StrCat({filtering_label, ".error_detection"}));
+-  }
+-
+-  std::string serialized_proto;
+-  request.SerializeToString(&serialized_proto);
+-
+-  auto resource_request = std::make_unique<network::ResourceRequest>();
+-  resource_request->url = collections_api_url_;
+-  resource_request->method = "POST";
+-  resource_request->credentials_mode = network::mojom::CredentialsMode::kOmit;
+-
+-  collections_loader_ = network::SimpleURLLoader::Create(
+-      std::move(resource_request), traffic_annotation);
+-  collections_loader_->AttachStringForUpload(serialized_proto, kProtoMimeType);
+-  collections_loader_->DownloadToString(
+-      url_loader_factory_.get(),
+-      base::BindOnce(&NtpBackgroundService::OnCollectionInfoFetchComplete,
+-                     base::Unretained(this)),
+-      1024 * 1024);
++  return;
+ }
+ 
+ void NtpBackgroundService::FetchCollectionInfo() {

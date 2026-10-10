@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from fingerprint_evidence_schema8 import (
+from fingerprint_evidence import (
     FingerprintEvidenceVerificationError,
     MAXIMUM_ENVELOPE_BYTES,
     MAXIMUM_MANIFEST_BYTES,
@@ -27,7 +27,7 @@ class SafeArgumentParser(argparse.ArgumentParser):
 def main() -> int:
     parser = SafeArgumentParser(
         description=(
-            "Verify one canonical candidate-bound NeAntik schema-8 "
+            "Verify one canonical candidate-bound NeAntik versioned "
             "fingerprint evidence envelope."
         )
     )
@@ -76,7 +76,7 @@ def main() -> int:
         )
     else:
         print(
-            "PASS: authenticated schema-8 fingerprint evidence verified; "
+            "PASS: authenticated versioned fingerprint evidence verified; "
             f"evidence ID {result.authenticated_evidence_id}"
         )
     return 0

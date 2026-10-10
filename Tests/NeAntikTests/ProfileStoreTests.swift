@@ -5,6 +5,51 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ProfileStoreTests {
+    @Test(arguments: ["single", "folder", "batch"])
+    func synchronousCreationRollbackPreservesForeignDirectoryReplacement(kind: String) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-sync-ownership-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), profile = BrowserProfile(name: "Own sync rollback fixture")
+        let original = paths.profileDirectory(for: profile.id), held = root.appendingPathComponent("RetainedOwnedCreate")
+        let marker = original.appendingPathComponent("preserve-foreign-fixture"), store = ProfileStore(paths: paths)
+        let fail: () throws -> Void = {
+            try FileManager.default.moveItem(at: original, to: held)
+            try FileManager.default.createDirectory(at: original, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+            try Data("foreign synthetic bytes".utf8).write(to: marker)
+            throw ProfileStoreTestError()
+        }
+        #expect(throws: (any Error).self) {
+            if kind == "single" { _ = try store.upsert(profile, afterPersist: { _ in try fail() }) }
+            else if kind == "folder" { _ = try store.upsert(profile, toFolderID: nil, afterPersist: { _ in try fail() }) }
+            else { _ = try store.insertNewProfiles([profile], afterPersist: { _ in try fail() }) }
+        }
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        if FileManager.default.fileExists(atPath: marker.path) { #expect(try Data(contentsOf: marker) == Data("foreign synthetic bytes".utf8)) }
+        #expect(FileManager.default.fileExists(atPath: held.appendingPathComponent("BrowserData").path))
+        #expect(store.profiles.isEmpty)
+    }
+    @Test func backgroundImportRollbackPreservesForeignDirectoryReplacement() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-import-ownership-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), profile = BrowserProfile(name: "Own import rollback fixture")
+        let original = paths.profileDirectory(for: profile.id), held = root.appendingPathComponent("RetainedOwnedImport")
+        let marker = original.appendingPathComponent("preserve-foreign-fixture")
+        let store = ProfileStore(paths: paths, beforeBackgroundImportOrganizationPersist: {
+            try FileManager.default.moveItem(at: original, to: held)
+            try FileManager.default.createDirectory(at: original, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+            try Data("foreign synthetic bytes".utf8).write(to: marker)
+            throw ProfileStoreTestError()
+        })
+        await #expect(throws: (any Error).self) {
+            try await store.insertImportedProfilesOffMainActor([profile], folderNames: ["Own import folder"])
+        }
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        if FileManager.default.fileExists(atPath: marker.path) { #expect(try Data(contentsOf: marker) == Data("foreign synthetic bytes".utf8)) }
+        #expect(FileManager.default.fileExists(atPath: held.appendingPathComponent("BrowserData").path))
+        #expect(store.profiles.isEmpty && store.organization == .empty)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.isEmpty && reloaded.organization == .empty)
+    }
     @Test func launchSnapshotCanonicalizesNestedEvidenceDates() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -509,8 +554,9 @@ struct ProfileStoreTests {
                 folderNames: ["Gate"]
             )
         }
-        await Task.detached {
-            waitForProfileStoreTestSignal(enteredOrganizationPersist)
+        defer { continueOrganizationPersist.signal() }
+        try await Task.detached {
+            try waitForProfileStoreTestSignal(enteredOrganizationPersist)
         }.value
 
         #expect(throws: ProfileMetadataMutationInProgressError.self) {
@@ -545,7 +591,8 @@ struct ProfileStoreTests {
         let task = Task {
             try await store.insertImportedProfilesOffMainActor([BrowserProfile(name: "Imported")], folderNames: ["Imported folder"])
         }
-        await Task.detached { waitForProfileStoreTestSignal(entered) }.value
+        defer { resume.signal() }
+        try await Task.detached { try waitForProfileStoreTestSignal(entered) }.value
         // Bound the unfixed lock wait so this regression can never deadlock QA.
         let release = Task.detached {
             try? await Task.sleep(for: .milliseconds(200))
@@ -582,8 +629,9 @@ struct ProfileStoreTests {
             )
         }
 
-        let reachedOrganizationPersist = await Task.detached {
-            waitForProfileStoreTestSignal(enteredOrganizationPersist)
+        defer { continueOrganizationPersist.signal() }
+        let reachedOrganizationPersist = try await Task.detached {
+            try waitForProfileStoreTestSignal(enteredOrganizationPersist)
             return true
         }.value
         #expect(reachedOrganizationPersist)
@@ -1917,8 +1965,8 @@ struct ProfileStoreTests {
 
 private struct ProfileStoreTestError: Error {}
 
-private func waitForProfileStoreTestSignal(_ semaphore: DispatchSemaphore) {
-    semaphore.wait()
+private func waitForProfileStoreTestSignal(_ semaphore: DispatchSemaphore) throws {
+    guard semaphore.wait(timeout: .now() + 5) == .success else { throw ProfileStoreTestError() }
 }
 
 private final class ProfileDeleteKeychainBackend:

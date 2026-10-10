@@ -70,6 +70,25 @@ struct UpdateManifestTests {
         #expect(verified.isNewerThanInstalled)
     }
 
+    @Test(arguments: ["+14.1", "14.1.-1", "014.0", "14.01", "14.0.00", "14.0.+1", "14..1", "14.١", "14.0.0.1", " 14.0", "14.0 "])
+    func rejectsNoncanonicalMinimumOSInAuthenticallySignedPayload(minimumOS: String) throws {
+        let key = Curve25519.Signing.PrivateKey()
+        #expect(throws: UpdateManifestError.invalidReleaseContract) {
+            try UpdateManifestVerifier.verify(signedEnvelope(payload: validPayload(minimumOS: minimumOS), key: key),
+                                              configuration: configuredChannel(publicKey: key.publicKey),
+                                              installedVersion: "0.3.12", installedBuild: 15, now: now)
+        }
+    }
+
+    @Test(arguments: ["14", "14.0", "14.0.0", "14.1", "26.1.2"])
+    func acceptsCanonicalMinimumOSInAuthenticallySignedPayload(minimumOS: String) throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let verified = try UpdateManifestVerifier.verify(signedEnvelope(payload: validPayload(minimumOS: minimumOS), key: key),
+                                                         configuration: configuredChannel(publicKey: key.publicKey),
+                                                         installedVersion: "0.3.12", installedBuild: 15, now: now)
+        #expect(verified.payload.minimumOS == minimumOS)
+    }
+
     @Test
     func rejectsPayloadChangedAfterSigning() throws {
         let key = Curve25519.Signing.PrivateKey()
@@ -195,7 +214,7 @@ struct UpdateManifestTests {
     func rejectsPreviouslyQualifiedRuntimeBelowCurrentBaseline() throws {
         let key = Curve25519.Signing.PrivateKey()
         let configuration = configuredChannel(publicKey: key.publicKey)
-        let payload = validPayload(chromiumVersion: "154.0.8037.93")
+        let payload = validPayload(chromiumVersion: "154.0.8037.98")
 
         #expect(throws: UpdateManifestError.invalidReleaseContract) {
             try UpdateManifestVerifier.verify(
@@ -260,7 +279,8 @@ struct UpdateManifestTests {
         issuedAt: Date? = nil,
         expiresAt: Date? = nil,
         downloadURL: String? = nil,
-        chromiumVersion: String = "154.0.8037.98"
+        chromiumVersion: String = "155.0.8059.40",
+        minimumOS: String = "14.0"
     ) -> UpdateManifestPayload {
         UpdateManifestPayload(
             schemaVersion: 1,
@@ -274,7 +294,7 @@ struct UpdateManifestTests {
             downloadURL: downloadURL ??
                 "https://affpapa.org/neantik/downloads/NeAntik-0.3.13-arm64-notarized.zip",
             sha256: String(repeating: "a", count: 64),
-            minimumOS: "14.0",
+            minimumOS: minimumOS,
             architecture: "arm64",
             artifactKind: "public-notarized",
             publicReleaseState: "public-ready",

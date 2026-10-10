@@ -19,7 +19,7 @@ enum FingerprintReleaseCriticalSurfaceState:
 struct FingerprintReleaseEvidencePayload:
     Codable, Equatable, Sendable
 {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
     static let kindName = "neantik-fingerprint-release-result"
 
     let schemaVersion: Int
@@ -38,6 +38,8 @@ struct FingerprintReleaseEvidencePayload:
     let identityCatalogVersion: Int
     let executionMode: String
     let verdict: String
+    let semanticPolicyID: String
+    let criticalObservationsStable: Bool
     let criticalSurfaces:
         [String: FingerprintReleaseCriticalSurfaceState]
     let changedCriticalKeys: [String]
@@ -88,6 +90,8 @@ struct FingerprintReleaseEvidencePayload:
         self.identityCatalogVersion = identityCatalogVersion
         executionMode = FingerprintAuditExecutionMode.browser.rawValue
         verdict = report.verdict.rawValue
+        semanticPolicyID = FingerprintAuditReport.semanticPolicyID
+        criticalObservationsStable = report.criticalObservationsStable
         criticalSurfaces = Dictionary(
             uniqueKeysWithValues:
                 FingerprintAuditReport.criticalKeys.map {

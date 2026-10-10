@@ -182,7 +182,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('CommandMenu("Профиль")', commands)
         for action in (
             '"Изменить…"',
-            '"Дублировать"',
+            '"Копировать настройки"',
             '"Переместить в папку"',
             '"Показать папку данных в Finder"',
             '"Удалить профиль"',

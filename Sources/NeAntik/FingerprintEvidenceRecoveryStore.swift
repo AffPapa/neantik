@@ -63,7 +63,7 @@ struct FileFingerprintEvidenceRecoveryStore:
         defer { _ = Darwin.close(candidate) }
         let output = try AtomicFingerprintEvidenceReleaseOutput(
             parentDescriptor: candidate,
-            basename: "envelope.schema8.json",
+            basename: "envelope.schema9.json",
             allowIdenticalExisting: true
         )
         try output.commit(data)
@@ -150,7 +150,7 @@ struct FileFingerprintEvidenceRecoveryStore:
     }
 
     private func readReceipt(parentDescriptor: Int32) throws -> Data? {
-        let name = "envelope.schema8.json"
+        let name = "envelope.schema9.json"
         let descriptor = name.withCString {
             Darwin.openat(
                 parentDescriptor,

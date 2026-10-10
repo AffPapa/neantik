@@ -127,6 +127,7 @@ struct ProfileEditorDraft: Equatable {
 struct ProfileEditorView: View {
   let original: BrowserProfile?
   let keychain: KeychainStore
+  let paths: AppPaths
   let folders: [ProfileFolder]
   let suggestedTags: [String]
   let onSave: (
@@ -144,6 +145,7 @@ struct ProfileEditorView: View {
   @State private var initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
+  @State private var showingCustomProxyDiagnostic = false
   @State private var name: String
   @State private var quickStartTemplate: ProfileQuickStartTemplate = .blank
   @State private var generatedTemplateName: String?
@@ -196,6 +198,7 @@ struct ProfileEditorView: View {
     folders: [ProfileFolder],
     initialFolderID: UUID?,
     suggestedTags: [String],
+    paths: AppPaths = AppPaths(),
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
     onClose: (() -> Void)? = nil,
@@ -207,6 +210,7 @@ struct ProfileEditorView: View {
   ) {
     self.original = original
     self.keychain = keychain
+    self.paths = paths
     self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
     self.suggestedTags = suggestedTags
     self.onSave = onSave
@@ -538,6 +542,12 @@ struct ProfileEditorView: View {
                   }
                   .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
                   .help("Разобрать введённую строку при необходимости и проверить прокси")
+                  Button("Свой адрес диагностики…") {
+                    if proxyEntryMode == .paste, !importProxy(source: proxyImportText) { return }
+                    showingCustomProxyDiagnostic = true
+                  }
+                  .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
+                  .help("Отдельная ручная проверка через твой HTTPS-сервис; не меняет геоконтекст")
                 }
               }
               if let testMessage {
@@ -820,6 +830,24 @@ struct ProfileEditorView: View {
       .padding()
     }
     .frame(minWidth: 460, maxWidth: .infinity, minHeight: 380, maxHeight: .infinity)
+    .sheet(isPresented: $showingCustomProxyDiagnostic) {
+      if let proxy = try? makeProxy() {
+        let password = proxyPassword
+        ProxyDiagnosticSheet(
+          configuration: proxy,
+          contextRevision: proxyPassword,
+          paths: paths,
+          readPassword: { password },
+          snapshotIsCurrent: { true }
+        )
+      } else {
+        VStack(spacing: 16) {
+          Text("Проверь тип, адрес и порт прокси.")
+          Button("Закрыть") { showingCustomProxyDiagnostic = false }
+            .keyboardShortcut(.cancelAction)
+        }.padding(24)
+      }
+    }
     .sheet(isPresented: $showingFolderPicker) {
       ProfileFolderPickerSheet(
         profileName:

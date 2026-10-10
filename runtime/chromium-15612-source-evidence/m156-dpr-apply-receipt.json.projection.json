@@ -1,0 +1,93 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "fae70b73e8f8e2093f19c0c8f1f95ec5a692d077ca67c22edf450d1ab103d2fc",
+  "payload": {
+    "appliedRoots": [
+      {
+        "applyOutputSHA256": "b46ac3a22ee614fc99fda8debf567e70a7c9917b6dd7aaae26a063948e30cd71",
+        "label": "shadow",
+        "postimages": {
+          "components/ungoogled/neantik_device_scale_factor.h": "54a143e3d599e1836e11ed98fb07c475ba2927c19f4528a3c8fd1b6a6986e608",
+          "content/browser/client_hints/client_hints.cc": "e8b8a4394f27ac97ad05a5a847dec910025530bd8a5790e0436244820064b00e",
+          "content/browser/devtools/protocol/emulation_handler.cc": "bc6049f70cbaabc9213e61d19e8bb42beb6980f3bfebf90224eba4125ab88517",
+          "content/browser/renderer_host/render_widget_host_impl.cc": "e9df677c44aa1cad25ac41e1d1eaf067789f465fab3ea04e80771e44a4594660",
+          "content/browser/renderer_host/render_widget_host_impl.h": "ae9687996b5358891c372b39a2f1e2c59834f0e31f2c611cd28db27462b1cca8",
+          "third_party/blink/renderer/core/frame/local_dom_window.cc": "7e9ff1d20107a394b16908b3c52e0c592c6c4e1cfaf1c6a741aac6e8659e26b7",
+          "third_party/blink/renderer/core/frame/local_frame.cc": "09f62baae18de39bf90274747bb94c8f82f5f60ad8e8e6adc32756579b71b6e7",
+          "third_party/blink/renderer/core/frame/web_frame_widget_impl.cc": "a97ffdc3bf13d3bcfb700cbb2750d03020c17850085e87d7608f23f0b7ae74cd",
+          "third_party/blink/renderer/core/page/page.h": "29d83c704d02d8840a451308a644674f145143b65557f82c5552ee6ff71783c3"
+        },
+        "preimages": {
+          "components/ungoogled/neantik_device_scale_factor.h": null,
+          "content/browser/client_hints/client_hints.cc": "99f2e0217b3217ff9d2483382581d42a3da6a76673c6c411fe862fd0e8eb9406",
+          "content/browser/devtools/protocol/emulation_handler.cc": "3056fc08d3d36cea635a602254040cdefa7d38a91f0fcfa8a1e64ec17839d9ee",
+          "content/browser/renderer_host/render_widget_host_impl.cc": "20e6b9c92046d35223b5b0e870b9f9aa67d99aa1b9b460a0a229cc80344a6ee1",
+          "content/browser/renderer_host/render_widget_host_impl.h": "a8e9d644b7209cd6153d55df125ef491fc31a25ff1786d61684cbded2dc4216a",
+          "third_party/blink/renderer/core/frame/local_dom_window.cc": "0c6f583740341981df80cdfb8422c583ae0c45367f2ac59e9f566ad1a82aa659",
+          "third_party/blink/renderer/core/frame/local_frame.cc": "0aa36be248d7deab26bf101f4f01ab89d43ba841bffab696e4752222968b1c13",
+          "third_party/blink/renderer/core/frame/web_frame_widget_impl.cc": "fc7f2035ad48120dfbb05910f51898f2e23b6c4f8837361fc2009cc4cc768d5b",
+          "third_party/blink/renderer/core/page/page.h": "95c25128114ee5ce476de22b94ca526f3564e7419902ea0bc235bea40a0a62a8"
+        }
+      },
+      {
+        "applyOutputSHA256": "b46ac3a22ee614fc99fda8debf567e70a7c9917b6dd7aaae26a063948e30cd71",
+        "label": "full-source",
+        "postimages": {
+          "components/ungoogled/neantik_device_scale_factor.h": "54a143e3d599e1836e11ed98fb07c475ba2927c19f4528a3c8fd1b6a6986e608",
+          "content/browser/client_hints/client_hints.cc": "e8b8a4394f27ac97ad05a5a847dec910025530bd8a5790e0436244820064b00e",
+          "content/browser/devtools/protocol/emulation_handler.cc": "bc6049f70cbaabc9213e61d19e8bb42beb6980f3bfebf90224eba4125ab88517",
+          "content/browser/renderer_host/render_widget_host_impl.cc": "e9df677c44aa1cad25ac41e1d1eaf067789f465fab3ea04e80771e44a4594660",
+          "content/browser/renderer_host/render_widget_host_impl.h": "ae9687996b5358891c372b39a2f1e2c59834f0e31f2c611cd28db27462b1cca8",
+          "third_party/blink/renderer/core/frame/local_dom_window.cc": "7e9ff1d20107a394b16908b3c52e0c592c6c4e1cfaf1c6a741aac6e8659e26b7",
+          "third_party/blink/renderer/core/frame/local_frame.cc": "09f62baae18de39bf90274747bb94c8f82f5f60ad8e8e6adc32756579b71b6e7",
+          "third_party/blink/renderer/core/frame/web_frame_widget_impl.cc": "a97ffdc3bf13d3bcfb700cbb2750d03020c17850085e87d7608f23f0b7ae74cd",
+          "third_party/blink/renderer/core/page/page.h": "29d83c704d02d8840a451308a644674f145143b65557f82c5552ee6ff71783c3"
+        },
+        "preimages": {
+          "components/ungoogled/neantik_device_scale_factor.h": null,
+          "content/browser/client_hints/client_hints.cc": "99f2e0217b3217ff9d2483382581d42a3da6a76673c6c411fe862fd0e8eb9406",
+          "content/browser/devtools/protocol/emulation_handler.cc": "3056fc08d3d36cea635a602254040cdefa7d38a91f0fcfa8a1e64ec17839d9ee",
+          "content/browser/renderer_host/render_widget_host_impl.cc": "20e6b9c92046d35223b5b0e870b9f9aa67d99aa1b9b460a0a229cc80344a6ee1",
+          "content/browser/renderer_host/render_widget_host_impl.h": "a8e9d644b7209cd6153d55df125ef491fc31a25ff1786d61684cbded2dc4216a",
+          "third_party/blink/renderer/core/frame/local_dom_window.cc": "0c6f583740341981df80cdfb8422c583ae0c45367f2ac59e9f566ad1a82aa659",
+          "third_party/blink/renderer/core/frame/local_frame.cc": "0aa36be248d7deab26bf101f4f01ab89d43ba841bffab696e4752222968b1c13",
+          "third_party/blink/renderer/core/frame/web_frame_widget_impl.cc": "fc7f2035ad48120dfbb05910f51898f2e23b6c4f8837361fc2009cc4cc768d5b",
+          "third_party/blink/renderer/core/page/page.h": "95c25128114ee5ce476de22b94ca526f3564e7419902ea0bc235bea40a0a62a8"
+        }
+      }
+    ],
+    "finishedAt": "2026-10-08T20:37:18.576070+00:00",
+    "patchSHA256": "645ba0ef2dc8bb91e3547f003ceda136cdc86e6960bd7ecf230fab8bdd6fc1fc",
+    "releaseReady": false,
+    "remainingRuntimeGates": [
+      "native compile",
+      "headed normal zoom JS/CSS/HTTP",
+      "explicit desktop emulation DSF 0/1/2/3/clear and events",
+      "OOPIF state propagation",
+      "mobile emulation native parity",
+      "second display and live zoom",
+      "Multiple CDP sessions; detach order; crash/rebind/reapply; prerender/prefetch"
+    ],
+    "review": "Independent read-only Chromium source review; remaining corrections checked against declarations; headed M155 zoom/nav positive and negative observations retained",
+    "schemaVersion": 1,
+    "startedAt": "2026-10-08T20:37:18.507025+00:00",
+    "status": "reviewed-source-applied-native-build-required"
+  },
+  "payloadType": "json",
+  "receipt": "m156-dpr-apply-receipt.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

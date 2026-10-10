@@ -1,0 +1,39 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "953ea5a7dcc00b78bf550a8870cc670ae44ba369a10ed4a0598e07c6a4ccb014",
+  "payload": {
+    "BTMMethodBytesUnchanged": true,
+    "applyExactPostimage": true,
+    "at": "2026-10-09T03:51:21.903700+00:00",
+    "brokenDeletedLineRefused": true,
+    "disableFallThroughPreserved": true,
+    "fiveNativeUnavailableResponses": true,
+    "negativeControls": 2,
+    "patchSHA256": "f3d731b7e188cfb05cf243802baf1b59bd8e3156f190e9d708314d72e506fcc1",
+    "positiveControls": 2,
+    "releaseReady": false,
+    "reverseExactPreimage": true,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "serviceObserverAndAcquisitionRemoved": true,
+    "stalePostimageRefused": true,
+    "status": "owned-patch-controls-passed"
+  },
+  "payloadType": "json",
+  "receipt": "native-pvt-devtools-owned-regression.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

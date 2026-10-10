@@ -1,0 +1,22 @@
+--- a/extensions/browser/test_blocklist_state_fetcher.cc
++++ b/extensions/browser/test_blocklist_state_fetcher.cc
+@@ -3,6 +3,8 @@
+ // found in the LICENSE file.
+ 
+ #include "extensions/browser/test_blocklist_state_fetcher.h"
++
++#include <memory>
+ 
+ #include "components/safe_browsing/core/browser/db/sb_test_util.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+@@ -53,7 +55,9 @@
+ TestBlocklistStateFetcher::TestBlocklistStateFetcher(
+     BlocklistStateFetcher* fetcher)
+     : fetcher_(fetcher) {
+-  fetcher_->SetSafeBrowsingConfig(safe_browsing::GetTestSBProtocolConfig());
++  fetcher_->safe_browsing_config_ =
++      std::make_unique<safe_browsing::SBProtocolConfig>(
++          safe_browsing::GetTestSBProtocolConfig());
+ 
+   url_loader_factory_ = base::MakeRefCounted<DummySharedURLLoaderFactory>();
+   fetcher_->url_loader_factory_ = url_loader_factory_.get();

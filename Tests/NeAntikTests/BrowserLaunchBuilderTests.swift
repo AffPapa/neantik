@@ -232,9 +232,9 @@ struct BrowserLaunchBuilderTests {
             )
         )
         #expect(!arguments.contains { $0.hasPrefix("--fingerprint=") })
-        #expect(arguments.contains("--fingerprinting-client-rects-noise"))
-        #expect(arguments.contains("--fingerprinting-canvas-measuretext-noise"))
-        #expect(arguments.contains("--fingerprinting-canvas-image-data-noise"))
+        #expect(!arguments.contains("--fingerprinting-client-rects-noise"))
+        #expect(!arguments.contains("--fingerprinting-canvas-measuretext-noise"))
+        #expect(!arguments.contains("--fingerprinting-canvas-image-data-noise"))
         #expect(
             arguments.contains(
                 "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
@@ -362,9 +362,9 @@ struct BrowserLaunchBuilderTests {
 
         #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint=") })
         #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint-platform=") })
-        #expect(firstLaunch.contains("--fingerprinting-client-rects-noise"))
-        #expect(firstLaunch.contains("--fingerprinting-canvas-measuretext-noise"))
-        #expect(firstLaunch.contains("--fingerprinting-canvas-image-data-noise"))
+        #expect(!firstLaunch.contains("--fingerprinting-client-rects-noise"))
+        #expect(!firstLaunch.contains("--fingerprinting-canvas-measuretext-noise"))
+        #expect(!firstLaunch.contains("--fingerprinting-canvas-image-data-noise"))
         #expect(
             firstLaunch.contains {
                 $0.hasPrefix("--disable-features=") &&

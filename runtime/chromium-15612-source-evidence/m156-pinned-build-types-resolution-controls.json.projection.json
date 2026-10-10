@@ -1,0 +1,41 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "9577ee22b68c796f76ed3af09526cbe0ebfcbf795b36f1a69955372abcebf991",
+  "payload": {
+    "allDefinitionFilesInsideSource": true,
+    "definitionCount": 256,
+    "nativeTypeScriptSHA256": "a82f731365ad69d5c4c15f5e18fba4584bf3b7b839960172a76c3462b5114bf2",
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "status": "passed",
+    "undiciDefinitionCount": 42,
+    "undiciOnlyPinnedLocalPackage": true,
+    "validatorNegativeControls": [
+      {
+        "fixture": "outside-native-tree-definition",
+        "rejected": true
+      },
+      {
+        "fixture": "outside-native-tree-definition",
+        "rejected": true
+      }
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "m156-pinned-build-types-resolution-controls.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

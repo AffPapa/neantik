@@ -27,10 +27,12 @@ jobs:
           - BrowserLaunchPolicyTests
           - BrowserProcessInventoryTests
           - BrowserProcessManagerTests
+          - BrowserSessionObservationTests
           - BrowserRuntimeInspectorTests
           - BrowserRuntimePreflightTests
           - BulkProxyActionProjectionTests
           - BulkProxyImportTests
+          - CRX3SignatureVerifierTests
           - DisplayDateFormattingTests
           - EnvironmentDiagnosticAssessmentTests
           - FingerprintAuditReadinessPolicyTests
@@ -38,6 +40,17 @@ jobs:
           - FingerprintAuditAutomationPolicyTests
           - FingerprintAuditObservationTests
           - FingerprintAuditTriggerPolicyTests
+          - EncryptedBackupFramingTests
+          - EncryptedBackupArchiveTests
+          - BrowserDataBackupStorageTests
+          - BackupCompatibilityScopeStoreTests
+          - DevelopmentFixtureBackupScopeTests
+          - ProxyRelayWireCodecTests
+          - ProxyRelayClientWireCodecTests
+          - ProxyRelaySocketOwnerInspectorTests
+          - ProfileBrowserDataBackupServiceTests
+          - BrowserDataRestoreTransactionTests
+          - StoppedProfileRestoreAuthorityTests
           - FingerprintAuditTests
           - FingerprintEvidenceEnrollmentTests
           - FingerprintEvidenceEnvelopeTests
@@ -79,6 +92,7 @@ jobs:
           - ManagerSearchBenchmarkTests
           - ProfileMetadataUndoTests
           - ProfileStoreTests
+          - PrivateGuardLeaseTests
           - ProxyHealthTests
           - ProxyImportParserTests
           - ProxyTestOperationRegistryTests
@@ -98,7 +112,17 @@ jobs:
           - MCPWorkspaceQueryTests
           - ProfileQuickCommandProjectionTests
           - ProxyTesterLiveFixtureTests
+          - BookmarkImportTests
+          - DevelopmentFixtureKeychainTests
+          - OwnedProfileDirectoryTests
+          - ProfileCacheMaintenanceTests
+          - ProxyDiagnosticTests
+          - ProxyRelayBrowserRoleDecoderTests
+          - ProxyRelayControlPeerInspectorTests
+          - ProxyRelayLiveCodeVerifierTests
+          - ProxyRelayLoopbackServerTests
           - UpdateManifestTests
+          - DirectUpdateArchiveIntegrityTests
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Run Swift suite
@@ -138,6 +162,7 @@ jobs:
         run: >-
           python3 -m unittest
           scripts.tests.test_fingerprint_evidence_schema8
+          scripts.tests.test_fingerprint_evidence_schema9
           scripts.tests.test_direct_candidate_manifest
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'

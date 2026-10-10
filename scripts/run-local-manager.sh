@@ -70,6 +70,12 @@ mkdir -p \
   "$SWIFT_SECURITY" \
   "$CLANG_CACHE"
 
+# SwiftPM also compiles the manifest for --show-bin-path. Keep every invocation
+# on the same project-owned caches, including commands that do not build code.
+export CLANG_MODULE_CACHE_PATH="$CLANG_CACHE"
+export SWIFTPM_MODULECACHE_OVERRIDE="$CLANG_CACHE"
+export TMPDIR="$DEVELOPMENT_ROOT"
+
 echo "NeAntik — быстрый локальный запуск интерфейса"
 echo "Публичный релиз, dist, notarization и сайт не изменяются."
 echo "Xcode: $DEVELOPER_DIR"

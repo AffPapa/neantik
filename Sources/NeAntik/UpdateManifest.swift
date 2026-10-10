@@ -354,7 +354,16 @@ enum UpdateManifestVerifier {
             omittingEmptySubsequences: false
         )
         guard (1...3).contains(parts.count) else { return nil }
-        let numbers = parts.compactMap { Int($0) }
+        // Signed metadata still needs canonical syntax. Int alone accepts
+        // signs/leading zeros, including a negative patch component that can
+        // pass a lexicographic minimum-version comparison.
+        let numbers = parts.compactMap { part -> Int? in
+            guard !part.isEmpty,
+                  part.utf8.allSatisfy({ (48...57).contains($0) }),
+                  part.utf8.count == 1 || part.first != "0"
+            else { return nil }
+            return Int(part)
+        }
         return numbers.count == parts.count ? numbers : nil
     }
 }

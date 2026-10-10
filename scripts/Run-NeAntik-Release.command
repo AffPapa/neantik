@@ -79,9 +79,9 @@ cache_runtime_source_evidence() {
     echo "Не удалось определить версию Chromium из runtime evidence точного исходного приложения." >&2
     return 66
   fi
-  if [[ "$packaged_version" == 154.* &&
+  if [[ ( "$packaged_version" == 154.* || "$packaged_version" == 155.* ) &&
         ( -z "$configured_provenance" || -z "$configured_lock" ) ]]; then
-    echo "Chromium 154 требует явно заданные runtime source evidence; исторический M152 default запрещён." >&2
+    echo "Chromium 154/155 требует явно заданные runtime source evidence; исторический M152 default запрещён." >&2
     return 66
   fi
 

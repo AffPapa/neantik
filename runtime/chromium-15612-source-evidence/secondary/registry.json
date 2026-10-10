@@ -1,0 +1,166 @@
+{
+  "binaryBindingVerified": false,
+  "chromiumVersion": "156.0.8078.12",
+  "edges": [
+    {
+      "jsonPointer": "/records/34/evidence/m156-DEPS-receipt.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-DEPS-receipt.json",
+      "targetOriginalSHA256": "afd64acb2504007f5b37ae8e9a490e72cfd22009d27fb776a81b1dfc7bfb6c82",
+      "targetProjectionSHA256": "7a30b28a4343ea30ed446e0e9278d4f3bb3aefc23079aad6d6562c2f4005a0e4"
+    },
+    {
+      "jsonPointer": "/records/34/evidence/m156-devtools-absent-targets.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-devtools-absent-targets.json",
+      "targetOriginalSHA256": "125090427f9c6fe33f1cbeb1c5e58384852b7cc294b6e297b61aaf2e8aa9e161",
+      "targetProjectionSHA256": "17446bf1e03adead5ab3b0b1abd1dab08570a64b8828657d3ed240b304b43166"
+    },
+    {
+      "jsonPointer": "/records/34/evidence/m156-devtools-bundle-source-receipt.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-devtools-bundle-source-receipt.json",
+      "targetOriginalSHA256": "6e82790246c9b54a2ffc6c05a383a1f0a2fd9698772d62982579444429a0c289",
+      "targetProjectionSHA256": "ab85bdaa0c290bb5e1adb0c9395c60f242cc9c7dc171cc26e206c7cadead3e0f"
+    },
+    {
+      "jsonPointer": "/records/34/evidence/m156-devtools-source-receipts.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-devtools-source-receipts.json",
+      "targetOriginalSHA256": "5f07a42944f44f8bd4ccafbc0c654e11b8edd8278d9cd09e5fb9ae725bfdd4dc",
+      "targetProjectionSHA256": "a678e73a9a1bb76bc1e19e3afdd342b2f5a312a47ec4306cf65f00846d223b21"
+    },
+    {
+      "jsonPointer": "/records/124/evidence/m156-DEPS-receipt.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-DEPS-receipt.json",
+      "targetOriginalSHA256": "afd64acb2504007f5b37ae8e9a490e72cfd22009d27fb776a81b1dfc7bfb6c82",
+      "targetProjectionSHA256": "7a30b28a4343ea30ed446e0e9278d4f3bb3aefc23079aad6d6562c2f4005a0e4"
+    },
+    {
+      "jsonPointer": "/records/124/evidence/m156-crubit-native-supersession.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-crubit-native-supersession.json",
+      "targetOriginalSHA256": "99fd8630b4b7ae5cf2b7bb6091d99e0398bb6a1a5dd72056475e1941225d0d83",
+      "targetProjectionSHA256": "ab5199dd72b00fab6e6c7952c20a8d461cef95529a9a175f8c0a8e7d23b7389e"
+    },
+    {
+      "jsonPointer": "/records/124/evidence/m156-pinned-toolchain-probes.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-pinned-toolchain-probes.json",
+      "targetOriginalSHA256": "4e5409179227750c7dffc2f3e0b67f1b75d21540383113bd182820d5b39ffea8",
+      "targetProjectionSHA256": "fbfe7d1a47b572c49582dc586fde02354375ba905d3197b2fd8e35530d9b63e7"
+    },
+    {
+      "jsonPointer": "/records/124/evidence/m156-pinned-toolchain-receipt.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-pinned-toolchain-receipt.json",
+      "targetOriginalSHA256": "d1919dd1b5d6915cedd248be2080a160e6aadd06c3de45b6a647c3187c362d2a",
+      "targetProjectionSHA256": "2e706752e9fc17db80e29c61643458c2479ddbcbd935b50aeb4f047b7f8d7f54"
+    },
+    {
+      "jsonPointer": "/records/163/evidence/m156-enterprise-upload-native-include-supersession.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-enterprise-upload-native-include-supersession.json",
+      "targetOriginalSHA256": "1c17ae041f3a2865748fb04735c0c3d50921d5b9ffcb5a0b1f7cf36b72672d14",
+      "targetProjectionSHA256": "666ae875c28bf738f8ded51198bf88e3af2838b360c17a71857e13f652813852"
+    },
+    {
+      "jsonPointer": "/records/185/evidence/m156-signin-chip-local-removal-supersession.json",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "native-supersession-source-decision",
+      "targetName": "m156-signin-chip-local-removal-supersession.json",
+      "targetOriginalSHA256": "0296a8fd64382dc0f400bf087c6ea95b7772db984505eb7d031789c6eca0a631",
+      "targetProjectionSHA256": "15dc94ef3d978c413dfa397483d90b89558148fe22c49fa8fb37f13d66832ec3"
+    },
+    {
+      "jsonPointer": "/depHydrationReceipt",
+      "parentOriginalReceipt": "m156-shadow-replay-state.json",
+      "parentOriginalSHA256": "fdf97d89f3051e30538472882c347beb5f34d5368fa9abf2c80cb871084b9fbf",
+      "role": "independently-pinned-pristine-hydration",
+      "targetName": "m156-nasm-source-receipts.json",
+      "targetOriginalSHA256": "ffe8387d0df8a8eab934d29ce4c22e69038ed4c1061b961ed7447d22f0f5e678",
+      "targetProjectionSHA256": "bc9634b02254d8d038d2e3a3692546554372c52121175cc6df45728c669e4187"
+    }
+  ],
+  "originalFreezeSHA256": "3593e29cb4eaaed98b0fa7b97a5e0c7710328d8b2e9da6482c5491307eb62c48",
+  "primaryRegistrySHA256": "7471cb363ffa17469c868afcfe271ae4417b6cd79edefd5f3e87af01fa5602e5",
+  "receipts": [
+    {
+      "name": "m156-DEPS-receipt.json",
+      "originalSHA256": "afd64acb2504007f5b37ae8e9a490e72cfd22009d27fb776a81b1dfc7bfb6c82",
+      "projectionSHA256": "7a30b28a4343ea30ed446e0e9278d4f3bb3aefc23079aad6d6562c2f4005a0e4"
+    },
+    {
+      "name": "m156-crubit-native-supersession.json",
+      "originalSHA256": "99fd8630b4b7ae5cf2b7bb6091d99e0398bb6a1a5dd72056475e1941225d0d83",
+      "projectionSHA256": "ab5199dd72b00fab6e6c7952c20a8d461cef95529a9a175f8c0a8e7d23b7389e"
+    },
+    {
+      "name": "m156-devtools-absent-targets.json",
+      "originalSHA256": "125090427f9c6fe33f1cbeb1c5e58384852b7cc294b6e297b61aaf2e8aa9e161",
+      "projectionSHA256": "17446bf1e03adead5ab3b0b1abd1dab08570a64b8828657d3ed240b304b43166"
+    },
+    {
+      "name": "m156-devtools-bundle-source-receipt.json",
+      "originalSHA256": "6e82790246c9b54a2ffc6c05a383a1f0a2fd9698772d62982579444429a0c289",
+      "projectionSHA256": "ab85bdaa0c290bb5e1adb0c9395c60f242cc9c7dc171cc26e206c7cadead3e0f"
+    },
+    {
+      "name": "m156-devtools-source-receipts.json",
+      "originalSHA256": "5f07a42944f44f8bd4ccafbc0c654e11b8edd8278d9cd09e5fb9ae725bfdd4dc",
+      "projectionSHA256": "a678e73a9a1bb76bc1e19e3afdd342b2f5a312a47ec4306cf65f00846d223b21"
+    },
+    {
+      "name": "m156-enterprise-upload-native-include-supersession.json",
+      "originalSHA256": "1c17ae041f3a2865748fb04735c0c3d50921d5b9ffcb5a0b1f7cf36b72672d14",
+      "projectionSHA256": "666ae875c28bf738f8ded51198bf88e3af2838b360c17a71857e13f652813852"
+    },
+    {
+      "name": "m156-nasm-source-receipts.json",
+      "originalSHA256": "ffe8387d0df8a8eab934d29ce4c22e69038ed4c1061b961ed7447d22f0f5e678",
+      "projectionSHA256": "bc9634b02254d8d038d2e3a3692546554372c52121175cc6df45728c669e4187"
+    },
+    {
+      "name": "m156-pinned-toolchain-probes.json",
+      "originalSHA256": "4e5409179227750c7dffc2f3e0b67f1b75d21540383113bd182820d5b39ffea8",
+      "projectionSHA256": "fbfe7d1a47b572c49582dc586fde02354375ba905d3197b2fd8e35530d9b63e7"
+    },
+    {
+      "name": "m156-pinned-toolchain-receipt.json",
+      "originalSHA256": "d1919dd1b5d6915cedd248be2080a160e6aadd06c3de45b6a647c3187c362d2a",
+      "projectionSHA256": "2e706752e9fc17db80e29c61643458c2479ddbcbd935b50aeb4f047b7f8d7f54"
+    },
+    {
+      "name": "m156-signin-chip-local-removal-supersession.json",
+      "originalSHA256": "0296a8fd64382dc0f400bf087c6ea95b7772db984505eb7d031789c6eca0a631",
+      "projectionSHA256": "15dc94ef3d978c413dfa397483d90b89558148fe22c49fa8fb37f13d66832ec3"
+    }
+  ],
+  "releaseReady": false,
+  "runtimeQualified": false,
+  "schemaVersion": 1,
+  "sourceSnapshotVerified": false,
+  "status": "secondary-source-decisions-bound-unqualified",
+  "subsequentCorrectionChainStillRequired": true,
+  "toolPackagePayloadClosureStillRequired": true
+}

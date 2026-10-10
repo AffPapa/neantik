@@ -3,6 +3,92 @@ import Testing
 @testable import NeAntik
 
 struct ProxyTesterTests {
+    @Test
+    func connectRefusalIsNotMistakenForIPServiceFailure() async throws {
+        let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration
+        for (status, connect, response, expected) in [
+            (Int32(22), "502", "000", ProxyHealthOutcome.protocolFailed),
+            (56, "502", "000", .protocolFailed),
+            (22, "407", "000", .authenticationRejected),
+            (56, "407", "000", .authenticationRejected),
+            (22, "200", "429", .probeServiceFailed),
+            (28, "200", "000", .timedOut)
+        ] {
+            do {
+                _ = try await ProxyTester().probe(configuration: proxy, password: "", runProcess: { _, _, _, _ in
+                    .init(status: status, output: Data("\nNEANTIK_METRICS_V2:0.001|\(connect)|\(response)\n".utf8), outputExceeded: false)
+                })
+                Issue.record("Controlled transport/service refusal succeeded")
+            } catch let error as ProxyProbeError {
+                #expect(error.outcome == expected)
+            }
+        }
+    }
+
+    private actor TunnelRefusalSequence {
+        var count = 0
+        let connectStatus: String
+        init(_ status: String) { connectStatus = status }
+        func next() -> ProxyProcessResult {
+            count += 1
+            if count == 1 {
+                return .init(status: 56, output: Data("\nNEANTIK_METRICS_V2:0.001|\(connectStatus)|000\n".utf8), outputExceeded: false)
+            }
+            return .init(status: 0, output: Data("{\"ip\":\"203.0.113.12\"}\nNEANTIK_METRICS_V2:0.001|200|200\n".utf8), outputExceeded: false)
+        }
+    }
+
+    @Test
+    func refusedTunnelIsTerminalEvenIfAnotherServiceWouldSucceed() async throws {
+        let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration
+        for (code, expected) in [("407", ProxyHealthOutcome.authenticationRejected), ("502", .protocolFailed)] {
+            let sequence = TunnelRefusalSequence(code)
+            do {
+                _ = try await ProxyTester().probe(configuration: proxy, password: "", runProcess: { _, _, _, _ in await sequence.next() })
+                Issue.record("Refused tunnel was overridden")
+            } catch let error as ProxyProbeError {
+                #expect(error.outcome == expected)
+            }
+            #expect(await sequence.count == 1)
+        }
+    }
+
+    @Test
+    func structuredMetricsRejectMalformedSuffixesAndSelectCurlSuffix() throws {
+        for suffix in ["0.1|200", "nan|200|200", "-1|200|200", "0.1|+200|200", "0.1|20|200", "0.1|600|200", "0.1|200|999", "0.1|200|200|extra"] {
+            #expect(throws: (any Error).self) {
+                _ = try ProxyTester.parseProbeOutput(Data("{\"ip\":\"203.0.113.12\"}\nNEANTIK_METRICS_V2:\(suffix)\n".utf8))
+            }
+        }
+        let body = "{\"ip\":\"203.0.113.12\",\"city\":\"NEANTIK_METRICS_V2: forged\"}"
+        let parsed = try ProxyTester.parseProbeOutput(Data("\(body)\nNEANTIK_METRICS_V2:0.125|000|200\n".utf8))
+        #expect(parsed.responseTimeMilliseconds == 125)
+        #expect(parsed.result.ipAddress == "203.0.113.12")
+    }
+
+    @Test
+    func structuredRouteMetricsPreserveBodyAndTiming() throws {
+        let output = Data("{\"ip\":\"203.0.113.12\"}\nNEANTIK_METRICS_V2:0.125|200|200\n".utf8)
+        let parsed = try ProxyTester.parseProbeOutput(output)
+        #expect(parsed.result.ipAddress == "203.0.113.12")
+        #expect(parsed.responseTimeMilliseconds == 125)
+    }
+
+    @Test
+    func contradictorySuccessfulProcessCannotPublishProxySuccess() async throws {
+        let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration
+        for metrics in ["0.001|502|200", "0.001|200|503", "0.001|200|000"] {
+            do {
+                _ = try await ProxyTester().probe(configuration: proxy, password: "", runProcess: { _, _, _, _ in
+                    .init(status: 0, output: Data("{\"success\":true,\"ip\":\"203.0.113.12\",\"country_code\":\"DE\",\"timezone\":{\"id\":\"Europe/Berlin\"}}\nNEANTIK_METRICS_V2:\(metrics)\n".utf8), outputExceeded: false)
+                })
+                Issue.record("Contradictory process result published success")
+            } catch let error as ProxyProbeError {
+                #expect(error.outcome == .invalidResponse)
+            }
+        }
+    }
+
     private actor ProbeSequence {
         var count = 0
         func next() -> ProxyProcessResult {

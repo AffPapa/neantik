@@ -26,7 +26,7 @@ GUI_VERIFIER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
 EVIDENCE_SCHEMA_PATH = (
-    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence.py"
 )
 EVIDENCE_SPEC = importlib.util.spec_from_file_location(
     "fingerprint_evidence_schema8_for_collector",
@@ -184,8 +184,8 @@ def authenticated_public_attestation(
     payload: dict[str, Any],
     verified: Any,
 ) -> dict[str, Any]:
-    return {
-        "schemaVersion": 3,
+    result = {
+        "schemaVersion": 4 if payload["schemaVersion"] == 2 else 3,
         "kind": "neantik-gui-fingerprint-attestation",
         "releaseChannel": payload["releaseChannel"],
         "candidateManifestSHA256":
@@ -220,6 +220,10 @@ def authenticated_public_attestation(
         "productionQualified": payload["productionQualified"],
         "limitations": payload["limitations"],
     }
+    if payload["schemaVersion"] == 2:
+        result["semanticPolicyID"] = payload["semanticPolicyID"]
+        result["criticalObservationsStable"] = payload["criticalObservationsStable"]
+    return result
 
 
 def encoded_private_json(value: dict[str, Any]) -> bytes:
@@ -560,9 +564,9 @@ def collect_evidence(
         report,
         expected_runtime=expected_runtime,
     )
-    if report.get("auditSchemaVersion") != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION:
+    if report.get("auditSchemaVersion") != 7:
         raise EvidenceCollectionError(
-            "Source report does not use the current fingerprint audit schema."
+            "Raw legacy collection requires audit7. Audit8 release evidence requires the exact integrated candidate and signed schema9 envelope."
         )
     qualification_issues = GUI_VERIFIER.qualification_issues(
         summary,
@@ -659,7 +663,7 @@ def collect_authenticated_evidence(
         )
     except EVIDENCE_SCHEMA.FingerprintEvidenceVerificationError as error:
         raise EvidenceCollectionError(
-            "Authenticated schema-8 fingerprint evidence is invalid."
+            "Authenticated versioned fingerprint evidence is invalid."
         ) from error
     if payload["releaseChannel"] != release_channel:
         raise EvidenceCollectionError(

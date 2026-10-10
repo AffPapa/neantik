@@ -1,0 +1,351 @@
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -35,8 +35,6 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/trace_event/trace_id_helper.h"
+ #include "base/trace_event/typed_macros.h"
+-#include "components/ungoogled/neantik_apple_device_tuples.h"
+-#include "components/ungoogled/nevision_fingerprint.h"
+ #include "build/build_config.h"
+ #include "cc/input/snap_selection_strategy.h"
+ #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
+@@ -1946,10 +1944,6 @@
+     return 0.0;
+   }
+ 
+-  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
+-    return ungoogled::nevision::GetAppleDeviceTuple(*seed)
+-        .device_scale_factor;
+-  }
+   return GetFrame()->DevicePixelRatio();
+ }
+ 
+--- a/third_party/blink/renderer/core/frame/local_frame.cc
++++ b/third_party/blink/renderer/core/frame/local_frame.cc
+@@ -49,6 +49,9 @@
+ #include "base/unguessable_token.h"
+ #include "base/values.h"
+ #include "build/build_config.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/neantik_device_scale_factor.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ #include "mojo/public/cpp/system/message_pipe.h"
+ #include "services/network/public/cpp/features.h"
+@@ -171,6 +174,7 @@
+ #include "third_party/blink/renderer/core/frame/virtual_keyboard_overlay_changed_observer.h"
+ #include "third_party/blink/renderer/core/frame/visual_viewport.h"
+ #include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
++#include "ui/display/screen_info.h"
+ #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
+ #include "third_party/blink/renderer/core/frame/window_controls_overlay_changed_delegate.h"
+ #include "third_party/blink/renderer/core/fullscreen/fullscreen.h"
+@@ -1954,6 +1958,17 @@
+ 
+   double ratio = page_->InspectorDeviceScaleFactorOverride();
+   ratio *= LayoutZoomFactor();
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    LocalFrame& local_root = LocalFrameRoot();
++    if (local_root.GetWidgetForLocalRoot()) {
++      const double native_scale =
++          page_->GetChromeClient().GetScreenInfo(local_root).device_scale_factor;
++      ratio = ungoogled::nevision::AdjustDevicePixelRatio(
++          ratio, native_scale,
++          ungoogled::nevision::GetAppleDeviceTuple(*seed).device_scale_factor,
++          page_->HasExplicitInspectorDeviceScaleFactorOverride());
++    }
++  }
+   return ratio;
+ }
+ 
+--- a/third_party/blink/renderer/core/page/page.h
++++ b/third_party/blink/renderer/core/page/page.h
+@@ -331,6 +331,15 @@
+     inspector_device_scale_factor_override_ = override;
+   }
+ 
++  // Track the original positive DevTools request separately from E/H. The
++  // multiplier can equal one while an explicit override is still active.
++  bool HasExplicitInspectorDeviceScaleFactorOverride() const {
++    return explicit_inspector_device_scale_factor_override_;
++  }
++  void SetExplicitInspectorDeviceScaleFactorOverride(bool active) {
++    explicit_inspector_device_scale_factor_override_ = active;
++  }
++
+   static void AllVisitedStateChanged(bool invalidate_visited_link_hashes);
+   static void VisitedStateChanged(LinkHash visited_hash);
+ 
+@@ -637,6 +646,7 @@
+   bool tab_key_cycles_through_elements_;
+ 
+   float inspector_device_scale_factor_override_;
++  bool explicit_inspector_device_scale_factor_override_ = false;
+ 
+   mojom::blink::PageLifecycleStatePtr lifecycle_state_;
+ 
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+@@ -2489,14 +2489,37 @@
+         widget_base_->VisibleViewportSize(), widget_base_->WidgetScreenRect(),
+         widget_base_->WindowScreenRect());
+   }
++  Page* page = View()->GetPage();
++  const bool explicit_scale = parameters.device_scale_factor > 0;
++  const bool explicit_scale_changed =
++      page->HasExplicitInspectorDeviceScaleFactorOverride() != explicit_scale;
++  page->SetExplicitInspectorDeviceScaleFactorOverride(explicit_scale);
+   device_emulator_->ChangeEmulationParams(parameters, cache_behavior);
++  if (explicit_scale_changed) {
++    LocalRootImpl()->GetFrame()->MediaQueryAffectingValueChangedForLocalSubtree(
++        MediaValueChange::kOther);
++  }
+ }
+ 
+ void WebFrameWidgetImpl::DisableDeviceEmulation() {
+-  if (device_emulator_ && widget_base_ && !widget_base_->WillBeDestroyed()) {
++  // Disable can arrive during Close(), after the local root or widget is gone.
++  // Read the Page only through a live frame; View() dereferences local_root_.
++  LocalFrame* frame = local_root_ ? local_root_->GetFrame() : nullptr;
++  Page* page = frame ? frame->GetPage() : nullptr;
++  const bool explicit_scale_changed =
++      page && page->HasExplicitInspectorDeviceScaleFactorOverride();
++  if (page) {
++    page->SetExplicitInspectorDeviceScaleFactorOverride(false);
++  }
++  const bool live_widget = frame && page && widget_base_ &&
++                           !widget_base_->WillBeDestroyed();
++  if (device_emulator_ && live_widget) {
+     device_emulator_->DisableAndApply();
+   }
+   device_emulator_ = nullptr;
++  if (explicit_scale_changed && live_widget) {
++    frame->MediaQueryAffectingValueChangedForLocalSubtree(MediaValueChange::kOther);
++  }
+ }
+ 
+ void WebFrameWidgetImpl::SetIsInertForSubFrame(bool inert) {
+--- a/content/browser/client_hints/client_hints.cc
++++ b/content/browser/client_hints/client_hints.cc
+@@ -5,6 +5,7 @@
+ #include "content/browser/client_hints/client_hints.h"
+ 
+ #include <algorithm>
++#include <cmath>
+ #include <optional>
+ #include <string>
+ 
+@@ -29,6 +30,8 @@
+ #include "content/browser/renderer_host/navigator.h"
+ #include "content/browser/renderer_host/navigator_delegate.h"
+ #include "content/browser/renderer_host/render_view_host_impl.h"
++#include "content/browser/renderer_host/render_widget_host_impl.h"
++#include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/client_hints_controller_delegate.h"
+@@ -262,11 +265,41 @@
+ void AddDPRHeader(net::HttpRequestHeaders* headers,
+                   BrowserContext* context,
+                   const GURL& url,
++                  FrameTreeNode* frame_tree_node,
+                   bool use_deprecated_version = false) {
+   CHECK(headers, base::NotFatalUntil::M160);
+   CHECK(context, base::NotFatalUntil::M160);
+   double device_scale_factor = GetDeviceScaleFactor();
+   double zoom_factor = GetZoomFactor(context, url);
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    device_scale_factor =
++        ungoogled::nevision::GetAppleDeviceTuple(*seed).device_scale_factor;
++    if (frame_tree_node) {
++      RenderFrameHostImpl* frame = frame_tree_node->current_frame_host();
++      // Like native UA network overrides, use primary state for a new
++      // prerender main frame. Never lend main-frame state to an OOPIF.
++      if (frame_tree_node->frame_tree().is_prerendering() &&
++          frame_tree_node->IsMainFrame()) {
++        frame = WebContentsImpl::FromFrameTreeNode(frame_tree_node)
++                    ->GetPrimaryMainFrame();
++      }
++      RenderWidgetHostImpl* widget = frame ? frame->GetRenderWidgetHost() : nullptr;
++      const auto emulation =
++          widget ? widget->LastDispatchedDeviceEmulationParams() : std::nullopt;
++      if (emulation) {
++        const double explicit_scale = emulation->device_scale_factor;
++        if (std::isfinite(explicit_scale) && explicit_scale > 0) {
++          device_scale_factor = explicit_scale;
++        }
++        // Native mobile emulation replaces page zoom by one. DSF=0 means
++        // retain the cohort scale, not the physical host scale.
++        if (emulation->screen_type ==
++            blink::mojom::EmulatedScreenType::kMobile) {
++          zoom_factor = 1.0;
++        }
++      }
++    }
++  }
+   SetHeaderToDouble(headers,
+                     use_deprecated_version ? WebClientHintsType::kDpr_DEPRECATED
+                                            : WebClientHintsType::kDpr,
+@@ -894,10 +927,23 @@
+     AddDeviceMemoryHeader(headers);
+   }
+   if (ShouldAddClientHint(data, WebClientHintsType::kDpr_DEPRECATED)) {
+-    AddDPRHeader(headers, context, url, /*use_deprecated_version*/ true);
++    AddDPRHeader(headers, context, url,
++                 frame_tree_node ? frame_tree_node
++                                 : (ftn_for_devtools_override &&
++                                    ftn_for_devtools_override->current_frame_host()
++                                        ->is_main_frame()
++                                        ? ftn_for_devtools_override
++                                        : nullptr),
++                 /*use_deprecated_version*/ true);
+   }
+   if (ShouldAddClientHint(data, WebClientHintsType::kDpr)) {
+-    AddDPRHeader(headers, context, url);
++    AddDPRHeader(headers, context, url,
++                 frame_tree_node ? frame_tree_node
++                                 : (ftn_for_devtools_override &&
++                                    ftn_for_devtools_override->current_frame_host()
++                                        ->is_main_frame()
++                                        ? ftn_for_devtools_override
++                                        : nullptr));
+   }
+   if (ShouldAddClientHint(data,
+                           WebClientHintsType::kViewportWidth_DEPRECATED)) {
+--- /dev/null
++++ b/components/ungoogled/neantik_device_scale_factor.h
+@@ -0,0 +1,24 @@
++// Copyright 2026 The NeAntik Authors. MPL-2.0.
++#ifndef COMPONENTS_UNGOOGLED_NEANTIK_DEVICE_SCALE_FACTOR_H_
++#define COMPONENTS_UNGOOGLED_NEANTIK_DEVICE_SCALE_FACTOR_H_
++
++#include <cmath>
++
++namespace ungoogled::nevision {
++
++// Native layout ratio already includes hardware DSF, page zoom and frame CSS
++// zoom. Replace only hardware DSF; an explicit DevTools request takes priority.
++inline double AdjustDevicePixelRatio(double native_ratio,
++                                    double native_scale,
++                                    double cohort_scale,
++                                    bool explicit_override) {
++  if (explicit_override || !std::isfinite(native_scale) || native_scale <= 0 ||
++      !std::isfinite(cohort_scale) || cohort_scale <= 0) {
++    return native_ratio;
++  }
++  return native_ratio * (cohort_scale / native_scale);
++}
++
++}  // namespace ungoogled::nevision
++
++#endif  // COMPONENTS_UNGOOGLED_NEANTIK_DEVICE_SCALE_FACTOR_H_
+--- a/content/browser/renderer_host/render_widget_host_impl.h
++++ b/content/browser/renderer_host/render_widget_host_impl.h
+@@ -67,6 +67,7 @@
+ #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
+ #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
+ #include "third_party/blink/public/mojom/input/pointer_lock_context.mojom.h"
++#include "third_party/blink/public/common/widget/device_emulation_params.h"
+ #include "third_party/blink/public/mojom/keyboard_lock/keyboard_lock.mojom.h"
+ #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
+ #include "third_party/blink/public/mojom/page/widget.mojom.h"
+@@ -964,6 +965,17 @@
+ 
+   const mojo::AssociatedRemote<blink::mojom::FrameWidget>&
+   GetAssociatedFrameWidget();
++
++  // State sent to this widget, not an IPC acknowledgement. Tracking at the
++  // dispatch site preserves ordering across multiple DevTools sessions.
++  void DispatchDeviceEmulation(
++      const blink::DeviceEmulationParams& params,
++      const blink::mojom::DeviceEmulationCacheBehavior& cache_behavior);
++  void DispatchDeviceEmulationClear();
++  const std::optional<blink::DeviceEmulationParams>&
++  LastDispatchedDeviceEmulationParams() const {
++    return last_dispatched_device_emulation_params_;
++  }
+ 
+   blink::mojom::FrameWidgetInputHandler* GetFrameWidgetInputHandler();
+ 
+@@ -1704,6 +1716,9 @@
+   mojo::Receiver<blink::mojom::FrameWidgetHost> frame_widget_host_receiver_{
+       this};
+   mojo::AssociatedRemote<blink::mojom::FrameWidget> blink_frame_widget_;
++  std::optional<blink::DeviceEmulationParams>
++      last_dispatched_device_emulation_params_;
++  bool device_emulation_channel_current_ = false;
+ 
+   // If this is initialized with a popup this member will be valid and
+   // manages the lifecycle of the popup in blink.
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -800,6 +800,22 @@
+       GetUIThreadTaskRunner({BrowserTaskType::kUserInput}));
+ }
+ 
++void RenderWidgetHostImpl::DispatchDeviceEmulation(
++    const blink::DeviceEmulationParams& params,
++    const blink::mojom::DeviceEmulationCacheBehavior& cache_behavior) {
++  if (!device_emulation_channel_current_ || !blink_frame_widget_)
++    return;
++  last_dispatched_device_emulation_params_ = params;
++  blink_frame_widget_->EnableDeviceEmulation(params, cache_behavior);
++}
++
++void RenderWidgetHostImpl::DispatchDeviceEmulationClear() {
++  last_dispatched_device_emulation_params_.reset();
++  if (!device_emulation_channel_current_ || !blink_frame_widget_)
++    return;
++  blink_frame_widget_->DisableDeviceEmulation();
++}
++
+ void RenderWidgetHostImpl::BindFrameWidgetInterfaces(
+     mojo::PendingAssociatedReceiver<blink::mojom::FrameWidgetHost>
+         frame_widget_host,
+@@ -807,6 +823,8 @@
+   // This API may get called on a RenderWidgetHostImpl from a
+   // reused RenderViewHostImpl so we need to ensure old channels are dropped.
+   // TODO(dcheng): Rather than resetting here, reset when the process goes away.
++  device_emulation_channel_current_ = false;
++  last_dispatched_device_emulation_params_.reset();
+   blink_frame_widget_host_receiver_.reset();
+   blink_frame_widget_.reset();
+   widget_compositor_.reset();
+@@ -817,6 +835,7 @@
+   blink_frame_widget_.Bind(
+       std::move(frame_widget),
+       GetUIThreadTaskRunner({BrowserTaskType::kUserInput}));
++  device_emulation_channel_current_ = bool(blink_frame_widget_);
+ }
+ 
+ void RenderWidgetHostImpl::BindFrameWidgetHostReceiver(
+@@ -2430,6 +2449,8 @@
+ }
+ 
+ void RenderWidgetHostImpl::RendererExited() {
++  device_emulation_channel_current_ = false;
++  last_dispatched_device_emulation_params_.reset();
+   if (!renderer_widget_created_) {
+     return;
+   }
+--- a/content/browser/devtools/protocol/emulation_handler.cc
++++ b/content/browser/devtools/protocol/emulation_handler.cc
+@@ -1170,14 +1170,11 @@
+ void EmulationHandler::UpdateDeviceEmulationStateForHost(
+     RenderWidgetHostImpl* render_widget_host,
+     const blink::mojom::DeviceEmulationCacheBehavior& cache_behavior) {
+-  auto& frame_widget = render_widget_host->GetAssociatedFrameWidget();
+-  if (!frame_widget)
+-    return;
+   if (device_emulation_enabled_) {
+-    frame_widget->EnableDeviceEmulation(device_emulation_params_,
+-                                        cache_behavior);
+-  } else {
+-    frame_widget->DisableDeviceEmulation();
++    render_widget_host->DispatchDeviceEmulation(device_emulation_params_,
++                                                cache_behavior);
++  } else {
++    render_widget_host->DispatchDeviceEmulationClear();
+   }
+ }
+ 

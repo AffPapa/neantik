@@ -25,7 +25,7 @@ sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
 
 EVIDENCE_SCHEMA_PATH = (
-    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence.py"
 )
 EVIDENCE_SCHEMA_SPEC = importlib.util.spec_from_file_location(
     "fingerprint_evidence_schema8_for_candidate_manifest",

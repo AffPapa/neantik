@@ -47,6 +47,17 @@ def der_signature(r: int, s: int) -> bytes:
 
 
 class FingerprintEvidenceSchema8Tests(unittest.TestCase):
+    def test_only_reviewed_semantic_contract_paths_are_allowed(self):
+        _, raw, _, _ = fixture_bytes()
+        manifest = json.loads(raw)
+        for variant in ("v1", "v2", "v3", "v4", "v5"):
+            manifest['criticalFiles']['sourceContract']['bundlePath'] = "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-" + variant + "-source-contract.json"
+            MODULE._validate_candidate_manifest(manifest)
+        for variant in ("v6", "../../v3", "unknown"):
+            manifest['criticalFiles']['sourceContract']['bundlePath'] = "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-" + variant + "-source-contract.json"
+            with self.assertRaises(MODULE.FingerprintEvidenceVerificationError):
+                MODULE._validate_candidate_manifest(manifest)
+
     def test_manifest_accepts_exact_m154_contract_and_rejects_unknown_paths(self) -> None:
         _, raw, _, _ = fixture_bytes()
         manifest = json.loads(raw)

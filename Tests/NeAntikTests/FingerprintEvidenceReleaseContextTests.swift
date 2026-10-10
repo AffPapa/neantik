@@ -12,7 +12,8 @@ struct FingerprintEvidenceReleaseContextTests {
         var root = try #require(JSONSerialization.jsonObject(with: fixture.manifest) as? [String: Any])
         var critical = try #require(root["criticalFiles"] as? [String: Any])
         var contract = try #require(critical["sourceContract"] as? [String: Any])
-        for filename in ["chromium-154-source-contract.json", "chromium-155-source-contract.json", "../chromium-154-source-contract.json"] {
+        let allowed = ["chromium-154-source-contract.json", "chromium-15540-semantic-v1-source-contract.json", "chromium-15540-semantic-v2-source-contract.json", "chromium-15540-semantic-v3-source-contract.json", "chromium-15540-semantic-v4-source-contract.json", "chromium-15540-semantic-v5-source-contract.json"]
+        for filename in allowed + ["chromium-155-source-contract.json", "chromium-15540-semantic-v6-source-contract.json", "../chromium-154-source-contract.json"] {
             contract["bundlePath"] = "Contents/Resources/NeAntikRuntimeEvidence/" + filename
             critical["sourceContract"] = contract
             root["criticalFiles"] = critical
@@ -20,7 +21,7 @@ struct FingerprintEvidenceReleaseContextTests {
                 withJSONObject: root,
                 options: [.sortedKeys, .withoutEscapingSlashes]
             )
-            if filename == "chromium-154-source-contract.json" {
+            if allowed.contains(filename) {
                 _ = try FingerprintEvidenceReleaseContext.parseCandidateMetadata(manifest)
             } else {
                 #expect(throws: FingerprintEvidenceReleaseError.invalidManifest) {
@@ -415,7 +416,7 @@ struct FingerprintEvidenceReleaseContextTests {
         let receipt = root
             .appendingPathComponent("v1", isDirectory: true)
             .appendingPathComponent(identifier, isDirectory: true)
-            .appendingPathComponent("envelope.schema8.json")
+            .appendingPathComponent("envelope.schema9.json")
         let attributes = try FileManager.default.attributesOfItem(
             atPath: receipt.path
         )
@@ -917,7 +918,7 @@ struct FingerprintEvidenceReleaseContextTests {
             "webgl_vendor": "Google Inc. (Apple)",
             "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
-            "webgpu_policy": "disabled",
+            "webgpu_policy": "adapter-null",
             "user_agent": userAgent,
             "platform": "MacIntel",
             "client_hints": clientHints,

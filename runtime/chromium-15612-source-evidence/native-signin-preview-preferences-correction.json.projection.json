@@ -1,0 +1,40 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "9fd9df8dd7c90f2df7a2d13845177ad0a3d743ef9c565f16c871837983cad89c",
+  "payload": {
+    "at": "2026-10-09T03:20:57.048298+00:00",
+    "cause": "M156 port retained a new switching heuristic pref in a disabled account preview service and recorder while its preference header is removed",
+    "license": "Independent correction to BSD Chromium source; no AGPL helper copied",
+    "nativeTargetPassed": false,
+    "patchSHA256": "dc5e15488deff2a56b66b49d5cbd9ee576291fc7ba5cfdd3d15060ed02151209",
+    "postimages": {
+      "components/signin/core/browser/account_preview_data_service.cc": "c1d57e67996611ce4cbb38c636a8be0f7a06fde7ed91cef5c975d4c7db2053e9",
+      "components/signin/core/browser/account_preview_metrics_recorder.cc": "87539bce110dccda8fb1c28243c395bb2abd5368aad8640efda4dc34817adfad"
+    },
+    "preimages": {
+      "components/signin/core/browser/account_preview_data_service.cc": "303be0b6925a39b6aecf31fc33d02ef98ccb25200e73d506c8b8c43f9f728def",
+      "components/signin/core/browser/account_preview_metrics_recorder.cc": "7b77f475f8963aaa05b4aa37c42c625cb26cbb33ba56697ff26fba57fbbe481d"
+    },
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "status": "source-corrected-native-target-required"
+  },
+  "payloadType": "json",
+  "receipt": "native-signin-preview-preferences-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

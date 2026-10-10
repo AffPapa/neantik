@@ -1,0 +1,141 @@
+{
+  "baseOrderedReplaySHA256": "c936de57c8cf27ee00e3220a2c5a8bb69d3c6194a93c1405d53f921fb79b69a0",
+  "baseSourceContractSHA256": "5c1f8789fe9f586a075b98d29a969c62aa86cc8562b0c6a489fa9fc66a865716",
+  "baseSourceSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+  "generatedBuildCacheEvidenceSHA256": "8bc163d54804cc9e25ff3535eafd27d0e0862263b5831ed66c33c357ffc122aa",
+  "kind": "chromium-semantic-corrections",
+  "patches": [
+    {
+      "dependsOn": [],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc",
+          "postimageSHA256": "372ef4435eef656e2d3d7bf50b42e21abfc4d59a00005c2ed3702057074ca36c",
+          "preimageSHA256": "881f63d3830c62e5610e8d9dcc54253b1d327f17570520ee35bbc1acad503cc6"
+        },
+        {
+          "path": "third_party/blink/renderer/platform/image-encoders/image_encoder.cc",
+          "postimageSHA256": "8e862362decf65f2bd6ec26caaa33e62df62cec99c1c30253e70d04b5e1f887c",
+          "preimageSHA256": "1888580090b0be069df29720e1cb63d432ae7f40e1062c7088845661830c9201"
+        },
+        {
+          "path": "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc",
+          "postimageSHA256": "6eac7379a2fc4c5922ea9d08a9b3afb73845b7522b100a051ab9edec9fca01e0",
+          "preimageSHA256": "0984256eecb97a07a6c317a93380f968f80b73f46249bd532b1d5728de756cfd"
+        },
+        {
+          "path": "third_party/blink/renderer/platform/graphics/static_bitmap_image.h",
+          "postimageSHA256": "719fc38fc2735147c447fd336b9030347736053a4aff6250b8c045e5536c9ba9",
+          "preimageSHA256": "886ab6fe6169243488e1499c3b40ce05ca923963d4146351d1bd6738c561c63b"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-canvas-native-readback-semantics.patch",
+      "sha256": "116b00e14257746036ece3551314b4849c988b1a0817b6dba8ff165eb80b1d8c",
+      "vector": "canvas"
+    },
+    {
+      "dependsOn": [],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc",
+          "postimageSHA256": "8fbd86ea2e90317092e0dc6833d88f0f49948adf9a6c1b50299f89029cd82811",
+          "preimageSHA256": "bef1bd4a9bcf926246b59939a723987aacb6d93371986aed9d41d715c6b2ec2f"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-audio-native-output-semantics.patch",
+      "sha256": "21417db075ec6f2246aa2dde80463abbfb8fb39b8fde1b4e0bb160239879e8a9",
+      "vector": "audio"
+    },
+    {
+      "dependsOn": [],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+          "postimageSHA256": "9bd9d2abea3823b67942ed47d33b19b627838b40d5bb76b466a66c28fc350c74",
+          "preimageSHA256": "6cb3bc149f419aaecc97118d7d427d98b8c401eac65430f4416051da8eef360a"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-webgl-native-readback-semantics.patch",
+      "sha256": "f66cd62c0724fd1a6b016d02b1cedc9c2ec61c2f0d1730564f121f17bfcaaac6",
+      "vector": "webgl"
+    },
+    {
+      "dependsOn": [],
+      "files": [
+        {
+          "path": "chrome/browser/renderer_preferences_util.cc",
+          "postimageSHA256": "096858f4c1e5d8e0145185c6cf4cf6354df3d570cbf5d3accf6c12d71dc35739",
+          "preimageSHA256": "5704803c2ccce48ae3b614b876ff1a3730e07b2dcbbe2ab08a527372074bbef4"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-webrtc-explicit-udp-boundary.patch",
+      "sha256": "ce0c684a311636566d9ea2c7a67c5a91a11bcccb791b7c73d0c6cde2480599e1",
+      "vector": "webrtc"
+    },
+    {
+      "dependsOn": [],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/core/dom/element.cc",
+          "postimageSHA256": "7b23a678f59329ceded71f97b5e825358f9a370b345dc85596d664aea4fd9b32",
+          "preimageSHA256": "f1de4f602d3d5a975f0b7c3bc18d2b58b3a8aaf7e8d1ce713926cf13c4edda24"
+        },
+        {
+          "path": "third_party/blink/renderer/core/dom/range.cc",
+          "postimageSHA256": "7261bad60856bd8f71f29ad37d7dbaf6db47476cf1689c85302841907e65f939",
+          "preimageSHA256": "68534295901d19e8550fb7963b16b8a8f0a6c58fe0cd4cdbafcf5f7d76646dfe"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-clientrects-native-geometry-semantics.patch",
+      "sha256": "23aca6fbd29accb4db47492c15d3631c15a3d22d4b090e957b44e9c61c7f05d3",
+      "vector": "clientrects"
+    },
+    {
+      "dependsOn": [
+        "canvas"
+      ],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc",
+          "postimageSHA256": "e3d715ff63863389060cdc2d059506cf054bc7ca1a60aca3dfdc572339025fa7",
+          "preimageSHA256": "372ef4435eef656e2d3d7bf50b42e21abfc4d59a00005c2ed3702057074ca36c"
+        },
+        {
+          "path": "third_party/blink/renderer/core/html/canvas/text_metrics.cc",
+          "postimageSHA256": "79b5d44135a15dcbdf3ef0ee21f935bf9d7bdad56e850f02fc7c37f87a5956f1",
+          "preimageSHA256": "8f9dcbb079c5bc9bf858a7a8486af35ec06a32b5bf16fd4fddc7c4372597b77e"
+        },
+        {
+          "path": "third_party/blink/renderer/core/html/canvas/text_metrics.h",
+          "postimageSHA256": "b07e9b85adcc39efaeb06cc16cd350c6c03e5cffb024caab7dc37c31c8b2a311",
+          "preimageSHA256": "eac8ccccfa6c669a0a53dddf1eab8d8e1bb4899592cc9f466e2d75e6f0cfd335"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-textmetrics-native-geometry-semantics.patch",
+      "sha256": "6f16cb4a42a30343bf4d9262c604935c9f977c9e311cf84084f3de3f245cb281",
+      "vector": "textmetrics"
+    },
+    {
+      "dependsOn": [],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/webaudio/audio_worklet_node.cc",
+          "postimageSHA256": "5565b82a98320230ed6f06b7826e265fb2394865d6affa5d47cf87d936232b11",
+          "preimageSHA256": "5c94c8763e2b71bc8c55fa02b8ed6714ab69dd5ffacea444cb2c2a44ff0960ff"
+        },
+        {
+          "path": "third_party/blink/renderer/modules/webaudio/audio_worklet_node.h",
+          "postimageSHA256": "b878da399c6aad2f64f29eb47c45c2f27efab466f824bb419b62660e82ce5f41",
+          "preimageSHA256": "52730949a049bf34ae9d4754421e5cc0d17b39c794c5be220fe3848c63ab9fd7"
+        }
+      ],
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-audio-processor-error-event-semantics.patch",
+      "sha256": "f5855ca0635c91426531b4e7ffbba432c33affb6e654024c033511a8ea46defb",
+      "vector": "audio-events"
+    }
+  ],
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-layout-text-event-v5",
+  "targetChromiumVersion": "155.0.8059.40"
+}

@@ -15,7 +15,7 @@ final class MCPProfileManagement {
          processes: BrowserProcessManager? = nil) {
         let paths = AppPaths(rootDirectory: root)
         let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier)
-        self.keychain = keychain ?? KeychainStore(service: environment.keychainService, legacyService: environment.legacyKeychainService)
+        self.keychain = keychain ?? KeychainStore.applicationStore(environment: environment, paths: paths)
         store = ProfileStore(paths: paths, readOnlyMetadata: !allowsManagement)
         self.processes = processes ?? BrowserProcessManager(paths: paths)
         health = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile)
@@ -43,7 +43,7 @@ final class MCPProfileManagement {
             ("profile_get", "Read profile revision, start page and organization; proxy endpoint and credentials excluded; note excluded.", ["profileID": uuid], ["profileID"]),
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
-            ("profile_status", "Reconcile profile ownership. External sessions require manual close.", ["profileID": uuid], ["profileID"]),
+            ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
             ("profile_create", "Create a persistent profile without starting it. No automatic retry: a repeat creates another profile.", ["name": text, "changes": changes, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
             ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only; input may enter AI history. SOCKS5 authentication unsupported. Configuration is not a route test.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
@@ -128,8 +128,32 @@ final class MCPProfileManagement {
         guard var profile = store.profile(withID: profileID) else { throw Failure.unavailable }
         if name == "profile_get" { return dto(profile) }
         if name == "profile_status" {
+            let includeObservation: Bool
+            if let value = args["includeObservation"] {
+                guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else { throw Failure.invalid }
+                includeObservation = number.boolValue
+            } else { includeObservation = false }
+            if !includeObservation && args["expectedRevision"] != nil { throw Failure.invalid }
+            let expected: UInt64? = includeObservation ? try revision(args) : nil
+            if let expected, profile.revision != expected { throw Failure.conflict }
             try await observe(profileID)
-            return ["profileID": profileID.uuidString, "processState": status(profileID)]
+            guard includeObservation else {
+                return ["profileID": profileID.uuidString, "processState": status(profileID)]
+            }
+            var observation = try await processes.observeManagedBrowserSession(profileID: profileID)
+            do { try await store.refreshExternalMetadata() }
+            catch {
+                guard store.hasTrustedMetadata, !store.hasTrustedOrganization else { throw error }
+            }
+            try Task.checkCancellation()
+            guard store.hasTrustedMetadata,
+                  let expected, let current = store.profile(withID: profileID), current.revision == expected
+            else { throw Failure.conflict }
+            if observation.state == .observed && !processes.sessionObservationIsCurrent(observation, profileID: profileID) {
+                observation = .unavailable(.unverified)
+            }
+            return ["profileID": profileID.uuidString, "processState": status(profileID),
+                    "revision": String(current.revision), "observation": observation.mcpValue]
         }
         if name == "profile_stop" {
             try await observe(profileID)

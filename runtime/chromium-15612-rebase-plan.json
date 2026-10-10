@@ -1,0 +1,30 @@
+{
+  "chromiumVersion": "156.0.8078.12",
+  "lateCorrectionLineageOriginalSHA256": "dd36ec9569f8706f686d568be1e5ec4c72be6b6082bf257373ffe29a84f737f9",
+  "nativeSupersessionCount": 4,
+  "officialChromiumBase": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+  },
+  "orderedInputCount": 216,
+  "orderedReplayOriginalSHA256": "21998f2d54b0c817cc5fd879b4220bf352a6c1370e5c9af5ba7b976aa9559df7",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceChangingPatchCount": 212,
+  "status": "reviewed-source-inputs",
+  "subsequentCorrectionCount": 15,
+  "upstreamCommonOverlay": {
+    "commit": "37085e47cf580c815a30402917d350ce97399ded",
+    "patchCount": 109,
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "seriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+    "tree": "e0754007a836944e1365c17ce502907594af12f6"
+  },
+  "upstreamMacPackaging": {
+    "commit": "f7ba75f94442abda7ac3ea81790c217f8636d3ba",
+    "patchCount": 20,
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "tree": "019bd2588e47f70b301e09e5475b1b1abd82ad35"
+  }
+}

@@ -121,6 +121,9 @@ def verify_contract(project_root: Path) -> tuple[dict[str, Any], dict[str, Any]]
         ("rebasePlanSHA256", f"{PREFIX}-rebase-plan.json"),
     ):
         path = runtime / name
+        if key == "securityBaselineSHA256":
+            from runtime_historical_baseline import bound_baseline_path
+            path = bound_baseline_path(runtime, contract.get(key))
         if path.is_symlink() or not path.is_file() or sha256_file(path) != require_hash(contract.get(key), key):
             raise M15498EvidenceError(f"M154.98 {name} digest mismatch")
     snapshot = read_object(runtime / f"{PREFIX}-source-snapshot.json", "M154.98 source snapshot")

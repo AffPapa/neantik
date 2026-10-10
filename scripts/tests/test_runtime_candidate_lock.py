@@ -111,18 +111,19 @@ class RuntimeCandidateLockTests(unittest.TestCase):
                     project_root=PROJECT_ROOT,
                 )
 
-    def test_chromium_153_lock_is_stale_after_security_baseline_advance(self) -> None:
+    def test_chromium_153_historical_lock_still_binds_its_original_evidence(self) -> None:
         provenance = PROJECT_ROOT / "runtime" / "chromium-153-port-candidate.json"
         candidate = PROJECT_ROOT / "runtime" / "fingerprint-chromium-153.lock.json"
-        with self.assertRaisesRegex(
-            SOURCE.SourceProvenanceError,
-            "security baseline hash is stale",
-        ):
-            CANDIDATE.verify_candidate_lock(
-                candidate,
-                provenance,
-                project_root=PROJECT_ROOT,
-            )
+        before = SOURCE.sha256_file(candidate)
+        actual = CANDIDATE.verify_candidate_lock(
+            candidate, provenance, project_root=PROJECT_ROOT,
+        )
+        self.assertEqual(actual, json.loads(candidate.read_text(encoding="utf-8")))
+        self.assertEqual(SOURCE.sha256_file(candidate), before)
+        self.assertNotEqual(
+            actual["ownedManifests"]["securityBaselineSHA256"],
+            SOURCE.sha256_file(PROJECT_ROOT / "runtime" / "security-baseline.json"),
+        )
 
     def test_candidate_hash_has_no_provenance_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

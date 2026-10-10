@@ -1,0 +1,50 @@
+--- a/third_party/chromium-bidi/rollup.config.mjs
++++ b/third_party/chromium-bidi/rollup.config.mjs
+@@ -26,6 +26,12 @@
+ 
+ // Generate Mapper Tab
+ const mapperTabConfig = {
++  onwarn(warning, defaultHandler) {
++    if (warning.code === 'UNRESOLVED_IMPORT') {
++      throw new Error('Chromium BiDi requires every bundled import to resolve.');
++    }
++    defaultHandler(warning);
++  },
+   output: {
+     name: 'mapperTab',
+     sourcemap: true,
+@@ -84,6 +90,8 @@
+       },
+     }),
+     nodeResolve({
++      // Generated imports must use the DEPS-pinned packages, not ancestor workspaces.
++      moduleDirectories: [],
+       modulePaths: [path.join(process.cwd(), 'node_modules')],
+     }),
+   ],
+--- a/third_party/chromium-bidi/src/BUILD.gn
++++ b/third_party/chromium-bidi/src/BUILD.gn
+@@ -161,10 +161,22 @@
+   ]
+ }
+ 
++# Give generated JS the same package and license boundary as the pinned source.
++copy("bundle_package_metadata") {
++  sources = [
++    "../LICENSE",
++    "../package.json",
++  ]
++  outputs = [ "$target_gen_dir/{{source_file_part}}" ]
++}
++
+ bidi_bundle("mapper_bundle") {
+   entrypoint = "$target_gen_dir/bidiTab/bidiTab.js"
+   output_file = "$target_gen_dir/mapperTab.js"
+-  deps = [ ":bidi_tab" ]
++  deps = [
++    ":bidi_tab",
++    ":bundle_package_metadata",
++  ]
+ }
+ 
+ ts_library("unit_tests") {

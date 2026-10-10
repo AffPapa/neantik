@@ -62,6 +62,8 @@ enum ProfileMetadataImportTransaction {
         paths: AppPaths,
         requestedProfiles: [BrowserProfile],
         folderNames: [String?],
+        initialBookmarks: [UUID: BookmarkImportDocument] = [:],
+        beforeProfilesPersist: @Sendable () throws -> Void = {},
         beforeOrganizationPersist: @Sendable () throws -> Void = {}
     ) throws -> ProfileMetadataImportResult {
         guard !requestedProfiles.isEmpty,
@@ -69,6 +71,9 @@ enum ProfileMetadataImportTransaction {
         else {
             throw NeAntikError.invalidProfile
         }
+        try Task.checkCancellation()
+        guard Set(initialBookmarks.keys).isSubset(of: Set(requestedProfiles.map(\.id))) else { throw NeAntikError.invalidProfile }
+        try OwnedProfileDirectory.requireDescriptorBudget(profileCount: requestedProfiles.count, bookmarkProfileCount: initialBookmarks.count)
 
         return try paths.withProfilesMetadataGuard {
             let profileLoad = try ProfileStore.readProfilesWithRecovery(
@@ -195,21 +200,25 @@ enum ProfileMetadataImportTransaction {
                 nextOrganization.mutationRevision = UUID()
             }
 
-            var createdDirectories: [URL] = []
+            var createdDirectories: [OwnedProfileDirectory] = []
             do {
                 for profile in inserted {
+                    try Task.checkCancellation()
                     let directory = paths.profileDirectory(for: profile.id)
                     guard try paths.privateFileEntryKind(directory) == .missing
                     else {
                         throw NeAntikError.invalidProfile
                     }
-                    // Register before preparation: if creating BrowserData
-                    // fails after the profile directory itself was created,
-                    // the rollback still knows which new directory to clean.
-                    createdDirectories.append(directory)
-                    try paths.prepareProfileDirectories(for: profile.id)
+                    let owned = try OwnedProfileDirectory(paths: paths, profileID: profile.id)
+                    createdDirectories.append(owned)
+                    try owned.prepareBrowserData()
+                    if let bookmarks = initialBookmarks[profile.id] { try owned.prepareInitialBookmarks(bookmarks) }
                 }
-
+                try beforeProfilesPersist()
+                for owned in createdDirectories { try owned.validatePreparedInitialState() }
+                // Cancellation is accepted before durable publication. Once
+                // commit starts, finish commit/rollback and publish its result.
+                try Task.checkCancellation()
                 try persistProfiles(allProfiles, paths: paths)
                 if nextOrganization != previousOrganization {
                     try beforeOrganizationPersist()
@@ -222,12 +231,14 @@ enum ProfileMetadataImportTransaction {
             } catch {
                 let operationError = error
                 var rollbackError: Error?
+                var profileRollbackSucceeded = false
                 do {
                     try persistProfiles(
                         previousProfiles,
                         paths: paths,
                         synchronizeRecoverySnapshot: true
                     )
+                    profileRollbackSucceeded = true
                 } catch {
                     rollbackError = error
                 }
@@ -241,10 +252,12 @@ enum ProfileMetadataImportTransaction {
                 } catch {
                     if rollbackError == nil { rollbackError = error }
                 }
-                do {
-                    try removeCreatedDirectories(createdDirectories, paths: paths)
-                } catch {
-                    if rollbackError == nil { rollbackError = error }
+                if profileRollbackSucceeded {
+                    do {
+                        try removeCreatedDirectories(createdDirectories, paths: paths)
+                    } catch {
+                        if rollbackError == nil { rollbackError = error }
+                    }
                 }
                 if let rollbackError {
                     throw ProfileSaveRollbackError(
@@ -341,16 +354,11 @@ enum ProfileMetadataImportTransaction {
     }
 
     private static func removeCreatedDirectories(
-        _ directories: [URL],
+        _ directories: [OwnedProfileDirectory],
         paths: AppPaths
     ) throws {
         for directory in directories.reversed() {
-            guard let identity = try paths.privateFileEntryIdentity(directory)
-            else { continue }
-            guard (identity.mode & mode_t(S_IFMT)) == mode_t(S_IFDIR) else {
-                throw POSIXError(.EFTYPE)
-            }
-            try FileManager.default.removeItem(at: directory)
+            try directory.removeEmptyOwnedDirectories()
         }
     }
 }

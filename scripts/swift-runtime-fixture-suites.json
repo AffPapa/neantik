@@ -1,0 +1,8 @@
+{
+  "ProfileBackupRuntimeTests": ["NEANTIK_BACKUP_RUNTIME_FIXTURE"],
+  "ProfileBackupLiveRestoreRuntimeTests": ["NEANTIK_LIVE_RESTORE_FIXTURE"],
+  "ProfileCacheRuntimeTests": ["NEANTIK_CACHE_RUNTIME_FIXTURE"],
+  "ProxyDiagnosticLiveTests": ["NEANTIK_DIAGNOSTIC_LIVE_FIXTURE"],
+  "ProxyRelayHeadedOwnerRuntimeTests": ["NEANTIK_RELAY_PRIVATE_PIPE_FIXTURE", "NEANTIK_RELAY_HEADED_LIVE_CODE_FIXTURE", "NEANTIK_RELAY_HEADED_OWNER_FIXTURE"],
+  "ProxyRelayUpstreamTransportTests": ["NEANTIK_RELAY_SOCKET_FIXTURE"]
+}

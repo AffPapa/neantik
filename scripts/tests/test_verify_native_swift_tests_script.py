@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import re
 import subprocess
 import unittest
@@ -28,6 +29,7 @@ OPEN_SOURCE_VERIFIER = (
     / "verify-open-source-tree.py"
 )
 SWIFT_TESTS = Path(__file__).resolve().parents[2] / "Tests" / "NeAntikTests"
+RUNTIME_FIXTURE_SUITES = Path(__file__).resolve().parents[1] / "swift-runtime-fixture-suites.json"
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
@@ -113,6 +115,23 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         live_suites = {
             suite for suite in discovered_suites if suite.startswith("Live")
         }
+        # Explicit, wholly opt-in research suites require an owned headed
+        # runtime or local socket fixtures; ordinary CI cannot claim those ran.
+        fixtures = json.loads(RUNTIME_FIXTURE_SUITES.read_text())
+        self.assertIsInstance(fixtures, dict)
+        self.assertTrue(set(fixtures).issubset(discovered_suites))
+        for suite, flags in fixtures.items():
+            text = (SWIFT_TESTS / f"{suite}.swift").read_text()
+            declarations = re.findall(r"@Test([^\n]*)", text)
+            self.assertGreater(len(declarations), 0)
+            self.assertGreater(len(flags), 0)
+            for flag in flags:
+                self.assertRegex(flag, r"^NEANTIK_[A-Z_]+FIXTURE$")
+                self.assertIn(f'environment["{flag}"] == "1"', text)
+            for declaration in declarations:
+                self.assertIn(".enabled(if:", declaration)
+                self.assertTrue(any(f'environment["{flag}"] == "1"' in declaration for flag in flags))
+        live_suites |= set(fixtures)
         non_live_suites = discovered_suites - live_suites
 
         self.assertEqual(matrix_suites, non_live_suites)

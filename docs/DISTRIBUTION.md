@@ -61,11 +61,16 @@ signed-in user's Terminal, then writes the compact schema-3
 validated public binding. Every attempt uses a new private `0700` state
 directory; its binding and log are never public artifacts. A fresh GUI
 A → B → A audit must be run by that exact candidate with explicit canonical
-manifest/output paths. The app keeps raw schema-7 observations in memory and
-writes one authenticated schema-8 privacy aggregate; release tooling rejects
-raw diagnostic reports.
+manifest/output paths. Current development source uses audit schema 8,
+payload schema 2, binding schema 2 and an authenticated schema-9 aggregate.
+The binding pins the exact semantic policy and schema tuple. Release tooling
+rejects raw diagnostic reports. Historical schema-8 artifacts keep their
+original policy and remain verifiable through closed version dispatch; they
+cannot substitute for schema-9 evidence. See
+[FINGERPRINT_EVIDENCE_POLICY.md](FINGERPRINT_EVIDENCE_POLICY.md). This source
+update has not qualified or published the final major candidate.
 `release-direct.sh` only verifies and notarizes it; it never rebuilds or
-re-signs after the GUI run. Notarization pins the manifest, schema-8 evidence,
+re-signs after the GUI run. Notarization pins the manifest, versioned authenticated evidence,
 attestation and Info.plist to a private owner-only transaction. The live app is
 packaged exactly once. Apple receives that sealed private ZIP; after the same
 submission ID is independently confirmed `Accepted`, only a fresh app

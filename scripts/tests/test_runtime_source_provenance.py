@@ -85,14 +85,13 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
             "59657a38437d11520a68618008eb825721319b9e",
         )
 
-    def test_chromium_153_candidate_is_stale_after_security_baseline_advance(self) -> None:
+    def test_chromium_153_historical_provenance_keeps_original_baseline_binding(self) -> None:
         path = PROJECT_ROOT / "runtime" / "chromium-153-port-candidate.json"
         document = json.loads(path.read_text(encoding="utf-8"))
-        with self.assertRaisesRegex(
-            MODULE.SourceProvenanceError,
-            "security baseline hash is stale",
-        ):
-            MODULE.verify_document(document, project_root=PROJECT_ROOT)
+        before = MODULE.sha256_file(path)
+        MODULE.verify_document(document, project_root=PROJECT_ROOT)
+        self.assertEqual(MODULE.sha256_file(path), before)
+        self.assertFalse(document["releaseReady"])
 
     def test_contract_selector_keeps_152_and_selects_explicit_154_paths(self) -> None:
         self.assertEqual(

@@ -29,8 +29,8 @@ resolve_source_provenance() {
   packaged_version="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json" \
     2>/dev/null || true)"
-  if [[ "$packaged_version" == 154.* ]]; then
-    echo "Chromium 154 manager-only preparation requires explicit NEANTIK_SOURCE_PROVENANCE from the exact qualified source build; refusing the historical M152 default." >&2
+  if [[ "$packaged_version" == 154.* || "$packaged_version" == 155.* || "$packaged_version" == 156.* ]]; then
+    echo "Chromium 154/155/156 manager-only preparation requires explicit NEANTIK_SOURCE_PROVENANCE from the exact qualified source build; refusing the historical M152 default." >&2
     exit 66
   fi
   local default="/private/tmp/nevision-chromium-152/build/source-provenance.json"
@@ -88,6 +88,14 @@ verify_reviewed_runtime_evidence() {
     154.0.8037.98)
       source_contract="$PROJECT_DIR/runtime/chromium-15498-source-contract.json"
       ;;
+    155.0.8059.40)
+      local variant_prefix
+      variant_prefix="$(python3 "$PROJECT_DIR/scripts/chromium_15540_variant.py" "$evidence/fingerprint-chromium.lock.json")"
+      source_contract="$PROJECT_DIR/runtime/${variant_prefix}-source-contract.json"
+      ;;
+    156.0.8078.12)
+      source_contract="$PROJECT_DIR/runtime/chromium-15612-source-contract.json"
+      ;;
     *)
       echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2
       exit 65
@@ -119,6 +127,19 @@ verify_reviewed_runtime_evidence() {
     for name in device-memory-hotfix.json external-build-inputs.json ordered-patch-replay.json port-compatibility.json; do
       comparisons+=("$PROJECT_DIR/runtime/chromium-15498-source-evidence/$name:$evidence/chromium-15498-source-evidence/$name")
     done
+  elif [[ "$runtime_version" == "155.0.8059.40" ]]; then
+    python3 "$PROJECT_DIR/scripts/chromium_15540_packaged_evidence.py" \
+      "$evidence/fingerprint-chromium.lock.json" "$evidence"
+    local name
+    for name in chromium-15540-source-input-manifest.json chromium-15540-source-snapshot.json chromium-15540-rebase-plan.json; do
+      comparisons+=("$PROJECT_DIR/runtime/$name:$evidence/$name")
+    done
+    for name in ordered-patch-replay.json reviewed-source-overlay.json overlay-applied.json partial-port-decisions.json upstream-superseded-decisions.json pruning.json domain-substitution.json domain-substitution-inventory.json pinned-build-inputs.json generated-deps-hooks.json port-compatibility.json deps-revisions.json; do
+      comparisons+=("$PROJECT_DIR/runtime/chromium-15540-source-evidence/$name:$evidence/chromium-15540-source-evidence/$name")
+    done
+  elif [[ "$runtime_version" == "156.0.8078.12" ]]; then
+    python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" \
+      "$evidence/fingerprint-chromium.lock.json" "$evidence"
   fi
   local comparison
   for comparison in "${comparisons[@]}"; do
@@ -229,7 +250,7 @@ export SWIFTPM_MODULECACHE_OVERRIDE="$BUILD_SUPPORT_DIR/swiftpm"
 cd "$PROJECT_DIR"
 swift build \
   --build-system native \
-  --jobs 1 \
+  --jobs 2 \
   -c release \
   --arch arm64 \
   --disable-sandbox \
@@ -251,7 +272,7 @@ swift build \
 BIN_PATH="$(
   swift build \
   --build-system native \
-    --jobs 1 \
+    --jobs 2 \
     -c release \
     --arch arm64 \
     --disable-sandbox \

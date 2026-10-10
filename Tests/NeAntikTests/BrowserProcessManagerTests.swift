@@ -5,6 +5,53 @@ import Testing
 
 @MainActor
 struct BrowserProcessManagerTests {
+    @Test
+    func contendedLaunchPreservesRetryReasonWithoutStartingBrowser() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Owned contention fixture")
+        let manager = BrowserProcessManager(
+            paths: paths, processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let runtime = BrowserRuntime(
+            name: "Owned fixture", executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Owned fixture"
+        )
+        let acquired = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal()
+                _ = release.wait(timeout: .now() + 3)
+            }
+        }
+        var joined = false
+        defer {
+            release.signal()
+            if !joined { _ = finished.wait(timeout: .now() + 3) }
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        #expect(throws: ProfileProcessBusyError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(try paths.privateFileEntryKind(paths.lockFile(for: profile.id)) == .missing)
+        #expect(!FileManager.default.fileExists(atPath: paths.logFile(for: profile.id).path))
+        release.signal()
+        try #require(finished.wait(timeout: .now() + 2) == .success)
+        joined = true
+        // The same launch becomes possible once the other operation releases
+        // the guard; contention must not create a stale provisional lease.
+        try manager.launch(profile: profile, runtime: runtime)
+        #expect(FileManager.default.fileExists(atPath: paths.logFile(for: profile.id).path))
+        manager.stop(profileID: profile.id)
+    }
+
     @Test(arguments: ["proxy", "archive", "delete"])
     func staleCapturedLaunchNeverStartsProcess(change: String) throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -1332,21 +1379,22 @@ struct BrowserProcessManagerTests {
         )
         let manager = BrowserProcessManager(
             paths: paths,
-            processIdentityValidator: { _ in false },
+            processIdentityInspector: { _ in .expected },
+            processLivenessValidator: { $0 == getpid() },
             browserDataProcessInspector: { _ in .absent }
         )
         try manager.launch(profile: profile, runtime: runtime)
 
         let replacementOwner = UUID()
         let replacement = BrowserProcessLock(
-            pid: 777,
+            pid: getpid(),
             executablePath: fakeBrowser.path,
             browserDataPath:
                 paths.browserDataDirectory(for: profile.id).path,
             createdAt: Date(),
             schemaVersion: BrowserProcessLock.currentSchemaVersion,
             ownerToken: replacementOwner,
-            managerPID: 777,
+            managerPID: getpid(),
             phase: .running
         )
         let encoder = JSONEncoder()
@@ -1357,7 +1405,7 @@ struct BrowserProcessManagerTests {
         )
 
         for _ in 0..<100 {
-            if !manager.runningProfileIDs.contains(profile.id) {
+            if manager.processState(for: profile.id) == .externalVerified {
                 break
             }
             try await Task.sleep(nanoseconds: 20_000_000)
@@ -1372,6 +1420,76 @@ struct BrowserProcessManagerTests {
             from: persistedData
         )
         #expect(persisted.ownerToken == replacementOwner)
+        #expect(manager.processState(for: profile.id) == .externalVerified)
+        manager.suspendPassiveObservations()
+    }
+
+    @Test(arguments: [false, true])
+    func terminationContentionRetainsStateAndRevalidatesOwner(replace: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let fake = root.appendingPathComponent("owned-browser")
+        try Data("#!/bin/sh\nwhile [ ! -f \"$0.finish\" ]; do sleep 0.01; done\n".utf8).write(to: fake)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: fake.path)
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let profile = BrowserProfile(name: "Owned termination contention")
+        let manager = BrowserProcessManager(
+            paths: paths, processIdentityInspector: { _ in .expected },
+            processLivenessValidator: { $0 == getpid() },
+            observationIntervalNanoseconds: 20_000_000,
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let runtime = BrowserRuntime(name: "Owned fixture", executableURL: fake, source: "Owned fixture")
+        try manager.launch(profile: profile, runtime: runtime)
+        let replacement = BrowserProcessLock(pid: getpid(), executablePath: fake.path,
+            browserDataPath: paths.browserDataDirectory(for: profile.id).path,
+            createdAt: Date(), schemaVersion: BrowserProcessLock.currentSchemaVersion,
+            ownerToken: UUID(), managerPID: getpid(), phase: .running)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let replacementData = try encoder.encode(replacement)
+        let acquired = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal()
+                release.wait()
+                if replace { try paths.writePrivateFile(replacementData, to: paths.lockFile(for: profile.id)) }
+            }
+        }
+        defer {
+            try? Data().write(to: fake.appendingPathExtension("finish"))
+            if manager.processState(for: profile.id) == .managed { manager.stop(profileID: profile.id) }
+            release.signal(); _ = finished.wait(timeout: .now() + 3)
+            manager.suspendPassiveObservations()
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        try Data().write(to: fake.appendingPathExtension("finish"))
+        var terminationObserved = false
+        for _ in 0..<100 {
+            terminationObserved = (try? String(contentsOf: paths.logFile(for: profile.id), encoding: .utf8))?
+                .contains("browser_exit") == true
+            if terminationObserved { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        try #require(terminationObserved)
+        #expect(FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
+        #expect(manager.processState(for: profile.id) != .stopped)
+        release.signal()
+        for _ in 0..<100 {
+            if replace {
+                if manager.processState(for: profile.id) == .externalVerified { break }
+            } else if manager.processState(for: profile.id) == .stopped { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        if replace {
+            #expect(try Data(contentsOf: paths.lockFile(for: profile.id)) == replacementData)
+            #expect(manager.processState(for: profile.id) == .externalVerified)
+        } else {
+            #expect(manager.processState(for: profile.id) == .stopped)
+            #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
+        }
     }
 
     @Test

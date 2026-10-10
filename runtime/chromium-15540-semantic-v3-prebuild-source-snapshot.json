@@ -1,0 +1,20 @@
+{
+  "argsGN": {
+    "relativePath": "out/NeAntikM155Qualified20261008/args.gn",
+    "sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01"
+  },
+  "deletedPathCount": 3248,
+  "deletedPathsSHA256": "659683e99c3a4b56324019e10d45db8e69c06a95789793e22616da32aef299e1",
+  "entriesSHA256": "86c62c24313acedbbc4fbb543d96f6235d9baf45043118400a4491e6253d8081",
+  "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+  "officialChromiumBase": {
+    "commit": "cfaadc5a132d78e1828635aa8405a499f3e14864",
+    "tree": "6ff797d22a0943b4a56a38dc6e27a87f158246d3"
+  },
+  "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+  "recordType": "chromium-source-snapshot",
+  "releaseReady": false,
+  "schemaVersion": 2,
+  "sourceFileCount": 1060150,
+  "targetChromiumVersion": "155.0.8059.40"
+}

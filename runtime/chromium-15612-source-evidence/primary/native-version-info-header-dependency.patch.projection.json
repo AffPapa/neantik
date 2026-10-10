@@ -1,0 +1,21 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "b69141aa99b5342288e9fa780c9ee55c841e318d774c1e048b2253e4069b37d7",
+  "payload": "--- a/components/version_info/version_info_with_user_agent.h\n+++ b/components/version_info/version_info_with_user_agent.h\n@@ -6,6 +6,8 @@\n #define COMPONENTS_VERSION_INFO_VERSION_INFO_WITH_USER_AGENT_H_\n \n #include <string>\n+\n+#include \"base/version_info/version_info_values.h\"\n \n namespace version_info {\n \n",
+  "payloadType": "text",
+  "receipt": "native-version-info-header-dependency.patch",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

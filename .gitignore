@@ -16,3 +16,5 @@ __pycache__/
 *.xcuserstate
 xcuserdata/
 .runtime-test/
+.swiftpm-major-clang/
+.swiftpm-major-validation/

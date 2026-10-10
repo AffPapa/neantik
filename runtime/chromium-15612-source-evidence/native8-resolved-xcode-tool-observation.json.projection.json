@@ -1,0 +1,60 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "687303c26650e1e47a7a4b2f91613b68d832942a12785c3380d3ac0f1f2db169",
+  "payload": {
+    "at": "2026-10-09T04:17:00.096820+00:00",
+    "attempt": 8,
+    "contractSHA256": "5bf9c5465aff024989e0a5a13bc0996343cc0fde45359f34588563ecbec5e248",
+    "limitations": [
+      "Finder resolution differs from proof of actual invocation",
+      "Metal leaf is a dispatcher and actual Metal compiler closure remains open",
+      "System dsymutil dispatcher remains separate root-owned78hardlink input",
+      "Post-terminal consumed dependency and link membership required"
+    ],
+    "metallibAbsenceIsReleaseBlocker": false,
+    "metallibFinderExitCode": 72,
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "tools": [
+      {
+        "actualBuildInvocationBound": false,
+        "bytes": 41929216,
+        "isDispatcher": false,
+        "relativeToDeveloper": "Toolchains/XcodeDefault.xctoolchainroot:apple-tools/dsymutil",
+        "sameResolvedBytesAsReadOnlyAgent": true,
+        "sha256": "607b61b7b349503b312409b920d73c92aa62900d6fd19c4fd91b779e9dd89a8a",
+        "strictSignatureVerificationExitCode": 1,
+        "tool": "dsymutil"
+      },
+      {
+        "actualBuildInvocationBound": false,
+        "bytes": 107392,
+        "isDispatcher": true,
+        "relativeToDeveloper": "Toolchains/XcodeDefault.xctoolchainroot:apple-tools/metal",
+        "sameResolvedBytesAsReadOnlyAgent": true,
+        "sha256": "886302503cb24f3a96aff5f3b3bbf258eac1b7aecf52c3263c97d3fb4e903472",
+        "strictSignatureVerificationExitCode": 1,
+        "tool": "metal"
+      }
+    ],
+    "wholeExternalToolchainQualified": false
+  },
+  "payloadType": "json",
+  "receipt": "native8-resolved-xcode-tool-observation.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

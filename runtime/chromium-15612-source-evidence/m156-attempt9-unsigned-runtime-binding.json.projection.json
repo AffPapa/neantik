@@ -1,0 +1,50 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "5bdb3a1bc6f1f17df4a0add8cbaec8d0e17658f123565953c09a04b98e18b630",
+  "payload": {
+    "actualFullFDObservationSHA256": "d6836d97a7a24d370663976063516306bfc646c826149f579a319fdb5578722c",
+    "binaryBinding": {
+      "argsGNSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+      "candidateExecutableSHA256": "ba55caca9436c6f16fd6f3e4f7578d87515f161e51c2d0f8f138729086d761f0",
+      "candidateFrameworkSHA256": "9b2242daeea013b38f918761644ea23f70e4a72a2cea82a2d26b7e9dbfeec6c7",
+      "candidateInfoPlistSHA256": "de8aa8559bfb4ab271ab6d8cadb8cfc22f883e4bf1c22355cf82ee504d39c52c",
+      "executableBytes": 52096,
+      "frameworkBytes": 274552464,
+      "targetArchitecture": "arm64"
+    },
+    "bindingObserverSHA256": "e7ca189fa8e9e0e75a463dec910cadfe2c6f8f2e13aedcd493e80bc01f6a18c3",
+    "callerDigestKind": "private-native-inputs-receipt-not-canonical-source-manifest",
+    "callerSourceManifestSHA256": "f54ac245a02d6e4f494341d1923d41d1ddf846489061a04065c31abc652f77a2",
+    "chromiumVersion": "156.0.8078.12",
+    "developerIDVerified": false,
+    "launchSHA256": "dd9baf26f98d4fbf0d250fff1cb0cf6e2692df74fdd5ecb90dd762e3de9abe68",
+    "nativeOutputLoadabilityVerified": false,
+    "officialChromiumBase": {
+      "commit": "634b046faf2137b83af71c87baf362b533af9104",
+      "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+    },
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "sourceManifestAuthenticated": false,
+    "status": "unsigned-native-output-binding-only",
+    "terminalStateSHA256": "e6cde90908b67bf65fbc51fabb5d89a3b00fa2dcfec490774888d859e8603516"
+  },
+  "payloadType": "json",
+  "receipt": "m156-attempt9-unsigned-runtime-binding.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

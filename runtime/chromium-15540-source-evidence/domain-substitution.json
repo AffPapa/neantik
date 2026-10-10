@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "targetVersion": "155.0.8059.40",
+  "releaseReady": false,
+  "status": "domain-substitution-complete",
+  "inputs": {
+    "domain_regex.list": "f59c4316b4ac32f9dfe4f6440c4cf9ad5dab0ab8827769f5dc2587ca07e91f09",
+    "domain_substitution.list": "8155b7a9ef7da2122842ba560c19d8c4e8fe10ada2e4af3a4f072bd958a01edc",
+    "utils/domain_substitution.py": "2f3d356775c132d2de9225b0316a6b708b66877ef305d9deacdacf8276b744d3"
+  },
+  "inventorySHA256": "6ed61e967bc1dc85a2098db43a87a4a5c76df1e69ed03183f3bd8a99252538a2",
+  "cacheSHA256": "578fe981d7aabf9a07f1074df316ed3a05ffc62baa447ee6a44b2f7fe31384c9",
+  "listedCount": 17928,
+  "absentCount": 790,
+  "changedCount": 17087
+}

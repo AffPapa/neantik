@@ -197,6 +197,11 @@ struct ContentView: View {
     @State private var pendingManagerAction: (() -> Void)?
     @State private var showingManagerLibrary = false
     @State private var showingQuickCommands = false
+    @State private var proxyDiagnosticProfile: BrowserProfile?
+    @State private var cacheMaintenanceProfile: BrowserProfile?
+    @State private var browserDataBackupRequest: ProfileBrowserDataBackupRequest?
+    @State private var backupRecoveryRequired = false
+    @State private var showingBackupRecovery = false
     @State private var selection: UUID?
     @State private var editorRequest: EditorRequest?
     @State private var showingDeleteConfirmation = false
@@ -218,6 +223,9 @@ struct ContentView: View {
     @State private var isSavingLocalSnapshot = false
     @State private var isRestoringLocalSnapshot = false
     @State private var pendingSnapshotRestore: SnapshotRestoreRequest?
+    @State private var pendingBookmarkImport: BookmarkImportRequest?
+    @State private var isImportingBookmarks = false
+    @State private var isCreatingBookmarkProfile = false
     @State private var backgroundFileOperationTasks:
         [UUID: Task<Void, Never>] = [:]
     @State private var localError: String?
@@ -287,14 +295,38 @@ struct ContentView: View {
         return profileCommandSet(for: selectedProfile)
     }
 
+    private var allowsDevelopmentBrowserDataBackup: Bool {
+        #if DEBUG
+        return Bundle.main.object(forInfoDictionaryKey: "NeAntikBrowserDataBackupDevelopmentEnabled") as? Bool == true &&
+            KeychainStore.usesDisposableDevelopmentBackend(environment: NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier), paths: store.paths,
+                fixtureRoot: Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String)
+        #else
+        return false
+        #endif
+    }
+
+    @ViewBuilder private func browserDataBackupActions(_ commands: ProfileCommandSet, profile: BrowserProfile) -> some View {
+        if allowsDevelopmentBrowserDataBackup {
+            Button("Создать копию данных…", systemImage: "externaldrive") {
+                browserDataBackupRequest = .init(profile: profile, mode: .export)
+            }.disabled(!commands.presentation.editIsEnabled || runtime == nil)
+            Button("Восстановить данные из копии…", systemImage: "arrow.counterclockwise") {
+                browserDataBackupRequest = .init(profile: profile, mode: .restore)
+            }.disabled(!commands.presentation.editIsEnabled || runtime == nil)
+        }
+    }
+
     private var isWorkspaceModalPresented: Bool {
         showingManagerLibrary || showingQuickCommands ||
+            cacheMaintenanceProfile != nil || proxyDiagnosticProfile != nil || browserDataBackupRequest != nil ||
+            showingBackupRecovery ||
             editorRequest != nil ||
             folderNameRequest != nil ||
             profileFolderPickerRequest != nil ||
             bulkProxyImportRequest != nil ||
             transferPassphraseMode != nil ||
             isImportingProfileConfigurations ||
+            isImportingBookmarks || pendingBookmarkImport != nil ||
             isPreparingProfileExport ||
             isSavingLocalSnapshot ||
             isRestoringLocalSnapshot ||
@@ -319,6 +351,7 @@ struct ContentView: View {
             saveSnapshot: saveLocalSnapshot,
             restoreSnapshot: restoreLocalSnapshot,
             importProfiles: importProfileConfigurations,
+            importBookmarks: importBookmarks,
             exportEncryptedProfiles: {
                 transferPassphraseMode = .export
             },
@@ -641,6 +674,70 @@ struct ContentView: View {
                     pendingManagerAction = action; showingManagerLibrary = false
                 })
         }
+        .sheet(item: $proxyDiagnosticProfile) { snapshot in
+            if let proxy = snapshot.proxy {
+                let savedKeychain = keychain
+                ProxyDiagnosticSheet(
+                    configuration: store.profile(withID: snapshot.id)?.proxy ?? proxy,
+                    contextRevision: store.profile(withID: snapshot.id).map { String($0.revision) } ?? "removed",
+                    paths: store.paths,
+                    readPassword: {
+                        try await Task.detached(priority: .utility) {
+                            try savedKeychain.proxyPassword(profileID: snapshot.id) ?? ""
+                        }.value
+                    },
+                    snapshotIsCurrent: {
+                        try await store.refreshExternalMetadata(force: true)
+                        return store.profile(withID: snapshot.id).map {
+                            $0.revision == snapshot.revision && $0.proxy == snapshot.proxy
+                        } ?? false
+                    }
+                )
+            }
+        }
+        .sheet(item: $browserDataBackupRequest) { request in
+            if let runtime {
+                let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier)
+                let paths = store.paths
+                let service = ProfileBrowserDataBackupService(paths: paths, processes: processes,
+                    scope: BackupCompatibilityScopeStore.applicationStore(environment: environment, paths: paths), inspectRuntime: {
+                        BrowserRuntimeInspector.inspect(executableURL: runtime.executableURL)
+                    })
+                ProfileBrowserDataBackupSheet(request: request, service: service) {
+                    try await store.refreshExternalMetadata(force: true)
+                    fingerprintObservationStore.remove(profileID: request.profile.id)
+                    privacyPanelByProfileID.removeValue(forKey: request.profile.id)
+                    lifecycleHealthByProfileID.removeValue(forKey: request.profile.id)
+                    try await proxyHealthCoordinator.remove(profileID: request.profile.id)
+                }
+            } else { Text("Движок недоступен. Закрой окно и проверь установку NeAntik.").padding(24) }
+        }
+        .sheet(isPresented: $showingBackupRecovery) {
+            if let runtime {
+                let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier)
+                let paths = store.paths
+                let service = ProfileBrowserDataBackupService(paths: paths, processes: processes,
+                    scope: BackupCompatibilityScopeStore.applicationStore(environment: environment, paths: paths), inspectRuntime: {
+                        BrowserRuntimeInspector.inspect(executableURL: runtime.executableURL)
+                    })
+                ProfileBrowserDataRecoverySheet(service: service) { result in
+                    try await store.refreshExternalMetadata(force: true)
+                    backupRecoveryRequired = false
+                    fingerprintObservationStore.remove(profileID: result.profileID)
+                    privacyPanelByProfileID.removeValue(forKey: result.profileID)
+                    lifecycleHealthByProfileID.removeValue(forKey: result.profileID)
+                    try await proxyHealthCoordinator.remove(profileID: result.profileID)
+                }
+            } else { Text("Движок недоступен. Проверь установку NeAntik перед восстановлением.").padding(24) }
+        }
+        .sheet(item: $cacheMaintenanceProfile) { snapshot in
+            ProfileCacheMaintenanceSheet(profile: snapshot, paths: store.paths, processes: processes) {
+                try await store.refreshExternalMetadata(force: true)
+                return store.profile(withID: snapshot.id).map {
+                    $0.revision == snapshot.revision && $0.identity == snapshot.identity
+                } ?? false
+            }
+        }
         .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
             ProfileQuickCommandsSheet(commands: quickCommands, profiles: store.profiles, organization: store.organization, profileCommand: quickProfileCommand, performAction: { action in
                 pendingManagerAction = action; showingQuickCommands = false
@@ -718,6 +815,13 @@ struct ContentView: View {
                 }
             )
         }
+        .sheet(item: $pendingBookmarkImport) { request in
+            BookmarkImportPreviewSheet(document: request.document, isCreating: isCreatingBookmarkProfile, onCancel: {
+                pendingBookmarkImport = nil
+            }, onCreate: { name in
+                createProfileFromBookmarks(name: name, request: request)
+            })
+        }
         .sheet(item: $pendingSnapshotRestore) { request in
             ProfileSnapshotRestorePreviewSheet(
                 preview: ProfileSnapshotRestorePreview(
@@ -725,7 +829,10 @@ struct ContentView: View {
                     existingFolderNames: store.organization.folders.map(\.name)
                 ),
                 isRestoring: isRestoringLocalSnapshot,
-                onCancel: { pendingSnapshotRestore = nil },
+                onCancel: {
+                    guard !isRestoringLocalSnapshot else { return }
+                    pendingSnapshotRestore = nil
+                },
                 onRestore: { confirmLocalSnapshotRestore(request.payload) }
             )
         }
@@ -997,6 +1104,17 @@ struct ContentView: View {
 
     private var workspaceLifecycle: some View {
         workspaceNotifications
+        .task(id: store.hasTrustedMetadata) {
+            guard allowsDevelopmentBrowserDataBackup else { backupRecoveryRequired = false; return }
+            let paths = store.paths
+            let trusted = store.hasTrustedMetadata
+            let required = await Task.detached(priority: .utility) {
+                do { try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory); return false }
+                catch { return true }
+            }.value
+            guard !Task.isCancelled, store.hasTrustedMetadata == trusted else { return }
+            backupRecoveryRequired = required
+        }
         .task {
             await resolveRuntime()
         }
@@ -1073,6 +1191,7 @@ struct ContentView: View {
             folders: store.organization.folders,
             initialFolderID: initialFolderID,
             suggestedTags: suggestedTags,
+            paths: store.paths,
             initialFocus: request.initialFocus,
             onClose: {
                 editorRequest = nil
@@ -1209,6 +1328,9 @@ struct ContentView: View {
                             systemImage: "folder"
                         )
                     }
+                    Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
+                        .disabled(!commands.presentation.editIsEnabled)
+                    browserDataBackupActions(commands, profile: profile)
                     Divider()
                     Button(role: .destructive, action: commands.delete) {
                         Label("Удалить профиль", systemImage: "trash")
@@ -1522,6 +1644,35 @@ struct ContentView: View {
             } catch {
                 localError = error.localizedDescription
             }
+        }
+    }
+
+    private func importBookmarks() {
+        guard !isImportingBookmarks, pendingBookmarkImport == nil else { return }
+        isImportingBookmarks = true
+        runBackgroundFileOperation {
+            defer { isImportingBookmarks = false }
+            do {
+                guard let document = try await BookmarkImportFileService.select() else { return }
+                try Task.checkCancellation()
+                pendingBookmarkImport = .init(document: document)
+            } catch is CancellationError { return }
+            catch { localError = error.localizedDescription }
+        }
+    }
+
+    private func createProfileFromBookmarks(name: String, request: BookmarkImportRequest) {
+        guard !isCreatingBookmarkProfile, pendingBookmarkImport?.id == request.id else { return }
+        isCreatingBookmarkProfile = true
+        runBackgroundFileOperation {
+            defer { isCreatingBookmarkProfile = false }
+            do {
+                let saved = try await store.createProfileFromBookmarks(name: name, document: request.document)
+                pendingBookmarkImport = nil
+                revealSavedProfile(saved)
+                showWorkspaceSuccessNotice("Профиль создан. Закладок: \(request.document.linkCount).")
+            } catch is CancellationError { return }
+            catch { localError = error.localizedDescription }
         }
     }
 
@@ -1889,9 +2040,8 @@ struct ContentView: View {
             let password = try keychain.proxyPassword(
                 profileID: profile.id
             )
-            let saved = try store.upsert(
-                copy,
-                toFolderID: store.folderID(forProfileID: profile.id)
+            let saved = try store.duplicateProfile(
+                profile, name: copy.name
             ) { saved in
                 if let password, !password.isEmpty {
                     try keychain.saveProxyPassword(
@@ -2756,6 +2906,9 @@ struct ContentView: View {
         )
         .disabled(!commands.presentation.launchIsEnabled)
         Divider()
+        Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
+            .disabled(!commands.presentation.editIsEnabled)
+        Divider()
         Button(
             "Удалить профиль",
             systemImage: "trash",
@@ -2775,10 +2928,11 @@ struct ContentView: View {
             action: commands.togglePinned
         )
         Button(
-            "Дублировать",
+            "Копировать настройки",
             systemImage: "plus.square.on.square",
             action: commands.duplicate
         )
+        .help("Новый профиль с отдельной средой: копируются настройки и прокси, без данных сайтов и заметки")
         moveToFolderMenu(commands)
         Button(
             commands.presentation.archiveTitle,
@@ -2872,7 +3026,8 @@ struct ContentView: View {
             },
             toggleArchived: { toggleArchived(profile) },
             revealInFinder: { revealProfile(profile) },
-            delete: { requestProfileDeletion(profile) }
+            delete: { requestProfileDeletion(profile) },
+            clearCache: { cacheMaintenanceProfile = profile }
         )
     }
 
@@ -2957,6 +3112,9 @@ struct ContentView: View {
                 onEditProxy: {
                     beginEditing(profile)
                 },
+                onCustomProxyDiagnostic: {
+                    proxyDiagnosticProfile = profile
+                },
                 onChangeNote: {
                     beginEditing(profile, initialFocus: .note)
                 },
@@ -2973,7 +3131,17 @@ struct ContentView: View {
     private var emptyDetail: some View {
         Group {
             if !store.hasTrustedMetadata {
-                ProfileStorageUnavailableView()
+                if allowsDevelopmentBrowserDataBackup && backupRecoveryRequired {
+                    ContentUnavailableView {
+                        Label("Заверши восстановление данных", systemImage: "externaldrive.badge.exclamationmark")
+                    } description: {
+                        Text("После прерванной замены данные сохранены. Закрой другие версии NeAntik и проверь журнал восстановления; список откроется после завершения операции.")
+                            .frame(maxWidth: 480)
+                    } actions: {
+                        Button("Проверить восстановление…") { showingBackupRecovery = true }
+                            .disabled(runtime == nil || isWorkspaceModalPresented)
+                    }
+                } else { ProfileStorageUnavailableView() }
             } else if store.profiles.isEmpty {
                 FirstProfileOnboardingView(
                     runtimeAvailability: runtimeAvailability,
@@ -3888,6 +4056,7 @@ struct ProfileDetailView: View {
     var onTestProxy: () -> Void = {}
     var onCancelProxyTest: () -> Void = {}
     var onEditProxy: () -> Void = {}
+    var onCustomProxyDiagnostic: () -> Void = {}
     var onChangeNote: () -> Void = {}
     var onRunFingerprintAudit: () -> Void = {}
 
@@ -4186,6 +4355,11 @@ struct ProfileDetailView: View {
                 : "Сначала останови профиль"
         )
         .accessibilityHint("Открывает настройки прокси текущего профиля")
+
+        Button("Свой адрес диагностики…", action: onCustomProxyDiagnostic)
+            .buttonStyle(.bordered)
+            .disabled(processState != .stopped || isTestingProxy)
+            .help("Ручной запрос через твой HTTPS-сервис; не меняет геоконтекст и не измеряет маршрут Chromium")
 
         if hasCredentials {
             Menu {

@@ -45,6 +45,17 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
         )
         self.assertEqual(MODULE.inspect_binary(entry), [])
 
+    def test_native_manifest_and_source_text_formats_are_scanned_for_credentials(self):
+        for suffix in (".xcprivacy", ".strings", ".patch", ".metal", ".php",
+                       ".list", ".sha256", ".sudoers", ".tsv", ".zlist"):
+            with self.subTest(suffix=suffix), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / ("public" + suffix)
+                path.write_text("Public fixture without sensitive values\n")
+                MODULE.verify_public_artifact_privacy(artifact=path)
+                path.write_text("http://real-user:actual-password@proxy.invalid\n")
+                with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+                    MODULE.verify_public_artifact_privacy(artifact=path)
+
     def test_single_public_file_is_verified_without_parent_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -565,6 +576,107 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                     MODULE.PublicArtifactPrivacyError
                 ):
                     MODULE.validate_public_attestation(candidate)
+
+    def test_semantic_public_attestation_rejects_wrong_policy_and_malformed_summary(self):
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "fingerprint-evidence-schema9-swift.json"
+        fixture = json.loads(fixture_path.read_text())
+        manifest = base64.b64decode(fixture["manifestBase64"], validate=True)
+        envelope = base64.b64decode(fixture["envelopeBase64"], validate=True)
+        verified = MODULE.EVIDENCE_SCHEMA.verify_fingerprint_evidence(candidate_manifest_raw=manifest, envelope_raw=envelope)
+        payload = json.loads(verified.payload)
+        attestation = MODULE.expected_authenticated_public_attestation(payload, verified)
+        self.assertEqual(attestation["schemaVersion"], 4)
+        MODULE.validate_public_attestation(attestation)
+        for key, bad in (("semanticPolicyID", "unknown"), ("criticalObservationsStable", False),
+                         ("schemaVersion", 3), ("auditSchemaVersion", 7),
+                         ("changedCriticalKeys", None), ("changedCriticalKeys", "canvas"),
+                         ("changedCriticalKeys", ["unknown"]), ("verdict", "verified")):
+            item = dict(attestation); item[key] = bad
+            with self.assertRaises(MODULE.PublicArtifactPrivacyError, msg=key):
+                MODULE.validate_public_attestation(item)
+
+    def test_authenticated_attestation_reverifies_exact_schema9(self) -> None:
+        fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema9-swift.json"
+        )
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        manifest_raw = base64.b64decode(
+            fixture["manifestBase64"],
+            validate=True,
+        )
+        envelope_raw = base64.b64decode(
+            fixture["envelopeBase64"],
+            validate=True,
+        )
+        verified = MODULE.EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=manifest_raw,
+            envelope_raw=envelope_raw,
+        )
+        payload = MODULE.EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=MODULE.EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
+        attestation = MODULE.expected_authenticated_public_attestation(
+            payload,
+            verified,
+        )
+        expected_runtime = {
+            "managerVersion": payload["managerVersion"],
+            "managerBuild": payload["managerBuild"],
+            "runtimeVersion": payload["runtimeVersion"],
+            "runtimeExecutableSHA256":
+                payload["runtimeExecutableSHA256"],
+            "runtimeFrameworkSHA256":
+                payload["runtimeFrameworkSHA256"],
+        }
+        with mock.patch.object(
+            MODULE.GUI_VERIFIER,
+            "expected_runtime_evidence_from_app",
+            return_value=expected_runtime,
+        ):
+            result = (
+                MODULE.verify_evidence_attestation_payload_binding(
+                    private_payload=envelope_raw,
+                    public_payload=attestation,
+                    integrated_app=Path("/private/tmp/NeAntik.app"),
+                    release_channel="public-alpha",
+                    candidate_manifest_sha256=hashlib.sha256(
+                        manifest_raw
+                    ).hexdigest(),
+                    candidate_manifest_raw=manifest_raw,
+                )
+            )
+        self.assertEqual(
+            result,
+            fixture["expected"]["transportSHA256"],
+        )
+
+        tampered = dict(attestation)
+        tampered["payloadSHA256"] = "0" * 64
+        with mock.patch.object(
+            MODULE.GUI_VERIFIER,
+            "expected_runtime_evidence_from_app",
+            return_value=expected_runtime,
+        ):
+            with self.assertRaisesRegex(
+                MODULE.PublicArtifactPrivacyError,
+                "do not match",
+            ):
+                MODULE.verify_evidence_attestation_payload_binding(
+                    private_payload=envelope_raw,
+                    public_payload=tampered,
+                    integrated_app=Path(
+                        "/private/tmp/NeAntik.app"
+                    ),
+                    release_channel="public-alpha",
+                    candidate_manifest_sha256=hashlib.sha256(
+                        manifest_raw
+                    ).hexdigest(),
+                    candidate_manifest_raw=manifest_raw,
+                )
 
     def test_authenticated_attestation_reverifies_exact_schema8(self) -> None:
         fixture_path = (

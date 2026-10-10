@@ -106,28 +106,46 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     contract_names = {
         "154.0.8037.93": "chromium-154-source-contract.json",
         "154.0.8037.98": "chromium-15498-source-contract.json",
+        "155.0.8059.40": "chromium-15540-source-contract.json",
+        "156.0.8078.12": "chromium-15612-source-contract.json",
     }
     if version not in contract_names:
-        raise RuntimeNoticesError("explicit candidate notices require a reviewed M154 version")
+        raise RuntimeNoticesError("explicit candidate notices require an exact reviewed runtime version")
     contract_name = contract_names[version]
+    semantic = version == "155.0.8059.40" and "semanticCorrectionSet" in lock
+    if version == "155.0.8059.40":
+        from chromium_15540_variant import reviewed_lock_prefix
+        contract_name=reviewed_lock_prefix(lock)+"-source-contract.json"
     contract_path = project_root / "runtime" / contract_name
     if lock.get("sourceContract") != f"runtime/{contract_name}":
-        raise RuntimeNoticesError("candidate must reference the exact M154 source contract")
+        raise RuntimeNoticesError("candidate must reference the exact reviewed source contract")
     if lock.get("sourceContractSHA256") != sha256_file(contract_path):
         raise RuntimeNoticesError("candidate source contract SHA-256 mismatch")
     contract = load_json(contract_path)
-    if contract.get("targetChromiumVersion") != version or contract.get("schemaVersion") != 2:
+    if contract.get("targetChromiumVersion") != version or type(contract.get("schemaVersion")) is not int or contract.get("schemaVersion") != (3 if semantic else 2):
         raise RuntimeNoticesError("candidate source contract version/schema mismatch")
     base = required_mapping(contract.get("officialChromiumBase"), "officialChromiumBase")
     if base.get("commit") != chromium.get("commit"):
         raise RuntimeNoticesError("candidate Chromium source commit mismatch")
+    m156 = version == "156.0.8078.12"
+    if m156:
+        from chromium_15612_release_evidence import verify_contract, verify_candidate_lock
+        verify_contract(project_root)
+        verify_candidate_lock(lock, provenance=load_json(project_root / "runtime/chromium-15612-port-candidate.json"), project_root=project_root)
     groups = contract.get("ownedPatchGroupCount")
-    if not isinstance(groups, int) or groups <= 0:
+    if not m156 and (not isinstance(groups, int) or groups <= 0):
         raise RuntimeNoticesError("source contract must declare owned patch groups")
     lines = ["# NeAntik Chromium runtime notices", "", "## Source references", "",
-             f"- Chromium: `{version}`", f"- Owned patch groups: `{groups}`",
+             f"- Chromium: `{version}`",
+             *([] if m156 else [f"- Owned patch groups: `{groups}`"]),
              f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
              f"- Source contract SHA-256: `{sha256_file(contract_path)}`"]
+    if m156:
+        plan = load_json(project_root / "runtime/chromium-15612-rebase-plan.json")
+        for label, key in (("Ordered input records", "orderedInputCount"), ("Source-changing patches", "sourceChangingPatchCount"), ("Native supersessions", "nativeSupersessionCount"), ("Subsequent semantic corrections", "subsequentCorrectionCount")):
+            lines.append(f"- {label}: `{plan[key]}`")
+    if semantic:
+        lines.extend([f"- Independently authored semantic correction set: `{lock['semanticCorrectionSet']}`", f"- Correction manifest SHA-256: `{lock['correctionsManifestSHA256']}`", "- Historical replay count and new correction count are separate; runtime behavior remains a release gate."])
     for label, component in (("Chromium", chromium),
                              ("Common Chromium packaging", lock.get("commonChromium")),
                              ("macOS packaging", lock.get("macPackaging"))):
@@ -141,14 +159,14 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     for filename in ("Chromium-LICENSE", "ungoogled-chromium-macos-LICENSE",
                      "fingerprint-chromium-LICENSE"):
         expected = None
-        if filename == "Chromium-LICENSE":
+        if filename == "Chromium-LICENSE" and not m156:
             expected = required_text(chromium.get("licenseSHA256"), "Chromium licenseSHA256")
         digest = verified_license(project_root=project_root,
                                   relative_path="runtime/licenses/" + filename,
                                   expected_sha256=expected)
         lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
     lines.extend(["", "The fingerprint-chromium license is retained for historical attribution.",
-                  "The owned M154 port is recorded under",
+                  f"The owned M{version.split(chr(46))[0]} port is recorded under",
                   f"`runtime/nevision-patches/ports/chromium-{version}/`.", "",
                   "## Distribution boundary", "",
                   "These notices identify source references and bundled license bytes only.",
@@ -160,7 +178,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
 def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
-    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98"}:
+    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
         return render_m154_notices(
             project_root=project_root,
             runtime_lock=project_root / "runtime/fingerprint-chromium.lock.json",
@@ -355,7 +373,7 @@ def main() -> int:
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--runtime-lock", type=Path, help="Explicit M154 candidate lock; does not change published metadata.")
+    parser.add_argument("--runtime-lock", type=Path, help="Explicit reviewed candidate lock; does not change published metadata.")
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -364,8 +382,9 @@ def main() -> int:
     output = args.output or DEFAULT_OUTPUT
     if args.output is None and not args.runtime_lock:
         current_lock = load_json(project_root / "runtime/fingerprint-chromium.lock.json")
-        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98"}:
-            output = project_root / "docs/RUNTIME_INTEGRATION_NOTICES_154.md"
+        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
+            major = current_lock["fingerprintChromium"]["chromiumVersion"].split(".")[0]
+            output = project_root / "docs" / f"RUNTIME_INTEGRATION_NOTICES_{major}.md"
     if not output.is_absolute():
         output = project_root / output
     try:

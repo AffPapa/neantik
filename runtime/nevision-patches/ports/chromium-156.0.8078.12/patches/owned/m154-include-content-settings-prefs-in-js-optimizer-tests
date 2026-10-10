@@ -1,0 +1,66 @@
+--- a/chrome/browser/policy/test/v8_optimizer_policy_browsertest.cc
++++ b/chrome/browser/policy/test/v8_optimizer_policy_browsertest.cc
+@@ -11,6 +11,7 @@
+ #include "chrome/browser/policy/policy_test_utils.h"
+ #include "chrome/test/base/chrome_test_utils.h"
+ #include "components/content_settings/core/common/content_settings.h"
++#include "components/content_settings/core/common/pref_names.h"
+ #include "components/policy/core/common/policy_map.h"
+ #include "components/policy/policy_constants.h"
+ #include "components/prefs/pref_service.h"
+--- a/chrome/browser/renderer_host/javascript_optimizer_feature_browsertest.cc
++++ b/chrome/browser/renderer_host/javascript_optimizer_feature_browsertest.cc
+@@ -13,6 +13,7 @@
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/views/infobars/confirm_infobar.h"
+ #include "chrome/browser/ui/views/js_optimization/js_optimizations_infobar_delegate.h"
++#include "components/content_settings/core/common/pref_names.h"
+ #include "components/policy/core/browser/browser_policy_connector.h"
+ #include "components/policy/core/common/mock_configuration_policy_provider.h"
+ #include "components/policy/policy_constants.h"
+--- a/chrome/browser/safe_browsing/metrics/bundled_settings_metrics_provider_unittest.cc
++++ b/chrome/browser/safe_browsing/metrics/bundled_settings_metrics_provider_unittest.cc
+@@ -16,6 +16,7 @@
+ #include "chrome/test/base/testing_profile_manager.h"
+ #include "components/content_settings/core/browser/host_content_settings_map.h"
+ #include "components/content_settings/core/common/features.h"
++#include "components/content_settings/core/common/pref_names.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/safe_browsing/buildflags.h"
+ #include "components/safe_browsing/core/common/safe_browsing_prefs.h"
+--- a/chrome/browser/site_protection/site_familiarity_utils_unittest.cc
++++ b/chrome/browser/site_protection/site_familiarity_utils_unittest.cc
+@@ -12,6 +12,7 @@
+ #include "chrome/common/pref_names.h"
+ #include "chrome/test/base/testing_profile.h"
+ #include "components/content_settings/core/common/content_settings.h"
++#include "components/content_settings/core/common/pref_names.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/safe_browsing/core/common/features.h"
+ #include "components/safe_browsing/core/common/safe_browsing_prefs.h"
+--- a/chrome/browser/site_protection/site_protection_metrics_observer_unittest.cc
++++ b/chrome/browser/site_protection/site_protection_metrics_observer_unittest.cc
+@@ -17,6 +17,7 @@
+ #include "chrome/browser/site_protection/site_protection_metrics.h"
+ #include "chrome/common/chrome_features.h"
+ #include "chrome/test/base/chrome_render_view_host_test_harness.h"
++#include "components/content_settings/core/common/pref_names.h"
+ #include "components/history/core/browser/history_service.h"
+ #include "components/history/core/browser/history_types.h"
+ #include "components/prefs/pref_registry_simple.h"
+--- a/components/safe_browsing/core/common/safe_browsing_prefs.h
++++ b/components/safe_browsing/core/common/safe_browsing_prefs.h
+@@ -297,13 +297,6 @@
+ // See SecuritySettingsBundleToastState for values.
+ inline constexpr char kSecuritySettingsBundleMigrationToastState[] =
+     "safebrowsing.bundled_settings.migration_toast_state";
+-
+-// A boolean indicating whether the user selected on chrome://settings to
+-// disable the JavaScript optimizer on unfamiliar sites for improved security.
+-// The site-familiarity computation is done locally based on the user's
+-// browsing habits.
+-inline constexpr char kJavascriptOptimizerBlockedForUnfamiliarSites[] =
+-    "safebrowsing.javascript_optimizer_blocked_for_unfamiliar_sites";
+ 
+ // A boolean indicating whether this profile had the automatic JavaScript
+ // optimizer control enabled by the kMigrateToBlockV8OptimizerOnUnfamiliarSites

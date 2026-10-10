@@ -60,12 +60,12 @@ class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
         self.assertIn("verify-chromium-154-source-snapshot.py", script)
         self.assertIn("M154_SOURCE_SNAPSHOT_VERIFIED=1", script)
         self.assertIn(
-            "Chromium 154 source snapshot verification is required.", script
+            "Chromium source snapshot verification is required.", script
         )
 
     def test_m154_cannot_skip_live_source_snapshot_verification(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
-        branch_start = script.index("elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 )); then", script.index("SOURCE_POSTIMAGES_VERIFIED=0"))
+        branch_start = script.index("elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1", script.index("SOURCE_POSTIMAGES_VERIFIED=0"))
         branch_end = script.index("elif [[ -f \"$SOURCE_ROOT/components/ungoogled/BUILD.gn\" ]]", branch_start)
         branch = script[branch_start:branch_end]
 

@@ -211,6 +211,7 @@ def source_evidence_paths(
     runtime_version: Any,
     evidence: Path,
     project_root: Path,
+    candidate_lock: dict | None = None,
 ) -> tuple[Path, Path]:
     if not isinstance(runtime_version, str):
         raise PackagedRuntimeReportError(
@@ -241,6 +242,17 @@ def source_evidence_paths(
             project_root / "runtime/fingerprint-chromium-15498.lock.json",
             evidence / "chromium-154-source-contract.json",
         )
+    if runtime_version == "155.0.8059.40":
+        from chromium_15540_variant import reviewed_lock_prefix
+        prefix = reviewed_lock_prefix(candidate_lock) if candidate_lock is not None else "chromium-15540"
+        lock_name = "fingerprint-" + prefix + ".lock.json"
+        return (
+            project_root / "runtime" / lock_name,
+            evidence / (prefix + "-source-contract.json"),
+        )
+    if runtime_version == "156.0.8078.12":
+        return (project_root / "runtime/fingerprint-chromium-15612.lock.json",
+                evidence / "chromium-15612-source-contract.json")
     if runtime_version.startswith("154."):
         raise PackagedRuntimeReportError(
             f"Chromium {runtime_version} release qualification is unavailable; "
@@ -287,6 +299,7 @@ def verify(
         runtime_version,
         evidence,
         project_root,
+        load_json(evidence / "fingerprint-chromium.lock.json") if runtime_version == "155.0.8059.40" else None,
     )
     evidence_files = {
         "sourceLockSHA256": source_lock,
@@ -344,6 +357,49 @@ def verify(
                 raise PackagedRuntimeReportError(
                     f"Packaged M154.98 source evidence differs: {name}"
                 )
+    elif runtime_version == "155.0.8059.40":
+        from chromium_15540_packaged_evidence import process as verify_m155_packaged
+        from chromium_15540_variant import reviewed_lock_prefix
+        packaged_lock = load_json(evidence / "fingerprint-chromium.lock.json")
+        verify_m155_packaged(project_root, evidence, packaged_lock)
+        reviewed_names = (
+            "chromium-15540-source-input-manifest.json",
+            "chromium-15540-source-snapshot.json",
+            "chromium-15540-rebase-plan.json",
+        )
+        from chromium_15540_release_evidence import EVIDENCE_NAMES, verify_packaged_tuple_qualification
+        # Baseline qualification is never transferable to an additive source variant.
+        # The semantic candidate's pending lock is rejected by the release gate
+        # until fresh, exact-byte qualification is recorded.
+        if reviewed_lock_prefix(packaged_lock) == "chromium-15540":
+            verify_packaged_tuple_qualification(project_root, evidence, load_json(source_lock))
+        reviewed_evidence = EVIDENCE_NAMES
+        for name in reviewed_names:
+            packaged = evidence / name
+            reviewed = project_root / "runtime" / name
+            if (packaged.is_symlink() or not packaged.is_file()
+                    or reviewed.is_symlink() or not reviewed.is_file()
+                    or packaged.read_bytes() != reviewed.read_bytes()):
+                raise PackagedRuntimeReportError(
+                    f"Packaged M155.40 evidence differs from reviewed input: {name}"
+                )
+        for name in reviewed_evidence:
+            packaged = evidence / "chromium-15540-source-evidence" / name
+            reviewed = project_root / "runtime/chromium-15540-source-evidence" / name
+            if (packaged.is_symlink() or not packaged.is_file()
+                    or reviewed.is_symlink() or not reviewed.is_file()
+                    or packaged.read_bytes() != reviewed.read_bytes()):
+                raise PackagedRuntimeReportError(
+                    f"Packaged M155.40 source evidence differs: {name}"
+                )
+
+    if runtime_version == "156.0.8078.12":
+        from chromium_15612_packaged_evidence import process as verify_m156_packaged
+        verify_m156_packaged(project_root, evidence, load_json(evidence / "fingerprint-chromium.lock.json"))
+        if (report.get("sourceEvidenceMode") != "executed-final9-preserved-build-and-current-packaging-inputs"
+                or report.get("fullFDObservationSHA256") != "d6836d97a7a24d370663976063516306bfc646c826149f579a319fdb5578722c"
+                or report.get("freshWholeSourceTreeObserved") is not False):
+            raise PackagedRuntimeReportError("M156 source evidence mode/binding mismatch")
 
     command_output(
         ["codesign", "--verify", "--deep", "--strict", str(runtime_app)]

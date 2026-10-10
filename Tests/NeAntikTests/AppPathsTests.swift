@@ -200,6 +200,39 @@ struct AppPathsTests {
     }
 
     @Test
+    func contendedProcessGuardDoesNotParkSynchronousCommands() throws {
+        let root = temporaryDirectory()
+        let paths = AppPaths(rootDirectory: root)
+        let id = UUID()
+        let acquired = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: id) {
+                acquired.signal()
+                Thread.sleep(forTimeInterval: 0.5)
+            }
+        }
+        var joined = false
+        defer {
+            if !joined { _ = finished.wait(timeout: .now() + 2) }
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        var ran = false
+        let start = ContinuousClock.now
+        #expect(throws: ProfileProcessBusyError.self) {
+            try paths.withProcessLockGuard(for: id) { ran = true }
+        }
+        #expect(!ran)
+        #expect(start.duration(to: .now) < .milliseconds(200))
+        try #require(finished.wait(timeout: .now() + 2) == .success)
+        joined = true
+        try paths.withProcessLockGuard(for: id) { ran = true }
+        #expect(ran)
+    }
+
+    @Test
     func contendedMetadataGuardFailsPromptlyWithoutRunningMutation() throws {
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

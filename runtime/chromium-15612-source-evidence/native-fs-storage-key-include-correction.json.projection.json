@@ -1,0 +1,39 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "71544c0b2b869730ccd1aebc1c52e83238e59a1e6febb1ebacc3769527ca376d",
+  "payload": {
+    "at": "2026-10-09T05:32:21.079935+00:00",
+    "cause": "Member access to const blink::StorageKey at native caller lacks complete type after transitive enterprise include guard",
+    "license": "Independent direct include correction to BSD Chromium code; no AGPL copied",
+    "nativeFailureLogSHA256": "cc539e30c3ba1b52b22a48dec2693b78242cfd8a9bf15e91a1de8331016036b6",
+    "patchSHA256": "195b9b627842f8a3d5707aa17cd183b92aef0ee88a8b832cf0e0a8021549e5e9",
+    "postimages": {
+      "chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc": "f13a35df09eb87b7ebee5283cef6df362b2ba20e40fdaeaa7eb021e2a47e98b9"
+    },
+    "preimages": {
+      "chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc": "69ab0a5cd981de03873f64292d9e1a039cbea80edc7a4e72c8cce2acb22eec31"
+    },
+    "preserved": "Only direct storage_key header added; all permission/security/runtime code and GN args unchanged",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "status": "source-corrected-native-target-required"
+  },
+  "payloadType": "json",
+  "receipt": "native-fs-storage-key-include-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

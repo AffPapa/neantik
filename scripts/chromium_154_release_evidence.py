@@ -156,7 +156,8 @@ def verify_contract(
         raise M154EvidenceError("Separate M154 source manifests require contract schema 2")
     experiment_path = runtime / "nevision-patches/ports/chromium-154.0.8037.93/port-experiment.json"
     tuples_path = runtime / "apple-device-tuples.json"
-    security_path = runtime / "security-baseline.json"
+    from runtime_historical_baseline import bound_baseline_path
+    security_path = bound_baseline_path(runtime, contract.get("securityBaselineSHA256"))
     toolchain_path = runtime / "chromium-154-toolchain-lock.json"
     for path, expected, label in (
         (experiment_path, contract["portExperimentSHA256"], "port experiment"),

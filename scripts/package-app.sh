@@ -25,10 +25,13 @@ export SWIFTPM_MODULECACHE_OVERRIDE="$BUILD_SUPPORT_DIR/swiftpm"
 cd "$PROJECT_DIR"
 swift build \
   --build-system native \
-  --jobs 1 \
+  --jobs 2 \
   -c release \
   --arch arm64 \
   --disable-sandbox \
+  --disable-dependency-cache \
+  --manifest-cache local \
+  --scratch-path "$BUILD_SUPPORT_DIR/build" \
   --cache-path "$BUILD_SUPPORT_DIR/cache" \
   --config-path "$BUILD_SUPPORT_DIR/config" \
   --security-path "$BUILD_SUPPORT_DIR/security"
@@ -36,10 +39,13 @@ swift build \
 BIN_PATH="$(
   swift build \
   --build-system native \
-    --jobs 1 \
+    --jobs 2 \
     -c release \
     --arch arm64 \
     --disable-sandbox \
+    --disable-dependency-cache \
+    --manifest-cache local \
+    --scratch-path "$BUILD_SUPPORT_DIR/build" \
     --cache-path "$BUILD_SUPPORT_DIR/cache" \
     --config-path "$BUILD_SUPPORT_DIR/config" \
     --security-path "$BUILD_SUPPORT_DIR/security" \

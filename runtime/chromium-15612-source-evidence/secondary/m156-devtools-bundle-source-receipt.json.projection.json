@@ -1,0 +1,21 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "6e82790246c9b54a2ffc6c05a383a1f0a2fd9698772d62982579444429a0c289",
+  "payload": {
+    "gitBlob": "faca2814040bbb16a9bdceb21075e469b015cb4c",
+    "path": "scripts/build/ninja/bundle.gni",
+    "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+    "sha256": "807673e688dc0d325510a86e5fc0f4fc38c071acab00b07c4e9d8f8a4cc19ffc",
+    "url": "https://chromium.googlesource.com/devtools/devtools-frontend/+/2d671c506c4e5f8958b027e26047deb0acfbd7f9/scripts/build/ninja/bundle.gni?format=TEXT"
+  },
+  "payloadType": "json",
+  "receipt": "m156-devtools-bundle-source-receipt.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

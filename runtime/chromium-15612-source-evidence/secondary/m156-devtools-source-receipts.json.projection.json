@@ -1,0 +1,107 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "5f07a42944f44f8bd4ccafbc0c654e11b8edd8278d9cd09e5fb9ae725bfdd4dc",
+  "payload": {
+    "third_party/devtools-frontend/src/front_end/BUILD.gn": {
+      "gitBlob": "404d1a4c0dc2ca927f8d6507a12c38fbe4fe97fc",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "6dc6b0f40dd4e24e6f3e734ee8c0af7ce72457d2f65b7bd8584696f8ad1fdd77",
+      "size": 11597
+    },
+    "third_party/devtools-frontend/src/front_end/Images/BUILD.gn": {
+      "gitBlob": "dbacbfb60ef69d3cf14fa0e835438a1cbe140305",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "686aa649a77cfbfb61bc4f6b60683af0d57576624bf98de1bf7a2983bd7ddf33",
+      "size": 1496
+    },
+    "third_party/devtools-frontend/src/front_end/core/host/DispatchHttpRequestClient.ts": {
+      "gitBlob": "76d3ee11f4e8fd86faa20adc9f15cf1afdf74729",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "8d08dad053d4acb5a8faac3f9ad61d24344a935d60dc7566b2dfad5a112b8e33",
+      "size": 2693
+    },
+    "third_party/devtools-frontend/src/front_end/models/live-metrics/web-vitals-injected/BUILD.gn": {
+      "gitBlob": "8293035aad1aa10dcc381e87369b2628bfc61b7d",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "6aca77153f25dcc9988973920d5dd751de2d85aa097466b88c7dcac03120e74b",
+      "size": 1533
+    },
+    "third_party/devtools-frontend/src/front_end/models/trace/lantern/core/BUILD.gn": {
+      "gitBlob": "804234d812384cced544d27112a2ef6bc296d285",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "5cbd836df4dd583d7f1ca5645322d2ea116efc8e3ec46b89664389a2a313ada4",
+      "size": 1022
+    },
+    "third_party/devtools-frontend/src/front_end/models/trace/lantern/metrics/BUILD.gn": {
+      "gitBlob": "61ff5efc82b49b9198e6e03205c7c1914e1495ac",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "c1619ab7adcef87ca2f9ee960b4b69f44a4f1954886c4ac7153496e197755be4",
+      "size": 1359
+    },
+    "third_party/devtools-frontend/src/front_end/models/trace/lantern/simulation/BUILD.gn": {
+      "gitBlob": "0420e9374eaf4038c69292c66594c17a27aac823",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "362067a95e505d9c86985b1174da654b5a6bd06a28dbd37497adc52bd7a3b016",
+      "size": 1276
+    },
+    "third_party/devtools-frontend/src/front_end/panels/elements/WebCustomData.ts": {
+      "gitBlob": "192875d2ded04b7aa7815b806d6a284f9c420600",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "d1c5288d279b4eee7db1bc80a9964474b07e0071344237b033ba7eabb98b8901",
+      "size": 2231
+    },
+    "third_party/devtools-frontend/src/front_end/panels/recorder/injected/BUILD.gn": {
+      "gitBlob": "af02deb246c0382c87911c11ea17cc55c27464c5",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "b674b06e85c04ff2c73797ad9507d952e3cce9804f80cec9f759d5c59d54136a",
+      "size": 1460
+    },
+    "third_party/devtools-frontend/src/inspector_overlay/BUILD.gn": {
+      "gitBlob": "7d0c2364c8c318da743b8e4f994227ca30bb21a0",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "0edbac7b92f7dc5183cf5f3860021ed310f3afff14484bbcd92fea99c55abee8",
+      "size": 2451
+    },
+    "third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni": {
+      "gitBlob": "bc34d3a90c1fad407435dcb78b63cc1cfb294a6f",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "6e834d2ba894b4596fe3a425f220a8389bc0917bf73d13fb19206c4ef9c4b718",
+      "size": 42813
+    },
+    "third_party/devtools-frontend/src/scripts/devtools_paths.py": {
+      "gitBlob": "4c943bbd04f86a9ef8fc4fd9c87bc2e2a306965c",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "18b39c2583d7431bf2fc8c826497227ed1cebb09032f40f5df21322e11edf366",
+      "size": 2995
+    },
+    "third_party/devtools-frontend/src/third_party/typescript/typescript.py": {
+      "gitBlob": "a01a471e477b107a8dc2d5384fb8dac429669dcf",
+      "pin": "2d671c506c4e5f8958b027e26047deb0acfbd7f9",
+      "repository": "https://chromium.googlesource.com/devtools/devtools-frontend",
+      "sha256": "ef6417d77e1251888aeb356e2afffbd395e158b6ee06a13a59ca0788bebda636",
+      "size": 2204
+    }
+  },
+  "payloadType": "json",
+  "receipt": "m156-devtools-source-receipts.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

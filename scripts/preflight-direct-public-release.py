@@ -11,6 +11,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from chromium_15540_variant import reviewed_lock_prefix as m155_reviewed_lock_prefix
 from typing import Any
 from urllib.parse import unquote, urlparse
 
@@ -26,7 +27,7 @@ GUI_VERIFIER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
 EVIDENCE_SCHEMA_PATH = (
-    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence.py"
 )
 EVIDENCE_SPEC = importlib.util.spec_from_file_location(
     "fingerprint_evidence_schema8_for_preflight",
@@ -91,8 +92,27 @@ def verify_source_contract_binding(
         if provenance.get("binaryBinding", {}).get("argsGNSHA256") != sha256_file(args_gn):
             raise ValueError("M154.98 packaged args differ from built candidate")
         return
-    if runtime_version.startswith("154."):
-        raise ValueError("unqualified Chromium 154 candidate")
+    if runtime_version == "155.0.8059.40":
+        from chromium_15540_variant import verify_candidate_lock
+
+        verify_candidate_lock(candidate_lock, provenance=provenance, project_root=project_root)
+        expected_schema=3 if "semanticCorrectionSet" in provenance else 2
+        if type(contract.get("schemaVersion")) is not int or contract.get("schemaVersion") != expected_schema:
+            raise ValueError("M155.40 source contract schema/variant mismatch")
+        if provenance.get("sourceContractSHA256") != sha256_file(contract_path):
+            raise ValueError("M155.40 provenance is not bound to embedded source contract")
+        if provenance.get("binaryBinding", {}).get("argsGNSHA256") != sha256_file(args_gn):
+            raise ValueError("M155.40 packaged args differ from built candidate")
+        return
+    if runtime_version == "156.0.8078.12":
+        from chromium_15612_release_evidence import verify_candidate_lock
+        verify_candidate_lock(candidate_lock, provenance=provenance, project_root=project_root)
+        if (contract.get("schemaVersion") != 2 or provenance.get("sourceContractSHA256") != sha256_file(contract_path)
+                or provenance.get("binaryBinding", {}).get("argsGNSHA256") != sha256_file(args_gn)):
+            raise ValueError("M156 embedded source contract/arguments mismatch")
+        return
+    if runtime_version.startswith(("154.", "155.", "156.")):
+        raise ValueError("unqualified Chromium 154/155 candidate")
     if provenance.get("contractSHA256") != sha256_file(contract_path):
         raise ValueError("source provenance is not bound to embedded source contract")
     if contract.get("binaryBindingStatus") != "pending-new-build":
@@ -323,7 +343,10 @@ def verify_direct_public_release_plan(
             )
         )
         runtime_major = parse_version(runtime_version)[0]
-        contract_name = f"chromium-{runtime_major}-source-contract.json"
+        contract_name = ((m155_reviewed_lock_prefix(runtime_candidate)+"-source-contract.json")
+                         if runtime_version == "155.0.8059.40"
+                         else "chromium-15612-source-contract.json" if runtime_version == "156.0.8078.12"
+                         else f"chromium-{runtime_major}-source-contract.json")
         embedded_contract_path = evidence_root / contract_name
         project_contract_name = (
             "chromium-15498-source-contract.json"

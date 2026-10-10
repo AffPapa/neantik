@@ -1,0 +1,298 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "9808144cfdb79cff974def6c79acef48af828fdff5fdd8d5cb77d0b498534f02",
+  "payload": {
+    "archiveMembers": 46,
+    "archiveSHA256": "4d92799b0e619468a30f70eff033c1a27e713134a4ff353e1a6794f67e425497",
+    "archiveURL": "https://registry.npmjs.org/undici-types/-/undici-types-7.18.2.tgz",
+    "files": [
+      {
+        "path": "third_party/node/node_modules/undici-types/agent.d.ts",
+        "postimageSHA256": "7befaf0e76b5671be1d47b77fcc65f2b0aad91cc26529df1904f4a7c46d216e9",
+        "preimageSHA256": null,
+        "size": 1167
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/api.d.ts",
+        "postimageSHA256": "8aee8b6d4f9f62cf3776cda1305fb18763e2aade7e13cea5bbe699112df85214",
+        "preimageSHA256": null,
+        "size": 1609
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/balanced-pool.d.ts",
+        "postimageSHA256": "4d327f7d72ad0918275cea3eee49a6a8dc8114ae1d5b7f3f5d0774de75f7439a",
+        "preimageSHA256": null,
+        "size": 1019
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/cache-interceptor.d.ts",
+        "postimageSHA256": "c63b9ada8c72f95aac5db92aea07e5e87ec810353cdf63b2d78f49a58662cf6c",
+        "preimageSHA256": null,
+        "size": 4121
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/cache.d.ts",
+        "postimageSHA256": "c46e079fe54c76f95c67fb89081b3e399da2c7d109e7dca8e4b58d83e332e605",
+        "preimageSHA256": null,
+        "size": 1251
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/client-stats.d.ts",
+        "postimageSHA256": "68834d631c8838c715f225509cfc3927913b9cc7a4870460b5b60c8dbdb99baf",
+        "preimageSHA256": null,
+        "size": 456
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/client.d.ts",
+        "postimageSHA256": "24371e69a38fc33e268d4a8716dbcda430d6c2c414a99ff9669239c4b8f40dea",
+        "preimageSHA256": null,
+        "size": 5008
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/connector.d.ts",
+        "postimageSHA256": "074de5b2fdead0165a2757e3aaef20f27a6347b1c36adea27d51456795b37682",
+        "preimageSHA256": null,
+        "size": 1039
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/content-type.d.ts",
+        "postimageSHA256": "2e85db9e6fd73cfa3d7f28e0ab6b55417ea18931423bd47b409a96e4a169e8e6",
+        "preimageSHA256": null,
+        "size": 561
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/cookies.d.ts",
+        "postimageSHA256": "59af37caec41ecf7b2e76059c9672a49e682c1a2aa6f9d7dc78878f53aa284d6",
+        "preimageSHA256": null,
+        "size": 696
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/diagnostics-channel.d.ts",
+        "postimageSHA256": "12950411eeab8563b349cb7959543d92d8d02c289ed893d78499a19becb5a8cc",
+        "preimageSHA256": null,
+        "size": 1776
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/dispatcher.d.ts",
+        "postimageSHA256": "3e11fce78ad8c0e1d1db4ba5f0652285509be3acdd519529bc8fcef85f7dafd9",
+        "preimageSHA256": null,
+        "size": 15606
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/env-http-proxy-agent.d.ts",
+        "postimageSHA256": "80aae6afc67faa5ac0b32b5b8bc8cc9f7fa299cff15cf09cc2e11fd28c6ae29e",
+        "preimageSHA256": null,
+        "size": 732
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/errors.d.ts",
+        "postimageSHA256": "ccab02f3920fc75c01174c47fcf67882a11daf16baf9e81701d0a94636e94556",
+        "preimageSHA256": null,
+        "size": 4439
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/eventsource.d.ts",
+        "postimageSHA256": "adf27937dba6af9f08a68c5b1d3fce0ca7d4b960c57e6d6c844e7d1a8e53adae",
+        "preimageSHA256": null,
+        "size": 1794
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/fetch.d.ts",
+        "postimageSHA256": "10ec5e82144dfac6f04fa5d1d6c11763b3e4dbbac6d99101427219ab3e2ae887",
+        "preimageSHA256": null,
+        "size": 5667
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/formdata.d.ts",
+        "postimageSHA256": "615754924717c0b1e293e083b83503c0a872717ad5aa60ed7f1a699eb1b4ea5c",
+        "preimageSHA256": null,
+        "size": 5009
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/global-dispatcher.d.ts",
+        "postimageSHA256": "ea6bc8de8b59f90a7a3960005fd01988f98fd0784e14bc6922dde2e93305ec7d",
+        "preimageSHA256": null,
+        "size": 275
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/global-origin.d.ts",
+        "postimageSHA256": "36107995674b29284a115e21a0618c4c2751b32a8766dd4cb3ba740308b16d59",
+        "preimageSHA256": null,
+        "size": 176
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/h2c-client.d.ts",
+        "postimageSHA256": "e85d7f8068f6a26710bff0cc8c0fc5e47f71089c3780fbede05857331d2ddec9",
+        "preimageSHA256": null,
+        "size": 3706
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/handlers.d.ts",
+        "postimageSHA256": "7fd1b31fd35876b0aa650811c25ec2c97a3c6387e5473eb18004bed86cdd76b6",
+        "preimageSHA256": null,
+        "size": 451
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/header.d.ts",
+        "postimageSHA256": "23cd712e2ce083d68afe69224587438e5914b457b8acf87073c22494d706a3d0",
+        "preimageSHA256": null,
+        "size": 3336
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/index.d.ts",
+        "postimageSHA256": "c9381908473a1c92cb8c516b184e75f4d226dad95c3a85a5af35f670064d9a2f",
+        "preimageSHA256": null,
+        "size": 4356
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/interceptors.d.ts",
+        "postimageSHA256": "1cc2a09e1a61a5222d4174ab358a9f9de5e906afe79dbf7363d871a7edda3955",
+        "preimageSHA256": null,
+        "size": 3301
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/mock-agent.d.ts",
+        "postimageSHA256": "9666f2f84b985b62400d2e5ab0adae9ff44de9b2a34803c2c5bd3c8325b17dc0",
+        "preimageSHA256": null,
+        "size": 3448
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/mock-call-history.d.ts",
+        "postimageSHA256": "0b6e25234b4eec6ed96ab138d96eb70b135690d7dd01f3dd8a8ab291c35a683a",
+        "preimageSHA256": null,
+        "size": 5558
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/mock-client.d.ts",
+        "postimageSHA256": "40cd35c95e9cf22cfa5bd84e96408b6fcbca55295f4ff822390abb11afbc3dca",
+        "preimageSHA256": null,
+        "size": 1065
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/mock-errors.d.ts",
+        "postimageSHA256": "40b463c6766ca1b689bfcc46d26b5e295954f32ad43e37ee6953c0a677e4ae2b",
+        "preimageSHA256": null,
+        "size": 336
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/mock-interceptor.d.ts",
+        "postimageSHA256": "0a60a292b89ca7218b8616f78e5bbd1c96b87e048849469cccb4355e98af959a",
+        "preimageSHA256": null,
+        "size": 3931
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/mock-pool.d.ts",
+        "postimageSHA256": "b1616b8959bf557feb16369c6124a97a0e74ed6f49d1df73bb4b9ddf68acf3f3",
+        "preimageSHA256": null,
+        "size": 1037
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/patch.d.ts",
+        "postimageSHA256": "addf417b9eb3f938fddf8d81e96393a165e4be0d4a8b6402292f9c634b1cb00d",
+        "preimageSHA256": null,
+        "size": 599
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/pool-stats.d.ts",
+        "postimageSHA256": "914a0ae30d96d71915fc519ccb4efbf2b62c0ddfb3a3fc6129151076bc01dc60",
+        "preimageSHA256": null,
+        "size": 663
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/pool.d.ts",
+        "postimageSHA256": "9c32412007b5662fd34a8eb04292fb5314ec370d7016d1c2fb8aa193c807fe22",
+        "preimageSHA256": null,
+        "size": 1490
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/proxy-agent.d.ts",
+        "postimageSHA256": "249b9cab7f5d628b71308c7d9bb0a808b50b091e640ba3ed6e2d0516f4a8d91d",
+        "preimageSHA256": null,
+        "size": 806
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/readable.d.ts",
+        "postimageSHA256": "156a859e21ef3244d13afeeba4e49760a6afa035c149dda52f0c45ea8903b338",
+        "preimageSHA256": null,
+        "size": 1910
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/retry-agent.d.ts",
+        "postimageSHA256": "499e5b055a5aba1e1998f7311a6c441a369831c70905cc565ceac93c28083d53",
+        "preimageSHA256": null,
+        "size": 233
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/retry-handler.d.ts",
+        "postimageSHA256": "f473cd2288991ff3221165dcf73cd5d24da30391f87e85b3dd4d0450c787a391",
+        "preimageSHA256": null,
+        "size": 3262
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/round-robin-pool.d.ts",
+        "postimageSHA256": "6ebe8ebb8659aaa9d1acbf3710d7dae3e923e97610238b9511c25dc39023a166",
+        "preimageSHA256": null,
+        "size": 1590
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/snapshot-agent.d.ts",
+        "postimageSHA256": "5b03a034c72146b61573aab280f295b015b9168470f2df05f6080a2122f9b4df",
+        "preimageSHA256": null,
+        "size": 3048
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/util.d.ts",
+        "postimageSHA256": "5d0375ca7310efb77e3ef18d068d53784faf62705e0ad04569597ae0e755c401",
+        "preimageSHA256": null,
+        "size": 623
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/utility.d.ts",
+        "postimageSHA256": "cdcf9ea426ad970f96ac930cd176d5c69c6c24eebd9fc580e1572d6c6a88f62c",
+        "preimageSHA256": null,
+        "size": 245
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/webidl.d.ts",
+        "postimageSHA256": "f769602cfc723e250e63cffec9cda19b7d13cdfd09885ebcde441380c68f71b1",
+        "preimageSHA256": null,
+        "size": 8725
+      },
+      {
+        "path": "third_party/node/node_modules/undici-types/websocket.d.ts",
+        "postimageSHA256": "b64d4d1c5f877f9c666e98e833f0205edb9384acc46e98a1fef344f64d6aba44",
+        "preimageSHA256": null,
+        "size": 4657
+      }
+    ],
+    "integrity": "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==",
+    "metadata": {
+      "third_party/node/node_modules/undici-types/LICENSE": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+      "third_party/node/node_modules/undici-types/package.json": "01701286a0441eddf1cd47d488047d363ce7d75466e7b6c89f1c605fba1c3957"
+    },
+    "noNpmInstall": true,
+    "packageLockSHA256": "9f2164bb3613fced8baa366624c40e0ed27a1bc1198892834c3f53bf07130e2e",
+    "preserveDependencyValidator": true,
+    "preserveNativeTypeScript": true,
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "status": "restored-build-only-exact-pinned-types-native-action-check-pending",
+    "version": "7.18.2"
+  },
+  "payloadType": "json",
+  "receipt": "m156-pinned-build-types-restoration.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

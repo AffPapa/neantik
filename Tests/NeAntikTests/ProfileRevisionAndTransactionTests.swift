@@ -6,6 +6,65 @@ import Testing
 @MainActor
 struct ProfileRevisionAndTransactionTests {
     @Test
+    func configurationCopyRejectsSourceChangedByAnotherManager() throws {
+        let fixture = try TransactionFixture()
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original", startURL: "https://example.com/"))
+        let other = ProfileStore(paths: fixture.paths)
+        var edit = original
+        edit.startURL = "https://example.org/"
+        let current = try other.upsert(edit)
+        let count = fixture.store.profiles.count
+        #expect(throws: BrowserProfileRevisionConflictError.self) {
+            try fixture.store.duplicateProfile(original, name: "Copy")
+        }
+        #expect(fixture.store.profiles.count == count)
+        #expect(fixture.store.profile(withID: original.id)?.revision == current.revision)
+        #expect(fixture.store.profile(withID: original.id)?.startURL == "https://example.org/")
+    }
+
+    @Test
+    func configurationCopyInheritsLatestFolderAndNeverWebsiteData() throws {
+        let fixture = try TransactionFixture()
+        let folder = try fixture.store.createFolder(named: "Project")
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original", tags: ["Work"], note: "Private note"))
+        let other = ProfileStore(paths: fixture.paths)
+        try other.assignProfile(original.id, toFolderID: folder.id)
+        let marker = fixture.paths.browserDataDirectory(for: original.id).appendingPathComponent("owned-data")
+        try FileManager.default.createDirectory(at: marker.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("original website fixture".utf8).write(to: marker)
+        let copy = try fixture.store.duplicateProfile(original, name: "Copy")
+        #expect(copy.id != original.id)
+        #expect(copy.identity.runtimeSeed != original.identity.runtimeSeed)
+        #expect(copy.tags == original.tags)
+        #expect(copy.note.isEmpty)
+        #expect(fixture.store.folderID(forProfileID: copy.id) == folder.id)
+        #expect(!FileManager.default.fileExists(atPath: fixture.paths.browserDataDirectory(for: copy.id).appendingPathComponent("owned-data").path))
+        #expect(try Data(contentsOf: marker) == Data("original website fixture".utf8))
+    }
+
+    @Test
+    func configurationCopyCredentialFailureRollsBackProfileFolderAndNewDirectory() throws {
+        let fixture = try TransactionFixture()
+        let folder = try fixture.store.createFolder(named: "Project")
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original"), toFolderID: folder.id)
+        var copyID: UUID?
+        #expect(throws: TransactionTestError.self) {
+            try fixture.store.duplicateProfile(original, name: "Copy") { saved in
+                copyID = saved.id
+                throw TransactionTestError.forced
+            }
+        }
+        let failedID = try #require(copyID)
+        #expect(fixture.store.profiles.map(\.id) == [original.id])
+        #expect(fixture.store.folderID(forProfileID: original.id) == folder.id)
+        #expect(fixture.store.folderID(forProfileID: failedID) == nil)
+        #expect(!FileManager.default.fileExists(atPath: fixture.paths.profileDirectory(for: failedID).path))
+        let reloaded = ProfileStore(paths: fixture.paths)
+        #expect(reloaded.profiles.map(\.id) == [original.id])
+        #expect(reloaded.folderID(forProfileID: failedID) == nil)
+    }
+
+    @Test
     func bulkRequestRetainsFolderCapturedAtPresentation() {
         let folderID = UUID()
         var selectedFolderID: UUID? = folderID

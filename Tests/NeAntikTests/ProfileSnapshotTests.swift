@@ -4,6 +4,89 @@ import Testing
 
 struct ProfileSnapshotTests {
     @Test
+    func growingSnapshotIsBoundedAndRejected() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-grow-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let saved = try ProfileSnapshotStore.save(
+            profiles: [BrowserProfile(name: "Growth fixture")],
+            folderNameByProfileID: [:], paths: paths
+        )
+        #expect(throws: ProfileSnapshotError.fileTooLarge) {
+            try ProfileSnapshotStore.document(from: saved, paths: paths) {
+                let handle = try FileHandle(forWritingTo: saved)
+                defer { try? handle.close() }
+                try handle.truncate(atOffset: UInt64(ProfileSnapshotStore.maximumFileBytes + 1))
+            }
+        }
+    }
+
+    @Test
+    func replacedSnapshotCannotChangeTheOpenedInode() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-replace-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let saved = try ProfileSnapshotStore.save(
+            profiles: [BrowserProfile(name: "Opened owned bytes")],
+            folderNameByProfileID: [:], paths: paths
+        )
+        let unrelated = root.appendingPathComponent("outside.json")
+        try Data("unrelated data".utf8).write(to: unrelated)
+        #expect(throws: ProfileSnapshotError.invalidFile) {
+            try ProfileSnapshotStore.document(from: saved, paths: paths) {
+                try FileManager.default.removeItem(at: saved)
+                try FileManager.default.createSymbolicLink(at: saved, withDestinationURL: unrelated)
+            }
+        }
+        #expect(try Data(contentsOf: unrelated) == Data("unrelated data".utf8))
+    }
+
+    @Test
+    func nestedSnapshotPathIsNotAValidDirectSnapshot() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-nested-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let saved = try ProfileSnapshotStore.save(
+            profiles: [BrowserProfile(name: "Direct snapshot")],
+            folderNameByProfileID: [:], paths: paths
+        )
+        let nested = paths.profileSnapshotsDirectory.appendingPathComponent("nested")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: false)
+        let copied = nested.appendingPathComponent(saved.lastPathComponent)
+        try FileManager.default.copyItem(at: saved, to: copied)
+        #expect(throws: ProfileSnapshotError.unsafeLocation) {
+            try ProfileSnapshotStore.document(from: copied, paths: paths)
+        }
+        #expect(try ProfileSnapshotStore.document(from: saved, paths: paths).configuration.profiles.count == 1)
+    }
+
+    @Test
+    func snapshotReadRejectsSymlinkedParentDirectory() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-snapshot-parent-link-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let saved = try ProfileSnapshotStore.save(
+            profiles: [BrowserProfile(name: "Owned source")],
+            folderNameByProfileID: [:], paths: paths
+        )
+        let outside = root.appendingPathComponent("preserved-original-snapshots")
+        try FileManager.default.moveItem(at: paths.profileSnapshotsDirectory, to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: paths.profileSnapshotsDirectory, withDestinationURL: outside
+        )
+        let original = outside.appendingPathComponent(saved.lastPathComponent)
+        let bytes = try Data(contentsOf: original)
+        #expect(throws: ProfileSnapshotError.self) {
+            try ProfileSnapshotStore.document(from: saved, paths: paths)
+        }
+        #expect(try Data(contentsOf: original) == bytes)
+    }
+
+    @Test
     func snapshotsKeepOnlyThreeNewestMetadataOnlyVersions() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("neantik-snapshot-\(UUID().uuidString)")

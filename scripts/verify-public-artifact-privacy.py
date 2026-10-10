@@ -29,7 +29,7 @@ GUI_VERIFIER = importlib.util.module_from_spec(GUI_SPEC)
 sys.modules[GUI_SPEC.name] = GUI_VERIFIER
 GUI_SPEC.loader.exec_module(GUI_VERIFIER)
 EVIDENCE_SCHEMA_PATH = (
-    Path(__file__).resolve().parent / "fingerprint_evidence_schema8.py"
+    Path(__file__).resolve().parent / "fingerprint_evidence.py"
 )
 EVIDENCE_SPEC = importlib.util.spec_from_file_location(
     "fingerprint_evidence_schema8_for_public_privacy",
@@ -54,6 +54,9 @@ SOURCE_SUFFIXES = {
     ".mdx",
     ".mjs",
     ".mm",
+    ".metal",
+    ".patch",
+    ".php",
     ".py",
     ".sh",
     ".swift",
@@ -80,8 +83,15 @@ TEXT_SUFFIXES = {
     ".json",
     ".jsonl",
     ".log",
+    ".list",
+    ".sha256",
+    ".strings",
+    ".sudoers",
+    ".tsv",
+    ".zlist",
     ".md",
     ".plist",
+    ".xcprivacy",
     ".properties",
     ".rst",
     ".svg",
@@ -99,6 +109,7 @@ ASSIGNMENT_SUFFIXES = {
     ".jsonl",
     ".log",
     ".plist",
+    ".xcprivacy",
     ".properties",
     ".toml",
     ".txt",
@@ -1098,8 +1109,8 @@ def expected_authenticated_public_attestation(
     payload: dict[str, object],
     verified: object,
 ) -> dict[str, object]:
-    return {
-        "schemaVersion": 3,
+    result = {
+        "schemaVersion": 4 if payload["schemaVersion"] == 2 else 3,
         "kind": "neantik-gui-fingerprint-attestation",
         "releaseChannel": payload["releaseChannel"],
         "candidateManifestSHA256":
@@ -1134,20 +1145,25 @@ def expected_authenticated_public_attestation(
         "productionQualified": payload["productionQualified"],
         "limitations": payload["limitations"],
     }
+    if payload["schemaVersion"] == 2:
+        result["semanticPolicyID"] = payload["semanticPolicyID"]
+        result["criticalObservationsStable"] = payload["criticalObservationsStable"]
+    return result
 
 
 def validate_authenticated_public_attestation(
     payload: object,
 ) -> dict[str, object]:
-    if (
-        not isinstance(payload, dict)
-        or set(payload) != AUTHENTICATED_PUBLIC_ATTESTATION_KEYS
-    ):
+    semantic = isinstance(payload, dict) and type(payload.get("schemaVersion")) is int and payload.get("schemaVersion") == 4
+    expected_keys = AUTHENTICATED_PUBLIC_ATTESTATION_KEYS | (
+        {"semanticPolicyID", "criticalObservationsStable"} if semantic else set()
+    )
+    if not isinstance(payload, dict) or set(payload) != expected_keys:
         raise PublicArtifactPrivacyError(
             "Authenticated public fingerprint attestation has an invalid "
             "exact key set."
         )
-    if payload.get("schemaVersion") != 3:
+    if type(payload.get("schemaVersion")) is not int or payload.get("schemaVersion") not in (3, 4):
         raise PublicArtifactPrivacyError(
             "Authenticated public fingerprint attestation schemaVersion "
             "must be 3."
@@ -1178,13 +1194,22 @@ def validate_authenticated_public_attestation(
         raise PublicArtifactPrivacyError(
             "Production attestation must be production-qualified."
         )
+    if semantic:
+        changed = payload.get("changedCriticalKeys")
+        if (not isinstance(changed, list) or not all(isinstance(key, str) for key in changed)
+            or changed != sorted(set(changed))
+            or not set(changed).issubset({"canvas", "webgl_pixels", "audio", "client_rects"})):
+            raise PublicArtifactPrivacyError("Public fingerprint changed keys are invalid.")
     if (
-        payload.get("auditSchemaVersion")
-        != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION
+        payload.get("auditSchemaVersion") != (8 if semantic else 7)
         or payload.get("identityCatalogVersion")
         != GUI_VERIFIER.CURRENT_IDENTITY_CATALOG_VERSION
         or payload.get("runtimeCodeSignatureValid") is not True
-        or payload.get("verdict") != "verified"
+        or (not semantic and payload.get("verdict") != "verified")
+        or (semantic and (payload.get("semanticPolicyID") != "repeatable-critical-observations-v1"
+            or payload.get("criticalObservationsStable") is not True
+            or payload.get("verdict") != ("verified" if len(payload.get("changedCriticalKeys", [])) >= 2
+                else "partial" if payload.get("changedCriticalKeys") else "unchanged")))
     ):
         raise PublicArtifactPrivacyError(
             "Authenticated public attestation metadata is invalid."
@@ -1241,7 +1266,7 @@ def validate_authenticated_public_attestation(
 
 
 def validate_public_attestation(payload: object) -> dict[str, object]:
-    if isinstance(payload, dict) and payload.get("schemaVersion") == 3:
+    if isinstance(payload, dict) and type(payload.get("schemaVersion")) is int and payload.get("schemaVersion") in (3, 4):
         return validate_authenticated_public_attestation(payload)
     if not isinstance(payload, dict) or set(payload) != PUBLIC_ATTESTATION_KEYS:
         raise PublicArtifactPrivacyError(
@@ -1282,8 +1307,7 @@ def validate_public_attestation(payload: object) -> dict[str, object]:
             "Production attestation must be production-qualified."
         )
     if (
-        payload.get("auditSchemaVersion")
-        != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION
+        payload.get("auditSchemaVersion") != 7
         or payload.get("identityCatalogVersion")
         != GUI_VERIFIER.CURRENT_IDENTITY_CATALOG_VERSION
     ):
@@ -1356,7 +1380,7 @@ def verify_evidence_attestation_payload_binding(
     validate_public_attestation(public_payload)
     if (
         candidate_manifest_raw is not None
-        and public_payload.get("schemaVersion") != 3
+        and public_payload.get("schemaVersion") not in (3, 4)
     ):
         raise PublicArtifactPrivacyError(
             "Candidate-bound release evidence requires authenticated "
@@ -1373,7 +1397,7 @@ def verify_evidence_attestation_payload_binding(
         raise PublicArtifactPrivacyError(
             "Public attestation does not match the immutable candidate manifest."
         )
-    if public_payload.get("schemaVersion") == 3:
+    if public_payload.get("schemaVersion") in (3, 4):
         if candidate_manifest_raw is None:
             raise PublicArtifactPrivacyError(
                 "Authenticated evidence requires the exact candidate manifest."

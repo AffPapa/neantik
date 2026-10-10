@@ -47,11 +47,11 @@ enum FingerprintAuditVerdict: String, Codable, Sendable {
     var explanation: String {
         switch self {
         case .verified:
-            "Минимум две критичные поверхности браузера отличаются между профилями и остаются стабильными при повторном запуске профиля A."
+            "Минимум два измерения отличаются между профилями и повторяются для профиля A. Число различий не доказывает изоляцию данных или анонимность."
         case .partial:
-            "Одна критичная поверхность отличается и остаётся стабильной. Движок даёт ограниченное разделение отпечатков."
+            "Одно измерение отличается и повторяется. Совпадение остальных измерений допустимо; согласованность, данные и сеть проверяются отдельно."
         case .unchanged:
-            "Критичные поверхности не доказали различие между профилями. Недоступные измерения не считаются разделением."
+            "Различий в доступных измерениях нет. Это допустимо для одинаковой аппаратной когорты; доступность и повторяемость показаны отдельно."
         case .unstable:
             "Минимум одно критичное значение изменилось при повторном запуске того же профиля."
         }
@@ -97,7 +97,8 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
-    static let currentAuditSchemaVersion = 7
+    static let currentAuditSchemaVersion = 8
+    static let semanticPolicyID = "repeatable-critical-observations-v1"
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
@@ -164,6 +165,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "permission_microphone",
         "speech_synthesis",
         "speech_voice_count",
+        "speech_voice_observation",
         "worker_audio",
         "worker_client_rects"
     ]
@@ -313,6 +315,13 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         Self.criticalKeys.filter {
             firstInitial.values[$0] != firstRepeat.values[$0]
         }
+    }
+
+    /// Repeatability and availability are independent of cross-profile
+    /// uniqueness. Equal GPU pixels are lawful; this is not a storage-isolation
+    /// or comprehensive API-semantics proof. Those remain separate gates.
+    var criticalObservationsStable: Bool {
+        unavailableCriticalKeys.isEmpty && unstableCriticalKeys.isEmpty
     }
 
     var verdict: FingerprintAuditVerdict {
@@ -517,8 +526,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 "The report does not contain distinct, stable profile identities."
             )
         }
-        if verdict != .verified {
-            issues.append("The critical-surface verdict is not verified.")
+        if !criticalObservationsStable {
+            issues.append("The critical observations are unavailable or unstable.")
         }
         if !publicAlphaUnavailableKeys.isEmpty {
             issues.append(
@@ -531,9 +540,6 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 "Required browser surfaces are unstable: " +
                     publicAlphaUnstableKeys.joined(separator: ", ") + "."
             )
-        }
-        if !changedCriticalKeys.contains("webgl_pixels") {
-            issues.append("WebGL pixels did not differ between profiles.")
         }
         issues.append(contentsOf: crossRealmConsistencyIssues)
         issues.append(contentsOf: deviceTupleConsistencyIssues)
@@ -673,9 +679,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     private static func canMapDeviceTuple(_ capture: FingerprintCapture) -> Bool {
-        capture.identityCode.hasPrefix("NA-") &&
-            capture.identityCode.count == 11 &&
-            UInt32(capture.identityCode.dropFirst(3), radix: 16) != nil
+        guard capture.identityCode.hasPrefix("NA-"),
+              capture.identityCode.count == 11,
+              let seed = UInt32(capture.identityCode.dropFirst(3), radix: 16)
+        else { return false }
+        return seed > 0 && seed <= UInt32(Int32.max)
     }
 
     private static func deviceTupleIssues(
@@ -688,7 +696,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
               let seed = UInt32(
                 capture.identityCode.dropFirst(3),
                 radix: 16
-              )
+              ),
+              seed > 0, seed <= UInt32(Int32.max)
         else {
             return [
                 "The \(label) identity code cannot be mapped to the reviewed Apple device catalog."
@@ -711,10 +720,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         expect("screen", tuple.screen)
         expect("platform", "MacIntel")
         expect("webgl_vendor", "Google Inc. (Apple)")
-        expect("webgpu_policy", "disabled")
-        if capture.values["webgl_renderer"]?.contains(
-            "Apple \(tuple.gpuModel)"
-        ) != true {
+        expect("webgpu_policy", "adapter-null")
+        // This runtime emits a canonical ANGLE renderer. A substring would
+        // incorrectly accept a Pro/Max model as the corresponding base model.
+        if capture.values["webgl_renderer"] !=
+            "ANGLE (Apple, ANGLE Metal Renderer: Apple \(tuple.gpuModel), Unspecified Version)" {
             issues.append(
                 "The \(label) WebGL renderer does not match device tuple \(tuple.id)."
             )
@@ -1247,6 +1257,9 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
         func checkCount(_ key: String) {
             guard let value = values[key] else { return }
+            // Optional native APIs may legitimately be unavailable. This is
+            // not a count of zero and must remain distinct in the receipt.
+            if value == "unavailable" { return }
             if let count = Int(value), (0...256).contains(count) {
                 return
             } else {
@@ -1278,6 +1291,30 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         checkEnum("permission_microphone", allowed: stateValues)
         checkEnum("speech_synthesis", allowed: availabilityValues)
         checkCount("speech_voice_count")
+        checkEnum("speech_voice_observation", allowed: Set([
+            "observed", "unavailable", "timeout", "error"
+        ]))
+        if values["speech_voice_observation"] == "error" {
+            issues.append("The \(label) native speech voice observation failed.")
+        }
+        if let observation = values["speech_voice_observation"] {
+            let count = values["speech_voice_count"]
+            let available = values["speech_synthesis"] == "available"
+            let consistent: Bool
+            switch observation {
+            case "observed":
+                consistent = available && count.flatMap(Int.init).map { (0...256).contains($0) } == true
+            case "timeout":
+                consistent = available && count == "unavailable"
+            case "unavailable", "error":
+                consistent = values["speech_synthesis"] == "unavailable" && count == "unavailable"
+            default:
+                consistent = false
+            }
+            if !consistent {
+                issues.append("The \(label) speech voice state disagrees with its count or availability.")
+            }
+        }
         checkHash("worker_audio")
         checkHash("worker_client_rects")
         return issues
@@ -2350,21 +2387,42 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
       } catch (_) {}
 
-      let webgpuPolicy = 'disabled';
-      try {
-        const adapter = navigator.gpu ?
-          await navigator.gpu.requestAdapter() : null;
-        if (adapter) {
-          const limits = {};
-          for (const key in adapter.limits) {
-            limits[key] = String(adapter.limits[key]);
+      // Observation is distinct from the configured launch policy. Missing
+      // API, unavailable adapter, failed request and timeout are not synonyms.
+      const observeWebGPU = async (timeoutMilliseconds = 5000) => {
+        let timer;
+        try {
+          const gpu = navigator.gpu;
+          if (!gpu || typeof gpu.requestAdapter !== 'function') {
+            return 'api-absent';
           }
-          webgpuPolicy = `available:${hashText(JSON.stringify({
-            features: Array.from(adapter.features || []).sort(),
+          const outcome = await Promise.race([
+            Promise.resolve(gpu.requestAdapter()).then(adapter => ({ adapter })),
+            new Promise(resolve => {
+              timer = setTimeout(() => resolve({ timedOut: true }), timeoutMilliseconds);
+            })
+          ]);
+          if (outcome.timedOut) return 'timeout';
+          if (outcome.adapter === null) return 'adapter-null';
+          if (!outcome.adapter) return 'error';
+          const limits = {};
+          for (const key in outcome.adapter.limits) {
+            limits[key] = String(outcome.adapter.limits[key]);
+          }
+          // Availability and advertised capabilities are not operation proof.
+          return `available:${hashText(JSON.stringify({
+            features: Array.from(outcome.adapter.features || []).sort(),
             limits
           }))}`;
+        } catch (_) {
+          return 'error';
+        } finally {
+          if (timer !== undefined) clearTimeout(timer);
         }
-      } catch (_) {}
+      };
+      // The historical report key is retained for wire compatibility; its
+      // value describes the observed adapter result, never an inferred policy.
+      const webgpuPolicy = await observeWebGPU();
 
       const renderAudioHash = async () => {
         const Audio = window.OfflineAudioContext ||
@@ -2422,17 +2480,48 @@ final class FingerprintAuditCoordinator: ObservableObject {
         'available' : 'unavailable';
       const permissionCamera = await permissionState('camera');
       const permissionMicrophone = await permissionState('microphone');
-      let speechSynthesis = 'unavailable';
-      let speechVoiceCount = 'unavailable';
-      try {
-        if (window.speechSynthesis &&
-            typeof window.speechSynthesis.getVoices === 'function') {
-          speechSynthesis = 'available';
-          speechVoiceCount = String(
-            Math.min(window.speechSynthesis.getVoices().length, 256)
-          );
+      const observeSpeechVoices = async (timeoutMilliseconds = 2000) => {
+        // Native lists load asynchronously. Keep only a bounded count; never
+        // return voice names, identifiers, locales, or synthesise speech.
+        let timer;
+        let listener;
+        let synthesis;
+        try {
+          synthesis = window.speechSynthesis;
+          if (!synthesis || typeof synthesis.getVoices !== 'function') {
+            return { availability: 'unavailable', count: 'unavailable', observation: 'unavailable' };
+          }
+          const count = () => {
+            const voices = synthesis.getVoices();
+            if (!Array.isArray(voices)) throw new Error('Invalid voice list');
+            return String(Math.min(voices.length, 256));
+          };
+          const initial = count();
+          if (initial !== '0') return { availability: 'available', count: initial, observation: 'observed' };
+          const observed = await new Promise((resolve, reject) => {
+            listener = () => {
+              try { resolve({ count: count(), observation: 'observed' }); }
+              catch (_) { reject(new Error('Voice observation failed')); }
+            };
+            synthesis.addEventListener('voiceschanged', listener);
+            // Close the gap between the initial read and listener setup.
+            const afterSubscription = count();
+            if (afterSubscription !== '0') resolve({ count: afterSubscription, observation: 'observed' });
+            timer = setTimeout(() => resolve({ count: 'unavailable', observation: 'timeout' }), timeoutMilliseconds);
+          });
+          return { availability: 'available', ...observed };
+        } catch (_) {
+          return { availability: 'unavailable', count: 'unavailable', observation: 'error' };
+        } finally {
+          if (timer !== undefined) clearTimeout(timer);
+          if (listener && synthesis && typeof synthesis.removeEventListener === 'function') {
+            synthesis.removeEventListener('voiceschanged', listener);
+          }
         }
-      } catch (_) {}
+      };
+      const speechObservation = await observeSpeechVoices();
+      const speechSynthesis = speechObservation.availability;
+      const speechVoiceCount = speechObservation.count;
 
       const rectHost = document.createElement('div');
       rectHost.style.cssText =
@@ -2456,9 +2545,77 @@ final class FingerprintAuditCoordinator: ObservableObject {
         'Arial', 'Helvetica Neue', 'Times New Roman', 'Courier New',
         'Menlo', 'SF Pro Text', 'Verdana', 'Georgia'
       ];
-      const fonts = fontCandidates.filter(font =>
-        document.fonts && document.fonts.check(`16px "${font}"`)
-      );
+      // FontFaceSet.check reports load readiness, including fallback. It is
+      // not installed-font evidence. Observe DOM and Canvas rendering against
+      // several fallback families, and retain an intentionally absent control.
+      await document.fonts.ready;
+      const fontFallbacks = ['monospace', 'serif', 'sans-serif'];
+      const fontTexts = ['mmmmWWWWiiii1111', 'Text 0123456789', 'ЖЩДяй', '漢字かな'];
+      const absentFont = 'NeAntikAbsentFont_8b243f21';
+      const fontHost = document.createElement('div');
+      fontHost.style.cssText =
+        'position:absolute;left:-10000px;visibility:hidden;white-space:pre';
+      document.body.appendChild(fontHost);
+      const fontCanvas = document.createElement('canvas');
+      const fontContext = fontCanvas.getContext('2d');
+      const measureFont = (family, text) => {
+        const span = document.createElement('span');
+        span.style.cssText = 'font-size:48px;font-kerning:none';
+        span.style.fontFamily = family;
+        span.textContent = text;
+        fontHost.appendChild(span);
+        const box = span.getBoundingClientRect();
+        fontContext.font = `48px ${family}`;
+        fontContext.fontKerning = 'none';
+        const metric = fontContext.measureText(text);
+        span.remove();
+        const values = [box.width, box.height, metric.width,
+          metric.actualBoundingBoxLeft, metric.actualBoundingBoxRight,
+          metric.actualBoundingBoxAscent, metric.actualBoundingBoxDescent];
+        if (!values.every(Number.isFinite)) throw new Error('Font metric unavailable');
+        return values;
+      };
+      let fonts = 'unavailable';
+      try {
+        const baseline = new Map();
+        const observations = [];
+        for (const fallback of fontFallbacks) {
+          for (const text of fontTexts) {
+            const first = measureFont(fallback, text);
+            const repeated = measureFont(fallback, text);
+            if (JSON.stringify(first) !== JSON.stringify(repeated)) {
+              throw new Error('Unstable fallback metrics');
+            }
+            baseline.set(`${fallback}:${text}`, first);
+          }
+        }
+        for (const font of [...fontCandidates, absentFont]) {
+          for (const fallback of fontFallbacks) {
+            for (const text of fontTexts) {
+              const family = `"${font}", ${fallback}`;
+              await document.fonts.load(`48px ${family}`, text);
+              const first = measureFont(family, text);
+              const repeated = measureFont(family, text);
+              if (JSON.stringify(first) !== JSON.stringify(repeated)) {
+                throw new Error('Unstable candidate metrics');
+              }
+              const fallbackEquivalent = JSON.stringify(first) ===
+                JSON.stringify(baseline.get(`${fallback}:${text}`));
+              if (font === absentFont && !fallbackEquivalent) {
+                throw new Error('Absent font control changed fallback');
+              }
+              observations.push([font, fallback, text, first, fallbackEquivalent]);
+            }
+          }
+        }
+        // Equality is inconclusive, not a claim that a family exists or is
+        // absent. Report bounded rendering evidence rather than a font list.
+        fonts = `metrics-v1:${hashText(JSON.stringify(observations))}:fallback-control-pass`;
+      } catch (_) {
+        fonts = 'unavailable';
+      } finally {
+        fontHost.remove();
+      }
 
       let clientHints = {};
       try {
@@ -2797,6 +2954,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         permission_microphone: permissionMicrophone,
         speech_synthesis: speechSynthesis,
         speech_voice_count: speechVoiceCount,
+        speech_voice_observation: speechObservation.observation,
         client_rects: hashText(rectValues),
         client_rects_repeat: hashText(rectRepeatValues),
         user_agent: navigator.userAgent,
@@ -2818,7 +2976,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         hardware_concurrency: String(navigator.hardwareConcurrency || ''),
         device_memory: String(navigator.deviceMemory || ''),
         touch_points: String(navigator.maxTouchPoints || 0),
-        fonts: fonts.join(','),
+        fonts,
         client_hints: JSON.stringify(clientHints),
         worker_canvas: workerValue('canvas'),
         worker_webgl_pixels: workerValue('webgl_pixels'),

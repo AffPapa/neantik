@@ -56,7 +56,7 @@ struct RuntimeProvenanceCardTests {
         #expect(snapshot.preflight == "Готов к запуску")
         #expect(
             snapshot.publicReleaseStatus.contains(
-                "Ниже baseline 154.0.8037.98"
+                "Ниже baseline 155.0.8059.40"
             )
         )
         #expect(!snapshot.source.contains("/private"))
@@ -83,7 +83,7 @@ struct RuntimeProvenanceCardTests {
             source: "Встроен",
             flavor: .fingerprintChromium,
             inspection: BrowserRuntimeInspection(
-                version: "154.0.8037.98",
+                version: "155.0.8059.40",
                 architectures: ["arm64"],
                 codeSignatureValid: true
             )
@@ -116,7 +116,7 @@ struct RuntimeProvenanceCardTests {
             preflight: BrowserRuntimePreflight(errors: [], warnings: [])
         )
 
-        #expect(snapshot.publicReleaseStatus.contains("154.0.8037.98"))
+        #expect(snapshot.publicReleaseStatus.contains("155.0.8059.40"))
         #expect(snapshot.publicReleaseStatus.contains("заблокирован"))
     }
 }

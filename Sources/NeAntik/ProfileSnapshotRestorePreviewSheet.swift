@@ -8,11 +8,11 @@ struct ProfileSnapshotRestorePreviewSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Проверка восстановления")
+            Text("Добавление настроек из снимка")
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Snapshot от \(preview.snapshotDate.formatted(date: .long, time: .shortened))")
+            Text("Снимок настроек от \(preview.snapshotDate.formatted(date: .long, time: .shortened))")
                 .foregroundStyle(.secondary)
 
             Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
@@ -38,7 +38,7 @@ struct ProfileSnapshotRestorePreviewSheet: View {
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Сводка восстановления профиля")
+            .accessibilityLabel("Сводка добавления новых профилей")
             .accessibilityValue(preview.accessibilitySummary)
 
             Text("Будут добавлены новые профили. Существующие профили и данные браузера не изменятся. Для новых профилей создаются новые identity.")
@@ -48,7 +48,8 @@ struct ProfileSnapshotRestorePreviewSheet: View {
             HStack {
                 Button("Отмена", action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                    .accessibilityLabel("Отменить восстановление профиля")
+                    .disabled(isRestoring)
+                    .accessibilityLabel("Отменить добавление профилей")
                     .accessibilityHint(
                         "Закроет просмотр. Профили и папки не изменятся."
                     )
@@ -57,10 +58,10 @@ struct ProfileSnapshotRestorePreviewSheet: View {
                     if isRestoring {
                         HStack(spacing: 8) {
                             ProgressView().controlSize(.small)
-                            Text("Восстанавливаем…")
+                            Text("Добавляем…")
                         }
                     } else {
-                        Text("Восстановить")
+                        Text("Добавить новые профили")
                     }
                 }
                 .disabled(isRestoring)
@@ -68,16 +69,17 @@ struct ProfileSnapshotRestorePreviewSheet: View {
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel(
                     isRestoring
-                        ? "Восстанавливаем профили из снимка"
-                        : "Восстановить профили из снимка"
+                        ? "Добавляем новые профили из снимка настроек"
+                        : "Добавить новые профили из снимка настроек"
                 )
                 .accessibilityHint(
                     isRestoring
-                        ? "Идёт восстановление. Подожди завершения операции."
-                        : "Добавит профили из snapshot в текущий список"
+                        ? "Сохраняем новые профили и папки. Подожди завершения операции."
+                        : "Добавит новые профили с новыми identity. Данные сайтов не переносятся."
                 )
             }
         }
+        .interactiveDismissDisabled(isRestoring)
         .padding(24)
         .frame(minWidth: 480, idealWidth: 520, maxWidth: 620)
         .fixedSize(horizontal: false, vertical: true)

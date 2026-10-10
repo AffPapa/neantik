@@ -184,6 +184,60 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func unavailableCountsRemainDistinctFromZeroAndVoiceErrorsAreNotSuccess() {
+        var values = baseValues(canvas: "canvas-a")
+        values["media_devices"] = "unavailable"
+        values["media_device_count"] = "unavailable"
+        values["speech_synthesis"] = "available"
+        values["speech_voice_count"] = "unavailable"
+        values["speech_voice_observation"] = "timeout"
+        let first = capture(name: "First", values: values)
+        let second = capture(name: "Second", values: baseValues(canvas: "canvas-b"))
+        let unresolved = report(first: first, second: second, repeatCapture: first)
+        #expect(unresolved.privacyDiagnosticIssues.isEmpty)
+        #expect(unresolved.firstInitial.values["speech_voice_count"] != "0")
+
+        values["speech_voice_observation"] = "error"
+        // Match the native probe's catch result: failure is distinct from
+        // an available API whose initial voice list has not settled yet.
+        values["speech_synthesis"] = "unavailable"
+        let failed = capture(name: "First", values: values)
+        let failure = report(first: failed, second: second, repeatCapture: failed)
+        #expect(failure.privacyDiagnosticIssues.count == 2)
+    }
+
+    @Test
+    func voiceFailureCannotAlsoClaimAvailableObservation() {
+        var values = baseValues(canvas: "canvas-a")
+        values["speech_synthesis"] = "available"
+        values["speech_voice_count"] = "unavailable"
+        values["speech_voice_observation"] = "error"
+        let failed = capture(name: "First", values: values)
+        let result = report(first: failed,
+                            second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+                            repeatCapture: failed)
+        #expect(result.privacyDiagnosticIssues.filter { $0.contains("observation failed") }.count == 2)
+        #expect(result.privacyDiagnosticIssues.filter { $0.contains("disagrees") }.count == 2)
+        #expect(!result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func unresolvedVoiceListCannotPretendToBeAnObservedEmptyList() {
+        for state in ["timeout", "unavailable", "observed"] {
+            var values = baseValues(canvas: "canvas-a")
+            values["speech_synthesis"] = "available"
+            values["speech_voice_observation"] = state
+            values["speech_voice_count"] = state == "observed" ? "unavailable" : "0"
+            let first = capture(name: "First", values: values)
+            let result = report(first: first,
+                                second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+                                repeatCapture: first)
+            #expect(!result.privacyDiagnosticIssues.isEmpty)
+        }
+    }
+
+    @Test
     func missingOptionalPrivacyDiagnosticsRemainBackwardCompatible() {
         let first = capture(
             name: "First",
@@ -443,6 +497,20 @@ struct FingerprintAuditTests {
         )
 
         #expect(context.exception == nil)
+    }
+
+    @Test(arguments: ["api-absent", "error", "timeout", "disabled", "available:owned"])
+    func webGPUFailureOrLegacyLabelCannotQualifyAsAdapterUnavailable(_ observation: String) {
+        var values = coherentM2Values(canvas: "owned", webGLPixels: "owned")
+        values["webgpu_policy"] = observation
+        let first = capture(name: "Owned WebGPU fixture", identityCode: "NA-00000002", values: values)
+        let issues = report(first: first, second: first, repeatCapture: first).deviceTupleConsistencyIssues
+        #expect(issues.contains { $0.contains("webgpu_policy") })
+
+        values["webgpu_policy"] = "adapter-null"
+        let observed = capture(name: "Owned WebGPU fixture", identityCode: "NA-00000002", values: values)
+        let observedIssues = report(first: observed, second: observed, repeatCapture: observed).deviceTupleConsistencyIssues
+        #expect(!observedIssues.contains { $0.contains("webgpu_policy") })
     }
 
     @Test
@@ -738,6 +806,44 @@ struct FingerprintAuditTests {
             FingerprintAuditExecutionMode.browser
                 .additionalLaunchArguments.isEmpty
         )
+    }
+
+    @Test
+    func equalGPUReadbackDoesNotRequireArtificialProfileUniqueness() {
+        let shared = coherentM2Values(canvas: "canvas-shared", webGLPixels: "webgl-shared")
+        let first = capture(name: "A", identityCode: "NA-00000002", values: shared)
+        let second = capture(name: "B", identityCode: "NA-0000000D", values: shared)
+        let result = report(first: first, second: second, repeatCapture: first)
+        #expect(result.changedCriticalKeys.isEmpty)
+        #expect(result.verdict == .unchanged) // Truthful difference summary.
+        #expect(result.criticalObservationsStable)
+        #expect(result.productionReleaseIssues.isEmpty)
+        #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func semanticAcceptanceStillRejectsMissingUnstableAndIncoherentWebGL() {
+        let shared = coherentM2Values(canvas: "canvas-shared", webGLPixels: "webgl-shared")
+        let first = capture(name: "A", identityCode: "NA-00000002", values: shared)
+        for (key, value) in [("webgl_pixels", "unavailable"),
+                             ("worker_webgl_pixels", "other"),
+                             ("webgl_pixels_repeat", "other"),
+                             ("webgl_renderer", "invalid GPU"),
+                             ("webrtc_complete", "false")] {
+            var bad = shared; bad[key] = value
+            let second = capture(name: "B", identityCode: "NA-0000000D", values: bad)
+            let result = report(first: first, second: second, repeatCapture: first)
+            #expect(!result.isProductionReleaseQualified)
+        }
+        var badRepeat = shared; badRepeat["webgl_pixels"] = "other"
+        let unstable = report(first: first,
+            second: capture(name: "B", identityCode: "NA-0000000D", values: shared),
+            repeatCapture: capture(id: first.profileID, name: "A", identityCode: first.identityCode, values: badRepeat))
+        #expect(!unstable.criticalObservationsStable)
+        #expect(!unstable.isProductionReleaseQualified)
+        let sameIdentity = report(first: first,
+            second: capture(name: "B", identityCode: first.identityCode, values: shared), repeatCapture: first)
+        #expect(!sameIdentity.isProductionReleaseQualified)
     }
 
     @Test
@@ -1540,6 +1646,50 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func rejectsGPUFamilySubstringAndInvalidIdentitySeeds() {
+        // Fixed cohort contracts, rather than values derived from the matcher.
+        let tuples: [(String, Int, String, String)] = [
+            ("M1", 8, "1280x800x1280x775x24x2", "15.5.0"),
+            ("M1 Pro", 10, "1512x982x1512x957x24x2", "15.4.1"),
+            ("M2", 8, "1280x832x1280x807x24x2", "15.4.0"),
+            ("M2 Max", 12, "1728x1117x1728x1092x24x2", "15.3.2"),
+            ("M2 Pro", 12, "1512x982x1512x957x24x2", "15.3.1"),
+            ("M3", 8, "1280x832x1280x807x24x2", "15.3.0"),
+            ("M3 Max", 16, "1728x1117x1728x1092x24x2", "15.2.0"),
+            ("M3 Pro", 12, "1512x982x1512x957x24x2", "15.1.1"),
+            ("M4", 10, "1280x832x1280x807x24x2", "15.1.0"),
+            ("M4 Max", 16, "1728x1117x1728x1092x24x2", "15.0.1"),
+            ("M4 Pro", 14, "1512x982x1512x957x24x2", "15.5.0")
+        ]
+        for (index, tuple) in tuples.enumerated() {
+            let identity = String(format: "NA-%08X", index == 0 ? 11 : index)
+            let values = coherentTupleValues(canvas: "a", webGLPixels: "a",
+                gpu: tuple.0, cores: tuple.1, screen: tuple.2,
+                platformVersion: tuple.3, runtimeVersion: "1")
+            func issues(_ changed: [String: String], identityCode: String? = nil) -> [String] {
+                let first = capture(name: "Owned fixture", identityCode: identityCode ?? identity,
+                                    values: changed)
+                return report(first: first, second: first, repeatCapture: first)
+                    .deviceTupleConsistencyIssues
+            }
+            #expect(issues(values).isEmpty)
+            let renderer = values["webgl_renderer"]!
+            let wrongRenderers = ["prefix " + renderer, renderer + " suffix"] +
+                tuples.filter { $0.0 != tuple.0 }.map {
+                    "ANGLE (Apple, ANGLE Metal Renderer: Apple \($0.0), Unspecified Version)"
+                }
+            for wrong in wrongRenderers {
+                var changed = values
+                changed["webgl_renderer"] = wrong
+                #expect(issues(changed).contains { $0.contains("WebGL renderer") })
+            }
+            for invalid in ["NA-00000000", "NA-FFFFFFFF", "NA-80000000"] {
+                #expect(!issues(values, identityCode: invalid).isEmpty)
+            }
+        }
+    }
+
+    @Test
     func validatesCoherentAppleDeviceTuplesForPinnedRuntime() {
         let firstValues = coherentTupleValues(
             canvas: "canvas-a",
@@ -1875,7 +2025,7 @@ struct FingerprintAuditTests {
         )
         #expect(
             result.productionReleaseIssues.contains {
-                $0.contains("WebGL pixels did not differ")
+                $0.contains("unavailable or unstable")
             }
         )
     }
@@ -2124,7 +2274,7 @@ struct FingerprintAuditTests {
             "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
             "webgl_shader_precision": "precision",
-            "webgpu_policy": "disabled",
+            "webgpu_policy": "adapter-null",
             "user_agent": "Mozilla/5.0",
             "platform": "MacIntel",
             "client_hints": clientHints,

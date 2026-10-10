@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-gui-fingerprint-report.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("verify_gui_fingerprint_report", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -20,11 +21,91 @@ SHA_B = "b" * 64
 
 
 class VerifyGuiFingerprintReportTests(unittest.TestCase):
+    def test_exact_m156_source_contract_cannot_borrow_another_runtime(self):
+        self.assertEqual(MODULE.source_contract_name("156.0.8078.12"), "chromium-15612-source-contract.json")
+        self.assertEqual(MODULE.source_contract_name("156.0.8078.12", {"sourceContract": "runtime/chromium-15612-source-contract.json"}), "chromium-15612-source-contract.json")
+        for value in ({"sourceContract": "runtime/chromium-15540-source-contract.json"}, {}, {"sourceContract": "../chromium-15612-source-contract.json"}):
+            with self.assertRaises(MODULE.FingerprintReportError):
+                MODULE.source_contract_name("156.0.8078.12", value)
+        with self.assertRaises(MODULE.FingerprintReportError):
+            MODULE.source_contract_name("156.0.8078.13")
+
+    def test_semantic_audit8_allows_equal_webgl_without_relaxing_coherence(self):
+        report = production_report(); report["auditSchemaVersion"] = 8
+        # Distinct identities keep their coherent tuples; rendering equality is
+        # lawful even if hardware labels differ. Preserve actual changed keys.
+        for name in ("firstInitial", "second", "firstRepeat"):
+            for key in ("webgl_pixels", "webgl_pixels_repeat", "worker_webgl_pixels"):
+                report[name]["values"][key] = "shared-webgl"
+        summary = MODULE.verification_summary(report)
+        self.assertTrue(summary["productionQualified"], summary)
+        legacy = json.loads(json.dumps(report)); legacy["auditSchemaVersion"] = 7
+        self.assertFalse(MODULE.verification_summary(legacy)["productionQualified"])
+        for key, bad in (("worker_webgl_pixels", "wrong"), ("webgl_pixels_repeat", "wrong"),
+                         ("webgl_pixels", "unavailable"), ("webgl_renderer", "wrong"),
+                         ("webrtc_complete", "false")):
+            value = json.loads(json.dumps(report)); value["second"]["values"][key] = bad
+            self.assertFalse(MODULE.verification_summary(value)["productionQualified"], key)
+
+    def test_catalog_renderer_requires_exact_gpu_and_identity_range(self):
+        for index, tuple_ in enumerate(MODULE.APPLE_DEVICE_TUPLES):
+            identity = f"NA-{(index or len(MODULE.APPLE_DEVICE_TUPLES)):08X}"
+            valid = {"identityCode": identity, "values": {
+                "hardware_concurrency": str(tuple_.hardware_concurrency),
+                "device_memory": str(tuple_.web_device_memory_gb), "screen": tuple_.screen,
+                "platform": "MacIntel", "webgl_vendor": "Google Inc. (Apple)",
+                "webgpu_policy": "disabled", "webgl_renderer":
+                    f"ANGLE (Apple, ANGLE Metal Renderer: Apple {tuple_.gpu_model}, Unspecified Version)",
+                "client_hints": json.dumps({"architecture": "arm", "bitness": "64",
+                    "platform": "macOS", "platformVersion": tuple_.platform_version,
+                    "uaFullVersion": "156.0.8078.12"}),
+                "user_agent": "Mozilla/5.0 Chrome/156.0.8078.12 Safari/537.36"}}
+            self.assertEqual(MODULE.device_tuple_issues("control", valid,
+                             runtime_version="156.0.8078.12"), [])
+            renderer = valid["values"]["webgl_renderer"]
+            for bad in ["prefix " + renderer, renderer + " suffix"] + [
+                    f"ANGLE (Apple, ANGLE Metal Renderer: Apple {other.gpu_model}, Unspecified Version)"
+                    for other in MODULE.APPLE_DEVICE_TUPLES if other.gpu_model != tuple_.gpu_model]:
+                valid["values"]["webgl_renderer"] = bad
+                self.assertTrue(any("WebGL renderer" in issue for issue in
+                    MODULE.device_tuple_issues("negative", valid, runtime_version="156.0.8078.12")))
+        for identity in ("NA-00000000", "NA-FFFFFFFF", "NA-80000000"):
+            self.assertIsNone(MODULE.tuple_for_identity(identity))
+        self.assertIsNotNone(MODULE.tuple_for_identity("NA-7FFFFFFF"))
+
+    def test_semantic_contract_path_cannot_inherit_base_contract(self):
+        prefix = "chromium-15540-semantic-v3"
+        lock = {"semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-v3",
+                "sourceContract": "runtime/" + prefix + "-source-contract.json",
+                "sourceProvenance": "runtime/" + prefix + "-port-candidate.json"}
+        self.assertEqual(MODULE.source_contract_name("155.0.8059.40", lock), prefix + "-source-contract.json")
+        with self.assertRaises(ValueError):
+            MODULE.source_contract_name("155.0.8059.40", {**lock, "sourceContract": "runtime/chromium-15540-source-contract.json"})
+
     def test_m154_embedded_contract_uses_exact_version(self):
         self.assertEqual(MODULE.source_contract_name("154.0.8037.93"), "chromium-154-source-contract.json")
         self.assertEqual(MODULE.source_contract_name("154.0.8037.98"), "chromium-154-source-contract.json")
         with self.assertRaises(MODULE.FingerprintReportError):
             MODULE.source_contract_name("154.0.8037.58")
+
+    def test_m155_contract_cannot_fall_back_to_legacy_version(self):
+        self.assertEqual(MODULE.source_contract_name("155.0.8059.40"),
+                         "chromium-15540-source-contract.json")
+        for version in ("155.0.8059.26", "155.0.8059.41", "154.0.8037.58"):
+            with self.assertRaises(MODULE.FingerprintReportError):
+                MODULE.source_contract_name(version)
+
+    def test_future_versions_cannot_select_historical_gui_evidence(self):
+        for version in ("156.0.8078.13", "157.0.9000.1", "999.1.2.3"):
+            with self.subTest(version=version):
+                with self.assertRaises(MODULE.FingerprintReportError):
+                    MODULE.source_contract_name(version)
+
+    def test_invalid_versions_have_no_diagnostic_contract_fallback(self):
+        for version in (None, "", "156", "156.0.8078.12.extra", "１５６.0.1.2"):
+            with self.subTest(version=version):
+                with self.assertRaises(MODULE.FingerprintReportError):
+                    MODULE.source_contract_name(version)
 
     def test_m154_embedded_app_cannot_fall_back_to_legacy_contract(self):
         with tempfile.TemporaryDirectory() as temporary:

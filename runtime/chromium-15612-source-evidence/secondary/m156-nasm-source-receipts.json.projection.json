@@ -1,0 +1,23 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "ffe8387d0df8a8eab934d29ce4c22e69038ed4c1061b961ed7447d22f0f5e678",
+  "payload": {
+    "third_party/nasm/config/config-mac.h": {
+      "gitBlob": "d4f4004420cb21cf5a276354a9de41c9562711fc",
+      "pin": "525a09a813be0f75b646ee93fc2a31c27b87d722",
+      "repository": "https://chromium.googlesource.com/chromium/deps/nasm",
+      "sha256": "a6c17406ee2ed8c39ffc204b0cda59e9477a7a2d6e16796b2708f7ac356d4327",
+      "size": 31285
+    }
+  },
+  "payloadType": "json",
+  "receipt": "m156-nasm-source-receipts.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

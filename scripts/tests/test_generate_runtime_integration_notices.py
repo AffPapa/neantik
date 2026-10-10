@@ -5,7 +5,10 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +24,21 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeIntegrationNoticesTests(unittest.TestCase):
+    def test_m155_default_check_uses_new_major_and_preserves_m154_notices(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "runtime").mkdir()
+            (root / "docs").mkdir()
+            (root / "runtime/fingerprint-chromium.lock.json").write_text(json.dumps({
+                "fingerprintChromium": {"chromiumVersion": "155.0.8059.40"}}))
+            old = root / "docs/RUNTIME_INTEGRATION_NOTICES_154.md"
+            old.write_text("immutable old notices")
+            (root / "docs/RUNTIME_INTEGRATION_NOTICES_155.md").write_text("new notices")
+            with patch.object(sys, "argv", [str(SCRIPT), "--project-root", str(root), "--check"]), \
+                 patch.object(MODULE, "render_notices", return_value="new notices"):
+                self.assertEqual(MODULE.main(), 0)
+            self.assertEqual(old.read_text(), "immutable old notices")
+
     def test_m154_candidate_has_own_source_and_preserves_public_notices(self) -> None:
         published = ROOT / "docs/RUNTIME_INTEGRATION_NOTICES.md"
         before = published.read_bytes()
@@ -43,8 +61,8 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
         rendered = MODULE.render_notices(project_root=ROOT)
         runtime_lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium.lock.json")
-        if runtime_lock["fingerprintChromium"]["chromiumVersion"] in {"154.0.8037.93", "154.0.8037.98"}:
-            self.assertEqual(rendered, (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_154.md").read_text())
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40"}:
+            self.assertEqual(rendered, (ROOT / ("docs/RUNTIME_INTEGRATION_NOTICES_"+runtime_lock["fingerprintChromium"]["chromiumVersion"].split(".")[0]+".md")).read_text())
             self.assertEqual(rendered, MODULE.render_m154_notices(
                 project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
             self.assertIn(f"Chromium: `{runtime_lock['fingerprintChromium']['chromiumVersion']}`", rendered)

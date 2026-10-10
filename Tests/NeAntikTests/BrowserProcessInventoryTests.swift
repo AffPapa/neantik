@@ -446,6 +446,86 @@ struct BrowserProcessInventoryTests {
 
     @MainActor
     @Test
+    func transientLeaseContentionRetriesFreshInventory() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Owned busy inventory")
+        let acquired = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal()
+                _ = release.wait(timeout: .now() + 3)
+            }
+        }
+        defer {
+            release.signal()
+            _ = finished.wait(timeout: .now() + 3)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        let sequence = InventorySequence((0..<3).map { _ in BrowserProcessInventory(processes: [:]) })
+        let manager = BrowserProcessManager(
+            paths: paths, processIdentityInspector: { _ in .unknown },
+            processLivenessValidator: { _ in false },
+            browserDataProcessInspector: { _ in .unknown },
+            processInventoryProvider: { sequence.capture() }
+        )
+        manager.reconcile(profiles: [profile])
+        try #require(await waitUntil { sequence.captureCount == 1 })
+        #expect(manager.processState(for: profile.id) != .stopped)
+        release.signal()
+        #expect(await waitUntil { manager.processState(for: profile.id) == .stopped })
+        #expect(sequence.captureCount >= 2 && sequence.captureCount <= 3)
+        #expect(!sequence.anyCaptureOnMainThread)
+        manager.suspendPassiveObservations()
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func busyInventoryRetriesAreBoundedAndCancellationInvalidatesThem(cancel: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Owned bounded inventory")
+        let acquired = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal(); release.wait()
+            }
+        }
+        let sequence = InventorySequence((0..<5).map { _ in BrowserProcessInventory(processes: [:]) })
+        let manager = BrowserProcessManager(
+            paths: paths, processIdentityInspector: { _ in .unknown },
+            processLivenessValidator: { _ in false }, browserDataProcessInspector: { _ in .unknown },
+            processInventoryProvider: { sequence.capture() }
+        )
+        defer {
+            release.signal(); _ = finished.wait(timeout: .now() + 3)
+            manager.suspendPassiveObservations()
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        manager.reconcile(profiles: [profile])
+        try #require(await waitUntil { sequence.captureCount == 1 })
+        if cancel { manager.suspendPassiveObservations() }
+        else { try #require(await waitUntil { manager.processState(for: profile.id) == .recoveryRequired }) }
+        try await Task.sleep(nanoseconds: 400_000_000)
+        #expect(sequence.captureCount == (cancel ? 1 : 3))
+        #expect(manager.processState(for: profile.id) != .stopped)
+        release.signal()
+        // Foreground reconciliation uses a new generation and fresh evidence.
+        manager.reconcile(profiles: [profile])
+        #expect(await waitUntil { manager.processState(for: profile.id) == .stopped })
+        #expect(sequence.captureCount == (cancel ? 2 : 4))
+    }
+
+    @MainActor
+    @Test
     func productionReconcileCapturesOneInventoryForOneHundredProfiles()
         async throws
     {
