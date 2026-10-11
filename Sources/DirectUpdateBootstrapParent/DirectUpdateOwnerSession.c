@@ -79,19 +79,21 @@ static int owner_poll(int fd, short events, uint64_t deadline, NeAntikBootstrapC
     if ((fds[0].revents|fds[1].revents)&POLLNVAL) return NUB_IO;
     return s ? owner_stderr(s):NUB_COMPLETE;
 }
+static int owner_uncancelled(void *context) { (void)context; return 0; }
 static int owner_read(int fd, uint8_t *buffer, size_t capacity, size_t *received,
-    uint64_t deadline, uint32_t frame_ms, NeAntikBootstrapCancel cancel, void *context, NeAntikUpdateOwnerSession *s) {
+    uint64_t deadline, uint32_t frame_ms, NeAntikBootstrapCancel cancel, void *context, NeAntikUpdateOwnerSession *s, int boundary) {
     if (received) *received=0;
     if (!buffer || !received || !capacity || capacity>OWNER_FRAME_MAX || !deadline || !cancel ||
         !frame_ms || frame_ms>10000 || !owner_prepare_fd(fd,0)) return NUB_REQUEST;
     uint8_t header[4]; size_t header_bytes=0, length=0, offset=0;
     uint64_t body_deadline=deadline;
     while (header_bytes<4 || offset<length) {
-        int status=owner_check(body_deadline,cancel,context,s); if (status) return status;
+        NeAntikBootstrapCancel current_cancel = boundary && header_bytes ? owner_uncancelled:cancel;
+        int status=owner_check(body_deadline,current_cancel,context,s); if (status) return status;
         size_t count=header_bytes<4 ? 4-header_bytes:length-offset;
         ssize_t got=read(fd,header_bytes<4 ? header+header_bytes:buffer+offset,count);
         if (got<0 && (errno==EINTR || errno==EAGAIN)) {
-            status=owner_poll(fd,POLLIN,body_deadline,cancel,context,s); if (status) return status; continue;
+            status=owner_poll(fd,POLLIN,body_deadline,current_cancel,context,s); if (status) return status; continue;
         }
         if (got<0) return NUB_IO;
         if (!got) return !header_bytes ? NUB_EOF:NUB_OUTPUT;
@@ -107,7 +109,7 @@ static int owner_read(int fd, uint8_t *buffer, size_t capacity, size_t *received
             }
         } else offset+=(size_t)got;
     }
-    int status=owner_check(body_deadline,cancel,context,s); if (status) return status;
+    int status=owner_check(body_deadline,boundary ? owner_uncancelled:cancel,context,s); if (status) return status;
     *received=offset; return NUB_COMPLETE;
 }
 static int owner_write(int fd, const uint8_t *bytes, size_t count, uint64_t deadline,
@@ -127,7 +129,7 @@ static int owner_write(int fd, const uint8_t *bytes, size_t count, uint64_t dead
     return owner_check(deadline,cancel,context,s);
 }
 int neantik_update_pipe_read_frame(int fd,uint8_t *buffer,size_t capacity,size_t *received,uint64_t deadline,
-    uint32_t frame_ms,NeAntikBootstrapCancel cancel,void *context) { return owner_read(fd,buffer,capacity,received,deadline,frame_ms,cancel,context,NULL); }
+    uint32_t frame_ms,NeAntikBootstrapCancel cancel,void *context) { return owner_read(fd,buffer,capacity,received,deadline,frame_ms,cancel,context,NULL,0); }
 int neantik_update_pipe_write_frame(int fd,const uint8_t *bytes,size_t count,uint64_t deadline,
     NeAntikBootstrapCancel cancel,void *context) { return owner_write(fd,bytes,count,deadline,cancel,context,NULL); }
 int neantik_update_pipe_expect_eof(int fd,uint64_t deadline,NeAntikBootstrapCancel cancel,void *context) {
@@ -143,7 +145,11 @@ int neantik_update_pipe_expect_eof(int fd,uint64_t deadline,NeAntikBootstrapCanc
 }
 int neantik_update_owner_read_frame(NeAntikUpdateOwnerSession *s,uint8_t *buffer,size_t capacity,size_t *received,
     uint64_t deadline,uint32_t frame_ms,NeAntikBootstrapCancel cancel,void *context) {
-    return s ? owner_read(s->output,buffer,capacity,received,deadline,frame_ms,cancel,context,s):NUB_REQUEST;
+    return s ? owner_read(s->output,buffer,capacity,received,deadline,frame_ms,cancel,context,s,0):NUB_REQUEST;
+}
+int neantik_update_owner_read_frame_boundary(NeAntikUpdateOwnerSession *s,uint8_t *buffer,size_t capacity,size_t *received,
+    uint64_t deadline,uint32_t frame_ms,NeAntikBootstrapCancel cancel,void *context) {
+    return s ? owner_read(s->output,buffer,capacity,received,deadline,frame_ms,cancel,context,s,1):NUB_REQUEST;
 }
 int neantik_update_owner_write_frame(NeAntikUpdateOwnerSession *s,const uint8_t *bytes,size_t count,
     uint64_t deadline,NeAntikBootstrapCancel cancel,void *context) {

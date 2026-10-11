@@ -32,6 +32,14 @@ private func ownerPipeCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
     guard let raw else { return 1 }
     return Unmanaged<OwnerPipeContext>.fromOpaque(raw).takeUnretainedValue().isCancelled ? 1:0
 }
+private final class OwnerBoundaryCancellation {
+    private(set) var checks = 0
+    func check() -> Int32 { checks += 1; return checks >= 2 ? 1 : 0 }
+}
+private func ownerBoundaryCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
+    guard let raw else { return 1 }
+    return Unmanaged<OwnerBoundaryCancellation>.fromOpaque(raw).takeUnretainedValue().check()
+}
 @Suite(.serialized) struct DirectUpdateOwnerTransportTests {
     private func fixture(_ mode: String, source: URL? = nil) throws -> (URL, URL) {
         var binary = source
@@ -126,6 +134,38 @@ private func ownerPipeCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
         let cancel = Thread { usleep(50000); context.cancel() }; cancel.start()
         let start = Date(), (reply, _) = read(session, context, phase: 2000)
         #expect(reply == NUB_CANCELLED && Date().timeIntervalSince(start) < 1)
+    }
+    @Test func cooperativeCancellationPreservesAnAlreadyStartedFrameAndNextBoundary() throws {
+        for boundary in [false, true] {
+            let (root, helper) = try fixture("boundary-frame"); defer { try? FileManager.default.removeItem(at: root) }
+            let context = OwnerPipeContext(helper: helper), (_, value) = begin(context)
+            let session = try #require(value); defer { cleanup(session) }
+            #expect(write(Data([7]), session: session, context: context) == NUB_COMPLETE)
+            for _ in 0..<100 where !FileManager.default.fileExists(atPath: helper.path + ".frame-started") { usleep(1000) }
+            try #require(FileManager.default.fileExists(atPath: helper.path + ".frame-started"))
+            let cancellation = OwnerBoundaryCancellation(), raw = Unmanaged.passUnretained(cancellation).toOpaque()
+            var data = Data(count: 1024), received = 0
+            let status = data.withUnsafeMutableBytes { bytes in
+                if boundary {
+                    return neantik_update_owner_read_frame_boundary(session, bytes.bindMemory(to: UInt8.self).baseAddress,
+                        bytes.count, &received, neantik_update_pipe_deadline(1000), 500, ownerBoundaryCancel, raw)
+                }
+                return neantik_update_owner_read_frame(session, bytes.bindMemory(to: UInt8.self).baseAddress,
+                    bytes.count, &received, neantik_update_pipe_deadline(1000), 500, ownerBoundaryCancel, raw)
+            }
+            if boundary {
+                #expect(status == NUB_COMPLETE && data.prefix(received) == Data(repeating: 7, count: 4) && cancellation.checks == 1)
+                let next = data.withUnsafeMutableBytes {
+                    neantik_update_owner_read_frame_boundary(session, $0.bindMemory(to: UInt8.self).baseAddress,
+                        $0.count, &received, neantik_update_pipe_deadline(1000), 500, ownerBoundaryCancel, raw)
+                }
+                #expect(next == NUB_CANCELLED && received == 0)
+            } else {
+                // Negative control proves ordinary mid-frame cancellation
+                // cannot safely resume parsing on the same stream.
+                #expect(status == NUB_CANCELLED && received == 0)
+            }
+        }
     }
     @Test func abortEscalationIsBoundedAndRepeatedAbortDoesNotSignal() throws {
         let (root, helper) = try fixture("hang-kill"); defer { try? FileManager.default.removeItem(at:root) }

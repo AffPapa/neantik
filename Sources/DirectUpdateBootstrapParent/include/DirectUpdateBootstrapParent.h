@@ -51,6 +51,12 @@ int neantik_update_pipe_expect_eof(int fd, uint64_t deadline,
 int neantik_update_owner_read_frame(NeAntikUpdateOwnerSession *session,
     uint8_t *buffer, size_t capacity, size_t *received, uint64_t deadline,
     uint32_t frame_timeout_ms, NeAntikBootstrapCancel cancel, void *context);
+/* Cooperative client cancellation stops only before the first header byte.
+ * Once a frame starts, finish it under the existing short frame deadline, so
+ * a subsequent Cancelled response cannot be parsed from a discarded tail. */
+int neantik_update_owner_read_frame_boundary(NeAntikUpdateOwnerSession *session,
+    uint8_t *buffer, size_t capacity, size_t *received, uint64_t deadline,
+    uint32_t frame_timeout_ms, NeAntikBootstrapCancel cancel, void *context);
 int neantik_update_owner_write_frame(NeAntikUpdateOwnerSession *session,
     const uint8_t *bytes, size_t count, uint64_t deadline,
     NeAntikBootstrapCancel cancel, void *context);

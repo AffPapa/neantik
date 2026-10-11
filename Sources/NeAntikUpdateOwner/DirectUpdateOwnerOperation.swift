@@ -8,6 +8,7 @@ import Foundation
 /// installation target, helper, credentials or profile path is accepted.
 enum DirectUpdateOwnerOperation {
     static func run() async throws {
+        var cancellationReply = DirectUpdateOwnerCancellationReply()
         let trust = try DirectUpdateOwnerAuthentication.authenticate()
         let request = try DirectUpdateOwnerInit.parse(DirectUpdateOwnerPipe.readFrame(STDIN_FILENO, timeoutMS: 10_000))
         let manifest = try DirectUpdateOwnerPipe.readFrame(STDIN_FILENO, timeoutMS: 10_000)
@@ -41,7 +42,7 @@ enum DirectUpdateOwnerOperation {
             if frame == DirectUpdateOwnerConsent.earlyCancel(request: request) {
                 // The cancelled admission task is awaited above, including its
                 // actual assessment helper cleanup, before acknowledging.
-                try writeFrame(DirectUpdateOwnerConsent.cancelled(request: request))
+                try cancellationReply.acknowledge(request)
                 return
             }
             throw error
@@ -53,11 +54,11 @@ enum DirectUpdateOwnerOperation {
             try writeFrame(offer.bytes)
             let command = try await decisionReader.value
             if command == DirectUpdateOwnerConsent.earlyCancel(request: request) {
-                try writeFrame(DirectUpdateOwnerConsent.cancelled(request: request)); return
+                try cancellationReply.acknowledge(request); return
             }
             switch try DirectUpdateOwnerConsent.parseCommand(command, request: request, offer: offer) {
             case .cancel:
-                try writeFrame(DirectUpdateOwnerConsent.cancelled(request: request)); return
+                try cancellationReply.acknowledge(request); return
             case .commit: break
             }
             // Revalidate retained admission after the user's potentially long
@@ -101,7 +102,7 @@ enum DirectUpdateOwnerOperation {
             control.cancelIO(); inspection.cancel()
             let frame = try? await decisionReader.value; _ = await inspection.result
             if frame == DirectUpdateOwnerConsent.earlyCancel(request: request) {
-                try writeFrame(DirectUpdateOwnerConsent.cancelled(request: request)); return
+                try cancellationReply.acknowledge(request); return
             }
             throw error
         }

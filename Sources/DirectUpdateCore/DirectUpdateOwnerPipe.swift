@@ -48,3 +48,17 @@ private func ownerPipeCancellation(_ raw: UnsafeMutableRawPointer?) -> Int32 {
     guard let raw else { return 0 }
     return Unmanaged<DirectUpdateOwnerPipeCancellation>.fromOpaque(raw).takeUnretainedValue().isCancelled ? 1 : 0
 }
+
+/// One reply per operation, including when EOF fails after the frame was sent.
+/// Wire acknowledgement alone never proves process cleanup or installation.
+package struct DirectUpdateOwnerCancellationReply {
+    private var attempted = false
+    package init() {}
+    package mutating func acknowledge(_ request: DirectUpdateOwnerInit,
+        input: Int32 = STDIN_FILENO, output: Int32 = STDOUT_FILENO, timeoutMS: UInt32 = 10_000) throws {
+        guard !attempted else { throw DirectUpdateOwnerProtocolError.binding }
+        attempted = true
+        try DirectUpdateOwnerPipe.writeFrame(DirectUpdateOwnerConsent.cancelled(request: request), to: output)
+        try DirectUpdateOwnerPipe.expectEOF(input, timeoutMS: timeoutMS)
+    }
+}

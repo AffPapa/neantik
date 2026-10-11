@@ -65,7 +65,13 @@ int main(int argc,char **argv) {
         for (;;) pause();
     }
     if (!strcmp(mode,"idle-delay")) usleep(200000);
-    if (neantik_update_pipe_write_frame(1,bytes,count,neantik_update_pipe_deadline(1000),never_cancel,NULL)) return 19;
+    if (!strcmp(mode,"boundary-frame")) {
+        unsigned char first[2]={0,0}, rest[6]={0,4,7,7,7,7};
+        if (!raw_write(first,2)) return 25;
+        char ready[4096]; snprintf(ready,sizeof(ready),"%s.frame-started",argv[0]);
+        int mark=open(ready,O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW,0600); if (mark<0) return 26; close(mark);
+        usleep(200000); if (!raw_write(rest,6)) return 27;
+    } else if (neantik_update_pipe_write_frame(1,bytes,count,neantik_update_pipe_deadline(1000),never_cancel,NULL)) return 19;
     if (neantik_update_pipe_read_frame(0,bytes,sizeof(bytes),&count,neantik_update_pipe_deadline(3000),1000,never_cancel,NULL)) return 20;
     if (neantik_update_pipe_write_frame(1,bytes,count,neantik_update_pipe_deadline(1000),never_cancel,NULL)) return 21;
     if (neantik_update_pipe_expect_eof(0,neantik_update_pipe_deadline(3000),never_cancel,NULL)) return 22;
