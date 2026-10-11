@@ -35,7 +35,14 @@ enum ApplicationInstallLifecycle {
             participant = try InstallLifecycleParticipant(namespaceURL: namespace) {
                 try InstallLifecycle.requireNoPendingTransaction(installationURL: app)
             }
-        } catch { throw ApplicationInstallLifecycleError.unavailable }
+        } catch {
+            #if DEBUG
+            if let error = error as? InstallFilesystemError {
+                DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-lifecycle-" + String(describing: error))
+            }
+            #endif
+            throw ApplicationInstallLifecycleError.unavailable
+        }
     }
     static func requireNewWork() throws {
         do { try participant?.requireNewWork() }

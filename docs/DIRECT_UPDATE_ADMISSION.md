@@ -120,8 +120,11 @@ The independently signed DEBUG QA owner inspects native code/runtime/system
 gates and transfers an owned stage in a private synthetic installation parent.
 It checks its actual live Developer ID code and empty entitlements first.
 Its fixture key/policy cannot exist in Release, which rejects all invocations
-with exit 64. No owner transaction, restart or readiness ACK is implemented by
-this slice. The shipping updater remains disabled.
+with exit 64. The subsequent development driver now joins this retained-slot
+interface to filesystem transactions and authenticated readiness. Its current
+signed QA installation uses a separate synthetic receipt, not this shipping
+manifest admission chain. See the lifecycle follow-up below. The shipping
+updater remains disabled.
 
 Real accepted-stage controls cover expiry before transfer/before rename/after
 visible transfer, changed custody, Task cancellation before transfer/at final
@@ -129,3 +132,18 @@ return, disk-full faults on either side of rename and duplicate consumption.
 The independent QA executable additionally refuses unsigned owner code, an
 unrelated manifest key, expired manifest, unsafe root permissions, wrong QA
 marker and mismatched archive bytes.
+
+## Real transaction driver follow-up
+
+`DirectUpdateInstallDriver` retains the install lease and stopped-process
+authority, rechecks both trees and candidate code at every bootstrap custody
+boundary, and commits only inside authenticated live-child readiness. Failure
+recovery runs in an uncancelled utility task. The exact finalized transaction
+receipt distinguishes a late completion error from absence of an active
+journal; an unrelated receipt or missing history cannot manufacture success.
+The post-ACK continuation has its own bounded IO budget, separate from launch.
+
+DEBUG QA controls are restricted to explicit marked private roots, the same
+Developer ID certificate and disposable development credential storage. They
+do not activate the Release installer, supply a trusted shipping feed, or
+qualify privileged installation in `/Applications`.

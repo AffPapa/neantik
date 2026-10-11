@@ -181,8 +181,13 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     private static func isCanonicalAbsoluteExecutablePath(
         _ path: String
     ) -> Bool {
-        path.hasPrefix("/") &&
+        // Pure syntax check: the lifecycle resolves the actual kernel path
+        // independently. Foundation standardization can rewrite an existing
+        // /private/tmp app to /tmp and reject that valid realpath spelling.
+        let components = path.split(separator: "/", omittingEmptySubsequences: false)
+        return path.hasPrefix("/") &&
             path.hasSuffix("/Contents/MacOS/NeAntik") &&
-            URL(fileURLWithPath: path).standardizedFileURL.path == path
+            components.dropFirst().allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." } &&
+            !path.unicodeScalars.contains { $0.value < 32 || $0.value == 127 }
     }
 }

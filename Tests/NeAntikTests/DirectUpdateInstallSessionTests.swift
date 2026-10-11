@@ -9,6 +9,7 @@ import Testing
 private final class BootstrapFixtureContext {
     let request: DirectUpdateBootstrapRequest
     var admitted = true, accepted = true, didAdmit = false, didReady = false, cancelAfterAdmission = false, cancelAfterReady = false
+    var readyDelayMicroseconds: useconds_t = 0
     init(_ request: DirectUpdateBootstrapRequest) { self.request = request }
 }
 private func sessionFixtureAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) -> Int32 {
@@ -18,7 +19,9 @@ private func sessionFixtureAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) 
 private func sessionFixtureReady(_ pid: pid_t, _ bytes: UnsafePointer<UInt8>?, _ count: Int, _ raw: UnsafeMutableRawPointer?) -> Int32 {
     let context = Unmanaged<BootstrapFixtureContext>.fromOpaque(raw!).takeUnretainedValue()
     guard let bytes else { return 0 }
-    do { try context.request.validateReply(Data(bytes: bytes, count: count)); context.didReady = true; return context.accepted ? 1 : 0 }
+    do { try context.request.validateReply(Data(bytes: bytes, count: count)); context.didReady = true
+        if context.readyDelayMicroseconds > 0 { usleep(context.readyDelayMicroseconds) }
+        return context.accepted ? 1 : 0 }
     catch { return 0 }
 }
 private func sessionFixtureCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
@@ -97,6 +100,14 @@ private final class BootstrapFixtureBundle {}
         #expect(result.status != NUB_COMPLETE && result.handed_off == 0 && result.reaped == 1 && !context.didReady)
         var status: Int32 = 0
         #expect(waitpid(result.process_id, &status, WNOHANG) == -1 && errno == ECHILD)
+    }
+    @Test func completedReadyDecisionGetsSeparateContinueBudget() throws {
+        let (root, helper) = try fixture("ok"); defer { try? FileManager.default.removeItem(at: root) }
+        let context = BootstrapFixtureContext(try request()); context.readyDelayMicroseconds = 600_000
+        let result = run(helper, context, deadline: 500)
+        #expect(context.didReady && result.status == NUB_COMPLETE && result.handed_off == 1 && result.reaped == 0)
+        var status: Int32 = 0
+        #expect(waitpid(result.process_id, &status, 0) == result.process_id && status == 0)
     }
     @Test(arguments: ["admission", "cancel", "ready-refusal", "closed-hang"])
     func refusedOrCancelledGuestIsOwnedAndReaped(mode: String) throws {

@@ -1,4 +1,5 @@
 import Darwin
+import CryptoKit
 import DirectInstallFilesystem
 import DirectUpdateCore
 import Foundation
@@ -12,6 +13,12 @@ import Security
         #if DEBUG
         let arguments = CommandLine.arguments
         guard arguments.count == 3 else { exit(64) }
+        if ["--qa-install", "--qa-install-refuse", "--qa-install-cancel", "--qa-install-before-ack", "--qa-install-after-ack", "--qa-install-after-finish"].contains(arguments[1]) {
+            do { try authenticateQAOwner(); try await runQAInstallation(root: URL(fileURLWithPath: arguments[2]), mode: arguments[1]); exit(0) }
+            catch {
+                FileHandle.standardError.write(Data("Isolated installation refused.\n".utf8)); exit(1)
+            }
+        }
         if ["--qa-bootstrap", "--qa-bootstrap-refuse"].contains(arguments[1]) {
             do { try authenticateQAOwner(); try await runQABootstrap(root: URL(fileURLWithPath: arguments[2]), refuse: arguments[1] == "--qa-bootstrap-refuse"); exit(0) }
             catch { exit(1) }
@@ -65,6 +72,76 @@ import Security
         guard let identity = DirectProcessIdentityInspector.processIdentity(getpid()),
               ProxyRelayLiveCodeVerifier.matches(processID: getpid(), expectedProcess: identity, expectedCode: expected)
         else { throw DirectAssessmentParentError.admission }
+    }
+    private static func runQAInstallation(root: URL, mode: String) async throws {
+        let prefix = "neantik-update-transaction-"
+        guard root.deletingLastPathComponent().path == "/private/tmp", root.lastPathComponent.hasPrefix(prefix),
+              let id = UUID(uuidString: String(root.lastPathComponent.dropFirst(prefix.count))),
+              root.lastPathComponent == prefix + id.uuidString.lowercased() else { throw DirectUpdateInstallSessionError.request }
+        let directory = try BackupFS.directory(root); defer { close(directory) }
+        let identity = try BackupFS.identity(directory)
+        guard identity.mode & 0o7777 == 0o700 else { throw DirectUpdateInstallSessionError.custody }
+        let marker = openat(directory, "fixture.marker", O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard marker >= 0 else { throw DirectUpdateInstallSessionError.request }; defer { close(marker) }
+        let markerIdentity = try BackupFS.identity(marker); try markerIdentity.validateFile(device: identity.device)
+        let expectedMarker = Data("isolated-real-update-transaction-qa\n".utf8)
+        guard markerIdentity.mode & 0o777 == 0o600, markerIdentity.size == expectedMarker.count,
+              try BackupFS.read(marker, at: 0, count: expectedMarker.count) == expectedMarker,
+              try BackupFS.identity(marker) == markerIdentity, try BackupFS.entry(directory, "fixture.marker") == markerIdentity else {
+            throw DirectUpdateInstallSessionError.custody
+        }
+        let source = root.appendingPathComponent("source"), sourceFD = try BackupFS.directory(source)
+        defer { close(sourceFD) }
+        let sourceIdentity = try BackupFS.identity(sourceFD), app = source.appendingPathComponent("NeAntik.app")
+        let observed = try DirectUpdateEmptyEntitlementCode.inspect(app, identifier: "app.neantik.desktop.update-bootstrap-qa")
+        guard let value = observed.build, let build = UInt64(value) else { throw DirectUpdateInstallSessionError.identity }
+        func validateCandidate(_ candidate: URL) throws {
+            let current = try DirectUpdateEmptyEntitlementCode.inspect(candidate, identifier: "app.neantik.desktop.update-bootstrap-qa")
+            guard current.cdHash == observed.cdHash, current.build == observed.build else { throw DirectUpdateInstallSessionError.identity }
+        }
+        let lease = try InstallFilesystemLease(parentURL: root.appendingPathComponent("install"))
+        // This receipt binds QA signed bytes only. It deliberately does not
+        // pretend to be a signed shipping manifest/channel admission.
+        let receipt = BackupFS.hex(SHA256.hash(data: observed.cdHash))
+        let slot = try InstallPreparation.transfer(lease: lease, sourceParentURL: source, sourceParentDescriptor: sourceFD,
+            candidateReceiptSHA256: receipt, validateSource: {
+                try BackupFS.validateDirectoryPath(source, sourceIdentity); try validateCandidate(app)
+            }, didTransfer: {})
+        let injected: InstallFilesystemPoint? = switch mode {
+            case "--qa-install-before-ack": .beforeAcknowledgementPublication
+            case "--qa-install-after-ack": .acknowledgementPublishedBeforeSync
+            case "--qa-install-after-finish": .finalizedBeforeSync
+            default: nil
+        }
+        let cancellation = QAInstallCancellation()
+        var lastFilesystemPoint = "none"
+        var reachedReady = false
+        let operation = Task { try await DirectUpdateInstallDriver.run(lease: lease, slot: slot, expectedCode: observed.pin,
+            cdHash: observed.cdHash, build: build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest,
+            validateCandidate: validateCandidate, validateReady: { _ in
+                reachedReady = true
+                if mode == "--qa-install-refuse" { throw DirectUpdateInstallSessionError.admission }
+                if mode == "--qa-install-cancel" { try cancellation.cancel() }
+            }, fault: { point in
+                lastFilesystemPoint = point.rawValue
+                if point == injected { throw DirectUpdateInstallSessionError.io }
+            }) }
+        cancellation.set(operation)
+        let outcome = try await operation.value
+        let expectedCommit = !["--qa-install-refuse", "--qa-install-cancel", "--qa-install-before-ack"].contains(mode)
+        let report: [String: Any] = ["schema": 1, "actualInstallation": true,
+            "committed": outcome.decision.committed, "handedOff": outcome.handedOff,
+            "transactionID": outcome.decision.transactionID.uuidString,
+            "processID": outcome.processID.map(Int.init) ?? 0,
+            "authenticatedReadiness": reachedReady,
+            "lastFilesystemPoint": lastFilesystemPoint,
+            "failurePhase": outcome.failurePhase ?? "none",
+            "refusal": outcome.refusal.map { String(describing: $0) } ?? "none",
+            "shippingChannelQualified": false, "productionKeychainUsed": false]
+        FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]) + Data([10]))
+        guard reachedReady, outcome.decision.committed == expectedCommit, outcome.handedOff == (mode == "--qa-install") else {
+            throw DirectUpdateInstallSessionError.handoff
+        }
     }
     private static func runQABootstrap(root: URL, refuse: Bool) async throws {
         let prefix = "neantik-update-bootstrap-"
@@ -127,6 +204,18 @@ import Security
 }
 
 #if DEBUG
+private final class QAInstallCancellation: @unchecked Sendable {
+    private let lock = NSLock()
+    private var operation: Task<DirectUpdateInstallOutcome, Error>?
+    func set(_ task: Task<DirectUpdateInstallOutcome, Error>) {
+        lock.lock(); operation = task; lock.unlock()
+    }
+    func cancel() throws {
+        lock.lock(); let task = operation; lock.unlock()
+        guard let task else { throw DirectUpdateInstallSessionError.admission }
+        task.cancel()
+    }
+}
 /// Bounded synthetic inputs only. This type does not exist in the release
 /// executable and cannot supply shipping channel policy or install authority.
 private struct QAOwnerFixture: Sendable {

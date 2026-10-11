@@ -43,12 +43,33 @@ GUI startup refusals show an explicit alert; CLI/control modes return temporary 
 
 These are local Dev/process tests, not qualification of a new signed published release.
 
+## Authenticated owner transaction follow-up
+
+The development independent owner now composes retained filesystem slots,
+fresh legacy-process inventory, suspended live-code admission, fixed private
+request/reply frames, authenticated premigration readiness, durable ACK and
+continuation. Signed disposable QA controls exercised actual commit, refusal,
+cancellation and faults before/after ACK publication and after finalization.
+Before ACK the old slot returns; after visible ACK the new slot remains. Both
+application trees and the exact decision history are retained.
+
+Ordinary startup still enters the participant fence and checks pending records.
+Its executable-path parser validates syntax without rewriting a kernel
+`/private/tmp` realpath to Foundation's `/tmp` alias. Actual-path resolution,
+no-follow descriptors and signature checks are independent of that parser.
+Existing temporary bundles and malformed component controls cover this case.
+
+These controls do not enable the Release owner (exit64), qualify a trusted
+shipping update feed, or prove migration/installation in ordinary privileged
+`/Applications` locations. The GUI continuation is a separate required gate;
+commit/continue alone is not proof of an open usable window.
+
 ## Remaining installation gates
 
 - Global quit/drain and fresh conservative inventory of legacy managers, MCP, relay, Chromium and helpers. Legacy releases and Chromium do not hold these participant leases.
 - Independently authenticated updater owner and exact candidate trust capability.
-- Explicit authenticated first-launch handoff: the candidate cannot enter normally while admission EX remains held. Do not casually drop the fence to admit arbitrary competing processes.
-- Durable pending recovery and authenticated first-launch ACK before profile migration, including owner/candidate interruption and rollback.
+- Shipping integration of the authenticated handoff and pre-migration ACK:
+  development QA must not be promoted to production admission or migration proof.
 - Signed/notarized exact candidate and hosted-byte qualification, with existing immutable rollback.
 
 Never use a quiet fence alone as permission to swap an app or report a working atomic updater.

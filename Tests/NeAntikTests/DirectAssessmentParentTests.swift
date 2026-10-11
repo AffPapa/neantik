@@ -10,6 +10,7 @@ private final class ParentFixtureContext {
     var admitted = true, cancelAfterAdmission = false, didAdmit = false
     var admissionHook: ((pid_t) -> Void)?
     var cancelAt: Date?
+    var runningReadyMarker: URL?
     var expectedCode: ProxyRelayExpectedCode?
 }
 private func fixtureAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) -> Int32 {
@@ -24,6 +25,14 @@ private func fixtureAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) -> Int3
 }
 private func fixtureCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
     let context = Unmanaged<ParentFixtureContext>.fromOpaque(raw!).takeUnretainedValue()
+    if let marker = context.runningReadyMarker, context.cancelAt == nil {
+        var file = stat()
+        if lstat(marker.path, &file) == 0, file.st_uid == geteuid(), file.st_mode & UInt16(S_IFMT) == UInt16(S_IFREG), file.st_size == 0 {
+            // The guest has emitted READY and reached its running wait. Allow
+            // one bounded IO phase to consume READY before testing cancellation.
+            context.cancelAt = Date().addingTimeInterval(0.1)
+        }
+    }
     return (context.cancelAfterAdmission && context.didAdmit) || (context.cancelAt.map { Date() >= $0 } ?? false) ? 1 : 0
 }
 private final class AssessmentParentBundle {}
@@ -83,7 +92,11 @@ private final class AssessmentParentBundle {}
     @Test(arguments: ["hang", "descendant", "closed-stdio", "stderr", "flood", "abnormal"])
     func actualBrokenChildControls(mode: String) throws {
         let (root, helper) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
-        let start = Date(); var result = run(helper, mode, deadline: 200)
+        // A freshly copied Mach-O may take >200ms for OS launch admission.
+        // Timeout controls keep a short bound; output controls use the normal
+        // test budget so they actually reach their intentionally broken output.
+        let timed = ["hang", "descendant", "closed-stdio"].contains(mode)
+        let start = Date(); var result = run(helper, mode, deadline: timed ? 1_000 : 2_000)
         #expect(result.reaped == 1 && result.continued == 1)
         if mode == "hang" || mode == "descendant" || mode == "closed-stdio" { #expect(result.status == NAP_TIMEOUT) }
         else if mode == "abnormal" { #expect(result.status == NAP_COMPLETE && result.exited_normally == 0) }
@@ -109,8 +122,8 @@ private final class AssessmentParentBundle {}
     }
     @Test func runningCancellationKillsAndReaps() throws {
         let (root, helper) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
-        let context = ParentFixtureContext(); context.admissionHook = { _ in context.cancelAt = Date().addingTimeInterval(0.15) }
-        let result = run(helper, "hang", context: context, deadline: 1_000)
+        let context = ParentFixtureContext(); context.runningReadyMarker = root.appendingPathComponent("ready")
+        let result = run(helper, "hang", context: context, deadline: 2_000)
         #expect(result.status == NAP_CANCELLED && result.reaped == 1 && result.continued == 1 && result.output_bytes == 5)
     }
     @Test func deniedPausedGuestNeverContinues() throws {

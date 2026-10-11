@@ -49,6 +49,91 @@ struct DirectInstallFilesystemTests {
         }
         throw InstallFilesystemError.unsupported
     }
+    @Test func largeDirectoryEnumerationIsRepeatableOnRetainedDescriptor() throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let directory = f.root.appendingPathComponent("many")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        for number in 0..<1_000 { try Data().write(to: directory.appendingPathComponent("fixture-\(number)")) }
+        let fd = try InstallFS.directory(directory); defer { close(fd) }
+        let expected = try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted()
+        for _ in 0..<10 { #expect(try InstallFS.names(fd) == expected) }
+    }
+    private func markMetadata(_ url: URL) throws {
+        let marker: [UInt8] = [1]
+        guard marker.withUnsafeBytes({ setxattr(url.path, "com.neantik.install-fixture", $0.baseAddress, $0.count, 0, 0) }) == 0 else {
+            throw InstallFS.posix()
+        }
+    }
+    @Test func bundleRootMetadataChangeDuringCapturePreservesExactContentCustody() throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let fd = try InstallFS.directory(f.root); defer { close(fd) }
+        let before = try InstallTree.capture(parent: fd, name: "NeAntik.app")
+        let after = try InstallTree.capture(parent: fd, name: "NeAntik.app", beforeScanRecheck: { prefix in
+            if prefix.isEmpty { try markMetadata(f.root.appendingPathComponent("NeAntik.app")) }
+        })
+        let current = try #require(try InstallFS.entry(fd, "NeAntik.app"))
+        #expect(before.root.changedSeconds != current.changedSeconds || before.root.changedNanos != current.changedNanos)
+        #expect(before.matches(after))
+        #expect(before.entries == after.entries)
+    }
+    @Test(arguments: ["rootACL", "rootMode", "rootFlags", "rootMtime", "rootNamespace", "rootReplacement", "descendantMetadata", "descendantContent"])
+    func bundleRootMetadataToleranceNeverAdmitsOtherChanges(control: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let fd = try InstallFS.directory(f.root); defer { close(fd) }
+        let app = f.root.appendingPathComponent("NeAntik.app")
+        defer { _ = chflags(app.path, 0) }
+        var injected = false
+        do {
+            _ = try InstallTree.capture(parent: fd, name: "NeAntik.app", beforeScanRecheck: { prefix in
+                guard !injected, prefix == (control == "descendantMetadata" ? "Contents" : "") else { return }
+                injected = true
+                switch control {
+                case "rootACL":
+                    let process = Process(); process.executableURL = URL(fileURLWithPath: "/bin/chmod")
+                    process.arguments = ["+a", "everyone allow read", app.path]
+                    process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
+                    try process.run(); process.waitUntilExit(); try #require(process.terminationStatus == 0)
+                case "rootMode": try #require(chmod(app.path, 0o700) == 0)
+                case "rootFlags": try #require(chflags(app.path, UInt32(UF_NODUMP)) == 0)
+                case "rootMtime":
+                    var status = stat(); try #require(lstat(app.path, &status) == 0)
+                    var times = [timeval(tv_sec: status.st_atimespec.tv_sec, tv_usec: 0),
+                                 timeval(tv_sec: status.st_mtimespec.tv_sec + 1, tv_usec: 0)]
+                    try #require(utimes(app.path, &times) == 0)
+                case "rootNamespace": try Data([1]).write(to: app.appendingPathComponent("unexpected"))
+                case "rootReplacement":
+                    try FileManager.default.moveItem(at: app, to: f.root.appendingPathComponent("replaced.app"))
+                    try f.tree("NeAntik.app", version: "old")
+                case "descendantMetadata": try markMetadata(app.appendingPathComponent("Contents"))
+                default: try Data("mutated".utf8).write(to: app.appendingPathComponent("Contents/version"))
+                }
+            })
+            Issue.record("Changed bundle custody was accepted")
+        } catch is InstallFilesystemError { }
+        #expect(injected)
+    }
+    @Test(arguments: [InstallFilesystemPoint.finalizedBeforeSync, .finished])
+    func exactFinalizedReceiptRecoversLateCompletionFailure(point: InstallFilesystemPoint) throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let lease = try InstallFilesystemLease(parentURL: f.root), receipt = try f.begin(lease)
+        #expect(try lease.validatedApplicationURL() == f.root.appendingPathComponent("NeAntik.app"))
+        #expect(try InstallFilesystemTransaction.finalizedResult(lease: lease, expected: receipt) == nil)
+        #expect(throws: POSIXError(.EIO)) {
+            try InstallFilesystemTransaction.acknowledge(lease: lease, expected: receipt,
+                validateLaunchAuthority: {}, fault: { if $0 == point { throw POSIXError(.EIO) } })
+        }
+        #expect(try InstallFilesystemTransaction.recover(lease: lease, validateStoppedAuthority: {}) == nil)
+        let result = try #require(try InstallFilesystemTransaction.finalizedResult(lease: lease, expected: receipt))
+        #expect(result.committed && result.transactionID == receipt.transactionID)
+        #expect(try f.version() == "new")
+        var fields = try JSONSerialization.jsonObject(with: JSONEncoder().encode(receipt)) as! [String: Any]
+        fields["journalSHA256"] = String(repeating: "f", count: 64)
+        let altered = try JSONDecoder().decode(InstallFilesystemReceipt.self, from: JSONSerialization.data(withJSONObject: fields))
+        #expect(throws: InstallFilesystemError.changed) { try InstallFilesystemTransaction.finalizedResult(lease: lease, expected: altered) }
+        fields["transactionID"] = UUID().uuidString
+        let unrelated = try JSONDecoder().decode(InstallFilesystemReceipt.self, from: JSONSerialization.data(withJSONObject: fields))
+        #expect(try InstallFilesystemTransaction.finalizedResult(lease: lease, expected: unrelated) == nil)
+    }
     private func child(_ fixture: Fixture, _ action: String, _ point: String = "none") throws -> Int32 {
         let process = Process(); process.executableURL = try executable()
         process.arguments = [action, fixture.root.path, point]
@@ -387,11 +472,17 @@ struct DirectInstallFilesystemTests {
         #expect(try child(f, "inspectTransfer", "journal") == 0)
         #expect(try child(f, "recover") == 0); #expect(try f.version(f.candidateName) == "new")
     }
-    @Test func typedSlotConsumedOnVisibleActivationAndNeverOwnsOldApp() throws {
+    @Test func typedSlotConsumedOnVisibleActivationAndNeverOwnsOldApp() async throws {
         let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
         let lease = try InstallFilesystemLease(parentURL: f.root), slot = try transfer(f, lease: lease)
         #expect(try slot.withValidatedCandidate { try String(contentsOf: $0.appendingPathComponent("Contents/version"), encoding: .utf8) } == "new")
         let receipt = try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {})
+        let immediateReceipt = try InstallFilesystemTransaction.pendingReceipt(lease: lease)
+        #expect(immediateReceipt == receipt)
+        let workerReceipt = try await Task.detached(priority: .utility) {
+            try InstallFilesystemTransaction.pendingReceipt(lease: lease)
+        }.value
+        #expect(workerReceipt == receipt)
         #expect(try f.version(f.candidateName) == "old")
         #expect(throws: InstallFilesystemError.changed) { try slot.withValidatedCandidate { _ in () } }
         #expect(throws: InstallFilesystemError.changed) { try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {}) }
@@ -400,6 +491,32 @@ struct DirectInstallFilesystemTests {
         let record = ".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4))
         #expect(try InstallPreparation.inspect(lease: lease, recordName: record, sourceParentURL: f.root.appendingPathComponent("source")) == .journal)
         #expect(try f.version(f.candidateName) == "old")
+    }
+    @Test(arguments: [false, true]) func fullBundlePendingReceiptAcrossUtilityWorker(prepared: Bool) async throws {
+        guard let path = ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_APP"] else { return }
+        let f = try Fixture(); defer { f.cleanup() }
+        for name in ["NeAntik.app", f.candidateName] {
+            let destination = f.root.appendingPathComponent(name)
+            try FileManager.default.removeItem(at: destination)
+            let copy = Process(); copy.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+            copy.arguments = [path, destination.path]; copy.standardOutput = FileHandle.nullDevice
+            copy.standardError = FileHandle.nullDevice; try copy.run(); copy.waitUntilExit()
+            try #require(copy.terminationStatus == 0)
+        }
+        if prepared { _ = try prepareSource(f) }
+        let lease = try InstallFilesystemLease(parentURL: f.root)
+        let receipt: InstallFilesystemReceipt
+        if prepared {
+            let slot = try transfer(f, lease: lease)
+            receipt = try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {})
+        } else { receipt = try f.begin(lease) }
+        let immediate = try InstallFilesystemTransaction.pendingReceipt(lease: lease)
+        #expect(immediate == receipt)
+        let worker = try await Task.detached(priority: .utility) {
+            try InstallFilesystemTransaction.pendingReceipt(lease: lease)
+        }.value
+        #expect(worker == receipt)
+        _ = try InstallFilesystemTransaction.recover(lease: lease, validateStoppedAuthority: {})
     }
     @Test(arguments: [InstallPreparationPoint.recordPublishedBeforeSync, .renamedBeforeSync, .sourceDirectorySynced, .destinationDirectorySynced])
     func transferSyncErrorsNeverReturnCustody(point: InstallPreparationPoint) throws {

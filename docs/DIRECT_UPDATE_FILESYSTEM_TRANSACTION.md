@@ -62,9 +62,15 @@ targets, non-directory ancestors, cycles and >32 expansions refuse.
 
 Journal:4MiB, schema1, canonical JSON plus checksum, captured journal inode.
 ACK:2048bytes, exact bound receipt. Neither record checksum is authentication.
-Root rename legitimately changes root ctime; descendant identities, content,
-modes, exact link targets and namespace must still match. A second metadata
-walk detects late writes to earlier entries during streaming hashing.
+The app root's ctime is not content identity: relocation changes it, and real
+signed-launch controls reproduced a further ctime-only change during capture.
+The source of that additional system metadata event is not established.
+Root device/inode/owner/full mode/flags/link count/size/mtime remain exact,
+and extended ACL absence is rechecked after the complete walk. Descendant
+identities (including ctime), content, modes, exact link targets and namespace
+must still match. A second metadata walk detects late writes to earlier entries
+during streaming hashing. No xattr value is trusted as code identity; native
+signature/system-policy checks remain separate. Quarantine is not removed.
 
 ## Verification and remaining gates
 

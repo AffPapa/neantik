@@ -37,6 +37,9 @@ struct NeAntikApp: App {
         DirectUpdateCandidateBootstrap.runIfRequested()
         do { try ApplicationInstallLifecycle.enter() }
         catch {
+            #if DEBUG
+            DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-lifecycle")
+            #endif
             if CommandLine.arguments.count == 1 {
                 let alert = NSAlert()
                 alert.messageText = "Запуск NeAntik временно недоступен"
@@ -126,6 +129,9 @@ struct NeAntikApp: App {
                 root: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.rootKey) as? String
             ) : nil
         } catch {
+            #if DEBUG
+            DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-backup-qualification")
+            #endif
             Self.writeControlErrorAndExit("Не удалось подтвердить изолированный стенд копий данных.\n", code: EX_NOPERM)
         }
         let paths: AppPaths
@@ -144,6 +150,9 @@ struct NeAntikApp: App {
                 qualification: backupQualification
             )
         } catch {
+            #if DEBUG
+            DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-backup-composition")
+            #endif
             Self.writeControlErrorAndExit("Не удалось подтвердить доступ к копиям данных.\n", code: EX_NOPERM)
         }
         let keychain = auditRoot == nil

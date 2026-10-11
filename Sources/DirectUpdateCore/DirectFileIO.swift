@@ -36,6 +36,12 @@ package struct BackupIdentity: Equatable, Codable {
     }
     package var directory: Bool { mode & mode_t(S_IFMT) == mode_t(S_IFDIR) }
     package func sameObject(_ other: Self) -> Bool { device == other.device && inode == other.inode && uid == other.uid && (mode & mode_t(S_IFMT)) == (other.mode & mode_t(S_IFMT)) }
+    /// App-root custody only: system metadata/relocation ctime is not content
+    /// identity. Full tree custody and signed-code verification remain separate.
+    package func sameBundleRoot(_ other: Self) -> Bool {
+        sameObject(other) && directory && other.directory && mode == other.mode && links == other.links &&
+            size == other.size && mtimeSeconds == other.mtimeSeconds && mtimeNanos == other.mtimeNanos
+    }
     package func validateFile(device: dev_t?) throws {
         guard mode & mode_t(S_IFMT) == mode_t(S_IFREG), links == 1, uid == geteuid(), size >= 0,
               device == nil || self.device == device else { throw BrowserDataBackupStorageError.unsafeEntry }

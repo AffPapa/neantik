@@ -3,6 +3,20 @@ import Testing
 @testable import NeAntik
 
 struct LaunchIntentTests {
+    @Test func existingCanonicalPrivateTemporaryBundleKeepsItsKernelPath() throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-launch-layout-" + UUID().uuidString.lowercased())
+        defer { try? FileManager.default.removeItem(at: root) }
+        let app = root.appendingPathComponent("NeAntik.app")
+        let executable = app.appendingPathComponent("Contents/MacOS/NeAntik")
+        try FileManager.default.createDirectory(at: executable.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data().write(to: executable)
+        #expect(NeAntikLaunchIntent.applicationBundleURL(forExecutablePath: executable.path)?.path == app.path)
+        for path in [root.path + "//NeAntik.app/Contents/MacOS/NeAntik",
+                     root.path + "/./NeAntik.app/Contents/MacOS/NeAntik",
+                     root.path + "/../NeAntik.app/Contents/MacOS/NeAntik"] {
+            #expect(NeAntikLaunchIntent.applicationBundleURL(forExecutablePath: path) == nil)
+        }
+    }
     @Test func relayOwnerRequiresExactReservedModeWithoutUserParameters() {
         let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
         let flag = NeAntikLaunchIntent.proxyRelayOwnerArgument

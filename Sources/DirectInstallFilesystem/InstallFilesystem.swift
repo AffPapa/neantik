@@ -22,6 +22,13 @@ struct InstallObject: Codable, Equatable {
     func sameObject(_ other: Self) -> Bool {
         device == other.device && inode == other.inode && owner == other.owner && mode == other.mode && flags == other.flags
     }
+    /// Bundle relocation and macOS metadata bookkeeping can change only the
+    /// root's ctime. Keep every other root field, and all descendant metadata,
+    /// namespace and bytes exact. This does not authenticate extended attributes.
+    func sameBundleRoot(_ other: Self) -> Bool {
+        sameObject(other) && directory && other.directory && links == other.links && size == other.size &&
+            modifiedSeconds == other.modifiedSeconds && modifiedNanos == other.modifiedNanos
+    }
 }
 
 enum InstallFS {
@@ -157,6 +164,11 @@ public final class InstallFilesystemLease {
         held = true
     }
     deinit { _ = installFlock(lock, LOCK_UN); close(lock); close(parent) }
+    /// Fixed installed slot derived from this retained lease, never caller argv.
+    package func validatedApplicationURL() throws -> URL {
+        try validate()
+        return url.appendingPathComponent(InstallFilesystemTransaction.appName)
+    }
     func validate() throws {
         let fresh = try InstallFS.directory(url); defer { close(fresh) }
         guard try InstallFS.privateDirectory(fresh).sameObject(identity),
@@ -172,13 +184,16 @@ struct InstallTree: Codable, Equatable {
     struct Entry: Codable, Equatable { let path: String, identity: InstallObject, sha256: String, target: String? }
     let root: InstallObject
     let entries: [Entry]
-    static func capture(parent: Int32, name: String, checksCancellation: Bool = true) throws -> Self {
+    static func capture(parent: Int32, name: String, checksCancellation: Bool = true,
+                        onChanged: (String) -> Void = { _ in },
+                        beforeScanRecheck: (String) throws -> Void = { _ in }) throws -> Self {
+        func changed(_ phase: String) -> InstallFilesystemError { onChanged(phase); return .changed }
         try InstallFS.name(name)
         guard let observed = try InstallFS.entry(parent, name), observed.directory,
               observed.device == (try InstallFS.object(parent)).device else { throw InstallFilesystemError.unsafe }
         let root = openat(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard root >= 0 else { throw InstallFilesystemError.unsafe }; defer { close(root) }
-        guard try InstallFS.object(root) == observed else { throw InstallFilesystemError.changed }
+        guard try InstallFS.object(root).sameBundleRoot(observed) else { throw changed("root-before") }
         try InstallFS.owned(observed); try InstallFS.noACL(root)
         var entries: [Entry] = [], total: Int64 = 0
         func scan(_ fd: Int32, _ prefix: String, _ depth: Int) throws {
@@ -187,7 +202,7 @@ struct InstallTree: Codable, Equatable {
             for name in names {
                 if checksCancellation { try Task.checkCancellation() }; guard entries.count < 6_000 else { throw InstallFilesystemError.limit }
                 let path = prefix.isEmpty ? name : prefix + "/" + name
-                guard path.utf8.count <= 1_024, let object = try InstallFS.entry(fd, name) else { throw InstallFilesystemError.changed }
+                guard path.utf8.count <= 1_024, let object = try InstallFS.entry(fd, name) else { throw changed("entry-before") }
                 try InstallFS.owned(object, device: observed.device)
                 if object.symlink {
                     var buffer = [CChar](repeating: 0, count: 1_025)
@@ -207,7 +222,7 @@ struct InstallTree: Codable, Equatable {
                     guard object.directory || object.file else { throw InstallFilesystemError.unsafe }
                     let child = openat(fd, name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC | (object.directory ? O_DIRECTORY : 0))
                     guard child >= 0 else { throw InstallFilesystemError.unsafe }; defer { close(child) }
-                    guard try InstallFS.object(child) == object else { throw InstallFilesystemError.changed }
+                    guard try InstallFS.object(child) == object else { throw changed("child-before") }
                     try InstallFS.noACL(child)
                     if object.directory {
                         entries.append(.init(path: path, identity: object, sha256: "", target: nil)); try scan(child, path, depth + 1)
@@ -219,16 +234,27 @@ struct InstallTree: Codable, Equatable {
                             let size = Int(min(Int64(buffer.count), object.size - offset))
                             let count = pread(child, &buffer, size, off_t(offset))
                             if count < 0, errno == EINTR { continue }
-                            guard count > 0 else { throw InstallFilesystemError.changed }
+                            guard count > 0 else { throw changed("read-eof") }
                             hash.update(data: Data(buffer.prefix(count))); offset += Int64(count)
                         }
                         entries.append(.init(path: path, identity: object, sha256: hash.finalize().map { String(format: "%02x", $0) }.joined(), target: nil))
                     }
-                    guard try InstallFS.object(child) == object else { throw InstallFilesystemError.changed }
+                    guard try InstallFS.object(child) == object else { throw changed("child-after") }
                 }
-                guard try InstallFS.entry(fd, name) == object else { throw InstallFilesystemError.changed }
+                guard try InstallFS.entry(fd, name) == object else { throw changed("entry-after") }
             }
-            guard try InstallFS.object(fd) == before, try InstallFS.names(fd) == names else { throw InstallFilesystemError.changed }
+            try beforeScanRecheck(prefix)
+            let after = try InstallFS.object(fd)
+            guard prefix.isEmpty ? after.sameBundleRoot(before) : after == before else {
+                let fields = [("device", after.device != before.device), ("inode", after.inode != before.inode),
+                    ("owner", after.owner != before.owner), ("mode", after.mode != before.mode),
+                    ("links", after.links != before.links), ("size", after.size != before.size),
+                    ("mtime", after.modifiedSeconds != before.modifiedSeconds || after.modifiedNanos != before.modifiedNanos),
+                    ("ctime", after.changedSeconds != before.changedSeconds || after.changedNanos != before.changedNanos),
+                    ("flags", after.flags != before.flags)].filter { $0.1 }.map { $0.0 }.joined(separator: "-")
+                throw changed("scan-stat-" + fields + (prefix.isEmpty ? "-root" : "-descendant"))
+            }
+            guard try InstallFS.names(fd) == names else { throw changed("scan-names") }
         }
         try scan(root, "", 0)
         // Catch a late write/rename to an earlier entry while hashing a later
@@ -254,26 +280,28 @@ struct InstallTree: Codable, Equatable {
         func recheck(_ fd: Int32, _ prefix: String) throws {
             if checksCancellation { try Task.checkCancellation() }
             let expected = children[prefix] ?? []
-            guard try InstallFS.names(fd) == expected.map({ $0.path.split(separator: "/").last!.description }).sorted() else { throw InstallFilesystemError.changed }
+            guard try InstallFS.names(fd) == expected.map({ $0.path.split(separator: "/").last!.description }).sorted() else { throw changed("recheck-names") }
             for item in expected {
                 let name = item.path.split(separator: "/").last!.description
-                guard try InstallFS.entry(fd, name) == byPath[item.path]?.identity else { throw InstallFilesystemError.changed }
+                guard try InstallFS.entry(fd, name) == byPath[item.path]?.identity else { throw changed("recheck-entry") }
                 if item.identity.directory {
                     let child = openat(fd, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
-                    guard child >= 0 else { throw InstallFilesystemError.changed }; defer { close(child) }
-                    guard try InstallFS.object(child) == item.identity else { throw InstallFilesystemError.changed }
+                    guard child >= 0 else { throw changed("recheck-open") }; defer { close(child) }
+                    guard try InstallFS.object(child) == item.identity else { throw changed("recheck-child-before") }
                     try recheck(child, item.path)
-                    guard try InstallFS.object(child) == item.identity else { throw InstallFilesystemError.changed }
+                    guard try InstallFS.object(child) == item.identity else { throw changed("recheck-child-after") }
                 }
             }
         }
         try recheck(root, "")
-        guard try InstallFS.object(root) == observed, try InstallFS.entry(parent, name) == observed else { throw InstallFilesystemError.changed }
+        // An ACL change can update ctime without changing mode bits. Root
+        // metadata tolerance must never admit a new extended ACL.
+        try InstallFS.noACL(root)
+        guard try InstallFS.object(root).sameBundleRoot(observed),
+              try InstallFS.entry(parent, name)?.sameBundleRoot(observed) == true else { throw changed("root-after") }
         return .init(root: observed, entries: entries.sorted { $0.path < $1.path })
     }
     func matches(_ current: Self) -> Bool {
-        // Moving the bundle changes its root ctime. All descendant objects,
-        // modes, names, bytes and exact link targets must still match.
-        root.sameObject(current.root) && entries == current.entries
+        root.sameBundleRoot(current.root) && entries == current.entries
     }
 }

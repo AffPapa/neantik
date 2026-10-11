@@ -33,7 +33,14 @@ int main(int argc,char **argv) {
             if (strlen(marker)+7>=sizeof(marker)) return 89; strcat(marker,"/ready");
             int fd=open(marker,O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW,0600); if(fd<0) return 88; close(fd);
         }
-        write(1,"READY",5); signal(SIGTERM,SIG_IGN); for (;;) pause(); }
+        if (write(1,"READY",5)!=5) return 88;
+        if (!native_request) {
+            char marker[PATH_MAX]; strncpy(marker,argv[0],sizeof(marker)); marker[sizeof(marker)-1]=0;
+            char *leaf=strrchr(marker,'/'); if (!leaf) return 91; *leaf=0;
+            if (strlen(marker)+7>=sizeof(marker)) return 89; strcat(marker,"/ready");
+            int fd=open(marker,O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW,0600); if(fd<0) return 88; close(fd);
+        }
+        signal(SIGTERM,SIG_IGN); for (;;) pause(); }
     if (!strcmp(input,"closed-stdio")) { close(0); close(1); close(2); for (;;) pause(); }
     if (!strcmp(input,"descendant")) { pid_t child=fork(); if (!child) { for (;;) pause(); } char b[64]; int len=snprintf(b,sizeof(b),"%d",child); write(1,b,(size_t)len); return 0; }
     if (!strcmp(input,"autoreap-ignore") || !strcmp(input,"autoreap-no-wait")) {

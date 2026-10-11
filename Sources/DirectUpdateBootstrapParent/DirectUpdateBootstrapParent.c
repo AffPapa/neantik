@@ -122,6 +122,10 @@ NeAntikBootstrapResult neantik_update_bootstrap_run(const char *helper,
     if (ready(result.process_id,output,output_bytes,context)!=1) goto done;
     // Ready may have published a durable ACK. From now on cancellation cannot
     // undo that decision. Any send failure still leaves ACK recovery to owner.
+    // Journal validation/ACK may consume the earlier launch budget. This is a
+    // new bounded IO phase after the durable decision, not a longer launch wait.
+    now=monotonic_ms(); if (!now || now>UINT64_MAX-5000) { result.status=NUB_TIMEOUT; goto done; }
+    deadline=now+5000;
     uint8_t command[36]; memcpy(command,"NUC1",4); memcpy(command+4,request+4,32);
     size_t offset=0;
     while (offset<sizeof(command)) {

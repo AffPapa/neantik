@@ -143,9 +143,35 @@ public enum InstallFilesystemTransaction {
     }
 
     public static func pendingReceipt(lease: InstallFilesystemLease) throws -> InstallFilesystemReceipt? {
+        try pendingReceipt(lease: lease, observeValidation: { _ in })
+    }
+    package static func pendingReceipt(lease: InstallFilesystemLease, observeValidation: (String) -> Void) throws -> InstallFilesystemReceipt? {
+        observeValidation("lease")
         try lease.validate(); guard try InstallFS.entry(lease.parent, activeName) != nil else { return nil }
+        observeValidation("load")
         let loaded = try load(lease); defer { close(loaded.descriptor) }
-        try validatePair(lease, loaded.journal, requireNew: true); return loaded.receipt
+        observeValidation("pair")
+        try validatePair(lease, loaded.journal, requireNew: true, observeValidation: observeValidation); return loaded.receipt
+    }
+
+    /// Exact finalized decision after an error between history rename and the
+    /// return to the owner. Absence is not success; never adopt another journal.
+    package static func finalizedResult(lease: InstallFilesystemLease, expected: InstallFilesystemReceipt) throws -> InstallFilesystemResult? {
+        try lease.validate()
+        var result: InstallFilesystemResult?
+        for committed in [true, false] {
+            let name = (committed ? ".neantik-install-committed-" : ".neantik-install-rolledback-") + expected.transactionID.uuidString.lowercased()
+            guard try InstallFS.entry(lease.parent, name) != nil else { continue }
+            guard result == nil else { throw InstallFilesystemError.changed }
+            let loaded = try load(lease, name: name); defer { close(loaded.descriptor) }
+            guard loaded.receipt == expected, try acknowledgement(loaded) == committed else { throw InstallFilesystemError.changed }
+            try validatePair(lease, loaded.journal, requireNew: committed, checksCancellation: false)
+            // finish may have thrown just after rename, before parent sync.
+            try InstallFS.sync(loaded.descriptor); try InstallFS.sync(lease.parent)
+            try validateLoaded(lease, loaded)
+            result = .init(transactionID: expected.transactionID, committed: committed)
+        }
+        return result
     }
 
     /// Records a decision only AFTER the caller authenticates the exact new
@@ -223,14 +249,18 @@ public enum InstallFilesystemTransaction {
         throw InstallFilesystemError.changed
     }
     private static func validatePair(_ lease: InstallFilesystemLease, _ journal: Journal, requireNew: Bool,
-                                     checksCancellation: Bool = true) throws {
+                                     checksCancellation: Bool = true, observeValidation: (String) -> Void = { _ in }) throws {
         try lease.validate()
-        let active = try InstallTree.capture(parent: lease.parent, name: appName, checksCancellation: checksCancellation)
-        let retained = try InstallTree.capture(parent: lease.parent, name: journal.candidateName, checksCancellation: checksCancellation)
-        guard (requireNew ? journal.candidate : journal.original).matches(active),
-              (requireNew ? journal.original : journal.candidate).matches(retained),
-              journal.parent.sameObject(lease.identity) else { throw InstallFilesystemError.changed }
+        observeValidation("active-capture")
+        let active = try InstallTree.capture(parent: lease.parent, name: appName, checksCancellation: checksCancellation, onChanged: { observeValidation("active-" + $0) })
+        observeValidation("retained-capture")
+        let retained = try InstallTree.capture(parent: lease.parent, name: journal.candidateName, checksCancellation: checksCancellation, onChanged: { observeValidation("retained-" + $0) })
+        observeValidation("active-match")
+        guard (requireNew ? journal.candidate : journal.original).matches(active) else { throw InstallFilesystemError.changed }
+        observeValidation("retained-match")
+        guard (requireNew ? journal.original : journal.candidate).matches(retained), journal.parent.sameObject(lease.identity) else { throw InstallFilesystemError.changed }
         try lease.validate()
+        observeValidation("preparation")
         try validatePreparation(lease, journal)
     }
     private static func validatePreparation(_ lease: InstallFilesystemLease, _ journal: Journal) throws {
