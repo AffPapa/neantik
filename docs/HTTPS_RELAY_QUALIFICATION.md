@@ -77,6 +77,6 @@ The actual OS-default constructor carried HTTP application I/O with no private
 anchor and no credentials. Cancellation rejected the next write. The local
 certificate/authentication controls remain independent negative tests.
 
-See releases/v0.7.32.md for the exact signed/published candidate status. Before
+See docs/RELEASE_CANDIDATE_0732.md for the exact signed/published candidate status. Before
 that report passes its gates, these source/QA results are not publication evidence.
 Synthetic fixtures never use customer credentials, profiles or Keychain items.
