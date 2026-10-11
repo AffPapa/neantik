@@ -9,6 +9,7 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
     package let url: URL, expectedCode: ProxyRelayExpectedCode
     private let parentURL: URL, parent: Int32, file: Int32
     private let parentIdentity: BackupIdentity, fileIdentity: BackupIdentity, sha256: String
+    private let codeIdentifier: String, codeHash: Data, releaseCertificateRequired: Bool
     package var description: String { "DirectAssessmentHelper(<redacted>)" }
     package var customMirror: Mirror { Mirror(self, children: [:]) }
     private init(url: URL, sha256: String, cdHash: Data, identifier: String, requireReleaseCertificate: Bool = true) throws {
@@ -44,6 +45,7 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
         }
         self.url = url; self.parentURL = parentURL; self.parent = parent; self.file = file
         self.parentIdentity = parentIdentity; fileIdentity = identity; self.sha256 = sha256; expectedCode = pin
+        codeIdentifier = identifier; codeHash = cdHash; releaseCertificateRequired = requireReleaseCertificate
         kept = true
     }
     deinit { close(file); close(parent) }
@@ -56,6 +58,16 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
     package static func packagedOwner(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
         try .init(url: qualifiedInstalledApp.appendingPathComponent("Contents/Helpers/NeAntikUpdateOwner"),
                   sha256: releasePayloadSHA256, cdHash: releaseCDHash, identifier: "app.neantik.update-owner")
+    }
+    // These constructors are used only after the owner derives and validates
+    // its fixed operation root. Their pins come from installed signed policy.
+    package static func relocatedOwner(in operationRoot: URL, pin: DirectUpdateHelperPin) throws -> DirectAssessmentHelper {
+        try .init(url: operationRoot.appendingPathComponent("Helpers/NeAntikUpdateOwner"),
+                  sha256: pin.sha256, cdHash: pin.cdHash, identifier: "app.neantik.update-owner")
+    }
+    package static func relocatedAssessment(in operationRoot: URL, pin: DirectUpdateHelperPin) throws -> DirectAssessmentHelper {
+        try .init(url: operationRoot.appendingPathComponent("Helpers/NeAntikUpdateAssessment"),
+                  sha256: pin.sha256, cdHash: pin.cdHash, identifier: identifier)
     }
     #if DEBUG
     /// Only separately signed QA files, in a marked isolated UUID root. It
@@ -82,6 +94,38 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
               try BackupFS.hash(file, size: fileIdentity.size) == sha256 else { throw DirectAssessmentParentError.helper }
         try Self.noACLOrFlags(parent); try Self.noACLOrFlags(file)
         guard try BackupFS.identity(parent).mode & 0o7022 == 0, try BackupFS.identity(file) == fileIdentity, try BackupFS.entry(parent, url.lastPathComponent) == fileIdentity else { throw DirectAssessmentParentError.helper }
+    }
+    /// Copies only this already authenticated retained file. The destination
+    /// is an exclusive regular file under a retained private directory, never
+    /// a manifest-selected executable. A fresh signature capture binds the copy.
+    package func relocate(to directory: URL) throws -> DirectAssessmentHelper {
+        try validate()
+        let fd = try BackupFS.directory(directory); defer { close(fd) }
+        let identity = try BackupFS.identity(fd)
+        guard identity.mode & 0o7777 == 0o700 else { throw DirectAssessmentParentError.helper }
+        try Self.noACLOrFlags(fd)
+        let output = openat(fd, url.lastPathComponent, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o500)
+        guard output >= 0 else { throw DirectAssessmentParentError.helper }; defer { close(output) }
+        let initial = try BackupFS.identity(output); try initial.validateFile(device: identity.device)
+        var offset: Int64 = 0
+        while offset < fileIdentity.size {
+            let count = Int(min(Int64(DirectFileIOLimits.hashChunkBytes), fileIdentity.size - offset))
+            let bytes = try BackupFS.read(file, at: offset, count: count)
+            guard bytes.count == count else { throw DirectAssessmentParentError.helper }
+            try BackupFS.write(output, bytes, at: offset); offset += Int64(count)
+        }
+        guard fsync(output) == 0, fsync(fd) == 0,
+              try BackupFS.identity(output).sameObject(initial),
+              try BackupFS.entry(fd, url.lastPathComponent) == BackupFS.identity(output) else { throw DirectAssessmentParentError.helper }
+        try validate(); try BackupFS.validateDirectoryPath(directory, identity)
+        guard try BackupFS.identity(fd).mode & 0o7777 == 0o700 else { throw DirectAssessmentParentError.helper }
+        return try .init(url: directory.appendingPathComponent(url.lastPathComponent), sha256: sha256,
+                         cdHash: codeHash, identifier: codeIdentifier, requireReleaseCertificate: releaseCertificateRequired)
+    }
+    package static func validatePrivateDirectory(_ descriptor: Int32) throws {
+        let identity = try BackupFS.identity(descriptor)
+        guard identity.directory, identity.uid == geteuid(), identity.mode & 0o7777 == 0o700 else { throw DirectAssessmentParentError.helper }
+        try noACLOrFlags(descriptor)
     }
     private static func noACLOrFlags(_ fd: Int32) throws {
         var stat = Darwin.stat(); guard fstat(fd, &stat) == 0, stat.st_flags == 0 else { throw DirectAssessmentParentError.helper }

@@ -83,6 +83,9 @@ package struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
     package func installedUpdateMetadata() throws -> DirectUpdateInstalledMetadata {
         try updateMetadata(expectedIdentifier: DirectUpdateCodeRole.manager.identifier)
     }
+    package func requireReleaseCertificate() throws {
+        guard DirectUpdateDeveloperIdentity.matches(signingCertificate) else { throw DirectUpdateCodeSignatureError.identity }
+    }
     #if DEBUG
     package func qualificationUpdateMetadata() throws -> DirectUpdateInstalledMetadata {
         try updateMetadata(expectedIdentifier: DirectUpdateCodeRole.updatePolicyQualification.identifier)

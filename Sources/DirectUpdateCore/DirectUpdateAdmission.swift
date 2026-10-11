@@ -62,6 +62,37 @@ package actor DirectUpdateAdmissionCoordinator {
     }
     package func snapshot() -> DirectUpdateAdmissionState { state }
 
+    /// Refuse an incompatible bootstrap before asking the manager to quit.
+    /// The actual retained stage supplies signed helper policy and files; a
+    /// scalar offer or a same-team declaration cannot supply compatibility.
+    package func validateRetainedCandidate(ownerCDHash: Data) async throws -> DirectUpdateInstalledMetadata {
+        guard state == .observed, let stage, let archive, let signature,
+              let manifest = acceptedManifest, let expected = acceptedPayload else { throw DirectUpdateAdmissionError.binding }
+        let configuration = self.configuration, version = installedVersion, build = installedBuild
+        let host = hostOS, clock = self.clock
+        return try await utility {
+            guard try DirectUpdateArchiveIntegrityService.admittedManifest(manifest, configuration: configuration,
+                installedVersion: version, installedBuild: build, hostOS: host, now: clock()) == expected else { throw DirectUpdateAdmissionError.binding }
+            try signature.requireBinding(to: stage)
+            try archive.withValidatedArchive { _, integrity in try Self.requireBinding(integrity, payload: expected.payload) }
+            let metadata = try stage.withValidatedApp { app in
+                let code = try DirectUpdateCodeSignature.inspect(app, role: .manager)
+                guard code == signature.manager else { throw DirectUpdateAdmissionError.binding }
+                let metadata = try code.installedUpdateMetadata()
+                guard ownerCDHash.count == 20, metadata.owner.cdHash == ownerCDHash else { throw DirectUpdateAdmissionError.binding }
+                try DirectAssessmentHelper.packagedOwner(in: app, releasePayloadSHA256: metadata.owner.sha256,
+                    releaseCDHash: metadata.owner.cdHash).validate()
+                try DirectAssessmentHelper.packaged(in: app, releasePayloadSHA256: metadata.assessment.sha256,
+                    releaseCDHash: metadata.assessment.cdHash).validate()
+                return metadata
+            }
+            guard try DirectUpdateArchiveIntegrityService.admittedManifest(manifest, configuration: configuration,
+                installedVersion: version, installedBuild: build, hostOS: host, now: clock()) == expected else { throw DirectUpdateAdmissionError.binding }
+            try signature.requireBinding(to: stage)
+            return metadata
+        }
+    }
+
     package func inspectLocalArchive(_ source: URL, signedManifest: Data, archiveParent: URL, extractionParent: URL,
                              beforePhase: (@Sendable (DirectUpdateAdmissionPhase) throws -> Void)? = nil,
                              archiveFault: (@Sendable (DirectUpdateStagePoint) throws -> Void)? = nil,

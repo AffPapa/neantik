@@ -236,6 +236,13 @@ private final class AdmissionClock: @unchecked Sendable {
         #expect(offlineDate.isFinite && offlineDate > 0)
         #expect(onlineDate == nil || onlineDate.map { $0.isFinite && $0 > 0 } == true)
         #expect(await c.snapshot() == .observed)
+        // The admitted legacy release has no enabled signed helper channel.
+        // It remains a valid observation, but cannot close the manager and
+        // pretend its bootstrap can authenticate the new independent owner.
+        await #expect(throws: UpdateManifestError.channelDisabled) {
+            try await c.validateRetainedCandidate(ownerCDHash: Data(repeating: 9, count: 20))
+        }
+        #expect(await c.snapshot() == .observed)
         // Genuine observation A cannot be wrapped as an offer for manifest B.
         // Wire hashes alone cannot establish this composition boundary.
         let request = try DirectUpdateOwnerInit(archive: f.source, manifest: manifest)

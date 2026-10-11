@@ -10,6 +10,12 @@ import Security
 /// and premigration readiness have their real-process qualification.
 @main enum NeAntikUpdateOwner {
     static func main() async {
+        if CommandLine.arguments == [CommandLine.arguments[0], "--neantik-update-owner-v1"] {
+            // Fixed production mode authenticates the actual live parent and
+            // itself before reading any input. No DEBUG policy is accepted.
+            do { try await DirectUpdateOwnerOperation.run(); exit(0) }
+            catch { exit(EX_NOPERM) }
+        }
         #if DEBUG
         let arguments = CommandLine.arguments
         guard arguments.count == 3 else { exit(64) }
@@ -60,7 +66,7 @@ import Security
             exit(1)
         }
         #else
-        // Release has no QA policy, fixture key, profile access or install path.
+        // No QA policy, fixture key or caller-selected install path in Release.
         exit(64)
         #endif
     }

@@ -149,6 +149,18 @@ package enum DirectUpdateArchiveIntegrityService {
         guard supports(verified.payload.minimumOS, host: hostOS) else { throw DirectUpdateArchiveIntegrityError.incompatibleOS }
         return verified
     }
+    /// Expiry is checked on both sides of potentially slow signature/custody
+    /// work. This bounds a validation window; it is not install authority.
+    package static func withAdmittedManifest<T>(_ data: Data, configuration: UpdateChannelConfiguration,
+        installedVersion: String, installedBuild: Int, hostOS: OperatingSystemVersion,
+        clock: () -> Date = { Date() }, body: () throws -> T) throws -> T {
+        let before = try admittedManifest(data, configuration: configuration, installedVersion: installedVersion,
+            installedBuild: installedBuild, hostOS: hostOS, now: clock())
+        let result = try body()
+        guard try admittedManifest(data, configuration: configuration, installedVersion: installedVersion,
+            installedBuild: installedBuild, hostOS: hostOS, now: clock()) == before else { throw DirectUpdateAdmissionError.binding }
+        return result
+    }
 
     private static func supports(_ minimum: String, host: OperatingSystemVersion) -> Bool {
         // The signature verifier already enforces canonical OS syntax.

@@ -56,6 +56,26 @@ private func integrityFixtureWait(_ semaphore: DispatchSemaphore) -> Bool {
 }
 
 struct DirectUpdateArchiveIntegrityTests {
+    @Test func candidateValidationWindowRefusesExpiryDuringActualWork() throws {
+        let f = try OwnUpdateIntegrityFixture(), manifest = try f.envelope(expiresAt: f.now.addingTimeInterval(10))
+        let clock = IntegrityTestClock(f.now)
+        func validate(_ work: () throws -> Int) throws -> Int {
+            try DirectUpdateArchiveIntegrityService.withAdmittedManifest(manifest, configuration: f.configuration,
+                installedVersion: "0.7.24", installedBuild: 87,
+                hostOS: .init(majorVersion: 27, minorVersion: 0, patchVersion: 0), clock: { clock.read() }, body: work)
+        }
+        let result = try validate { 7 }; #expect(result == 7)
+        var ranWork = false
+        #expect(throws: UpdateManifestError.expired) {
+            // Existing verifier allows five minutes of clock skew. Advance
+            // beyond that contract rather than weakening the verifier for QA.
+            try validate { ranWork = true; clock.set(f.now.addingTimeInterval(311)); return 7 }
+        }
+        #expect(ranWork)
+        ranWork = false
+        #expect(throws: UpdateManifestError.expired) { try validate { ranWork = true; return 7 } }
+        #expect(!ranWork)
+    }
     @Test func actualOwnZIPMatchesAuthenticManifestWithoutInstallationClaims() throws {
         let f = try OwnUpdateIntegrityFixture(), result = try f.verify()
         #expect(result.version == "1.0.0" && result.build == 88)

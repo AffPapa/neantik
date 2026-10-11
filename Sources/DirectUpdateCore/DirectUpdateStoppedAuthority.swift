@@ -116,6 +116,9 @@ enum DirectUpdateProcessInventory {
 /// lifecycle fence. Conservative first policy requires every NeAntik instance
 /// for this UID to stop, including another installation and detached helpers.
 final package class DirectUpdateStoppedAuthority {
+    package static func requireQuietInventory() throws {
+        try DirectUpdateProcessInventory.requireQuiet(DirectUpdateProcessInventory.capture())
+    }
     private let lock = NSRecursiveLock()
     private var intent: InstallLifecycleIntent?
     private var released = false

@@ -62,6 +62,7 @@ package struct DirectUpdateOwnerOffer: Equatable, Sendable {
     package var runtimeSHA256: Data { bytes.subdata(in: 132..<164) }
     package var digest: Data { Data(SHA256.hash(data: bytes)) }
     package init(request: DirectUpdateOwnerInit, observation: DirectUpdateAdmissionObservation) throws {
+        guard case .observed = observation.system.reply else { throw DirectUpdateOwnerProtocolError.reply }
         guard try OwnerWire.hash(observation.manifestSHA256) == request.manifestSHA256 else {
             throw DirectUpdateOwnerProtocolError.binding
         }
@@ -102,6 +103,14 @@ package enum DirectUpdateOwnerDecision: String, Sendable { case commit = "NUC2",
 /// A private-pipe decision binds the exact offer and session. Accepted means
 /// consent received, never durable filesystem ACK or proof that manager exited.
 package enum DirectUpdateOwnerConsent {
+    /// Available before an offer exists. Cancellation is session-bound and
+    /// acknowledgement is sent only after admission and its children drain.
+    package static func earlyCancel(request: DirectUpdateOwnerInit) -> Data {
+        Data("NUX0".utf8) + request.nonce + request.digest
+    }
+    package static func cancelled(request: DirectUpdateOwnerInit) -> Data {
+        Data("NUD0".utf8) + request.nonce + request.digest
+    }
     package static func command(_ decision: DirectUpdateOwnerDecision, request: DirectUpdateOwnerInit, offer: DirectUpdateOwnerOffer) throws -> Data {
         _ = try DirectUpdateOwnerOffer.parse(offer.bytes, request: request)
         return Data(decision.rawValue.utf8) + request.nonce + offer.digest
