@@ -120,7 +120,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         golden()
-        source = (PROJECT / 'Sources/NeAntik/DirectUpdateRuntimeProvenance.swift').read_text()
+        source = (PROJECT / 'Sources/DirectUpdateCore/DirectUpdateRuntimeProvenance.swift').read_text()
         resources = args.reference_app / 'Contents/Resources'
         result = {}
         for scope, directory in [('runtime', 'NeAntik Browser.app'), ('evidence', 'NeAntikRuntimeEvidence')]:

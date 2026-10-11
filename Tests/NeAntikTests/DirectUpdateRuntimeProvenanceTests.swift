@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 private final class RuntimeClosureFixture: @unchecked Sendable {
     let root = URL(fileURLWithPath: "/private/tmp/neantik-runtime-closure-" + UUID().uuidString)

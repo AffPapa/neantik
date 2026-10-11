@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 /// Exact headed owned-fixture observation. This does not enable a listener,
 /// send credentials, bypass sandboxing or authorize production relay use.

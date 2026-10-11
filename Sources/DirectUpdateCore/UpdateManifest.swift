@@ -1,34 +1,34 @@
 import CryptoKit
 import Foundation
 
-enum NeAntikPublicHostPolicy {
-    static let approvedHosts: Set<String> = [
+package enum NeAntikPublicHostPolicy {
+    package static let approvedHosts: Set<String> = [
         "affpapa.org",
         "browser.free",
         "github.com"
     ]
 
-    static func allows(_ value: String) -> Bool {
+    package static func allows(_ value: String) -> Bool {
         approvedHosts.contains(value.lowercased())
     }
 }
 
-struct UpdateChannelConfiguration: Equatable, Sendable {
-    static let enabledKey = "NeAntikUpdateChannelEnabled"
-    static let manifestURLKey = "NeAntikUpdateManifestURL"
-    static let publicKeyIDKey = "NeAntikUpdatePublicKeyID"
-    static let publicKeyKey = "NeAntikUpdatePublicKeyBase64"
+package struct UpdateChannelConfiguration: Equatable, Sendable {
+    package static let enabledKey = "NeAntikUpdateChannelEnabled"
+    package static let manifestURLKey = "NeAntikUpdateManifestURL"
+    package static let publicKeyIDKey = "NeAntikUpdatePublicKeyID"
+    package static let publicKeyKey = "NeAntikUpdatePublicKeyBase64"
 
-    let isEnabled: Bool
-    let manifestURL: URL?
-    let publicKeyID: String?
-    let publicKey: Data?
+    package let isEnabled: Bool
+    package let manifestURL: URL?
+    package let publicKeyID: String?
+    package let publicKey: Data?
 
-    static func fromBundle(_ bundle: Bundle = .main) -> Self {
+    package static func fromBundle(_ bundle: Bundle = .main) -> Self {
         fromInfoDictionary(bundle.infoDictionary ?? [:])
     }
 
-    static func fromInfoDictionary(_ dictionary: [String: Any]) -> Self {
+    package static func fromInfoDictionary(_ dictionary: [String: Any]) -> Self {
         let enabled = dictionary[enabledKey] as? Bool ?? false
         let manifestURL = (dictionary[manifestURLKey] as? String)
             .flatMap(validatedManifestURL)
@@ -91,38 +91,38 @@ struct UpdateChannelConfiguration: Equatable, Sendable {
     }
 }
 
-struct SignedUpdateEnvelope: Codable, Equatable, Sendable {
-    let schemaVersion: Int
-    let algorithm: String
-    let keyID: String
-    let payload: String
-    let signature: String
+package struct SignedUpdateEnvelope: Codable, Equatable, Sendable {
+    package let schemaVersion: Int
+    package let algorithm: String
+    package let keyID: String
+    package let payload: String
+    package let signature: String
 }
 
-struct UpdateManifestPayload: Codable, Equatable, Sendable {
-    let schemaVersion: Int
-    let product: String
-    let edition: String
-    let version: String
-    let build: Int
-    let issuedAt: Date
-    let expiresAt: Date
-    let archiveName: String
-    let downloadURL: String
-    let sha256: String
-    let minimumOS: String
-    let architecture: String
-    let artifactKind: String
-    let publicReleaseState: String
-    let chromiumVersion: String
+package struct UpdateManifestPayload: Codable, Equatable, Sendable {
+    package let schemaVersion: Int
+    package let product: String
+    package let edition: String
+    package let version: String
+    package let build: Int
+    package let issuedAt: Date
+    package let expiresAt: Date
+    package let archiveName: String
+    package let downloadURL: String
+    package let sha256: String
+    package let minimumOS: String
+    package let architecture: String
+    package let artifactKind: String
+    package let publicReleaseState: String
+    package let chromiumVersion: String
 }
 
-struct VerifiedUpdateManifest: Equatable, Sendable {
-    let payload: UpdateManifestPayload
-    let isNewerThanInstalled: Bool
+package struct VerifiedUpdateManifest: Equatable, Sendable {
+    package let payload: UpdateManifestPayload
+    package let isNewerThanInstalled: Bool
 }
 
-enum UpdateManifestError: LocalizedError, Equatable {
+package enum UpdateManifestError: LocalizedError, Equatable {
     case channelDisabled
     case malformedEnvelope
     case unsupportedEnvelope
@@ -131,7 +131,7 @@ enum UpdateManifestError: LocalizedError, Equatable {
     case expired
     case invalidReleaseContract
 
-    var errorDescription: String? {
+    package var errorDescription: String? {
         switch self {
         case .channelDisabled:
             "Подписанный канал обновлений не настроен."
@@ -151,13 +151,13 @@ enum UpdateManifestError: LocalizedError, Equatable {
     }
 }
 
-enum UpdateManifestVerifier {
+package enum UpdateManifestVerifier {
     private static let maximumLifetime: TimeInterval = 14 * 24 * 60 * 60
     private static let clockSkew: TimeInterval = 5 * 60
     private static let minimumPublicChromiumVersion =
         NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersion
 
-    static func verify(
+    package static func verify(
         _ data: Data,
         configuration: UpdateChannelConfiguration,
         installedVersion: String,

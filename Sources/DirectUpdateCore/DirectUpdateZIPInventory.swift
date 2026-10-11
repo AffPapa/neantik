@@ -2,23 +2,23 @@ import Darwin
 import DirectZipCodec
 import Foundation
 
-enum DirectUpdateZIPError: Error { case malformed, unsupported, unsafePath, collision, limit, changed, checksum, codec, write }
+package enum DirectUpdateZIPError: Error { case malformed, unsupported, unsafePath, collision, limit, changed, checksum, codec, write }
 
 /// A bounded ZIP32 reader for the Direct package contract, not a general ZIP
 /// importer. No ZIP64, encryption, split archives, SFX, xattrs or special files.
-struct DirectUpdateZIPInventory {
-    enum Kind: Sendable { case file, directory, symlink }
-    struct Entry: Sendable {
-        let path: String, kind: Kind, mode: mode_t
-        let dataOffset: Int64, compressed: Int64, expanded: Int64
-        let method: UInt16, crc: UInt32, target: String?
+package struct DirectUpdateZIPInventory {
+    package enum Kind: Sendable { case file, directory, symlink }
+    package struct Entry: Sendable {
+        package let path: String, kind: Kind, mode: mode_t
+        package let dataOffset: Int64, compressed: Int64, expanded: Int64
+        package let method: UInt16, crc: UInt32, target: String?
     }
-    let entries: [Entry]
-    let expandedBytes: Int64
-    static let maximumEntries = 50_000, maximumPathBytes = 1_024
-    static let maximumExpandedBytes: Int64 = 8 * 1_024 * 1_024 * 1_024
+    package let entries: [Entry]
+    package let expandedBytes: Int64
+    package static let maximumEntries = 50_000, maximumPathBytes = 1_024
+    package static let maximumExpandedBytes: Int64 = 8 * 1_024 * 1_024 * 1_024
 
-    static func read(_ fd: Int32) throws -> Self {
+    package static func read(_ fd: Int32) throws -> Self {
         let original = try BackupFS.identity(fd)
         try original.validateFile(device: nil)
         guard original.size >= 22, original.size <= DirectUpdateArchiveIntegrityService.maximumArchiveBytes else { throw DirectUpdateZIPError.limit }

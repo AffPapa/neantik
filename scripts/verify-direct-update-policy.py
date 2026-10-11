@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 INFO_PLIST = PROJECT_ROOT / "Resources" / "Info.plist"
-SWIFT_SOURCE = PROJECT_ROOT / "Sources" / "NeAntik" / "UpdateManifest.swift"
+SWIFT_SOURCE = PROJECT_ROOT / "Sources" / "DirectUpdateCore" / "UpdateManifest.swift"
 APPROVED_PUBLIC_HOSTS = {"affpapa.org", "browser.free", "github.com"}
 
 

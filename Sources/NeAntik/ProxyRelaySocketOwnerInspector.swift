@@ -14,12 +14,6 @@ struct ProxyRelaySocketOwnerEvidence: Equatable, Sendable, CustomStringConvertib
     var customMirror: Mirror { Mirror(self, children: [:]) }
 }
 
-struct ProxyRelayOwnerProcessIdentity: Equatable, Sendable {
-    let generation: BrowserProcessKernelIdentity
-    let userID: uid_t
-    let parentProcessID: pid_t
-}
-
 enum ProxyRelaySocketOwnerResult: Sendable {
     case matched(ProxyRelaySocketOwnerEvidence), unrelated, unavailable
 }
@@ -31,15 +25,7 @@ enum ProxyRelaySocketOwnerInspector {
     static let maximumDescriptors = 8192
 
     static func processIdentity(_ pid: pid_t) -> ProxyRelayOwnerProcessIdentity? {
-        guard pid > 0 else { return nil }
-        var info = proc_bsdinfo()
-        let count = withUnsafeMutableBytes(of: &info) { bytes in
-            proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, bytes.baseAddress, Int32(bytes.count))
-        }
-        guard count == MemoryLayout<proc_bsdinfo>.size, info.pbi_pid == pid,
-              info.pbi_start_tvusec < 1_000_000 else { return nil }
-        return .init(generation: .init(startSeconds: Int64(info.pbi_start_tvsec), startMicroseconds: Int32(info.pbi_start_tvusec)),
-                     userID: info.pbi_uid, parentProcessID: pid_t(info.pbi_ppid))
+        DirectProcessIdentityInspector.processIdentity(pid)
     }
 
     static func inspect(processID: pid_t, expected: ProxyRelayOwnerProcessIdentity,

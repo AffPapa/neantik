@@ -2,9 +2,9 @@ import CryptoKit
 import Darwin
 import Foundation
 
-enum DirectUpdateArchiveIntegrityError: LocalizedError, Equatable {
+package enum DirectUpdateArchiveIntegrityError: LocalizedError, Equatable {
     case notNewer, incompatibleOS, unsafeFile, limitExceeded, archiveChanged, digestMismatch, readFailed
-    var errorDescription: String? {
+    package var errorDescription: String? {
         switch self {
         case .notNewer: "Архив не является более новой сборкой NeAntik."
         case .incompatibleOS: "Для этой сборки требуется более новая версия macOS."
@@ -20,32 +20,32 @@ enum DirectUpdateArchiveIntegrityError: LocalizedError, Equatable {
 /// A point-in-time integrity observation, never an installation capability.
 /// A later installer must independently verify its owned immutable stage,
 /// code signature, runtime provenance and notarization before publication.
-struct UpdateArchiveIntegrityReceipt: Codable, Equatable, Sendable {
-    let schemaVersion: Int
-    let version: String
-    let build: Int
-    let chromiumVersion: String
-    let archiveBytes: Int64
-    let sha256: String
-    let checkedAt: Date
-    let manifestSignatureVerified: Bool
-    let archiveBytesMatchManifest: Bool
-    let archiveSafetyVerified: Bool
-    let developerIDVerified: Bool
-    let notarizationVerified: Bool
-    let installed: Bool
+package struct UpdateArchiveIntegrityReceipt: Codable, Equatable, Sendable {
+    package let schemaVersion: Int
+    package let version: String
+    package let build: Int
+    package let chromiumVersion: String
+    package let archiveBytes: Int64
+    package let sha256: String
+    package let checkedAt: Date
+    package let manifestSignatureVerified: Bool
+    package let archiveBytesMatchManifest: Bool
+    package let archiveSafetyVerified: Bool
+    package let developerIDVerified: Bool
+    package let notarizationVerified: Bool
+    package let installed: Bool
 }
 
-enum DirectUpdateArchiveIntegrityPoint: Sendable {
+package enum DirectUpdateArchiveIntegrityPoint: Sendable {
     case sourceOpened, chunkHashed(Int64), beforeFinalValidation
 }
 
 /// Explicit local-file verification. No requests, extraction, process launch,
 /// profile changes or public-key adoption from the selected manifest.
-enum DirectUpdateArchiveIntegrityService {
-    static let maximumArchiveBytes: Int64 = 4 * 1_024 * 1_024 * 1_024
+package enum DirectUpdateArchiveIntegrityService {
+    package static let maximumArchiveBytes: Int64 = 4 * 1_024 * 1_024 * 1_024
 
-    static func verify(
+    package static func verify(
         archiveURL: URL, signedManifest: Data, configuration: UpdateChannelConfiguration,
         installedVersion: String, installedBuild: Int,
         hostOS: OperatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion,
@@ -62,7 +62,7 @@ enum DirectUpdateArchiveIntegrityService {
         return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
     }
 
-    static func verifySynchronously(
+    package static func verifySynchronously(
         archiveURL: URL, signedManifest: Data, configuration: UpdateChannelConfiguration,
         installedVersion: String, installedBuild: Int, hostOS: OperatingSystemVersion,
         clock: @Sendable () -> Date, byteLimit: Int64 = maximumArchiveBytes,
@@ -139,7 +139,7 @@ enum DirectUpdateArchiveIntegrityService {
 
     /// Shared admission runs before either integrity observation or owned-stage
     /// preparation opens a source/destination. A receipt is never authority.
-    static func admittedManifest(_ data: Data, configuration: UpdateChannelConfiguration,
+    package static func admittedManifest(_ data: Data, configuration: UpdateChannelConfiguration,
                                  installedVersion: String, installedBuild: Int,
                                  hostOS: OperatingSystemVersion, now: Date) throws -> VerifiedUpdateManifest {
         let verified = try UpdateManifestVerifier.verify(data, configuration: configuration,
@@ -161,7 +161,7 @@ enum DirectUpdateArchiveIntegrityService {
         return true
     }
 
-    static func platformFileURL(_ url: URL) throws -> URL {
+    package static func platformFileURL(_ url: URL) throws -> URL {
         guard url.isFileURL, url.path.hasPrefix("/"), url.query == nil, url.fragment == nil,
               url.host == nil || url.host == "" || url.host == "localhost" else { throw DirectUpdateArchiveIntegrityError.unsafeFile }
         // Darwin's fixed aliases only. Arbitrary symlink ancestry stays refused.

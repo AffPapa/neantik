@@ -3,14 +3,14 @@ import DirectAssessmentParent
 import DirectInstallFilesystem
 import Foundation
 
-enum DirectAssessmentParentError: Error, Equatable { case helper, request, reply, spawn, admission, cancelled, timeout, output, input, wait, io }
+package enum DirectAssessmentParentError: Error, Equatable { case helper, request, reply, spawn, admission, cancelled, timeout, output, input, wait, io }
 
 /// A system observation, never an installation capability or proof that an
 /// online lookup fetched a fresh response. Not decodable from external JSON.
-struct DirectSystemAssessmentObservation: Sendable {
-    let reply: DirectAssessmentReply
-    let managerCDHash: Data
-    var installAuthorized: Bool { false }
+package struct DirectSystemAssessmentObservation: Sendable {
+    package let reply: DirectAssessmentReply
+    package let managerCDHash: Data
+    package var installAuthorized: Bool { false }
     fileprivate init(reply: DirectAssessmentReply, managerCDHash: Data) { self.reply = reply; self.managerCDHash = managerCDHash }
 }
 
@@ -22,13 +22,13 @@ private final class AssessmentParentContext: @unchecked Sendable {
     func cancel() { lock.lock(); cancelled = true; lock.unlock() }
     var isCancelled: Bool { lock.lock(); defer { lock.unlock() }; return cancelled }
     func admit(_ pid: pid_t) -> Bool {
-        guard !isCancelled, let identity = ProxyRelaySocketOwnerInspector.processIdentity(pid),
+        guard !isCancelled, let identity = DirectProcessIdentityInspector.processIdentity(pid),
               identity.userID == geteuid(), identity.parentProcessID == getpid() else { return false }
         do {
             try helper.validate()
             guard ProxyRelayLiveCodeVerifier.matches(processID: pid, expectedProcess: identity, expectedCode: helper.expectedCode) else { return false }
             try helper.validate()
-            return !isCancelled && ProxyRelaySocketOwnerInspector.processIdentity(pid) == identity
+            return !isCancelled && DirectProcessIdentityInspector.processIdentity(pid) == identity
         } catch { return false }
     }
 }
@@ -39,10 +39,10 @@ private func assessmentCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
     guard let raw else { return 1 }; return Unmanaged<AssessmentParentContext>.fromOpaque(raw).takeUnretainedValue().isCancelled ? 1 : 0
 }
 
-enum DirectAssessmentParent {
+package enum DirectAssessmentParent {
     /// Run while the owning stage's borrow holds custody, including on refusal.
     /// Catch operation errors inside the borrow so its postcondition still runs.
-    static func observe(stage: ExtractedUpdateApp, helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
+    package static func observe(stage: ExtractedUpdateApp, helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
         try await work(helper: helper) { context in
             let result: Result<DirectSystemAssessmentObservation, Error> = try stage.withValidatedApp { url in
                 Result { try observe(url: url, context: context) }
@@ -50,7 +50,7 @@ enum DirectAssessmentParent {
             return try result.get()
         }
     }
-    static func observe(stage: ExtractedUpdateApp, signature: DirectUpdateStageSignature,
+    package static func observe(stage: ExtractedUpdateApp, signature: DirectUpdateStageSignature,
                         helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
         try await work(helper: helper) { context in
             try signature.requireBinding(to: stage)
@@ -65,7 +65,7 @@ enum DirectAssessmentParent {
             return try result.get()
         }
     }
-    static func observe(candidate: PreparedInstallSlot, helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
+    package static func observe(candidate: PreparedInstallSlot, helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
         // The slot is never accessed outside this one worker; caller must retain
         // its installation lease and must not begin a transaction concurrently.
         let slot = AssessmentCandidate(candidate)
@@ -96,7 +96,7 @@ enum DirectAssessmentParent {
         guard !context.isCancelled else { throw DirectAssessmentParentError.cancelled }
         return .init(reply: reply, managerCDHash: signature.cdHash)
     }
-    static func request(app: URL, cdHash: Data) throws -> Data {
+    package static func request(app: URL, cdHash: Data) throws -> Data {
         let bytes = Array(app.path.utf8)
         // Foundation's standardizedFileURL can rewrite the macOS /private/tmp
         // spelling to /tmp. Check syntax without that alias rewrite; the C

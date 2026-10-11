@@ -2,9 +2,9 @@ import CryptoKit
 import Darwin
 import Foundation
 
-enum DirectUpdateRuntimeProvenanceError: LocalizedError, Equatable {
+package enum DirectUpdateRuntimeProvenanceError: LocalizedError, Equatable {
     case unsupported, metadata, closure, architecture, changed, limit
-    var errorDescription: String? {
+    package var errorDescription: String? {
         switch self {
         case .unsupported: "Для этого движка нет проверенного контракта обновления."
         case .metadata: "Сведения о происхождении движка не соответствуют проверенному выпуску."
@@ -20,17 +20,17 @@ enum DirectUpdateRuntimeProvenanceError: LocalizedError, Equatable {
 /// M156 payload. Downloaded reports/manifests cannot select these pins. A new
 /// runtime, a new nested signature or changed evidence needs a reviewed policy
 /// update; a higher version number alone is never sufficient.
-enum DirectUpdateRuntimePins {
-    static let chromiumVersion = "156.0.8078.12"
-    static let runtimeDigest = "176c65a1e1e069dcc36ef56ab6210753db7fc23527efc5bfbcb4afc5714a6efe"
-    static let evidenceDigest = "f16a5b823ffaf05da6e0882ec89ef09684a0302c097aa39a6d85cd5384425b6b"
-    static let reportDigest = "a367417b75da00de4655c6c0c1c03a1c0fe2ee5f30f38743c44549775c2f94a9"
-    static let runtimeEntries = 946, evidenceEntries = 114
-    static let runtimeBytes: Int64 = 411_177_721, evidenceBytes: Int64 = 49_527_984
-    static let executable = "Contents/MacOS/NeAntik Browser"
-    static let frameworkPrefix = "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/"
-    static let framework = frameworkPrefix + "NeAntik Browser Framework"
-    static let machoPaths: Set<String> = Set([
+package enum DirectUpdateRuntimePins {
+    package static let chromiumVersion = "156.0.8078.12"
+    package static let runtimeDigest = "176c65a1e1e069dcc36ef56ab6210753db7fc23527efc5bfbcb4afc5714a6efe"
+    package static let evidenceDigest = "f16a5b823ffaf05da6e0882ec89ef09684a0302c097aa39a6d85cd5384425b6b"
+    package static let reportDigest = "a367417b75da00de4655c6c0c1c03a1c0fe2ee5f30f38743c44549775c2f94a9"
+    package static let runtimeEntries = 946, evidenceEntries = 114
+    package static let runtimeBytes: Int64 = 411_177_721, evidenceBytes: Int64 = 49_527_984
+    package static let executable = "Contents/MacOS/NeAntik Browser"
+    package static let frameworkPrefix = "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/"
+    package static let framework = frameworkPrefix + "NeAntik Browser Framework"
+    package static let machoPaths: Set<String> = Set([
         executable, framework,
         "Libraries/libaperitif.dylib", "Libraries/libvk_swiftshader.dylib", "Libraries/libvulkan.dylib",
         "Helpers/app_mode_loader", "Helpers/chrome_crashpad_handler", "Helpers/web_app_shortcut_copier"
@@ -38,7 +38,7 @@ enum DirectUpdateRuntimePins {
         "", " (Alerts)", " (GPU)", " (Renderer)", " (Aperitif)",
         " (Aperitif Alerts)", " (Aperitif GPU)", " (Aperitif Renderer)"
     ].map { frameworkPrefix + "Helpers/NeAntik Browser Helper\($0).app/Contents/MacOS/NeAntik Browser Helper\($0)" })
-    static let reportHashes: [String: String] = [
+    package static let reportHashes: [String: String] = [
         "sourceLockSHA256": "bca02c9e891ea4dfab36966202f1d5bf6824f327af683499d48a7722220ece68",
         "candidateLockSHA256": "bca02c9e891ea4dfab36966202f1d5bf6824f327af683499d48a7722220ece68",
         "sourceContractSHA256": "f8ee0079edb447343edb136b52ccba4aa00a91b77b61b0b8d88a62963d818757",
@@ -52,10 +52,10 @@ enum DirectUpdateRuntimePins {
 
 /// Scalar observation of exact bytes under current custody, not a source build,
 /// notarization/Gatekeeper decision, installation capability or runtime test.
-struct DirectUpdateRuntimeProvenanceObservation: Sendable, Equatable {
-    let chromiumVersion: String
-    let runtimeSHA256: String, evidenceSHA256: String
-    let machoCount: Int
+package struct DirectUpdateRuntimeProvenanceObservation: Sendable, Equatable {
+    package let chromiumVersion: String
+    package let runtimeSHA256: String, evidenceSHA256: String
+    package let machoCount: Int
     fileprivate init(runtime: DirectRuntimeClosureMeasurement, evidence: DirectRuntimeClosureMeasurement) {
         chromiumVersion = DirectUpdateRuntimePins.chromiumVersion
         runtimeSHA256 = runtime.digest; evidenceSHA256 = evidence.digest
@@ -63,14 +63,14 @@ struct DirectUpdateRuntimeProvenanceObservation: Sendable, Equatable {
     }
 }
 
-struct DirectRuntimeClosureMeasurement: Sendable, Equatable {
-    let digest: String, entries: Int, regularBytes: Int64
-    let machoPaths: Set<String>
-    let capturedReport: Data?
+package struct DirectRuntimeClosureMeasurement: Sendable, Equatable {
+    package let digest: String, entries: Int, regularBytes: Int64
+    package let machoPaths: Set<String>
+    package let capturedReport: Data?
 }
 
-enum DirectUpdateRuntimeProvenance {
-    static func inspectStage(_ stage: ExtractedUpdateApp) throws -> DirectUpdateRuntimeProvenanceObservation {
+package enum DirectUpdateRuntimeProvenance {
+    package static func inspectStage(_ stage: ExtractedUpdateApp) throws -> DirectUpdateRuntimeProvenanceObservation {
         try Task.checkCancellation()
         guard stage.archiveIntegrity.chromiumVersion == DirectUpdateRuntimePins.chromiumVersion else {
             throw DirectUpdateRuntimeProvenanceError.unsupported
@@ -83,7 +83,7 @@ enum DirectUpdateRuntimeProvenance {
 
     /// Reuse a genuine signature observation only for its retained sealed
     /// stage, not a caller-supplied flag or signature array from another app.
-    static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp,
+    package static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp,
                                            signature: DirectUpdateStageSignature) async throws -> DirectUpdateRuntimeProvenanceObservation {
         try Task.checkCancellation()
         let worker = Task.detached(priority: .utility) {
@@ -125,7 +125,7 @@ enum DirectUpdateRuntimeProvenance {
         }
     }
 
-    static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateRuntimeProvenanceObservation {
+    package static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateRuntimeProvenanceObservation {
         try Task.checkCancellation()
         let worker = Task.detached(priority: .utility) { try inspectStage(stage) }
         return try await withTaskCancellationHandler {
@@ -134,7 +134,7 @@ enum DirectUpdateRuntimeProvenance {
         } onCancel: { worker.cancel() }
     }
 
-    static func validateMeasurements(_ runtime: DirectRuntimeClosureMeasurement, _ evidence: DirectRuntimeClosureMeasurement) throws {
+    package static func validateMeasurements(_ runtime: DirectRuntimeClosureMeasurement, _ evidence: DirectRuntimeClosureMeasurement) throws {
         guard runtime.digest == DirectUpdateRuntimePins.runtimeDigest,
               evidence.digest == DirectUpdateRuntimePins.evidenceDigest,
               runtime.entries == DirectUpdateRuntimePins.runtimeEntries,
@@ -149,7 +149,7 @@ enum DirectUpdateRuntimeProvenance {
     }
 
     /// Pure schema/policy tests do not manufacture provenance observations.
-    static func validateReport(_ report: [String: Any]) throws {
+    package static func validateReport(_ report: [String: Any]) throws {
         func integer(_ value: Any?, equals expected: Int) -> Bool {
             guard let n = value as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID() else { return false }
             return n.doubleValue == Double(expected)
@@ -179,18 +179,18 @@ enum DirectUpdateRuntimeProvenance {
     }
 }
 
-enum DirectRuntimeClosurePoint: Sendable {
+package enum DirectRuntimeClosurePoint: Sendable {
     case opened(String), chunk(String, Int64), beforeEntryValidation(String)
 }
 
 /// Captured no-follow descriptor walk of actual files, including every directory
 /// and exact symlink spelling. Does not follow symlinks or parse large evidence.
 /// The enclosing stage seal validates namespace and custody before/after.
-enum DirectRuntimeClosure {
+package enum DirectRuntimeClosure {
     private struct Record {
         let path: String, bytes: Data
     }
-    static func measure(_ url: URL, scope: String, maximumEntries: Int, maximumBytes: Int64,
+    package static func measure(_ url: URL, scope: String, maximumEntries: Int, maximumBytes: Int64,
                         fault: (@Sendable (DirectRuntimeClosurePoint) throws -> Void)? = nil) throws -> DirectRuntimeClosureMeasurement {
         guard ["runtime", "evidence"].contains(scope), (1...2_000).contains(maximumEntries),
               (0...1_073_741_824).contains(maximumBytes) else { throw DirectUpdateRuntimeProvenanceError.limit }
@@ -317,7 +317,7 @@ enum DirectRuntimeClosure {
                      regularBytes: total, machoPaths: machoPaths, capturedReport: capturedReport)
     }
 
-    static func isMachO(_ bytes: Data) -> Bool {
+    package static func isMachO(_ bytes: Data) -> Bool {
         guard bytes.count >= 4 else { return false }
         let magics: [[UInt8]] = [[0xcf,0xfa,0xed,0xfe], [0xce,0xfa,0xed,0xfe],
             [0xfe,0xed,0xfa,0xcf], [0xfe,0xed,0xfa,0xce], [0xca,0xfe,0xba,0xbe],

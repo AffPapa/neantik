@@ -2,9 +2,9 @@ import Darwin
 import Foundation
 import Security
 
-enum DirectUpdateCodeSignatureError: LocalizedError, Equatable {
+package enum DirectUpdateCodeSignatureError: LocalizedError, Equatable {
     case identity, signature, policy, metadata, changed
-    var errorDescription: String? {
+    package var errorDescription: String? {
         switch self {
         case .identity: "Обновление подписано не ожидаемым Developer ID NeAntik."
         case .signature: "Подпись приложения или вложенного кода не прошла проверку."
@@ -17,23 +17,23 @@ enum DirectUpdateCodeSignatureError: LocalizedError, Equatable {
 
 /// Fixed product identities, never requirements supplied by an archive, MCP
 /// client, Info.plist team declaration or a downloaded manifest.
-enum DirectUpdateCodeRole: CaseIterable, Sendable {
+package enum DirectUpdateCodeRole: CaseIterable, Sendable {
     case manager, runtime, framework
-    var identifier: String {
+    package var identifier: String {
         switch self {
         case .manager: "app.neantik.desktop"
         case .runtime: "app.neantik.runtime"
         case .framework: "app.neantik.runtime.framework"
         }
     }
-    var executable: String {
+    package var executable: String {
         switch self {
         case .manager: "NeAntik"
         case .runtime: "NeAntik Browser"
         case .framework: "NeAntik Browser Framework"
         }
     }
-    var entitlements: [String: NSObject] {
+    package var entitlements: [String: NSObject] {
         switch self {
         // Legacy Direct contract. The provisioned manager has three exact
         // claims and additionally requires an authenticated matching profile.
@@ -51,54 +51,54 @@ enum DirectUpdateCodeRole: CaseIterable, Sendable {
 
 /// Signature observation only; not notarization, provenance or permission to
 /// install. In particular it cannot be decoded into an installation capability.
-struct DirectUpdateCodeSignatureFields: Sendable, Equatable {
-    let identifier: String, version: String, build: String, cdHash: Data
-    let certifiedTimestamp: Date
+package struct DirectUpdateCodeSignatureFields: Sendable, Equatable {
+    package let identifier: String, version: String, build: String, cdHash: Data
+    package let certifiedTimestamp: Date
 }
 
-struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
+package struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
     private let fields: DirectUpdateCodeSignatureFields
     private let profileValidity: DirectUpdateProvisioningValidity?
     fileprivate init(_ fields: DirectUpdateCodeSignatureFields, profileValidity: DirectUpdateProvisioningValidity?) {
         self.fields = fields; self.profileValidity = profileValidity
     }
     fileprivate func validateTimePolicy(now: Date) throws { try profileValidity?.validate(now: now) }
-    var identifier: String { fields.identifier }
-    var version: String { fields.version }
-    var build: String { fields.build }
-    var cdHash: Data { fields.cdHash }
-    var certifiedTimestamp: Date { fields.certifiedTimestamp }
-    var developerIDVerified: Bool { true }
-    var nestedAndAllArchitecturesVerified: Bool { true }
-    var hardenedRuntimeVerified: Bool { true }
+    package var identifier: String { fields.identifier }
+    package var version: String { fields.version }
+    package var build: String { fields.build }
+    package var cdHash: Data { fields.cdHash }
+    package var certifiedTimestamp: Date { fields.certifiedTimestamp }
+    package var developerIDVerified: Bool { true }
+    package var nestedAndAllArchitecturesVerified: Bool { true }
+    package var hardenedRuntimeVerified: Bool { true }
 }
 
 /// Genuine signature observations bound to one sealed stage's lifetime. The
 /// retained object prevents identity reuse; callers cannot construct this from
 /// an array, a receipt or downloaded JSON. Every subsequent use still borrows
 /// and validates the same stage. This is not installation authority.
-final class DirectUpdateStageSignature: Sendable {
+final package class DirectUpdateStageSignature: Sendable {
     private let stage: ExtractedUpdateApp
-    let observations: [DirectUpdateCodeSignatureObservation]
+    package let observations: [DirectUpdateCodeSignatureObservation]
     fileprivate init(stage: ExtractedUpdateApp, observations: [DirectUpdateCodeSignatureObservation]) {
         self.stage = stage; self.observations = observations
     }
-    func requireBinding(to stage: ExtractedUpdateApp, now: Date = Date()) throws {
+    package func requireBinding(to stage: ExtractedUpdateApp, now: Date = Date()) throws {
         guard self.stage === stage else { throw DirectUpdateCodeSignatureError.changed }
         for observation in observations { try observation.validateTimePolicy(now: now) }
     }
-    var manager: DirectUpdateCodeSignatureObservation { observations[0] }
+    package var manager: DirectUpdateCodeSignatureObservation { observations[0] }
 }
 
-enum DirectUpdateCodeSignature {
-    static let team = "H6VGU2M6JD"
+package enum DirectUpdateCodeSignature {
+    package static let team = "H6VGU2M6JD"
     private static let validationFlags = SecCSFlags(rawValue:
         kSecCSStrictValidate | kSecCSCheckAllArchitectures | kSecCSCheckNestedCode)
 
     /// Internal primitive for an owned sealed stage (or an explicit local
     /// qualification fixture). Security.framework secures the plist supplied
     /// below; a separately parsed unsigned CFBundle dictionary is not trusted.
-    static func inspect(_ url: URL, role: DirectUpdateCodeRole) throws -> DirectUpdateCodeSignatureObservation {
+    package static func inspect(_ url: URL, role: DirectUpdateCodeRole) throws -> DirectUpdateCodeSignatureObservation {
         try Task.checkCancellation()
         let profile = role == .manager ? try DirectUpdateProvisioningSnapshot(app: url) : nil
         var requirement: SecRequirement?
@@ -158,14 +158,14 @@ enum DirectUpdateCodeSignature {
 
     // Current distribution is thin 64-bit ARM64. Universal/future formats must
     // get an explicit contract instead of silently truncating a fat-arch list.
-    static func admitsARM64Header(_ bytes: Data) -> Bool {
+    package static func admitsARM64Header(_ bytes: Data) -> Bool {
         guard bytes.count == 32 else { return false }
         return bytes.prefix(8) == Data([0xcf, 0xfa, 0xed, 0xfe, 0x0c, 0, 0, 1])
     }
 
     /// Pure scalar policy only. Supplied dictionaries cannot produce an
     /// observation claiming that a cryptographic signature was verified.
-    static func validatedFields(_ info: [String: Any], role: DirectUpdateCodeRole,
+    package static func validatedFields(_ info: [String: Any], role: DirectUpdateCodeRole,
                                 provisionedManager: Bool = false) throws -> DirectUpdateCodeSignatureFields {
         guard !provisionedManager || role == .manager else { throw DirectUpdateCodeSignatureError.policy }
         guard info[kSecCodeInfoIdentifier as String] as? String == role.identifier,
@@ -222,7 +222,7 @@ enum DirectUpdateCodeSignature {
 
     /// Not a trusted-update constructor: runtime payload provenance and actual
     /// notary/Gatekeeper gates still have to follow these signature checks.
-    static func inspectStageAsync(_ stage: ExtractedUpdateApp) async throws -> [DirectUpdateCodeSignatureObservation] {
+    package static func inspectStageAsync(_ stage: ExtractedUpdateApp) async throws -> [DirectUpdateCodeSignatureObservation] {
         try Task.checkCancellation()
         let worker = Task.detached(priority: .utility) { try inspectStage(stage) }
         return try await withTaskCancellationHandler {
@@ -232,7 +232,7 @@ enum DirectUpdateCodeSignature {
         } onCancel: { worker.cancel() }
     }
 
-    static func inspectBoundStage(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateStageSignature {
+    package static func inspectBoundStage(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateStageSignature {
         try Task.checkCancellation()
         let worker = Task.detached(priority: .utility) {
             let observations = try inspectStage(stage)
@@ -244,7 +244,7 @@ enum DirectUpdateCodeSignature {
         } onCancel: { worker.cancel() }
     }
 
-    static func inspectStage(_ stage: ExtractedUpdateApp) throws -> [DirectUpdateCodeSignatureObservation] {
+    package static func inspectStage(_ stage: ExtractedUpdateApp) throws -> [DirectUpdateCodeSignatureObservation] {
         try Task.checkCancellation()
         let receipt = stage.archiveIntegrity
         try admitStageLayout(stage.inventory, chromiumVersion: receipt.chromiumVersion)
@@ -261,7 +261,7 @@ enum DirectUpdateCodeSignature {
         }
     }
 
-    static func admitStageLayout(_ inventory: DirectUpdateZIPInventory, chromiumVersion: String) throws {
+    package static func admitStageLayout(_ inventory: DirectUpdateZIPInventory, chromiumVersion: String) throws {
         let prefix = "NeAntik.app/Contents/", runtime = prefix + "Resources/NeAntik Browser.app/Contents/"
         let framework = runtime + "Frameworks/NeAntik Browser Framework.framework/Versions/" + chromiumVersion + "/"
         let plists = [prefix + "Info.plist", runtime + "Info.plist", framework + "Resources/Info.plist"]

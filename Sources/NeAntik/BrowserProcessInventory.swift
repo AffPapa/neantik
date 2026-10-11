@@ -17,11 +17,6 @@ fileprivate struct BrowserProcessInventoryEntry: Sendable {
     }
 }
 
-struct BrowserProcessKernelIdentity: Equatable, Sendable {
-    let startSeconds: Int64
-    let startMicroseconds: Int32
-}
-
 enum BrowserProcessArgumentParser {
     static let maximumArgumentCount = 4_096
 

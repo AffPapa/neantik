@@ -5,6 +5,7 @@ import DirectZipCodec
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 private struct ZIPFixtureEntry {
     var path: String, bytes: Data = Data(), mode: UInt32 = 0o100644, method: UInt16 = 0
@@ -103,6 +104,13 @@ private final class AdmissionBarrier: @unchecked Sendable {
     func wait() -> Bool { entered.wait(timeout: .now() + 10) == .success }
     func resume() { release.signal() }
 }
+private final class AdmissionClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: Date
+    init(_ value: Date) { self.value = value }
+    var now: Date { lock.lock(); defer { lock.unlock() }; return value }
+    func advance() { lock.lock(); value = value.addingTimeInterval(172_800); lock.unlock() }
+}
 
 /// These controls use real signed manifests, copied bytes and extraction. No
 /// substituted verifier/helper can manufacture a passing trust observation.
@@ -153,6 +161,19 @@ private final class AdmissionBarrier: @unchecked Sendable {
         #expect(try Data(contentsOf: f.source) == goodZIP.bytes)
         await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
         #expect(await c.snapshot() == .failed(.signature))
+    }
+    @Test func idleAndFailedCoordinatorCannotTransferScalarOrUnsignedStage() async throws {
+        let f = try OwnZIPFixture(ZIPFixture([.directory("NeAntik.app"), .init(path: "NeAntik.app/file", bytes: Data([9]))]).bytes)
+        let c = coordinator(f), install = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: install, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: install)
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await c.prepareInstallSlot(lease: lease) }
+        #expect(await c.snapshot() == .idle)
+        await #expect(throws: DirectUpdateCodeSignatureError.metadata) { try await inspect(c, f) }
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await c.prepareInstallSlot(lease: lease) }
+        #expect(await c.snapshot() == .failed(.signature))
+        #expect(try names(install) == [".neantik-install.lock"])
+        #expect(try names(f.apps).count == 1)
     }
     @Test func actualReentrantCallCannotOverwriteCandidate() async throws {
         let f = try OwnZIPFixture(Data([1])), c = coordinator(f), barrier = AdmissionBarrier()
@@ -238,6 +259,77 @@ private final class AdmissionBarrier: @unchecked Sendable {
         await #expect(throws: DirectUpdateZIPError.changed) {
             try await DirectUpdateRuntimeProvenance.inspectStageAsynchronously(extracted, signature: signature)
         }
+        let install = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: install, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: install)
+        let slot = try await c.prepareInstallSlot(lease: lease)
+        #expect(await c.snapshot() == .transferred)
+        let movedSignature = try slot.withValidatedCandidate { try DirectUpdateCodeSignature.inspect($0, role: .manager) }
+        #expect(movedSignature.cdHash == result.system.managerCDHash)
+        #expect(!FileManager.default.fileExists(atPath: install.appendingPathComponent("NeAntik.app").path))
+        #expect(!FileManager.default.fileExists(atPath: install.appendingPathComponent(InstallFilesystemTransaction.activeName).path))
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await c.prepareInstallSlot(lease: lease) }
+        #expect(await c.snapshot() == .transferred)
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_ADMISSION_PUBLIC_ARCHIVE"] != nil),
+          arguments: ["expired", "cancelled", "changed", "before-rename", "after-rename", "expires-before-rename"])
+    func actualAcceptedStageTransferRefusesStaleChangedCancelledAndInterruptedAuthority(control: String) async throws {
+        try await exerciseAcceptedStageTransfer(control: control)
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_ADMISSION_PUBLIC_ARCHIVE"] != nil),
+          arguments: ["expires-before-return", "cancels-before-return"])
+    func actualAcceptedStageLosesAuthorityAfterVisibleTransferBeforeReturn(control: String) async throws {
+        try await exerciseAcceptedStageTransfer(control: control)
+    }
+    private func exerciseAcceptedStageTransfer(control: String) async throws {
+        let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_ADMISSION_PUBLIC_ARCHIVE"])
+        let helperRoot = try #require(ProcessInfo.processInfo.environment["NEANTIK_ASSESSMENT_PARENT_QA_ROOT"])
+        let helperHash = try #require(ProcessInfo.processInfo.environment["NEANTIK_ASSESSMENT_PARENT_QA_HASH"])
+        let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+        try #require(BackupFS.hex(SHA256.hash(data: bytes)) == "1a445b68a22634ab249573cf4712d9f47552daa9e3d403df0cf0adc360cbc7df")
+        let f = try OwnZIPFixture(bytes), clock = AdmissionClock(f.now)
+        let c = DirectUpdateAdmissionCoordinator(configuration: f.configuration, installedVersion: "0.7.29", installedBuild: 92,
+            clock: { clock.now }, assessmentHelper: { try DirectAssessmentHelper.qualification(in: URL(fileURLWithPath: helperRoot), payloadSHA256: helperHash) })
+        let result = try await inspect(c, f)
+        guard case .observed = result.system.reply else { Issue.record("Required actual accepted-stage control refused during qualification"); return }
+        let install = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: install, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: install)
+        if control == "expired" { clock.advance() }
+        if control == "changed" {
+            let root = try #require(names(f.apps).first)
+            try Data([1]).write(to: f.apps.appendingPathComponent(root + "/NeAntik.app/unexpected"))
+        }
+        let task = Task {
+            if control == "cancelled" { withUnsafeCurrentTask { $0?.cancel() } }
+            return try await c.prepareInstallSlot(lease: lease, fault: { point in
+                if (control == "before-rename" || control == "expires-before-rename"), point == .beforeRename {
+                    if control == "expires-before-rename" { clock.advance() } else { throw POSIXError(.ENOSPC) }
+                }
+                if control == "after-rename", point == .renamedBeforeSync { throw POSIXError(.ENOSPC) }
+                if point == .beforeReturn {
+                    if control == "expires-before-return" { clock.advance() }
+                    if control == "cancels-before-return" { withUnsafeCurrentTask { $0?.cancel() } }
+                }
+            })
+        }
+        do { _ = try await task.value; Issue.record("Invalid or interrupted authority returned a slot") }
+        catch {
+            switch control {
+            case "expired", "expires-before-rename", "expires-before-return": #expect(error as? UpdateManifestError == .expired)
+            case "cancelled", "cancels-before-return": #expect(error is CancellationError)
+            case "changed": #expect(error as? DirectUpdateZIPError == .changed)
+            default: #expect((error as? POSIXError)?.code == .ENOSPC)
+            }
+        }
+        #expect(await c.snapshot() == .transferFailed)
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await c.prepareInstallSlot(lease: lease) }
+        let entries = try names(install)
+        #expect(!entries.contains("NeAntik.app") && !entries.contains(InstallFilesystemTransaction.activeName))
+        let moved = ["after-rename", "expires-before-return", "cancels-before-return"].contains(control)
+        #expect(entries.filter { $0.hasPrefix(".neantik-next-") }.count == (moved ? 1 : 0))
+        let publishedRecord = ["before-rename", "expires-before-rename", "after-rename", "expires-before-return", "cancels-before-return"].contains(control)
+        #expect(entries.filter { $0.hasPrefix(".neantik-install-transfer-") }.count == (publishedRecord ? 1 : 0))
     }
 }
 private final class ZIPRootCapture: @unchecked Sendable {

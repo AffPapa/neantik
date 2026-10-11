@@ -3,6 +3,7 @@ import Foundation
 import Security
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 struct DirectUpdateProvisioningTests {
     private let bundle = "app.neantik.desktop"

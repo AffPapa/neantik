@@ -1,16 +1,16 @@
 import Darwin
 import Foundation
 
-enum DirectUpdateStageError: Error { case unsafeDestination, changed, discarded }
-enum DirectUpdateStagePoint: Sendable {
+package enum DirectUpdateStageError: Error { case unsafeDestination, changed, discarded }
+package enum DirectUpdateStagePoint: Sendable {
     case created(URL), beforeChunkWrite(Int64), beforeFileSync, beforeDirectorySync, beforeParentSync, beforeReturn
     case beforeRetireDirectory(URL), beforeRetireArchive(URL)
 }
 
 /// Owned archive custody, not verified app/install authority. No decoding or
 /// public receipt can manufacture this object. Extraction/trust must follow.
-final class PreparedUpdateArchive: @unchecked Sendable {
-    let integrity: UpdateArchiveIntegrityReceipt
+final package class PreparedUpdateArchive: @unchecked Sendable {
+    package let integrity: UpdateArchiveIntegrityReceipt
     private let lock = NSLock()
     private let parentURL: URL, stageURL: URL
     private let parent: Int32, directory: Int32, file: Int32
@@ -31,12 +31,12 @@ final class PreparedUpdateArchive: @unchecked Sendable {
 
     /// The caller gets a path only while custody is validated and locked. Later
     /// stages must revalidate their own snapshots before publishing anything.
-    func withValidatedArchive<T>(_ operation: (URL, UpdateArchiveIntegrityReceipt) throws -> T) throws -> T {
+    package func withValidatedArchive<T>(_ operation: (URL, UpdateArchiveIntegrityReceipt) throws -> T) throws -> T {
         try withValidatedArchiveFile { _, url, integrity in try operation(url, integrity) }
     }
     /// Borrow the captured descriptor under the custody lock. The callback
     /// must not close it or reopen the namespace in place of this descriptor.
-    func withValidatedArchiveFile<T>(_ operation: (Int32, URL, UpdateArchiveIntegrityReceipt) throws -> T) throws -> T {
+    package func withValidatedArchiveFile<T>(_ operation: (Int32, URL, UpdateArchiveIntegrityReceipt) throws -> T) throws -> T {
         lock.lock(); defer { lock.unlock() }
         try validate()
         let result = try operation(file, stageURL.appendingPathComponent("archive.zip"), integrity)
@@ -57,7 +57,7 @@ final class PreparedUpdateArchive: @unchecked Sendable {
     }
     /// Explicit cleanup only, with captured inode checks. Unexpected objects
     /// are preserved and reported; deinit closes descriptors without deletion.
-    func discard(fault: (@Sendable (DirectUpdateStagePoint) throws -> Void)? = nil) throws {
+    package func discard(fault: (@Sendable (DirectUpdateStagePoint) throws -> Void)? = nil) throws {
         lock.lock(); defer { lock.unlock() }
         try validate()
         try DirectUpdateStageStorage.removeOwnedStage(parentURL: parentURL, parent: parent, name: name,
@@ -69,8 +69,8 @@ final class PreparedUpdateArchive: @unchecked Sendable {
 
 /// One local archive is copied into a new private directory on the chosen
 /// target volume. No network, extraction, app execution or installation.
-enum DirectUpdateStageStorage {
-    static func prepareLocalArchive(
+package enum DirectUpdateStageStorage {
+    package static func prepareLocalArchive(
         archiveURL: URL, signedManifest: Data, configuration: UpdateChannelConfiguration,
         installedVersion: String, installedBuild: Int, destinationParent: URL,
         hostOS: OperatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion,
@@ -86,7 +86,7 @@ enum DirectUpdateStageStorage {
         return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
     }
 
-    static func prepareSynchronously(
+    package static func prepareSynchronously(
         archiveURL: URL, signedManifest: Data, configuration: UpdateChannelConfiguration,
         installedVersion: String, installedBuild: Int, destinationParent: URL,
         hostOS: OperatingSystemVersion, clock: @Sendable () -> Date,

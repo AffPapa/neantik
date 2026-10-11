@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 struct UpdateManifestTests {
     private let now = Date(timeIntervalSince1970: 1_800_000_000)

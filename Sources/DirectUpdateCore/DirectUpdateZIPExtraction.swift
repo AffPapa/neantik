@@ -4,15 +4,15 @@ import DirectInstallFilesystem
 import DirectZipCodec
 import Foundation
 
-enum DirectUpdateZIPExtractionPoint: Sendable {
+package enum DirectUpdateZIPExtractionPoint: Sendable {
     case created(URL), beforeEntry(String), afterEntry(String), beforeSeal, beforeReturn
 }
 
 /// Owned extracted bytes only. Developer ID/runtime/notarization and install
 /// authority remain separate. Unknown or changed trees are retained.
-final class ExtractedUpdateApp: @unchecked Sendable {
-    let archiveIntegrity: UpdateArchiveIntegrityReceipt
-    let inventory: DirectUpdateZIPInventory
+final package class ExtractedUpdateApp: @unchecked Sendable {
+    package let archiveIntegrity: UpdateArchiveIntegrityReceipt
+    package let inventory: DirectUpdateZIPInventory
     private let lock = NSLock()
     private let parentURL: URL, name: String
     private let parent: Int32, root: Int32
@@ -31,7 +31,7 @@ final class ExtractedUpdateApp: @unchecked Sendable {
     }
     deinit { Darwin.close(root); Darwin.close(parent) }
 
-    func withValidatedApp<T>(_ operation: (URL) throws -> T) throws -> T {
+    package func withValidatedApp<T>(_ operation: (URL) throws -> T) throws -> T {
         lock.lock(); defer { lock.unlock() }
         guard sealed else { throw DirectUpdateZIPError.changed }
         try validate(exact: true)
@@ -41,16 +41,17 @@ final class ExtractedUpdateApp: @unchecked Sendable {
     }
     /// One-shot custody transfer, distinct from a borrow whose postcondition
     /// requires the app to remain in the extraction namespace. No install trust.
-    func prepareInstallSlot(lease: InstallFilesystemLease,
+    package func prepareInstallSlot(lease: InstallFilesystemLease,
                             candidateID: UUID = UUID(),
+                            validateAdmission: () throws -> Void = {},
                             fault: ((InstallPreparationPoint) throws -> Void)? = nil) throws -> PreparedInstallSlot {
         guard lock.try() else { throw InstallFilesystemError.busy }; defer { lock.unlock() }
         guard sealed else { throw DirectUpdateZIPError.changed }
-        try validate(exact: true)
+        try validateAdmission(); try validate(exact: true); try validateAdmission()
         return try InstallPreparation.transfer(lease: lease, sourceParentURL: rootURL,
             sourceParentDescriptor: root, candidateID: candidateID,
             candidateReceiptSHA256: InstallPreparationReceipt.hash(archiveIntegrity),
-            validateSource: { try self.validate(exact: true) },
+            validateSource: { try validateAdmission(); try self.validate(exact: true); try validateAdmission() },
             didTransfer: { self.transferred = true }, fault: fault)
     }
     fileprivate func validateRoot(exact: Bool = false) throws {
@@ -125,7 +126,7 @@ final class ExtractedUpdateApp: @unchecked Sendable {
         sealedRoot = try BackupFS.identity(root); sealed = true
         try validate(exact: true)
     }
-    func discard() throws {
+    package func discard() throws {
         lock.lock(); defer { lock.unlock() }
         try remove(exact: sealed)
     }
@@ -154,13 +155,13 @@ final class ExtractedUpdateApp: @unchecked Sendable {
     }
 }
 
-enum DirectUpdateZIPExtraction {
-    static func extract(_ archive: PreparedUpdateArchive, destinationParent: URL,
+package enum DirectUpdateZIPExtraction {
+    package static func extract(_ archive: PreparedUpdateArchive, destinationParent: URL,
                         fault: (@Sendable (DirectUpdateZIPExtractionPoint) throws -> Void)? = nil) async throws -> ExtractedUpdateApp {
         let worker = Task.detached(priority: .utility) { try extractSynchronously(archive, destinationParent: destinationParent, fault: fault) }
         return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
     }
-    static func extractSynchronously(_ archive: PreparedUpdateArchive, destinationParent: URL,
+    package static func extractSynchronously(_ archive: PreparedUpdateArchive, destinationParent: URL,
                                     fault: (@Sendable (DirectUpdateZIPExtractionPoint) throws -> Void)? = nil) throws -> ExtractedUpdateApp {
         var created: ExtractedUpdateApp?
         do {

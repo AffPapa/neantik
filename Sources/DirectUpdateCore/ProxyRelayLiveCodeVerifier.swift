@@ -5,11 +5,11 @@ import Security
 /// A pinned code identity from the qualified runtime, not from a client or a
 /// path supplied by MCP. The explicit requirement includes the live code's
 /// CDHash; another app signed by the same team does not satisfy it.
-final class ProxyRelayExpectedCode: @unchecked Sendable {
-    enum Failure: Error { case invalidIdentity, invalidRequirement }
+final package class ProxyRelayExpectedCode: @unchecked Sendable {
+    package enum Failure: Error { case invalidIdentity, invalidRequirement }
     fileprivate let requirement: SecRequirement
 
-    init(identifier: String, teamIdentifier: String, cdHash: Data) throws {
+    package init(identifier: String, teamIdentifier: String, cdHash: Data) throws {
         let identifierBytes = Array(identifier.utf8), teamBytes = Array(teamIdentifier.utf8)
         guard !identifierBytes.isEmpty, identifierBytes.count <= 200,
               identifierBytes.allSatisfy({ (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || [45,46,95].contains($0) }),
@@ -29,7 +29,7 @@ final class ProxyRelayExpectedCode: @unchecked Sendable {
     /// Called only for a helper/main inside an already hash-qualified runtime.
     /// Static inspection supplies a pin; admission still validates live code.
     /// This does not substitute for runtime payload provenance/notarization.
-    static func qualifiedPin(at url: URL, expectedIdentifier: String,
+    package static func qualifiedPin(at url: URL, expectedIdentifier: String,
                              expectedTeamIdentifier: String, expectedCDHash: Data? = nil) throws -> ProxyRelayExpectedCode {
         var code: SecStaticCode?
         guard SecStaticCodeCreateWithPath(url as CFURL, SecCSFlags(), &code) == errSecSuccess,
@@ -55,11 +55,11 @@ final class ProxyRelayExpectedCode: @unchecked Sendable {
 /// that the dynamic→filesystem link is not a secure live-process identity.
 /// Inspect only the supplied PID. No argv, payload or credential access.
 /// This is a fresh observation, not a process lease or session authorization.
-enum ProxyRelayLiveCodeVerifier {
-    static func matches(processID: pid_t, expectedProcess: ProxyRelayOwnerProcessIdentity,
+package enum ProxyRelayLiveCodeVerifier {
+    package static func matches(processID: pid_t, expectedProcess: ProxyRelayOwnerProcessIdentity,
                         expectedCode: ProxyRelayExpectedCode) -> Bool {
         guard processID > 0, expectedProcess.userID == geteuid(),
-              ProxyRelaySocketOwnerInspector.processIdentity(processID) == expectedProcess
+              DirectProcessIdentityInspector.processIdentity(processID) == expectedProcess
         else { return false }
         for _ in 0..<2 {
             var guest: SecCode?
@@ -67,7 +67,7 @@ enum ProxyRelayLiveCodeVerifier {
             guard SecCodeCopyGuestWithAttributes(nil, attributes, SecCSFlags(), &guest) == errSecSuccess,
                   let guest,
                   SecCodeCheckValidity(guest, SecCSFlags(), expectedCode.requirement) == errSecSuccess,
-                  ProxyRelaySocketOwnerInspector.processIdentity(processID) == expectedProcess
+                  DirectProcessIdentityInspector.processIdentity(processID) == expectedProcess
             else { return false }
             // Fetch a fresh guest for the second validation rather than
             // reusing an object captured before a possible same-PID exec.

@@ -98,7 +98,7 @@ REQUIRED_PUBLIC_PATHS = {
     "Sources/NeAntik/ProfileListProjection.swift",
     "Sources/NeAntik/ProxyImportParser.swift",
     "Sources/NeAntik/SecureEnclaveFingerprintEvidenceSigner.swift",
-    "Sources/NeAntik/UpdateManifest.swift",
+    "Sources/DirectUpdateCore/UpdateManifest.swift",
     "Sources/NeAntik/WorkspaceLayout.swift",
     "Sources/NeAntik/RedactedSupportBundle.swift",
     "Sources/NeAntik/RedactedSupportBundleFileCoordinator.swift",

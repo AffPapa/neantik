@@ -3,6 +3,7 @@ import Foundation
 import ObjectiveC
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 struct ProfileBackupLiveRestoreRuntimeTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_LIVE_RESTORE_FIXTURE"] == "1"))

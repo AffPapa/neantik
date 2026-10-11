@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 private final class OwnUpdateIntegrityFixture: @unchecked Sendable {
     let root: URL, archive: URL

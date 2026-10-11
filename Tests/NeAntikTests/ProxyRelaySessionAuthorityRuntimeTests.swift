@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 struct ProxyRelaySessionAuthorityRuntimeTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_RELAY_SESSION_AUTHORITY_FIXTURE"] == "1"))

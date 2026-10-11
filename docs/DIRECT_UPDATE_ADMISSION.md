@@ -62,11 +62,13 @@ typed `.refused(status)` remains a refusal. A Codable archive/installation
 receipt cannot be promoted to installation authority.
 
 The exact public v0.7.30 ZIP composition test on the available macOS 27 beta
-ARM64 host reached system refusal **8**: Gatekeeper and offline ticket accepted,
-the required complete online-ticket/date condition not accepted. This is not
-an enabled updater or a shipping-candidate qualification. The gate is preserved
-without CLI/label fallback or claims that a lookup necessarily fetched a fresh
-remote response. The current private system API policy remains unresolved.
+ARM64 host completes native protocol v2 admission. The earlier status **8**
+was caused by requiring an online date that Apple's forced lookup need not
+publish. An actual completed Boolean result without CFError is required;
+the separate offline ticket date remains mandatory. An online date, when
+supplied, must be finite, positive and non-future. No fresh remote response
+or installation authority is inferred from either value. See
+[DIRECT_UPDATE_ASSESSMENT.md](DIRECT_UPDATE_ASSESSMENT.md).
 
 Product completion still requires a trusted pinned channel/helper, bounded
 download/retention, a global admission and quit barrier, fresh manager/MCP/relay
@@ -97,3 +99,33 @@ controls. No actual app is installed or run by these tests.
 ## Cooperative lifecycle follow-up
 
 Packaged manager/MCP/relay process participation and new-work admission are now implemented as a separate development slice. See [DIRECT_UPDATE_LIFECYCLE.md](DIRECT_UPDATE_LIFECYCLE.md) for actual controls and limits. This does not turn candidate admission into install authority, enable the updater, or close legacy-process, owner, trust, recovery and authenticated first-launch gates.
+
+## Shared core and one-shot stage transfer
+
+`Sources/DirectUpdateCore` shares the existing native admission primitives with
+the independent `NeAntikUpdateOwner` executable. Package access preserves
+private/file-private capability constructors. The core has no SwiftUI, AppKit,
+ProfileStore, Keychain or browser credential dependencies. The shared bounded
+filesystem limits are checked against the existing encrypted backup framing.
+
+`prepareInstallSlot` requires the coordinator's actual retained `.observed`
+stage and original signed manifest. It changes state before suspension,
+rechecks expiry/profile validity throughout the source validation callbacks
+and after transfer, and consumes the stage immediately at visible rename.
+Failure or cancellation is terminal. A partial transfer retains its record
+and candidate; no second call adopts it. The returned filesystem token is
+not installation or process authority.
+
+The independently signed DEBUG QA owner inspects native code/runtime/system
+gates and transfers an owned stage in a private synthetic installation parent.
+It checks its actual live Developer ID code and empty entitlements first.
+Its fixture key/policy cannot exist in Release, which rejects all invocations
+with exit 64. No owner transaction, restart or readiness ACK is implemented by
+this slice. The shipping updater remains disabled.
+
+Real accepted-stage controls cover expiry before transfer/before rename/after
+visible transfer, changed custody, Task cancellation before transfer/at final
+return, disk-full faults on either side of rename and duplicate consumption.
+The independent QA executable additionally refuses unsigned owner code, an
+unrelated manifest key, expired manifest, unsafe root permissions, wrong QA
+marker and mismatched archive bytes.

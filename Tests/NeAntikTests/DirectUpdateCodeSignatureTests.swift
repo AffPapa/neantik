@@ -3,6 +3,7 @@ import Foundation
 import Security
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 struct DirectUpdateCodeSignatureTests {
     private func information(_ role: DirectUpdateCodeRole) -> [String: Any] {

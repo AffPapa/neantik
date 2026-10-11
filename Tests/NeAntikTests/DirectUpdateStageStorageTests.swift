@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 private final class OwnUpdateStageFixture: @unchecked Sendable {
     let root: URL, source: URL, destination: URL

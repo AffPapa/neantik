@@ -3,11 +3,11 @@ import Foundation
 /// The current C helper emits one fixed scalar JSON line. Parse that exact
 /// grammar, before any coercing JSON decoder, so duplicate/escaped/extra keys,
 /// numeric booleans, nesting and second objects cannot silently be accepted.
-enum DirectAssessmentReply: Equatable, Sendable {
+package enum DirectAssessmentReply: Equatable, Sendable {
     case observed(offlineTicketDate: Double, onlineTicketDate: Double?)
     case refused(status: Int, gatekeeper: Bool, offline: Bool, online: Bool, onlineDate: Bool, systemError: Int64)
-    var installAuthorized: Bool { false }
-    static func parse(_ data: Data, exitCode: Int32, normalExit: Bool, now: Double) throws -> Self {
+    package var installAuthorized: Bool { false }
+    package static func parse(_ data: Data, exitCode: Int32, normalExit: Bool, now: Double) throws -> Self {
         guard normalExit, !data.isEmpty, data.count <= 1024, now.isFinite, now > 0,
               let text = String(data: data, encoding: .utf8), text.utf8.allSatisfy({ $0 == 10 || (32...126).contains($0) }) else { throw DirectAssessmentParentError.reply }
         func groups(_ pattern: String) -> [String]? {

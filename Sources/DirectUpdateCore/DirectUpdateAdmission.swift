@@ -1,25 +1,27 @@
 import CryptoKit
+import DirectInstallFilesystem
 import Foundation
 
-enum DirectUpdateAdmissionPhase: String, Sendable, CaseIterable {
+package enum DirectUpdateAdmissionPhase: String, Sendable, CaseIterable {
     case manifest, archive, extraction, signature, runtime, systemAssessment, finalBinding
 }
-enum DirectUpdateAdmissionState: Equatable, Sendable {
+package enum DirectUpdateAdmissionState: Equatable, Sendable {
     case idle, checking(DirectUpdateAdmissionPhase), observed, refused(Int)
     case failed(DirectUpdateAdmissionPhase), cancelled(DirectUpdateAdmissionPhase)
+    case transferring, transferred, transferFailed
 }
-enum DirectUpdateAdmissionError: Error, Equatable { case alreadyAttempted, binding }
+package enum DirectUpdateAdmissionError: Error, Equatable { case alreadyAttempted, binding }
 
 /// Scalar outcome of the whole local candidate check. It is deliberately not
 /// Codable and never authorizes swapping/launching an app or migrating data.
 /// In particular a system refusal cannot be promoted to a ready candidate.
-struct DirectUpdateAdmissionObservation: Sendable {
-    let manifestSHA256: String
-    let version: String, build: Int, archiveSHA256: String
-    let signatures: [DirectUpdateCodeSignatureObservation]
-    let runtime: DirectUpdateRuntimeProvenanceObservation
-    let system: DirectSystemAssessmentObservation
-    var installAuthorized: Bool { false }
+package struct DirectUpdateAdmissionObservation: Sendable {
+    package let manifestSHA256: String
+    package let version: String, build: Int, archiveSHA256: String
+    package let signatures: [DirectUpdateCodeSignatureObservation]
+    package let runtime: DirectUpdateRuntimeProvenanceObservation
+    package let system: DirectSystemAssessmentObservation
+    package var installAuthorized: Bool { false }
     fileprivate init(manifestSHA256: String, payload: UpdateManifestPayload,
                      signature: DirectUpdateStageSignature, runtime: DirectUpdateRuntimeProvenanceObservation,
                      system: DirectSystemAssessmentObservation) {
@@ -34,7 +36,7 @@ struct DirectUpdateAdmissionObservation: Sendable {
 /// and Security work is awaited utility work, including final custody checks.
 /// Unchanged/unknown files remain retained on refusal; no process is stopped,
 /// app installed, profile read, key adopted or network download performed.
-actor DirectUpdateAdmissionCoordinator {
+package actor DirectUpdateAdmissionCoordinator {
     private let configuration: UpdateChannelConfiguration
     private let installedVersion: String, installedBuild: Int
     private let hostOS: OperatingSystemVersion
@@ -47,8 +49,10 @@ actor DirectUpdateAdmissionCoordinator {
     private var stage: ExtractedUpdateApp?
     private var signature: DirectUpdateStageSignature?
     private var observation: DirectUpdateAdmissionObservation?
+    private var acceptedManifest: Data?
+    private var acceptedPayload: VerifiedUpdateManifest?
 
-    init(configuration: UpdateChannelConfiguration, installedVersion: String, installedBuild: Int,
+    package init(configuration: UpdateChannelConfiguration, installedVersion: String, installedBuild: Int,
          hostOS: OperatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion,
          clock: @escaping @Sendable () -> Date = { Date() },
          assessmentHelper: @escaping @Sendable () throws -> DirectAssessmentHelper) {
@@ -56,9 +60,9 @@ actor DirectUpdateAdmissionCoordinator {
         self.installedBuild = installedBuild; self.hostOS = hostOS
         self.clock = clock; self.assessmentHelper = assessmentHelper
     }
-    func snapshot() -> DirectUpdateAdmissionState { state }
+    package func snapshot() -> DirectUpdateAdmissionState { state }
 
-    func inspectLocalArchive(_ source: URL, signedManifest: Data, archiveParent: URL, extractionParent: URL,
+    package func inspectLocalArchive(_ source: URL, signedManifest: Data, archiveParent: URL, extractionParent: URL,
                              beforePhase: (@Sendable (DirectUpdateAdmissionPhase) throws -> Void)? = nil,
                              archiveFault: (@Sendable (DirectUpdateStagePoint) throws -> Void)? = nil,
                              extractionFault: (@Sendable (DirectUpdateZIPExtractionPoint) throws -> Void)? = nil) async throws -> DirectUpdateAdmissionObservation {
@@ -113,13 +117,53 @@ actor DirectUpdateAdmissionCoordinator {
             try Task.checkCancellation()
             observation = result
             switch system.reply {
-            case .observed: state = .observed
+            case .observed:
+                acceptedManifest = signedManifest; acceptedPayload = verified
+                state = .observed
             case .refused(let status, _, _, _, _, _): state = .refused(status)
             }
             return result
         } catch {
             if error is CancellationError || (error as? DirectAssessmentParentError) == .cancelled { state = .cancelled(phase) }
             else { state = .failed(phase) }
+            throw error
+        }
+    }
+
+    /// Consumes this coordinator's real retained stage, never a scalar report.
+    /// This is filesystem custody only: the independent owner must separately
+    /// establish stopped-process authority, fresh candidate trust and readiness.
+    /// Any failure is terminal; partially published transfer records stay fenced.
+    package func prepareInstallSlot(lease: InstallFilesystemLease,
+                                    fault: (@Sendable (InstallPreparationPoint) throws -> Void)? = nil) async throws -> PreparedInstallSlot {
+        guard state == .observed, let stage, let archive, let signature,
+              let manifest = acceptedManifest, let expected = acceptedPayload else {
+            throw DirectUpdateAdmissionError.alreadyAttempted
+        }
+        state = .transferring
+        let configuration = self.configuration, version = installedVersion, build = installedBuild
+        let host = hostOS, clock = self.clock
+        // The caller retains the lease and cannot concurrently use it. Keep
+        // the non-Sendable filesystem handles inside one utility operation.
+        let context = AdmissionTransferContext(lease)
+        do {
+            let result = try await utility {
+                let validate = {
+                    guard try DirectUpdateArchiveIntegrityService.admittedManifest(manifest,
+                        configuration: configuration, installedVersion: version, installedBuild: build,
+                        hostOS: host, now: clock()) == expected else { throw DirectUpdateAdmissionError.binding }
+                    try signature.requireBinding(to: stage)
+                }
+                try validate()
+                try archive.withValidatedArchive { _, integrity in try Self.requireBinding(integrity, payload: expected.payload) }
+                let slot = try stage.prepareInstallSlot(lease: context.lease, validateAdmission: validate, fault: fault)
+                try validate()
+                return AdmissionPreparedSlot(slot)
+            }
+            state = .transferred
+            return result.value
+        } catch {
+            state = .transferFailed
             throw error
         }
     }
@@ -143,4 +187,13 @@ actor DirectUpdateAdmissionCoordinator {
               integrity.archiveBytes > 0, integrity.manifestSignatureVerified, integrity.archiveBytesMatchManifest,
               !integrity.installed else { throw DirectUpdateAdmissionError.binding }
     }
+}
+
+private final class AdmissionTransferContext: @unchecked Sendable {
+    let lease: InstallFilesystemLease
+    init(_ lease: InstallFilesystemLease) { self.lease = lease }
+}
+private final class AdmissionPreparedSlot: @unchecked Sendable {
+    let value: PreparedInstallSlot
+    init(_ value: PreparedInstallSlot) { self.value = value }
 }

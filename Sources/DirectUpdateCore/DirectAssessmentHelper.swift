@@ -4,13 +4,13 @@ import Security
 
 /// Owned release-selected helper bytes, not a path supplied by an update/MCP.
 /// Authentication and hashing are synchronous utility-worker operations only.
-final class DirectAssessmentHelper: @unchecked Sendable, CustomStringConvertible, CustomReflectable {
-    static let identifier = "app.neantik.update-assessment"
-    let url: URL, expectedCode: ProxyRelayExpectedCode
+final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringConvertible, CustomReflectable {
+    package static let identifier = "app.neantik.update-assessment"
+    package let url: URL, expectedCode: ProxyRelayExpectedCode
     private let parentURL: URL, parent: Int32, file: Int32
     private let parentIdentity: BackupIdentity, fileIdentity: BackupIdentity, sha256: String
-    var description: String { "DirectAssessmentHelper(<redacted>)" }
-    var customMirror: Mirror { Mirror(self, children: [:]) }
+    package var description: String { "DirectAssessmentHelper(<redacted>)" }
+    package var customMirror: Mirror { Mirror(self, children: [:]) }
     private init(url: URL, sha256: String, cdHash: Data, identifier: String) throws {
         guard cdHash.count == 20, sha256.utf8.count == 64, sha256.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { throw DirectAssessmentParentError.helper }
         let parentURL = url.deletingLastPathComponent(), parent = try BackupFS.directory(parentURL)
@@ -41,14 +41,14 @@ final class DirectAssessmentHelper: @unchecked Sendable, CustomStringConvertible
         kept = true
     }
     deinit { close(file); close(parent) }
-    static func packaged(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
+    package static func packaged(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
         try .init(url: qualifiedInstalledApp.appendingPathComponent("Contents/Helpers/NeAntikUpdateAssessment"),
                   sha256: releasePayloadSHA256, cdHash: releaseCDHash, identifier: identifier)
     }
     #if DEBUG
     /// Only separately signed QA files, in a marked isolated UUID root. It
     /// accepts no production identifier or entitlements. Never shipping policy.
-    static func qualification(in root: URL, payloadSHA256: String) throws -> DirectAssessmentHelper {
+    package static func qualification(in root: URL, payloadSHA256: String) throws -> DirectAssessmentHelper {
         guard root.path.hasPrefix("/private/tmp/neantik-assessment-parent-"), root.deletingLastPathComponent().path == "/private/tmp",
               try String(contentsOf: root.appendingPathComponent("fixture.marker"), encoding: .utf8) == "isolated-assessment-parent-qa\n" else { throw DirectAssessmentParentError.helper }
         let fd = try BackupFS.directory(root); defer { close(fd) }
@@ -62,7 +62,7 @@ final class DirectAssessmentHelper: @unchecked Sendable, CustomStringConvertible
                          identifier: "app.neantik.update-assessment-qa")
     }
     #endif
-    func validate() throws {
+    package func validate() throws {
         try BackupFS.validateDirectoryPath(parentURL, parentIdentity)
         guard try BackupFS.identity(parent).sameObject(parentIdentity),
               try BackupFS.identity(parent).mode & 0o7022 == 0,

@@ -1,12 +1,12 @@
 import Foundation
 
-enum NeAntikRuntimeSecurityBaseline {
+package enum NeAntikRuntimeSecurityBaseline {
     // Keep this manager-side warning aligned with the checked release gate.
     // The release preflight still reads runtime/security-baseline.json directly.
-    static let minimumPublicChromiumVersion = [155, 0, 8059, 40]
-    static let minimumPublicChromiumVersionText = "155.0.8059.40"
+    package static let minimumPublicChromiumVersion = [155, 0, 8059, 40]
+    package static let minimumPublicChromiumVersionText = "155.0.8059.40"
 
-    static func meetsPublicChromiumVersion(_ value: String) -> Bool {
+    package static func meetsPublicChromiumVersion(_ value: String) -> Bool {
         guard let components = versionComponents(value) else {
             return false
         }

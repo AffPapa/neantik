@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 struct ProxyRelayLiveCodeVerifierTests {
     @Test func unsafeRequirementInputsCannotCompile() throws {

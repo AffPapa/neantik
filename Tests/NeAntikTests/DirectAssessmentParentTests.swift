@@ -4,6 +4,7 @@ import DirectAssessmentParent
 import Foundation
 import Testing
 @testable import NeAntik
+@testable import DirectUpdateCore
 
 private final class ParentFixtureContext {
     var admitted = true, cancelAfterAdmission = false, didAdmit = false
