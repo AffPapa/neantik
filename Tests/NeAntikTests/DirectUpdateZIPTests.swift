@@ -321,6 +321,32 @@ struct DirectUpdateZIPTests {
             }
             #expect(task.terminationStatus == 0)
         }
+        let observed = try DirectUpdateCodeSignature.inspectStage(app)
+        #expect(observed.count == 3 && observed.allSatisfy(\.developerIDVerified))
+        try app.discard(); try prepared.discard(); #expect(f.retainedApps.isEmpty)
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_STAGE_PUBLIC_ARCHIVE"] != nil))
+    func actualSignedStageRefusesManifestVersionMismatch() throws {
+        let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_STAGE_PUBLIC_ARCHIVE"])
+        let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+        try #require(BackupFS.hex(SHA256.hash(data: bytes)) == "2085796970bdef926beb7a3ff46090f5b1f7eb3dcf29f8b95bda1091a63b3bef")
+        let f = try OwnZIPFixture(bytes), prepared = try f.prepare(publicArchive: false)
+        let app = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: f.apps)
+        #expect(throws: DirectUpdateCodeSignatureError.metadata) { try DirectUpdateCodeSignature.inspectStage(app) }
+        try app.discard(); try prepared.discard(); #expect(f.retainedApps.isEmpty)
+    }
+
+    @Test func cancelledSignatureCallerCannotBeginAdmissionOrAlterStage() async throws {
+        let f = try OwnZIPFixture(ZIPFixture([appDirectory]).bytes), prepared = try f.prepare()
+        let app = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: f.apps)
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await DirectUpdateCodeSignature.inspectStageAsync(app)
+        }
+        do { _ = try await task.value; Issue.record("Cancelled caller obtained signature observation") }
+        catch { #expect(error is CancellationError) }
+        try app.withValidatedApp { _ in }
         try app.discard(); try prepared.discard(); #expect(f.retainedApps.isEmpty)
     }
 }

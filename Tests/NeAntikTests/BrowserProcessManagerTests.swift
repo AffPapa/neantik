@@ -10,7 +10,9 @@ struct BrowserProcessManagerTests {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let fake = root.appendingPathComponent("owned-browser")
-        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.arguments\"\nsleep 0.2\n".utf8).write(to: fake)
+        // Publish only a complete argument capture. File existence before the
+        // writer closes stdout was not proof of its final argument list.
+        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.arguments.pending\"\n/bin/mv \"$0.arguments.pending\" \"$0.arguments\"\nsleep 0.2\n".utf8).write(to: fake)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: fake.path)
         let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
         let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
@@ -24,6 +26,7 @@ struct BrowserProcessManagerTests {
             if FileManager.default.fileExists(atPath: captured.path) { break }
             try await Task.sleep(for: .milliseconds(5))
         }
+        try #require(FileManager.default.fileExists(atPath: captured.path))
         let arguments = try String(contentsOf: captured, encoding: .utf8).split(separator: "\n").map(String.init)
         #expect(arguments.last == "about:blank")
         #expect(arguments.contains("--user-data-dir=" + paths.browserDataDirectory(for: profile.id).path))

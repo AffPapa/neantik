@@ -68,13 +68,49 @@ This does not establish notarization or quarantine/Gatekeeper policy.
 links, malformed records, CRC/truncation/size controls, symlink graph and
 filesystem escape controls, faults, file/permission/namespace tampering,
 actual cancellation inside deflate and at seal, and a 500-file inventory.
-The opt-in `NEANTIK_UPDATE_ZIP_PUBLIC_ARCHIVE` test additionally extracts the
+The opt-in `NEANTIK_UPDATE_STAGE_PUBLIC_ARCHIVE` test additionally extracts the
 exact published 0.7.29 ZIP (1,085 entries, 488,206,443 expanded bytes), compares
 the manager hash and runs `codesign --verify --deep --strict`. These are actual
 archive/signature-preservation checks; they are not a staged Developer ID,
 notarization or installer qualification. The ZIP contract follows the
 [PKWARE ZIP specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT)
 and uses the [system zlib raw-deflate API](https://zlib.net/manual.html).
+
+## Native signing observation
+
+`DirectUpdateCodeSignature` applies fixed Apple-anchored Developer ID
+requirements for team `H6VGU2M6JD` and the manager/runtime/framework identifiers.
+It uses strict, nested-code and all-architecture validity flags, then inspects
+Security.framework's secured Info.plist and signed entitlements. It requires
+hardened runtime and the TSA-certified `kSecCodeInfoTimestamp`; the
+signer-supplied `kSecCodeInfoTime` is insufficient. A fresh code object is
+checked again after inspection. Current executable format is explicitly thin
+64-bit ARM64; universal or future formats refuse pending a separate contract.
+
+The stage adapter checks all regular Info.plist entries (1 MiB each), resource
+envelopes (8 MiB each) and an aggregate metadata budget (32 MiB) before Security
+parsing. The actual 0.7.29 ZIP has 22 such entries totaling 532,876 bytes.
+It checks owner-executable modes, explicitly verifies the runtime under `Resources`, and
+matches manager version/build and Chromium version to the admitted manifest.
+The asynchronous entry point uses a utility worker and checks caller/worker
+cancellation before returning. It currently accepts only the existing
+unprovisioned manager entitlement contract. Provisioned backup packages require
+the separate authenticated CMS/profile policy and are not admitted by this
+slice.
+
+Scalar fields alone cannot construct a verified observation. Wrong-type
+decoded entitlement dictionaries and opaque raw entitlements without a decoded
+dictionary refuse, including for the otherwise empty framework policy.
+
+Real 0.7.29 manager/runtime/framework Developer ID and certified timestamps,
+the exact owned ZIP stage, a technically valid ad-hoc signature refusal and a
+signed test-manifest version mismatch were exercised. Scalar-policy controls
+are unit evidence; they do not replace those actual code-signature checks.
+The result remains a signing observation: full runtime payload provenance,
+notarization/Gatekeeper, lifecycle admission and durable installation gates are
+still required. See Apple's
+[signature validation API](https://developer.apple.com/documentation/security/secstaticcodecheckvalidity(_:_:_:))
+and [certified timestamp definition](https://developer.apple.com/documentation/security/kseccodeinfotimestamp).
 
 ## Remaining installation gates
 
