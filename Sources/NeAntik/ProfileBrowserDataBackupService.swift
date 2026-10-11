@@ -18,6 +18,8 @@ import Foundation
     }
 
     func export(profileID: UUID, expectedRevision: UInt64, destination: URL, password: String) async throws -> EncryptedBackupArchive.Manifest {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let paths = paths, scope = scope, inspect = inspectRuntime
         let retained = paths.profileDirectory(for: profileID).appendingPathComponent(".neantik-backup-restore-" + UUID().uuidString.lowercased())
         return try await processes.withVerifiedStoppedProfileRestore(profileID: profileID, retainedTree: retained) { authority in
@@ -42,6 +44,8 @@ import Foundation
     }
 
     func restore(profileID: UUID, expectedRevision: UInt64, archive: URL, password: String) async throws -> BrowserDataRestoreTransaction.Result {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let paths = paths, scope = scope, inspect = inspectRuntime, restoreFault = restoreFault
         let retained = paths.profileDirectory(for: profileID).appendingPathComponent(".neantik-backup-restore-" + UUID().uuidString.lowercased())
         return try await processes.withVerifiedStoppedProfileRestore(profileID: profileID, retainedTree: retained) { authority in
@@ -87,6 +91,8 @@ import Foundation
     /// Cheap conservative UI admission: corrupt/foreign pending intent must
     /// not be mistaken for a cancelled transaction with unchanged live data.
     func pendingRecoveryRequired() async -> Bool {
+        guard let activity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return true }
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let paths = paths
         return await Task.detached(priority: .utility) {
             do { try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory); return false }
@@ -95,11 +101,15 @@ import Foundation
     }
 
     func inspectPendingRecovery() async throws -> BrowserDataRestoreTransaction.RecoveryPreview {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let paths = paths
         return try await Task.detached(priority: .utility) { try BrowserDataRestoreTransaction.inspectPending(paths: paths) }.value
     }
 
     func recoverPending() async throws -> BrowserDataRestoreTransaction.Result {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let paths = paths, scope = scope, inspect = inspectRuntime
         let preview = try await inspectPendingRecovery()
         return try await processes.withVerifiedStoppedProfileRestore(profileID: preview.context.profileID, retainedTree: preview.retainedTree) { authority in

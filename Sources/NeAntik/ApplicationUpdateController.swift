@@ -1,0 +1,172 @@
+import AppKit
+import Combine
+import Darwin
+import DirectUpdateCore
+import Foundation
+
+protocol ApplicationUpdateTransport: Sendable {
+    func inspect(archive: URL, manifest: Data) async throws -> DirectUpdateOwnerOffer
+    func consentAndHandoff() async throws
+    func cancelAndDrain() async throws
+}
+extension DirectUpdateOwnerClient: ApplicationUpdateTransport {}
+
+/// App-owned state survives view dismissal. The local fence is released only
+/// after the owner has drained, or retained until ordinary application exit.
+@MainActor
+final class ApplicationUpdateController: ObservableObject {
+    enum Phase: Equatable { case idle, checking, offered, cancelling, committing, restartRequired }
+    @Published private(set) var isPresented = false
+    @Published private(set) var phase = Phase.idle
+    @Published private(set) var offeredVersion: String?
+    @Published private(set) var message: String?
+    let channelEnabled: Bool
+    private let admission: ApplicationUpdateAdmission
+    private var fence: UUID?
+    private var client: (any ApplicationUpdateTransport)?
+    private let makeClient: @MainActor () -> any ApplicationUpdateTransport
+    private let terminate: @MainActor () -> Void
+    private var inspection: Task<Void, Never>?
+    private var archiveAccess: URL?
+    private var cleanupUnconfirmed = false
+
+    init(channelEnabled: Bool = UpdateChannelConfiguration.fromBundle().isEnabled,
+         admission: ApplicationUpdateAdmission? = nil,
+         makeClient: (@MainActor () -> any ApplicationUpdateTransport)? = nil,
+         terminate: (@MainActor () -> Void)? = nil) {
+        self.channelEnabled = channelEnabled; self.admission = admission ?? .shared
+        self.makeClient = makeClient ?? { DirectUpdateOwnerClient() }
+        self.terminate = terminate ?? { NSApplication.shared.terminate(nil) }
+    }
+    var holdsFence: Bool { fence != nil }
+    var canClose: Bool { phase == .idle }
+    var canCancel: Bool { phase == .checking || phase == .offered }
+
+    func present(workspaceIsBusy: Bool) {
+        guard !isPresented, fence == nil else { return }
+        message = nil; offeredVersion = nil; phase = .idle; cleanupUnconfirmed = false
+        if channelEnabled {
+            guard !workspaceIsBusy, !ManagerLaunchAdmission.shared.isPreparing else {
+                message = "Закрой браузерные окна и дождись завершения операций с профилями. Затем снова открой обновление."
+                isPresented = true; return
+            }
+            do { fence = try admission.acquireUpdate() }
+            catch { message = error.localizedDescription }
+        }
+        isPresented = true
+    }
+
+    func chooseFiles() {
+        guard channelEnabled, holdsFence, phase == .idle else { return }
+        let archivePanel = NSOpenPanel()
+        archivePanel.title = "Выбрать ZIP обновления NeAntik"
+        archivePanel.message = "Выбери оригинальный ZIP из выпуска NeAntik. DMG здесь не используется."
+        archivePanel.allowedContentTypes = [.zip]; archivePanel.canChooseDirectories = false
+        archivePanel.allowsMultipleSelection = false
+        guard archivePanel.runModal() == .OK, let archive = archivePanel.url else { return }
+        let manifestPanel = NSOpenPanel()
+        manifestPanel.title = "Выбрать подписанный manifest обновления"
+        manifestPanel.message = "Нужен manifest этого же выпуска. Обычный файл SHA-256 его не заменяет."
+        manifestPanel.allowedContentTypes = [.json]; manifestPanel.canChooseDirectories = false
+        manifestPanel.allowsMultipleSelection = false
+        guard manifestPanel.runModal() == .OK, let manifest = manifestPanel.url else { return }
+        beginInspection(archive: archive, manifest: manifest)
+    }
+
+    func beginInspection(archive: URL, manifest: URL) {
+        guard channelEnabled, holdsFence, phase == .idle else { return }
+        if archive.startAccessingSecurityScopedResource() { archiveAccess = archive }
+        let manifestScoped = manifest.startAccessingSecurityScopedResource()
+        let client = makeClient(); self.client = client
+        phase = .checking; message = nil
+        inspection = Task { @MainActor in
+            defer { if manifestScoped { manifest.stopAccessingSecurityScopedResource() } }
+            do {
+                let bytes = try await Task.detached(priority: .utility) { try Self.readManifest(manifest) }.value
+                try Task.checkCancellation()
+                let offer = try await client.inspect(archive: archive, manifest: bytes)
+                guard phase != .cancelling else { return }
+                offeredVersion = "\(offer.version) (\(offer.build))"; phase = .offered
+            } catch {
+                // A later no-session drain must not erase a previous unknown
+                // cleanup result, including an inspection cancelled by UI.
+                if error as? DirectUpdateOwnerClientError == .cleanup { cleanupUnconfirmed = true }
+                guard phase != .cancelling else { return }
+                // Selected private paths and native diagnostics never enter UI.
+                if cleanupUnconfirmed {
+                    phase = .restartRequired
+                    message = "Завершение установщика не подтверждено. Закрой NeAntik и повтори запуск перед новой попыткой."
+                } else {
+                    phase = .cancelling
+                    await drain(client, failureMessage: "Файлы обновления не прошли проверку или установке мешает другой экземпляр NeAntik. Закрой его и выбери оригинальные файлы выпуска.")
+                }
+            }
+        }
+    }
+
+    func cancel() {
+        guard canCancel, let client else { return }
+        phase = .cancelling; message = "Завершение проверки…"
+        let checking = inspection
+        checking?.cancel()
+        Task { @MainActor in
+            await checking?.value
+            await drain(client, failureMessage: nil)
+        }
+    }
+    private func drain(_ client: any ApplicationUpdateTransport, failureMessage: String?) async {
+        do {
+            try await client.cancelAndDrain()
+            guard !cleanupUnconfirmed else { throw DirectUpdateOwnerClientError.cleanup }
+            self.client = nil; inspection = nil; stopArchiveAccess()
+            // Keep this modal's admission through a retry; Close releases it.
+            phase = .idle; offeredVersion = nil; message = failureMessage
+        } catch {
+            cleanupUnconfirmed = true
+            phase = .restartRequired
+            message = "Не удалось подтвердить остановку установщика. Закрой NeAntik и повтори запуск. Другие операции пока заблокированы."
+        }
+    }
+    func installAndRestart() {
+        guard phase == .offered, holdsFence, let client else { return }
+        phase = .committing; message = "Подготовка к перезапуску…"
+        Task { @MainActor in
+            do {
+                try await client.consentAndHandoff()
+                // Accepted is consent, not installation success. The owner
+                // waits for actual manager exit before the filesystem swap.
+                terminate()
+            } catch {
+                phase = .restartRequired
+                message = "Установщик не подтвердил перезапуск. Закрой NeAntik и проверь версию при следующем запуске перед повторной установкой."
+            }
+        }
+    }
+    func close() {
+        guard canClose else { return }
+        stopArchiveAccess()
+        if let fence { admission.releaseUpdate(fence) }
+        fence = nil; isPresented = false; message = nil
+    }
+    private func stopArchiveAccess() {
+        archiveAccess?.stopAccessingSecurityScopedResource(); archiveAccess = nil
+    }
+    nonisolated static func readManifest(_ url: URL) throws -> Data {
+        let fd = open(url.path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw DirectUpdateOwnerClientError.transport }
+        defer { Darwin.close(fd) }
+        var s = stat()
+        guard fstat(fd, &s) == 0, s.st_mode & S_IFMT == S_IFREG,
+              s.st_size > 0, s.st_size <= 128 * 1024 else { throw DirectUpdateOwnerClientError.transport }
+        var data = Data(count: Int(s.st_size)); var offset = 0
+        while offset < data.count {
+            let n = data.withUnsafeMutableBytes { Darwin.read(fd, $0.baseAddress!.advanced(by: offset), $0.count - offset) }
+            if n < 0, errno == EINTR { continue }
+            guard n > 0 else { throw DirectUpdateOwnerClientError.transport }
+            offset += n
+        }
+        var extra: UInt8 = 0
+        guard Darwin.read(fd, &extra, 1) == 0 else { throw DirectUpdateOwnerClientError.transport }
+        return data
+    }
+}

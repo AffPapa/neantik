@@ -613,6 +613,19 @@ final class BrowserProcessManager: ObservableObject {
     private var consumedProxyPreparationKeys =
         Set<BrowserLaunchPreparationConsumptionKey>()
 
+    /// Local busy evidence is only an initial refusal. The owner still checks
+    /// a fresh full-UID kernel inventory before launch and after manager exit.
+    var hasWorkPreventingUpdate: Bool {
+        !runningProfileIDs.isEmpty || !processes.isEmpty ||
+        !preparedRelayLaunches.isEmpty || !pendingRelayLaunchTokens.isEmpty ||
+        !unconfirmedRelayOwnerFences.isEmpty || !activeRelayOwners.isEmpty ||
+        !externalLocks.isEmpty || !externalUnverifiedProfileIDs.isEmpty ||
+        !recoveryProfileIDs.isEmpty || !recoveryRecords.isEmpty ||
+        !managedStopRequests.isEmpty || !externalStopTasks.isEmpty ||
+        !tombstoneRecoveryMessages.isEmpty || !fingerprintAuditReservations.isEmpty ||
+        !pendingReconciliationProfileIDs.isEmpty || reconcileTask != nil || queuedReconcile != nil
+    }
+
     init(paths: AppPaths) {
         self.paths = paths
         self.validatesPersistedProfiles = true
@@ -745,6 +758,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func reconcile(profiles: [BrowserProfile], preservesKnownStates: Bool = false) {
+        guard !ApplicationUpdateAdmission.shared.isUpdating else { return }
         lastReconciledProfiles = profiles
         if profiles.isEmpty {
             reconcileGeneration &+= 1
@@ -846,9 +860,11 @@ final class BrowserProcessManager: ObservableObject {
         processInventoryProvider:
             @escaping @Sendable () -> BrowserProcessInventory
     ) {
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let paths = paths
         let profileIDs = profiles.map(\.id)
         reconcileTask = Task { [weak self] in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             let evidence = await Task.detached(priority: .utility) {
                 Self.captureReconcileEvidence(
                     paths: paths,
@@ -1232,6 +1248,8 @@ final class BrowserProcessManager: ObservableObject {
         profile: BrowserProfile,
         operation: @escaping @Sendable (StoppedProfileMaintenanceAuthority) throws -> Result
     ) async throws -> Result {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         guard processes[profile.id]?.isRunning != true else {
             throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
         }
@@ -1311,6 +1329,8 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID, retainedTree: URL,
         operation: @escaping @Sendable (StoppedProfileRestoreAuthority) throws -> Result
     ) async throws -> Result {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let savedPaths = paths
         let parent = savedPaths.profileDirectory(for: profileID)
         guard retainedTree.deletingLastPathComponent() == parent,
@@ -2669,6 +2689,8 @@ final class BrowserProcessManager: ObservableObject {
                     return
                 }
                 guard let self else { return }
+                guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
+                defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
                 let recordsBeforeCapture = Array(recoveryRecords)
                 let ownerWasAlive = Dictionary(
                     uniqueKeysWithValues:

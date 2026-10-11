@@ -72,10 +72,12 @@ struct ProfileCacheMaintenanceSheet: View {
 
     private func perform(clear: Bool, recover: Bool = false) {
         guard !busy else { return }
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let id = UUID(); requestID = id
         busy = true; clearing = clear; recovering = recover; errorMessage = nil; recoveryMessage = nil
         let operation = ProfileCacheMaintenance(browserData: paths.browserDataDirectory(for: profile.id))
         task = Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             defer { if requestID == id { busy = false; task = nil } }
             do {
                 guard try await validateSnapshot() else { throw BrowserProfileRevisionConflictError(profileID: profile.id) }

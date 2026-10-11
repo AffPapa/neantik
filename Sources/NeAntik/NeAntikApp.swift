@@ -7,6 +7,7 @@ import SwiftUI
 struct NeAntikApp: App {
     @Environment(\.openWindow) private var openWindow
     @StateObject private var helpNavigation = HelpNavigation()
+    @StateObject private var updateController = ApplicationUpdateController()
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
     @StateObject private var telemetry: TelemetryController
@@ -183,6 +184,7 @@ struct NeAntikApp: App {
             ContentView(
                 store: store,
                 processes: processes,
+                updateController: updateController,
                 telemetry: telemetry,
                 fingerprintObservationStore: fingerprintObservationStore,
                 proxyHealthCoordinator: proxyHealthCoordinator,

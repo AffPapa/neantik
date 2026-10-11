@@ -578,6 +578,7 @@ struct ResponsiveLayoutRenderTests {
                 ContentView(
                     store: store,
                     processes: processes,
+                    updateController: ApplicationUpdateController(),
                     telemetry: telemetry,
                     fingerprintObservationStore:
                         FingerprintObservationStore(),
@@ -640,6 +641,7 @@ struct ResponsiveLayoutRenderTests {
                     ContentView(
                         store: store,
                         processes: processes,
+                    updateController: ApplicationUpdateController(),
                         telemetry: telemetry,
                         fingerprintObservationStore:
                             FingerprintObservationStore(),

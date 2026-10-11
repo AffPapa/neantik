@@ -8,6 +8,7 @@ final class ManagerLaunchAdmission: ObservableObject {
     static let shared = ManagerLaunchAdmission()
     @Published private(set) var pressured = false
     private var active: (profileID: UUID, token: UUID)?
+    var isPreparing: Bool { active != nil }
     private var nextStart = Date.distantPast
     private var source: DispatchSourceMemoryPressure?
     private let thermalState: () -> ProcessInfo.ThermalState

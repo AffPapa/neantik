@@ -111,6 +111,7 @@ final class ProxyHealthCoordinator: ObservableObject {
     @Published private(set) var testingProfileIDs: Set<UUID> = []
     @Published private(set) var lastError: String?
 
+    private let updateAdmission: ApplicationUpdateAdmission
     private let fileURL: URL
     private var repository: ProxyHealthRepository?
     private let executionGate: ProxyTestExecutionGate
@@ -118,15 +119,19 @@ final class ProxyHealthCoordinator: ObservableObject {
 
     init(
         fileURL: URL,
+        updateAdmission: ApplicationUpdateAdmission? = nil,
         executionGate: ProxyTestExecutionGate = .appShared,
         commitBoundaryHook: @escaping @Sendable () async -> Void = {}
     ) {
+        self.updateAdmission = updateAdmission ?? .shared
         self.fileURL = fileURL
         self.executionGate = executionGate
         self.commitBoundaryHook = commitBoundaryHook
     }
 
     func reload(profiles: [BrowserProfile]) async {
+        guard let activity = try? updateAdmission.beginActivity() else { return }
+        defer { updateAdmission.finishActivity(activity) }
         let repository: ProxyHealthRepository
         do {
             repository = try resolvedRepository()
@@ -214,6 +219,8 @@ final class ProxyHealthCoordinator: ObservableObject {
         operation: @escaping @MainActor @Sendable (ProxyHealthState?) async throws ->
             ProxyHealthTestCommit
     ) async throws -> ProxyHealthState? {
+        let activity = try updateAdmission.beginActivity()
+        defer { updateAdmission.finishActivity(activity) }
         guard !testingProfileIDs.contains(profileID) else { return nil }
         testingProfileIDs.insert(profileID)
         defer { testingProfileIDs.remove(profileID) }
@@ -301,6 +308,8 @@ final class ProxyHealthCoordinator: ObservableObject {
     }
 
     func remove(profileID: UUID) async throws {
+        let activity = try updateAdmission.beginActivity()
+        defer { updateAdmission.finishActivity(activity) }
         let repository = try resolvedRepository()
         try await repository.remove(profileID: profileID)
         healthByProfileID[profileID] = nil

@@ -49,8 +49,10 @@ struct ProfileBrowserDataRecoverySheet: View {
 
     private func recover() {
         guard !busy, preview != nil else { return }
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         busy = true; message = nil
         Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             defer { busy = false }
             var recovered = false
             do {

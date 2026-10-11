@@ -45,7 +45,10 @@ enum ApplicationInstallLifecycle {
         }
     }
     static func requireNewWork() throws {
-        do { try participant?.requireNewWork() }
+        do {
+            try ApplicationUpdateAdmission.shared.requireNewWork()
+            try participant?.requireNewWork()
+        }
         catch { throw ApplicationInstallLifecycleError.unavailable }
     }
 }

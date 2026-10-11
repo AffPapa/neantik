@@ -171,6 +171,7 @@ struct ClipboardLeaseState: Equatable {
 struct ContentView: View {
     @ObservedObject var store: ProfileStore
     @ObservedObject var processes: BrowserProcessManager
+    @ObservedObject var updateController: ApplicationUpdateController
     @ObservedObject var telemetry: TelemetryController
     @ObservedObject var fingerprintObservationStore:
         FingerprintObservationStore
@@ -300,7 +301,8 @@ struct ContentView: View {
     }
 
     private var isWorkspaceModalPresented: Bool {
-        showingManagerLibrary || showingQuickCommands ||
+        updateController.isPresented || updateController.holdsFence ||
+            showingManagerLibrary || showingQuickCommands ||
             cacheMaintenanceProfile != nil || extensionsProfile != nil || proxyDiagnosticProfile != nil || browserDataBackupRequest != nil ||
             showingBackupRecovery ||
             editorRequest != nil ||
@@ -629,7 +631,7 @@ struct ContentView: View {
                 )
         }
         .navigationSplitViewStyle(.balanced)
-        .disabled(isImportingProfileConfigurations || isRestoringLocalSnapshot)
+        .disabled(isImportingProfileConfigurations || isRestoringLocalSnapshot || updateController.holdsFence)
         .frame(
             minWidth: WorkspaceLayout.minimumWindowWidth,
             minHeight: WorkspaceLayout.minimumWindowHeight
@@ -647,6 +649,9 @@ struct ContentView: View {
 
     private var workspaceSheets: some View {
         workspaceBase
+        .sheet(isPresented: Binding(get: { updateController.isPresented }, set: { if !$0 { updateController.close() } })) {
+            ApplicationUpdateSheet(controller: updateController)
+        }
         .sheet(isPresented: $showingManagerLibrary, onDismiss: completeManagerSheetAction) {
             ManagerLibrarySheet(library: store.managerLibrary, profile: selectedProfile,
                 folderID: selectedProfile.flatMap { store.folderID(forProfileID: $0.id) },
@@ -1066,7 +1071,7 @@ struct ContentView: View {
         workspaceStateObservers
         .task {
             while !Task.isCancelled {
-                try? await store.refreshExternalMetadata()
+                if !updateController.holdsFence { try? await store.refreshExternalMetadata() }
                 try? await Task.sleep(for: .seconds(2))
             }
         }
@@ -1082,7 +1087,9 @@ struct ContentView: View {
                 for: NSApplication.didBecomeActiveNotification
             )
         ) { _ in
+            guard !updateController.holdsFence else { return }
             Task { @MainActor in
+                guard !updateController.holdsFence else { return }
                 try? await store.refreshExternalMetadata(force: true)
                 processes.reconcile(profiles: store.profiles)
             }
@@ -1111,6 +1118,8 @@ struct ContentView: View {
     private var workspaceLifecycle: some View {
         workspaceNotifications
         .task(id: store.hasTrustedMetadata) {
+            guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             // Existing restore journals require attention even when new backup
             // operations are unavailable in this build. Never hide the fence.
             let paths = store.paths
@@ -1357,6 +1366,8 @@ struct ContentView: View {
     }
 
     private func recoverDeletedProfileCredentials() async {
+        guard let activity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let summary = await credentialCleanup.runOnce(
             metadataIsTrusted: store.hasTrustedMetadata,
             excluding: Set(store.profiles.map(\.id))
@@ -1513,6 +1524,7 @@ struct ContentView: View {
     private func completeManagerSheetAction() {
         let action = pendingManagerAction
         pendingManagerAction = nil
+        guard !updateController.holdsFence else { return }
         profileSearchIsFocused = true
         action?()
     }
@@ -1575,8 +1587,10 @@ struct ContentView: View {
     private func runBackgroundFileOperation(
         _ operation: @escaping @MainActor () async -> Void
     ) {
+        guard let activity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let id = UUID()
         let task = Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
             await operation()
             backgroundFileOperationTasks[id] = nil
         }
@@ -2968,6 +2982,7 @@ struct ContentView: View {
         for profile: BrowserProfile,
         processState requestedProcessState: BrowserProfileProcessState? = nil
     ) -> ProfileCommandSet {
+        guard !updateController.holdsFence else { return .unavailable }
         let processState = requestedProcessState ?? presentedProcessState(
             for: profile
         )
@@ -3168,16 +3183,17 @@ struct ContentView: View {
 
     @ViewBuilder
     private var sidebarStatus: some View {
-        if updateChannel.isEnabled || telemetry.isConfigured
-        {
-            VStack(alignment: .leading, spacing: 7) {
-                if updateChannel.isEnabled {
-                    Label(
-                        "Подписанные обновления",
-                        systemImage: "arrow.triangle.2.circlepath"
-                    )
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 7) {
+                Button("Обновить NeAntik…", systemImage: "arrow.triangle.2.circlepath") {
+                    guard !isWorkspaceModalPresented, pendingManagerAction == nil else { return }
+                    let busy = !store.hasTrustedMetadata || processes.hasWorkPreventingUpdate || backupRecoveryRequired ||
+                        !backgroundFileOperationTasks.isEmpty || !launchPreparationTasks.isEmpty ||
+                        !proxyTestTasks.isEmpty || bulkProxyTestTask != nil ||
+                        isCreatingBookmarkProfile || isCreatingFirstProfile
+                    updateController.present(workspaceIsBusy: busy)
                 }
+                .disabled(isWorkspaceModalPresented)
+                .help("Проверить файлы обновления или открыть ручную загрузку")
 
                 if telemetry.isConfigured {
                     Toggle(
@@ -3199,7 +3215,6 @@ struct ContentView: View {
             .font(.caption)
             .padding(12)
             .accessibilityElement(children: .contain)
-        }
     }
 
     private var runtimeStatusIcon: String {
@@ -3252,6 +3267,7 @@ struct ContentView: View {
     }
 
     private func launch(_ profile: BrowserProfile, target: BrowserUserLaunchTarget = .profileStart) {
+        guard !updateController.holdsFence else { return }
         guard !isImportingProfileConfigurations,
               !isRestoringLocalSnapshot
         else {

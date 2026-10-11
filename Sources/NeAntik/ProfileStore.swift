@@ -39,12 +39,14 @@ final class ProfileStore: ObservableObject {
     private let restoreTrashedDirectory: (URL, URL) throws -> Void
     private let beforeDeleteMetadataPersist: () throws -> Void
     private let afterDeleteMetadataPersist: () throws -> Void
+    private let updateAdmission: ApplicationUpdateAdmission
     private let beforeOrganizationPersist: () throws -> Void
     private let beforeBackgroundImportOrganizationPersist:
         @Sendable () throws -> Void
 
     init(
         paths: AppPaths = AppPaths(),
+        updateAdmission: ApplicationUpdateAdmission? = nil,
         readOnlyMetadata: Bool = false,
         trashDirectory: ((URL) throws -> URL)? = nil,
         restoreTrashedDirectory: ((URL, URL) throws -> Void)? = nil,
@@ -55,6 +57,7 @@ final class ProfileStore: ObservableObject {
             @escaping @Sendable () throws -> Void = {}
     ) {
         self.paths = paths
+        self.updateAdmission = updateAdmission ?? .shared
         self.trashDirectory =
             trashDirectory ?? Self.moveDirectoryToTrash
         self.restoreTrashedDirectory =
@@ -173,6 +176,8 @@ final class ProfileStore: ObservableObject {
     /// Admission spans read and publication, preventing an older snapshot from
     /// replacing a local commit. Drafts retain their original revision.
     func refreshExternalMetadata(force: Bool = false) async throws {
+        let activity = try updateAdmission.beginActivity()
+        defer { updateAdmission.finishActivity(activity) }
         let rootKey = paths.rootDirectory.resolvingSymlinksInPath().path
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(rootKey) else { return }
         let paths = paths
@@ -654,6 +659,8 @@ final class ProfileStore: ObservableObject {
         folderNames: [String?],
         initialBookmarks: [UUID: BookmarkImportDocument] = [:]
     ) async throws -> [BrowserProfile] {
+        let activity = try updateAdmission.beginActivity()
+        defer { updateAdmission.finishActivity(activity) }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             throw ProfileMetadataMutationInProgressError()
         }
@@ -1036,6 +1043,8 @@ final class ProfileStore: ObservableObject {
 
     @discardableResult
     func markLaunched(_ id: UUID) -> Bool {
+        do { try updateAdmission.requireNewWork() }
+        catch { lastError = error.localizedDescription; return false }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             lastError = ProfileMetadataMutationInProgressError()
                 .localizedDescription
@@ -1636,6 +1645,7 @@ final class ProfileStore: ObservableObject {
     }
 
     private func requireSynchronousMutationAdmission() throws {
+        try updateAdmission.requireNewWork()
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             throw ProfileMetadataMutationInProgressError()
         }
@@ -1648,6 +1658,7 @@ final class ProfileStore: ObservableObject {
         _ expected: BrowserProfile, paths: AppPaths,
         operation: () throws -> Result
     ) throws -> Result {
+        try ApplicationUpdateAdmission.shared.requireNewWork()
         guard !importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             throw ProfileMetadataMutationInProgressError()
         }
@@ -1683,6 +1694,7 @@ final class ProfileStore: ObservableObject {
     }
 
     func validateLaunchSnapshot(_ profile: BrowserProfile) throws {
+        try updateAdmission.requireNewWork()
         try requireStorage()
         try Self.withValidatedLaunchSnapshot(profile, paths: paths) {}
     }

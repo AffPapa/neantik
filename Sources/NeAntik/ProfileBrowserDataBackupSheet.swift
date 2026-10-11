@@ -90,9 +90,11 @@ struct ProfileBrowserDataBackupSheet: View {
     }
     private func perform(recovery: Bool = false) {
         guard !busy, recovery || canConfirm, let file else { return }
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         busy = true; message = nil
         let password = password, profile = request.profile
         task = Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             defer { busy = false; task = nil }
             var dataOperationCompleted = false
             do {

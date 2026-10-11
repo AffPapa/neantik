@@ -176,10 +176,12 @@ struct ProfileExtensionsSheet: View {
 
     private func refresh() {
         task?.cancel()
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let id = UUID(); requestID = id
         busy = true; errorMessage = nil; snapshot = nil
         let browserData = paths.browserDataDirectory(for: profile.id)
         task = Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             defer { if requestID == id { busy = false; task = nil } }
             do {
                 guard try await validateSnapshot() else { throw BrowserProfileRevisionConflictError(profileID: profile.id) }
@@ -209,9 +211,11 @@ struct ProfileExtensionsSheet: View {
         panel.allowedContentTypes = [UTType(filenameExtension: "crx") ?? .data]
         panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         packageTask?.cancel()
         let id = UUID(); packageRequestID = id; packageBusy = true; packageError = nil; package = nil
         packageTask = Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             let scoped = url.startAccessingSecurityScopedResource()
             defer {
                 if scoped { url.stopAccessingSecurityScopedResource() }
@@ -235,8 +239,10 @@ struct ProfileExtensionsSheet: View {
 
     private func preparePackage() {
         guard !preparationBusy, let url = packageURL, let expected = package else { return }
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         preparationBusy = true; preparationError = nil
         preparationTask = Task { @MainActor in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() }; preparationBusy = false; preparationTask = nil }
             do {
