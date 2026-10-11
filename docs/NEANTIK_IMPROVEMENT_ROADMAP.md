@@ -1,8 +1,12 @@
-> Current public release: 0.7.32/build95 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.32.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+> Current public release: 0.7.33/build96 public-alpha; Chromium 156.0.8078.12. Source of truth: `releases/v0.7.33.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+
+## Выпуск 0.7.33 / build96 — 12 октября 2026
+
+Понятное ручное обновление и admission операций профиля опубликованы. ZIP/DMG, скачанный headed manager и metadata MCP прошли проверки; browser.free, Sites 134 и API 200 синхронизированы. Автоматическая установка выключена до полного signed old→new gate; CRX installer остаётся в работе. Rollback 0.7.32. AffPapa пользователь обновляет самостоятельно. [Отчёт](../releases/v0.7.33.json).
 
 ## Выпуск 0.7.32 / build95 — 12 октября 2026
 
-HTTPS auth relay включён в обычный запуск после TLS/negative/headed проверок. GitHub ZIP/DMG прошли Direct и hosted-byte gates; свежий скачанный headed manager и MCP проходят. browser.free — Sites133, видимые ссылки и API200 совпадают с0.7.32/95. Прежний сертификат и Chromium156.0.8078.12 сохранены; rollback0.7.31. Полный CRX installer и public updater открыты. AffPapa исключён прямым указанием пользователя. [Отчёт](../releases/v0.7.32.json).
+HTTPS auth relay включён в обычный запуск после TLS/negative/headed проверок. GitHub ZIP/DMG прошли Direct и hosted-byte gates; свежий скачанный headed manager и MCP проходят. browser.free — Sites133, видимые ссылки и API200 совпадают с0.7.32/95. Прежний сертификат и Chromium 156.0.8078.12 сохранены; rollback0.7.31. Полный CRX installer и public updater открыты. AffPapa исключён прямым указанием пользователя. [Отчёт](../releases/v0.7.32.json).
 
 ## Выпуск 0.7.30 / build 93 — 11 октября 2026
 

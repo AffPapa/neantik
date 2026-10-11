@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.32 (95), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.32). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.32.json).
+Latest published release: [NeAntik 0.7.33 (96), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.33). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.33.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.32` adds authenticated HTTPS proxies through a separate profile relay. macOS verifies the certificate before credentials; failures do not retry HTTP or Direct. Encrypted BrowserData backup, previous tabs, the extension center and MCP remain available. Backup needs the original stopped profile, same Mac, original Keychain and exact runtime; cross-Mac login transfer is unsupported. Chromium was not rebuilt. Safe Browsing is disabled; full CRX installation, public atomic updater and version1.0 remain in progress. Immutable `0.7.31` remains for rollback. GitHub and browser.free are updated; the user updates AffPapa manually.
+`0.7.33` adds a readable manual update window and installation admission that waits for profile operations. Chromium156.0.8078.12, HTTP/HTTPS/SOCKS5 relay, encrypted BrowserData backup and the extension center are retained. Automatic installation and the full CRX installer are not yet qualified. Backup requires the original stopped profile, same Mac, original Keychain and exact runtime; cross-Mac login transfer is unsupported. Safe Browsing is disabled. Immutable `0.7.32` remains for rollback. GitHub and browser.free are updated; the user updates AffPapa manually.
 
 Direct downloads: [browser.free](https://browser.free).
 
@@ -68,7 +68,7 @@ after 60 seconds; another app can still read it during that interval.
 
 Searchable in-app help covers profiles, proxies, organization, storage and MCP.
 **Help → Connect MCP to AI…** copies workspace-specific JSON/TOML settings.
-Read access is the default; management enables 17 tools for profile creation,
+Read access is the default; management enables 18 tools for profile creation,
 editing, duplication, proxy settings, project folders, tags, pins, archive and
 normal launch/stop. Profile and folder revisions prevent stale writes; passwords
 are write-only. Stop is graceful and owned by the live MCP session; reconnect
@@ -155,4 +155,4 @@ NeAntik-owned source files are licensed under MPL-2.0. Chromium-derived files
 retain their upstream licenses and notices. The NeAntik name and logo are
 subject to [TRADEMARKS.md](TRADEMARKS.md).
 
-MCP 0.7.23 adds modern 2026-07-28 plus legacy handshake, project/tag queries, 17 tool schemas, 3 static prompts and 7 client formats: [cookbook](docs/MCP_GUIDE.md). Official configuration compatibility is distinct from end-to-end qualification of each AI client.
+MCP supports modern 2026-07-28 plus legacy handshake, project/tag queries, 18 tools in management mode; read-only mode exposes 7 of these, 3 static prompts and 7 client formats: [cookbook](docs/MCP_GUIDE.md). Official configuration compatibility is distinct from end-to-end qualification of each AI client.

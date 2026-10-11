@@ -14,13 +14,13 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.7.32 (95), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.32). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.32.json).
+Последний опубликованный выпуск: [NeAntik 0.7.33 (96), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.33). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.33.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-`0.7.32` добавляет HTTPS-прокси с авторизацией через отдельный relay профиля. Сертификат проверяется macOS до передачи пароля; при ошибке нет перехода на HTTP или Direct. Зашифрованная копия BrowserData, предыдущие вкладки, центр расширений и MCP сохранены. Backup требует исходный закрытый профиль, этот Mac, исходную Связку ключей и точный runtime; перенос авторизации между Mac не поддерживается. Chromium не пересобирался. Safe Browsing отключён; полный CRX installer, публичный атомарный updater и версия1.0 остаются в работе. `0.7.31` сохранён для отката. GitHub и browser.free обновлены; AffPapa пользователь обновляет самостоятельно.
+`0.7.33` добавляет понятное окно ручного обновления и защиту установки от параллельных операций с профилями. Chromium156.0.8078.12, relay HTTP/HTTPS/SOCKS5, зашифрованная копия BrowserData и центр расширений сохранены. Автоматическая установка и полный CRX installer ещё не квалифицированы. Backup требует исходный закрытый профиль, этот Mac, исходную Связку ключей и точный runtime; перенос авторизации между Mac не поддерживается. Safe Browsing отключён. `0.7.32` сохранён для отката. GitHub и browser.free обновлены; AffPapa пользователь обновляет самостоятельно.
 
 Скачать напрямую: [browser.free](https://browser.free).
 
@@ -297,22 +297,8 @@ fingerprint seed или proxy-конфигурации.
 сохраняют свои upstream-лицензии и notices. Название и логотип регулируются
 [TRADEMARKS.md](TRADEMARKS.md).
 
-## Выпуск на AffPapa
+## Каналы выпуска
 
-Codex и Claude используют один ограниченный release-клиент. Проверить доступ,
-текущий релиз и публичные файлы одной командой:
+GitHub `AffPapa/neantik` и browser.free через существующий Sites project. AffPapa пользователь обновляет самостоятельно; его доступы и doctor не нужны для этих каналов. Ограниченный клиент сохранён как исторический workflow: [ops/affpapa/README.md](ops/affpapa/README.md).
 
-```bash
-./scripts/neantik-affpapa-release doctor
-```
-
-Опубликовать уже подготовленный release-каталог:
-
-```bash
-./scripts/neantik-affpapa-release publish /absolute/path/to/release-dir
-```
-
-Ручные SSH/SCP/SFTP для этого не нужны и запрещены серверным forced-command.
-Полный контракт: [ops/affpapa/README.md](ops/affpapa/README.md).
-
-MCP 0.7.23: modern 2026-07-28 + legacy handshake, поиск по проектам/тегам, 17 tool schemas, 3 готовых prompts и 7 клиентских форматов; см. [cookbook](docs/MCP_GUIDE.md). Официальная совместимость форматов не доказывает end-to-end каждой версии AI-клиента.
+MCP: modern 2026-07-28 + legacy handshake, поиск по проектам/тегам, 18 инструментов в режиме управления; в режиме только чтения доступны 7 из них, 3 готовых prompts и 7 клиентских форматов; см. [cookbook](docs/MCP_GUIDE.md). Официальная совместимость форматов не доказывает end-to-end каждой версии AI-клиента.
