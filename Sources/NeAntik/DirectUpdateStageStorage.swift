@@ -32,9 +32,14 @@ final class PreparedUpdateArchive: @unchecked Sendable {
     /// The caller gets a path only while custody is validated and locked. Later
     /// stages must revalidate their own snapshots before publishing anything.
     func withValidatedArchive<T>(_ operation: (URL, UpdateArchiveIntegrityReceipt) throws -> T) throws -> T {
+        try withValidatedArchiveFile { _, url, integrity in try operation(url, integrity) }
+    }
+    /// Borrow the captured descriptor under the custody lock. The callback
+    /// must not close it or reopen the namespace in place of this descriptor.
+    func withValidatedArchiveFile<T>(_ operation: (Int32, URL, UpdateArchiveIntegrityReceipt) throws -> T) throws -> T {
         lock.lock(); defer { lock.unlock() }
         try validate()
-        let result = try operation(stageURL.appendingPathComponent("archive.zip"), integrity)
+        let result = try operation(file, stageURL.appendingPathComponent("archive.zip"), integrity)
         try validate()
         return result
     }

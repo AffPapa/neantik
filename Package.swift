@@ -11,8 +11,10 @@ let package = Package(
         .executable(name: "NeAntik", targets: ["NeAntik"])
     ],
     targets: [
+        .target(name: "DirectZipCodec", linkerSettings: [.linkedLibrary("z")]),
         .executableTarget(
             name: "NeAntik",
+            dependencies: ["DirectZipCodec"],
             linkerSettings: [
                 .linkedFramework("Security"),
                 .linkedFramework("Network")
