@@ -34,6 +34,7 @@ struct NeAntikApp: App {
     }
 
     init() {
+        DirectUpdateCandidateBootstrap.runIfRequested()
         do { try ApplicationInstallLifecycle.enter() }
         catch {
             if CommandLine.arguments.count == 1 {

@@ -17,9 +17,11 @@ let package = Package(
         .target(name: "DirectProvisioning", linkerSettings: [.linkedFramework("Security")]),
         .target(name: "DirectAssessment", linkerSettings: [.linkedFramework("Security")]),
         .target(name: "DirectAssessmentParent"),
+        .target(name: "DirectUpdateBootstrapParent"),
+        .executableTarget(name: "NeAntikUpdateBootstrapFixture", path: "Tests/Fixtures/UpdateBootstrap"),
         .executableTarget(name: "NeAntikAssessmentParentFixture", dependencies: ["DirectAssessmentParent"], path: "Tests/Fixtures/AssessmentParent"),
         .target(name: "DirectInstallFilesystem"),
-        .target(name: "DirectUpdateCore", dependencies: ["DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent"]),
+        .target(name: "DirectUpdateCore", dependencies: ["DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent", "DirectUpdateBootstrapParent"]),
         .executableTarget(name: "NeAntikUpdateOwner", dependencies: ["DirectUpdateCore", "DirectInstallFilesystem"]),
         .executableTarget(name: "NeAntikInstallFilesystemFixture", dependencies: ["DirectInstallFilesystem"],
                           path: "Tests/Fixtures/InstallFilesystem"),
@@ -35,7 +37,7 @@ let package = Package(
         ),
         .testTarget(
             name: "NeAntikTests",
-            dependencies: ["NeAntik", "DirectUpdateCore", "DirectProvisioning", "DirectAssessment", "DirectInstallFilesystem", "DirectAssessmentParent", "NeAntikAssessmentParentFixture", "NeAntikInstallFilesystemFixture"],
+            dependencies: ["NeAntik", "DirectUpdateCore", "DirectProvisioning", "DirectAssessment", "DirectInstallFilesystem", "DirectAssessmentParent", "DirectUpdateBootstrapParent", "NeAntikAssessmentParentFixture", "NeAntikInstallFilesystemFixture", "NeAntikUpdateBootstrapFixture"],
             linkerSettings: [
                 .linkedFramework("JavaScriptCore"),
                 .linkedFramework("Network")

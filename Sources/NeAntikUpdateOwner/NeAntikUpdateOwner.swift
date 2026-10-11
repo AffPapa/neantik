@@ -11,7 +11,12 @@ import Security
     static func main() async {
         #if DEBUG
         let arguments = CommandLine.arguments
-        guard arguments.count == 3, ["--qa-inspect", "--qa-prepare"].contains(arguments[1]) else { exit(64) }
+        guard arguments.count == 3 else { exit(64) }
+        if ["--qa-bootstrap", "--qa-bootstrap-refuse"].contains(arguments[1]) {
+            do { try authenticateQAOwner(); try await runQABootstrap(root: URL(fileURLWithPath: arguments[2]), refuse: arguments[1] == "--qa-bootstrap-refuse"); exit(0) }
+            catch { exit(1) }
+        }
+        guard ["--qa-inspect", "--qa-prepare"].contains(arguments[1]) else { exit(64) }
         do {
             try authenticateQAOwner()
             let root = URL(fileURLWithPath: arguments[2], isDirectory: true)
@@ -56,18 +61,67 @@ import Security
     #if DEBUG
     private static func authenticateQAOwner() throws {
         let url = URL(fileURLWithPath: CommandLine.arguments[0])
-        let expected = try ProxyRelayExpectedCode.qualifiedPin(at: url,
-            expectedIdentifier: "app.neantik.update-owner-qa", expectedTeamIdentifier: DirectUpdateCodeSignature.team)
-        var code: SecStaticCode?, dictionary: CFDictionary?
-        guard SecStaticCodeCreateWithPath(url as CFURL, SecCSFlags(), &code) == errSecSuccess, let code,
-              SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &dictionary) == errSecSuccess,
-              let info = dictionary as? [String: Any], let flags = info[kSecCodeInfoFlags as String] as? NSNumber,
-              CFGetTypeID(flags) != CFBooleanGetTypeID(), flags.uint32Value & 0x10002 == 0x10000,
-              info[kSecCodeInfoTimestamp as String] is Date,
-              info[kSecCodeInfoEntitlementsDict as String] == nil || (info[kSecCodeInfoEntitlementsDict as String] as? [String: Any])?.isEmpty == true,
-              let identity = DirectProcessIdentityInspector.processIdentity(getpid()),
+        let expected = try DirectUpdateEmptyEntitlementCode.inspect(url, identifier: "app.neantik.update-owner-qa").pin
+        guard let identity = DirectProcessIdentityInspector.processIdentity(getpid()),
               ProxyRelayLiveCodeVerifier.matches(processID: getpid(), expectedProcess: identity, expectedCode: expected)
         else { throw DirectAssessmentParentError.admission }
+    }
+    private static func runQABootstrap(root: URL, refuse: Bool) async throws {
+        let prefix = "neantik-update-bootstrap-"
+        guard root.deletingLastPathComponent().path == "/private/tmp", root.lastPathComponent.hasPrefix(prefix),
+              let id = UUID(uuidString: String(root.lastPathComponent.dropFirst(prefix.count))),
+              root.lastPathComponent == prefix + id.uuidString.lowercased() else { throw DirectUpdateInstallSessionError.request }
+        let directory = try BackupFS.directory(root); defer { close(directory) }
+        guard try BackupFS.identity(directory).mode & 0o7777 == 0o700 else { throw DirectUpdateInstallSessionError.custody }
+        func read(_ name: String, maximum: Int) throws -> Data {
+            let fd = openat(directory, name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+            guard fd >= 0 else { throw DirectUpdateInstallSessionError.io }; defer { close(fd) }
+            let identity = try BackupFS.identity(fd); try identity.validateFile(device: nil)
+            guard identity.mode & 0o777 == 0o600, identity.size > 0, identity.size <= maximum else { throw DirectUpdateInstallSessionError.request }
+            let bytes = try BackupFS.read(fd, at: 0, count: Int(identity.size))
+            guard bytes.count == identity.size, try BackupFS.identity(fd) == identity,
+                  try BackupFS.entry(directory, name) == identity else { throw DirectUpdateInstallSessionError.custody }
+            return bytes
+        }
+        guard try read("fixture.marker", maximum: 64) == Data("isolated-premigration-bootstrap-qa\n".utf8) else { throw DirectUpdateInstallSessionError.request }
+        let receipt = try JSONDecoder().decode(InstallFilesystemReceipt.self, from: read("receipt.json", maximum: 2_048))
+        let app = root.appendingPathComponent("NeAntik.app"), executable = app.appendingPathComponent("Contents/MacOS/NeAntik")
+        let appFD = try BackupFS.directory(app); defer { close(appFD) }
+        let identity = try BackupFS.identity(appFD)
+        guard receipt.candidateDevice == identity.device, receipt.candidateInode == identity.inode else { throw DirectUpdateInstallSessionError.custody }
+        var code: SecStaticCode?, dictionary: CFDictionary?
+        guard SecStaticCodeCreateWithPath(app as CFURL, SecCSFlags(), &code) == errSecSuccess, let code,
+              SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &dictionary) == errSecSuccess,
+              let info = dictionary as? [String: Any], let hash = info[kSecCodeInfoUnique as String] as? Data,
+              let plist = info[kSecCodeInfoPList as String] as? [String: Any],
+              let string = plist["CFBundleVersion"] as? String, let build = UInt64(string) else { throw DirectUpdateInstallSessionError.identity }
+        let pin = try ProxyRelayExpectedCode.qualifiedPin(at: app, expectedIdentifier: "app.neantik.desktop.update-bootstrap-qa",
+            expectedTeamIdentifier: DirectUpdateCodeSignature.team, expectedCDHash: hash)
+        let request = try DirectUpdateBootstrapRequest(receipt: receipt, cdHash: hash, build: build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest)
+        var retainedReadiness: DirectUpdateCandidateReadiness?
+        let pid = try await DirectUpdateInstallSession.run(candidate: executable, request: request, expectedCode: pin,
+            validateCustody: {
+                try BackupFS.validateDirectoryPath(app, identity)
+                guard try BackupFS.identity(appFD) == identity else { throw DirectUpdateInstallSessionError.custody }
+                _ = try ProxyRelayExpectedCode.qualifiedPin(at: app, expectedIdentifier: "app.neantik.desktop.update-bootstrap-qa",
+                    expectedTeamIdentifier: DirectUpdateCodeSignature.team, expectedCDHash: hash)
+            }, onReady: { readiness in
+                try readiness.validate(receipt: receipt)
+                var changedReceipt = try JSONSerialization.jsonObject(with: JSONEncoder().encode(receipt)) as! [String: Any]
+                changedReceipt["transactionID"] = UUID().uuidString
+                let different = try JSONDecoder().decode(InstallFilesystemReceipt.self, from: JSONSerialization.data(withJSONObject: changedReceipt))
+                do { try readiness.validate(receipt: different); throw DirectUpdateInstallSessionError.reply }
+                catch DirectUpdateInstallSessionError.admission { }
+                retainedReadiness = readiness
+                if refuse { throw DirectUpdateInstallSessionError.admission }
+                // This QA callback does not commit a transaction. It tests live
+                // blocked readiness/continue only; no installation is claimed.
+            })
+        guard pid > 0 else { throw DirectUpdateInstallSessionError.child }
+        guard let retainedReadiness else { throw DirectUpdateInstallSessionError.child }
+        do { try retainedReadiness.validate(receipt: receipt); throw DirectUpdateInstallSessionError.reply }
+        catch DirectUpdateInstallSessionError.admission { }
+        FileHandle.standardOutput.write(Data("{\"authenticatedReadiness\":true,\"handedOff\":true,\"installAuthorized\":false}\n".utf8))
     }
     #endif
 }
