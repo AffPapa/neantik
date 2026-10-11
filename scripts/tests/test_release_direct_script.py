@@ -97,7 +97,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             "enroll-direct-fingerprint-authority.sh"
         )
         manifest = text.index("direct-candidate-manifest.py")
-        final_signing = text.rindex("codesign \\\n")
+        final_signing = text.index('direct_backup_signing.py" sign')
 
         self.assertLess(final_signing, enrollment)
         self.assertLess(enrollment, manifest)
@@ -117,15 +117,15 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn('runtime_candidate_lock="$(resolve_runtime_candidate_lock)"', text)
         self.assertIn("verify-packaged-runtime-report.py", text)
         self.assertIn("verify-runtime-compliance.sh", text)
-        self.assertIn(
-            '--entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"',
-            text,
-        )
+        self.assertIn('direct_backup_signing.py" sign', text)
         for signing_script in (
             PACKAGE_APP,
             PREPARE,
         ):
-            self.assertIn('--entitlements', signing_script.read_text(encoding="utf-8"))
+            self.assertIn('direct_backup_signing.py" sign', signing_script.read_text(encoding="utf-8"))
+        shared_signer = (SCRIPTS / "direct_backup_signing.py").read_text(encoding="utf-8")
+        self.assertIn('runtime/neantik-direct-entitlements.plist', shared_signer)
+        self.assertIn('verify-direct-provisioning-contract.py', shared_signer)
         verifier = (SCRIPTS / "verify-release.sh").read_text(
             encoding="utf-8"
         )

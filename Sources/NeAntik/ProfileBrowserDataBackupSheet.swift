@@ -9,7 +9,7 @@ struct ProfileBrowserDataBackupRequest: Identifiable {
     var id: String { profile.id.uuidString + mode.rawValue }
 }
 
-/// Development-only GUI until signed-manager device-scope qualification.
+/// Available only through the application composition's qualified capability.
 /// The worker owns cancellation and durable recovery; dismissing a view never
 /// means an already activated restore was rolled back.
 struct ProfileBrowserDataBackupSheet: View {
@@ -81,7 +81,8 @@ struct ProfileBrowserDataBackupSheet: View {
             panel.allowedContentTypes = [UTType(filenameExtension: "nabackup") ?? .data]
             if panel.runModal() == .OK { file = panel.url }
         } else {
-            let panel = NSSavePanel(); panel.nameFieldStringValue = "NeAntik-profile.nabackup"
+            // NSSavePanel appends the allowed type's extension itself.
+            let panel = NSSavePanel(); panel.nameFieldStringValue = "NeAntik-profile"
             panel.allowedContentTypes = [UTType(filenameExtension: "nabackup") ?? .data]
             if panel.runModal() == .OK { file = panel.url }
         }

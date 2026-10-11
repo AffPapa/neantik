@@ -145,6 +145,7 @@ if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDAT
 else
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
 fi
+NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE="" \
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
@@ -153,13 +154,7 @@ fi
 
 rm -rf "$APP_PATH"
 ditto "$ENGINEERING_APP" "$APP_PATH"
-codesign \
-  --force \
-  --options runtime \
-  --timestamp \
-  --entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist" \
-  --sign "$NEANTIK_SIGNING_IDENTITY" \
-  "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign "$APP_PATH" "$NEANTIK_SIGNING_IDENTITY"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
 

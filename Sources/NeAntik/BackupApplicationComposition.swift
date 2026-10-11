@@ -31,6 +31,8 @@ struct BackupGUIQualificationContext: Equatable, Sendable {
 
 /// One selection at the application root is shared by export and recovery.
 struct BackupApplicationComposition: Sendable {
+    static let productionCapabilityKey = "NeAntikBrowserDataBackupEnabled"
+    static let productionAccessGroup = "H6VGU2M6JD.app.neantik.desktop"
     let scope: BackupCompatibilityScopeStore
     let allowsNewOperations: Bool
     static var unavailable: Self {
@@ -43,12 +45,25 @@ struct BackupApplicationComposition: Sendable {
         bundleIdentifier: String? = Bundle.main.bundleIdentifier,
         fixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String,
         developmentEnabled: Bool = Bundle.main.object(forInfoDictionaryKey: "NeAntikBrowserDataBackupDevelopmentEnabled") as? Bool == true,
+        productionEnabled: Bool = Bundle.main.object(forInfoDictionaryKey: productionCapabilityKey) as? Bool == true,
         securityBackend: @Sendable (String, String?) -> any BackupCompatibilityScopeBackend = {
             SecurityBackupCompatibilityScopeBackend(service: $0, accessGroup: $1)
         }
     ) throws -> Self {
         // The authenticated audit context wins before any QA or Keychain choice.
         if validatedReleaseAudit { return .unavailable }
+        // A development switch or a foreign identity cannot enable production
+        // access. Signing gates authenticate the capability/profile; Security
+        // independently enforces this exact group without a file fallback.
+        if productionEnabled {
+            guard bundleIdentifier == NeAntikApplicationEnvironment.productionBundleIdentifier,
+                  environment.bundleIdentifier == bundleIdentifier, qualification == nil else {
+                throw BackupCompatibilityScopeError.unavailable
+            }
+            return .init(scope: .init(backend: securityBackend(
+                environment.bundleIdentifier + ".browser-data-backup-scope", productionAccessGroup)),
+                allowsNewOperations: true)
+        }
         #if DEBUG
         if let qualification {
             guard bundleIdentifier == BackupGUIQualificationContext.bundleIdentifier,
@@ -67,8 +82,7 @@ struct BackupApplicationComposition: Sendable {
             return .init(scope: .init(backend: DevelopmentFixtureBackupScope(paths: paths)), allowsNewOperations: developmentEnabled)
         }
         #endif
-        // Production recovery retains its existing scope. New operations need
-        // separate signing and GUI qualification before this gate can change.
+        // Legacy releases retain recovery selection without enabling creation.
         return .init(scope: .init(backend: securityBackend(environment.bundleIdentifier + ".browser-data-backup-scope", nil)),
                      allowsNewOperations: false)
     }

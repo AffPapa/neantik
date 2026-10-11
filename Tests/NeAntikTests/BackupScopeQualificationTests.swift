@@ -4,6 +4,27 @@ import Testing
 @testable import NeAntik
 
 struct BackupScopeQualificationTests {
+    @Test func proxyUpgradeFixturesRequireQAIdentityPrivateDigestAndNoRoot() throws {
+        for phase in [BackupScopeQualification.Phase.createProxyFixture, .readProxyFixture, .removeProxyFixture, .assertProxyFixtureMissing] {
+            let guarded = phase == .readProxyFixture || phase == .removeProxyFixture
+            var request = BackupScopeQualification.Request(runID: UUID(), phase: phase,
+                expectedDigest: guarded ? String(repeating: "a", count: 64) : nil)
+            try BackupScopeQualification.validate(request, bundleID: BackupScopeQualification.bundleIdentifier)
+            #expect(throws: BackupScopeQualification.Failure.invalidIdentity) {
+                try BackupScopeQualification.validate(request, bundleID: "app.neantik.desktop")
+            }
+            request.root = "/private/tmp/neantik-synthetic"
+            #expect(throws: BackupScopeQualification.Failure.invalidRequest) {
+                try BackupScopeQualification.validate(request, bundleID: BackupScopeQualification.bundleIdentifier)
+            }
+            if guarded {
+                request.root = nil; request.expectedDigest = nil
+                #expect(throws: BackupScopeQualification.Failure.invalidRequest) {
+                    try BackupScopeQualification.validate(request, bundleID: BackupScopeQualification.bundleIdentifier)
+                }
+            }
+        }
+    }
     @Test func admissionDiagnosticsDistinguishReasonsWithoutPrivateErrorText() {
         let reasons: [BrowserProfileDeletionBlockReason] = [.managedProcess, .leasePresent, .unsafeLease, .browserDataInUse, .inspectionUnavailable]
         let expected = ["Admission.managedProcess", "Admission.leasePresent", "Admission.unsafeLease", "Admission.browserDataInUse", "Admission.inspectionUnavailable"]

@@ -107,10 +107,15 @@ else
 fi
 
 # The Direct manager retains its App ID for existing Keychain items.  Adding
-# Team ID explicitly alongside it caused AMFI to demand a provisioning
-# profile at launch, even though notarization and Gatekeeper passed.
+# Legacy releases claim only App ID. Provisioned backup requires an
+# authenticated matching profile; notarization alone cannot authorize claims.
 MANAGER_ENTITLEMENTS="$(codesign -d --entitlements - "$APP_PATH" 2>&1)"
-if [[ "$(grep -c '\[Key\]' <<<"$MANAGER_ENTITLEMENTS")" != "1" ]] ||
+BACKUP_CAPABILITY="$(python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" state "$APP_PATH")"
+if [[ "$BACKUP_CAPABILITY" == "enabled" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-contract.py" \
+    --app "$APP_PATH" --bundle app.neantik.desktop \
+    --certificate-sha1 474F7C78F33EE324C24F6F5AE0443EB713E85E60
+elif [[ "$(grep -c '\[Key\]' <<<"$MANAGER_ENTITLEMENTS")" != "1" ]] ||
    ! grep -q 'H6VGU2M6JD.app.neantik.desktop' <<<"$MANAGER_ENTITLEMENTS" ||
    grep -q 'com.apple.developer.team-identifier' <<<"$MANAGER_ENTITLEMENTS"; then
   echo "Direct manager must claim only its existing App ID entitlement." >&2

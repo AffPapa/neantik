@@ -14,13 +14,41 @@ private final class BackupCompositionRecorder: @unchecked Sendable {
 }
 
 struct BackupApplicationCompositionTests {
+    @Test func productionCapabilityUsesExplicitGroupAndDoesNotCreateAtStartup() throws {
+        let recorder = BackupCompositionRecorder()
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: NeAntikApplicationEnvironment.productionBundleIdentifier)
+        let composition = try BackupApplicationComposition.resolve(environment: environment,
+            paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/neantik-production-capability-synthetic")),
+            validatedReleaseAudit: false, bundleIdentifier: environment.bundleIdentifier,
+            productionEnabled: true, securityBackend: { recorder.make($0, $1) })
+        #expect(composition.allowsNewOperations)
+        #expect(recorder.choices.count == 1)
+        #expect(recorder.choices.first?.0 == "app.neantik.desktop.browser-data-backup-scope")
+        #expect(recorder.choices.first?.1 == BackupApplicationComposition.productionAccessGroup)
+        #expect(recorder.backend.insertionCount == 0)
+    }
+
+    @Test func productionCapabilityCannotSelectDevelopmentOrQAIdentity() {
+        for bundle in [nil, NeAntikApplicationEnvironment.developmentBundleIdentifier,
+                       BackupGUIQualificationContext.bundleIdentifier] as [String?] {
+            let recorder = BackupCompositionRecorder()
+            #expect(throws: BackupCompatibilityScopeError.unavailable) {
+                try BackupApplicationComposition.resolve(environment: .resolve(bundleIdentifier: bundle),
+                    paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/neantik-foreign-capability-synthetic")),
+                    validatedReleaseAudit: false, bundleIdentifier: bundle, productionEnabled: true,
+                    securityBackend: { recorder.make($0, $1) })
+            }
+            #expect(recorder.choices.isEmpty)
+        }
+    }
+
     @Test func validatedAuditCannotAccessOrCreateScopeEvenWithProductionSettings() throws {
         let recorder = BackupCompositionRecorder()
         let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: NeAntikApplicationEnvironment.productionBundleIdentifier)
         let composition = try BackupApplicationComposition.resolve(environment: environment,
             paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/neantik-audit-composition-synthetic")),
             validatedReleaseAudit: true, bundleIdentifier: BackupGUIQualificationContext.bundleIdentifier,
-            developmentEnabled: true, securityBackend: { recorder.make($0, $1) })
+            developmentEnabled: true, productionEnabled: true, securityBackend: { recorder.make($0, $1) })
         #expect(!composition.allowsNewOperations)
         #expect(recorder.choices.isEmpty)
         for create in [false, true] {

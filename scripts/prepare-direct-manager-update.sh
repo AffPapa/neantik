@@ -326,6 +326,10 @@ verify_reviewed_runtime_evidence
 verify_runtime_unchanged
 
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
+  if [[ "${NEANTIK_BROWSER_DATA_BACKUP_ENABLED:-0}" != "0" || -n "${NEANTIK_DIRECT_PROVISIONING_PROFILE:-}" ]]; then
+    echo "Local QA signing cannot enable production backup." >&2
+    exit 65
+  fi
   echo "LOCAL QA ONLY: applying an ad-hoc outer signature."
   codesign \
     --force \
@@ -333,13 +337,7 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
     --sign - \
     "$CANDIDATE_APP"
 else
-  codesign \
-    --force \
-    --options runtime \
-    --timestamp \
-    --entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist" \
-    --sign "$NEANTIK_SIGNING_IDENTITY" \
-    "$CANDIDATE_APP"
+  python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign "$CANDIDATE_APP" "$NEANTIK_SIGNING_IDENTITY"
 fi
 codesign --verify --deep --strict --verbose=2 "$CANDIDATE_APP"
 

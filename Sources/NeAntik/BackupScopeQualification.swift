@@ -16,6 +16,7 @@ enum BackupScopeQualification {
     }
     enum Phase: String, Codable {
         case create, read, removeOwnedItem, assertMissing
+        case createProxyFixture, readProxyFixture, removeProxyFixture, assertProxyFixtureMissing
         case prepareData, exportData, restoreData, wrongPassword, corruptArchive, missingScopeData, interruptBeforeDecision, interruptAfterDecision, recoverData
     }
     struct Request: Codable {
@@ -39,12 +40,45 @@ enum BackupScopeQualification {
     }
     enum Failure: Error { case invalidIdentity, invalidRequest, unexpectedItem }
 
+    /// Bounded QA operation labels locate native failures without returning
+    /// service names, account identifiers, credentials or localized messages.
+    struct ProxyFixtureFailure: Error {
+        let stage: String
+        let status: OSStatus
+    }
+    private struct ProxyFixtureBackend: KeychainBackend {
+        let raw = SecurityKeychainBackend()
+        func label(_ service: String) -> String {
+            if service.hasSuffix(".current-a") { return "currentA" }
+            if service.hasSuffix(".current-b") { return "currentB" }
+            return "legacyB"
+        }
+        func data(service: String, profileID: UUID) throws -> Data? {
+            do { return try raw.data(service: service, profileID: profileID) }
+            catch let error as KeychainError {
+                throw ProxyFixtureFailure(stage: "read." + label(service), status: error.status)
+            }
+        }
+        func upsert(_ data: Data, service: String, profileID: UUID) throws {
+            do { try raw.upsert(data, service: service, profileID: profileID) }
+            catch let error as KeychainError {
+                throw ProxyFixtureFailure(stage: "upsert." + label(service), status: error.status)
+            }
+        }
+        func delete(service: String, profileID: UUID) throws {
+            do { try raw.delete(service: service, profileID: profileID) }
+            catch let error as KeychainError {
+                throw ProxyFixtureFailure(stage: "delete." + label(service), status: error.status)
+            }
+        }
+    }
+
     static func validate(_ request: Request, bundleID: String?) throws {
         guard bundleID == bundleIdentifier else { throw Failure.invalidIdentity }
         switch request.phase {
-        case .create, .assertMissing, .prepareData:
+        case .create, .assertMissing, .prepareData, .createProxyFixture, .assertProxyFixtureMissing:
             guard request.expectedDigest == nil else { throw Failure.invalidRequest }
-        case .read, .removeOwnedItem, .exportData, .restoreData, .wrongPassword, .corruptArchive, .missingScopeData, .interruptBeforeDecision, .interruptAfterDecision, .recoverData:
+        case .read, .removeOwnedItem, .exportData, .restoreData, .wrongPassword, .corruptArchive, .missingScopeData, .interruptBeforeDecision, .interruptAfterDecision, .recoverData, .readProxyFixture, .removeProxyFixture:
             guard let digest = request.expectedDigest, digest.count == 64,
                   digest.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
             else { throw Failure.invalidRequest }
@@ -72,6 +106,9 @@ enum BackupScopeQualification {
                 do {
                     result = isDataPhase(request.phase) ? try await performData(request) : try perform(request)
                 }
+                catch let error as ProxyFixtureFailure {
+                    result = .init(passed: false, status: error.status, digest: nil, failureCategory: "ProxyFixture." + error.stage)
+                }
                 catch let error as KeychainError { result = .init(passed: false, status: error.status, digest: nil) }
                 catch {
                     result = .init(passed: false, status: nil, digest: nil, failureCategory: redactedFailureCategory(error))
@@ -97,6 +134,9 @@ enum BackupScopeQualification {
     }
 
     private static func perform(_ request: Request) throws -> Result {
+        if [.createProxyFixture, .readProxyFixture, .removeProxyFixture, .assertProxyFixtureMissing].contains(request.phase) {
+            return try performProxyFixture(request)
+        }
         let service = scopeService(request.runID)
         let backend = SecurityBackupCompatibilityScopeBackend(service: service, accessGroup: accessGroup)
         let store = BackupCompatibilityScopeStore(backend: backend)
@@ -123,6 +163,63 @@ enum BackupScopeQualification {
             catch BackupCompatibilityScopeError.unavailable {
                 return .init(passed: try backend.read() == nil, status: nil, digest: nil)
             }
+        default: throw Failure.invalidRequest
+        }
+    }
+
+    /// Actual legacy file-Keychain backend, only UUID-scoped QA services. It
+    /// proves existing ACL access/migration across signatures without touching
+    /// production services, groups, credentials or the DP backup scope.
+    private static func performProxyFixture(_ request: Request) throws -> Result {
+        let backend = ProxyFixtureBackend(), id = request.runID
+        let prefix = bundleIdentifier + ".proxy-upgrade." + id.uuidString.lowercased()
+        let currentA = prefix + ".current-a", currentB = prefix + ".current-b", legacyB = prefix + ".legacy-b"
+        let services = [currentA, currentB, legacyB]
+        func digest(_ a: Data, _ b: Data) -> String {
+            SHA256.hash(data: a + Data([0]) + b).map { String(format: "%02x", $0) }.joined()
+        }
+        func existingPair() throws -> (Data, Data) {
+            guard let a = try backend.data(service: currentA, profileID: id),
+                  let b = try backend.data(service: currentB, profileID: id) ?? backend.data(service: legacyB, profileID: id)
+            else { throw Failure.unexpectedItem }
+            return (a, b)
+        }
+        switch request.phase {
+        case .createProxyFixture:
+            for service in services {
+                guard try backend.data(service: service, profileID: id) == nil else { throw Failure.unexpectedItem }
+            }
+            let a = Data(UUID().uuidString.utf8), b = Data(UUID().uuidString.utf8)
+            do {
+                try backend.upsert(a, service: currentA, profileID: id)
+                try backend.upsert(b, service: legacyB, profileID: id)
+                let pair = try existingPair()
+                guard pair.0 == a, pair.1 == b else { throw Failure.unexpectedItem }
+                return .init(passed: true, status: nil, digest: digest(a, b))
+            } catch {
+                for service in services { try? backend.delete(service: service, profileID: id) }
+                throw error
+            }
+        case .readProxyFixture:
+            let pair = try existingPair()
+            guard digest(pair.0, pair.1) == request.expectedDigest else { throw Failure.unexpectedItem }
+            let first = try KeychainStore(backend: backend, service: currentA, legacyService: nil).proxyPassword(profileID: id)
+            let second = try KeychainStore(backend: backend, service: currentB, legacyService: legacyB).proxyPassword(profileID: id)
+            guard first.map({ Data($0.utf8) }) == pair.0, second.map({ Data($0.utf8) }) == pair.1,
+                  try backend.data(service: currentA, profileID: id) == pair.0,
+                  try backend.data(service: currentB, profileID: id) == pair.1,
+                  try backend.data(service: legacyB, profileID: id) == nil else { throw Failure.unexpectedItem }
+            return .init(passed: true, status: nil, digest: nil)
+        case .removeProxyFixture:
+            let pair = try existingPair()
+            guard digest(pair.0, pair.1) == request.expectedDigest else { throw Failure.unexpectedItem }
+            for service in services { try backend.delete(service: service, profileID: id) }
+            fallthrough
+        case .assertProxyFixtureMissing:
+            for service in services {
+                guard try backend.data(service: service, profileID: id) == nil else { throw Failure.unexpectedItem }
+            }
+            return .init(passed: true, status: nil, digest: nil)
         default: throw Failure.invalidRequest
         }
     }

@@ -78,15 +78,13 @@ cp \
   "$RESOURCES_DIR/ru.lproj/"
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
+  if [[ "${NEANTIK_BROWSER_DATA_BACKUP_ENABLED:-0}" != "0" || -n "${NEANTIK_DIRECT_PROVISIONING_PROFILE:-}" ]]; then
+    echo "Engineering signing cannot enable provisioned backup." >&2
+    exit 65
+  fi
   codesign --force --deep --sign - "$APP_DIR"
 else
-  codesign \
-    --force \
-    --options runtime \
-    --timestamp \
-    --entitlements "$DIRECT_ENTITLEMENTS" \
-    --sign "$SIGNING_IDENTITY" \
-    "$APP_DIR"
+  python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign "$APP_DIR" "$SIGNING_IDENTITY"
 fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
