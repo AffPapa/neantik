@@ -34,6 +34,19 @@ struct NeAntikApp: App {
     }
 
     init() {
+        do { try ApplicationInstallLifecycle.enter() }
+        catch {
+            if CommandLine.arguments.count == 1 {
+                let alert = NSAlert()
+                alert.messageText = "Запуск NeAntik временно недоступен"
+                alert.informativeText = error.localizedDescription
+                alert.addButton(withTitle: "Закрыть")
+                NSApplication.shared.setActivationPolicy(.regular)
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                alert.runModal()
+            }
+            Self.writeControlErrorAndExit(error.localizedDescription + "\n", code: EX_TEMPFAIL)
+        }
         #if DEBUG
         if CommandLine.arguments.count == 2,
            CommandLine.arguments[1] == BackupScopeQualification.argument {

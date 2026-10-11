@@ -27,6 +27,7 @@ final class ManagerLaunchAdmission: ObservableObject {
     }
     deinit { source?.cancel() }
     func requireSafePressure() throws {
+        try ApplicationInstallLifecycle.requireNewWork()
         guard !pressured, thermalState() != .serious, thermalState() != .critical else {
             throw ManagerLaunchAdmissionError.pressure
         }

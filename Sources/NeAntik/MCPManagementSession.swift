@@ -187,6 +187,7 @@ final class MCPManagementSession {
         if !allowsManagement && MCPProfileManagement.writeTools.contains(name) { return toolFailure(id: id, code: "management_disabled", message: "Management disabled. Choose Manage profiles in NeAntik MCP help and reconnect with the copied configuration.") }
         do {
             try Task.checkCancellation()
+            try ApplicationInstallLifecycle.requireNewWork()
             if engine == nil { engine = MCPProfileManagement(root: root, allowsManagement: allowsManagement) }
             let result = try await engine!.call(name, params["arguments"] as? [String: Any] ?? [:])
             guard try MCPStdioServer.toolResult(result).count <= MCPStdioServer.maximumToolPayloadBytes else { throw MCPProfileManagement.Failure.responseLimit }
@@ -195,6 +196,7 @@ final class MCPManagementSession {
             let message: String
             let code: String
             switch error {
+            case let error as ApplicationInstallLifecycleError: code = "update_pending"; message = error.localizedDescription
             case is ProfileMetadataBusyError: code = "storage_busy"; message = "Profile metadata is busy in another operation. Wait for it to finish, re-read current state, then retry intentionally."
             case let error as ManagerLaunchAdmissionError: code = "launch_busy"; message = error.localizedDescription
             case is CancellationError: code = "cancelled"; message = "Operation cancelled. Re-read current state before retry; a completed disk commit may remain."

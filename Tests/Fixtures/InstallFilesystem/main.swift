@@ -8,12 +8,48 @@ _ = signal(SIGALRM, SIG_DFL)
 var signals = sigset_t(); sigemptyset(&signals); sigaddset(&signals, SIGALRM)
 _ = sigprocmask(SIG_UNBLOCK, &signals, nil); alarm(30)
 let args = CommandLine.arguments
-guard args.count == 4, ["begin", "recover", "ack", "hold", "transfer", "inspectTransfer", "transferBegin"].contains(args[1]),
+guard args.count == 4, ["begin", "recover", "ack", "hold", "transfer", "inspectTransfer", "transferBegin", "participant", "participantPending", "intent"].contains(args[1]),
       args[2].hasPrefix("/private/tmp/neantik-install-fixture-"),
       URL(fileURLWithPath: args[2]).deletingLastPathComponent().path == "/private/tmp" else { exit(64) }
 do {
     let root = URL(fileURLWithPath: args[2])
     guard try String(contentsOf: root.appendingPathComponent("fixture.marker"), encoding: .utf8) == "isolated-install-filesystem-qa\n" else { exit(64) }
+    if ["participant", "participantPending", "intent"].contains(args[1]) {
+        let namespace = root.appendingPathComponent("lifecycle")
+        if args[1] == "intent" {
+            let intent = try InstallLifecycleIntent(namespaceURL: namespace)
+            FileHandle.standardOutput.write(Data("intent\n".utf8))
+            while let byte = FileHandle.standardInput.readData(ofLength: 1).first {
+                if byte == 113 {
+                    let quiet = try intent.tryAcquireParticipantFence()
+                    FileHandle.standardOutput.write(Data((quiet ? "quiet\n" : "live\n").utf8))
+                } else { break }
+            }
+            withExtendedLifetime(intent) {}
+        } else {
+            let participant = try InstallLifecycleParticipant(namespaceURL: namespace) {
+                if args[1] == "participantPending" {
+                    try InstallLifecycle.requireNoPendingTransaction(installationURL: root.appendingPathComponent("NeAntik.app"))
+                }
+            }
+            FileHandle.standardOutput.write(Data("participant\n".utf8))
+            while let byte = FileHandle.standardInput.readData(ofLength: 1).first {
+                if byte == 119 {
+                    do { try participant.requireNewWork(); FileHandle.standardOutput.write(Data("allowed\n".utf8)) }
+                    catch InstallFilesystemError.busy { FileHandle.standardOutput.write(Data("busy\n".utf8)) }
+                } else if byte == 101 {
+                    // Exec the same isolated fixture: all participant FDs must
+                    // close, otherwise its new external-owner role self-blocks.
+                    var pointers = [args[0], "intent", root.path, "none"].map { strdup($0) }
+                    pointers.append(nil)
+                    _ = pointers.withUnsafeMutableBufferPointer { execv(args[0], $0.baseAddress!) }
+                    exit(74)
+                } else { break }
+            }
+            withExtendedLifetime(participant) {}
+        }
+        exit(0)
+    }
     let lease = try InstallFilesystemLease(parentURL: root)
     let fault: (InstallFilesystemPoint) throws -> Void = { point in
         if point.rawValue == args[3] { _exit(73) }

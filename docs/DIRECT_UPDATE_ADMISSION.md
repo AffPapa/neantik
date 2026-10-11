@@ -93,3 +93,7 @@ key is synthetic; this is not verification of a deployed update feed.
 The `canonicalPrivateTemporaryPathIsNotRewrittenByFoundation` test checks
 request framing/path retention and malformed hash, scheme and traversal
 controls. No actual app is installed or run by these tests.
+
+## Cooperative lifecycle follow-up
+
+Packaged manager/MCP/relay process participation and new-work admission are now implemented as a separate development slice. See [DIRECT_UPDATE_LIFECYCLE.md](DIRECT_UPDATE_LIFECYCLE.md) for actual controls and limits. This does not turn candidate admission into install authority, enable the updater, or close legacy-process, owner, trust, recovery and authenticated first-launch gates.
