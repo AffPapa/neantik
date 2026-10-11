@@ -22,7 +22,7 @@ let package = Package(
                           linkerSettings: [.linkedFramework("Security")]),
         .executableTarget(
             name: "NeAntik",
-            dependencies: ["DirectZipCodec", "DirectProvisioning"],
+            dependencies: ["DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem"],
             linkerSettings: [
                 .linkedFramework("Security"),
                 .linkedFramework("Network")

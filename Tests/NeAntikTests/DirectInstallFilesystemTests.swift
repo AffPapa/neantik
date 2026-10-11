@@ -350,4 +350,174 @@ struct DirectInstallFilesystemTests {
         }
         #expect(try f.version() == "old"); #expect(FileManager.default.fileExists(atPath: f.active.path))
     }
+    private func prepareSource(_ f: Fixture) throws -> URL {
+        let source = f.root.appendingPathComponent("source")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        try FileManager.default.moveItem(at: f.root.appendingPathComponent(f.candidateName), to: source.appendingPathComponent("NeAntik.app"))
+        return source
+    }
+    private func transfer(_ f: Fixture, lease: InstallFilesystemLease, didTransfer: () -> Void = {},
+                          fault: ((InstallPreparationPoint) throws -> Void)? = nil) throws -> PreparedInstallSlot {
+        let source = f.root.appendingPathComponent("source"), fd = try InstallFS.directory(source); defer { close(fd) }
+        let id = try #require(UUID(uuidString: String(f.candidateName.dropFirst(14).dropLast(4))))
+        return try InstallPreparation.transfer(lease: lease, sourceParentURL: source, sourceParentDescriptor: fd,
+            candidateID: id, candidateReceiptSHA256: String(repeating: "a", count: 64),
+            validateSource: {}, didTransfer: didTransfer, fault: fault)
+    }
+    @Test(arguments: InstallPreparationPoint.allCases)
+    func transferCrashesRetainExactCustody(point: InstallPreparationPoint) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        #expect(try child(f, "transfer", point.rawValue) == 73)
+        let moved = [InstallPreparationPoint.renamedBeforeSync, .sourceDirectorySynced, .destinationDirectorySynced, .beforeReturn].contains(point)
+        #expect(try f.version() == "old")
+        let sourceApp = f.root.appendingPathComponent("source/NeAntik.app")
+        #expect(FileManager.default.fileExists(atPath: sourceApp.path) == !moved)
+        #expect(FileManager.default.fileExists(atPath: f.root.appendingPathComponent(f.candidateName).path) == moved)
+        let published = ![InstallPreparationPoint.created, .recordWrittenBeforeSync, .recordFileSynced, .recordDirectorySynced].contains(point)
+        #expect(try child(f, "inspectTransfer", moved ? "candidate" : "source") == (published ? 0 : 74))
+        #expect(try child(f, "inspectTransfer", moved ? "candidate" : "source") == (published ? 0 : 74))
+        #expect(try child(f, "transfer") == 74) // retained intent/incomplete record fences retry
+    }
+    @Test(arguments: [InstallFilesystemPoint.activatedBeforeSync, .beforeSwap, .swappedBeforeSync, .pendingLaunch])
+    func transferredTokenJournalCrashRecovery(point: InstallFilesystemPoint) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        #expect(try child(f, "transferBegin", point.rawValue) == 73)
+        #expect(try child(f, "inspectTransfer", "journal") == 0)
+        #expect(try child(f, "recover") == 0); #expect(try f.version() == "old")
+        #expect(try child(f, "inspectTransfer", "journal") == 0)
+        #expect(try child(f, "recover") == 0); #expect(try f.version(f.candidateName) == "new")
+    }
+    @Test func typedSlotConsumedOnVisibleActivationAndNeverOwnsOldApp() throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        let lease = try InstallFilesystemLease(parentURL: f.root), slot = try transfer(f, lease: lease)
+        #expect(try slot.withValidatedCandidate { try String(contentsOf: $0.appendingPathComponent("Contents/version"), encoding: .utf8) } == "new")
+        let receipt = try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {})
+        #expect(try f.version(f.candidateName) == "old")
+        #expect(throws: InstallFilesystemError.changed) { try slot.withValidatedCandidate { _ in () } }
+        #expect(throws: InstallFilesystemError.changed) { try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {}) }
+        _ = try InstallFilesystemTransaction.acknowledge(lease: lease, expected: receipt, validateLaunchAuthority: {})
+        #expect(throws: InstallFilesystemError.changed) { try slot.withValidatedCandidate { _ in () } }
+        let record = ".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4))
+        #expect(try InstallPreparation.inspect(lease: lease, recordName: record, sourceParentURL: f.root.appendingPathComponent("source")) == .journal)
+        #expect(try f.version(f.candidateName) == "old")
+    }
+    @Test(arguments: [InstallPreparationPoint.recordPublishedBeforeSync, .renamedBeforeSync, .sourceDirectorySynced, .destinationDirectorySynced])
+    func transferSyncErrorsNeverReturnCustody(point: InstallPreparationPoint) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        let lease = try InstallFilesystemLease(parentURL: f.root); var invalidated = false
+        #expect(throws: POSIXError(.EIO)) {
+            try transfer(f, lease: lease, didTransfer: { invalidated = true }, fault: { if $0 == point { throw POSIXError(.EIO) } })
+        }
+        let moved = point != .recordPublishedBeforeSync
+        #expect(invalidated == moved)
+        let record = ".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4))
+        #expect(try InstallPreparation.inspect(lease: lease, recordName: record, sourceParentURL: f.root.appendingPathComponent("source")) == (moved ? .candidate : .source))
+        #expect(try f.version() == "old")
+    }
+    @Test(arguments: ["body", "candidateCollision", "sourceReplacement", "parentMode", "record", "recordExtra", "lock", "hardlink"])
+    func transferUnknownCustodyIsRetained(control: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }; let sourceURL = try prepareSource(f)
+        let lease = try InstallFilesystemLease(parentURL: f.root); var invalidated = false
+        #expect(throws: (any Error).self) {
+            try transfer(f, lease: lease, didTransfer: { invalidated = true }, fault: { point in
+                guard point == .beforeRename else { return }
+                let record = f.root.appendingPathComponent(".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4)))
+                switch control {
+                case "body": try Data("bad".utf8).write(to: sourceURL.appendingPathComponent("NeAntik.app/Contents/version"))
+                case "candidateCollision": try f.tree(f.candidateName, version: "foreign")
+                case "sourceReplacement":
+                    try FileManager.default.moveItem(at: sourceURL, to: f.root.appendingPathComponent("retained-source"))
+                    try FileManager.default.createDirectory(at: sourceURL, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+                case "parentMode": #expect(chmod(f.root.path, 0o755) == 0)
+                case "record": try Data("{}".utf8).write(to: record.appendingPathComponent("transfer.json"))
+                case "recordExtra": try Data([1]).write(to: record.appendingPathComponent("unexpected"))
+                case "lock":
+                    try FileManager.default.removeItem(at: f.root.appendingPathComponent(InstallFilesystemLease.lockName))
+                    try Data().write(to: f.root.appendingPathComponent(InstallFilesystemLease.lockName))
+                default: #expect(link(sourceURL.appendingPathComponent("NeAntik.app/Contents/version").path, f.root.appendingPathComponent("alias").path) == 0)
+                }
+            })
+        }
+        #expect(!invalidated); #expect(try f.version() == "old")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: f.root.path).contains { $0.hasPrefix(InstallPreparation.prefix) })
+    }
+    @Test func scalarBeginCannotBypassPreparedRecordAndActivationErrorConsumesToken() throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        let lease = try InstallFilesystemLease(parentURL: f.root), slot = try transfer(f, lease: lease)
+        #expect(throws: InstallFilesystemError.pending) { try f.begin(lease) }
+        #expect(throws: POSIXError(.EIO)) {
+            try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {},
+                fault: { if $0 == .activatedBeforeSync { throw POSIXError(.EIO) } })
+        }
+        #expect(throws: InstallFilesystemError.changed) { try slot.withValidatedCandidate { _ in () } }
+        #expect(try InstallFilesystemTransaction.recover(lease: lease, validateStoppedAuthority: {})?.committed == false)
+        #expect(try f.version() == "old"); #expect(try f.version(f.candidateName) == "new")
+    }
+
+    @Test func twoFreshProcessUpdatesKeepHistoricalRecordsWithoutBlockingNext() throws {
+        let f = try Fixture(); defer { f.cleanup() }; let source = try prepareSource(f)
+        #expect(try child(f, "transferBegin") == 0); #expect(try child(f, "ack") == 0)
+        let second = ".neantik-next-" + UUID().uuidString.lowercased() + ".app"
+        try f.tree(second, version: "newer")
+        try FileManager.default.moveItem(at: f.root.appendingPathComponent(second), to: source.appendingPathComponent("NeAntik.app"))
+        try Data(second.utf8).write(to: f.root.appendingPathComponent("candidate.name"))
+        #expect(try child(f, "transferBegin") == 0); #expect(try child(f, "ack") == 0)
+        #expect(try f.version() == "newer"); #expect(try f.version(second) == "new"); #expect(try f.version(f.candidateName) == "old")
+        let names = try FileManager.default.contentsOfDirectory(atPath: f.root.path)
+        #expect(names.filter { $0.hasPrefix(InstallPreparation.prefix) }.count == 2)
+        #expect(names.filter { $0.hasPrefix(".neantik-install-committed-") }.count == 2)
+        #expect(try child(f, "inspectTransfer", "journal") == 0)
+        try Data(f.candidateName.utf8).write(to: f.root.appendingPathComponent("candidate.name"))
+        #expect(try child(f, "inspectTransfer", "journal") == 0) // first history, now a different active app
+    }
+    @Test func unknownRecordCannotPretendToBeHistoricalFinalized() throws {
+        let f = try Fixture(); defer { f.cleanup() }; let source = try prepareSource(f)
+        #expect(try child(f, "transferBegin") == 0); #expect(try child(f, "ack") == 0)
+        let committed = try #require(FileManager.default.contentsOfDirectory(at: f.root, includingPropertiesForKeys: nil).first { $0.lastPathComponent.hasPrefix(".neantik-install-committed-") })
+        try Data("foreign".utf8).write(to: committed.appendingPathComponent("commit.json"))
+        let second = ".neantik-next-" + UUID().uuidString.lowercased() + ".app"
+        try f.tree(second, version: "newer")
+        try FileManager.default.moveItem(at: f.root.appendingPathComponent(second), to: source.appendingPathComponent("NeAntik.app"))
+        try Data(second.utf8).write(to: f.root.appendingPathComponent("candidate.name"))
+        #expect(try child(f, "transfer") == 74); #expect(try f.version() == "new")
+        #expect(FileManager.default.fileExists(atPath: source.appendingPathComponent("NeAntik.app").path))
+    }
+
+    @Test(arguments: ["body", "record", "sourceExtra"])
+    func postRenameChangesRetainCandidateAndRefuseUnknownCustody(control: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }; let source = try prepareSource(f)
+        let lease = try InstallFilesystemLease(parentURL: f.root); var moved = false
+        #expect(throws: (any Error).self) {
+            try transfer(f, lease: lease, didTransfer: { moved = true }, fault: { point in
+                guard point == .destinationDirectorySynced else { return }
+                if control == "body" { try Data("unknown".utf8).write(to: f.root.appendingPathComponent(f.candidateName + "/Contents/version")) }
+                else if control == "record" {
+                    let record = f.root.appendingPathComponent(".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4)))
+                    try Data("{}".utf8).write(to: record.appendingPathComponent("transfer.json"))
+                } else { try Data([1]).write(to: source.appendingPathComponent("foreign")) }
+            })
+        }
+        #expect(moved); #expect(try f.version() == "old")
+        let record = ".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4))
+        #expect(throws: (any Error).self) { try InstallPreparation.inspect(lease: lease, recordName: record, sourceParentURL: source) }
+        #expect(FileManager.default.fileExists(atPath: f.root.appendingPathComponent(f.candidateName).path))
+    }
+    @Test func substitutedSourceDescriptorPathAndWrongLeaseRefuse() throws {
+        let f = try Fixture(); defer { f.cleanup() }; let source = try prepareSource(f)
+        let other = source.appendingPathComponent("other")
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: f.root), fd = try InstallFS.directory(source); defer { close(fd) }
+        #expect(throws: InstallFilesystemError.changed) {
+            try InstallPreparation.transfer(lease: lease, sourceParentURL: other, sourceParentDescriptor: fd,
+                candidateReceiptSHA256: String(repeating: "a", count: 64), validateSource: {}, didTransfer: {})
+        }
+        try FileManager.default.removeItem(at: other)
+        let slot = try transfer(f, lease: lease), second = try Fixture(); defer { second.cleanup() }
+        let otherLease = try InstallFilesystemLease(parentURL: second.root)
+        #expect(throws: InstallFilesystemError.changed) { try InstallFilesystemTransaction.begin(lease: otherLease, preparedSlot: slot, validateStoppedAuthority: {}) }
+        #expect(try f.version() == "old")
+        try Data("unknown".utf8).write(to: f.root.appendingPathComponent(f.candidateName + "/Contents/version"))
+        #expect(throws: InstallFilesystemError.changed) { try slot.withValidatedCandidate { _ in () } }
+    }
+
 }

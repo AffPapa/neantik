@@ -229,6 +229,7 @@ does not authorize installation or establish parent stage custody.
 ## Filesystem transaction development slice
 
 See [two-slot journal and recovery contract](DIRECT_UPDATE_FILESYSTEM_TRANSACTION.md).
-The standalone primitive preserves both copies and has fresh-process crash
-tests. Main NeAntik has no caller; this does not close installation authority,
-authenticated first launch or final signed update qualification gates.
+The primitive preserves both copies and has fresh-process crash tests. The
+development owned ZIP stage can transfer custody to a typed prepared slot;
+there is no production installer/UI caller. This does not close installation
+authority, authenticated first launch or final signed update qualification gates.

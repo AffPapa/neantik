@@ -1,4 +1,6 @@
+import CryptoKit
 import Darwin
+import DirectInstallFilesystem
 import DirectZipCodec
 import Foundation
 
@@ -17,7 +19,7 @@ final class ExtractedUpdateApp: @unchecked Sendable {
     private let parentIdentity: BackupIdentity, rootIdentity: BackupIdentity
     fileprivate var identities: [String: BackupIdentity] = [:]
     fileprivate var completed: Set<String> = []
-    private var sealedRoot: BackupIdentity?, sealed = false, discarded = false
+    private var sealedRoot: BackupIdentity?, sealed = false, discarded = false, transferred = false
     fileprivate var rootURL: URL { parentURL.appendingPathComponent(name) }
 
     fileprivate init(parentURL: URL, parent: Int32, name: String, root: Int32,
@@ -37,8 +39,22 @@ final class ExtractedUpdateApp: @unchecked Sendable {
         try Task.checkCancellation(); try validate(exact: true)
         return result
     }
+    /// One-shot custody transfer, distinct from a borrow whose postcondition
+    /// requires the app to remain in the extraction namespace. No install trust.
+    func prepareInstallSlot(lease: InstallFilesystemLease,
+                            candidateID: UUID = UUID(),
+                            fault: ((InstallPreparationPoint) throws -> Void)? = nil) throws -> PreparedInstallSlot {
+        guard lock.try() else { throw InstallFilesystemError.busy }; defer { lock.unlock() }
+        guard sealed else { throw DirectUpdateZIPError.changed }
+        try validate(exact: true)
+        return try InstallPreparation.transfer(lease: lease, sourceParentURL: rootURL,
+            sourceParentDescriptor: root, candidateID: candidateID,
+            candidateReceiptSHA256: InstallPreparationReceipt.hash(archiveIntegrity),
+            validateSource: { try self.validate(exact: true) },
+            didTransfer: { self.transferred = true }, fault: fault)
+    }
     fileprivate func validateRoot(exact: Bool = false) throws {
-        guard !discarded else { throw DirectUpdateZIPError.changed }
+        guard !discarded, !transferred else { throw DirectUpdateZIPError.changed }
         try BackupFS.validateDirectoryPath(parentURL, parentIdentity)
         let currentParent = try BackupFS.identity(parent), currentRoot = try BackupFS.identity(root)
         guard currentParent.sameObject(parentIdentity), currentParent.mode & 0o777 == 0o700,
@@ -221,5 +237,12 @@ enum DirectUpdateZIPExtraction {
             try Task.checkCancellation()
             return result
         } catch { created?.cleanupFailure(); throw error }
+    }
+}
+
+private enum InstallPreparationReceipt {
+    static func hash(_ receipt: UpdateArchiveIntegrityReceipt) throws -> String {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        return SHA256.hash(data: try encoder.encode(receipt)).map { String(format: "%02x", $0) }.joined()
     }
 }

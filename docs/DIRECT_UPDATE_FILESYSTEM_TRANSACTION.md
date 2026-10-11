@@ -1,8 +1,9 @@
 # Direct updater filesystem transaction — development contract
 
-`DirectInstallFilesystem` is an independent filesystem primitive. Main NeAntik
-does not depend on or invoke it. It is not included in public0.7.30 and does not
-enable automatic updates or authorize installation.
+`DirectInstallFilesystem` is a filesystem primitive linked to the development
+manager's owned ZIP stage through `prepareInstallSlot`. There is no production
+installer/UI caller. It is not included in public0.7.30 and does not enable
+automatic updates or authorize installation.
 
 ## Inputs and boundaries
 
@@ -14,9 +15,9 @@ enable automatic updates or authorize installation.
   refuse before creating a lock. Privileged installation needs a separate design.
 - Candidate receipt SHA256 supplied by the future trusted caller. This hash is
   a binding, not a signature or permission grant.
-- Caller must establish durable staged bytes, lifecycle authority for every
-  manager, MCP process, browser and relay, and signature/provisioning/runtime/
-  system trust. Existing archive custody is not transferred by this primitive.
+- Caller must establish lifecycle authority for every manager, MCP process,
+  browser and relay, and signature/provisioning/runtime/system trust. ZIP stage
+  transfer now establishes filesystem custody and durable slot bytes only.
 - Operations are synchronous; future callers must run them on a cancellable
   utility worker. There is no UI/MainActor integration here.
 
@@ -81,7 +82,44 @@ privacy audits are recorded in the task delivery report. Filesystem fixtures
 do not qualify signed app installation, migration or user-data rollback.
 
 Still required: authenticated helper/launch protocol, packaged helper custody,
-full process admission, extracted-stage transfer and durable slot preparation,
-trusted update manifest hosting, real signed/notarized A→B→A installation and
+full process admission, trusted update manifest hosting, real signed/notarized A→B→A installation and
 exact final candidate/public-byte gates. The independently observed native
 online ticket-date refusal remains a trust blocker; no bypass is introduced.
+
+## Extracted-stage transfer
+
+`ExtractedUpdateApp.prepareInstallSlot` is a one-shot operation under the owning
+stage lock, separate from `withValidatedApp`'s borrow. It synchronizes captured
+files/directories and writes a bounded canonical transfer intent before the
+same-volume, descriptor-relative `RENAME_EXCL`. The intent binds source parent,
+install parent/lock, candidate UUID, full app tree and archive-integrity receipt
+hash. It is a checksum/custody record, not install trust.
+
+Immediately after successful rename, the extraction stage becomes transferred,
+before any cancellation, throwing hook or synchronization. Its later borrow,
+repeat transfer and discard refuse. Both source and destination parent names
+are synchronized. Failure preserves the transferred candidate and records;
+there is no copy fallback, rename-back, recursive cleanup or automatic adoption.
+Source namespaces must be exactly `NeAntik.app` before transfer and empty after.
+
+The non-Codable `PreparedInstallSlot` has no delete API. It brackets inspection
+with captured inode/tree/record validation. Typed `begin(preparedSlot:)` binds
+the transfer record in the installation journal and consumes the handle
+immediately on visible active-journal publication. After swap the candidate
+pathname contains the old app; the former handle still refuses all access.
+Reentrant borrow/transfer/transaction calls return `busy`, rather than hanging.
+
+Fresh-process `inspect` classifies exact source, exact candidate or journal
+custody without issuing an installation token. Incomplete/unknown records fence
+new preparation. Intact finalized journals with exact ACK/rollback decisions
+allow historical transfer records to remain while a subsequent update proceeds;
+records and rollback app slots are not pruned. History decision validation does
+not assert that an earlier installed app remains the currently active app.
+
+Tests include abrupt process exits before/after intent publication, rename and
+both parent syncs; real Task cancellation; simulated EIO; substitution, namespace
+and content changes; token consumption at an interrupted activation; two fresh
+process updates with retained history; old stage discard refusal. The optional
+public ZIP transfer test checks the exact archive hash, authenticated Developer
+ID/profile before/after transfer, unchanged manager bytes and runtime closure.
+It does not execute/install that app or resolve native online-ticket admission.

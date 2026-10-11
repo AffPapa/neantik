@@ -1,5 +1,6 @@
 import CryptoKit
 import Darwin
+import DirectInstallFilesystem
 import DirectZipCodec
 import Foundation
 import Testing
@@ -402,4 +403,99 @@ struct DirectUpdateZIPTests {
         try stage.withValidatedApp { _ in }
         try stage.discard(); try prepared.discard(); #expect(fixture.retainedApps.isEmpty)
     }
+}
+
+@Suite(.serialized)
+struct DirectUpdateZIPTransferTests {
+    private func stage(_ fixture: OwnZIPFixture) throws -> ExtractedUpdateApp {
+        let archive = try fixture.prepare()
+        return try DirectUpdateZIPExtraction.extractSynchronously(archive, destinationParent: fixture.apps)
+    }
+    @Test(arguments: [InstallPreparationPoint.beforeRename, .renamedBeforeSync, .sourceDirectorySynced, .destinationDirectorySynced, .beforeReturn])
+    func extractionCustodyInvalidatedBeforeEveryPostRenameFailure(point: InstallPreparationPoint) throws {
+        let f = try OwnZIPFixture(ZIPFixture([.directory("NeAntik.app"), .init(path: "NeAntik.app/file", bytes: Data([1,2,3]))]).bytes)
+        let extracted = try stage(f), destination = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: destination)
+        let app = try extracted.withValidatedApp { $0 }, id = UUID()
+        #expect(throws: POSIXError(.EIO)) {
+            try extracted.prepareInstallSlot(lease: lease, candidateID: id, fault: { if $0 == point { throw POSIXError(.EIO) } })
+        }
+        if point == .beforeRename { #expect(try extracted.withValidatedApp { $0 } == app) }
+        else {
+            #expect(throws: DirectUpdateZIPError.changed) { try extracted.withValidatedApp { _ in () } }
+            #expect(throws: DirectUpdateZIPError.changed) { try extracted.discard() }
+            #expect(throws: DirectUpdateZIPError.changed) { try extracted.prepareInstallSlot(lease: lease) }
+            let candidate = destination.appendingPathComponent(".neantik-next-" + id.uuidString.lowercased() + ".app/file")
+            #expect(try Data(contentsOf: candidate) == Data([1,2,3])); #expect(!FileManager.default.fileExists(atPath: app.path))
+        }
+    }
+    @Test func realStageTransferSuccessIsOneShotAndBorrowReentryRefuses() throws {
+        let f = try OwnZIPFixture(ZIPFixture([.directory("NeAntik.app"), .init(path: "NeAntik.app/file", bytes: Data([7]))]).bytes)
+        let extracted = try stage(f), destination = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: destination)
+        _ = try extracted.withValidatedApp { _ in
+            #expect(throws: InstallFilesystemError.busy) { try extracted.prepareInstallSlot(lease: lease) }
+        }
+        let slot = try extracted.prepareInstallSlot(lease: lease)
+        #expect(try slot.withValidatedCandidate { try Data(contentsOf: $0.appendingPathComponent("file")) } == Data([7]))
+        try slot.withValidatedCandidate { _ in
+            #expect(throws: InstallFilesystemError.busy) { try slot.withValidatedCandidate { _ in () } }
+            #expect(throws: InstallFilesystemError.busy) { try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {}) }
+        }
+        #expect(throws: DirectUpdateZIPError.changed) { try extracted.discard() }
+    }
+    @Test(arguments: [InstallPreparationPoint.beforeRename, .renamedBeforeSync, .destinationDirectorySynced, .beforeReturn])
+    func actualCancelledTaskPreservesOriginalOrTransferredStage(point: InstallPreparationPoint) async throws {
+        let f = try OwnZIPFixture(ZIPFixture([.directory("NeAntik.app"), .init(path: "NeAntik.app/file", bytes: Data([4]))]).bytes)
+        let extracted = try stage(f), destination = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: destination), id = UUID()
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let task = Task.detached {
+            try extracted.prepareInstallSlot(lease: lease, candidateID: id, fault: {
+                if $0 == point { entered.signal(); guard release.wait(timeout: .now() + 10) == .success else { throw POSIXError(.ETIMEDOUT) } }
+            })
+        }
+        func waitForEntry() -> Bool { entered.wait(timeout: .now() + 10) == .success }
+        let observed = await Task.detached { waitForEntry() }.value
+        #expect(observed); task.cancel(); release.signal()
+        do { _ = try await task.value; Issue.record("cancelled preparation returned a token") } catch { #expect(error is CancellationError) }
+        if point == .beforeRename { _ = try extracted.withValidatedApp { $0 } }
+        else {
+            #expect(throws: DirectUpdateZIPError.changed) { try extracted.discard() }
+            #expect(try Data(contentsOf: destination.appendingPathComponent(".neantik-next-" + id.uuidString.lowercased() + ".app/file")) == Data([4]))
+        }
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_TRANSFER_PUBLIC_ARCHIVE"] != nil))
+    func exactSignedProvisionedAppSurvivesCustodyTransfer() throws {
+        let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_TRANSFER_PUBLIC_ARCHIVE"])
+        let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+        try #require(BackupFS.hex(SHA256.hash(data: bytes)) == "1a445b68a22634ab249573cf4712d9f47552daa9e3d403df0cf0adc360cbc7df")
+        let f = try OwnZIPFixture(bytes), extracted = try stage(f), destination = f.root.appendingPathComponent("install")
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        print("Transfer qualification: signature before transfer")
+        let before = try DirectUpdateCodeSignature.inspectStage(extracted)
+        try #require(before.count == 3)
+        print("Transfer qualification: provenance before transfer")
+        let provenance = try DirectUpdateRuntimeProvenance.inspectStage(extracted)
+        #expect(provenance.chromiumVersion == "156.0.8078.12" && provenance.machoCount == 16)
+        print("Transfer qualification: prepare slot")
+        let lease = try InstallFilesystemLease(parentURL: destination), slot = try extracted.prepareInstallSlot(lease: lease)
+        try slot.withValidatedCandidate { url in
+            print("Transfer qualification: signatures after transfer")
+            let manager = try DirectUpdateCodeSignature.inspect(url, role: .manager)
+            let runtime = try DirectUpdateCodeSignature.inspect(url.appendingPathComponent("Contents/Resources/NeAntik Browser.app"), role: .runtime)
+            let framework = try DirectUpdateCodeSignature.inspect(url.appendingPathComponent("Contents/Resources/NeAntik Browser.app/Contents/Frameworks/NeAntik Browser Framework.framework"), role: .framework)
+            #expect(manager.version == before[0].version && manager.build == before[0].build && manager.cdHash == before[0].cdHash)
+            #expect(runtime.cdHash == before[1].cdHash && framework.cdHash == before[2].cdHash)
+            let executable = url.appendingPathComponent("Contents/MacOS/NeAntik")
+            #expect(BackupFS.hex(SHA256.hash(data: try Data(contentsOf: executable))) == "8f0e29b3080b1fdb25d4362b9e76597fcf36d0056bd6b82627a17a653be0b099")
+        }
+        #expect(throws: DirectUpdateZIPError.changed) { try extracted.discard() }
+        // OwnZIPFixture removes only its known isolated UUID root. Product stage
+        // never deletes a transferred tree. No installed app/Keychain is touched.
+    }
+
 }
