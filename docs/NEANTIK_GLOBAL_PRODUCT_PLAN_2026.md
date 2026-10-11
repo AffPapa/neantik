@@ -1,4 +1,8 @@
-> Current public release: 0.7.30/build93 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.30.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+> Current public release: 0.7.32/build95 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.32.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+
+## Выпуск 0.7.32 / build95 — 12 октября 2026
+
+HTTPS auth relay включён в обычный запуск после TLS/negative/headed проверок. GitHub ZIP/DMG прошли Direct и hosted-byte gates; свежий скачанный headed manager и MCP проходят. browser.free — Sites133, видимые ссылки и API200 совпадают с0.7.32/95. Прежний сертификат и Chromium156.0.8078.12 сохранены; rollback0.7.31. Полный CRX installer и public updater открыты. AffPapa исключён прямым указанием пользователя. [Отчёт](../releases/v0.7.32.json).
 
 ## Выпуск 0.7.30 / build 93 — 11 октября 2026
 

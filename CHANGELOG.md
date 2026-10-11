@@ -1,5 +1,12 @@
 # NeAntik changelog
 
+## Direct 0.7.32 (95) — public alpha
+
+- Авторизация HTTP, HTTPS и SOCKS5 через отдельный relay профиля; HTTPS проверяет сертификат до пароля и не переходит на HTTP/Direct при отказе.
+- Обновлены подсказки сети, справка и MCP. Тесты собственного kernel record updater больше не зависят от посторонних процессов; production inventory остаётся полным и строгим.
+- 1317 Swift-тестов; actual TLS/negative controls, headed relay и Dev keyboard/persistence PASS. Точный кандидат и публичные ZIP/DMG прошли Direct-гейты, скачанный headed manager и MCP. browser.free Sites133/API200 синхронизированы.
+- Chromium156.0.8078.12 не менялся. Full CRX installer и public updater открыты; rollback0.7.31. [Точный отчёт и ограничения](releases/v0.7.32.json).
+
 ## Direct 0.7.30 (93) — public alpha
 
 - Зашифрованный backup BrowserData остановленного профиля: отдельный пароль архива и привязка к локальной Связке ключей. Настройки, прокси и папки экспортируются отдельно и сохраняются при restore. Неверный пароль и повреждённый архив не заменяют данные. Перенос авторизации между Mac не поддерживается.

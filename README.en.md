@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.30 (93), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.30). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.30.json).
+Latest published release: [NeAntik 0.7.32 (95), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.32). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.32.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.30` adds encrypted BrowserData backup for stopped profiles and an explicit choice of the start page or previous tabs. Settings, proxy and folders are exported separately and preserved during restore. Backup requires the original profile, this Mac, original Keychain and exact runtime; cross-Mac login transfer is not supported. HTTP/SOCKS5 relay, extension center and MCP remain available. Chromium was not rebuilt. Safe Browsing is disabled; HTTPS relay, CRX installation, atomic updater and version1.0 remain in progress. Immutable `0.7.29` remains for rollback. browser.free is being updated; current artifacts are on GitHub.
+`0.7.32` adds authenticated HTTPS proxies through a separate profile relay. macOS verifies the certificate before credentials; failures do not retry HTTP or Direct. Encrypted BrowserData backup, previous tabs, the extension center and MCP remain available. Backup needs the original stopped profile, same Mac, original Keychain and exact runtime; cross-Mac login transfer is unsupported. Chromium was not rebuilt. Safe Browsing is disabled; full CRX installation, public atomic updater and version1.0 remain in progress. Immutable `0.7.31` remains for rollback. GitHub and browser.free are updated; the user updates AffPapa manually.
 
 Direct downloads: [browser.free](https://browser.free).
 
@@ -41,8 +41,8 @@ the exact public binary contents are defined by its release notes and assets.
   inactive profiles without deleting data, and duplicates settings into a
   profile with a new UUID, fingerprint seed, and BrowserData; the proxy
   configuration is copied too;
-- supports direct connections and authenticated HTTP/SOCKS5 through a separate
-  local relay per profile; HTTPS proxies use Chromium's native prompt;
+- supports direct connections and authenticated HTTP/HTTPS/SOCKS5 through a separate
+  local relay per profile, including HTTPS with certificate verification before credentials;
 - locally parses a proxy list and creates up to 100 separate profiles without
   automatic network requests; a failed import does not save profiles, and any
   unfinished password cleanup is marked for retry on the next launch;
