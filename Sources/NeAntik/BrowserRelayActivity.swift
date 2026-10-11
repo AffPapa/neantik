@@ -5,7 +5,7 @@ import Foundation
 /// and bind any exported snapshot to its exact browser/session/configuration.
 /// Tunnel/byte activity cannot establish HTTP, TLS-page or DNS-route results.
 final class BrowserRelayActivity: @unchecked Sendable {
-    enum End: String, Codable, Sendable {
+    enum End: String, Codable, Sendable, CaseIterable {
         case completed, cancelled, localSetupFailed, clientNegotiationFailed
         case admissionRevoked, upstreamNegotiationFailed, browserReplyFailed, streamFailed
         var isFailure: Bool { self != .completed && self != .cancelled }
@@ -38,6 +38,18 @@ final class BrowserRelayActivity: @unchecked Sendable {
         /// Monotonic elapsed time, not a refreshed success timestamp. Quiet
         /// established streams have no automatic failure/freshness verdict.
         let lastEventAgeMilliseconds: UInt64?
+        /// Only fixed scalars from an authenticated, currently bound reply.
+        /// These are transport events, not browser request or DNS verdicts.
+        var mcpValue: [String: Any] {
+            ["state": "observed", "sequence": sequence, "admittedConnections": admittedConnections,
+             "upstreamTunnels": upstreamTunnels, "successRepliesSent": successRepliesSent,
+             "completedConnections": completedConnections, "failedConnections": failedConnections,
+             "cancelledConnections": cancelledConnections, "activeConnections": activeConnections,
+             "listenerStopped": listenerStopped, "countersSaturated": countersSaturated,
+             "lastEnd": lastEnd?.rawValue as Any? ?? NSNull(), "lastFailure": lastFailure?.rawValue as Any? ?? NSNull(),
+             "lastFailureSequence": lastFailureSequence as Any? ?? NSNull(),
+             "lastEventAgeMilliseconds": lastEventAgeMilliseconds as Any? ?? NSNull()]
+        }
     }
     struct Ticket: Hashable, Sendable { fileprivate let id = UUID() }
     private struct Stream { var tunnel = false; var replySent = false }

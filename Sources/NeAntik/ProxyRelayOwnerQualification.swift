@@ -12,6 +12,8 @@ enum ProxyRelayOwnerQualification {
     struct Request: Codable { let root: String; let upstreamPort: UInt16; let kind: ProxyKind; var managerIntegration: Bool? = nil; var mutateBeforeActivation: Bool? = nil; var observeRestart: Bool? = nil; var terminateAfterActivation: Bool? = nil; var cancelBeforeActivation: Bool? = nil; var fixtureSlot: UInt8? = nil; var holdManagerUntilRelease: Bool? = nil; var qualificationAnchorDER: Data? = nil
         var closeAfterRestart: Bool? = nil
         var expectedQuitSnapshot: ProxyRelayQualificationQuit.Snapshot? = nil
+        var observeTransport: Bool? = nil
+        var expectedLaunchRevision: UInt64? = nil
         var fixtureHost: String { kind == .https ? "localhost" : "127.0.0.1" }
     }
     struct Result: Codable {
@@ -22,6 +24,11 @@ enum ProxyRelayOwnerQualification {
         var quitSnapshot: ProxyRelayQualificationQuit.Snapshot? = nil
         var nativeQuitAccepted: Bool? = nil
         var processesDrained: Bool? = nil
+        var transportObservation: BrowserRelayActivity.Snapshot? = nil
+        var staleRevisionObservationRefused: Bool? = nil
+        var launchMetadataObservationVerified: Bool? = nil
+        var abandonedObservationDidNotStopSession: Bool? = nil
+        var launchRevision: UInt64? = nil
     }
     static func runAndExit() -> Never {
         Task.detached {
@@ -31,6 +38,7 @@ enum ProxyRelayOwnerQualification {
                 // paths, endpoints, credentials or fingerprint values.
                 let type: String
                 if let error = error as? Failure { type = "Qualification." + String(describing: error) }
+                else if let error = error as? ProxyRelayObservationProtocol.Failure { type = "Observation." + String(describing: error) }
                 else if let error = error as? ProxyRelayQualificationQuit.Failure { type = "QualificationQuit." + String(describing: error) }
                 else { type = String(reflecting: Swift.type(of: error)) }
                 FileHandle.standardError.write(Data(("relay_qualification_failed type=" + type + "\n").utf8))
@@ -160,9 +168,42 @@ enum ProxyRelayOwnerQualification {
               browserIdentity.userID == geteuid(), ownerIdentity.userID == geteuid(),
               lease.pid == session.browserPID, lease.relay?.ownerPID == session.ownerPID
         else { throw Failure.unsafeRoot }
-        return Result(schemaVersion: 1, browserPID: session.browserPID, ownerPID: session.ownerPID, relayPort: session.port,
+        var result = Result(schemaVersion: 1, browserPID: session.browserPID, ownerPID: session.ownerPID, relayPort: session.port,
             runtimeVersion: version, runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
             quitSnapshot: .init(lease: lease, browser: .init(browserIdentity), owner: .init(ownerIdentity)))
+        if request.observeTransport == true {
+            guard let manager = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier,
+                  let generation = lease.ownerToken else { throw Failure.unsafeRoot }
+            let diagnosticReceipt = ManagedBrowserSessionReceipt(generation: generation, lock: lease,
+                runtimeVersion: version, configuredRoute: .httpProxy, profileRevision: profile.revision, browserIdentity: browserIdentity)
+            guard let diagnosticBinding = try diagnosticReceipt.relayBinding(profileID: profile.id, expectedRevision: profile.revision) else { throw Failure.unsafeRoot }
+            let code = try ProxyRelayExpectedCode.qualifiedPin(at: manager, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+            _ = try await Task.detached {
+                try ProxyRelayObservationSocket.abandonReplyForQualification(binding: diagnosticBinding, expectedOwnerCode: code)
+            }.value
+            _ = try await Task.detached {
+                try ProxyRelayObservationSocket.query(binding: diagnosticBinding, expectedOwnerCode: code)
+            }.value
+            result.abandonedObservationDidNotStopSession = diagnosticBinding.processesAreCurrent
+            guard store.markLaunched(profile.id), let recorded = store.profiles.first(where: { $0.id == profile.id }),
+                  recorded.revision == profile.revision + 1 else { throw Failure.unsafeRoot }
+            processes.recordManagedLaunchMetadata(from: profile, to: recorded)
+            let deadline = ContinuousClock.now + .seconds(12)
+            repeat {
+                let observed = try await processes.observeManagedBrowserSession(profileID: profile.id, expectedRevision: recorded.revision)
+                if let transport = observed.relayTransport, transport.admittedConnections > 0,
+                   try await processes.revalidateManagedBrowserObservation(observed, profileID: profile.id, expectedProfile: recorded) {
+                    result.transportObservation = transport; break
+                }
+                try await Task.sleep(for: .milliseconds(50))
+            } while ContinuousClock.now < deadline
+            let stale = try await processes.observeManagedBrowserSession(profileID: profile.id, expectedRevision: profile.revision)
+            guard result.transportObservation != nil, stale.relayTransport == nil else { throw Failure.unsafeRoot }
+            result.staleRevisionObservationRefused = true
+            result.launchMetadataObservationVerified = true
+            result.launchRevision = profile.revision
+        }
+        return result
     }
     @MainActor private static func observeRestart(request: Request, root: URL, browser: URL,
                                                   inspection: BrowserRuntimeInspection) async throws -> Result {
@@ -172,6 +213,7 @@ enum ProxyRelayOwnerQualification {
               let version = inspection.version, let executableHash = inspection.executableSHA256, let frameworkHash = inspection.frameworkSHA256
         else { throw Failure.unsafeRoot }
         let lease = try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id)
+        let launchRevision = request.expectedLaunchRevision ?? profile.revision
         guard lease.phase == .running, let relay = lease.relay,
               relay.profileID == profile.id, relay.runtimeExecutableSHA256 == executableHash,
               relay.runtimeFrameworkSHA256 == frameworkHash,
@@ -191,6 +233,22 @@ enum ProxyRelayOwnerQualification {
         var result = Result(schemaVersion: 1, browserPID: lease.pid, ownerPID: relay.ownerPID, relayPort: relay.loopbackPort,
                       runtimeVersion: version, runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
                       restartAdoptedAndDuplicateRefused: true)
+        guard let observedBrowser = ProxyRelaySocketOwnerInspector.processIdentity(lease.pid),
+              let observedOwner = ProxyRelaySocketOwnerInspector.processIdentity(relay.ownerPID) else { throw Failure.unsafeRoot }
+        result.quitSnapshot = .init(lease: lease, browser: .init(observedBrowser), owner: .init(observedOwner))
+        if request.observeTransport == true {
+            guard let browserIdentity = ProxyRelaySocketOwnerInspector.processIdentity(lease.pid),
+                  let manager = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier else { throw Failure.unsafeRoot }
+            let receipt = ManagedBrowserSessionReceipt(generation: relay.sessionGeneration, lock: lease,
+                runtimeVersion: version, configuredRoute: .httpProxy, profileRevision: launchRevision, browserIdentity: browserIdentity)
+            guard let context = try receipt.relayBinding(profileID: profile.id, expectedRevision: launchRevision) else { throw Failure.unsafeRoot }
+            let code = try ProxyRelayExpectedCode.qualifiedPin(at: manager, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+            result.transportObservation = try await Task.detached {
+                try ProxyRelayObservationSocket.query(binding: context, expectedOwnerCode: code)
+            }.value
+            // Core reconnect qualification does not grant the restarted MCP
+            // session ownership of an externally running browser.
+        }
         if request.closeAfterRestart == true {
             guard let expected = request.expectedQuitSnapshot, expected.lease == lease else { throw Failure.changedQuitLease }
             guard lease.executablePath == browser.standardizedFileURL.path else { throw Failure.changedQuitExecutable }
@@ -198,7 +256,7 @@ enum ProxyRelayOwnerQualification {
             else { throw Failure.changedQuitDataPath }
             guard let proxy = profile.proxy,
                   relay.configurationSHA256 == ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(
-                    profileID: profile.id, revision: profile.revision, kind: proxy.kind,
+                    profileID: profile.id, revision: launchRevision, kind: proxy.kind,
                     host: proxy.host, port: proxy.port, username: proxy.username)
             else { throw Failure.changedQuitConfiguration }
             try paths.withProcessLockGuard(for: profile.id) {

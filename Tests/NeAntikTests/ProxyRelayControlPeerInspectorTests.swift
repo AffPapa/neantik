@@ -5,6 +5,20 @@ import Testing
 @testable import DirectUpdateCore
 
 struct ProxyRelayControlPeerInspectorTests {
+    @Test func peerCloseClearsKernelPIDEvenWithAQueuedReply() throws {
+        let pair = try StreamPair(); defer { pair.close() }
+        let identity = try #require(ProxyRelaySocketOwnerInspector.processIdentity(getpid()))
+        let evidence = try matched(pair.first, identity)
+        var reply: UInt8 = 82
+        try #require(send(pair.second, &reply, 1, 0) == 1)
+        #expect(ProxyRelayControlPeerInspector.revalidate(evidence))
+        try #require(Darwin.close(pair.second) == 0); pair.second = -1
+        var received: UInt8 = 0
+        try #require(recv(pair.first, &received, 1, 0) == 1 && received == reply)
+        #expect(!ProxyRelayControlPeerInspector.revalidate(evidence))
+        // This is why an authenticated observation server waits for the
+        // client's bounded receipt before closing its reply channel.
+    }
     @Test func realUnixStreamPinsKernelPeerAndRedactsEvidence() throws {
         let pair = try StreamPair(); defer { pair.close() }
         let identity = try #require(ProxyRelaySocketOwnerInspector.processIdentity(getpid()))

@@ -93,6 +93,10 @@ Read the current revision after `profile_start`: starting a profile advances its
 
 Example AI request: “Check whether this session's profile is ready for graceful close, and show the runtime version it launched. Do not infer its network route.” Calling `profile_status` without observation retains the original compact response. This development capability still requires exact candidate stdio and headed acceptance before publication.
 
+The development manager also includes `relayTransport`. For an authenticated relay session this contains bounded connection/tunnel counters and the most recent transport failure. The private exchange checks the running owner's exact signed code, process generation, launch configuration, runtime hashes and current profile metadata. A legitimate launch bookkeeping revision is recorded separately from the immutable relay launch revision. A stale or unverified exchange returns `state: notObserved`, including Direct/native-proxy sessions without this relay. Counters do not prove page loading, HTTPS validation or DNS routing; `chromiumRoute` remains `notObserved`. No destination, PID, credential, page content or private session ID is returned.
+
+Signed DEBUG headed HTTP/reconnect acceptance has passed for the socket exchange. Final signed shipping stdio/UI, missing-receipt cancellation and browser HTTP/HTTPS/DNS observation remain separate release gates; this paragraph does not advertise a published capability.
+
 ## Proxy input
 
 Choose **either** separate fields **or** a line; never both. Separate fields:

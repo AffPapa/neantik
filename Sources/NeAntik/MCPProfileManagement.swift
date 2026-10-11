@@ -169,7 +169,7 @@ final class MCPProfileManagement {
             guard includeObservation else {
                 return ["profileID": profileID.uuidString, "processState": status(profileID)]
             }
-            var observation = try await processes.observeManagedBrowserSession(profileID: profileID)
+            var observation = try await processes.observeManagedBrowserSession(profileID: profileID, expectedRevision: expected)
             do { try await store.refreshExternalMetadata() }
             catch {
                 guard store.hasTrustedMetadata, !store.hasTrustedOrganization else { throw error }
@@ -178,8 +178,11 @@ final class MCPProfileManagement {
             guard store.hasTrustedMetadata,
                   let expected, let current = store.profile(withID: profileID), current.revision == expected
             else { throw Failure.conflict }
-            if observation.state == .observed && !processes.sessionObservationIsCurrent(observation, profileID: profileID) {
-                observation = .unavailable(.unverified)
+            if observation.state == .observed {
+                if !(try await processes.revalidateManagedBrowserObservation(observation, profileID: profileID, expectedProfile: current)) {
+                    observation = .unavailable(.unverified)
+                }
+                guard store.profile(withID: profileID)?.revision == expected, store.hasTrustedMetadata else { throw Failure.conflict }
             }
             return ["profileID": profileID.uuidString, "processState": status(profileID),
                     "revision": String(current.revision), "observation": observation.mcpValue]
@@ -288,6 +291,7 @@ final class MCPProfileManagement {
         try Task.checkCancellation()
         try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
         guard store.markLaunched(profile.id) else { processes.stop(profileID: profile.id); throw Failure.unavailable }
+        if let recorded = store.profile(withID: profile.id) { processes.recordManagedLaunchMetadata(from: profile, to: recorded) }
         launched = true
         store.managerLibrary.record(.launch, .succeeded)
         return ["profileID": profile.id.uuidString, "processState": status(profile.id), "revision": String(store.profile(withID: profile.id)?.revision ?? profile.revision)]

@@ -7,6 +7,11 @@ import Foundation
 /// Keychain and never exposes a public control/debugging endpoint.
 enum ProxyRelayOwner {
     private static let team = "H6VGU2M6JD"
+    private final class ObservationActivation: @unchecked Sendable {
+        private let lock = NSLock(); private var active = false
+        func set(_ value: Bool) { lock.lock(); active = value; lock.unlock() }
+        var isActive: Bool { lock.lock(); defer { lock.unlock() }; return active }
+    }
     private final class AuthorityBox: @unchecked Sendable {
         private let lock = NSLock()
         private var value: ProxyRelaySessionAuthority?
@@ -75,6 +80,8 @@ enum ProxyRelayOwner {
             waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
         #endif
         var authority: ProxyRelaySessionAuthority?
+        var observation: ProxyRelayObservationSocket.Server?
+        let observationActivation = ObservationActivation()
         do {
             let port = try await relay.start()
             try ProxyRelayPrivatePipe.writeFrame(STDOUT_FILENO,
@@ -102,16 +109,30 @@ enum ProxyRelayOwner {
                   ProxyRelaySocketOwnerInspector.processIdentity(parentPID) == parentIdentity,
                   ProxyRelayLiveCodeVerifier.matches(processID: parentPID, expectedProcess: parentIdentity, expectedCode: managerCode)
             else { throw ProxyRelayOwnerProtocol.Failure.invalidBinding }
+            guard let ownerIdentity = ProxyRelaySocketOwnerInspector.processIdentity(getpid()) else { throw ProxyRelayOwnerProtocol.Failure.invalidBinding }
+            let observationBinding = ProxyRelayObservationProtocol.Binding(profileID: bootstrap.profileID,
+                sessionGeneration: bootstrap.sessionGeneration, profileRevision: bootstrap.profileRevision,
+                runtimeExecutableSHA256: bootstrap.runtimeExecutableSHA256, runtimeFrameworkSHA256: bootstrap.runtimeFrameworkSHA256,
+                configurationSHA256: bootstrap.configurationSHA256,
+                owner: .init(pid: getpid(), identity: ownerIdentity), browser: .init(pid: bind.browserPID, identity: browser))
+            observation = try ProxyRelayObservationSocket.start(binding: observationBinding, expectedManagerCode: managerCode,
+                sessionValid: { observationActivation.isActive && admitted.browserIsAlive() }, snapshot: { relay.activitySnapshot() })
             try ProxyRelayPrivatePipe.writeFrame(STDOUT_FILENO,
                 data: encoder.encode(ProxyRelayOwnerProtocol.Active(schemaVersion: 1, nonce: bootstrap.nonce, active: true)), timeout: 2)
             try await gate.open()
+            observationActivation.set(true)
             _ = Darwin.close(STDIN_FILENO); _ = Darwin.close(STDOUT_FILENO)
-            // Deliberately ignore parent EOF after successful bind. There is
-            // no subsequent control command or descriptor transfer protocol.
+            // Deliberately ignore parent EOF after successful bind. A separate
+            // authenticated read-only endpoint observes this same owner; the
+            // bootstrap channel and credentials are never reopened.
             while admitted.browserIsAlive() { try await Task.sleep(for: .milliseconds(250)) }
+            observationActivation.set(false); observation?.cancel()
             admitted.revoke(); await gate.close(); await relay.stop()
+            await observation?.stop()
         } catch {
-            authority?.revoke(); await gate.close(); await relay.stop(); throw error
+            observationActivation.set(false); observation?.cancel()
+            authority?.revoke(); await gate.close(); await relay.stop()
+            await observation?.stop(); throw error
         }
     }
 }

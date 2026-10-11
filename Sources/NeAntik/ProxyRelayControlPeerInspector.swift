@@ -35,6 +35,15 @@ enum ProxyRelayControlPeerResult {
 /// caller must separately bind the control request to profile/generation and
 /// current session authority; an owner token is correlation, not permission.
 enum ProxyRelayControlPeerInspector {
+    /// Discover only this connected socket's kernel peer. A caller-supplied
+    /// PID never grants authority; live code validation is still mandatory.
+    static func currentPeer(descriptor: Int32) -> ProxyRelayControlPeerEvidence? {
+        guard let kernel = snapshot(descriptor),
+              let identity = ProxyRelaySocketOwnerInspector.processIdentity(kernel.pid),
+              case .matched(let evidence) = inspect(descriptor: descriptor, expectedProcessID: kernel.pid, expectedProcess: identity)
+        else { return nil }
+        return evidence
+    }
     static func inspect(descriptor: Int32, expectedProcessID: pid_t,
                         expectedProcess: ProxyRelayOwnerProcessIdentity) -> ProxyRelayControlPeerResult {
         guard descriptor >= 0, expectedProcessID > 0, expectedProcess.userID == geteuid() else { return .unrelated }

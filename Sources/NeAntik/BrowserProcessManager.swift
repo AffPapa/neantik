@@ -2124,7 +2124,8 @@ final class BrowserProcessManager: ObservableObject {
                 // representation, not an in-memory Date with fractional time.
                 generation: ownerToken, lock: try Self.decodeLock(Self.encodeLock(lock)),
                 runtimeVersion: ManagedBrowserSessionReceipt.safeRuntimeVersion(runtime.inspection.version),
-                configuredRoute: route
+                configuredRoute: route, profileRevision: profile.revision,
+                browserIdentity: ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier)
             )
         } catch {
             if process.isRunning {
@@ -2196,29 +2197,52 @@ final class BrowserProcessManager: ObservableObject {
 
     /// Observe only a session this manager launched. Disk reads and process
     /// inventory run off MainActor; a changed generation never returns old data.
-    func observeManagedBrowserSession(profileID: UUID) async throws -> BrowserSessionObservation {
+    func observeManagedBrowserSession(profileID: UUID, expectedRevision: UInt64? = nil) async throws -> BrowserSessionObservation {
         guard let process = processes[profileID], process.isRunning,
               let receipt = managedSessionReceipts[profileID]
         else { return .unavailable(.notOwned) }
         let paths = paths
         let task = Task.detached(priority: .utility) {
             try Task.checkCancellation()
-            return try paths.withProcessLockGuard(for: profileID) {
+            let verified = try paths.withProcessLockGuard(for: profileID) {
                 let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
                 guard receipt.matches(current) else { return false }
                 return Self.inspectProcess(current) == .expected
             }
+            guard verified else { return (false, Optional<BrowserRelayActivity.Snapshot>.none) }
+            var transport: BrowserRelayActivity.Snapshot?
+            do {
+                if let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedRevision),
+                   let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier {
+                    let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+                    // Never hold the filesystem guard while waiting for IPC or
+                    // Security. An observation failure does not stop a browser.
+                    transport = try ProxyRelayObservationSocket.query(binding: binding, expectedOwnerCode: code)
+                }
+            } catch is CancellationError { throw CancellationError() }
+            catch { transport = nil }
+            try Task.checkCancellation()
+            let unchanged = try paths.withProcessLockGuard(for: profileID) {
+                let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
+                guard receipt.matches(current), Self.inspectProcess(current) == .expected else { return false }
+                if let expected = receipt.browserIdentity {
+                    return ProxyRelayObservationProtocol.ProcessBinding(pid: current.pid, identity: expected)
+                        .matches(ProxyRelaySocketOwnerInspector.processIdentity(current.pid))
+                }
+                return true
+            }
+            return (unchanged, unchanged ? transport : nil)
         }
-        let verified: Bool
+        let result: (Bool, BrowserRelayActivity.Snapshot?)
         do {
-            verified = try await withTaskCancellationHandler {
+            result = try await withTaskCancellationHandler {
                 try await task.value
             } onCancel: { task.cancel() }
         } catch is CancellationError { throw CancellationError() }
         catch { return .unavailable(.unverified) }
         try Task.checkCancellation()
-        guard verified, processes[profileID] === process, process.isRunning,
-              managedSessionReceipts[profileID]?.generation == receipt.generation,
+        guard result.0, processes[profileID] === process, process.isRunning,
+              managedSessionReceipts[profileID] == receipt,
               managedLeaseOwners[profileID] == receipt.lock.ownerToken
         else { return .unavailable(.unverified) }
         return BrowserSessionObservation(
@@ -2226,7 +2250,7 @@ final class BrowserProcessManager: ObservableObject {
             readyForGracefulQuit: managedBrowserReadyForQuit(profileID: profileID),
             runtimeVersion: receipt.runtimeVersion,
             configuredRoute: receipt.configuredRoute,
-            sessionGeneration: receipt.generation
+            sessionGeneration: receipt.generation, relayTransport: result.1, launchContext: receipt
         )
     }
 
@@ -2234,9 +2258,52 @@ final class BrowserProcessManager: ObservableObject {
         guard observation.state == .observed, let generation = observation.sessionGeneration,
               let process = processes[profileID], process.isRunning,
               managedSessionReceipts[profileID]?.generation == generation,
+              observation.launchContext == managedSessionReceipts[profileID],
               managedLeaseOwners[profileID] == generation
         else { return false }
         return true
+    }
+
+    func recordManagedLaunchMetadata(from original: BrowserProfile, to recorded: BrowserProfile) {
+        guard original.id == recorded.id, let process = processes[original.id], process.isRunning,
+              var receipt = managedSessionReceipts[original.id],
+              managedLeaseOwners[original.id] == receipt.generation,
+              (try? receipt.recordLaunchMetadata(from: original, to: recorded)) == true else { return }
+        managedSessionReceipts[original.id] = receipt
+    }
+
+    /// Revalidate after an independent metadata/network await. A snapshot is
+    /// sampled evidence, never a perpetual green status for a dead/reused owner.
+    func revalidateManagedBrowserObservation(_ observation: BrowserSessionObservation, profileID: UUID,
+                                             expectedProfile: BrowserProfile) async throws -> Bool {
+        guard expectedProfile.id == profileID else { return false }
+        guard sessionObservationIsCurrent(observation, profileID: profileID), let receipt = observation.launchContext else { return false }
+        let paths = paths
+        let task = Task.detached(priority: .utility) {
+            let leaseMatches = try paths.withProcessLockGuard(for: profileID) {
+                let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
+                return receipt.matches(current) && Self.inspectProcess(current) == .expected
+            }
+            guard leaseMatches else { return false }
+            if observation.relayTransport != nil {
+                guard let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedProfile.revision), binding.processesAreCurrent,
+                      let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier,
+                      let owner = ProxyRelaySocketOwnerInspector.processIdentity(binding.owner.pid) else { return false }
+                let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+                guard ProxyRelayLiveCodeVerifier.matches(processID: binding.owner.pid, expectedProcess: owner, expectedCode: code), binding.processesAreCurrent else { return false }
+            }
+            try Task.checkCancellation()
+            // The independent metadata refresh preceded this asynchronous
+            // check. Re-read persisted configuration with process -> metadata
+            // guards after Security; no IPC/network wait holds either guard.
+            return try ManagedSessionLeaseReader.matchesPersistedContext(paths: paths, profile: expectedProfile, receipt: receipt)
+        }
+        let valid: Bool
+        do { valid = try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() }) }
+        catch is CancellationError { throw CancellationError() }
+        catch { return false }
+        try Task.checkCancellation()
+        return valid && sessionObservationIsCurrent(observation, profileID: profileID)
     }
 
     func stop(profileID: UUID) {

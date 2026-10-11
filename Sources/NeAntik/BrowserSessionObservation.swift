@@ -3,7 +3,7 @@ import Foundation
 
 /// An allowlisted observation of a manager-owned browser session. Launch
 /// configuration is separate from browser-observed network or page evidence.
-struct BrowserSessionObservation: Sendable {
+struct BrowserSessionObservation: Sendable, CustomReflectable, CustomStringConvertible {
     enum State: String, Sendable { case observed, unavailable }
     enum Ownership: String, Sendable { case thisSession, notOwned, unverified }
     enum Route: String, Sendable { case direct, httpProxy, httpsProxy, socks5Proxy, unknown }
@@ -14,6 +14,10 @@ struct BrowserSessionObservation: Sendable {
     let runtimeVersion: String?
     let configuredRoute: Route
     var sessionGeneration: UUID? = nil
+    var relayTransport: BrowserRelayActivity.Snapshot? = nil
+    var launchContext: ManagedBrowserSessionReceipt? = nil
+    var description: String { "BrowserSessionObservation(<redacted>)" }
+    var customMirror: Mirror { Mirror(self, children: [:]) }
 
     static func unavailable(_ ownership: Ownership) -> Self {
         Self(state: .unavailable, ownership: ownership,
@@ -27,15 +31,48 @@ struct BrowserSessionObservation: Sendable {
          "runtimeVersion": runtimeVersion as Any? ?? NSNull(),
          "configuredRoute": configuredRoute.rawValue,
          "chromiumRoute": "notObserved", "pageObservation": "notSupported",
-         "extensionsObservation": "notObserved"]
+         "extensionsObservation": "notObserved",
+         "relayTransport": relayTransport?.mcpValue ?? ["state": "notObserved"]]
     }
 }
 
-struct ManagedBrowserSessionReceipt: Sendable {
+struct ManagedBrowserSessionReceipt: Equatable, Sendable {
     let generation: UUID
     let lock: BrowserProcessLock
     let runtimeVersion: String?
     let configuredRoute: BrowserSessionObservation.Route
+    var profileRevision: UInt64? = nil
+    var browserIdentity: ProxyRelayOwnerProcessIdentity? = nil
+    var observedMetadataRevision: UInt64? = nil
+
+    /// markLaunched advances metadata after the immutable relay bootstrap.
+    /// Accept only that exact single bookkeeping transition, never a newer
+    /// proxy/identity/editor configuration or a guessed revision offset.
+    mutating func recordLaunchMetadata(from original: BrowserProfile, to recorded: BrowserProfile) throws -> Bool {
+        guard profileRevision == original.revision, original.revision < UInt64.max,
+              recorded.revision == original.revision + 1, recorded.lastLaunchedAt != nil else { return false }
+        var comparable = recorded
+        comparable.revision = original.revision; comparable.updatedAt = original.updatedAt
+        comparable.lastLaunchedAt = original.lastLaunchedAt
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
+        guard try encoder.encode(comparable) == encoder.encode(original) else { return false }
+        observedMetadataRevision = recorded.revision
+        return true
+    }
+
+    func relayBinding(profileID: UUID, expectedRevision: UInt64?) throws -> ProxyRelayObservationProtocol.Binding? {
+        guard let revision = profileRevision, (observedMetadataRevision ?? revision) == expectedRevision,
+              let browserIdentity, let relay = lock.relay,
+              relay.profileID == profileID, relay.sessionGeneration == generation,
+              lock.ownerToken == generation, lock.phase == .running else { return nil }
+        let ownerIdentity = ProxyRelayOwnerProcessIdentity(generation: .init(startSeconds: relay.ownerStartSeconds,
+            startMicroseconds: relay.ownerStartMicroseconds), userID: relay.ownerUID, parentProcessID: 0)
+        let binding = ProxyRelayObservationProtocol.Binding(profileID: profileID, sessionGeneration: generation, profileRevision: revision,
+            runtimeExecutableSHA256: relay.runtimeExecutableSHA256, runtimeFrameworkSHA256: relay.runtimeFrameworkSHA256,
+            configurationSHA256: relay.configurationSHA256, owner: .init(pid: relay.ownerPID, identity: ownerIdentity),
+            browser: .init(pid: lock.pid, identity: browserIdentity))
+        try binding.validate(); return binding
+    }
 
     /// Bound a receipt to the exact, still-owned launch lease. Never adopt an
     /// external process or expose its PID, paths, owner token, or credentials.
@@ -56,6 +93,16 @@ struct ManagedBrowserSessionReceipt: Sendable {
 }
 
 enum ManagedSessionLeaseReader {
+    /// Final publication fence after asynchronous observation/code checks.
+    /// The in-memory metadata snapshot alone cannot detect another manager's
+    /// write during those waits. Keep the existing process -> metadata order.
+    static func matchesPersistedContext(paths: AppPaths, profile: BrowserProfile, receipt: ManagedBrowserSessionReceipt) throws -> Bool {
+        try paths.withProcessLockGuard(for: profile.id) {
+            try ProfileStore.withPersistedLaunchSnapshot(profile, paths: paths) {
+                try read(paths: paths, profileID: profile.id) == receipt.lock
+            }
+        }
+    }
     /// The caller holds the process guard. A bounded descriptor read avoids
     /// symlink/FIFO blocking and checks replacement before trusting the data.
     static func read(paths: AppPaths, profileID: UUID) throws -> BrowserProcessLock {

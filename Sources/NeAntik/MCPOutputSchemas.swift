@@ -25,6 +25,17 @@ enum MCPOutputSchemas {
             return object(["profiles": ["type": "array", "items": profile, "maxItems": 100], "count": count, "totalCount": count, "organizationRevision": nullable, "nextCursor": nullable])
         }
         if name == "profile_status" {
+            let transportCount: [String: Any] = ["type": "integer", "minimum": 0, "maximum": 9_007_199_254_740_991]
+            let end: [String: Any] = ["type": ["string", "null"], "enum": BrowserRelayActivity.End.allCases.map { $0.rawValue as Any } + [NSNull()]]
+            let transport = object([
+                "state": ["type": "string", "const": "observed"], "sequence": transportCount,
+                "admittedConnections": transportCount, "upstreamTunnels": transportCount, "successRepliesSent": transportCount,
+                "completedConnections": transportCount, "failedConnections": transportCount, "cancelledConnections": transportCount,
+                "activeConnections": ["type": "integer", "minimum": 0, "maximum": 64], "listenerStopped": boolean,
+                "countersSaturated": boolean, "lastEnd": end, "lastFailure": end,
+                "lastFailureSequence": ["type": ["integer", "null"], "minimum": 0, "maximum": 9_007_199_254_740_991],
+                "lastEventAgeMilliseconds": ["type": ["integer", "null"], "minimum": 0, "maximum": 9_007_199_254_740_991]
+            ])
             let observation = object([
                 "state": ["type": "string", "enum": ["observed", "unavailable"]],
                 "ownership": ["type": "string", "enum": ["thisSession", "notOwned", "unverified"]],
@@ -33,7 +44,8 @@ enum MCPOutputSchemas {
                 "configuredRoute": ["type": "string", "enum": ["direct", "httpProxy", "httpsProxy", "socks5Proxy", "unknown"]],
                 "chromiumRoute": ["type": "string", "const": "notObserved"],
                 "pageObservation": ["type": "string", "const": "notSupported"],
-                "extensionsObservation": ["type": "string", "const": "notObserved"]
+                "extensionsObservation": ["type": "string", "const": "notObserved"],
+                "relayTransport": ["oneOf": [transport, object(["state": ["type": "string", "const": "notObserved"]])]]
             ])
             return object(["profileID": uuid, "processState": state, "revision": revision,
                            "observation": observation], optional: ["revision", "observation"])

@@ -3328,6 +3328,7 @@ struct ContentView: View {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
+        if let recorded = store.profile(withID: profile.id) { processes.recordManagedLaunchMetadata(from: profile, to: recorded) }
         store.managerLibrary.record(.launch, .succeeded)
         telemetry.record(
             .browserLaunched,
@@ -3343,6 +3344,7 @@ struct ContentView: View {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
+        if let recorded = store.profile(withID: profile.id) { processes.recordManagedLaunchMetadata(from: profile, to: recorded) }
         store.managerLibrary.record(.launch, .succeeded)
         telemetry.record(.browserLaunched, snapshot: telemetrySnapshot)
     }

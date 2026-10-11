@@ -4,6 +4,32 @@ import Testing
 @testable import NeAntik
 
 struct BrowserSessionObservationTests {
+    @MainActor @Test func finalPersistedFenceRefusesExternalChangeDuringObservationWait() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("synthetic-observation-fence-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), reader = ProfileStore(paths: paths)
+        let profile = try reader.upsert(BrowserProfile(name: "Observation fence"))
+        let lease = lock(), receipt = ManagedBrowserSessionReceipt(generation: UUID(), lock: lease,
+            runtimeVersion: "156.0.8078.12", configuredRoute: .direct)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(encoder.encode(lease), to: paths.lockFile(for: profile.id))
+        let valid = try await Task.detached {
+            try ManagedSessionLeaseReader.matchesPersistedContext(paths: paths, profile: profile, receipt: receipt)
+        }.value
+        #expect(valid)
+        let gate = AsyncStream<Void>.makeStream()
+        let suspendedRead = Task.detached {
+            for await _ in gate.stream { break }
+            return try ManagedSessionLeaseReader.matchesPersistedContext(paths: paths, profile: profile, receipt: receipt)
+        }
+        let writer = ProfileStore(paths: paths)
+        var changed = profile; changed.startURL = "https://example.com/changed"
+        let saved = try writer.upsert(changed)
+        #expect(saved.revision != profile.revision)
+        #expect(reader.profile(withID: profile.id)?.revision == profile.revision)
+        gate.continuation.yield(()); gate.continuation.finish()
+        await #expect(throws: BrowserProfileRevisionConflictError.self) { try await suspendedRead.value }
+    }
     func lock(owner: UUID? = UUID(), manager: pid_t = getpid(), phase: BrowserProcessLockPhase = .running) -> BrowserProcessLock {
         BrowserProcessLock(pid: 123, executablePath: "/synthetic/browser",
                            browserDataPath: "/synthetic/data", createdAt: Date(timeIntervalSince1970: 100),
@@ -31,7 +57,9 @@ struct BrowserSessionObservationTests {
         #expect(!json.contains(generation.uuidString))
         #expect(value["chromiumRoute"] as? String == "notObserved")
         #expect(value["pageObservation"] as? String == "notSupported")
-        #expect(Set(value.keys) == ["state", "ownership", "readyForGracefulQuit", "runtimeVersion", "configuredRoute", "chromiumRoute", "pageObservation", "extensionsObservation"])
+        #expect(Set(value.keys) == ["state", "ownership", "readyForGracefulQuit", "runtimeVersion", "configuredRoute", "chromiumRoute", "pageObservation", "extensionsObservation", "relayTransport"])
+        #expect((value["relayTransport"] as? [String: String])?["state"] == "notObserved")
+        #expect(Mirror(reflecting: observation).children.isEmpty)
         let absent = BrowserSessionObservation.unavailable(.notOwned).mcpValue
         #expect(absent["readyForGracefulQuit"] is NSNull)
         #expect(absent["runtimeVersion"] is NSNull)
