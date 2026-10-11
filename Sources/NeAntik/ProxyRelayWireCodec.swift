@@ -71,7 +71,7 @@ enum ProxyRelayWireCodec {
         guard data.count >= 2 else { return nil }
         let bytes = [UInt8](data.prefix(2))
         guard bytes[0] == 5 else { throw ProxyRelayWireError.malformed }
-        if bytes[1] == 0 && credentials == nil { return .none }
+        if bytes[1] == 0 && credentials == nil { return .some(.none) }
         if bytes[1] == 2 && credentials != nil { return .usernamePassword }
         throw ProxyRelayWireError.unsupportedMethod
     }

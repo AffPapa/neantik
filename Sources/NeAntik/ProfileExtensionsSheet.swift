@@ -298,22 +298,12 @@ private struct CRXPackagePreview: View {
                     Divider()
                     permissions("Запрошенные разрешения", inspection.permissions)
                     permissions("Необязательные разрешения", inspection.optionalPermissions)
+                    if let prepared { preparedInstructions(prepared) }
                 }.frame(maxWidth: .infinity, alignment: .leading)
-            }.frame(maxHeight: 360)
+            }.frame(maxHeight: 480)
             Text("Фактически выданные права и возможность установки определяет Chromium. Для управления открой chrome://extensions/ в нужном профиле.")
                 .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let error { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
-            if let prepared {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Папка подготовлена. Расширение ещё не установлено", systemImage: "folder.badge.checkmark")
-                    Text("Открой этот профиль → chrome://extensions/ → Режим разработчика → Загрузить распакованное расширение. В выборе папки нажми ⌘⇧G и вставь скопированный путь.")
-                    if prepared.manifestKeyAdded { Text("В manifest добавлен публичный ключ подписи, чтобы Chromium сохранил ID. Исходный CRX сохранён рядом.").foregroundStyle(.secondary) }
-                    Button("Копировать путь к папке") {
-                        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(prepared.payload.path, forType: .string)
-                    }
-                    Text("Папка нужна для повторных запусков: не перемещай и не удаляй её. Разрешения и удаление расширения — в Chromium.").font(.subheadline).foregroundStyle(.secondary)
-                }.fixedSize(horizontal: false, vertical: true)
-            }
             HStack {
                 if busy { ProgressView().controlSize(.small); Button("Отменить подготовку", action: cancel) }
                 else if prepared == nil && inspection.manifestVersion == 3 {
@@ -323,6 +313,25 @@ private struct CRXPackagePreview: View {
                 Spacer(); Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
             }
         }.padding(24).frame(width: 650).interactiveDismissDisabled(busy)
+    }
+    private func preparedInstructions(_ prepared: PreparedCRXPackage) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            Label("Папка подготовлена. Расширение ещё не установлено", systemImage: "folder.badge.checkmark")
+            Text("Исходный CRX").font(.headline)
+            Text("Покажи файл в Finder. В выбранном профиле открой chrome://extensions/, включи режим разработчика и перетащи CRX на страницу. Проверь запрос разрешений перед подтверждением установки.")
+            Button("Показать CRX в Finder") {
+                NSWorkspace.shared.activateFileViewerSelecting([prepared.originalCRX])
+            }
+            Divider()
+            Text("Альтернатива: распакованная папка").font(.headline)
+            Text("Открой этот профиль → chrome://extensions/ → Режим разработчика → Загрузить распакованное расширение. В выборе папки нажми ⌘⇧G и вставь скопированный путь.")
+            if prepared.manifestKeyAdded { Text("В manifest добавлен публичный ключ подписи, чтобы Chromium сохранил ID. Исходный CRX сохранён рядом.").foregroundStyle(.secondary) }
+            Button("Копировать путь к папке") {
+                NSPasteboard.general.clearContents(); NSPasteboard.general.setString(prepared.payload.path, forType: .string)
+            }
+            Text("Папка нужна для повторных запусков: не перемещай и не удаляй её. Разрешения и удаление расширения — в Chromium.").font(.subheadline).foregroundStyle(.secondary)
+        }.fixedSize(horizontal: false, vertical: true)
     }
     private func permissions(_ title: String, _ values: [String]) -> some View {
         VStack(alignment: .leading, spacing: 6) {

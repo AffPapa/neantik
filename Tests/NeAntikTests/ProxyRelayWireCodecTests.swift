@@ -5,6 +5,13 @@ import Testing
 struct ProxyRelayWireCodecTests {
     private var credentials: ProxyRelayCredentials { get throws { try .init(username: "own-user", password: "own-password") } }
 
+    @Test func completeAnonymousReplyIsDistinctFromIncompleteReply() throws {
+        #expect(try ProxyRelayWireCodec.socksSelectedMethod(Data([5]), credentials: nil) == nil)
+        let reply = try ProxyRelayWireCodec.socksSelectedMethod(Data([5, 0]), credentials: nil)
+        let selected = try #require(reply)
+        #expect(selected == ProxyRelayWireCodec.SOCKSMethod.none)
+    }
+
     @Test func socksNegotiationRequiresOfferedMethodAndRedactsCredentials() throws {
         let secret = try credentials
         #expect(ProxyRelayWireCodec.socksGreeting(credentials: nil) == Data([5, 1, 0]))

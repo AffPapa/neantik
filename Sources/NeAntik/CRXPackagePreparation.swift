@@ -19,6 +19,9 @@ enum CRXPreparationError: LocalizedError, Equatable {
 
 struct PreparedCRXPackage: Sendable {
     let payload: URL
+    /// Retained signed bytes for Chromium's native, user-confirmed CRX install.
+    /// Revealing this file is not installation or an extension trust verdict.
+    let originalCRX: URL
     let extensionID: String
     let manifestKeyAdded: Bool
 }
@@ -138,7 +141,9 @@ enum CRXPackagePreparation {
             guard fsync(parent) == 0 else { throw CRXPreparationError.retained }
             try validateParents()
             guard try BackupFS.entry(parent, expected.packageSHA256)?.sameObject(stageIdentity) == true else { throw CRXPreparationError.retained }
-            return PreparedCRXPackage(payload: stageURL.deletingLastPathComponent().appendingPathComponent(expected.packageSHA256).appendingPathComponent("payload"),
+            let publishedDirectory = stageURL.deletingLastPathComponent().appendingPathComponent(expected.packageSHA256)
+            return PreparedCRXPackage(payload: publishedDirectory.appendingPathComponent("payload"),
+                                      originalCRX: publishedDirectory.appendingPathComponent("original.crx"),
                                       extensionID: expected.extensionID, manifestKeyAdded: added)
         } catch {
             // Never delete a visible published folder: native loading can have
