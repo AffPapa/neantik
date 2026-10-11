@@ -8,7 +8,9 @@ import Foundation
 enum ProxyRelayOwnerQualification {
     enum Failure: Error { case noncanonicalRoot, invalidRootParent, invalidRootName, invalidFixtureProtocol, unsafeRoot, nonemptyRoot, missingBundle, invalidRuntimeSignature, missingRuntimeVersion, missingRuntimeHash }
     static let argument = "--neantik-qualify-relay-owner"
-    struct Request: Codable { let root: String; let upstreamPort: UInt16; let kind: ProxyKind; var managerIntegration: Bool? = nil; var mutateBeforeActivation: Bool? = nil; var observeRestart: Bool? = nil; var terminateAfterActivation: Bool? = nil; var cancelBeforeActivation: Bool? = nil; var fixtureSlot: UInt8? = nil; var holdManagerUntilRelease: Bool? = nil }
+    struct Request: Codable { let root: String; let upstreamPort: UInt16; let kind: ProxyKind; var managerIntegration: Bool? = nil; var mutateBeforeActivation: Bool? = nil; var observeRestart: Bool? = nil; var terminateAfterActivation: Bool? = nil; var cancelBeforeActivation: Bool? = nil; var fixtureSlot: UInt8? = nil; var holdManagerUntilRelease: Bool? = nil; var qualificationAnchorDER: Data? = nil
+        var fixtureHost: String { kind == .https ? "localhost" : "127.0.0.1" }
+    }
     struct Result: Codable {
         let schemaVersion: Int; let browserPID: pid_t; let ownerPID: pid_t; let relayPort: UInt16
         let runtimeVersion: String; let runtimeExecutableSHA256: String; let runtimeFrameworkSHA256: String
@@ -33,6 +35,9 @@ enum ProxyRelayOwnerQualification {
     private static func run() async throws {
         try ProxyRelayPrivatePipe.prepare(STDIN_FILENO, writable: false)
         try ProxyRelayPrivatePipe.prepare(STDOUT_FILENO, writable: true)
+        guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+              CommandLine.arguments.count == 2, CommandLine.arguments[1] == argument
+        else { throw Failure.missingBundle }
         let request = try JSONDecoder().decode(Request.self, from: ProxyRelayPrivatePipe.readFrame(STDIN_FILENO, timeout: 5))
         let root = try validatedRoot(request)
         guard let resources = Bundle.main.resourceURL, let manager = Bundle.main.executableURL,
@@ -97,7 +102,7 @@ enum ProxyRelayOwnerQualification {
         let password = request.fixtureSlot == 2 ? "qualification-password-2" : "qualification-password"
         let stamp = Date()
         let profile = try store.upsert(BrowserProfile(name: "Owned relay qualification", startURL: "http://relay-qualification.test/owned",
-            proxy: .init(kind: request.kind, host: "127.0.0.1", port: Int(request.upstreamPort), username: username),
+            proxy: .init(kind: request.kind, host: request.fixtureHost, port: Int(request.upstreamPort), username: username),
             identity: .init(seed: 123, timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE", proxyContextEvidence: .ipAPI(observedAt: stamp))))
         // Synthetic preflight only. Actual HTTP route is independently observed
         // by the fixture, never inferred from this prepared launch capability.
@@ -110,9 +115,17 @@ enum ProxyRelayOwnerQualification {
         try keychain.saveProxyPassword(password, profileID: profile.id)
         let runtime = BrowserRuntime(name: "Qualified public runtime", executableURL: browser, source: "Signed QA bundled", inspection: inspection)
         let processes = BrowserProcessManager(paths: paths)
+        if let anchor = request.qualificationAnchorDER { try processes.relayQualificationSetTLS(anchorDER: anchor) }
+        @MainActor func launchFixture() async throws {
+            if request.kind == .https {
+                try await processes.launchWithAuthenticatedRelay(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
+            } else {
+                try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
+            }
+        }
         if request.cancelBeforeActivation == true {
             let task = Task { @MainActor in
-                try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
+                try await launchFixture()
             }
             let marker = root.appendingPathComponent("qa-bound-session")
             let deadline = ContinuousClock.now + .seconds(15)
@@ -130,7 +143,7 @@ enum ProxyRelayOwnerQualification {
             var result = bound; result.cancelledBeforeActivation = true
             return result
         }
-        try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
+        try await launchFixture()
         guard let session = processes.relayQualificationReceipt(profileID: profile.id),
               let version = inspection.version, let executableHash = inspection.executableSHA256, let frameworkHash = inspection.frameworkSHA256
         else { throw ProxyRelayOwnerProtocol.Failure.invalidBinding }
@@ -141,7 +154,7 @@ enum ProxyRelayOwnerQualification {
                                                   inspection: BrowserRuntimeInspection) async throws -> Result {
         let paths = AppPaths(rootDirectory: root), store = ProfileStore(paths: AppPaths(rootDirectory: root))
         guard store.hasTrustedMetadata, store.profiles.count == 1, let profile = store.profiles.first,
-              profile.name == "Owned relay qualification", profile.proxy?.host == "127.0.0.1", profile.proxy?.port == Int(request.upstreamPort),
+              profile.name == "Owned relay qualification", profile.proxy?.host == request.fixtureHost, profile.proxy?.port == Int(request.upstreamPort),
               let version = inspection.version, let executableHash = inspection.executableSHA256, let frameworkHash = inspection.frameworkSHA256
         else { throw Failure.unsafeRoot }
         let lease = try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id)
@@ -216,9 +229,15 @@ enum ProxyRelayOwnerQualification {
               ![".", "..", ""].contains(root.lastPathComponent) else { throw Failure.noncanonicalRoot }
         guard request.root == "/private/tmp/" + root.lastPathComponent else { throw Failure.invalidRootParent }
         guard root.lastPathComponent.hasPrefix("neantik-relay-owner-qualification-") else { throw Failure.invalidRootName }
-        guard request.upstreamPort != 0, request.kind == .http || request.kind == .socks5,
+        guard request.upstreamPort != 0, request.kind == .http || request.kind == .socks5 || request.kind == .https,
               request.fixtureSlot == nil || request.fixtureSlot == 1 || request.fixtureSlot == 2,
               request.holdManagerUntilRelease != true || request.managerIntegration == true else { throw Failure.invalidFixtureProtocol }
+        if request.kind == .https {
+            guard let anchor = request.qualificationAnchorDER else { throw Failure.invalidFixtureProtocol }
+            _ = try ProxyRelayTLSQualification.Configuration(anchorDER: anchor)
+        } else {
+            guard request.qualificationAnchorDER == nil else { throw Failure.invalidFixtureProtocol }
+        }
         guard lstat(root.path, &info) == 0, info.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR),
               info.st_uid == geteuid(), info.st_mode & 0o777 == 0o700 else { throw Failure.unsafeRoot }
         if request.observeRestart == true {
@@ -235,13 +254,14 @@ enum ProxyRelayOwnerQualification {
     }
     private static func launch(request: Request, root: URL, manager: URL, browser: URL, version: String,
                                executableHash: String, frameworkHash: String) async throws {
-        let profile = UUID(), generation = UUID(), host = "127.0.0.1", username = "qualification-user"
-        let bootstrap = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profile,
+        let profile = UUID(), generation = UUID(), host = request.fixtureHost, username = "qualification-user"
+        var bootstrap = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profile,
             sessionGeneration: generation, profileRevision: 1, kind: request.kind, host: host,
             port: Int(request.upstreamPort), username: username, password: "qualification-password",
             runtimeVersion: version, runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
             configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profile, revision: 1,
                 kind: request.kind, host: host, port: Int(request.upstreamPort), username: username))
+        bootstrap.qualificationAnchorDER = request.qualificationAnchorDER
         let owner = try await ProxyRelayOwnerClient.prepare(executable: manager, bootstrap: bootstrap)
         let process = Process()
         let data = root.appendingPathComponent("BrowserData", isDirectory: true)

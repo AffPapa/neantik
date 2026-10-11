@@ -12,7 +12,8 @@ enum ProxyRelayTLSQualification {
         private let anchorDER: Data
         init(anchorDER: Data) throws {
             guard !anchorDER.isEmpty, anchorDER.count <= 4096,
-                  SecCertificateCreateWithData(nil, anchorDER as CFData) != nil
+                  let certificate = SecCertificateCreateWithData(nil, anchorDER as CFData),
+                  SecCertificateCopyData(certificate) as Data == anchorDER
             else { throw Failure.invalidAnchor }
             self.anchorDER = anchorDER
         }

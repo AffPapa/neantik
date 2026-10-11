@@ -1752,12 +1752,20 @@ final class BrowserProcessManager: ObservableObject {
             let savedPassword = try await withTaskCancellationHandler(operation: { try await passwordTask.value }, onCancel: { passwordTask.cancel() })
             try Task.checkCancellation()
             guard let password = savedPassword else { throw NeAntikError.invalidProxy }
-            let bootstrap = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profile.id,
+            var bootstrap = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profile.id,
                 sessionGeneration: token, profileRevision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port,
                 username: proxy.username, password: password, runtimeVersion: version,
                 runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
                 configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profile.id,
                     revision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port, username: proxy.username))
+            #if DEBUG
+            if let anchor = relayQualificationAnchorDER {
+                guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+                      proxy.kind == .https, proxy.host == "localhost"
+                else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
+                bootstrap.qualificationAnchorDER = anchor
+            }
+            #endif
             let relayPaths = paths
             let prepared = try await ProxyRelayOwnerClient.prepare(executable: managerExecutable, bootstrap: bootstrap,
                 registerChild: { fence in try fence.persist(paths: relayPaths, expected: provisional) })
@@ -1861,6 +1869,15 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     #if DEBUG
+    private var relayQualificationAnchorDER: Data?
+    func relayQualificationSetTLS(anchorDER: Data) throws {
+        guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+              CommandLine.arguments.count == 2, CommandLine.arguments[1] == ProxyRelayOwnerQualification.argument,
+              paths.rootDirectory.lastPathComponent.hasPrefix("neantik-relay-owner-qualification-")
+        else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
+        _ = try ProxyRelayTLSQualification.Configuration(anchorDER: anchorDER)
+        relayQualificationAnchorDER = anchorDER
+    }
     func relayQualificationHasAdopted(profileID: UUID) -> Bool {
         Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification" && reconcileTask == nil &&
             externalLocks[profileID] != nil && !externalUnverifiedProfileIDs.contains(profileID) && runningProfileIDs.contains(profileID)

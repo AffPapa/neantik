@@ -29,17 +29,44 @@ initializer change. A separate Release compilation passed and its symbol table
 contains no `ProxyRelayTLSQualification` type. This is compilation evidence,
 not a signed/notarized runtime qualification.
 
+## Signed owner and headed Chromium fixture controls
+
+A separate Developer ID signed DEBUG manager (`app.neantik.desktop.relay-qualification`)
+now carries the bounded public CA certificate over its authenticated private bootstrap
+pipe. Only its exact qualification invocation creates this in-memory context. The
+receiver checks its QA identity; protocol must be HTTPS and upstream name exactly
+`localhost`. The shared Release path retains Network's normal certificate policy.
+No anchor is saved in profile metadata, browser preferences, argv or Keychain.
+
+The owned signed fixture verified:
+
+- Chromium HTTP navigation through the authenticated TLS CONNECT relay, with
+  the destination domain passed to upstream;
+- manager exit, fresh browser request, restart adoption and duplicate refusal;
+- upstream drop: actual Chromium request error selected the expected relay,
+  with no response headers and no Direct sentinel hit; a headed Direct control
+  independently proved the sentinel responds;
+- wrong TLS name: two actual connection attempts, zero decoded authentication
+  bytes, and actual Chromium request error through the expected relay;
+- cancellation of the real launch Task after Bound, before Commit: zero upstream
+  connection/authentication and no published running session;
+- two HTTPS profile streams with distinct upstreams/credentials,17 seconds idle
+  after manager EOF, refusal of a foreign signed browser, and stop A while B
+  continued. Owned groups/listeners were drained.
+
+The test CA is never installed in system trust and its temporary private keys are
+removed. These are synthetic preflight/private-anchor qualification controls, not
+production OS-default trusted-upstream or notarized-release evidence. The bundled
+Chromium payload remained unchanged at156.0.8078.12.
+
 ## Required before product enablement
 
-1. Carry the bounded public fixture anchor through authenticated DEBUG owner
-   bootstrap only, with exact QA identity and loopback restrictions.
-2. Exercise ordinary manager launch, Chromium HTTP/HTTPS route, remote DNS,
-   manager EOF/restart, revocation, cancellation and concurrent session cleanup.
-3. Obtain independently observed OS-default trusted HTTPS upstream evidence.
-   Private-anchor controls do not establish that result.
-4. Enable the shared production selector only after those gates, then qualify
+1. Browser HTTPS destination and independent DNS-route observations beyond the
+   current HTTP navigation/remote-domain handshake fixture.
+2. Independently observed OS-default trusted HTTPS upstream evidence. Private-anchor
+   controls do not establish that result.
+3. Enable the shared production selector only after those gates, then qualify
    the exact signed candidate and freshly downloaded published bytes.
 
-No browser-route, final release or production HTTPS relay claim follows from
-the transport tests alone. Synthetic fixtures never use customer credentials,
-profiles, Keychain items or external endpoints.
+No final-release or production HTTPS relay claim follows from the fixture results.
+Synthetic fixtures never use customer credentials, profiles or Keychain items.

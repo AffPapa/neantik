@@ -13,6 +13,11 @@ struct ProxyRelayOwnerQualificationTests {
         #expect(throws: (any Error).self) { try ProxyRelayOwnerQualification.validatedRoot(.init(root: root.path, upstreamPort: 10000, kind: .https)) }
         #expect(throws: ProxyRelayOwnerQualification.Failure.invalidFixtureProtocol) { try ProxyRelayOwnerQualification.validatedRoot(.init(root: root.path, upstreamPort: 10000, kind: .http, fixtureSlot: 3)) }
         #expect(throws: ProxyRelayOwnerQualification.Failure.invalidFixtureProtocol) { try ProxyRelayOwnerQualification.validatedRoot(.init(root: root.path, upstreamPort: 10000, kind: .http, holdManagerUntilRelease: true)) }
+        for kind in [ProxyKind.http, .socks5, .https] {
+            for data in [Data(), Data([1,2,3]), Data(repeating: 0, count: 4097)] {
+                #expect(throws: (any Error).self) { try ProxyRelayOwnerQualification.validatedRoot(.init(root: root.path, upstreamPort: 10000, kind: kind, qualificationAnchorDER: data)) }
+            }
+        }
         try Data("owned synthetic fixture".utf8).write(to: root.appendingPathComponent("existing"))
         #expect(throws: (any Error).self) { try ProxyRelayOwnerQualification.validatedRoot(.init(root: root.path, upstreamPort: 10000, kind: .http)) }
     }

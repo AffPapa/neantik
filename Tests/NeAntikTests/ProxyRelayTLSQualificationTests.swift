@@ -1,3 +1,4 @@
+#if DEBUG
 import Foundation
 import Testing
 @testable import NeAntik
@@ -32,6 +33,43 @@ struct ProxyRelayTLSQualificationTests {
         let encoded = try #require(env["NEANTIK_RELAY_TLS_PUBLIC_ANCHOR"])
         let data = try #require(Data(base64Encoded: encoded))
         return try ProxyRelayUpstreamTransport(qualification: .init(anchorDER: data), upstream: endpoint, observe: { trace.observe($0) })
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_RELAY_TLS_FIXTURE"] == "1"))
+    func exactCertificateAndBootstrapBoundary() throws {
+        let encoded = try #require(ProcessInfo.processInfo.environment["NEANTIK_RELAY_TLS_PUBLIC_ANCHOR"])
+        let der = try #require(Data(base64Encoded: encoded))
+        _ = try ProxyRelayTLSQualification.Configuration(anchorDER: der)
+        for bad in [der + Data([0]), der + der] {
+            #expect(throws: (any Error).self) { _ = try ProxyRelayTLSQualification.Configuration(anchorDER: bad) }
+        }
+        let profileID = UUID(), host = "localhost", hash = String(repeating: "a", count: 64)
+        var value = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profileID,
+            sessionGeneration: UUID(), profileRevision: 1, kind: .https, host: host, port: 8000,
+            username: "fixture-user", password: "fixture-password", runtimeVersion: "156.0.8078.12",
+            runtimeExecutableSHA256: hash, runtimeFrameworkSHA256: hash,
+            configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profileID,
+                revision: 1, kind: .https, host: host, port: 8000, username: "fixture-user"))
+        value.qualificationAnchorDER = der
+        let frame = try JSONEncoder().encode(value)
+        #expect(frame.count <= 16384)
+        let decoded = try JSONDecoder().decode(ProxyRelayOwnerProtocol.Bootstrap.self, from: frame)
+        try decoded.validate()
+        #expect(decoded.qualificationAnchorDER == der)
+        for (kind, host) in [(ProxyKind.http, "localhost"), (.socks5, "localhost"), (.https, "127.0.0.1"), (.https, "external.example.test")] {
+            var invalid = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profileID,
+                sessionGeneration: UUID(), profileRevision: 1, kind: kind, host: host, port: 8000,
+                username: "fixture-user", password: "fixture-password", runtimeVersion: "156.0.8078.12",
+                runtimeExecutableSHA256: hash, runtimeFrameworkSHA256: hash,
+                configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profileID,
+                    revision: 1, kind: kind, host: host, port: 8000, username: "fixture-user"))
+            invalid.qualificationAnchorDER = der
+            #expect(throws: ProxyRelayOwnerProtocol.Failure.invalidBootstrap) { try invalid.validate() }
+        }
+        for otherHost in ["127.0.0.1", "external.example.test"] {
+            #expect(throws: ProxyRelayTLSQualification.Failure.invalidEndpoint) {
+                _ = try ProxyRelayTLSQualification.Configuration(anchorDER: der).parameters(for: .init(host: otherHost, port: 8000))
+            }
+        }
     }
     private var destination: ProxyRelayDestination { get throws { try .init(host: "owned.example.test", port: 443) } }
     private var credentials: ProxyRelayCredentials { get throws { try .init(username: "fixture-user", password: "fixture-password") } }
@@ -96,3 +134,5 @@ struct ProxyRelayTLSQualificationTests {
         #expect(trace.credentialWrites == 1)
     }
 }
+
+#endif

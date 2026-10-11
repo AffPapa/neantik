@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 
-/// Persistent signed owner, presently not enabled by any profile launch path.
+/// Persistent signed owner for authenticated profile relay sessions.
 /// A successful bind survives manager EOF. Browser identity/code loss drains
 /// the listener and every established stream. It never owns BrowserData or
 /// Keychain and never exposes a public control/debugging endpoint.
@@ -57,9 +57,23 @@ enum ProxyRelayOwner {
         else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
         let gate = try ProxyRelayBindingGate(), box = AuthorityBox()
         let credentials = bootstrap.username.isEmpty ? nil : try ProxyRelayCredentials(username: bootstrap.username, password: bootstrap.password)
-        let relay = try ProxyRelayLoopbackServer(upstreamKind: bootstrap.kind,
+        let relay: ProxyRelayLoopbackServer
+        #if DEBUG
+        if let anchor = bootstrap.qualificationAnchorDER {
+            guard ownID == "app.neantik.desktop.relay-qualification" else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
+            relay = try ProxyRelayLoopbackServer(qualification: .init(anchorDER: anchor),
+                upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials,
+                waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
+        } else {
+            relay = try ProxyRelayLoopbackServer(upstreamKind: bootstrap.kind,
+                upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials,
+                waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
+        }
+        #else
+        relay = try ProxyRelayLoopbackServer(upstreamKind: bootstrap.kind,
             upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials,
             waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
+        #endif
         var authority: ProxyRelaySessionAuthority?
         do {
             let port = try await relay.start()

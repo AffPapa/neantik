@@ -1,8 +1,8 @@
 import Foundation
 import Network
 
-/// Development listener only. No production profile/config/MCP path enables
-/// it. A caller must supply a bounded, revocable browser-session admission
+/// Loopback listener owned by a signed authenticated profile session.
+/// A caller must supply a bounded, revocable browser-session admission
 /// function; loopback address and anonymous SOCKS method are not authority.
 final class ProxyRelayLoopbackServer: @unchecked Sendable {
     struct Peer: Sendable, CustomStringConvertible, CustomReflectable {
@@ -12,6 +12,9 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
         var customMirror: Mirror { Mirror(self, children: [:]) }
     }
     enum Failure: Error { case invalidLimit, unavailable, closed, refused, malformed }
+    #if DEBUG
+    private var tlsQualification: ProxyRelayTLSQualification.Configuration?
+    #endif
     private let listener: NWListener
     private let queue = DispatchQueue(label: "app.neantik.relay.loopback")
     private let upstreamKind: ProxyKind
@@ -40,6 +43,19 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
         parameters.requiredLocalEndpoint = .hostPort(host: .init("127.0.0.1"), port: .any)
         listener = try NWListener(using: parameters)
     }
+    #if DEBUG
+    convenience init(qualification: ProxyRelayTLSQualification.Configuration,
+                     upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
+                     waitForBinding: @escaping @Sendable () async throws -> Void,
+                     admit: @escaping @Sendable (Peer) throws -> Bool) throws {
+        // Validate before constructing a listener; configuration is assigned
+        // once, before start exposes any connection or detached task.
+        _ = try qualification.parameters(for: upstream)
+        try self.init(upstreamKind: .https, upstream: upstream, credentials: credentials,
+                      waitForBinding: waitForBinding, admit: admit)
+        tlsQualification = qualification
+    }
+    #endif
     func start() async throws -> UInt16 {
         try await withTaskCancellationHandler {
             try Task.checkCancellation()
@@ -98,7 +114,16 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
         else { connection.cancel(); return }
         let peer = Peer(clientPort: clientPort.rawValue, relayPort: port), id = UUID()
         let front = ProxyRelayUpstreamTransport(accepted: connection)
-        let back = ProxyRelayUpstreamTransport(kind: upstreamKind, upstream: upstream)
+        let back: ProxyRelayUpstreamTransport
+        #if DEBUG
+        if let tlsQualification {
+            guard let qualified = try? ProxyRelayUpstreamTransport(qualification: tlsQualification, upstream: upstream)
+            else { front.cancel(); return }
+            back = qualified
+        } else { back = ProxyRelayUpstreamTransport(kind: upstreamKind, upstream: upstream) }
+        #else
+        back = ProxyRelayUpstreamTransport(kind: upstreamKind, upstream: upstream)
+        #endif
         sessions[id] = Task.detached { [self] in
             defer { front.cancel(); back.cancel(); queue.async { self.sessions.removeValue(forKey: id) } }
             do {

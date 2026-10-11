@@ -21,6 +21,9 @@ enum ProxyRelayOwnerProtocol {
         let runtimeExecutableSHA256: String
         let runtimeFrameworkSHA256: String
         let configurationSHA256: String
+        #if DEBUG
+        var qualificationAnchorDER: Data? = nil
+        #endif
         var description: String { "ProxyRelayBootstrap(<redacted>)" }
         var customMirror: Mirror { Mirror(self, children: [:]) }
 
@@ -31,6 +34,12 @@ enum ProxyRelayOwnerProtocol {
                   configurationSHA256 == Self.configurationDigest(profileID: profileID, revision: profileRevision,
                                                                    kind: kind, host: host, port: port, username: username)
             else { throw Failure.invalidBootstrap }
+            #if DEBUG
+            if let qualificationAnchorDER {
+                guard kind == .https, host == "localhost" else { throw Failure.invalidBootstrap }
+                _ = try ProxyRelayTLSQualification.Configuration(anchorDER: qualificationAnchorDER)
+            }
+            #endif
             _ = try ProxyRelayDestination(host: host, port: port)
             if username.isEmpty {
                 guard password.isEmpty else { throw Failure.invalidBootstrap }

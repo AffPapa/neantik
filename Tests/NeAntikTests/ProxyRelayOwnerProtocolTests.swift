@@ -60,4 +60,21 @@ struct ProxyRelayOwnerProtocolTests {
         let otherUser = ProxyRelayOwnerProcessIdentity(generation: observed.generation, userID: geteuid() + 1, parentProcessID: 200)
         #expect(throws: ProxyRelayOwnerProtocol.Failure.invalidBinding) { try bind.validate(bootstrap: input, observed: otherUser, originalParentPID: 200) }
     }
+    #if DEBUG
+    @Test func fixtureTrustCannotAttachToOtherProtocolEndpointOrMalformedAnchor() throws {
+        for kind in [ProxyKind.http, .socks5, .https] {
+            for host in ["localhost", "owned.example.test", "127.0.0.1"] {
+                for data in [Data(), Data([1,2,3]), Data(repeating: 0, count: 4097)] {
+                    var value = bootstrap(kind: kind, host: host)
+                    value.qualificationAnchorDER = data
+                    #expect(throws: (any Error).self) { try value.validate() }
+                    let decoded = try JSONDecoder().decode(ProxyRelayOwnerProtocol.Bootstrap.self, from: JSONEncoder().encode(value))
+                    #expect(throws: (any Error).self) { try decoded.validate() }
+                    #expect(Mirror(reflecting: decoded).children.isEmpty)
+                }
+            }
+        }
+    }
+    #endif
+
 }
