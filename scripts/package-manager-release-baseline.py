@@ -24,7 +24,7 @@ def read_regular(path: Path) -> bytes:
     return data
 
 
-def package(project: Path, evidence: Path) -> None:
+def baseline_inputs(project: Path, evidence: Path) -> bytes:
     if evidence.is_symlink() or not evidence.is_dir():
         raise ValueError("Unsafe evidence directory")
     report = json.loads(read_regular(evidence / "runtime-verification.json"))
@@ -33,7 +33,17 @@ def package(project: Path, evidence: Path) -> None:
     packaged = read_regular(evidence / "security-baseline.json")
     if hashlib.sha256(packaged).hexdigest() != digest or packaged != read_regular(historical):
         raise ValueError("Packaged historical baseline differs from runtime report")
-    current = read_regular(project / "runtime/security-baseline.json")
+    return read_regular(project / "runtime/security-baseline.json")
+
+
+def verify(project: Path, evidence: Path) -> None:
+    current = baseline_inputs(project, evidence)
+    if read_regular(evidence / "release-security-baseline.json") != current:
+        raise ValueError("Packaged release baseline differs from current publication gate")
+
+
+def package(project: Path, evidence: Path) -> None:
+    current = baseline_inputs(project, evidence)
     destination = evidence / "release-security-baseline.json"
     if destination.exists() or destination.is_symlink():
         # Never overwrite a link or an unrelated pre-existing release input.
@@ -56,6 +66,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-root", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
+    parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
-    package(args.project_root, args.evidence)
+    (verify if args.verify_only else package)(args.project_root, args.evidence)
     print("PASS: historical runtime baseline retained; fresh release baseline packaged separately.")

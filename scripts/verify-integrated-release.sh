@@ -126,12 +126,10 @@ else
   exit 65
 fi
 
-if ! cmp -s \
-  "$PROJECT_DIR/runtime/security-baseline.json" \
-  "$EVIDENCE/security-baseline.json"; then
-  echo "Integrated runtime security baseline does not match the project baseline." >&2
-  exit 65
-fi
+# The runtime report pins its immutable historical baseline. The separate
+# publication observation must still exactly match today's reviewed gate.
+python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
+  --project-root "$PROJECT_DIR" --evidence "$EVIDENCE" --verify-only
 
 if ! cmp -s \
   "$PROJECT_DIR/runtime/nevision-patches/series.json" \

@@ -35,10 +35,25 @@ class ManagerBaselineTests(unittest.TestCase):
             original_report = (evidence / "runtime-verification.json").read_bytes()
             module.package(project, evidence)
             module.package(project, evidence)  # Idempotent same observation.
+            module.verify(project, evidence)
             self.assertEqual((evidence / "security-baseline.json").read_bytes(), old)
             self.assertEqual((evidence / "runtime-verification.json").read_bytes(), original_report)
             self.assertEqual((evidence / "release-security-baseline.json").read_bytes(), new)
             self.assertEqual(list(evidence.glob(".release-baseline-*")), [])
+
+    def test_fresh_observation_cannot_replace_historical_trust_or_be_omitted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project, evidence, _, _ = self.fixture(Path(temporary))
+            with self.assertRaises(ValueError): module.verify(project, evidence)
+            module.package(project, evidence)
+            (evidence / "release-security-baseline.json").write_bytes(b"stale")
+            with self.assertRaises(ValueError): module.verify(project, evidence)
+
+    def test_integrated_gate_uses_read_only_shared_verification(self):
+        text = (SCRIPTS / "verify-integrated-release.sh").read_text()
+        self.assertIn('package-manager-release-baseline.py', text)
+        self.assertIn('--evidence "$EVIDENCE" --verify-only', text)
+        self.assertIn('verify-packaged-runtime-report.py', text)
 
     def test_mismatched_history_cannot_be_repaired_by_fresh_baseline(self):
         with tempfile.TemporaryDirectory() as temporary:
