@@ -162,4 +162,12 @@ public final class InstallLifecycleIntent {
         }
         try handles.validate(); quiet = true; return true
     }
+    /// Verify a previously acquired fence after a durable filesystem decision.
+    /// Cancellation cannot reverse ACK; this neither acquires a new fence nor
+    /// treats a still-running participant as quiet.
+    public func validateHeldParticipantFence() throws {
+        lock.lock(); defer { lock.unlock() }
+        guard quiet else { throw InstallFilesystemError.busy }
+        try handles.validate()
+    }
 }
