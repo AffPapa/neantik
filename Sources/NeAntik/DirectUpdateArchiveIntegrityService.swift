@@ -69,12 +69,9 @@ enum DirectUpdateArchiveIntegrityService {
         fault: (@Sendable (DirectUpdateArchiveIntegrityPoint) throws -> Void)? = nil
     ) throws -> UpdateArchiveIntegrityReceipt {
         try Task.checkCancellation()
-        let verified = try UpdateManifestVerifier.verify(signedManifest, configuration: configuration,
-                                                        installedVersion: installedVersion, installedBuild: installedBuild,
-                                                        now: clock())
-        guard verified.isNewerThanInstalled, installedBuild > 0,
-              verified.payload.build > installedBuild else { throw DirectUpdateArchiveIntegrityError.notNewer }
-        guard supports(verified.payload.minimumOS, host: hostOS) else { throw DirectUpdateArchiveIntegrityError.incompatibleOS }
+        let verified = try admittedManifest(signedManifest, configuration: configuration,
+                                           installedVersion: installedVersion, installedBuild: installedBuild,
+                                           hostOS: hostOS, now: clock())
         guard byteLimit > 0, byteLimit <= maximumArchiveBytes else { throw DirectUpdateArchiveIntegrityError.limitExceeded }
 
         // Admission precedes any file access, including security-scoped access.
@@ -140,6 +137,19 @@ enum DirectUpdateArchiveIntegrityService {
         catch { throw DirectUpdateArchiveIntegrityError.readFailed }
     }
 
+    /// Shared admission runs before either integrity observation or owned-stage
+    /// preparation opens a source/destination. A receipt is never authority.
+    static func admittedManifest(_ data: Data, configuration: UpdateChannelConfiguration,
+                                 installedVersion: String, installedBuild: Int,
+                                 hostOS: OperatingSystemVersion, now: Date) throws -> VerifiedUpdateManifest {
+        let verified = try UpdateManifestVerifier.verify(data, configuration: configuration,
+                                                        installedVersion: installedVersion, installedBuild: installedBuild, now: now)
+        guard verified.isNewerThanInstalled, installedBuild > 0,
+              verified.payload.build > installedBuild else { throw DirectUpdateArchiveIntegrityError.notNewer }
+        guard supports(verified.payload.minimumOS, host: hostOS) else { throw DirectUpdateArchiveIntegrityError.incompatibleOS }
+        return verified
+    }
+
     private static func supports(_ minimum: String, host: OperatingSystemVersion) -> Bool {
         // The signature verifier already enforces canonical OS syntax.
         let minimumParts = minimum.split(separator: ".").compactMap { Int($0) }
@@ -151,7 +161,7 @@ enum DirectUpdateArchiveIntegrityService {
         return true
     }
 
-    private static func platformFileURL(_ url: URL) throws -> URL {
+    static func platformFileURL(_ url: URL) throws -> URL {
         guard url.isFileURL, url.path.hasPrefix("/"), url.query == nil, url.fragment == nil,
               url.host == nil || url.host == "" || url.host == "localhost" else { throw DirectUpdateArchiveIntegrityError.unsafeFile }
         // Darwin's fixed aliases only. Arbitrary symlink ancestry stays refused.
