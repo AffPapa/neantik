@@ -49,13 +49,22 @@ final class ProxyRelayUpstreamTransport: @unchecked Sendable {
     private var readConsumer: (maximum: Int, finish: (Result<ReadChunk, Error>) -> Void)?
     private static let readBufferLimit = 128 * 1024
 
-    init(kind: ProxyKind, upstream: ProxyRelayDestination, observe: (@Sendable (Observation) -> Void)? = nil) {
+    convenience init(kind: ProxyKind, upstream: ProxyRelayDestination, observe: (@Sendable (Observation) -> Void)? = nil) {
+        self.init(kind: kind, upstream: upstream, observe: observe, parameters: kind == .https ? .tls : .tcp)
+    }
+    private init(kind: ProxyKind, upstream: ProxyRelayDestination, observe: (@Sendable (Observation) -> Void)?, parameters: NWParameters) {
         self.observe = observe
         self.kind = kind; allowsUpstreamHandshake = true
         connection = NWConnection(host: NWEndpoint.Host(upstream.host), port: NWEndpoint.Port(rawValue: upstream.port)!,
-                                  using: kind == .https ? .tls : .tcp)
+                                  using: parameters)
         queue.setSpecific(key: queueKey, value: 1)
     }
+    #if DEBUG
+    convenience init(qualification: ProxyRelayTLSQualification.Configuration, upstream: ProxyRelayDestination,
+                     observe: (@Sendable (Observation) -> Void)? = nil) throws {
+        self.init(kind: .https, upstream: upstream, observe: observe, parameters: try qualification.parameters(for: upstream))
+    }
+    #endif
     /// Only the internal loopback listener may wrap an accepted client.
     /// This stream cannot be used to send an upstream authentication frame.
     init(accepted: NWConnection) {
