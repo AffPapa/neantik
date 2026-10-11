@@ -132,11 +132,9 @@ enum ProxyRelayOwnerQualification {
         let processes = BrowserProcessManager(paths: paths)
         if let anchor = request.qualificationAnchorDER { try processes.relayQualificationSetTLS(anchorDER: anchor) }
         @MainActor func launchFixture() async throws {
-            if request.kind == .https {
-                try await processes.launchWithAuthenticatedRelay(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
-            } else {
-                try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
-            }
+            // Qualify the same selector as UI/MCP, including HTTPS. The only
+            // fixture difference is the DEBUG localhost trust configuration.
+            try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
         }
         if request.cancelBeforeActivation == true {
             let task = Task { @MainActor in

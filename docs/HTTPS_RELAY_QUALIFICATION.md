@@ -1,8 +1,13 @@
-# HTTPS authenticated relay — qualification in progress
+# HTTPS authenticated relay — shared production selection
 
-The production relay supports authenticated HTTP/SOCKS5. The HTTPS relay
-selector is still disabled pending owner/session and headed-browser gates.
-Existing HTTPS proxy launch behavior is unchanged.
+HTTP, HTTPS and SOCKS5 authentication now use the same UI/MCP relay selector.
+TLS uses the default macOS certificate policy before credentials are enqueued.
+There is no plaintext or Direct retry on trust/authentication failure.
+
+Qualification is composed: actual OS-default TLS/application I/O against the
+owned browser.free origin, authenticated CONNECT/private-anchor controls and
+headed Chromium through the normal manager selector. This is not a claim of
+end-to-end authenticated CONNECT against a public OS-trusted HTTPS proxy.
 
 ## Implemented and actually tested
 
@@ -59,14 +64,19 @@ removed. These are synthetic preflight/private-anchor qualification controls, no
 production OS-default trusted-upstream or notarized-release evidence. The bundled
 Chromium payload remained unchanged at156.0.8078.12.
 
-## Required before product enablement
+## Current measured scope and remaining limits
 
-1. Browser HTTPS destination and independent DNS-route observations beyond the
-   current HTTP navigation/remote-domain handshake fixture.
-2. Independently observed OS-default trusted HTTPS upstream evidence. Private-anchor
-   controls do not establish that result.
-3. Enable the shared production selector only after those gates, then qualify
-   the exact signed candidate and freshly downloaded published bytes.
+The fresh normal-selector headed fixture passed an HTTPS destination, independent
+request/job/SOCKS/TLS NetLog binding, remote-domain CONNECT, manager adoption,
+duplicate refusal, active upstream interruption and native PID/generation-bound
+close. Both HTTP and HTTPS failures selected the relay, with no Direct sentinel
+hit. This is bounded session evidence; it is not a universal continuous DNS/route
+verdict. A default-OS-trusted authenticated CONNECT end-to-end run is unmeasured.
 
-No final-release or production HTTPS relay claim follows from the fixture results.
+The actual OS-default constructor carried HTTP application I/O with no private
+anchor and no credentials. Cancellation rejected the next write. The local
+certificate/authentication controls remain independent negative tests.
+
+See releases/v0.7.32.md for the exact signed/published candidate status. Before
+that report passes its gates, these source/QA results are not publication evidence.
 Synthetic fixtures never use customer credentials, profiles or Keychain items.

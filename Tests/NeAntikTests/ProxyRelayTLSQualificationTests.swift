@@ -74,6 +74,41 @@ struct ProxyRelayTLSQualificationTests {
     private var destination: ProxyRelayDestination { get throws { try .init(host: "owned.example.test", port: 443) } }
     private var credentials: ProxyRelayCredentials { get throws { try .init(username: "fixture-user", password: "fixture-password") } }
 
+    /// Explicit network opt-in, owned public origin, no proxy credentials.
+    /// This qualifies the production default-trust TLS constructor and I/O;
+    /// authenticated CONNECT is independently tested by the loopback fixtures.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_RELAY_PUBLIC_TLS_FIXTURE"] == "1"))
+    func systemTrustCarriesApplicationDataWithoutPrivateAnchor() async throws {
+        let trace = Trace()
+        let transport = ProxyRelayUpstreamTransport(kind: .https,
+            upstream: try .init(host: "browser.free", port: 443), observe: { trace.observe($0) })
+        defer { transport.cancel() }
+        try await transport.open(timeout: 10)
+        try await transport.send(Data("GET / HTTP/1.1\r\nHost: browser.free\r\nConnection: close\r\n\r\n".utf8), timeout: 5)
+        var prefix = Data()
+        while prefix.range(of: Data("\r\n".utf8)) == nil {
+            let chunk = try await transport.receive(maximumBytes: 512, timeout: 5)
+            try #require(!chunk.data.isEmpty && prefix.count + chunk.data.count <= 4096)
+            prefix.append(chunk.data)
+        }
+        let lineEnd = try #require(prefix.range(of: Data("\r\n".utf8)))
+        // Only the ASCII status line is relevant; a partial UTF-8 body must
+        // not turn a valid TLS/HTTP response into a harness decoding failure.
+        let line = try #require(String(data: prefix[..<lineEnd.lowerBound], encoding: .ascii))
+        let parts = line.split(separator: " ")
+        try #require(parts.count >= 2 && parts[0] == "HTTP/1.1")
+        let status = try #require(Int(parts[1]))
+        // A site-level refusal still proves TLS and HTTP application I/O.
+        // Never use this control as proof of CONNECT or Chromium's route.
+        try #require((200...499).contains(status))
+        #expect(trace.credentialWrites == 0)
+        #expect(trace.maximumBufferedBytes <= 128 * 1024)
+        transport.cancel()
+        do { try await transport.send(Data([0]), timeout: 1); Issue.record("Cancelled TLS transport accepted a write") }
+        catch { #expect(error is CancellationError || error as? ProxyRelayTransportError == .closed) }
+        print("RELAY_DEFAULT_TLS_PROOF {\"systemTrust\":true,\"applicationIO\":true,\"credentialWrites\":0,\"privateAnchor\":false,\"connectProxyQualified\":false}")
+    }
+
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_RELAY_TLS_FIXTURE"] == "1"))
     func trustedChainCarriesAuthenticatedConnectAndBulkPayload() async throws {
         let trace = Trace(), upstream = try fixture("trusted", trace: trace)

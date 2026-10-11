@@ -1696,12 +1696,13 @@ final class BrowserProcessManager: ObservableObject {
         }
     }
 
-    /// Ordinary UI and MCP starts share this transport selection. Native
-    /// Chromium retains HTTPS-proxy auth until its TLS relay gate is complete.
+    /// UI and MCP share one authenticated relay path for all proxy protocols.
+    /// HTTPS upstream uses macOS default TLS trust before any credentials are
+    /// enqueued; a trust/auth failure never retries as plaintext or Direct.
     func launchUserProfile(profile: BrowserProfile, runtime: BrowserRuntime,
                            preparationReceipt: BrowserLaunchPreparationReceipt?, keychain: KeychainStore,
                            target: BrowserUserLaunchTarget = .profileStart) async throws {
-        if let proxy = profile.proxy, !proxy.username.isEmpty, proxy.kind != .https {
+        if let proxy = profile.proxy, !proxy.username.isEmpty {
             guard let preparationReceipt else { throw NeAntikError.proxyPreparationRequired }
             try await launchWithAuthenticatedRelay(profile: profile, runtime: runtime,
                                                    preparationReceipt: preparationReceipt, keychain: keychain, target: target)

@@ -49,7 +49,13 @@ enum DirectUpdateProcessInventory {
                 startMicroseconds: Int32(current.kp_proc.p_starttime.tv_usec))
     }
 
+    /// Authority always classifies the entire fresh UID table. There is no
+    /// PID filter or permission to ignore a live unreadable process here.
     static func capture(onRefusal: (String) -> Void = { _ in }) throws -> [Entry] {
+        try captureEntries(table: captureKernelTable(onRefusal: onRefusal), onRefusal: onRefusal)
+    }
+
+    static func captureKernelTable(onRefusal: (String) -> Void = { _ in }) throws -> [kinfo_proc] {
         func unknown(_ stage: String) -> DirectUpdateStoppedError { onRefusal(stage); return .unknown }
         var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_UID, Int32(geteuid())]
         var bytes = 0
@@ -64,8 +70,18 @@ enum DirectUpdateProcessInventory {
               bytes % MemoryLayout<kinfo_proc>.stride == 0 else { throw unknown("table-read") }
         let count = bytes / MemoryLayout<kinfo_proc>.stride
         guard table.prefix(count).contains(where: { $0.kp_proc.p_pid == getpid() }) else { throw unknown("self-missing") }
-        var entries: [Entry] = []; entries.reserveCapacity(count)
-        for info in table.prefix(count) {
+        return Array(table.prefix(count))
+    }
+
+    /// Shared classifier, separate from update authority. Kernel fixture tests
+    /// can classify their exact owned record without unrelated host processes
+    /// invalidating that assertion. validateStopped/validateLaunch still use
+    /// capture(), which never supplies a subset.
+    static func captureEntries(table: [kinfo_proc], onRefusal: (String) -> Void = { _ in }) throws -> [Entry] {
+        func unknown(_ stage: String) -> DirectUpdateStoppedError { onRefusal(stage); return .unknown }
+        guard table.count <= maximumProcesses else { throw unknown("limit") }
+        var entries: [Entry] = []; entries.reserveCapacity(table.count)
+        for info in table {
             let pid = info.kp_proc.p_pid
             guard pid > 0, pid != getpid() else { continue }
             let generation = BrowserProcessKernelIdentity(startSeconds: Int64(info.kp_proc.p_starttime.tv_sec),

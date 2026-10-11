@@ -559,7 +559,7 @@ struct ProfileEditorView: View {
               .foregroundStyle(.secondary)
               if !proxyUsername.isEmpty {
                 Text(
-                  "HTTP и SOCKS5 используют сохранённые данные автоматически. Для HTTPS-прокси браузер может запросить логин и пароль; их можно скопировать из карточки профиля."
+                  "HTTP, HTTPS и SOCKS5 используют сохранённые данные автоматически через локальный relay. Для HTTPS-прокси сначала проверяется сертификат сервера; ошибки TLS не приводят к переходу на HTTP или прямое подключение."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

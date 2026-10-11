@@ -5,6 +5,27 @@ import Testing
 
 @MainActor
 struct BrowserProcessManagerTests {
+    @Test(arguments: [ProxyKind.http, .https, .socks5])
+    func everyAuthenticatedProtocolRequiresRelayPreparationBeforeLaunch(kind: ProxyKind) async throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-relay-selector-" + UUID().uuidString)
+        let manager = BrowserProcessManager(paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations(); try? FileManager.default.removeItem(at: root) }
+        let profile = BrowserProfile(name: "Owned selector fixture",
+            proxy: .init(kind: kind, host: "owned.example.test", port: 8000, username: "fixture-user"))
+        let runtime = BrowserRuntime(name: "Never launched", executableURL: root.appendingPathComponent("missing"), source: "Synthetic")
+        let keychain = KeychainStore(backend: DevelopmentFixtureKeychain(), service: "owned-selector", legacyService: nil)
+        do {
+            try await manager.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: nil, keychain: keychain)
+            Issue.record("Authenticated protocol bypassed relay preparation")
+        } catch {
+            guard let error = error as? NeAntikError, case .proxyPreparationRequired = error else {
+                Issue.record("Authenticated protocol did not require relay preparation"); return
+            }
+        }
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("missing").path))
+    }
     @Test func sharedExtensionsLaunchUsesSelectedDataRootAndDoesNotChangeStartURL() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

@@ -49,6 +49,11 @@ private final class StoppedAuthorityTestBundle: NSObject {}
         }
         throw InstallFilesystemError.unsupported
     }
+    private func ownedKernelRecord(_ pid: pid_t) throws -> [kinfo_proc] {
+        let rows = try DirectUpdateProcessInventory.captureKernelTable().filter { $0.kp_proc.p_pid == pid }
+        try #require(rows.count == 1 && rows[0].kp_eproc.e_ucred.cr_uid == geteuid(), "Owned kernel record missing")
+        return rows
+    }
     @Test(arguments: ["NeAntikLegacyFixture", "NeAntikRelayFixture", "NeAntik Browser.app/Contents/MacOS/helper", "OrdinaryFixture"])
     func actualFreshKernelInventoryRecognizesOwnedLiveProcess(name: String) throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
@@ -63,7 +68,8 @@ private final class StoppedAuthorityTestBundle: NSObject {}
         try child.run()
         defer { try? input.fileHandleForWriting.close(); if child.isRunning { kill(child.processIdentifier, SIGKILL) }; child.waitUntilExit() }
         #expect(output.fileHandleForReading.readData(ofLength: 5) == Data("held\n".utf8))
-        let entries = try DirectUpdateProcessInventory.capture(onRefusal: { Issue.record("Inventory refused at \($0)") }).filter { $0.processID == child.processIdentifier }
+        let records = try ownedKernelRecord(child.processIdentifier)
+        let entries = try DirectUpdateProcessInventory.captureEntries(table: records)
         #expect(entries.count == 1 && entries.first?.identity == DirectProcessIdentityInspector.processIdentity(child.processIdentifier))
         if name == "OrdinaryFixture" { try DirectUpdateProcessInventory.requireQuiet(entries) }
         else { #expect(throws: DirectUpdateStoppedError.busy) { try DirectUpdateProcessInventory.requireQuiet(entries) } }
@@ -81,7 +87,37 @@ private final class StoppedAuthorityTestBundle: NSObject {}
         var info = siginfo_t()
         try #require(waitid(P_PID, id_t(pid), &info, WEXITED | WNOWAIT) == 0)
         #expect(kill(pid, 0) == 0)
-        #expect(try DirectUpdateProcessInventory.capture(onRefusal: { Issue.record("Inventory refused at \($0)") }).allSatisfy { $0.processID != pid })
+        let records = try ownedKernelRecord(pid)
+        try #require(records[0].kp_proc.p_stat == SZOMB, "Owned child is not an unreaped zombie")
+        #expect(try DirectUpdateProcessInventory.captureEntries(table: records).isEmpty)
+    }
+    @Test func liveUnlinkedOwnedExecutableAndChangedGenerationStillRefuse() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let binary = root.appendingPathComponent("OwnedUnlinkedFixture")
+        try FileManager.default.copyItem(at: fixtureBinary(), to: binary)
+        let child = Process(), input = Pipe(), output = Pipe()
+        child.executableURL = binary; child.arguments = ["hold", root.path, "none"]
+        child.standardInput = input; child.standardOutput = output
+        child.standardError = FileHandle.nullDevice; child.environment = ["PATH": "/usr/bin:/bin", "LANG": "C"]
+        try child.run()
+        defer { try? input.fileHandleForWriting.close(); if child.isRunning { kill(child.processIdentifier, SIGKILL) }; child.waitUntilExit() }
+        try #require(output.fileHandleForReading.readData(ofLength: 5) == Data("held\n".utf8))
+        var changed = try ownedKernelRecord(child.processIdentifier)
+        changed[0].kp_proc.p_starttime.tv_sec += 1
+        #expect(throws: DirectUpdateStoppedError.unknown) {
+            try DirectUpdateProcessInventory.captureEntries(table: changed)
+        }
+        // No process is exempted by name or by a missing path. Reproduce the
+        // actual host condition on our child, while preserving all user apps.
+        try FileManager.default.removeItem(at: binary)
+        try #require(kill(child.processIdentifier, 0) == 0)
+        try #require(DirectUpdateProcessInventory.path(child.processIdentifier) == nil,
+                     "This OS retained the executable path; unreadable-path control was not reproduced")
+        let live = try ownedKernelRecord(child.processIdentifier)
+        #expect(throws: DirectUpdateStoppedError.unknown) {
+            try DirectUpdateProcessInventory.captureEntries(table: live)
+        }
+        #expect(kill(child.processIdentifier, 0) == 0)
     }
     @Test func participantAndReleasedAuthorityRefuse() throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
