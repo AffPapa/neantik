@@ -4,19 +4,38 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func startupModeIsRevisionCheckedAndPersistsWithoutStartingBrowser() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await create(engine)
+        var args = request(created); args["changes"] = ["startupMode": "restoreSession"]
+        let edited = try await engine.call("profile_update", args)
+        #expect(edited["startupMode"] as? String == "restoreSession")
+        let id = try #require(UUID(uuidString: edited["id"] as! String))
+        #expect(engine.store.profile(withID: id)?.startupMode == .restoreSession)
+        #expect(engine.processes.processState(for: id) == .stopped)
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        args = request(edited); args["changes"] = ["startupMode": "unrecognized"]
+        let before = try Data(contentsOf: engine.store.paths.profilesFile)
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        #expect(try Data(contentsOf: engine.store.paths.profilesFile) == before)
+        let read = MCPProfileManagement(root: root, allowsManagement: false)
+        await #expect(throws: Error.self) { try await read.call("profile_update", request(edited)) }
+    }
+
     @Test func savedTemplateCreatesFreshProfileWithoutSecretOrBrowserDataCopies() async throws {
         let (root, engine, _) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
         _ = try await create(engine)
         let folder = try engine.store.createFolder(named: "QA")
-        let original = BrowserProfile(name: "Private original", tags: ["qa"], note: "synthetic-private-note", startURL: "https://example.com/qa")
+        let original = BrowserProfile(name: "Private original", tags: ["qa"], note: "synthetic-private-note", startURL: "https://example.com/qa", startupMode: .restoreSession)
         let template = try UserProfileTemplate(name: "QA template", profile: original, folderID: folder.id)
         _ = try await ManagerLibraryRepository(paths: engine.store.paths).update { $0.templates.append(template) }
         let read = MCPProfileManagement(root: root, allowsManagement: false)
         let list = try await read.call("template_list", [:])
         let rows = try #require(list["templates"] as? [[String: Any]])
         #expect(rows.count == 1 && rows[0]["id"] as? String == template.id.uuidString)
-        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "tags", "folderID"])
+        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "startupMode", "tags", "folderID"])
         #expect(!(String(decoding: try JSONSerialization.data(withJSONObject: list), as: UTF8.self)).contains("synthetic-private-note"))
         let args: [String: Any] = ["name": "New QA", "templateID": template.id.uuidString,
             "expectedOrganizationRevision": list["organizationRevision"]!]
@@ -27,7 +46,7 @@ struct MCPProfileManagementTests {
         let a = try #require(engine.store.profile(withID: UUID(uuidString: first["id"] as! String)!))
         let b = try #require(engine.store.profile(withID: UUID(uuidString: second["id"] as! String)!))
         #expect(a.id != b.id && a.identity != b.identity && a.identity != original.identity)
-        #expect(a.startURL == template.startURL && a.tags == template.tags)
+        #expect(a.startURL == template.startURL && a.tags == template.tags && a.startupMode == .restoreSession)
         #expect(a.note.isEmpty && a.proxy == nil && a.lastLaunchedAt == nil)
         #expect(first["folderID"] as? String == folder.id.uuidString)
         #expect(second["folderID"] is NSNull && b.tags == ["other"])

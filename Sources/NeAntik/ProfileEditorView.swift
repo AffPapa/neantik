@@ -157,6 +157,7 @@ struct ProfileEditorView: View {
   @State private var showsNoteEditor: Bool
   @State private var selectedFolderID: UUID?
   @State private var startURL: String
+  @State private var startupMode: BrowserStartupMode
   @State private var usesProxy: Bool
   @State private var proxyKind: ProxyKind
   @State private var proxyHost: String
@@ -182,7 +183,7 @@ struct ProfileEditorView: View {
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -234,6 +235,7 @@ struct ProfileEditorView: View {
         : nil
     )
     _startURL = State(initialValue: profile.startURL)
+    _startupMode = State(initialValue: profile.startupMode)
     _usesProxy = State(initialValue: profile.proxy != nil)
     _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
     _proxyHost = State(initialValue: profile.proxy?.host ?? "")
@@ -265,7 +267,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -678,11 +680,19 @@ struct ProfileEditorView: View {
           )
 
           if showsAdvancedOptions {
+            Picker("При запуске", selection: $startupMode) {
+              ForEach(BrowserStartupMode.allCases, id: \.self) { mode in
+                Text(mode.title).tag(mode)
+              }
+            }
+            .accessibilityLabel("При запуске профиля")
             TextField("Стартовая страница", text: $startURL)
               .accessibilityLabel("Стартовая страница")
               .focused($focusedField, equals: .startURL)
               .id(ProfileEditorField.startURL)
-            Text("Этот адрес открывается при запуске профиля. Для пустой страницы укажи about:blank.")
+            Text(startupMode == .restoreSession
+              ? "При первом запуске откроется этот адрес, затем — сохранённые вкладки. Вкладки сохраняются после штатного закрытия браузера."
+              : "Этот адрес открывается при каждом запуске профиля. Для пустой страницы укажи about:blank.")
               .font(.callout)
               .foregroundStyle(.secondary)
             validationLabel(for: .startURL)
@@ -1200,6 +1210,7 @@ struct ProfileEditorView: View {
       profile.tags = normalizedTags
       profile.note = normalizedNote
       profile.startURL = cleanStartURL.absoluteString
+      profile.startupMode = startupMode
       let proxy = try makeProxy()
       profile.proxy = proxy
       let locationMatchesProxy = proxy != nil && proxy == detectedProxy

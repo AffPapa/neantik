@@ -17,4 +17,5 @@ __pycache__/
 xcuserdata/
 .runtime-test/
 .swiftpm-major-clang/
+.swiftpm-major-cache/
 .swiftpm-major-validation/

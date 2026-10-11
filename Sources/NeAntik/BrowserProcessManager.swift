@@ -261,6 +261,8 @@ enum BrowserLaunchBuilder {
 
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
+        "--restore-last-session",
+        "--new-window",
         "--proxy-server",
         "--no-proxy-server",
         "--proxy-auto-detect",
@@ -298,11 +300,15 @@ enum BrowserLaunchBuilder {
             runtimeCapabilities: runtimeCapabilities,
             now: now
         )
+        // Never mix restoration with an explicit URL: Chromium adds that URL
+        // again on every launch. Audit/management targets remain fresh windows.
+        let restoresSession = purpose == .normal && startURLOverride == nil &&
+            profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
             "--no-default-browser-check",
-            "--new-window"
+            restoresSession ? "--restore-last-session" : "--new-window"
         ]
         let disabledFeatures = policy.disabledFeatures
 
@@ -363,7 +369,7 @@ enum BrowserLaunchBuilder {
         )
         let startURL =
             startURLOverride ?? normalizedStartURL(profile.startURL)
-        arguments.append(startURL.absoluteString)
+        if !restoresSession { arguments.append(startURL.absoluteString) }
         return arguments
     }
 

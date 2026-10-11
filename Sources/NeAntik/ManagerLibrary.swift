@@ -7,6 +7,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     let folderID: UUID?
     let tags: [String]
     let startURL: String
+    let startupMode: BrowserStartupMode?
 
     init(name: String, profile: BrowserProfile, folderID: UUID?) throws {
         guard let name = ProfileFolder.normalizedName(name),
@@ -18,6 +19,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
         self.folderID = folderID
         self.tags = tags
         self.startURL = profile.startURL
+        self.startupMode = profile.startupMode
     }
 
     // A template is reusable metadata, not a place to retain URL credentials
@@ -32,7 +34,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     }
 
     func makeProfile() -> BrowserProfile {
-        BrowserProfile(name: name, tags: tags, startURL: startURL)
+        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage)
     }
 }
 

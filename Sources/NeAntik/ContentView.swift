@@ -4136,7 +4136,11 @@ struct ProfileDetailView: View {
             ProfileDetailCard("Основное") {
                 VStack(alignment: .leading, spacing: 10) {
                     LabeledContent(
-                        "Стартовая страница",
+                        "При запуске",
+                        value: profile.startupMode.title
+                    )
+                    LabeledContent(
+                        profile.startupMode == .restoreSession ? "При первом запуске" : "Стартовая страница",
                         value: profile.startURL
                     )
                     .textSelection(.enabled)

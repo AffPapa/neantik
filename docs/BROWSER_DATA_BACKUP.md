@@ -1,7 +1,7 @@
 # BrowserData backup: development status
 
-This operation is under development for the major candidate. It is not enabled
-as a published GUI or MCP capability. Configuration export and metadata snapshots
+This operation is under development for an explicitly opted-in Direct candidate.
+It is not enabled in the current published 0.7.29 application or through MCP. Configuration export and metadata snapshots
 remain separate operations and do not contain BrowserData.
 
 ## Implemented and tested core
@@ -33,9 +33,14 @@ preserving the changed values. Successful restore returned the original values.
 Revision advanced; identity and proxy did not change.
 The test used Chromium's mock Keychain and never used a real account.
 
+Matching-profile Developer ID QA now also passes the actual GUI export,
+wrong-password refusal, restore and keyboard workflow. Wrong passwords preserve
+BrowserData and metadata; restore returns the original fixture and increments
+its metadata revision. The save panel proposes one `.nabackup` extension.
+
 This does not demonstrate cross-Mac migration of OS-encrypted secrets, saved
-passwords, a completed GUI workflow, or qualification of a
-notarized final application. Those acceptance gates remain open.
+passwords or qualification of a notarized final application. Those acceptance
+gates remain open.
 
 The actual three-tab session was also exported, changed, rolled back and
 restored. Existing restored targets were activated and their execution contexts,
@@ -43,6 +48,22 @@ documents and own-fixture nonces observed. No replacement navigation, reload or
 target creation was used to prove the result. This research test explicitly used
 `--restore-last-session`; automatic tab restoration by the normal manager remains
 an independent product gate. The report oracle rejects 44 broken controls.
+
+A newer control reproduced that `--new-window` plus a start URL does not reopen
+saved tabs, even with Chromium's continue-session preference. Independent cloned
+session controls pass with `--restore-last-session` and no explicit URL. Combining
+restoration with an explicit URL accumulated extra tabs on repeat; that negative
+receipt is retained.
+
+Profiles now have an explicit startup mode. Legacy documents default to
+`startPage`; `restoreSession` uses the start URL on the first launch and restores
+without an extra URL thereafter. Matching signed QA uses arguments returned by
+the compiled product builder: export -> changed tabs/data -> wrong-password and
+tamper refusal -> restore -> repeated launch passes for live documents of every
+saved tab plus cookies, LocalStorage and IndexedDB. Four headed launches and nine
+scope/service phases passed; the owned key and browser processes were cleaned up.
+Evidence: `signed-backup-startup-tabs-v6.json`. This is signed QA evidence, not
+qualification of the final notarized product or of every other Mac.
 
 ## Required integration boundaries
 
@@ -73,16 +94,27 @@ after an irreversible decision.
 
 The dedicated scope backend is immutable, non-synchronizing and device-only.
 Only export can create it; restore cannot regenerate a missing/corrupt key.
-Concurrent creation reads the persisted winner. Signed-manager access to the
-Data Protection Keychain still requires its own real qualification before GUI
-enablement. Unit and runtime fixtures use injected memory/private fixture stores
-and do not prove that production Keychain gate.
+Concurrent creation reads the persisted winner. A separate matching-profile
+Developer ID QA application has qualified real Data Protection Keychain lifecycle,
+full service restore and crash recovery with synthetic data. Production startup
+does not create a key. Mock tests do not replace the remaining exact notarized
+candidate gate or establish cross-Mac portability.
 
-The export/restore and startup recovery sheets are currently available only to
-explicit disposable DEBUG fixtures with a development opt-in. The types also
-compile in Release; their production UI entry points are disabled. Startup recovery authenticates the existing journal and obtains fresh
-authority; it does not rely on selecting a profile from pending metadata. GUI
-and keyboard verification remain open because the native CUA pipe failed.
+The export/restore and startup recovery sheets are enabled in disposable DEBUG
+fixtures or an explicitly opted-in production Direct bundle. The latter requires
+an authenticated matching macOS Developer ID profile, the existing pinned
+certificate, exact signed application/team/Keychain claims and a signed capability.
+Default packaging retains the legacy disabled state; there is no ad-hoc fallback.
+All packaging entry points authenticate and recheck the actual signed profile.
+
+Matching QA GUI export, wrong-password refusal, restore, Return/Escape and a
+single save extension have passed. Actual isolated classic proxy Keychain
+migration, rollback reads and cleanup pass between legacy and provisioned claims
+with an unchanged application basename. Production services and real credentials
+were not used. Renaming an installed application is not qualified by that test.
+Startup recovery authenticates the existing journal and obtains fresh authority;
+it does not rely on selecting a profile from pending metadata. The private native
+packaging proof is not a notarized or published release.
 
 Apple API references: [Data Protection Keychain](https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain),
 [device-only accessibility](https://developer.apple.com/documentation/security/ksecattraccessiblewhenunlockedthisdeviceonly).

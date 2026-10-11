@@ -675,6 +675,18 @@ enum ProfileAppearance {
     }
 }
 
+enum BrowserStartupMode: String, Codable, CaseIterable, Sendable {
+    case startPage
+    case restoreSession
+
+    var title: String {
+        switch self {
+        case .startPage: "Стартовая страница"
+        case .restoreSession: "Предыдущие вкладки"
+        }
+    }
+}
+
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
     static let maximumNameUTF8Bytes = 4 * 1_024
@@ -695,6 +707,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var isPinned: Bool
     var isArchived: Bool
     var startURL: String
+    var startupMode: BrowserStartupMode
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -712,6 +725,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         isPinned: Bool = false,
         isArchived: Bool = false,
         startURL: String = BrowserProfile.defaultStartURL,
+        startupMode: BrowserStartupMode = .startPage,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -729,6 +743,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.isPinned = isPinned
         self.isArchived = isArchived
         self.startURL = startURL
+        self.startupMode = startupMode
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -850,6 +865,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             tags: tags,
             note: "",
             startURL: startURL,
+            startupMode: startupMode,
             proxy: proxy,
             identity: BrowserIdentity(),
             createdAt: date,
@@ -871,6 +887,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case isPinned
         case isArchived
         case startURL
+        case startupMode
         case proxy
         case identity
         case createdAt
@@ -908,6 +925,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             forKey: .isArchived
         ) ?? false
         startURL = try container.decode(String.self, forKey: .startURL)
+        // Missing field preserves the established startup contract of old profiles.
+        startupMode = try container.decodeIfPresent(BrowserStartupMode.self, forKey: .startupMode) ?? .startPage
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
             forKey: .proxy

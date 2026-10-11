@@ -88,6 +88,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
                 isPinned: entry.isPinned,
                 isArchived: entry.isArchived,
                 startURL: entry.startURL,
+                startupMode: entry.startupMode ?? .startPage,
                 proxy: entry.proxy,
                 identity: BrowserIdentity(),
                 createdAt: now,
@@ -130,6 +131,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
     let isPinned: Bool
     let isArchived: Bool
     let startURL: String
+    let startupMode: BrowserStartupMode?
     let proxy: ProxyConfiguration?
     let folderName: String?
 
@@ -141,6 +143,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         isPinned: Bool,
         isArchived: Bool,
         startURL: String,
+        startupMode: BrowserStartupMode? = nil,
         proxy: ProxyConfiguration?,
         folderName: String?
     ) {
@@ -151,6 +154,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         self.isPinned = isPinned
         self.isArchived = isArchived
         self.startURL = startURL
+        self.startupMode = startupMode
         self.proxy = proxy
         self.folderName = folderName
     }
@@ -173,6 +177,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         isPinned = normalized.isPinned
         isArchived = normalized.isArchived
         startURL = normalized.startURL
+        startupMode = normalized.startupMode
         proxy = normalized.proxy
         self.folderName = folderName
     }
@@ -187,6 +192,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
             isPinned: isPinned,
             isArchived: isArchived,
             startURL: startURL,
+            startupMode: startupMode ?? .startPage,
             proxy: proxy,
             identity: BrowserIdentity()
         )

@@ -42,13 +42,13 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 |---|---|
 | `workspace_list_profiles` | Small allowlisted list; processState remains unverified |
 | `workspace_list_profiles_page` | Pages of 1–100 profiles, default 50; pass nextCursor unchanged; restart on workspace change |
-| `template_list` | Read up to 50 saved templates: id/name/startURL/tags/resolved folderID and organizationRevision; no identity, notes, proxy or BrowserData |
-| `profile_get` | Current decimal-string revision, name, startURL, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
+| `template_list` | Read up to 50 saved templates: id/name/startURL/startupMode/tags/resolved folderID and organizationRevision; no identity, notes, proxy or BrowserData |
+| `profile_get` | Current decimal-string revision, name, startURL, startupMode, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
 | `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
 | `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
 | `profile_status` | Reconciled stopped/managed/checking/recovery/external state; optional revision-bound observation of this session's owned browser |
 | `profile_create` | Create persistent configuration without launching |
-| `profile_update` | Patch name, startURL, tags, note, isPinned, isArchived, colorHex, symbolName |
+| `profile_update` | Patch name, startURL, startupMode, tags, note, isPinned, isArchived, colorHex, symbolName |
 | `profile_set_proxy` | Set fields or parse one proxy line; proxy:null disables |
 | `profile_move` | Assign one folder/project or null (unfiled) |
 | `profile_duplicate` | Fresh profile identity and ID; configuration only, no cookies/BrowserData/notes; copies local proxy password without returning it |
@@ -163,3 +163,14 @@ Example request: “Покажи сохранённые шаблоны. По в�
 ## Separate workspace credentials
 
 The normal application library retains its existing Keychain service and legacy migration. An explicit custom `--data-root` uses a separate credential namespace derived from that directory. Matching profile IDs in different directories do not share or overwrite proxy passwords. Reopening the same directory retains its credentials. After upgrading an old custom workspace or moving its directory, enter proxy passwords again; credentials from the main library are not imported automatically. Proxy preflight remains separate from observing the Chromium network route.
+
+## What opens when a profile starts
+
+`startupMode` is `startPage` (the saved URL on every launch) or `restoreSession`
+(previous tabs after the first successful launch). Existing profiles retain
+`startPage`. Select the mode in the profile editor or send a revision-checked
+`profile_update` with `changes: {"startupMode": "restoreSession"}`.
+The first launch, including a fresh copy/import, uses the start page. Restoring
+does not append that URL again. Graceful close lets Chromium save its session;
+a crash may lose work not yet written. Opening extension management or a
+diagnostic fixture uses its explicit target without changing this setting.

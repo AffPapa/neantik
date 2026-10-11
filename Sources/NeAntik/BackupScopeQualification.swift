@@ -37,6 +37,7 @@ enum BackupScopeQualification {
         var runtimeFrameworkSHA256: String? = nil
         var runtimeVersion: String? = nil
         var failureCategory: String? = nil
+        var normalLaunchArguments: [String]? = nil
     }
     enum Failure: Error { case invalidIdentity, invalidRequest, unexpectedItem }
 
@@ -243,9 +244,10 @@ enum BackupScopeQualification {
         if request.phase == .prepareData {
             guard try BackupFS.names(directory).isEmpty else { throw Failure.unexpectedItem }
             let store = ProfileStore(paths: paths)
-            let profile = try store.upsert(BrowserProfile(name: "Synthetic signed backup QA"))
+            let profile = try store.upsert(BrowserProfile(name: "Synthetic signed backup QA", startupMode: .restoreSession, lastLaunchedAt: Date()))
             try paths.writePrivateFile(Data(profile.id.uuidString.utf8), to: marker)
-            return .init(passed: true, status: nil, digest: nil, profileID: profile.id)
+            return .init(passed: true, status: nil, digest: nil, profileID: profile.id,
+                normalLaunchArguments: BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: paths.browserDataDirectory(for: profile.id)))
         }
         try paths.validatePrivateFile(marker)
         let bytes = try Data(contentsOf: marker)
