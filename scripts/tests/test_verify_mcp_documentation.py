@@ -17,7 +17,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_corrupt_claim_and_omitted_tool_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for name in ['Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT/name,root/name)
             manifest = root/'docs/mcp-capabilities.json'
@@ -30,7 +30,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_read_only_product_claim_is_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             p=root/'docs/PRODUCT.md';p.write_text(p.read_text().replace('18 management tools','17 management tools'))
             with self.assertRaisesRegex(ValueError,'permission counts'): MODULE.verify(root)
@@ -38,7 +38,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_roadmap_and_template_claims_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify_current_product_claims(root)
             for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md', 'SOURCE_TO_SITE_HANDOFF.md'):
@@ -52,5 +52,33 @@ class MCPDocumentationTests(unittest.TestCase):
             changelog.write_text(original)
             help_path=root/'Sources/NeAntik/HelpContent.swift';help_path.write_text(help_path.read_text()+'\nпрокси с авторизацией требует собственного пароля')
             with self.assertRaisesRegex(ValueError, 'templates copy'): MODULE.verify_current_product_claims(root)
+
+    def test_stale_readme_version_build_url_and_report_are_detected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            latest_path = max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int, p.stem[1:].split('.'))))
+            latest = json.loads(latest_path.read_text())
+            for name in ['README.md', 'README.en.md', 'Resources/Info.plist', 'CHANGELOG.md',
+                         'Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md',
+                         'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + latest_path.name]:
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / name, root / name)
+            MODULE.verify_current_product_claims(root)
+            for name in ['README.md', 'README.en.md']:
+                path = root / name
+                original = path.read_text()
+                changes = [
+                    (f"NeAntik {latest['version']} ({latest['build']})", 'NeAntik 0.0.1 (1)'),
+                    (f"({latest['build']}), public alpha", '(99999), public alpha'),
+                    (f"releases/tag/{latest['tag']}", 'releases/tag/v0.0.1'),
+                    (f"releases/{latest['tag']}.json", 'releases/obsolete.json'),
+                ]
+                for before, after in changes:
+                    with self.subTest(readme=name, field=before):
+                        self.assertIn(before, original)
+                        path.write_text(original.replace(before, after, 1))
+                        with self.assertRaisesRegex(ValueError, 'README release claim'):
+                            MODULE.verify_current_product_claims(root)
+                        path.write_text(original)
 
 if __name__=='__main__': unittest.main()

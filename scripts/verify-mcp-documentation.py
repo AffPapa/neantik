@@ -46,6 +46,13 @@ def verify_current_product_claims(root: Path) -> None:
     if not reports:
         raise ValueError('Published release evidence is missing')
     latest = max(reports, key=lambda item: tuple(int(v) for v in item['version'].split('.')))
+    for filename in ('README.md', 'README.en.md'):
+        text = (root / filename).read_text()
+        claim = re.search(r'\[NeAntik (\d+\.\d+\.\d+) \((\d+)\)[^\]]*\]\((https://github\.com/AffPapa/neantik/releases/tag/v[^)]+)\)', text)
+        if (not claim or claim.groups() != (latest['version'], str(latest['build']),
+                f"https://github.com/AffPapa/neantik/releases/tag/{latest['tag']}")
+                or f"releases/{latest['tag']}.json" not in text):
+            raise ValueError('README release claim differs from published evidence: ' + filename)
     for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md', 'SOURCE_TO_SITE_HANDOFF.md'):
         header = (root / 'docs' / filename).read_text().splitlines()[0]
         if (f"Current public release: {latest['version']}/build{latest['build']}" not in header

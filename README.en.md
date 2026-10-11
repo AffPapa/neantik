@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.28 (91), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.28). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.28.json).
+Latest published release: [NeAntik 0.7.29 (92), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.29). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.29.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.28` adds per-profile authenticated HTTP/SOCKS5 relay, MCP workspace credential isolation and accessible profile cards. The runtime is retained without rebuilding. Safe Browsing is disabled; full backup, extension center, atomic updater and major1.0 remain in progress. Keep immutable `0.7.27` for rollback. Settings snapshots are not BrowserData backups.
+`0.7.29` adds a searchable extension center for closed profiles, saved status and clear instructions for native Chromium management. Authenticated HTTP/SOCKS5 relay and MCP workspace isolation are retained. The runtime has not been rebuilt. Safe Browsing is disabled; production backup, HTTPS relay, atomic updater and version1.0 remain in progress. Immutable `0.7.28` is retained for rollback. Settings snapshots are not BrowserData backups.
 
 Direct downloads: [browser.free](https://browser.free).
 
