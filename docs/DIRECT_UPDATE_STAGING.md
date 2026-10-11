@@ -219,3 +219,9 @@ authority. A future install commit must acquire and recheck all required gates.
    actual signed/notarized A→B→A installation with isolated test data.
 
 ZIP byte integrity alone never grants extraction or installation authority.
+
+## Native system assessment helper
+
+See [development contract and real SPI limitations](DIRECT_UPDATE_ASSESSMENT.md).
+This helper is not packaged or enabled in public0.7.30. Its standalone result
+does not authorize installation or establish parent stage custody.

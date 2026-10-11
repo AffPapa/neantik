@@ -8,11 +8,15 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "NeAntik", targets: ["NeAntik"])
+        .executable(name: "NeAntik", targets: ["NeAntik"]),
+        .executable(name: "NeAntikUpdateAssessment", targets: ["NeAntikUpdateAssessment"])
     ],
     targets: [
         .target(name: "DirectZipCodec", linkerSettings: [.linkedLibrary("z")]),
         .target(name: "DirectProvisioning", linkerSettings: [.linkedFramework("Security")]),
+        .target(name: "DirectAssessment", linkerSettings: [.linkedFramework("Security")]),
+        .executableTarget(name: "NeAntikUpdateAssessment", dependencies: ["DirectAssessment"],
+                          linkerSettings: [.linkedFramework("Security")]),
         .executableTarget(
             name: "NeAntik",
             dependencies: ["DirectZipCodec", "DirectProvisioning"],
@@ -23,7 +27,7 @@ let package = Package(
         ),
         .testTarget(
             name: "NeAntikTests",
-            dependencies: ["NeAntik", "DirectProvisioning"],
+            dependencies: ["NeAntik", "DirectProvisioning", "DirectAssessment"],
             linkerSettings: [
                 .linkedFramework("JavaScriptCore"),
                 .linkedFramework("Network")
