@@ -7,9 +7,10 @@ disabled. No App Store distribution is involved.
 
 ## Boundary
 
-The future parent must first validate the manifest, archive, exact product
-Developer ID/entitlements/provisioning and complete pinned runtime provenance.
-It must authenticate the packaged helper, hold exclusive lifecycle ownership,
+The internal [candidate admission coordinator](DIRECT_UPDATE_ADMISSION.md)
+now composes manifest, archive, exact product Developer ID/entitlements/profile,
+pinned runtime provenance and authenticated helper observations for one stage.
+The future installed parent must additionally hold exclusive lifecycle ownership,
 and bracket the entire child run with the owned stage's custody validation.
 The helper's own repeated signature/hash observation does not detect swapping
 an identical signed app into the same pathname. An independent helper reply

@@ -50,6 +50,21 @@ enum DirectAssessmentParent {
             return try result.get()
         }
     }
+    static func observe(stage: ExtractedUpdateApp, signature: DirectUpdateStageSignature,
+                        helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
+        try await work(helper: helper) { context in
+            try signature.requireBinding(to: stage)
+            let result: Result<DirectSystemAssessmentObservation, Error> = try stage.withValidatedApp { url in
+                Result {
+                    let hash = signature.manager.cdHash
+                    let reply = try run(app: url, cdHash: hash, context: context, timeoutMS: 185_000)
+                    return .init(reply: reply, managerCDHash: hash)
+                }
+            }
+            try signature.requireBinding(to: stage)
+            return try result.get()
+        }
+    }
     static func observe(candidate: PreparedInstallSlot, helper: DirectAssessmentHelper) async throws -> DirectSystemAssessmentObservation {
         // The slot is never accessed outside this one worker; caller must retain
         // its installation lease and must not begin a transaction concurrently.
@@ -81,9 +96,15 @@ enum DirectAssessmentParent {
         guard !context.isCancelled else { throw DirectAssessmentParentError.cancelled }
         return .init(reply: reply, managerCDHash: signature.cdHash)
     }
-    private static func request(app: URL, cdHash: Data) throws -> Data {
+    static func request(app: URL, cdHash: Data) throws -> Data {
         let bytes = Array(app.path.utf8)
-        guard app.isFileURL, app.path.hasPrefix("/"), app.path == app.standardizedFileURL.path,
+        // Foundation's standardizedFileURL can rewrite the macOS /private/tmp
+        // spelling to /tmp. Check syntax without that alias rewrite; the C
+        // helper independently requires exact realpath + lstat owner/directory
+        // before Security assessment, under the stage's sealed custody borrow.
+        let components = app.path.split(separator: "/", omittingEmptySubsequences: false).dropFirst()
+        guard app.isFileURL, app.path.hasPrefix("/"),
+              components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }),
               app.path == app.path.precomposedStringWithCanonicalMapping, !bytes.contains(0),
               !bytes.isEmpty, bytes.count < Int(PATH_MAX), cdHash.count == 20 else { throw DirectAssessmentParentError.request }
         var data = Data("NAA1".utf8); data.append(cdHash)

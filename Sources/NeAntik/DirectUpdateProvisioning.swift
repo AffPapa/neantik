@@ -53,6 +53,16 @@ enum DirectUpdateProvisioningPolicy {
     }
 }
 
+/// This interval can only be obtained from authenticated CMS content whose
+/// grants and signing leaf passed policy. It conveys no profile bytes/secrets.
+struct DirectUpdateProvisioningValidity: Equatable, Sendable {
+    private let created: Date, expires: Date
+    fileprivate init(created: Date, expires: Date) { self.created = created; self.expires = expires }
+    func validate(now: Date) throws {
+        guard now.timeIntervalSince1970.isFinite, created <= now, now < expires else { throw DirectUpdateCodeSignatureError.policy }
+    }
+}
+
 /// A bounded single-link profile held by captured descriptors. Absence is also
 /// captured: a later profile cannot silently change legacy admission into a
 /// provisioned contract. The enclosing extracted-stage seal adds tree custody.
@@ -92,8 +102,12 @@ final class DirectUpdateProvisioningSnapshot {
     var present: Bool { bytes != nil }
 
     func authenticate(leaf: Data, bundle: String) throws {
+        _ = try authenticatedValidity(leaf: leaf, bundle: bundle)
+    }
+
+    func authenticatedValidity(leaf: Data, bundle: String) throws -> DirectUpdateProvisioningValidity? {
         try revalidate()
-        guard let bytes else { return }
+        guard let bytes else { return nil }
         var status: Int32 = -1
         guard let decoded = neantik_profile_copy_authenticated_content(bytes as CFData, &status),
               status == NEANTIK_PROFILE_OK,
@@ -102,6 +116,11 @@ final class DirectUpdateProvisioningSnapshot {
         }
         try DirectUpdateProvisioningPolicy.validate(profile, bundle: bundle, leaf: leaf, now: Date())
         try revalidate()
+        // These exact types/dates have already passed authenticated policy.
+        guard let created = profile["CreationDate"] as? Date, let expires = profile["ExpirationDate"] as? Date else {
+            throw DirectUpdateCodeSignatureError.policy
+        }
+        return .init(created: created, expires: expires)
     }
 
     func revalidate() throws {

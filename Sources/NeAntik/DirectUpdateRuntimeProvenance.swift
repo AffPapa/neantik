@@ -78,6 +78,30 @@ enum DirectUpdateRuntimeProvenance {
         // Separate custody scopes avoid re-entering the stage's nonrecursive
         // lock. Neither result confers installation authority.
         _ = try DirectUpdateCodeSignature.inspectStage(stage)
+        return try inspectClosure(stage)
+    }
+
+    /// Reuse a genuine signature observation only for its retained sealed
+    /// stage, not a caller-supplied flag or signature array from another app.
+    static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp,
+                                           signature: DirectUpdateStageSignature) async throws -> DirectUpdateRuntimeProvenanceObservation {
+        try Task.checkCancellation()
+        let worker = Task.detached(priority: .utility) {
+            try signature.requireBinding(to: stage)
+            guard stage.archiveIntegrity.chromiumVersion == DirectUpdateRuntimePins.chromiumVersion else {
+                throw DirectUpdateRuntimeProvenanceError.unsupported
+            }
+            let result = try inspectClosure(stage)
+            try signature.requireBinding(to: stage)
+            return result
+        }
+        return try await withTaskCancellationHandler {
+            let result = try await worker.value
+            try Task.checkCancellation(); return result
+        } onCancel: { worker.cancel() }
+    }
+
+    private static func inspectClosure(_ stage: ExtractedUpdateApp) throws -> DirectUpdateRuntimeProvenanceObservation {
         return try stage.withValidatedApp { app in
             let resources = app.appendingPathComponent("Contents/Resources")
             let runtime = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntik Browser.app"),

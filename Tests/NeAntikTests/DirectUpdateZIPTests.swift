@@ -68,20 +68,25 @@ private final class OwnZIPFixture: @unchecked Sendable {
         try bytes.write(to: source)
     }
     deinit { try? FileManager.default.removeItem(at: root) }
-    func prepare(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.12") throws -> PreparedUpdateArchive {
+    var configuration: UpdateChannelConfiguration {
+        .init(isEnabled: true, manifestURL: URL(string: "https://browser.free/update.json"),
+              publicKeyID: "own-zip-fixture", publicKey: key.publicKey.rawRepresentation)
+    }
+    func manifest(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.12", digest: String? = nil) throws -> Data {
         let version = publicArchive ? "0.7.29" : "0.7.30", build = publicArchive ? 92 : 93
         let payload = UpdateManifestPayload(schemaVersion: 1, product: "NeAntik", edition: "Direct", version: version, build: build,
             issuedAt: now.addingTimeInterval(-60), expiresAt: now.addingTimeInterval(86_400),
             archiveName: "NeAntik-\(version)-arm64-notarized.zip", downloadURL: "https://browser.free/downloads/NeAntik-\(version)-arm64-notarized.zip",
-            sha256: BackupFS.hex(SHA256.hash(data: bytes)), minimumOS: "14.0", architecture: "arm64",
+            sha256: digest ?? BackupFS.hex(SHA256.hash(data: bytes)), minimumOS: "14.0", architecture: "arm64",
             artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: chromiumVersion)
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let body = try encoder.encode(payload)
-        let manifest = try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519", keyID: "own-zip-fixture",
+        return try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519", keyID: "own-zip-fixture",
             payload: body.base64EncodedString(), signature: try key.signature(for: body).base64EncodedString()))
-        return try DirectUpdateStageStorage.prepareSynchronously(archiveURL: source, signedManifest: manifest,
-            configuration: .init(isEnabled: true, manifestURL: URL(string: "https://browser.free/update.json"),
-                publicKeyID: "own-zip-fixture", publicKey: key.publicKey.rawRepresentation),
+    }
+    func prepare(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.12") throws -> PreparedUpdateArchive {
+        return try DirectUpdateStageStorage.prepareSynchronously(archiveURL: source, signedManifest: manifest(publicArchive: publicArchive, chromiumVersion: chromiumVersion),
+            configuration: configuration,
             installedVersion: "0.7.28", installedBuild: 91, destinationParent: stages,
             hostOS: .init(majorVersion: 27, minorVersion: 0, patchVersion: 0), clock: { self.now })
     }
@@ -90,6 +95,146 @@ private final class OwnZIPFixture: @unchecked Sendable {
         defer { Darwin.close(fd) }; return try DirectUpdateZIPInventory.read(fd)
     }
     var retainedApps: [String] { (try? FileManager.default.contentsOfDirectory(atPath: apps.path)) ?? [] }
+}
+
+private final class AdmissionBarrier: @unchecked Sendable {
+    private let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+    func block() throws { entered.signal(); guard release.wait(timeout: .now() + 10) == .success else { throw POSIXError(.ETIMEDOUT) } }
+    func wait() -> Bool { entered.wait(timeout: .now() + 10) == .success }
+    func resume() { release.signal() }
+}
+
+/// These controls use real signed manifests, copied bytes and extraction. No
+/// substituted verifier/helper can manufacture a passing trust observation.
+@Suite(.serialized) struct DirectUpdateAdmissionTests {
+    private func coordinator(_ f: OwnZIPFixture, enabled: Bool = true) -> DirectUpdateAdmissionCoordinator {
+        let configuration = enabled ? f.configuration : UpdateChannelConfiguration(isEnabled: false, manifestURL: nil, publicKeyID: nil, publicKey: nil)
+        return .init(configuration: configuration, installedVersion: "0.7.29", installedBuild: 92,
+            hostOS: .init(majorVersion: 27, minorVersion: 0, patchVersion: 0), clock: { f.now },
+            assessmentHelper: { throw DirectAssessmentParentError.helper })
+    }
+    private func inspect(_ c: DirectUpdateAdmissionCoordinator, _ f: OwnZIPFixture, manifest: Data? = nil) async throws -> DirectUpdateAdmissionObservation {
+        try await c.inspectLocalArchive(f.source, signedManifest: manifest ?? f.manifest(), archiveParent: f.stages, extractionParent: f.apps)
+    }
+    private func names(_ directory: URL) throws -> [String] { try FileManager.default.contentsOfDirectory(atPath: directory.path) }
+
+    @Test func disabledChannelRefusesBeforeFileAccess() async throws {
+        let f = try OwnZIPFixture(Data([1])), c = coordinator(f, enabled: false)
+        try FileManager.default.removeItem(at: f.source)
+        await #expect(throws: UpdateManifestError.channelDisabled) { try await inspect(c, f) }
+        #expect(await c.snapshot() == .failed(.manifest))
+        #expect(try names(f.stages).isEmpty && names(f.apps).isEmpty)
+    }
+    @Test func unrelatedKeyRefusesBeforeAnyStage() async throws {
+        let f = try OwnZIPFixture(Data([1])), other = try OwnZIPFixture(Data([1])), c = coordinator(f)
+        await #expect(throws: UpdateManifestError.invalidSignature) { try await inspect(c, f, manifest: other.manifest()) }
+        #expect(await c.snapshot() == .failed(.manifest))
+        #expect(try names(f.stages).isEmpty && names(f.apps).isEmpty)
+    }
+    @Test func mismatchedBytesDoNotReachExtractionOrSignature() async throws {
+        let f = try OwnZIPFixture(Data([1])), c = coordinator(f)
+        await #expect(throws: DirectUpdateArchiveIntegrityError.digestMismatch) {
+            try await inspect(c, f, manifest: f.manifest(digest: String(repeating: "0", count: 64)))
+        }
+        #expect(await c.snapshot() == .failed(.archive))
+        #expect(try names(f.apps).isEmpty)
+    }
+    @Test func validManifestCannotPromoteNonZIPOrUnsignedApp() async throws {
+        let bad = try OwnZIPFixture(Data([1, 2])), badCoordinator = coordinator(bad)
+        do { _ = try await inspect(badCoordinator, bad); Issue.record("non-ZIP admitted") } catch { }
+        #expect(await badCoordinator.snapshot() == .failed(.extraction))
+        let goodZIP = ZIPFixture([.directory("NeAntik.app"), .init(path: "NeAntik.app/file", bytes: Data([9]))])
+        let f = try OwnZIPFixture(goodZIP.bytes), c = coordinator(f)
+        await #expect(throws: DirectUpdateCodeSignatureError.metadata) { try await inspect(c, f) }
+        #expect(await c.snapshot() == .failed(.signature))
+        // A complete untrusted stage is retained, but never returned as a
+        // signature/runtime observation or an installation capability.
+        #expect(try names(f.stages).count == 1 && names(f.apps).count == 1)
+        #expect(try Data(contentsOf: f.source) == goodZIP.bytes)
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
+        #expect(await c.snapshot() == .failed(.signature))
+    }
+    @Test func actualReentrantCallCannotOverwriteCandidate() async throws {
+        let f = try OwnZIPFixture(Data([1])), c = coordinator(f), barrier = AdmissionBarrier()
+        let manifest = try f.manifest()
+        let task = Task { try await c.inspectLocalArchive(f.source, signedManifest: manifest, archiveParent: f.stages, extractionParent: f.apps,
+            beforePhase: { if $0 == .archive { try barrier.block() } }) }
+        #expect(await Task.detached { barrier.wait() }.value)
+        #expect(await c.snapshot() == .checking(.archive))
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
+        #expect(await c.snapshot() == .checking(.archive))
+        barrier.resume()
+        do { _ = try await task.value; Issue.record("non-ZIP admitted") } catch { }
+        #expect(await c.snapshot() == .failed(.extraction))
+        #expect(try names(f.stages).count == 1)
+    }
+    @Test func actualCancellationDrainsWorkerAndPublishesNoResult() async throws {
+        let f = try OwnZIPFixture(Data([1])), c = coordinator(f), barrier = AdmissionBarrier()
+        let manifest = try f.manifest()
+        let task = Task { try await c.inspectLocalArchive(f.source, signedManifest: manifest, archiveParent: f.stages, extractionParent: f.apps,
+            beforePhase: { if $0 == .archive { try barrier.block() } }) }
+        #expect(await Task.detached { barrier.wait() }.value)
+        task.cancel(); barrier.resume()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(await c.snapshot() == .cancelled(.archive))
+        #expect(try names(f.stages).isEmpty && names(f.apps).isEmpty)
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
+        #expect(await c.snapshot() == .cancelled(.archive))
+    }
+    @Test func cancelledBeforeEntryDoesNotAccessFiles() async throws {
+        let f = try OwnZIPFixture(Data([1])), c = coordinator(f)
+        let task = Task { withUnsafeCurrentTask { $0?.cancel() }; return try await inspect(c, f) }
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(await c.snapshot() == .cancelled(.manifest))
+        #expect(try names(f.stages).isEmpty && names(f.apps).isEmpty)
+    }
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_ADMISSION_PUBLIC_ARCHIVE"] != nil))
+    func actualPublishedCandidateComposesAllGatesWithoutGrantingInstallAuthority() async throws {
+        let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_ADMISSION_PUBLIC_ARCHIVE"])
+        let helperRoot = try #require(ProcessInfo.processInfo.environment["NEANTIK_ASSESSMENT_PARENT_QA_ROOT"])
+        let helperHash = try #require(ProcessInfo.processInfo.environment["NEANTIK_ASSESSMENT_PARENT_QA_HASH"])
+        let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+        try #require(BackupFS.hex(SHA256.hash(data: bytes)) == "1a445b68a22634ab249573cf4712d9f47552daa9e3d403df0cf0adc360cbc7df")
+        let f = try OwnZIPFixture(bytes)
+        let c = DirectUpdateAdmissionCoordinator(configuration: f.configuration, installedVersion: "0.7.29", installedBuild: 92,
+            clock: { f.now }, assessmentHelper: { try DirectAssessmentHelper.qualification(in: URL(fileURLWithPath: helperRoot), payloadSHA256: helperHash) })
+        let manifest = try f.manifest()
+        let result = try await c.inspectLocalArchive(f.source, signedManifest: manifest, archiveParent: f.stages, extractionParent: f.apps)
+        #expect(result.manifestSHA256 == BackupFS.hex(SHA256.hash(data: manifest)))
+        #expect(result.version == "0.7.30" && result.build == 93 && result.archiveSHA256 == BackupFS.hex(SHA256.hash(data: bytes)))
+        #expect(result.signatures.map(\.identifier) == DirectUpdateCodeRole.allCases.map(\.identifier))
+        #expect(result.system.managerCDHash == result.signatures[0].cdHash)
+        #expect(result.runtime.runtimeSHA256 == DirectUpdateRuntimePins.runtimeDigest)
+        #expect(!result.installAuthorized && !result.system.installAuthorized && !result.system.reply.installAuthorized)
+        switch result.system.reply {
+        case .observed: #expect(await c.snapshot() == .observed)
+        case .refused(let status, _, _, _, _, _):
+            #expect(await c.snapshot() == .refused(status))
+            print("Admission qualification: system refusal status=\(status); installation not authorized")
+        }
+        await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
+        // Reuse has no trusted array/Boolean bypass. Another genuine but
+        // unsigned stage and a modified original must both be rejected.
+        let archive = try f.prepare(), extracted = try await DirectUpdateZIPExtraction.extract(archive, destinationParent: f.apps)
+        let signature = try await DirectUpdateCodeSignature.inspectBoundStage(extracted)
+        // Actual authenticated production profile is not allowed to become a
+        // perpetual observation just because its bytes did not change.
+        #expect(throws: DirectUpdateCodeSignatureError.policy) {
+            try signature.requireBinding(to: extracted, now: Date.distantFuture)
+        }
+        try signature.requireBinding(to: extracted)
+        let other = try OwnZIPFixture(ZIPFixture([.directory("NeAntik.app"), .init(path: "NeAntik.app/file", bytes: Data([8]))]).bytes)
+        let otherStage = try await DirectUpdateZIPExtraction.extract(other.prepare(), destinationParent: other.apps)
+        await #expect(throws: DirectUpdateCodeSignatureError.changed) {
+            try await DirectUpdateRuntimeProvenance.inspectStageAsynchronously(otherStage, signature: signature)
+        }
+        #expect(throws: DirectUpdateZIPError.changed) {
+            try extracted.withValidatedApp { url in try Data([1]).write(to: url.appendingPathComponent("unexpected")) }
+        }
+        await #expect(throws: DirectUpdateZIPError.changed) {
+            try await DirectUpdateRuntimeProvenance.inspectStageAsynchronously(extracted, signature: signature)
+        }
+    }
 }
 private final class ZIPRootCapture: @unchecked Sendable {
     private let lock = NSLock(); private var stored: URL?

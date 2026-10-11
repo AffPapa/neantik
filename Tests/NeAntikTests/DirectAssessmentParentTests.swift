@@ -28,6 +28,24 @@ private func fixtureCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
 private final class AssessmentParentBundle {}
 @Suite(.serialized) struct DirectAssessmentParentTests {
     private let refusal = "{\"schema\":1,\"status\":5,\"gatekeeperAccepted\":false,\"offlineTicketAccepted\":false,\"onlineLookupSuccess\":false,\"onlineDateValid\":false,\"systemErrorCode\":0,\"installAuthorized\":false}\n"
+    @Test func canonicalPrivateTemporaryPathIsNotRewrittenByFoundation() throws {
+        let url = URL(fileURLWithPath: "/private/tmp/neantik-admission-fixture/NeAntik.app")
+        let hash = Data(repeating: 7, count: 20)
+        let request = try DirectAssessmentParent.request(app: url, cdHash: hash)
+        #expect(request.prefix(4) == Data("NAA1".utf8))
+        #expect(request[4..<24] == hash)
+        #expect(String(decoding: request.dropFirst(32), as: UTF8.self) == url.path)
+        #expect(request.count == 32 + url.path.utf8.count)
+        #expect(throws: DirectAssessmentParentError.request) {
+            try DirectAssessmentParent.request(app: url, cdHash: Data(repeating: 0, count: 19))
+        }
+        #expect(throws: DirectAssessmentParentError.request) {
+            try DirectAssessmentParent.request(app: URL(string: "https://example.com/NeAntik.app")!, cdHash: hash)
+        }
+        #expect(throws: DirectAssessmentParentError.request) {
+            try DirectAssessmentParent.request(app: URL(string: "file:///private/tmp/a/../NeAntik.app")!, cdHash: hash)
+        }
+    }
     private func fixture() throws -> (URL, URL) {
         var binary: URL?
         for base in [Bundle(for: AssessmentParentBundle.self).bundleURL, URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()] {

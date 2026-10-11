@@ -58,7 +58,11 @@ struct DirectUpdateCodeSignatureFields: Sendable, Equatable {
 
 struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
     private let fields: DirectUpdateCodeSignatureFields
-    fileprivate init(_ fields: DirectUpdateCodeSignatureFields) { self.fields = fields }
+    private let profileValidity: DirectUpdateProvisioningValidity?
+    fileprivate init(_ fields: DirectUpdateCodeSignatureFields, profileValidity: DirectUpdateProvisioningValidity?) {
+        self.fields = fields; self.profileValidity = profileValidity
+    }
+    fileprivate func validateTimePolicy(now: Date) throws { try profileValidity?.validate(now: now) }
     var identifier: String { fields.identifier }
     var version: String { fields.version }
     var build: String { fields.build }
@@ -67,6 +71,23 @@ struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
     var developerIDVerified: Bool { true }
     var nestedAndAllArchitecturesVerified: Bool { true }
     var hardenedRuntimeVerified: Bool { true }
+}
+
+/// Genuine signature observations bound to one sealed stage's lifetime. The
+/// retained object prevents identity reuse; callers cannot construct this from
+/// an array, a receipt or downloaded JSON. Every subsequent use still borrows
+/// and validates the same stage. This is not installation authority.
+final class DirectUpdateStageSignature: Sendable {
+    private let stage: ExtractedUpdateApp
+    let observations: [DirectUpdateCodeSignatureObservation]
+    fileprivate init(stage: ExtractedUpdateApp, observations: [DirectUpdateCodeSignatureObservation]) {
+        self.stage = stage; self.observations = observations
+    }
+    func requireBinding(to stage: ExtractedUpdateApp, now: Date = Date()) throws {
+        guard self.stage === stage else { throw DirectUpdateCodeSignatureError.changed }
+        for observation in observations { try observation.validateTimePolicy(now: now) }
+    }
+    var manager: DirectUpdateCodeSignatureObservation { observations[0] }
 }
 
 enum DirectUpdateCodeSignature {
@@ -122,9 +143,9 @@ enum DirectUpdateCodeSignature {
               try signingLeaf(freshInfo) == leaf else { throw DirectUpdateCodeSignatureError.changed }
         // Recheck authenticated grants with the current clock, including expiry,
         // after fresh signed-code information; do not downgrade on any failure.
-        try profile?.authenticate(leaf: leaf, bundle: role.identifier)
+        let validity = try profile?.authenticatedValidity(leaf: leaf, bundle: role.identifier)
         try Task.checkCancellation()
-        return .init(result)
+        return .init(result, profileValidity: validity)
     }
 
     private static func signingLeaf(_ info: [String: Any]) throws -> Data {
@@ -208,6 +229,18 @@ enum DirectUpdateCodeSignature {
             let result = try await worker.value
             try Task.checkCancellation()
             return result
+        } onCancel: { worker.cancel() }
+    }
+
+    static func inspectBoundStage(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateStageSignature {
+        try Task.checkCancellation()
+        let worker = Task.detached(priority: .utility) {
+            let observations = try inspectStage(stage)
+            return DirectUpdateStageSignature(stage: stage, observations: observations)
+        }
+        return try await withTaskCancellationHandler {
+            let result = try await worker.value
+            try Task.checkCancellation(); return result
         } onCancel: { worker.cancel() }
     }
 
