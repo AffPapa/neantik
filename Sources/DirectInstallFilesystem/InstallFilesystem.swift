@@ -91,6 +91,15 @@ enum InstallFS {
         guard identity.directory, identity.mode & 0o777 == 0o700 else { throw InstallFilesystemError.unsupported }
         try noACL(fd); return identity
     }
+    /// A user-owned application folder may be readable by other users. Its
+    /// write authority stays with this UID; private stages and journals retain
+    /// their separate 0700 contract. Never repair permissions in place.
+    static func applicationParentDirectory(_ fd: Int32) throws -> InstallObject {
+        let identity = try object(fd); try owned(identity)
+        let mode = identity.mode & 0o777
+        guard identity.directory, mode == 0o700 || mode == 0o755 else { throw InstallFilesystemError.unsupported }
+        try noACL(fd); return identity
+    }
     static func names(_ fd: Int32) throws -> [String] {
         let copy = dup(fd); guard copy >= 0 else { throw posix() }
         guard let stream = fdopendir(copy) else { close(copy); throw posix() }
@@ -138,7 +147,7 @@ enum InstallFS {
 
 @_silgen_name("flock") private func installFlock(_ fd: Int32, _ operation: Int32) -> Int32
 
-/// Cooperation lock for one private install parent. It is not trust, process
+/// Cooperation lock for one user-owned install parent. It is not trust, process
 /// authority or protection from arbitrary same-UID writers. Never unlink it.
 public final class InstallFilesystemLease {
     static let lockName = ".neantik-install.lock"
@@ -147,7 +156,7 @@ public final class InstallFilesystemLease {
         let openedParent = try InstallFS.directory(parentURL)
         var held = false, opened: Int32 = -1
         defer { if !held { if opened >= 0 { close(opened) }; close(openedParent) } }
-        let parentObject = try InstallFS.privateDirectory(openedParent)
+        let parentObject = try InstallFS.applicationParentDirectory(openedParent)
         opened = openat(openedParent, Self.lockName, O_RDWR | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0o600)
         guard opened >= 0 else { throw InstallFilesystemError.unsafe }
         let lockObject = try InstallFS.object(opened); try InstallFS.owned(lockObject, device: parentObject.device)
@@ -157,8 +166,8 @@ public final class InstallFilesystemLease {
             if errno == EWOULDBLOCK { throw InstallFilesystemError.busy }; throw InstallFS.posix()
         }
         let fresh = try InstallFS.directory(parentURL); defer { close(fresh) }
-        guard try InstallFS.privateDirectory(fresh).sameObject(parentObject),
-              try InstallFS.privateDirectory(openedParent).sameObject(parentObject),
+        guard try InstallFS.applicationParentDirectory(fresh).sameObject(parentObject),
+              try InstallFS.applicationParentDirectory(openedParent).sameObject(parentObject),
               try InstallFS.object(opened) == lockObject, try InstallFS.entry(openedParent, Self.lockName) == lockObject else { throw InstallFilesystemError.changed }
         url = parentURL; parent = openedParent; lock = opened; identity = parentObject; lockIdentity = lockObject
         held = true
@@ -171,8 +180,8 @@ public final class InstallFilesystemLease {
     }
     func validate() throws {
         let fresh = try InstallFS.directory(url); defer { close(fresh) }
-        guard try InstallFS.privateDirectory(fresh).sameObject(identity),
-              try InstallFS.privateDirectory(parent).sameObject(identity),
+        guard try InstallFS.applicationParentDirectory(fresh).sameObject(identity),
+              try InstallFS.applicationParentDirectory(parent).sameObject(identity),
               try InstallFS.object(lock) == lockIdentity, try InstallFS.entry(parent, Self.lockName) == lockIdentity else { throw InstallFilesystemError.changed }
         try InstallFS.noACL(lock)
     }

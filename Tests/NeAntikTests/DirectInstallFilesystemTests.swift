@@ -293,13 +293,130 @@ struct DirectInstallFilesystemTests {
         }
         #expect(!FileManager.default.fileExists(atPath: f.active.path)); #expect(try f.version() == "old")
     }
-    @Test func parentModeAndRootOwnedSystemDirectoryAreUnsupportedWithoutMutation() throws {
+    @Test func readableApplicationParentSupportsTransferSwapAndAcknowledgement() throws {
         let f = try Fixture(); defer { f.cleanup() }
-        #expect(chmod(f.root.path, 0o755) == 0)
-        #expect(throws: InstallFilesystemError.unsupported) { try InstallFilesystemLease(parentURL: f.root) }
-        var observed = stat(); #expect(lstat(f.root.path, &observed) == 0); #expect(observed.st_mode & 0o777 == 0o755)
+        let source = try prepareSource(f)
+        try #require(chmod(f.root.path, 0o755) == 0)
+        let lease = try InstallFilesystemLease(parentURL: f.root)
+        let slot = try transfer(f, lease: lease)
+        let receipt = try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {})
+        #expect(try InstallFilesystemTransaction.pendingReceipt(lease: lease) == receipt)
+        #expect(try f.version() == "new")
+        var observed = stat()
+        for directory in [source, f.active] {
+            try #require(lstat(directory.path, &observed) == 0)
+            #expect(observed.st_mode & 0o777 == 0o700)
+        }
+        for file in [f.active.appendingPathComponent("journal.json"), f.root.appendingPathComponent(InstallFilesystemLease.lockName)] {
+            try #require(lstat(file.path, &observed) == 0)
+            #expect(observed.st_mode & 0o777 == 0o600)
+        }
+        _ = try InstallFilesystemTransaction.acknowledge(lease: lease, expected: receipt, validateLaunchAuthority: {})
+        try #require(lstat(f.root.path, &observed) == 0)
+        #expect(observed.st_mode & 0o777 == 0o755)
+        #expect(try f.version(f.candidateName) == "old")
+        #expect(try InstallFilesystemTransaction.recover(lease: lease, validateStoppedAuthority: {}) == nil)
+    }
+    @Test(arguments: [0o750, 0o775, 0o777])
+    func unsafeOrUnsupportedApplicationParentRefusesBeforeLock(mode: Int) throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        try #require(chmod(f.root.path, mode_t(mode)) == 0)
+        #expect(throws: (any Error).self) { try InstallFilesystemLease(parentURL: f.root) }
+        #expect(!FileManager.default.fileExists(atPath: f.root.appendingPathComponent(InstallFilesystemLease.lockName).path))
+        #expect(try f.version() == "old")
+        #expect(try f.version(f.candidateName) == "new")
+    }
+    @Test func rootOwnedSystemDirectoryIsUnsupportedWithoutMutation() throws {
         #expect(throws: (any Error).self) { try InstallFilesystemLease(parentURL: URL(fileURLWithPath: "/Applications")) }
         #expect(!FileManager.default.fileExists(atPath: "/Applications/" + InstallFilesystemLease.lockName))
+    }
+    @Test(arguments: ["mode", "replacement"])
+    func readableParentLeaseRejectsChangedCustody(control: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        try #require(chmod(f.root.path, 0o755) == 0)
+        let lease = try InstallFilesystemLease(parentURL: f.root)
+        let retained = URL(fileURLWithPath: f.root.path + "-retained")
+        defer { try? FileManager.default.removeItem(at: retained) }
+        if control == "mode" {
+            try #require(chmod(f.root.path, 0o700) == 0)
+        } else {
+            try FileManager.default.moveItem(at: f.root, to: retained)
+            try FileManager.default.createDirectory(at: f.root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o755])
+        }
+        #expect(throws: InstallFilesystemError.changed) { try lease.validate() }
+        #expect(throws: (any Error).self) { try f.begin(lease) }
+    }
+    @Test(arguments: ["ACL", "flags", "ancestorLink"])
+    func readableParentStillRejectsPlatformAccessHazards(control: String) throws {
+        let f = try Fixture(); defer { f.cleanup(); _ = chflags(f.root.path, 0) }
+        try #require(chmod(f.root.path, 0o755) == 0)
+        let alias = URL(fileURLWithPath: f.root.path + "-alias")
+        defer { try? FileManager.default.removeItem(at: alias); _ = chflags(f.root.path, 0) }
+        if control == "ACL" {
+            let process = Process(); process.executableURL = URL(fileURLWithPath: "/bin/chmod")
+            process.arguments = ["+a", "everyone allow read", f.root.path]
+            process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
+            try process.run(); process.waitUntilExit(); try #require(process.terminationStatus == 0)
+        } else if control == "flags" {
+            try #require(chflags(f.root.path, UInt32(UF_NODUMP)) == 0)
+        } else {
+            try #require(symlink(f.root.path, alias.path) == 0)
+        }
+        #expect(throws: (any Error).self) { try InstallFilesystemLease(parentURL: control == "ancestorLink" ? alias : f.root) }
+        #expect(!FileManager.default.fileExists(atPath: f.root.appendingPathComponent(InstallFilesystemLease.lockName).path))
+        #expect(try f.version() == "old")
+    }
+    @Test(arguments: ["source", "transferJournal", "transactionJournal"])
+    func readableParentNeverMakesPrivateStorageReadable(control: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let source = try prepareSource(f)
+        try #require(chmod(f.root.path, 0o755) == 0)
+        let lease = try InstallFilesystemLease(parentURL: f.root)
+        if control == "source" {
+            try #require(chmod(source.path, 0o755) == 0)
+            #expect(throws: InstallFilesystemError.unsupported) { try transfer(f, lease: lease) }
+            #expect(try f.version() == "old")
+            return
+        }
+        let slot = try transfer(f, lease: lease)
+        if control == "transferJournal" {
+            let record = f.root.appendingPathComponent(".neantik-install-transfer-" + String(f.candidateName.dropFirst(14).dropLast(4)))
+            try #require(chmod(record.path, 0o755) == 0)
+            #expect(throws: (any Error).self) { try slot.withValidatedCandidate { _ in () } }
+            #expect(throws: (any Error).self) { try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {}) }
+            #expect(try f.version() == "old")
+        } else {
+            _ = try InstallFilesystemTransaction.begin(lease: lease, preparedSlot: slot, validateStoppedAuthority: {})
+            try #require(chmod(f.active.path, 0o755) == 0)
+            // This process already holds the lease. A child would stop at the
+            // cooperation lock rather than exercise private journal admission.
+            #expect(throws: InstallFilesystemError.unsupported) {
+                try InstallFilesystemTransaction.recover(lease: lease, validateStoppedAuthority: {})
+            }
+            #expect(try f.version() == "new")
+            #expect(try f.version(f.candidateName) == "old")
+            #expect(FileManager.default.fileExists(atPath: f.active.path))
+        }
+    }
+    @Test(arguments: [InstallFilesystemPoint.swappedBeforeSync, .pendingLaunch])
+    func readableParentFreshProcessRecoveryRestoresOld(point: InstallFilesystemPoint) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        try #require(chmod(f.root.path, 0o755) == 0)
+        #expect(try child(f, "transferBegin", point.rawValue) == 73)
+        #expect(try child(f, "recover") == 0)
+        #expect(try f.version() == "old")
+        #expect(try child(f, "recover") == 0)
+        #expect(try f.version(f.candidateName) == "new")
+    }
+    @Test(arguments: [InstallFilesystemPoint.beforeAcknowledgementPublication, .acknowledgementPublishedBeforeSync])
+    func readableParentFreshProcessAcknowledgementPreservesVisibleDecision(point: InstallFilesystemPoint) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        try #require(chmod(f.root.path, 0o755) == 0)
+        #expect(try child(f, "transferBegin") == 0)
+        #expect(try child(f, "ack", point.rawValue) == 73)
+        #expect(try child(f, "recover") == 0)
+        #expect(try f.version() == (point == .beforeAcknowledgementPublication ? "old" : "new"))
+        #expect(try child(f, "recover") == 0)
     }
     @Test(arguments: ["parentACL", "fileACL", "flags", "depth", "bytes", "ancestorLink"])
     func actualPlatformAndResourceLimitsRefuse(control: String) throws {
