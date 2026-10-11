@@ -15,6 +15,9 @@ let package = Package(
         .target(name: "DirectZipCodec", linkerSettings: [.linkedLibrary("z")]),
         .target(name: "DirectProvisioning", linkerSettings: [.linkedFramework("Security")]),
         .target(name: "DirectAssessment", linkerSettings: [.linkedFramework("Security")]),
+        .target(name: "DirectInstallFilesystem"),
+        .executableTarget(name: "NeAntikInstallFilesystemFixture", dependencies: ["DirectInstallFilesystem"],
+                          path: "Tests/Fixtures/InstallFilesystem"),
         .executableTarget(name: "NeAntikUpdateAssessment", dependencies: ["DirectAssessment"],
                           linkerSettings: [.linkedFramework("Security")]),
         .executableTarget(
@@ -27,7 +30,7 @@ let package = Package(
         ),
         .testTarget(
             name: "NeAntikTests",
-            dependencies: ["NeAntik", "DirectProvisioning", "DirectAssessment"],
+            dependencies: ["NeAntik", "DirectProvisioning", "DirectAssessment", "DirectInstallFilesystem", "NeAntikInstallFilesystemFixture"],
             linkerSettings: [
                 .linkedFramework("JavaScriptCore"),
                 .linkedFramework("Network")

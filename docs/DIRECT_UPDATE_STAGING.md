@@ -225,3 +225,10 @@ ZIP byte integrity alone never grants extraction or installation authority.
 See [development contract and real SPI limitations](DIRECT_UPDATE_ASSESSMENT.md).
 This helper is not packaged or enabled in public0.7.30. Its standalone result
 does not authorize installation or establish parent stage custody.
+
+## Filesystem transaction development slice
+
+See [two-slot journal and recovery contract](DIRECT_UPDATE_FILESYSTEM_TRANSACTION.md).
+The standalone primitive preserves both copies and has fresh-process crash
+tests. Main NeAntik has no caller; this does not close installation authority,
+authenticated first launch or final signed update qualification gates.
