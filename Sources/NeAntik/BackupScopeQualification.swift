@@ -74,12 +74,7 @@ enum BackupScopeQualification {
                 }
                 catch let error as KeychainError { result = .init(passed: false, status: error.status, digest: nil) }
                 catch {
-                    let category: String
-                    if let error = error as? BrowserDataBackupStorageError { category = "Storage." + String(describing: error) }
-                    else if let error = error as? BrowserDataRestoreError { category = "Restore." + String(describing: error) }
-                    else if let error = error as? Failure { category = "Qualification." + String(describing: error) }
-                    else { category = String(reflecting: Swift.type(of: error)) }
-                    result = .init(passed: false, status: nil, digest: nil, failureCategory: category)
+                    result = .init(passed: false, status: nil, digest: nil, failureCategory: redactedFailureCategory(error))
                 }
                 try ProxyRelayPrivatePipe.writeFrame(STDOUT_FILENO, data: JSONEncoder().encode(result), timeout: 2)
                 Darwin.exit(EX_OK)
@@ -89,6 +84,16 @@ enum BackupScopeQualification {
             }
         }
         dispatchMain()
+    }
+
+    /// Static failure categories only: no localized paths, private requests,
+    /// scope digests or arbitrary NSError userInfo enter a qualification report.
+    static func redactedFailureCategory(_ error: Error) -> String {
+        if let error = error as? BrowserProfileDeletionBlockedError { return "Admission." + String(describing: error.reason) }
+        if let error = error as? BrowserDataBackupStorageError { return "Storage." + String(describing: error) }
+        if let error = error as? BrowserDataRestoreError { return "Restore." + String(describing: error) }
+        if let error = error as? Failure { return "Qualification." + String(describing: error) }
+        return String(reflecting: Swift.type(of: error))
     }
 
     private static func perform(_ request: Request) throws -> Result {

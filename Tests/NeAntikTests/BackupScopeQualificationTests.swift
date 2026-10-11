@@ -4,6 +4,16 @@ import Testing
 @testable import NeAntik
 
 struct BackupScopeQualificationTests {
+    @Test func admissionDiagnosticsDistinguishReasonsWithoutPrivateErrorText() {
+        let reasons: [BrowserProfileDeletionBlockReason] = [.managedProcess, .leasePresent, .unsafeLease, .browserDataInUse, .inspectionUnavailable]
+        let expected = ["Admission.managedProcess", "Admission.leasePresent", "Admission.unsafeLease", "Admission.browserDataInUse", "Admission.inspectionUnavailable"]
+        #expect(zip(reasons, expected).allSatisfy { reason, value in
+            BackupScopeQualification.redactedFailureCategory(BrowserProfileDeletionBlockedError(reason: reason)) == value
+        })
+        let error = NSError(domain: "synthetic-private-domain", code: 1, userInfo: [NSLocalizedDescriptionKey: "synthetic-private-path-and-passphrase"])
+        let result = BackupScopeQualification.redactedFailureCategory(error)
+        #expect(!result.contains("synthetic-private"))
+    }
     @Test func refusesProductionIdentityAndUnboundRemoval() throws {
         let request = BackupScopeQualification.Request(runID: UUID(), phase: .create)
         #expect(throws: BackupScopeQualification.Failure.invalidIdentity) {

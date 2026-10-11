@@ -14,8 +14,25 @@ The existing Developer ID macOS profile grants the production App ID exactly and
 a wildcard Keychain group. It does **not** grant the separate backup QA App ID.
 The observed QA scope create/read/delete and service recovery results are kept,
 but they are not accepted as a matching provisioning contract. The validator
-rejects that combination. A matching macOS Developer ID QA profile is needed
-before adoption into production signing.
+rejects that combination. A separate matching macOS Developer ID QA profile was issued and validated on
+2026-10-11. Its actual isolated create/new-process-read/delete/missing controls
+passed. Full backup service/GUI and exact release packaging remain separate
+gates before adoption into production signing.
+
+## One existing signing certificate
+
+The release entry point already selects the exact public certificate SHA1
+`474F7C78F33EE324C24F6F5AE0443EB713E85E60` by default. Use this same existing
+Developer ID Application certificate for QA and product signing. The portal
+contains two identically named certificates: match the public fingerprint,
+not the display name. No additional certificate was issued or revoked for QA.
+
+The production profile and isolated QA profile authorize different App IDs;
+both use the existing selected certificate. Generate only the exact QA group
+`H6VGU2M6JD.app.neantik.desktop.backup-qa` for the isolated QA application.
+Private provisioning files stay outside source control and public artifacts.
+Certificate renewal is an explicit signing-contract change, never an automatic
+fallback to another identically named identity.
 
 ## Independent checks
 
@@ -70,8 +87,10 @@ merely to make the QA test pass.
   actual hardened QA code signature and actual QA/profile mismatch refusal.
 - No production app was executed and no Keychain item operations were performed
   by these validator controls. No release-packaging adoption is claimed.
-- A matching QA profile, qualified packaging, actual backup restore/GUI tests
-  and the exact notarized candidate are still required for product enablement.
+- A matching QA profile and signed-code postcheck now pass; actual synthetic
+  scope creation, read in a new process, owned deletion and missing refusal pass.
+  Full service/GUI qualification under that profile, qualified product packaging
+  and the exact notarized candidate remain required for product enablement.
 
 References: [Apple TN3125](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles),
 [CMS signer verification](https://developer.apple.com/documentation/security/cmsdecodercopysignerstatus(_:_:_:_:_:_:_:)),
