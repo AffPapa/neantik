@@ -236,6 +236,15 @@ private final class AdmissionClock: @unchecked Sendable {
         #expect(offlineDate.isFinite && offlineDate > 0)
         #expect(onlineDate == nil || onlineDate.map { $0.isFinite && $0 > 0 } == true)
         #expect(await c.snapshot() == .observed)
+        // Genuine observation A cannot be wrapped as an offer for manifest B.
+        // Wire hashes alone cannot establish this composition boundary.
+        let request = try DirectUpdateOwnerInit(archive: f.source, manifest: manifest)
+        let offer = try DirectUpdateOwnerOffer(request: request, observation: result)
+        try offer.validate(request: request, observation: result)
+        let differentManifest = try f.manifest(digest: String(repeating: "b", count: 64))
+        let otherRequest = try DirectUpdateOwnerInit(archive: f.source, manifest: differentManifest)
+        #expect(throws: DirectUpdateOwnerProtocolError.binding) { try DirectUpdateOwnerOffer(request: otherRequest, observation: result) }
+        #expect(throws: DirectUpdateOwnerProtocolError.binding) { try offer.validate(request: otherRequest, observation: result) }
         print("Admission qualification: v2 completed; online date \(onlineDate == nil ? "absent" : "supplied"); installation not authorized")
         await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
         // Reuse has no trusted array/Boolean bypass. Another genuine but
