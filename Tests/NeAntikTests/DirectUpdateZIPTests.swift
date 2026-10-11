@@ -206,12 +206,16 @@ private final class AdmissionBarrier: @unchecked Sendable {
         #expect(result.system.managerCDHash == result.signatures[0].cdHash)
         #expect(result.runtime.runtimeSHA256 == DirectUpdateRuntimePins.runtimeDigest)
         #expect(!result.installAuthorized && !result.system.installAuthorized && !result.system.reply.installAuthorized)
-        switch result.system.reply {
-        case .observed: #expect(await c.snapshot() == .observed)
-        case .refused(let status, _, _, _, _, _):
-            #expect(await c.snapshot() == .refused(status))
-            print("Admission qualification: system refusal status=\(status); installation not authorized")
+        // This positive qualification must actually complete. Recording an
+        // explained system refusal is useful evidence, but must not pass it.
+        guard case .observed(let offlineDate, let onlineDate) = result.system.reply else {
+            Issue.record("Published candidate system observation refused; installation not authorized")
+            return
         }
+        #expect(offlineDate.isFinite && offlineDate > 0)
+        #expect(onlineDate == nil || onlineDate.map { $0.isFinite && $0 > 0 } == true)
+        #expect(await c.snapshot() == .observed)
+        print("Admission qualification: v2 completed; online date \(onlineDate == nil ? "absent" : "supplied"); installation not authorized")
         await #expect(throws: DirectUpdateAdmissionError.alreadyAttempted) { try await inspect(c, f) }
         // Reuse has no trusted array/Boolean bypass. Another genuine but
         // unsigned stage and a modified original must both be rejected.

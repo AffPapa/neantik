@@ -61,6 +61,23 @@ struct DirectUpdateAssessmentTests {
         value["assessment:error"] = 0
         #expect(neantik_assessment_result_admitted(value as CFDictionary) == 0)
     }
+    @Test func revocationCompletionAllowsAbsentDateButNeverAnError() {
+        let now = 812_000_000.0
+        for date in [Double.nan, now - 86400, now] {
+            #expect(neantik_assessment_revocation_admitted(1, 0, date, now) == 1)
+            #expect(neantik_assessment_revocation_admitted(0, 0, date, now) == 0)
+            #expect(neantik_assessment_revocation_admitted(2, 0, date, now) == 0)
+            // Both simulated revoked and other API errors must refuse.
+            #expect(neantik_assessment_revocation_admitted(1, EACCES, date, now) == 0)
+            #expect(neantik_assessment_revocation_admitted(1, 1, date, now) == 0)
+        }
+        for invalid in [Double.infinity, -Double.infinity, 0, -1, now + 301] {
+            #expect(neantik_assessment_revocation_admitted(1, 0, invalid, now) == 0)
+        }
+        for invalid in [Double.nan, Double.infinity, 0, -1] {
+            #expect(neantik_assessment_revocation_admitted(1, 0, .nan, invalid) == 0)
+        }
+    }
     private func admits(_ entries: [String]) -> Int32 {
         let memory = entries.map { strdup($0)! }
         defer { memory.forEach { free($0) } }

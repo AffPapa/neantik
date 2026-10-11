@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     if (sigaction(SIGALRM,&action,NULL) || sigprocmask(SIG_UNBLOCK,&unblock,NULL)) goto reply;
     alarm(180);
     uint8_t header[32]; char path[PATH_MAX], trailing;
-    if (argc!=1 || !read_exact(header,sizeof(header)) || memcmp(header,"NAA1",4)) goto reply;
+    if (argc!=1 || !read_exact(header,sizeof(header)) || memcmp(header,"NAA2",4)) goto reply;
     uint32_t length=big32(header+28);
     if (!length || length>=sizeof(path) || !read_exact(path,length) || memchr(path,0,length)) goto reply;
     path[length]=0;
@@ -43,13 +43,15 @@ int main(int argc, char **argv) {
     result=neantik_assessment_observe(path,header+4,big32(header+24));
 reply:
     if (result.status==NEANTIK_ASSESSMENT_OK) {
-        printf("{\"schema\":1,\"status\":0,\"offlineTicketDate\":%.6f,\"onlineTicketDate\":%.6f,\"freshRemoteResponseProven\":false,\"installAuthorized\":false}\n",
-            result.offline_date,result.online_date);
+        printf("{\"schema\":2,\"status\":0,\"offlineTicketDate\":%.6f,\"onlineTicketDate\":",result.offline_date);
+        if (isnan(result.online_date)) fputs("null",stdout);
+        else printf("%.6f",result.online_date);
+        fputs(",\"onlineRevocationCheckCompleted\":true,\"freshRemoteResponseProven\":false,\"installAuthorized\":false}\n",stdout);
     } else {
         /* No raw errors, paths, labels or environment values reach logs. */
-        printf("{\"schema\":1,\"status\":%d,\"gatekeeperAccepted\":%s,\"offlineTicketAccepted\":%s,\"onlineLookupSuccess\":%s,\"onlineDateValid\":%s,\"systemErrorCode\":%lld,\"installAuthorized\":false}\n",
+        printf("{\"schema\":2,\"status\":%d,\"gatekeeperAccepted\":%s,\"offlineTicketAccepted\":%s,\"onlineRevocationCheckCompleted\":%s,\"onlineDateAdmitted\":%s,\"systemErrorCode\":%lld,\"installAuthorized\":false}\n",
             result.status,result.gatekeeper_accepted ? "true":"false",result.offline_ticket_accepted ? "true":"false",
-            result.online_lookup_success ? "true":"false",result.online_date_valid ? "true":"false",(long long)result.system_error_code);
+            result.online_lookup_success ? "true":"false",result.online_date_admitted ? "true":"false",(long long)result.system_error_code);
     }
     return result.status==NEANTIK_ASSESSMENT_OK ? 0 : 1;
 }

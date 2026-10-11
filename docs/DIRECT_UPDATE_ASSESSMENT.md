@@ -25,7 +25,7 @@ There is no global mutation of the running manager's environment.
 
 ## Fixed protocol and checks
 
-- Stdin: `NAA1`, 20-byte expected canonical CodeDirectory hash, big-endian
+- Stdin: `NAA2`, 20-byte expected canonical CodeDirectory hash, big-endian
   original digest algorithm and path length (UInt32), canonical app path, EOF.
   Path length is below PATH_MAX, with no embedded NUL or extra request bytes.
   Only the current SHA256 CodeDirectory algorithm2 is admitted. A 20-byte
@@ -37,13 +37,20 @@ There is no global mutation of the running manager's environment.
   IgnoreActiveAssessments. The same flags, including Enforce, reach both Create
   and CopyResult. Override/cache/weak/error markers or malformed scalar types
   refuse, even alongside a misleading “Notarized Developer ID” rule label.
-- Offline and forced-online ticket lookups bind the same canonical hash and
-  original algorithm. Date outputs start as NaN. Full success requires true,
-  no CFError and a finite, positive, nonfuture CFAbsoluteTime date for each.
-  That date denotes ticket time, not response freshness.
-- Missing private SPI, errors, missing dates and unsupported formats refuse.
+- Default ticket and forced-online revocation lookups bind the same canonical
+  hash and original algorithm. Both require exactly true with no CFError.
+  The positive default-ticket observation additionally requires a finite,
+  positive, nonfuture CFAbsoluteTime date. The forced-online date is optional:
+  Apple's XPC adapter can leave the NaN sentinel untouched after completion.
+  Supplied invalid/future dates still refuse. A date denotes ticket time,
+  not response freshness; completion alone does not prove a fresh response.
+- Missing private SPI, errors, a missing default-ticket date and unsupported formats refuse.
   There is no CLI, weaker-policy or label-based fallback. No policy editing,
   quarantine removal, trust-store editing or Keychain credential operations.
+- Request magic and reply schema are version2; old protocol replies refuse.
+  Successful replies include `onlineRevocationCheckCompleted:true` and an
+  `onlineTicketDate` number or `null`. Refusal `onlineDateAdmitted` admits absent
+  metadata, and does not claim a measured date.
 - Fixed bounded JSON contains no paths, raw error userInfo, labels or inherited
   environment values. Failure stages expose only booleans and a numeric system
   error code. `installAuthorized` is always false; success additionally states
@@ -52,24 +59,26 @@ There is no global mutation of the running manager's environment.
   parent additionally bounds output, implements cancellation and reaps its
   exact owned child. There is no persistent service or arbitrary shell/JS.
 
-## Current real observations and limitation
+## Historical v1 refusal and corrected v2 semantics
 
-On macOS27 beta ARM64, the signed isolated helper observed the immutable
-published .29/.30 apps. System Execute assessment and offline ticket acceptance
-succeeded. The forced-online lookup returned true without CFError but provided
-no date. The strict complete observation therefore refused (status8); this is
-not reported as a successful updater gate or a failed public app launch.
+On macOS27 beta ARM64, the v1 signed isolated helper observed immutable
+published .29/.30 apps. Execute assessment and the default-ticket observation
+succeeded. Forced-online lookup completed without CFError or a supplied date.
+Our v1 policy incorrectly required that date and refused status8. This was a
+NeAntik observation defect, not evidence of failed public app launch.
 
-Negative controls cover a wrong hash, wrong algorithm, a policy-service
-environment override, malformed/truncated/trailing requests, an unnotarized
-same-team signed QA app and inherited ignored/blocked SIGALRM. These are
-read-only system observations; they may consult/populate system ticket caches.
-No apps were executed or installed and no Gatekeeper policy was changed.
+Apple's revocation consumer does not require a date, and its XPC adapter
+explicitly preserves the initialized sentinel when no date is supplied.
+Version2 separates positive default-ticket evidence from forced-online
+revocation completion. Every CFError, including non-revocation errors,
+still refuses. No Apple implementation was copied. These are private SPI:
+source research does not replace exact supported-OS qualification.
 
-Published 0.7.30's signing, notarization, stapling, Gatekeeper and fresh hosted
-launch checks are separate release evidence. This private SPI limitation does
-not invalidate those checks. Do not retry identical online-date lookups or
-declare remote freshness: the public Apple wrapper exposes no such provenance.
+Actual v2 qualification and negative controls are recorded separately from
+historical v1 reports. No remote freshness or installation permission follows
+from a successful scalar observation. The unchanged public0.7.30 release's
+signing, notarization, stapling, Gatekeeper and hosted launch evidence remain
+separate from this development helper.
 
 ## Primary-source basis
 
@@ -124,14 +133,15 @@ persistent service, arbitrary command runner or installed-app installer.
 
 Local real-process controls and separately signed QA admission are development
 evidence. Published0.7.30 contains neither this parent protocol nor the helper;
-no public updater capability is claimed. Trust hosting, supported ticket policy,
+no public updater capability is claimed. Trust hosting, supported-OS SPI qualification,
 installed lifecycle ownership and exact signed install/rollback/ack qualification
 remain required before enabling automatic installation.
 
 ## Remaining gates
 
-An explicit supported system-ticket policy still needs resolution; no silent
-downgrade is allowed. Final packaged helper admission on the exact installed release, production
+Version2 corrects the mandatory forced-online date condition; no signature,
+notarization, revocation error or Gatekeeper gate was removed. Final packaged
+helper admission and supported-OS SPI qualification on the exact installed release, production
 lifecycle integration of the implemented custody/cancellation/output controls,
 durable atomic install/rollback/first-launch ack,
 trusted updater key hosting and exact installed candidate checks remain open.

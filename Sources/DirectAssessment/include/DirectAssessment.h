@@ -14,13 +14,14 @@ typedef struct {
     int status;
     double offline_date, online_date;
     int gatekeeper_accepted, offline_ticket_accepted;
-    int online_lookup_success, online_date_valid;
+    int online_lookup_success, online_date_admitted;
     int64_t system_error_code;
 } NeAntikAssessmentResult;
 
 /* Pure admission predicates. Labels alone never establish notarization. */
 int neantik_assessment_result_admitted(CFDictionaryRef result);
 int neantik_assessment_ticket_admitted(int success, int error, double date, double now);
+int neantik_assessment_revocation_admitted(int success, int error, double optional_date, double now);
 uint64_t neantik_assessment_flags(void);
 int neantik_assessment_environment_admitted(char *const *environment);
 

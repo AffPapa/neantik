@@ -84,9 +84,17 @@ int neantik_assessment_result_admitted(CFDictionaryRef result) {
 }
 int neantik_assessment_ticket_admitted(int success, int error, double date, double now) {
     /* CFAbsoluteTime epoch 2001; date denotes ticket time, not network freshness.
-     * NaN sentinel closes the API's successful-but-no-date reply case. */
+     * This positive default-ticket observation requires an actual date. */
     return success==1 && error==0 && isfinite(now) && now>0 &&
         isfinite(date) && date>0 && date<=now+300;
+}
+int neantik_assessment_revocation_admitted(int success, int error, double date, double now) {
+    /* ForceOnlineCheck completes a revocation lookup. Apple's adapter can
+     * leave the initialized NaN untouched; that is absent metadata, not an
+     * error or proof of a fresh remote response. Every CFError still refuses.
+     * If a date is supplied, reject malformed/future metadata independently. */
+    return success==1 && error==0 && isfinite(now) && now>0 &&
+        (isnan(date) || neantik_assessment_ticket_admitted(1,0,date,now));
 }
 static int secured_hash(CFURLRef url, const uint8_t expected[20]) {
     SecStaticCodeRef code=NULL;
@@ -155,8 +163,8 @@ NeAntikAssessmentResult neantik_assessment_observe(const char *path,
     result.status=NEANTIK_ASSESSMENT_ONLINE_TICKET;
     accepted=lookup(hash,kSecCodeSignatureHashSHA256,1,&result.online_date,&error);
     result.online_lookup_success=accepted==1 && !error;
-    result.online_date_valid=neantik_assessment_ticket_admitted(1,0,result.online_date,CFAbsoluteTimeGetCurrent());
-    if (!neantik_assessment_ticket_admitted(accepted,error!=NULL,result.online_date,CFAbsoluteTimeGetCurrent())) goto done;
+    result.online_date_admitted=neantik_assessment_revocation_admitted(1,0,result.online_date,CFAbsoluteTimeGetCurrent());
+    if (!neantik_assessment_revocation_admitted(accepted,error!=NULL,result.online_date,CFAbsoluteTimeGetCurrent())) goto done;
     result.status=NEANTIK_ASSESSMENT_CHANGED;
     if (secured_hash(url,expected)!=1) goto done;
     result.status=NEANTIK_ASSESSMENT_OK;

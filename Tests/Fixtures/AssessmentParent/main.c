@@ -19,7 +19,7 @@ int main(int argc,char **argv) {
     char input[PATH_MAX+33]; size_t n=0;
     for (;;) { ssize_t got=read(0,input+n,sizeof(input)-1-n); if (got<0) return 97; if (!got) break; n+=(size_t)got; if(n>=sizeof(input)-1) return 96; }
     input[n]=0;
-    int native_request=n>32 && !memcmp(input,"NAA1",4);
+    int native_request=n>32 && !memcmp(input,"NAA2",4);
     if (native_request) {
         char *last=strrchr(input+32,'/');
         if (last && !strcmp(last+1,"hang")) strcpy(input,"hang");
@@ -53,7 +53,7 @@ int main(int argc,char **argv) {
     }
     if (!strncmp(input,"descriptor:",11)) { int fd=atoi(input+11); if (fd>2 && fcntl(fd,F_GETFD)>=0) return 94; }
     if (!strcmp(input,"malformed")) { write(1,"{}\n",3); return 0; }
-    const char *reply="{\"schema\":1,\"status\":5,\"gatekeeperAccepted\":false,\"offlineTicketAccepted\":false,\"onlineLookupSuccess\":false,\"onlineDateValid\":false,\"systemErrorCode\":0,\"installAuthorized\":false}\n";
+    const char *reply="{\"schema\":2,\"status\":5,\"gatekeeperAccepted\":false,\"offlineTicketAccepted\":false,\"onlineRevocationCheckCompleted\":false,\"onlineDateAdmitted\":false,\"systemErrorCode\":0,\"installAuthorized\":false}\n";
     write(1,reply,strlen(reply)); return 1;
 #endif
 }

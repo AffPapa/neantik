@@ -27,12 +27,12 @@ private func fixtureCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
 }
 private final class AssessmentParentBundle {}
 @Suite(.serialized) struct DirectAssessmentParentTests {
-    private let refusal = "{\"schema\":1,\"status\":5,\"gatekeeperAccepted\":false,\"offlineTicketAccepted\":false,\"onlineLookupSuccess\":false,\"onlineDateValid\":false,\"systemErrorCode\":0,\"installAuthorized\":false}\n"
+    private let refusal = "{\"schema\":2,\"status\":5,\"gatekeeperAccepted\":false,\"offlineTicketAccepted\":false,\"onlineRevocationCheckCompleted\":false,\"onlineDateAdmitted\":false,\"systemErrorCode\":0,\"installAuthorized\":false}\n"
     @Test func canonicalPrivateTemporaryPathIsNotRewrittenByFoundation() throws {
         let url = URL(fileURLWithPath: "/private/tmp/neantik-admission-fixture/NeAntik.app")
         let hash = Data(repeating: 7, count: 20)
         let request = try DirectAssessmentParent.request(app: url, cdHash: hash)
-        #expect(request.prefix(4) == Data("NAA1".utf8))
+        #expect(request.prefix(4) == Data("NAA2".utf8))
         #expect(request[4..<24] == hash)
         #expect(String(decoding: request.dropFirst(32), as: UTF8.self) == url.path)
         #expect(request.count == 32 + url.path.utf8.count)
@@ -136,12 +136,22 @@ private final class AssessmentParentBundle {}
         #expect(run(helper, "descriptor:\(fd)").exit_code == 1)
     }
     @Test func strictReplyPositiveAndNegativeControls() throws {
-        let success = "{\"schema\":1,\"status\":0,\"offlineTicketDate\":811900000.000000,\"onlineTicketDate\":811950000.000000,\"freshRemoteResponseProven\":false,\"installAuthorized\":false}\n"
+        let success = "{\"schema\":2,\"status\":0,\"offlineTicketDate\":811900000.000000,\"onlineTicketDate\":811950000.000000,\"onlineRevocationCheckCompleted\":true,\"freshRemoteResponseProven\":false,\"installAuthorized\":false}\n"
         #expect(try DirectAssessmentReply.parse(Data(success.utf8), exitCode: 0, normalExit: true, now: 812_000_000) == .observed(offlineTicketDate: 811900000, onlineTicketDate: 811950000))
+        let absentDate = success.replacingOccurrences(of: "811950000.000000", with: "null")
+        #expect(try DirectAssessmentReply.parse(Data(absentDate.utf8), exitCode: 0, normalExit: true, now: 812_000_000) == .observed(offlineTicketDate: 811900000, onlineTicketDate: nil))
         #expect(try DirectAssessmentReply.parse(Data(refusal.utf8), exitCode: 1, normalExit: true, now: 812_000_000).installAuthorized == false)
-        for bad in [success + "{}", success.replacingOccurrences(of: "\"schema\":1", with: "\"schema\":1,\"schema\":1"),
+        for bad in [success + "{}", success.replacingOccurrences(of: "\"schema\":2", with: "\"schema\":2,\"schema\":2"),
                     success.replacingOccurrences(of: "false", with: "0"), success.replacingOccurrences(of: "811900000.000000", with: "NaN"),
                     success.replacingOccurrences(of: "811900000.000000", with: "900000000.000000"),
+                    success.replacingOccurrences(of: "811900000.000000", with: "null"),
+                    success.replacingOccurrences(of: "811950000.000000", with: "0.000000"),
+                    success.replacingOccurrences(of: "811950000.000000", with: "900000000.000000"),
+                    success.replacingOccurrences(of: "811950000.000000", with: "NaN"),
+                    absentDate.replacingOccurrences(of: "\"onlineRevocationCheckCompleted\":true", with: "\"onlineRevocationCheckCompleted\":false"),
+                    absentDate.replacingOccurrences(of: "\"onlineRevocationCheckCompleted\":true", with: "\"onlineRevocationCheckCompleted\":1"),
+                    absentDate.replacingOccurrences(of: "\"schema\":2", with: "\"schema\":1"),
+                    success.replacingOccurrences(of: "\"onlineRevocationCheckCompleted\":true,", with: ""),
                     success.replacingOccurrences(of: "\"schema\"", with: "\"sch\\u0065ma\""),
                     refusal.replacingOccurrences(of: "\"gatekeeperAccepted\":false", with: "\"gatekeeperAccepted\":true"),
                     refusal.replacingOccurrences(of: "\"systemErrorCode\":0", with: "\"systemErrorCode\":9223372036854775808"),
@@ -150,6 +160,16 @@ private final class AssessmentParentBundle {}
         }
         #expect(throws: DirectAssessmentParentError.reply) { try DirectAssessmentReply.parse(Data(success.utf8), exitCode: 1, normalExit: true, now: 812_000_000) }
         #expect(throws: DirectAssessmentParentError.reply) { try DirectAssessmentReply.parse(Data(success.utf8), exitCode: 0, normalExit: false, now: 812_000_000) }
+    }
+    @Test func onlineRefusalsAndChangedBindingHaveConsistentVersionedStates() throws {
+        for (completed, admitted, error) in [(false, true, Int64(EACCES)), (false, true, 1), (true, false, 0), (false, false, 0)] {
+            let line = "{\"schema\":2,\"status\":8,\"gatekeeperAccepted\":true,\"offlineTicketAccepted\":true,\"onlineRevocationCheckCompleted\":\(completed),\"onlineDateAdmitted\":\(admitted),\"systemErrorCode\":\(error),\"installAuthorized\":false}\n"
+            #expect(try DirectAssessmentReply.parse(Data(line.utf8), exitCode: 1, normalExit: true, now: 812_000_000) == .refused(status: 8, gatekeeper: true, offline: true, online: completed, onlineDate: admitted, systemError: error))
+        }
+        let changed = "{\"schema\":2,\"status\":9,\"gatekeeperAccepted\":true,\"offlineTicketAccepted\":true,\"onlineRevocationCheckCompleted\":true,\"onlineDateAdmitted\":true,\"systemErrorCode\":0,\"installAuthorized\":false}\n"
+        #expect(try DirectAssessmentReply.parse(Data(changed.utf8), exitCode: 1, normalExit: true, now: 812_000_000) == .refused(status: 9, gatekeeper: true, offline: true, online: true, onlineDate: true, systemError: 0))
+        #expect(throws: DirectAssessmentParentError.reply) { try DirectAssessmentReply.parse(Data(changed.replacingOccurrences(of: "\"status\":9", with: "\"status\":8").utf8), exitCode: 1, normalExit: true, now: 812_000_000) }
+        #expect(throws: DirectAssessmentParentError.reply) { try DirectAssessmentReply.parse(Data(changed.replacingOccurrences(of: "\"systemErrorCode\":0", with: "\"systemErrorCode\":13").utf8), exitCode: 1, normalExit: true, now: 812_000_000) }
     }
     @Test func separatelySignedHelperQualification() async throws {
         guard let path = ProcessInfo.processInfo.environment["NEANTIK_ASSESSMENT_PARENT_QA_ROOT"],

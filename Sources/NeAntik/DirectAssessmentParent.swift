@@ -107,7 +107,7 @@ enum DirectAssessmentParent {
               components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }),
               app.path == app.path.precomposedStringWithCanonicalMapping, !bytes.contains(0),
               !bytes.isEmpty, bytes.count < Int(PATH_MAX), cdHash.count == 20 else { throw DirectAssessmentParentError.request }
-        var data = Data("NAA1".utf8); data.append(cdHash)
+        var data = Data("NAA2".utf8); data.append(cdHash)
         for value in [UInt32(2), UInt32(bytes.count)] {
             var be = value.bigEndian; withUnsafeBytes(of: &be) { data.append(contentsOf: $0) }
         }
