@@ -16,6 +16,7 @@ enum CRX3SignatureVerifier {
         let packageSHA256: String
         let archiveOffset: Int
         let verifiedProofCount: Int
+        let developerSPKI: Data
         // No publisher trust, safe extraction, installation or enabled-state
         // claim follows from a developer's cryptographic signature.
         let archiveSafetyVerified = false
@@ -92,7 +93,7 @@ enum CRX3SignatureVerifier {
             packageHash.update(data: chunk)
         }
         let digest = Data(hash.finalize())
-        var foundDeveloper = false
+        var developerSPKI: Data?
         for proof in proofs {
             try Task.checkCancellation()
             let (spki, signature) = try parseProof(proof.data)
@@ -106,16 +107,19 @@ enum CRX3SignatureVerifier {
                                         signature as CFData, nil) else {
                 throw Failure.invalidSignature
             }
-            if Data(SHA256.hash(data: spki).prefix(16)) == signedID { foundDeveloper = true }
+            if Data(SHA256.hash(data: spki).prefix(16)) == signedID {
+                guard developerSPKI == nil || developerSPKI == spki else { throw Failure.invalidHeader }
+                developerSPKI = spki
+            }
         }
-        guard foundDeveloper else { throw Failure.missingDeveloperProof }
+        guard let developerSPKI else { throw Failure.missingDeveloperProof }
         let id = signedID.flatMap { byte in
             [Character(UnicodeScalar(97 + Int(byte >> 4))!),
              Character(UnicodeScalar(97 + Int(byte & 15))!)]
         }
         return Verification(extensionID: String(id),
                             packageSHA256: packageHash.finalize().map { String(format: "%02x", $0) }.joined(),
-                            archiveOffset: archiveOffset, verifiedProofCount: proofs.count)
+                            archiveOffset: archiveOffset, verifiedProofCount: proofs.count, developerSPKI: developerSPKI)
     }
 
     private static func littleEndian32(_ data: Data, at offset: Int) -> UInt32 {

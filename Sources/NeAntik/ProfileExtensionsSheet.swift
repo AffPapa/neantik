@@ -24,6 +24,11 @@ struct ProfileExtensionsSheet: View {
     @State private var packageTask: Task<Void, Never>?
     @State private var packageRequestID: UUID?
     @State private var showPackage = false
+    @State private var packageURL: URL?
+    @State private var preparationBusy = false
+    @State private var preparationError: String?
+    @State private var preparedPackage: PreparedCRXPackage?
+    @State private var preparationTask: Task<Void, Never>?
 
     private var records: [ProfileExtensionRecord] {
         guard let snapshot else { return [] }
@@ -119,8 +124,13 @@ struct ProfileExtensionsSheet: View {
         }
         .padding(24).frame(minWidth: 680, idealWidth: 800, maxWidth: 980, minHeight: 330)
         .task { refresh() }
-        .onDisappear { requestID = nil; task?.cancel(); packageRequestID = nil; packageTask?.cancel() }
-        .sheet(isPresented: $showPackage) { if let package { CRXPackagePreview(inspection: package) } }
+        .onDisappear { requestID = nil; task?.cancel(); packageRequestID = nil; packageTask?.cancel(); preparationTask?.cancel() }
+        .sheet(isPresented: $showPackage) {
+            if let package {
+                CRXPackagePreview(inspection: package, busy: preparationBusy, error: preparationError, prepared: preparedPackage,
+                                  prepare: preparePackage, cancel: { preparationTask?.cancel() })
+            }
+        }
     }
 
     private func details(_ record: ProfileExtensionRecord) -> some View {
@@ -212,7 +222,7 @@ struct ProfileExtensionsSheet: View {
                 let result = try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
                 try Task.checkCancellation()
                 guard packageRequestID == id else { return }
-                package = result; showPackage = true
+                package = result; packageURL = url; preparedPackage = nil; preparationError = nil; showPackage = true
             } catch is CancellationError { }
             catch {
                 guard packageRequestID == id else { return }
@@ -222,10 +232,44 @@ struct ProfileExtensionsSheet: View {
             }
         }
     }
+
+    private func preparePackage() {
+        guard !preparationBusy, let url = packageURL, let expected = package else { return }
+        preparationBusy = true; preparationError = nil
+        preparationTask = Task { @MainActor in
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() }; preparationBusy = false; preparationTask = nil }
+            do {
+                guard try await validateSnapshot() else { throw CRXPreparationError.changed }
+                let browserData = paths.browserDataDirectory(for: profile.id)
+                let result = try await processes.withVerifiedStoppedProfileMaintenance(profile: profile) { authority in
+                    try authority.validate(browserData: browserData)
+                    let captured = try CRXPackageInspection.capture(url)
+                    return try CRXPackagePreparation.prepare(captured, expected: expected, browserData: browserData,
+                        validate: { try authority.validate(browserData: browserData) })
+                }
+                guard try await validateSnapshot() else { throw CRXPreparationError.retained }
+                // Once published, cancellation must not pretend no data were written.
+                preparedPackage = result
+            } catch is CancellationError {
+                preparationError = "Подготовка отменена. Расширение не установлено."
+            } catch {
+                preparationError = (error as? CRXPreparationError)?.localizedDescription
+                    ?? (error as? CRXPackageInspectionError)?.localizedDescription
+                    ?? "Не удалось подготовить расширение. Закрой профиль и проверь доступ к его данным."
+            }
+        }
+    }
+
 }
 
 private struct CRXPackagePreview: View {
     let inspection: CRXPackageInspection
+    let busy: Bool
+    let error: String?
+    let prepared: PreparedCRXPackage?
+    let prepare: () -> Void
+    let cancel: () -> Void
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -252,8 +296,27 @@ private struct CRXPackagePreview: View {
             }.frame(maxHeight: 360)
             Text("Фактически выданные права и возможность установки определяет Chromium. Для управления открой chrome://extensions/ в нужном профиле.")
                 .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            HStack { Spacer(); Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction) }
-        }.padding(24).frame(width: 650)
+            if let error { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
+            if let prepared {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Папка подготовлена. Расширение ещё не установлено", systemImage: "folder.badge.checkmark")
+                    Text("Открой этот профиль → chrome://extensions/ → Режим разработчика → Загрузить распакованное расширение. В выборе папки нажми ⌘⇧G и вставь скопированный путь.")
+                    if prepared.manifestKeyAdded { Text("В manifest добавлен публичный ключ подписи, чтобы Chromium сохранил ID. Исходный CRX сохранён рядом.").foregroundStyle(.secondary) }
+                    Button("Копировать путь к папке") {
+                        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(prepared.payload.path, forType: .string)
+                    }
+                    Text("Папка нужна для повторных запусков: не перемещай и не удаляй её. Разрешения и удаление расширения — в Chromium.").font(.subheadline).foregroundStyle(.secondary)
+                }.fixedSize(horizontal: false, vertical: true)
+            }
+            HStack {
+                if busy { ProgressView().controlSize(.small); Button("Отменить подготовку", action: cancel) }
+                else if prepared == nil && inspection.manifestVersion == 3 {
+                    Button("Подготовить папку для Chromium…", action: prepare)
+                        .help("Распакует проверенные файлы в закрытый профиль. Установка выполняется отдельно в Chromium.")
+                }
+                Spacer(); Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
+            }
+        }.padding(24).frame(width: 650).interactiveDismissDisabled(busy)
     }
     private func permissions(_ title: String, _ values: [String]) -> some View {
         VStack(alignment: .leading, spacing: 6) {

@@ -32,6 +32,17 @@ struct CRXPackageInspection: Equatable, Sendable {
     /// Off-main, no extraction, network, execution or profile writes. A valid
     /// developer signature authenticates bytes, not the author's trustworthiness.
     static func inspect(_ package: Data) throws -> Self {
+        try capture(package).inspection
+    }
+
+    struct Captured: Sendable {
+        let bytes: Data
+        let inspection: CRXPackageInspection
+        let proof: CRX3SignatureVerifier.Verification
+        let archive: CRXArchiveInspection.Result
+    }
+
+    static func capture(_ package: Data) throws -> Captured {
         let proof: CRX3SignatureVerifier.Verification
         do { proof = try CRX3SignatureVerifier.verify(package) }
         catch is CancellationError { throw CancellationError() }
@@ -49,11 +60,12 @@ struct CRXPackageInspection: Equatable, Sendable {
                   let manifestVersion = Int(number.stringValue), [2, 3].contains(manifestVersion) else {
                 throw CRXPackageInspectionError.manifest
             }
-            return .init(extensionID: proof.extensionID, packageSHA256: proof.packageSHA256,
+            let inspection = Self(extensionID: proof.extensionID, packageSHA256: proof.packageSHA256,
                 name: name, version: version, manifestVersion: manifestVersion,
                 permissions: try strings(object["permissions"]) + strings(object["host_permissions"]),
                 optionalPermissions: try strings(object["optional_permissions"]) + strings(object["optional_host_permissions"]),
                 entryCount: result.entries, expandedBytes: result.expanded, localizedName: name.hasPrefix("__MSG_"))
+            return Captured(bytes: Data(package), inspection: inspection, proof: proof, archive: result)
         } catch is CancellationError { throw CancellationError() }
         catch { throw CRXPackageInspectionError.manifest }
     }
@@ -73,6 +85,10 @@ struct CRXPackageInspection: Equatable, Sendable {
     /// Captures one selected file through a no-follow descriptor. Replacement,
     /// mutation and hard links invalidate the result before it reaches the UI.
     static func read(_ url: URL, afterRead: () throws -> Void = {}) throws -> Self {
+        try capture(url, afterRead: afterRead).inspection
+    }
+
+    static func capture(_ url: URL, afterRead: () throws -> Void = {}) throws -> Captured {
         guard url.isFileURL else { throw CRXPackageInspectionError.unsafeFile }
         let canonical = try DirectUpdateArchiveIntegrityService.platformFileURL(url)
         let parentURL = canonical.deletingLastPathComponent()
@@ -94,7 +110,7 @@ struct CRXPackageInspection: Equatable, Sendable {
             data.append(chunk); offset += Int64(chunk.count)
         }
         try afterRead()
-        let result = try inspect(data)
+        let result = try capture(data)
         try Task.checkCancellation()
         try BackupFS.validateDirectoryPath(parentURL, parentIdentity)
         guard try BackupFS.identity(fd) == before,
@@ -107,7 +123,19 @@ struct CRXPackageInspection: Equatable, Sendable {
 /// Every record is checked and decompressed with exact size/CRC, but only the
 /// bounded manifest is retained. No paths are extracted or opened from ZIP.
 enum CRXArchiveInspection {
-    struct Result { let manifest: Data; let entries: Int; let expanded: Int }
+    struct Entry: Sendable {
+        let path: String
+        let directory: Bool
+        let offset: Int
+        let compressed: Int
+        let expanded: Int
+        let method: UInt16
+        let crc: UInt32
+    }
+    struct Result: Sendable {
+        let manifest: Data; let entries: Int; let expanded: Int
+        let inventory: [Entry]
+    }
     static func read(_ input: Data) throws -> Result {
         let data = Data(input) // normalize indices before offset arithmetic
         func bytes(_ offset: Int, _ count: Int) throws -> Data {
@@ -128,6 +156,7 @@ enum CRXArchiveInspection {
         guard data.crx16(end + 4) == 0, data.crx16(end + 6) == 0,
               Int(data.crx16(end + 8)) == count, count > 0, central > 0, centralSize > 0,
               central <= end, centralSize == end - central else { throw CRXPackageInspectionError.archive }
+        var inventory: [Entry] = []
         var cursor = central, expandedTotal = 0, manifest: Data?
         var names: [String: Bool] = [:], canonicalNames: [String: String] = [:], ranges: [(Int, Int)] = []
         for _ in 0..<count {
@@ -201,6 +230,8 @@ enum CRXArchiveInspection {
             if status == NEANTIK_ZIP_CANCELLED { throw CancellationError() }
             guard status == NEANTIK_ZIP_OK else { throw CRXPackageInspectionError.archive }
             if isManifest { manifest = output }
+            inventory.append(Entry(path: path, directory: directory, offset: offset, compressed: compressed,
+                                   expanded: expanded, method: method, crc: crc))
             ranges.append((localOffset, recordEnd)); cursor += 46 + nameSize + extraSize + commentSize
             guard cursor <= end else { throw CRXPackageInspectionError.archive }
         }
@@ -217,7 +248,7 @@ enum CRXArchiveInspection {
             }
         }
         guard let manifest else { throw CRXPackageInspectionError.manifest }
-        return .init(manifest: manifest, entries: count, expanded: expandedTotal)
+        return .init(manifest: manifest, entries: count, expanded: expandedTotal, inventory: inventory)
     }
     private static func extra(_ data: Data) throws {
         var index = 0
