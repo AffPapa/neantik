@@ -30,6 +30,7 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     private var starting = false
     private var startFinish: ((Result<UInt16, Error>) -> Void)?
     private var startDeadline: DispatchWorkItem?
+    private let activity = BrowserRelayActivity()
 
     init(upstreamKind: ProxyKind, upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
          maximumConnections: Int = 8,
@@ -100,9 +101,13 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     func activeConnectionCount() async -> Int {
         await withCheckedContinuation { continuation in queue.async { continuation.resume(returning: self.sessions.count) } }
     }
+    /// Internal, unauthenticated scalar only. The persistent owner must bind
+    /// any IPC reply; callers cannot treat this as a browser request verdict.
+    func activitySnapshot() -> BrowserRelayActivity.Snapshot { activity.snapshot() }
     private func stopOnQueue(error: Error) {
         guard !stopped else { return }
         stopped = true; stopError = error; startDeadline?.cancel(); startDeadline = nil
+        activity.listenerDidStop()
         listener.stateUpdateHandler = nil; listener.newConnectionHandler = nil; listener.cancel()
         let finish = startFinish; startFinish = nil; finish?(.failure(error))
         for task in sessions.values { task.cancel() }
@@ -126,6 +131,8 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
         #endif
         sessions[id] = Task.detached { [self] in
             defer { front.cancel(); back.cancel(); queue.async { self.sessions.removeValue(forKey: id) } }
+            var ticket: BrowserRelayActivity.Ticket?
+            var failure = BrowserRelayActivity.End.localSetupFailed
             do {
                 try await withTaskCancellationHandler {
                     try Task.checkCancellation()
@@ -139,7 +146,10 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
                     _ = try remaining()
                     try Task.checkCancellation()
                     guard try admit(peer) else { throw Failure.refused }
+                    guard let admitted = activity.begin() else { throw Failure.closed }
+                    ticket = admitted
                     try await front.open(timeout: remaining())
+                    failure = .clientNegotiationFailed
                     var buffer = Data()
                     func more() async throws {
                         let chunk = try await front.receive(maximumBytes: 1024, timeout: remaining())
@@ -156,12 +166,18 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
                     let destination = request!.destination; buffer.removeFirst(request!.consumed)
                     // Repeat admission after parsing and immediately before
                     // the only operation that may send upstream credentials.
+                    failure = .admissionRevoked
                     try Task.checkCancellation(); guard try admit(peer) else { throw Failure.refused }
+                    failure = .upstreamNegotiationFailed
                     let early = try await back.establish(destination: destination, credentials: credentials, timeout: remaining(),
                                                          authorizeCredentials: { try self.admit(peer) })
+                    activity.established(admitted)
+                    failure = .browserReplyFailed
                     let bound = try await back.localBoundEndpoint()
                     let boundFrame = try ProxyRelayWireCodec.socksConnect(bound)
                     try await front.send(Data([5,0,0]) + boundFrame.dropFirst(3), timeout: remaining())
+                    activity.replySent(admitted)
+                    failure = .streamFailed
                     if !early.isEmpty { try await front.send(early) }
                     if !buffer.isEmpty { try await back.send(buffer) }
                     try await withThrowingTaskGroup(of: Void.self) { group in
@@ -171,7 +187,13 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
                         catch { front.cancel(); back.cancel(); group.cancelAll(); throw error }
                     }
                 } onCancel: { front.cancel(); back.cancel() }
-            } catch { /* No payload, destinations, credentials or native errors logged. */ }
+                if let ticket { activity.finish(ticket, as: Task.isCancelled ? .cancelled : .completed) }
+            } catch {
+                if let ticket {
+                    activity.finish(ticket, as: .failure(error, during: failure))
+                }
+                // No payload, destinations, credentials or native errors logged.
+            }
         }
     }
     private static func copy(_ from: ProxyRelayUpstreamTransport, _ to: ProxyRelayUpstreamTransport) async throws {
