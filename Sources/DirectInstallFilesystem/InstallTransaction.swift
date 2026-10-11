@@ -88,7 +88,7 @@ public enum InstallFilesystemTransaction {
         try self.candidateName(candidateName)
         guard InstallFS.validHash(candidateReceiptSHA256) else { throw InstallFilesystemError.unsafe }
         guard try InstallFS.entry(lease.parent, activeName) == nil,
-              !(try InstallFS.names(lease.parent)).contains(where: { $0.hasPrefix(".neantik-install-preparing-") }) else { throw InstallFilesystemError.pending }
+              !(try InstallFS.installParentNames(lease.parent)).contains(where: { $0.hasPrefix(".neantik-install-preparing-") }) else { throw InstallFilesystemError.pending }
         let transferNames = try InstallPreparation.unresolvedNames(lease: lease)
         guard transferNames == (preparation.map { [$0.name] } ?? []) else { throw InstallFilesystemError.pending }
         if let preparation { _ = try InstallPreparation.load(lease: lease, binding: preparation) }
@@ -273,7 +273,7 @@ public enum InstallFilesystemTransaction {
     static func ownsPreparation(lease: InstallFilesystemLease, binding: InstallPreparationBinding) throws -> Bool {
         // Finalized history has its own decision check; current slot orientation
         // applies only while the transaction still owns the active fence.
-        let names = try InstallFS.names(lease.parent).filter { $0 == activeName }
+        let names = try InstallFS.installParentNames(lease.parent).filter { $0 == activeName }
         for name in names {
             let loaded = try load(lease, name: name); defer { close(loaded.descriptor) }
             if loaded.journal.preparation == binding {
@@ -284,7 +284,7 @@ public enum InstallFilesystemTransaction {
         return false
     }
     static func settledPreparation(lease: InstallFilesystemLease, binding: InstallPreparationBinding) throws -> Bool {
-        for name in try InstallFS.names(lease.parent).filter({ $0.hasPrefix(".neantik-install-committed-") || $0.hasPrefix(".neantik-install-rolledback-") }) {
+        for name in try InstallFS.installParentNames(lease.parent).filter({ $0.hasPrefix(".neantik-install-committed-") || $0.hasPrefix(".neantik-install-rolledback-") }) {
             let loaded = try load(lease, name: name); defer { close(loaded.descriptor) }
             if loaded.journal.preparation == binding {
                 guard try acknowledgement(loaded) == name.hasPrefix(".neantik-install-committed-") else { throw InstallFilesystemError.changed }

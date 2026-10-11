@@ -76,7 +76,7 @@ public enum InstallPreparation {
         }
         try validateParent()
         guard try InstallFS.names(sourceParentDescriptor) == [InstallFilesystemTransaction.appName] else { throw InstallFilesystemError.changed }
-        let names = try InstallFS.names(lease.parent)
+        let names = try InstallFS.installParentNames(lease.parent)
         guard !names.contains(InstallFilesystemTransaction.activeName),
               !names.contains(where: { $0.hasPrefix(".neantik-install-preparing-") }),
               try unresolvedNames(lease: lease).isEmpty else { throw InstallFilesystemError.pending }
@@ -157,7 +157,7 @@ public enum InstallPreparation {
     // Incomplete, unknown, changed or unbound records continue to fence retries.
     static func unresolvedNames(lease: InstallFilesystemLease) throws -> [String] {
         var pending: [String] = []
-        for name in try InstallFS.names(lease.parent).filter({ $0.hasPrefix(prefix) }) {
+        for name in try InstallFS.installParentNames(lease.parent).filter({ $0.hasPrefix(prefix) }) {
             if name.hasPrefix(preparingPrefix) { pending.append(name); continue }
             let (_, binding) = try read(lease: lease, name: name)
             if try !InstallFilesystemTransaction.settledPreparation(lease: lease, binding: binding) { pending.append(name) }

@@ -101,18 +101,32 @@ enum InstallFS {
         try noACL(fd); return identity
     }
     static func names(_ fd: Int32) throws -> [String] {
+        try directoryNames(fd, prefix: nil)
+    }
+    /// The application parent also contains unrelated user files. Select only
+    /// our ASCII transaction namespace before decoding/validating names. Bad
+    /// names in that namespace still refuse; app/stage/journal scans stay strict.
+    static func installParentNames(_ fd: Int32) throws -> [String] {
+        try directoryNames(fd, prefix: Array(".neantik-install-".utf8))
+    }
+    private static func directoryNames(_ fd: Int32, prefix: [UInt8]?) throws -> [String] {
         let copy = dup(fd); guard copy >= 0 else { throw posix() }
         guard let stream = fdopendir(copy) else { close(copy); throw posix() }
         defer { closedir(stream) }; rewinddir(stream)
-        var result: [String] = []
+        var result: [String] = [], visited = 0
         while true {
             errno = 0
             guard let entry = readdir(stream) else { if errno != 0 { throw posix() }; break }
-            guard let name = withUnsafePointer(to: &entry.pointee.d_name, { p in
-                p.withMemoryRebound(to: CChar.self, capacity: 256) { String(validatingCString: $0) }
-            }) else { throw InstallFilesystemError.unsafe }
-            if name == "." || name == ".." { continue }
-            try self.name(name); guard result.count < 6_000 else { throw InstallFilesystemError.limit }
+            let bytes = withUnsafePointer(to: &entry.pointee.d_name) { p in
+                p.withMemoryRebound(to: UInt8.self, capacity: 256) {
+                    Array(UnsafeBufferPointer(start: $0, count: 256).prefix { $0 != 0 })
+                }
+            }
+            if bytes == [46] || bytes == [46, 46] { continue }
+            visited += 1; guard visited <= 6_000 else { throw InstallFilesystemError.limit }
+            if let prefix, !bytes.starts(with: prefix) { continue }
+            guard let name = String(bytes: bytes, encoding: .utf8) else { throw InstallFilesystemError.unsafe }
+            try self.name(name)
             result.append(name)
         }
         return result.sorted()

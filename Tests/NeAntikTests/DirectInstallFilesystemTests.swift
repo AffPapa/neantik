@@ -688,9 +688,20 @@ struct DirectInstallFilesystemTests {
         #expect(try f.version() == "old"); #expect(try f.version(f.candidateName) == "new")
     }
 
-    @Test func twoFreshProcessUpdatesKeepHistoricalRecordsWithoutBlockingNext() throws {
+    @Test(arguments: ["plain", "NFD", "newline", "backslash"])
+    func twoFreshProcessUpdatesKeepHistoricalRecordsWithoutBlockingNext(sibling: String) throws {
         let f = try Fixture(); defer { f.cleanup() }; let source = try prepareSource(f)
-        #expect(try child(f, "transferBegin") == 0); #expect(try child(f, "ack") == 0)
+        let unrelatedName: String
+        switch sibling {
+        case "NFD": unrelatedName = "Cafe\u{301}.app"
+        case "newline": unrelatedName = "unrelated\nentry"
+        case "backslash": unrelatedName = "unrelated\\entry"
+        default: unrelatedName = "unrelated.app"
+        }
+        let unrelated = f.root.appendingPathComponent(unrelatedName)
+        let original = Data("untouched-unrelated-sibling".utf8)
+        try original.write(to: unrelated)
+        try #require(try child(f, "transferBegin") == 0); try #require(try child(f, "ack") == 0)
         let second = ".neantik-next-" + UUID().uuidString.lowercased() + ".app"
         try f.tree(second, version: "newer")
         try FileManager.default.moveItem(at: f.root.appendingPathComponent(second), to: source.appendingPathComponent("NeAntik.app"))
@@ -703,6 +714,60 @@ struct DirectInstallFilesystemTests {
         #expect(try child(f, "inspectTransfer", "journal") == 0)
         try Data(f.candidateName.utf8).write(to: f.root.appendingPathComponent("candidate.name"))
         #expect(try child(f, "inspectTransfer", "journal") == 0) // first history, now a different active app
+        #expect(try Data(contentsOf: unrelated) == original)
+    }
+    @Test(arguments: ["unrelated\nentry", "unrelated\\entry"])
+    func unrelatedParentNamesSurviveFreshProcessRollback(sibling: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        let unrelated = f.root.appendingPathComponent(sibling), bytes = Data("retained-sibling".utf8)
+        try bytes.write(to: unrelated)
+        try #require(try child(f, "transferBegin", InstallFilesystemPoint.swappedBeforeSync.rawValue) == 73)
+        #expect(try child(f, "inspectTransfer", "journal") == 0)
+        #expect(try child(f, "recover") == 0); #expect(try f.version() == "old")
+        #expect(try child(f, "recover") == 0)
+        #expect(try Data(contentsOf: unrelated) == bytes)
+    }
+    @Test(arguments: [".neantik-install-preparing-unknown", ".neantik-install-transfer-unknown", ".neantik-install-unknown\nentry"])
+    func malformedOwnedParentNamespaceStillFencesTransfer(name: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }; _ = try prepareSource(f)
+        let unexpected = f.root.appendingPathComponent(name)
+        try FileManager.default.createDirectory(at: unexpected, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let lease = try InstallFilesystemLease(parentURL: f.root)
+        #expect(throws: (any Error).self) { try transfer(f, lease: lease) }
+        #expect(try f.version() == "old"); #expect(!FileManager.default.fileExists(atPath: f.active.path))
+        #expect(FileManager.default.fileExists(atPath: unexpected.path))
+    }
+    @Test(arguments: ["app", "source", "journal"])
+    func namespaceSelectionNeverRelaxesPrivateTreeNames(scope: String) throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let lease = try InstallFilesystemLease(parentURL: f.root)
+        if scope == "app" {
+            try Data([1]).write(to: f.root.appendingPathComponent(f.candidateName + "/Contents/unrelated\nentry"))
+            #expect(throws: InstallFilesystemError.unsafe) { try f.begin(lease) }
+            #expect(try f.version() == "old"); #expect(!FileManager.default.fileExists(atPath: f.active.path))
+        } else if scope == "source" {
+            let source = try prepareSource(f)
+            try Data([1]).write(to: source.appendingPathComponent("unrelated\nentry"))
+            #expect(throws: InstallFilesystemError.unsafe) { try transfer(f, lease: lease) }
+            #expect(try f.version() == "old"); #expect(!FileManager.default.fileExists(atPath: f.active.path))
+        } else {
+            _ = try f.begin(lease)
+            try Data([1]).write(to: f.active.appendingPathComponent("unrelated\nentry"))
+            #expect(throws: InstallFilesystemError.unsafe) { try InstallFilesystemTransaction.recover(lease: lease, validateStoppedAuthority: {}) }
+            #expect(try f.version() == "new"); #expect(try f.version(f.candidateName) == "old")
+            #expect(FileManager.default.fileExists(atPath: f.active.path))
+        }
+    }
+    @Test func unrelatedParentEntriesStillCountTowardsEnumerationLimit() throws {
+        let f = try Fixture(); defer { f.cleanup() }
+        let directory = f.root.appendingPathComponent("many-unrelated")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        let fd = try InstallFS.directory(directory); defer { close(fd) }
+        for index in 0..<6_001 {
+            let file = openat(fd, "unrelated-\(index)", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0o600)
+            try #require(file >= 0); close(file)
+        }
+        #expect(throws: InstallFilesystemError.limit) { try InstallFS.installParentNames(fd) }
     }
     @Test func unknownRecordCannotPretendToBeHistoricalFinalized() throws {
         let f = try Fixture(); defer { f.cleanup() }; let source = try prepareSource(f)
