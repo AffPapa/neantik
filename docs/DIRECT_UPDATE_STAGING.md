@@ -93,10 +93,10 @@ parsing. The actual 0.7.29 ZIP has 22 such entries totaling 532,876 bytes.
 It checks owner-executable modes, explicitly verifies the runtime under `Resources`, and
 matches manager version/build and Chromium version to the admitted manifest.
 The asynchronous entry point uses a utility worker and checks caller/worker
-cancellation before returning. It currently accepts only the existing
-unprovisioned manager entitlement contract. Provisioned backup packages require
-the separate authenticated CMS/profile policy and are not admitted by this
-slice.
+cancellation before returning. It distinguishes the legacy app-ID-only manager
+and a provisioned manager with exactly three scoped claims. A present profile
+must authenticate and match the actual Developer ID leaf; invalid provisioning
+never downgrades to the legacy contract.
 
 Scalar fields alone cannot construct a verified observation. Wrong-type
 decoded entitlement dictionaries and opaque raw entitlements without a decoded
@@ -111,6 +111,49 @@ notarization/Gatekeeper, lifecycle admission and durable installation gates are
 still required. See Apple's
 [signature validation API](https://developer.apple.com/documentation/security/secstaticcodecheckvalidity(_:_:_:))
 and [certified timestamp definition](https://developer.apple.com/documentation/security/kseccodeinfotimestamp).
+
+## Native provisioning observation
+
+`DirectProvisioning` builds as a normal C target linked to Security.framework.
+It runs no compiler/subprocess at application runtime and accesses no Keychain
+credentials. A bounded definite-DER SignedData/attached-data preflight rejects
+encrypted and detached envelopes before CMS finalization. Admission itself is
+not authentication. CMS must have one valid signer and pass the exact macOS
+provisioning-profile policy. That private Apple policy is loaded dynamically;
+if unavailable on an OS, admission refuses rather than using generic X509.
+
+The exact Apple policy and an explicit offline OCSP policy are evaluated with
+issuer/revocation network fetching disabled. This checks cached revocation on
+the platform's best-attempt basis; it does not prove a fresh non-revoked status.
+No custom anchors, trust-store edits or permissive trust fallback are used.
+Apple's [policy implementation](https://github.com/apple-oss-distributions/Security/blob/main/OSX/sec/Security/SecPolicy.c)
+defines the profile markers/Apple anchor/OCSP and the revocation flags;
+[revocation flag documentation](https://developer.apple.com/documentation/security/revocation-policy-constants)
+distinguishes cached replies and a required positive response. This source
+inspection is not cold-cache/revoked-certificate runtime qualification.
+
+Authenticated plist grants must authorize macOS/all devices, current validity,
+the fixed team, actual application ID and exact claimed Keychain group. The
+actual Security.framework Developer ID leaf DER must occur in the profile's
+DeveloperCertificates. Signed manager entitlements must have exactly the
+three production claims; development/debug and extra groups refuse. The
+profile is a bounded owned single-link regular file captured with descriptors,
+including captured absence for legacy. Bytes/path identities, fresh secured
+code fields/leaf and profile expiry are checked again after inspection.
+Only one top-level macOS profile is admitted; mobile/nested profiles refuse.
+
+Actual controls exercised the published 0.7.29 legacy and 0.7.30 provisioned
+ZIPs, a wrong manifest version, authenticated profile/actual leaf mismatch,
+wrong App ID, and damaged/removed profiles on disposable extracted app copies.
+A legitimate iOS Apple CMS passes a deliberately generic X509 control but
+fails the exact macOS policy. An owned self-signed foreign CMS, real encrypted
+CMS, unsigned/detached/truncated envelopes and signed-data tampering refuse.
+These are source/native-signature observations, not installation permission.
+Optional actual fixtures are explicitly skipped unless selected by environment.
+
+Cancellation prevents publishing a result after cancellation; the synchronous
+Security call is not proven promptly interruptible. Profile expiry/custody must
+be revalidated again immediately before a future installation commit.
 
 ## Remaining installation gates
 

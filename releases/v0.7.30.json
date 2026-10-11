@@ -60,10 +60,6 @@
       "negative": "external symlink input still refused; only verifier-created root canonicalized"
     }
   },
-  "siteVersion": 131,
-  "siteSourceCommit": "7d35b63f6db1967d5bfff92498fdf2069a017862",
-  "siteDeploymentId": "appgdep_6acb3b07ea788191b40e7e7cbe857499",
-  "siteDeploymentStatus": "succeeded",
   "siteUrl": "https://browser.free",
   "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.30",
   "affpapa": "unchanged: restricted doctor deploy credential unavailable; no alternative transport",
@@ -90,5 +86,10 @@
     "Verified immutable GitHub assets, downloaded headed app and metadata MCP; previous release retained"
   ],
   "releaseToolingCommit": "82c5495",
-  "sitePublication": "pending: auto-review rejected official hidden-stdin credential transfer; exact approval requested"
+  "sitePublication": "pending: auto-review rejected official hidden-stdin credential transfer; exact approval requested",
+  "previousSiteVersion": 131,
+  "siteDeploymentStatus": "pending-credential-transfer-approval",
+  "previousSiteSourceCommit": "7d35b63f6db1967d5bfff92498fdf2069a017862",
+  "previousSiteDeploymentId": "appgdep_6acb3b07ea788191b40e7e7cbe857499",
+  "previousSiteDeploymentStatus": "succeeded"
 }

@@ -63,6 +63,23 @@ struct DirectUpdateCodeSignatureTests {
         #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.validatedFields(info, role: .framework) }
     }
 
+    @Test(arguments: ["valid", "missing-profile", "legacy-with-profile", "wrong-group", "extra-group", "wrong-team", "extra-debug", "foreign-role"])
+    func provisionedManagerRequiresExactThreeClaims(control: String) throws {
+        var info = information(control == "foreign-role" ? .runtime : .manager)
+        var claims = DirectUpdateProvisioningPolicy.claims(bundle: DirectUpdateCodeRole.manager.identifier)
+        switch control {
+        case "wrong-group": claims["keychain-access-groups"] = ["H6VGU2M6JD.app.other"] as NSArray
+        case "extra-group": claims["keychain-access-groups"] = ["H6VGU2M6JD.app.neantik.desktop", "H6VGU2M6JD.app.other"] as NSArray
+        case "wrong-team": claims["com.apple.developer.team-identifier"] = "AAAAAAAAAA" as NSString
+        case "extra-debug": claims["get-task-allow"] = NSNumber(value: false)
+        default: break
+        }
+        if control != "legacy-with-profile" { info[kSecCodeInfoEntitlementsDict as String] = claims }
+        let provisioned = control != "missing-profile", role: DirectUpdateCodeRole = control == "foreign-role" ? .runtime : .manager
+        if control == "valid" { _ = try DirectUpdateCodeSignature.validatedFields(info, role: role, provisionedManager: provisioned) }
+        else { #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.validatedFields(info, role: role, provisionedManager: provisioned) } }
+    }
+
     @Test(arguments: ["wrong-type", "raw-without-dictionary"])
     func malformedFrameworkEntitlementsCannotMasqueradeAsAbsence(control: String) throws {
         var info = information(.framework)
@@ -84,7 +101,7 @@ struct DirectUpdateCodeSignatureTests {
         #expect(!DirectUpdateCodeSignature.admitsARM64Header(fat))
     }
 
-    @Test(arguments: ["valid", "missing", "large-plist", "link-plist", "non-executable", "other-user-executable", "large-helper-plist", "large-resources", "metadata-budget", "profile", "duplicate"])
+    @Test(arguments: ["valid", "valid-profile", "missing", "large-plist", "link-plist", "non-executable", "other-user-executable", "large-helper-plist", "large-resources", "metadata-budget", "profile", "empty-profile", "large-profile", "nested-profile", "mobile-profile", "duplicate"])
     func stageBoundsAndProfilePolicyAreAdmittedBeforeSecurityParsing(control: String) throws {
         let version = "156.0.8078.12", prefix = "NeAntik.app/Contents/", runtime = prefix + "Resources/NeAntik Browser.app/Contents/"
         let framework = runtime + "Frameworks/NeAntik Browser Framework.framework/Versions/" + version + "/"
@@ -104,11 +121,16 @@ struct DirectUpdateCodeSignatureTests {
         case "metadata-budget":
             entries += (0..<5).map { entry(runtime + "Frameworks/Helper\($0).app/Contents/_CodeSignature/CodeResources", size: 8_388_608) }
         case "profile": entries.append(entry(prefix + "embedded.provisionprofile", kind: .symlink))
+        case "valid-profile": entries.append(entry(prefix + "embedded.provisionprofile"))
+        case "empty-profile": entries.append(entry(prefix + "embedded.provisionprofile", size: 0))
+        case "large-profile": entries.append(entry(prefix + "embedded.provisionprofile", size: 2_097_153))
+        case "nested-profile": entries.append(entry(runtime + "embedded.provisionprofile"))
+        case "mobile-profile": entries.append(entry(prefix + "embedded.mobileprovision"))
         case "duplicate": entries.append(entries[0])
         default: break
         }
         let inventory = DirectUpdateZIPInventory(entries: entries, expandedBytes: 192)
-        if control == "valid" { try DirectUpdateCodeSignature.admitStageLayout(inventory, chromiumVersion: version) }
+        if ["valid", "valid-profile"].contains(control) { try DirectUpdateCodeSignature.admitStageLayout(inventory, chromiumVersion: version) }
         else { #expect(throws: (any Error).self) { try DirectUpdateCodeSignature.admitStageLayout(inventory, chromiumVersion: version) } }
     }
 
@@ -120,7 +142,7 @@ struct DirectUpdateCodeSignatureTests {
         let target = role == .manager ? app : role == .runtime ? runtime : runtime.appendingPathComponent("Contents/Frameworks/NeAntik Browser Framework.framework")
         let result = try DirectUpdateCodeSignature.inspect(target, role: role)
         #expect(result.developerIDVerified && result.nestedAndAllArchitecturesVerified && result.hardenedRuntimeVerified)
-        #expect(result.version == (role == .manager ? "0.7.29" : "156.0.8078.12"))
+        #expect(result.version == (role == .manager ? (ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_VERSION"] ?? "0.7.29") : "156.0.8078.12"))
         #expect(result.certifiedTimestamp.timeIntervalSince1970 > 1_700_000_000)
     }
 

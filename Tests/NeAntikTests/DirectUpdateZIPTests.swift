@@ -337,6 +337,51 @@ struct DirectUpdateZIPTests {
         try app.discard(); try prepared.discard(); #expect(f.retainedApps.isEmpty)
     }
 
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_STAGE_PROVISIONED_ARCHIVE"] != nil))
+    func actualProvisionedPublicZIPRequiresAuthenticatedProfileAndMatchingManifest() throws {
+        let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_STAGE_PROVISIONED_ARCHIVE"])
+        let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+        try #require(BackupFS.hex(SHA256.hash(data: bytes)) == "1a445b68a22634ab249573cf4712d9f47552daa9e3d403df0cf0adc360cbc7df")
+        let fixture = try OwnZIPFixture(bytes), prepared = try fixture.prepare()
+        let app = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: fixture.apps)
+        #expect(app.inventory.entries.contains(where: { $0.path == "NeAntik.app/Contents/embedded.provisionprofile" && $0.kind == .file }))
+        let observed = try DirectUpdateCodeSignature.inspectStage(app)
+        #expect(observed.count == 3 && observed[0].version == "0.7.30" && observed[0].build == "93")
+        #expect(observed.allSatisfy { $0.developerIDVerified })
+        try app.discard(); try prepared.discard(); #expect(fixture.retainedApps.isEmpty)
+        // An otherwise intact, signed/provisioned app cannot satisfy a different
+        // fixture manifest. This synthetic signing key is not production trust.
+        let mismatched = try fixture.prepare(publicArchive: true)
+        let mismatchedApp = try DirectUpdateZIPExtraction.extractSynchronously(mismatched, destinationParent: fixture.apps)
+        #expect(throws: DirectUpdateCodeSignatureError.metadata) { try DirectUpdateCodeSignature.inspectStage(mismatchedApp) }
+        try mismatchedApp.discard(); try mismatched.discard(); #expect(fixture.retainedApps.isEmpty)
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_STAGE_PROVISIONED_ARCHIVE"] != nil), arguments: ["tampered", "removed"])
+    func actualProvisionedPublicAppRefusesDamagedOrMissingProfile(control: String) throws {
+        let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_STAGE_PROVISIONED_ARCHIVE"])
+        let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+        try #require(BackupFS.hex(SHA256.hash(data: bytes)) == "1a445b68a22634ab249573cf4712d9f47552daa9e3d403df0cf0adc360cbc7df")
+        let fixture = try OwnZIPFixture(bytes), prepared = try fixture.prepare()
+        let stage = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: fixture.apps)
+        let app = try stage.withValidatedApp { $0 }
+        let profile = app.appendingPathComponent("Contents/embedded.provisionprofile")
+        if control == "removed" { try FileManager.default.removeItem(at: profile) }
+        else {
+            var data = try Data(contentsOf: profile)
+            let field = try #require(data.range(of: Data("<key>Platform</key>".utf8)))
+            data[field.lowerBound+5] ^= 1
+            try data.write(to: profile)
+        }
+        #expect(throws: (any Error).self) { try DirectUpdateCodeSignature.inspect(app, role: .manager) }
+        #expect(throws: DirectUpdateZIPError.changed) { try stage.withValidatedApp { _ in } }
+        #expect(throws: DirectUpdateZIPError.changed) { try stage.discard() }
+        // Product retains changed trees; the test's known UUID root owns the
+        // deliberately damaged disposable copy and removes it in fixture deinit.
+        #expect(!fixture.retainedApps.isEmpty)
+        try prepared.discard()
+    }
+
     @Test func cancelledSignatureCallerCannotBeginAdmissionOrAlterStage() async throws {
         let f = try OwnZIPFixture(ZIPFixture([appDirectory]).bytes), prepared = try f.prepare()
         let app = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: f.apps)

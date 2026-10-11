@@ -35,8 +35,8 @@ enum DirectUpdateCodeRole: CaseIterable, Sendable {
     }
     var entitlements: [String: NSObject] {
         switch self {
-        // Current non-provisioned Direct contract only. A future provisioned
-        // backup build requires separate CMS/profile policy before admission.
+        // Legacy Direct contract. The provisioned manager has three exact
+        // claims and additionally requires an authenticated matching profile.
         case .manager:
             ["com.apple.application-identifier": "H6VGU2M6JD.app.neantik.desktop" as NSString]
         case .runtime:
@@ -79,6 +79,7 @@ enum DirectUpdateCodeSignature {
     /// below; a separately parsed unsigned CFBundle dictionary is not trusted.
     static func inspect(_ url: URL, role: DirectUpdateCodeRole) throws -> DirectUpdateCodeSignatureObservation {
         try Task.checkCancellation()
+        let profile = role == .manager ? try DirectUpdateProvisioningSnapshot(app: url) : nil
         var requirement: SecRequirement?
         let expression = "anchor apple generic and identifier \"\(role.identifier)\" and certificate leaf[subject.OU] = \"\(team)\" and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"
         guard SecRequirementCreateWithString(expression as CFString, SecCSFlags(), &requirement) == errSecSuccess,
@@ -92,7 +93,9 @@ enum DirectUpdateCodeSignature {
         var dictionary: CFDictionary?
         guard SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &dictionary) == errSecSuccess,
               let info = dictionary as? [String: Any] else { throw DirectUpdateCodeSignatureError.signature }
-        let result = try validatedFields(info, role: role)
+        let result = try validatedFields(info, role: role, provisionedManager: profile?.present == true)
+        let leaf = try signingLeaf(info)
+        try profile?.authenticate(leaf: leaf, bundle: role.identifier)
         guard let executable = info[kSecCodeInfoMainExecutable as String] as? URL else { throw DirectUpdateCodeSignatureError.metadata }
         let fd = open(executable.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard fd >= 0 else { throw DirectUpdateCodeSignatureError.metadata }
@@ -112,8 +115,24 @@ enum DirectUpdateCodeSignature {
               try BackupFS.identity(fd) == identity else {
             throw DirectUpdateCodeSignatureError.changed
         }
+        var freshDictionary: CFDictionary?
+        guard SecCodeCopySigningInformation(freshCode, SecCSFlags(rawValue: kSecCSSigningInformation), &freshDictionary) == errSecSuccess,
+              let freshInfo = freshDictionary as? [String: Any],
+              try validatedFields(freshInfo, role: role, provisionedManager: profile?.present == true) == result,
+              try signingLeaf(freshInfo) == leaf else { throw DirectUpdateCodeSignatureError.changed }
+        // Recheck authenticated grants with the current clock, including expiry,
+        // after fresh signed-code information; do not downgrade on any failure.
+        try profile?.authenticate(leaf: leaf, bundle: role.identifier)
         try Task.checkCancellation()
         return .init(result)
+    }
+
+    private static func signingLeaf(_ info: [String: Any]) throws -> Data {
+        guard let certificates = info[kSecCodeInfoCertificates as String] as? [SecCertificate],
+              (1...16).contains(certificates.count) else { throw DirectUpdateCodeSignatureError.identity }
+        let leaf = SecCertificateCopyData(certificates[0]) as Data
+        guard (1...32_768).contains(leaf.count) else { throw DirectUpdateCodeSignatureError.identity }
+        return leaf
     }
 
     // Current distribution is thin 64-bit ARM64. Universal/future formats must
@@ -125,14 +144,16 @@ enum DirectUpdateCodeSignature {
 
     /// Pure scalar policy only. Supplied dictionaries cannot produce an
     /// observation claiming that a cryptographic signature was verified.
-    static func validatedFields(_ info: [String: Any], role: DirectUpdateCodeRole) throws -> DirectUpdateCodeSignatureFields {
+    static func validatedFields(_ info: [String: Any], role: DirectUpdateCodeRole,
+                                provisionedManager: Bool = false) throws -> DirectUpdateCodeSignatureFields {
+        guard !provisionedManager || role == .manager else { throw DirectUpdateCodeSignatureError.policy }
         guard info[kSecCodeInfoIdentifier as String] as? String == role.identifier,
               info[kSecCodeInfoTeamIdentifier as String] as? String == team,
               let cdHash = info[kSecCodeInfoUnique as String] as? Data, cdHash.count == 20 else {
             throw DirectUpdateCodeSignatureError.identity
         }
         // Timestamp is TSA-certified; signer-supplied kSecCodeInfoTime is not
-        // an acceptable substitute. No certificate extraction or Keychain use.
+        // an acceptable substitute. No Keychain credential access occurs here.
         guard let flags = info[kSecCodeInfoFlags as String] as? NSNumber,
               // CSCommon.h kSecCodeSignatureRuntime is not imported by Swift.
               flags.uint32Value & 0x10000 != 0,
@@ -141,18 +162,21 @@ enum DirectUpdateCodeSignature {
               let plist = info[kSecCodeInfoPList as String] as? [String: Any],
               let encoded = try? PropertyListSerialization.data(fromPropertyList: plist, format: .binary, options: 0),
               encoded.count <= 1_048_576 else { throw DirectUpdateCodeSignatureError.policy }
-        let expected = role.entitlements as NSDictionary
+        let claims = provisionedManager ? DirectUpdateProvisioningPolicy.claims(bundle: role.identifier) : role.entitlements
+        let expected = claims as NSDictionary
         if let rawDictionary = info[kSecCodeInfoEntitlementsDict as String] {
             guard let actual = rawDictionary as? NSDictionary else { throw DirectUpdateCodeSignatureError.policy }
             // NSDictionary equality intentionally also checks values. The later
             // strict scalar check prevents true from being admitted as integer1.
             guard actual.isEqual(expected),
                   actual.count == expected.count else { throw DirectUpdateCodeSignatureError.policy }
-            for (key, value) in role.entitlements {
+            for (key, value) in claims {
                 let actualValue = actual[key]
                 if value is NSNumber {
                     guard let number = actualValue as? NSNumber,
                           CFGetTypeID(number) == CFBooleanGetTypeID(), number.boolValue else { throw DirectUpdateCodeSignatureError.policy }
+                } else if let array = value as? [String] {
+                    guard actualValue as? [String] == array else { throw DirectUpdateCodeSignatureError.policy }
                 } else {
                     guard actualValue is String || actualValue is NSString else { throw DirectUpdateCodeSignatureError.policy }
                 }
@@ -192,10 +216,6 @@ enum DirectUpdateCodeSignature {
         let receipt = stage.archiveIntegrity
         try admitStageLayout(stage.inventory, chromiumVersion: receipt.chromiumVersion)
         return try stage.withValidatedApp { app in
-            // This slice supports the existing unprovisioned manager only.
-            guard !FileManager.default.fileExists(atPath: app.appendingPathComponent("Contents/embedded.provisionprofile").path) else {
-                throw DirectUpdateCodeSignatureError.policy
-            }
             let runtime = app.appendingPathComponent("Contents/Resources/NeAntik Browser.app")
             let framework = runtime.appendingPathComponent("Contents/Frameworks/NeAntik Browser Framework.framework")
             let managerInfo = try inspect(app, role: .manager)
@@ -231,8 +251,16 @@ enum DirectUpdateCodeSignature {
                 guard metadataBytes <= 33_554_432 else { throw DirectUpdateCodeSignatureError.metadata }
             }
         }
-        guard entries[prefix + "embedded.provisionprofile"] == nil,
-              entries[prefix + "embedded.mobileprovision"] == nil else { throw DirectUpdateCodeSignatureError.policy }
+        for entry in inventory.entries {
+            let name = entry.path.split(separator: "/").last
+            if name == "embedded.mobileprovision" { throw DirectUpdateCodeSignatureError.policy }
+            if name == "embedded.provisionprofile" {
+                guard entry.path == prefix + "embedded.provisionprofile", entry.kind == .file,
+                      entry.expanded > 0, entry.expanded <= DirectUpdateProvisioningPolicy.maximumBytes else {
+                    throw DirectUpdateCodeSignatureError.policy
+                }
+            }
+        }
         for path in plists {
             guard let e = entries[path], e.kind == .file, e.expanded > 0, e.expanded <= 1_048_576 else {
                 throw DirectUpdateCodeSignatureError.metadata
