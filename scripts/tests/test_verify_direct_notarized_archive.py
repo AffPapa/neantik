@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-direct-notarized-archive.py"
@@ -23,6 +24,33 @@ EXPECTED = MODULE.ExpectedAppContract(
 
 
 class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
+    def test_owned_temporary_alias_is_resolved_before_extraction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            write_info(root, version="1.2.3")
+            archive = write_archive(root)
+            owned = root / "owned"
+            owned.mkdir()
+            alias = root / "alias"
+            alias.symlink_to(owned, target_is_directory=True)
+            extracted = []
+
+            def runner(command):
+                if command[:4] == ["ditto", "-x", "-k", str(archive)]:
+                    destination = Path(command[4])
+                    self.assertEqual(destination, owned)
+                    self.assertFalse(any(parent.is_symlink() for parent in destination.parents))
+                    extracted.append(destination)
+                    write_app_info(destination / "NeAntik.app")
+                if command[:2] == ["codesign", "--display"]:
+                    return MODULE.CommandResult(0, signed_display())
+                return MODULE.CommandResult(0, "ok")
+
+            with patch.object(MODULE.tempfile, "TemporaryDirectory") as factory:
+                factory.return_value.__enter__.return_value = str(alias)
+                MODULE.verify_archive(archive=archive, project_root=root, runner=runner)
+            self.assertEqual(extracted, [owned])
+
     def test_archive_contract_accepts_matching_checksum(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

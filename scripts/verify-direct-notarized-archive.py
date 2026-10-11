@@ -332,7 +332,9 @@ def verify_archive(
     )
     assert_zip_has_no_finder_metadata(archive)
     with tempfile.TemporaryDirectory(prefix="nevision-notarized-verify-") as temporary:
-        app = extract_archive(archive, Path(temporary), runner=runner)
+        # macOS may return /var for its own temporary directories. Resolve only
+        # this freshly owned root; externally supplied paths remain strict.
+        app = extract_archive(archive, Path(temporary).resolve(), runner=runner)
         verify_public_artifact_privacy(
             app,
             project_root=project_root,

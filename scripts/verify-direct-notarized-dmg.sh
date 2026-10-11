@@ -60,6 +60,8 @@ spctl \
   "$DMG_PATH"
 
 TEMP_ROOT="$(mktemp -d -t neantik-dmg-verification)"
+# mktemp -t can return macOS's /var alias even with a canonical TMPDIR.
+TEMP_ROOT="$(cd "$TEMP_ROOT" && pwd -P)"
 MOUNT_POINT="$TEMP_ROOT/mount"
 MOUNTED=0
 

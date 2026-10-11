@@ -48,6 +48,8 @@ python3 "$PROJECT_DIR/scripts/verify-direct-notarized-archive.py" \
   --archive "$ZIP_PATH"
 
 TEMP_ROOT="$(mktemp -d -t neantik-dmg-release)"
+# Canonicalize our own temporary root before the strict app/profile validators.
+TEMP_ROOT="$(cd "$TEMP_ROOT" && pwd -P)"
 ARCHIVE_ROOT="$TEMP_ROOT/archive"
 STAGING_DIR="$TEMP_ROOT/staging"
 MOUNT_POINT="$TEMP_ROOT/mount"
