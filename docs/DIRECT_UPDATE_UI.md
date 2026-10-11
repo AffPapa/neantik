@@ -18,3 +18,8 @@
 - Dev.app: новый синтетический каталог, readable manual sheet, Tab/Escape, Cmd-N, два Return (завершение редактирования → Create/Save), запуск/остановка, kernel absence собственного manager после меню Quit и metadata после повторного запуска.
 
 Эти результаты не подтверждают автоматическую установку подписанного публичного кандидата. Обязательные открытые gates: легитимный pinned channel key/manifest feed, exact compatible notarized old→new, headed GUI/bootstrap, synthetic cookies/LocalStorage/IndexedDB/tabs и rollback без production data. Ни production Keychain, ни пользовательские профили не использовались.
+
+
+## Изолированная проверка перезапуска
+
+Новый source-кандидат сохраняет привязку к временным данным через установщик, не перенося полномочия старой проверки fingerprint. Контракт и негативные проверки описаны в [DIRECT_UPDATE_AUDIT_ISOLATION.md](DIRECT_UPDATE_AUDIT_ISOLATION.md). Это подготовка к проверке полноценной установки, а не подтверждение готовности публичного updater. Канал остаётся выключен до перечисленных выше gates.

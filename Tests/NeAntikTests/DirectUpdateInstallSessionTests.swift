@@ -10,6 +10,7 @@ private final class BootstrapFixtureContext {
     let request: DirectUpdateBootstrapRequest
     var admitted = true, accepted = true, didAdmit = false, didReady = false, cancelAfterAdmission = false, cancelAfterReady = false
     var readyDelayMicroseconds: useconds_t = 0
+    var auditRecordDigest: Data?
     init(_ request: DirectUpdateBootstrapRequest) { self.request = request }
 }
 private func sessionFixtureAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) -> Int32 {
@@ -19,7 +20,7 @@ private func sessionFixtureAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) 
 private func sessionFixtureReady(_ pid: pid_t, _ bytes: UnsafePointer<UInt8>?, _ count: Int, _ raw: UnsafeMutableRawPointer?) -> Int32 {
     let context = Unmanaged<BootstrapFixtureContext>.fromOpaque(raw!).takeUnretainedValue()
     guard let bytes else { return 0 }
-    do { try context.request.validateReply(Data(bytes: bytes, count: count)); context.didReady = true
+    do { try context.request.validateReply(Data(bytes: bytes, count: count), auditRecordDigest: context.auditRecordDigest); context.didReady = true
         if context.readyDelayMicroseconds > 0 { usleep(context.readyDelayMicroseconds) }
         return context.accepted ? 1 : 0 }
     catch { return 0 }
@@ -92,6 +93,15 @@ private final class BootstrapFixtureBundle {}
         #expect(result.status == NUB_COMPLETE && result.handed_off == 1 && result.reaped == 0 && context.didReady)
         var status: Int32 = 0
         #expect(waitpid(result.process_id, &status, 0) == result.process_id && status == 0)
+    }
+    @Test func legacyActualGuestIsReapedBeforeAuditReadinessOrCommit() throws {
+        let (root, helper) = try fixture("ok"); defer { try? FileManager.default.removeItem(at: root) }
+        let context = BootstrapFixtureContext(try request())
+        context.auditRecordDigest = Data(repeating: 0x31, count: 32)
+        let result = run(helper, context)
+        #expect(result.status != NUB_COMPLETE && result.handed_off == 0 && result.reaped == 1 && !context.didReady)
+        var status: Int32 = 0
+        #expect(waitpid(result.process_id, &status, WNOHANG) == -1 && errno == ECHILD)
     }
     @Test(arguments: ["hang", "descendant", "abnormal", "stderr", "flood", "short", "wrong"])
     func brokenActualGuestNeverHandsOff(mode: String) throws {

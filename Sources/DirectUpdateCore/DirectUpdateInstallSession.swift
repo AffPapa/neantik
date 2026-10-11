@@ -49,17 +49,22 @@ package struct DirectUpdateBootstrapRequest: Equatable, Sendable {
         }
         return .init(bytes: data)
     }
-    package func reply(cdHash: Data, build: UInt64, runtimeSHA256: String) throws -> Data {
+    package func reply(cdHash: Data, build: UInt64, runtimeSHA256: String, auditRecordDigest: Data? = nil) throws -> Data {
         guard cdHash == candidateCDHash, build == self.build, try Self.hash(runtimeSHA256) == self.runtimeSHA256 else {
             throw DirectUpdateInstallSessionError.reply
         }
-        var data = Data("NUR1".utf8); data.append(nonce); data.append(contentsOf: SHA256.hash(data: bytes))
+        let binding: Data
+        if let auditRecordDigest {
+            guard auditRecordDigest.count == 32 else { throw DirectUpdateInstallSessionError.reply }
+            binding = Data(SHA256.hash(data: Data("NeAntik update audit reply v1\0".utf8) + bytes + auditRecordDigest))
+        } else { binding = Data(SHA256.hash(data: bytes)) }
+        var data = Data("NUR1".utf8); data.append(nonce); data.append(binding)
         data.append(cdHash); Self.append(build, to: &data); data.append(self.runtimeSHA256)
         return data
     }
-    package func validateReply(_ data: Data) throws {
+    package func validateReply(_ data: Data, auditRecordDigest: Data? = nil) throws {
         guard data == (try reply(cdHash: candidateCDHash, build: build,
-                                  runtimeSHA256: runtimeSHA256.map { String(format: "%02x", $0) }.joined())) else { throw DirectUpdateInstallSessionError.reply }
+                                  runtimeSHA256: runtimeSHA256.map { String(format: "%02x", $0) }.joined(), auditRecordDigest: auditRecordDigest)) else { throw DirectUpdateInstallSessionError.reply }
     }
     package var continuation: Data { Data("NUC1".utf8) + nonce }
     fileprivate func matches(_ receipt: InstallFilesystemReceipt) throws -> Bool {
@@ -84,6 +89,7 @@ package struct DirectUpdateBootstrapRequest: Equatable, Sendable {
 
 private final class BootstrapSessionContext: @unchecked Sendable {
     let request: DirectUpdateBootstrapRequest, code: ProxyRelayExpectedCode
+    let auditRecordDigest: Data?
     let custody: () throws -> Void
     let onReady: (DirectUpdateCandidateReadiness) throws -> Void
     private let lock = NSLock()
@@ -91,9 +97,9 @@ private final class BootstrapSessionContext: @unchecked Sendable {
     private var readinessActive = false
     var process: ProxyRelayOwnerProcessIdentity?
     var error: Error?
-    init(request: DirectUpdateBootstrapRequest, code: ProxyRelayExpectedCode,
+    init(request: DirectUpdateBootstrapRequest, code: ProxyRelayExpectedCode, auditRecordDigest: Data?,
          custody: @escaping () throws -> Void, onReady: @escaping (DirectUpdateCandidateReadiness) throws -> Void) {
-        self.request = request; self.code = code; self.custody = custody; self.onReady = onReady
+        self.request = request; self.code = code; self.auditRecordDigest = auditRecordDigest; self.custody = custody; self.onReady = onReady
     }
     func cancel() { lock.lock(); cancelled = true; lock.unlock() }
     var isCancelled: Bool { lock.lock(); defer { lock.unlock() }; return cancelled }
@@ -142,7 +148,7 @@ private func bootstrapReady(_ pid: pid_t, _ bytes: UnsafePointer<UInt8>?, _ coun
     guard let raw, let bytes, count == 128 else { return 0 }
     let context = Unmanaged<BootstrapSessionContext>.fromOpaque(raw).takeUnretainedValue()
     do {
-        try context.request.validateReply(Data(bytes: bytes, count: count)); try context.validate(pid)
+        try context.request.validateReply(Data(bytes: bytes, count: count), auditRecordDigest: context.auditRecordDigest); try context.validate(pid)
         context.beginReadiness(); defer { context.endReadiness() }
         try context.onReady(.init(context, processID: pid))
         // Callback must commit under fresh readiness validation, release its
@@ -162,8 +168,8 @@ package enum DirectUpdateInstallSession {
     package static func run(candidate: URL, request: DirectUpdateBootstrapRequest, expectedCode: ProxyRelayExpectedCode,
                             validateCustody: @escaping () throws -> Void,
                             onReady: @escaping (DirectUpdateCandidateReadiness) throws -> Void,
-                            timeoutMS: UInt32 = 45_000) async throws -> pid_t {
-        let context = BootstrapSessionContext(request: request, code: expectedCode, custody: validateCustody, onReady: onReady)
+                            timeoutMS: UInt32 = 45_000, auditRecordDigest: Data? = nil) async throws -> pid_t {
+        let context = BootstrapSessionContext(request: request, code: expectedCode, auditRecordDigest: auditRecordDigest, custody: validateCustody, onReady: onReady)
         return try await withTaskCancellationHandler {
             try Task.checkCancellation()
             return try await Task.detached(priority: .utility) {

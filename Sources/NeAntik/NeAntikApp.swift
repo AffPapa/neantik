@@ -7,7 +7,7 @@ import SwiftUI
 struct NeAntikApp: App {
     @Environment(\.openWindow) private var openWindow
     @StateObject private var helpNavigation = HelpNavigation()
-    @StateObject private var updateController = ApplicationUpdateController()
+    @StateObject private var updateController: ApplicationUpdateController
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
     @StateObject private var telemetry: TelemetryController
@@ -16,6 +16,7 @@ struct NeAntikApp: App {
     @StateObject private var proxyHealthCoordinator:
         ProxyHealthCoordinator
 
+    private let updateAuditIsolation: DirectUpdateAuditIsolation?
     private let keychain: KeychainStore
     private let backupComposition: BackupApplicationComposition
     private let credentialCleanup: DeletedProfileCredentialCleanup
@@ -35,7 +36,8 @@ struct NeAntikApp: App {
     }
 
     init() {
-        DirectUpdateCandidateBootstrap.runIfRequested()
+        let updateAuditIsolation = DirectUpdateCandidateBootstrap.runIfRequested()
+        self.updateAuditIsolation = updateAuditIsolation
         do { try ApplicationInstallLifecycle.enter() }
         catch {
             #if DEBUG
@@ -121,7 +123,9 @@ struct NeAntikApp: App {
         let environment = NeAntikApplicationEnvironment.resolve(
             bundleIdentifier: Bundle.main.bundleIdentifier
         )
-        let auditRoot = fingerprintEvidenceReleaseContext?.request.managerDataRoot
+        let auditRoot = updateAuditIsolation?.root ?? fingerprintEvidenceReleaseContext?.request.managerDataRoot
+        do { try updateAuditIsolation?.validate() }
+        catch { Self.writeControlErrorAndExit("Не удалось подтвердить изоляцию проверки обновления.\n", code: EX_NOPERM) }
         let backupQualification: BackupGUIQualificationContext?
         do {
             backupQualification = auditRoot == nil ? try BackupGUIQualificationContext.resolve(
@@ -158,12 +162,24 @@ struct NeAntikApp: App {
         }
         let keychain = auditRoot == nil
             ? KeychainStore.applicationStore(environment: environment, paths: paths)
-            : KeychainStore(service: "app.neantik.release-audit.proxy", legacyService: nil)
+            : KeychainStore(backend: ReleaseAuditKeychainBackend(), service: "app.neantik.release-audit.proxy", legacyService: nil)
         self.keychain = keychain
         credentialCleanup = DeletedProfileCredentialCleanup(
             paths: paths,
             keychain: keychain
         )
+        let makeUpdateClient: () -> any ApplicationUpdateTransport
+        if let updateAuditIsolation {
+            makeUpdateClient = { DirectUpdateOwnerClient(auditIsolation: updateAuditIsolation) }
+        } else if let context = fingerprintEvidenceReleaseContext {
+            // Disk custody is captured on the client's utility worker after the
+            // app has created its synthetic store. No signer authority crosses.
+            let root = context.request.managerDataRoot, manifest = context.candidateManifest
+            makeUpdateClient = { DirectUpdateOwnerClient(prepareAuditIsolation: {
+                try DirectUpdateAuditIsolation.capture(root: root, validatedManifest: manifest)
+            }) }
+        } else { makeUpdateClient = { DirectUpdateOwnerClient() } }
+        _updateController = StateObject(wrappedValue: ApplicationUpdateController(makeClient: makeUpdateClient))
         _store = StateObject(wrappedValue: ProfileStore(paths: paths))
         _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths))
         _telemetry = StateObject(

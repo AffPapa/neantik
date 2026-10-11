@@ -8,8 +8,8 @@ import Security
 /// or a shortcut around ordinary startup fences.
 enum DirectUpdateCandidateBootstrap {
     static let argument = "--neantik-update-bootstrap-v1"
-    static func runIfRequested() {
-        guard CommandLine.arguments.contains(where: { $0.hasPrefix("--neantik-update-bootstrap") }) else { return }
+    static func runIfRequested() -> DirectUpdateAuditIsolation? {
+        guard CommandLine.arguments.contains(where: { $0.hasPrefix("--neantik-update-bootstrap") }) else { return nil }
         var phase = "request"
         do {
             guard CommandLine.arguments.count == 2, CommandLine.arguments[1] == argument else {
@@ -61,6 +61,18 @@ enum DirectUpdateCandidateBootstrap {
             guard ProxyRelayLiveCodeVerifier.matches(processID: selfIdentity.parentProcessID, expectedProcess: owner, expectedCode: ownerCode) else {
                 throw DirectUpdateInstallSessionError.identity
             }
+            phase = "audit-isolation"
+            let auditDirectory: URL?
+            if qa { auditDirectory = nil }
+            else {
+                var ownerPath = [CChar](repeating: 0, count: 4_096)
+                guard proc_pidpath(selfIdentity.parentProcessID, &ownerPath, UInt32(ownerPath.count)) > 0 else {
+                    throw DirectUpdateInstallSessionError.identity
+                }
+                auditDirectory = try DirectUpdateAuditRecord.directory(authenticatedOwnerExecutable: URL(fileURLWithPath: String(cString: ownerPath)))
+            }
+            let audit = try auditDirectory.flatMap { try DirectUpdateAuditRecord.load(directory: $0, request: request) }
+            try audit?.0.validate()
             let resources = app.appendingPathComponent("Contents/Resources")
             phase = "runtime"
             let runtimeURL = resources.appendingPathComponent("NeAntik Browser.app")
@@ -91,18 +103,24 @@ enum DirectUpdateCandidateBootstrap {
                 throw DirectUpdateInstallSessionError.custody
             }
             phase = "reply-frame"
-            let reply = try request.reply(cdHash: fields.cdHash, build: fields.build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest)
+            let reply = try request.reply(cdHash: fields.cdHash, build: fields.build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest, auditRecordDigest: audit?.1)
             try writeExactly(reply)
             // Real EOF seals the reply. Neither output nor logging can append a
             // second frame while owner records ACK. Continue is private stdin.
             close(STDOUT_FILENO); close(STDERR_FILENO)
             phase = "continue"
             guard try readExactly(36) == request.continuation, try readEOF() else { throw DirectUpdateInstallSessionError.handoff }
+            if let auditDirectory {
+                let fresh = try DirectUpdateAuditRecord.load(directory: auditDirectory, request: request)
+                guard fresh?.1 == audit?.1 else { throw DirectUpdateInstallSessionError.custody }
+            }
+            try audit?.0.validate()
             #if DEBUG
             if qa && !qaContinues { exit(0) }
             #endif
             // Owner released fences after durable ACK. Ordinary admission below
             // still checks the actual installed pathname and pending journal.
+            return audit?.0
         } catch {
             #if DEBUG
             recordQualificationRefusal(phase)

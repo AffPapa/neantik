@@ -14,34 +14,53 @@ package struct DirectUpdateOwnerInit: Equatable, Sendable, CustomReflectable {
     package var nonce: Data { bytes.subdata(in: 4..<36) }
     package var manifestSHA256: Data { bytes.subdata(in: 36..<68) }
     package var digest: Data { Data(SHA256.hash(data: bytes)) }
-    package var archive: URL { URL(fileURLWithPath: String(decoding: bytes.dropFirst(72), as: UTF8.self)) }
-    package init(archive: URL, manifest: Data) throws {
+    package var archive: URL { URL(fileURLWithPath: String(decoding: bytes.subdata(in: 72..<archiveEnd), as: UTF8.self)) }
+    private var archiveEnd: Int { 72 + Int(OwnerWire.integer(bytes, at: 68, count: 4)) }
+    package var auditFrame: Data? { bytes.prefix(4) == Data("NUI2".utf8) ? Data(bytes.dropFirst(archiveEnd + 4)) : nil }
+    package init(archive: URL, manifest: Data, auditIsolation: DirectUpdateAuditIsolation? = nil) throws {
         var nonce = Data(count: 32)
         guard nonce.withUnsafeMutableBytes({ SecRandomCopyBytes(kSecRandomDefault, $0.count, $0.baseAddress!) }) == errSecSuccess else {
             throw DirectUpdateOwnerProtocolError.request
         }
-        try self.init(archive: archive, manifest: manifest, nonce: nonce)
+        try auditIsolation?.validate()
+        try self.init(archive: archive, manifest: manifest, nonce: nonce, auditFrame: auditIsolation?.bytes)
     }
     // Deterministic negative controls; no signature/authority is manufactured.
-    init(archive: URL, manifest: Data, nonce: Data) throws {
+    init(archive: URL, manifest: Data, nonce: Data, auditFrame: Data? = nil) throws {
         guard archive.isFileURL, nonce.count == 32, !manifest.isEmpty, manifest.count <= 128 * 1_024 else {
             throw DirectUpdateOwnerProtocolError.request
         }
         let path = Data(archive.path.utf8)
         guard !path.isEmpty, path.count < Int(PATH_MAX) else { throw DirectUpdateOwnerProtocolError.request }
-        var data = Data("NUI1".utf8); data.append(nonce); data.append(contentsOf: SHA256.hash(data: manifest))
+        var data = Data((auditFrame == nil ? "NUI1" : "NUI2").utf8); data.append(nonce); data.append(contentsOf: SHA256.hash(data: manifest))
         var count = UInt32(path.count).bigEndian; withUnsafeBytes(of: &count) { data.append(contentsOf: $0) }; data.append(path)
+        if let auditFrame {
+            try DirectUpdateAuditIsolation.validateFrameSyntax(auditFrame)
+            var auditCount = UInt32(auditFrame.count).bigEndian
+            withUnsafeBytes(of: &auditCount) { data.append(contentsOf: $0) }; data.append(auditFrame)
+        }
         self = try Self.parse(data)
     }
     private init(bytes: Data) { self.bytes = bytes }
     package static func parse(_ input: Data) throws -> Self {
         let data = Data(input)
-        guard (73..<(72 + Int(PATH_MAX))).contains(data.count), data.prefix(4) == Data("NUI1".utf8),
-              OwnerWire.integer(data, at: 68, count: 4) == data.count - 72,
-              let path = String(data: data.dropFirst(72), encoding: .utf8), path.hasPrefix("/"),
+        guard (73..<12_288).contains(data.count),
+              [Data("NUI1".utf8), Data("NUI2".utf8)].contains(data.prefix(4)) else { throw DirectUpdateOwnerProtocolError.request }
+        let pathCount = Int(OwnerWire.integer(data, at: 68, count: 4)), end = 72 + pathCount
+        guard (1..<Int(PATH_MAX)).contains(pathCount), end <= data.count,
+              let path = String(data: data.subdata(in: 72..<end), encoding: .utf8), path.hasPrefix("/"),
               !path.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }),
               path.split(separator: "/", omittingEmptySubsequences: false).dropFirst().allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }) else {
             throw DirectUpdateOwnerProtocolError.request
+        }
+        if data.prefix(4) == Data("NUI1".utf8) {
+            guard end == data.count else { throw DirectUpdateOwnerProtocolError.request }
+        } else {
+            guard end + 4 < data.count, OwnerWire.integer(data, at: end, count: 4) == data.count - end - 4 else {
+                throw DirectUpdateOwnerProtocolError.request
+            }
+            do { try DirectUpdateAuditIsolation.validateFrameSyntax(Data(data.dropFirst(end + 4))) }
+            catch { throw DirectUpdateOwnerProtocolError.request }
         }
         return .init(bytes: data)
     }

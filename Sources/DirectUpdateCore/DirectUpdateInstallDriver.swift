@@ -18,6 +18,7 @@ package enum DirectUpdateInstallDriver {
                             runtimeSHA256: String,
                             validateCandidate: @escaping (URL) throws -> Void,
                             validateReady: ((DirectUpdateCandidateReadiness) throws -> Void)? = nil,
+                            auditIsolation: DirectUpdateAuditIsolation? = nil, auditRecordDirectory: URL? = nil,
                             fault: ((InstallFilesystemPoint) throws -> Void)? = nil) async throws -> DirectUpdateInstallOutcome {
         let app = try lease.validatedApplicationURL()
         let authority = try DirectUpdateStoppedAuthority(installation: app)
@@ -34,10 +35,19 @@ package enum DirectUpdateInstallDriver {
             receipt = pending
             let request = try DirectUpdateBootstrapRequest(receipt: pending, cdHash: cdHash, build: build,
                 runtimeSHA256: runtimeSHA256)
+            let auditRecordDigest: Data?
+            if let auditIsolation {
+                guard let auditRecordDirectory else { throw DirectUpdateInstallSessionError.custody }
+                auditRecordDigest = try DirectUpdateAuditRecord.publish(auditIsolation, request: request, directory: auditRecordDirectory)
+            } else {
+                guard auditRecordDirectory == nil else { throw DirectUpdateInstallSessionError.custody }
+                auditRecordDigest = nil
+            }
             phase = "bootstrap"
             let pid = try await DirectUpdateInstallSession.run(candidate: app.appendingPathComponent("Contents/MacOS/NeAntik"),
                 request: request, expectedCode: expectedCode,
                 validateCustody: {
+                    try auditIsolation?.validate()
                     custodyChecks += 1
                     phase = "custody-lease"
                     guard try lease.validatedApplicationURL() == app else { throw DirectUpdateInstallSessionError.custody }
@@ -56,7 +66,7 @@ package enum DirectUpdateInstallDriver {
                     completed = try InstallFilesystemTransaction.acknowledge(lease: lease, expected: pending,
                         validateLaunchAuthority: { try authority.validateLaunch(readiness, receipt: pending) }, fault: fault)
                     try authority.releaseAfterCompletion(); fencesReleased = true
-                })
+                }, auditRecordDigest: auditRecordDigest)
             guard let completed, completed.committed, fencesReleased else { throw DirectUpdateInstallSessionError.handoff }
             return .init(decision: completed, handedOff: true, processID: pid, refusal: nil, failurePhase: nil)
         } catch {

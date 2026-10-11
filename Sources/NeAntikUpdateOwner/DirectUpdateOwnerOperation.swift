@@ -13,6 +13,7 @@ enum DirectUpdateOwnerOperation {
         let request = try DirectUpdateOwnerInit.parse(DirectUpdateOwnerPipe.readFrame(STDIN_FILENO, timeoutMS: 10_000))
         let manifest = try DirectUpdateOwnerPipe.readFrame(STDIN_FILENO, timeoutMS: 10_000)
         try request.validateManifest(manifest); try trust.validate(requireParent: true)
+        let auditIsolation = try request.auditFrame.map { try DirectUpdateAuditIsolation.adoptAuthenticatedFrame($0) }
         let metadata = trust.policy.metadata
         let coordinator = DirectUpdateAdmissionCoordinator(configuration: metadata.configuration,
             installedVersion: metadata.version, installedBuild: metadata.build,
@@ -49,6 +50,7 @@ enum DirectUpdateOwnerOperation {
         }
         do {
             try trust.validate(requireParent: true)
+            try auditIsolation?.validate()
             let offer = try DirectUpdateOwnerOffer(request: request, observation: result)
             try control.publishOffer()
             try writeFrame(offer.bytes)
@@ -68,6 +70,7 @@ enum DirectUpdateOwnerOperation {
                 throw DirectUpdateAdmissionError.binding
             }
             try trust.validate(requireParent: true)
+            try auditIsolation?.validate()
             try writeFrame(DirectUpdateOwnerConsent.accepted(request: request, offer: offer))
             try DirectUpdateOwnerPipe.expectEOF(STDIN_FILENO)
             close(STDIN_FILENO); close(STDOUT_FILENO); close(STDERR_FILENO)
@@ -96,7 +99,8 @@ enum DirectUpdateOwnerOperation {
             }
             let installed = try await DirectUpdateInstallDriver.run(lease: lease, slot: slot, expectedCode: code,
                 cdHash: result.system.managerCDHash, build: UInt64(result.build), runtimeSHA256: result.runtime.runtimeSHA256,
-                validateCandidate: validateCandidate)
+                validateCandidate: validateCandidate, auditIsolation: auditIsolation,
+                auditRecordDirectory: auditIsolation == nil ? nil : trust.workspace.apps)
             guard installed.decision.committed, installed.handedOff else { throw DirectUpdateInstallSessionError.handoff }
         } catch {
             control.cancelIO(); inspection.cancel()

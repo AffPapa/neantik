@@ -17,8 +17,11 @@ package enum DirectUpdateOwnerClientError: LocalizedError {
 /// only the cancellation flag may change concurrently. No MCP entry or caller
 /// supplies the installed app, public key, helper or process to signal.
 final package class DirectUpdateOwnerClient: @unchecked Sendable {
-    private let worker = OwnerClientWorker()
-    package init() {}
+    private let worker: OwnerClientWorker
+    package init(auditIsolation: DirectUpdateAuditIsolation? = nil,
+                 prepareAuditIsolation: (@Sendable () throws -> DirectUpdateAuditIsolation)? = nil) {
+        worker = OwnerClientWorker(auditIsolation: auditIsolation, prepareAuditIsolation: prepareAuditIsolation)
+    }
     package func inspect(archive: URL, manifest: Data) async throws -> DirectUpdateOwnerOffer {
         try await withTaskCancellationHandler {
             try await worker.perform { try $0.inspect(archive: archive, manifest: manifest) }
@@ -73,6 +76,11 @@ private func ownerClientAdmit(_ pid: pid_t, _ raw: UnsafeMutableRawPointer?) -> 
 
 private final class OwnerClientWorker: @unchecked Sendable {
     let cancellation = OwnerClientCancellation()
+    private var auditIsolation: DirectUpdateAuditIsolation?
+    private let prepareAuditIsolation: (@Sendable () throws -> DirectUpdateAuditIsolation)?
+    init(auditIsolation: DirectUpdateAuditIsolation?, prepareAuditIsolation: (@Sendable () throws -> DirectUpdateAuditIsolation)?) {
+        self.auditIsolation = auditIsolation; self.prepareAuditIsolation = prepareAuditIsolation
+    }
     private let queue = DispatchQueue(label: "app.neantik.update-client", qos: .utility)
     private var session: OpaquePointer?
     private var admission: OwnerClientAdmission?
@@ -95,6 +103,8 @@ private final class OwnerClientWorker: @unchecked Sendable {
         started = true
         do {
             if cancellation.isRequested { throw CancellationError() }
+            if let prepareAuditIsolation { auditIsolation = try prepareAuditIsolation() }
+            try auditIsolation?.validate()
             guard let executable = DirectUpdateProcessInventory.path(getpid()) else { throw DirectUpdateInstallSessionError.identity }
             let installed = try DirectUpdateOwnerAuthentication.installedApp(executable: URL(fileURLWithPath: executable))
             let policy = try DirectUpdateInstalledPolicy.inspect(installedApp: installed)
@@ -111,7 +121,7 @@ private final class OwnerClientWorker: @unchecked Sendable {
             let workspace = try DirectUpdateOwnerWorkspace.prepare(policy: policy)
             let context = OwnerClientAdmission(policy: policy, workspace: workspace, cancellation: cancellation)
             admission = context
-            let input = try DirectUpdateOwnerInit(archive: archive, manifest: manifest); request = input
+            let input = try DirectUpdateOwnerInit(archive: archive, manifest: manifest, auditIsolation: auditIsolation); request = input
             let status = withExtendedLifetime(context) {
                 workspace.owner.url.path.withCString {
                     neantik_update_owner_begin($0, 10_000, ownerClientAdmit, ownerClientAdmissionCancel,
@@ -138,7 +148,7 @@ private final class OwnerClientWorker: @unchecked Sendable {
             throw DirectUpdateOwnerClientError.state
         }
         do {
-            try admission?.policy.validate(); try admission?.workspace.validate()
+            try auditIsolation?.validate(); try admission?.policy.validate(); try admission?.workspace.validate()
             try write(DirectUpdateOwnerConsent.command(.commit, request: request, offer: offer))
             try DirectUpdateOwnerConsent.validateAccepted(read(cancellable: false), request: request, offer: offer)
             try requireComplete(neantik_update_owner_handoff(session))
