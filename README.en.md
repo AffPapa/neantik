@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.29 (92), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.29). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.29.json).
+Latest published release: [NeAntik 0.7.30 (93), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.30). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.30.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.29` adds a searchable extension center for closed profiles, saved status and clear instructions for native Chromium management. Authenticated HTTP/SOCKS5 relay and MCP workspace isolation are retained. The runtime has not been rebuilt. Safe Browsing is disabled; production backup, HTTPS relay, atomic updater and version1.0 remain in progress. Immutable `0.7.28` is retained for rollback. Settings snapshots are not BrowserData backups.
+`0.7.30` adds encrypted BrowserData backup for stopped profiles and an explicit choice of the start page or previous tabs. Settings, proxy and folders are exported separately and preserved during restore. Backup requires the original profile, this Mac, original Keychain and exact runtime; cross-Mac login transfer is not supported. HTTP/SOCKS5 relay, extension center and MCP remain available. Chromium was not rebuilt. Safe Browsing is disabled; HTTPS relay, CRX installation, atomic updater and version1.0 remain in progress. Immutable `0.7.29` remains for rollback. browser.free is being updated; current artifacts are on GitHub.
 
 Direct downloads: [browser.free](https://browser.free).
 

@@ -1,4 +1,8 @@
-> Current public release: 0.7.29/build92 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.29.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+> Current public release: 0.7.30/build93 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.30.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+
+## Выпуск 0.7.30 / build 93 — 11 октября 2026
+
+GitHub ZIP/DMG опубликованы; свежие hosted-byte/signing/notarization/stapling/Gatekeeper, скачанный headed manager и metadata MCP проходят. Зашифрованная копия содержит BrowserData; настройки, прокси, папки и identity сохраняются при restore. Нужны исходный профиль/Mac/Keychain и точный runtime. Подробные data/keyboard сценарии квалифицированы отдельно подписанным QA; production Keychain не использовался. Режим стартовой страницы/предыдущих вкладок доступен в UI, MCP, шаблонах и конфигурационном экспорте. Chromium не менялся, rollback — 0.7.29. HTTPS relay, CRX installer и атомарный updater открыты. browser.free подготовлен (локальная сборка и 32 теста PASS); публикация ждёт требуемого auto-review разрешения на штатную передачу Sites credential. AffPapa doctor не имеет deploy credential. [Отчёт](../releases/v0.7.30.json).
 
 ## Выпуск 0.7.29 / build 92 — 11 октября 2026
 

@@ -1,8 +1,13 @@
-# BrowserData backup: development status
+# BrowserData backup: Direct 0.7.30 public alpha
 
-This operation is under development for an explicitly opted-in Direct candidate.
-It is not enabled in the current published 0.7.29 application or through MCP. Configuration export and metadata snapshots
+The explicitly opted-in Direct 0.7.30 (93) application enables this operation
+for a stopped profile. It is not exposed through MCP. Configuration export and metadata snapshots
 remain separate operations and do not contain BrowserData.
+
+The archive contains BrowserData only. Restore preserves the profile's settings,
+proxy, folder and identity. Compatibility requires the original profile, Mac,
+local Keychain and exact runtime hashes. Cross-Mac encrypted-secret portability
+is not supported. The previous release remains available for rollback.
 
 ## Implemented and tested core
 
@@ -38,9 +43,10 @@ wrong-password refusal, restore and keyboard workflow. Wrong passwords preserve
 BrowserData and metadata; restore returns the original fixture and increments
 its metadata revision. The save panel proposes one `.nabackup` extension.
 
-This does not demonstrate cross-Mac migration of OS-encrypted secrets, saved
-passwords or qualification of a notarized final application. Those acceptance
-gates remain open.
+These QA operations do not demonstrate cross-Mac migration of OS-encrypted
+secrets or operation against production Keychain records. The exact final
+bundle's signing/profile/notarization and downloaded launch gates passed
+separately; they do not replace the isolated data-operation evidence.
 
 The actual three-tab session was also exported, changed, rolled back and
 restored. Existing restored targets were activated and their execution contexts,
@@ -79,7 +85,7 @@ bypass that fence after a crash releases flock. They must be proven closed befor
 restore is exposed to users. The pending format alone is not a guarantee for all
 historical versions.
 
-## Product service integration (development)
+## Product service integration
 
 The service now binds export, restore and pending recovery to a borrowed
 stopped-profile process lease. It refuses another known same-user NeAntik/NeVision
@@ -97,8 +103,8 @@ Only export can create it; restore cannot regenerate a missing/corrupt key.
 Concurrent creation reads the persisted winner. A separate matching-profile
 Developer ID QA application has qualified real Data Protection Keychain lifecycle,
 full service restore and crash recovery with synthetic data. Production startup
-does not create a key. Mock tests do not replace the remaining exact notarized
-candidate gate or establish cross-Mac portability.
+does not create a key. Mock tests do not replace exact notarized candidate gates
+or establish cross-Mac portability.
 
 The export/restore and startup recovery sheets are enabled in disposable DEBUG
 fixtures or an explicitly opted-in production Direct bundle. The latter requires
@@ -114,7 +120,9 @@ with an unchanged application basename. Production services and real credentials
 were not used. Renaming an installed application is not qualified by that test.
 Startup recovery authenticates the existing journal and obtains fresh authority;
 it does not rely on selecting a profile from pending metadata. The private native
-packaging proof is not a notarized or published release.
+packaging proof remains separate from the final notarized and published release.
+The latter's ZIP/DMG hosted gates, fresh downloaded headed launch and metadata
+MCP checks passed. See [release record](../releases/v0.7.30.json).
 
 Apple API references: [Data Protection Keychain](https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain),
 [device-only accessibility](https://developer.apple.com/documentation/security/ksecattraccessiblewhenunlockedthisdeviceonly).
