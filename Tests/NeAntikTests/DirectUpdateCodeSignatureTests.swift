@@ -136,7 +136,7 @@ struct DirectUpdateCodeSignatureTests {
     }
 
     // Explicit fixture opt-in; no installed application/profiles/Keychain.
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_APP"] != nil), arguments: DirectUpdateCodeRole.allCases)
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_APP"] != nil), arguments: DirectUpdateCodeRole.shippingRoles)
     func actualPublishedDeveloperIDAndCertifiedTimestamp(role: DirectUpdateCodeRole) throws {
         let path = try #require(ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_APP"])
         let app = URL(fileURLWithPath: path), runtime = app.appendingPathComponent("Contents/Resources/NeAntik Browser.app")

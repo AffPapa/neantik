@@ -223,7 +223,7 @@ private final class AdmissionClock: @unchecked Sendable {
         let result = try await c.inspectLocalArchive(f.source, signedManifest: manifest, archiveParent: f.stages, extractionParent: f.apps)
         #expect(result.manifestSHA256 == BackupFS.hex(SHA256.hash(data: manifest)))
         #expect(result.version == "0.7.30" && result.build == 93 && result.archiveSHA256 == BackupFS.hex(SHA256.hash(data: bytes)))
-        #expect(result.signatures.map(\.identifier) == DirectUpdateCodeRole.allCases.map(\.identifier))
+        #expect(result.signatures.map(\.identifier) == DirectUpdateCodeRole.shippingRoles.map(\.identifier))
         #expect(result.system.managerCDHash == result.signatures[0].cdHash)
         #expect(result.runtime.runtimeSHA256 == DirectUpdateRuntimePins.runtimeDigest)
         #expect(!result.installAuthorized && !result.system.installAuthorized && !result.system.reply.installAuthorized)

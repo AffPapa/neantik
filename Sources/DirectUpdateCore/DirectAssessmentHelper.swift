@@ -11,7 +11,7 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
     private let parentIdentity: BackupIdentity, fileIdentity: BackupIdentity, sha256: String
     package var description: String { "DirectAssessmentHelper(<redacted>)" }
     package var customMirror: Mirror { Mirror(self, children: [:]) }
-    private init(url: URL, sha256: String, cdHash: Data, identifier: String) throws {
+    private init(url: URL, sha256: String, cdHash: Data, identifier: String, requireReleaseCertificate: Bool = true) throws {
         guard cdHash.count == 20, sha256.utf8.count == 64, sha256.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { throw DirectAssessmentParentError.helper }
         let parentURL = url.deletingLastPathComponent(), parent = try BackupFS.directory(parentURL)
         var kept = false, file: Int32 = -1
@@ -36,6 +36,12 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
               info[kSecCodeInfoDigestAlgorithm as String] as? Int == 2,
               info[kSecCodeInfoEntitlementsDict as String] == nil || (info[kSecCodeInfoEntitlementsDict as String] as? [String: Any])?.isEmpty == true
         else { throw DirectAssessmentParentError.helper }
+        if requireReleaseCertificate {
+            guard let certificates = info[kSecCodeInfoCertificates as String] as? [SecCertificate],
+                  let leaf = certificates.first, DirectUpdateDeveloperIdentity.matches(SecCertificateCopyData(leaf) as Data) else {
+                throw DirectAssessmentParentError.helper
+            }
+        }
         self.url = url; self.parentURL = parentURL; self.parent = parent; self.file = file
         self.parentIdentity = parentIdentity; fileIdentity = identity; self.sha256 = sha256; expectedCode = pin
         kept = true
@@ -44,6 +50,12 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
     package static func packaged(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
         try .init(url: qualifiedInstalledApp.appendingPathComponent("Contents/Helpers/NeAntikUpdateAssessment"),
                   sha256: releasePayloadSHA256, cdHash: releaseCDHash, identifier: identifier)
+    }
+    /// The owner uses the same bounded retained-file checks, but a different
+    /// fixed identifier and path. A caller cannot select an arbitrary helper.
+    package static func packagedOwner(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
+        try .init(url: qualifiedInstalledApp.appendingPathComponent("Contents/Helpers/NeAntikUpdateOwner"),
+                  sha256: releasePayloadSHA256, cdHash: releaseCDHash, identifier: "app.neantik.update-owner")
     }
     #if DEBUG
     /// Only separately signed QA files, in a marked isolated UUID root. It
@@ -59,7 +71,7 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
               SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &dictionary) == errSecSuccess,
               let hash = (dictionary as? [String: Any])?[kSecCodeInfoUnique as String] as? Data else { throw DirectAssessmentParentError.helper }
         return try .init(url: url, sha256: payloadSHA256, cdHash: hash,
-                         identifier: "app.neantik.update-assessment-qa")
+                         identifier: "app.neantik.update-assessment-qa", requireReleaseCertificate: false)
     }
     #endif
     package func validate() throws {

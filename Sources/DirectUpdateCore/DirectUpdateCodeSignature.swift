@@ -19,11 +19,19 @@ package enum DirectUpdateCodeSignatureError: LocalizedError, Equatable {
 /// client, Info.plist team declaration or a downloaded manifest.
 package enum DirectUpdateCodeRole: CaseIterable, Sendable {
     case manager, runtime, framework
+    /// A debug qualification role must never expand the shipping stage contract.
+    package static let shippingRoles: [Self] = [.manager, .runtime, .framework]
+    #if DEBUG
+    case updatePolicyQualification
+    #endif
     package var identifier: String {
         switch self {
         case .manager: "app.neantik.desktop"
         case .runtime: "app.neantik.runtime"
         case .framework: "app.neantik.runtime.framework"
+        #if DEBUG
+        case .updatePolicyQualification: "app.neantik.desktop.update-policy-qa"
+        #endif
         }
     }
     package var executable: String {
@@ -31,6 +39,9 @@ package enum DirectUpdateCodeRole: CaseIterable, Sendable {
         case .manager: "NeAntik"
         case .runtime: "NeAntik Browser"
         case .framework: "NeAntik Browser Framework"
+        #if DEBUG
+        case .updatePolicyQualification: "NeAntik"
+        #endif
         }
     }
     package var entitlements: [String: NSObject] {
@@ -45,6 +56,9 @@ package enum DirectUpdateCodeRole: CaseIterable, Sendable {
                 + ["location", "photos-library"].map { "com.apple.security.personal-information." + $0 }
             ).map { ($0, NSNumber(value: true) as NSObject) })
         case .framework: [:]
+        #if DEBUG
+        case .updatePolicyQualification: [:]
+        #endif
         }
     }
 }
@@ -59,8 +73,28 @@ package struct DirectUpdateCodeSignatureFields: Sendable, Equatable {
 package struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
     private let fields: DirectUpdateCodeSignatureFields
     private let profileValidity: DirectUpdateProvisioningValidity?
-    fileprivate init(_ fields: DirectUpdateCodeSignatureFields, profileValidity: DirectUpdateProvisioningValidity?) {
+    private let signedPlist: Data, signingCertificate: Data
+    fileprivate init(_ fields: DirectUpdateCodeSignatureFields, profileValidity: DirectUpdateProvisioningValidity?, signedPlist: Data, signingCertificate: Data) {
         self.fields = fields; self.profileValidity = profileValidity
+        self.signedPlist = signedPlist; self.signingCertificate = signingCertificate
+    }
+    /// Only a genuine Security.framework observation can supply update policy.
+    /// Parsing an unsigned Bundle dictionary cannot construct this value.
+    package func installedUpdateMetadata() throws -> DirectUpdateInstalledMetadata {
+        try updateMetadata(expectedIdentifier: DirectUpdateCodeRole.manager.identifier)
+    }
+    #if DEBUG
+    package func qualificationUpdateMetadata() throws -> DirectUpdateInstalledMetadata {
+        try updateMetadata(expectedIdentifier: DirectUpdateCodeRole.updatePolicyQualification.identifier)
+    }
+    #endif
+    private func updateMetadata(expectedIdentifier: String) throws -> DirectUpdateInstalledMetadata {
+        guard identifier == expectedIdentifier,
+              DirectUpdateDeveloperIdentity.matches(signingCertificate),
+              let plist = try PropertyListSerialization.propertyList(from: signedPlist, format: nil) as? [String: Any] else {
+            throw DirectUpdateCodeSignatureError.policy
+        }
+        return try DirectUpdateInstalledMetadata.parseSigned(plist, version: version, build: build)
     }
     fileprivate func validateTimePolicy(now: Date) throws { try profileValidity?.validate(now: now) }
     package var identifier: String { fields.identifier }
@@ -116,6 +150,8 @@ package enum DirectUpdateCodeSignature {
               let info = dictionary as? [String: Any] else { throw DirectUpdateCodeSignatureError.signature }
         let result = try validatedFields(info, role: role, provisionedManager: profile?.present == true)
         let leaf = try signingLeaf(info)
+        guard let signedPlist = info[kSecCodeInfoPList as String] as? [String: Any] else { throw DirectUpdateCodeSignatureError.metadata }
+        let encodedPlist = try PropertyListSerialization.data(fromPropertyList: signedPlist, format: .binary, options: 0)
         try profile?.authenticate(leaf: leaf, bundle: role.identifier)
         guard let executable = info[kSecCodeInfoMainExecutable as String] as? URL else { throw DirectUpdateCodeSignatureError.metadata }
         let fd = open(executable.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
@@ -140,12 +176,14 @@ package enum DirectUpdateCodeSignature {
         guard SecCodeCopySigningInformation(freshCode, SecCSFlags(rawValue: kSecCSSigningInformation), &freshDictionary) == errSecSuccess,
               let freshInfo = freshDictionary as? [String: Any],
               try validatedFields(freshInfo, role: role, provisionedManager: profile?.present == true) == result,
+              let freshPlist = freshInfo[kSecCodeInfoPList as String] as? NSDictionary,
+              freshPlist.isEqual(signedPlist as NSDictionary),
               try signingLeaf(freshInfo) == leaf else { throw DirectUpdateCodeSignatureError.changed }
         // Recheck authenticated grants with the current clock, including expiry,
         // after fresh signed-code information; do not downgrade on any failure.
         let validity = try profile?.authenticatedValidity(leaf: leaf, bundle: role.identifier)
         try Task.checkCancellation()
-        return .init(result, profileValidity: validity)
+        return .init(result, profileValidity: validity, signedPlist: encodedPlist, signingCertificate: leaf)
     }
 
     private static func signingLeaf(_ info: [String: Any]) throws -> Data {

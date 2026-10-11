@@ -307,6 +307,11 @@ python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$CANDIDATE_APP/Conten
 xcrun strip -S "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
+if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
+  python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" -
+else
+  python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" "$NEANTIK_SIGNING_IDENTITY"
+fi
 cp "$PROJECT_DIR/Resources/NeAntik.icns" \
   "$CANDIDATE_APP/Contents/Resources/NeAntik.icns"
 cp "$PROJECT_DIR/Resources/PrivacyInfo.xcprivacy" \

@@ -66,6 +66,7 @@ python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$MACOS_DIR/NeAntik"
 xcrun strip -S "$MACOS_DIR/NeAntik"
 
 cp "$PROJECT_DIR/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
+python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$APP_DIR" "$BIN_PATH" "$SIGNING_IDENTITY"
 printf 'APPLNANT' >"$CONTENTS_DIR/PkgInfo"
 cp "$PROJECT_DIR/Resources/NeAntik.icns" "$RESOURCES_DIR/NeAntik.icns"
 cp \
@@ -82,7 +83,9 @@ if [[ "$SIGNING_IDENTITY" == "-" ]]; then
     echo "Engineering signing cannot enable provisioned backup." >&2
     exit 65
   fi
-  codesign --force --deep --sign - "$APP_DIR"
+  # Helpers were signed explicitly above. Recursive re-signing would change
+  # their CodeDirectory after its pins were sealed into Info.plist.
+  codesign --force --sign - "$APP_DIR"
 else
   python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign "$APP_DIR" "$SIGNING_IDENTITY"
 fi
