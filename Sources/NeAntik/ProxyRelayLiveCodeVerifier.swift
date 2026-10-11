@@ -30,7 +30,7 @@ final class ProxyRelayExpectedCode: @unchecked Sendable {
     /// Static inspection supplies a pin; admission still validates live code.
     /// This does not substitute for runtime payload provenance/notarization.
     static func qualifiedPin(at url: URL, expectedIdentifier: String,
-                             expectedTeamIdentifier: String) throws -> ProxyRelayExpectedCode {
+                             expectedTeamIdentifier: String, expectedCDHash: Data? = nil) throws -> ProxyRelayExpectedCode {
         var code: SecStaticCode?
         guard SecStaticCodeCreateWithPath(url as CFURL, SecCSFlags(), &code) == errSecSuccess,
               let code else { throw Failure.invalidIdentity }
@@ -39,10 +39,11 @@ final class ProxyRelayExpectedCode: @unchecked Sendable {
               let info = information as? [String: Any],
               info[kSecCodeInfoIdentifier as String] as? String == expectedIdentifier,
               info[kSecCodeInfoTeamIdentifier as String] as? String == expectedTeamIdentifier,
-              let hash = info[kSecCodeInfoUnique as String] as? Data
+              let hash = info[kSecCodeInfoUnique as String] as? Data,
+              expectedCDHash == nil || expectedCDHash == hash
         else { throw Failure.invalidIdentity }
         let pin = try ProxyRelayExpectedCode(identifier: expectedIdentifier,
-                                             teamIdentifier: expectedTeamIdentifier, cdHash: hash)
+                                             teamIdentifier: expectedTeamIdentifier, cdHash: expectedCDHash ?? hash)
         guard SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), pin.requirement) == errSecSuccess
         else { throw Failure.invalidIdentity }
         return pin

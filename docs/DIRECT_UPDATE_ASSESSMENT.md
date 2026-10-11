@@ -47,8 +47,8 @@ There is no global mutation of the running manager's environment.
   environment values. Failure stages expose only booleans and a numeric system
   error code. `installAuthorized` is always false; success additionally states
   `freshRemoteResponseProven:false`.
-- The child restores/unblocks SIGALRM and uses a180-second deadline. The future
-  parent must additionally bound output, implement cancellation and reap its
+- The child restores/unblocks SIGALRM and uses a180-second deadline. The
+  parent additionally bounds output, implements cancellation and reaps its
   exact owned child. There is no persistent service or arbitrary shell/JS.
 
 ## Current real observations and limitation
@@ -82,9 +82,55 @@ was copied into this product:
 - [Canonical code hash and algorithm](https://github.com/apple-oss-distributions/Security/blob/main/OSX/libsecurity_codesigning/lib/notarization.cpp)
 - [Apple's default text-encoding environment format](https://github.com/apple-oss-distributions/webdavfs/blob/main/WebDAVPlugin/WebDAV_Mount.c)
 
+## Parent process protocol — implemented, not yet shipped
+
+`DirectAssessmentParent` now brackets the child run with an owned extracted
+stage or prepared slot borrow. Operation errors are captured inside that borrow;
+the filesystem postcondition runs before an error is returned. Cancellation is
+latched onto the utility worker instead of leaving a detached child behind.
+A reply remains an observation with `installAuthorized:false`.
+
+The installed helper must have release-selected SHA256 **and** canonical CDHash,
+fixed Developer ID identifier/team, hardened runtime, certified timestamp,
+SHA256 CodeDirectory, thin ARM64 executable and no entitlements. The release
+pins must come from qualified installed release inputs, never update JSON/MCP.
+Retained nofollow descriptors, inode/file identity, permissions, flags, ACLs
+and full hash are rechecked. Executable owner permission is required. The QA
+factory accepts only a separate QA identity and a marked private temporary root.
+
+The process starts suspended with fixed argv, environment, working directory,
+stdio and signal defaults. Before SIGCONT the parent checks current UID, parent
+PID, kernel generation, live Developer ID identity and exact CDHash twice, plus
+helper file custody. This secures the loaded guest rather than treating a
+filesystem signature check as proof of executing code. Other same-team code
+with the same identifier does not qualify.
+
+Stdin is bounded binary protocol ending in real EOF. stdout is at most1024
+bytes; any stderr refuses and is never retained as an error message. Strict
+versioned scalar reply grammar rejects duplicate/escaped/extra keys, nesting,
+numeric booleans, inconsistent stages, unexpected exits and invalid dates.
+The worker polls cancellation/deadline while writing and draining concurrently.
+On failure it kills its still-owned child process group and reaps the exact
+leader before returning; it never signals after reaping. Descendant pipe holders
+and a child that closes stdio and hangs are negative controls.
+
+The caller must be the sole wait owner of this PID; no unrelated `wait(-1)`
+reaper or concurrent SIGCHLD policy changes are supported. SIGCHLD ignore or
+SA_NOCLDWAIT refuses spawn without changing global signal state. Synchronous
+Security.framework admission, posix_spawn and final kernel wait cannot guarantee
+an absolute wall-clock bound under a kernel/framework stall. This is not a
+persistent service, arbitrary command runner or installed-app installer.
+
+Local real-process controls and separately signed QA admission are development
+evidence. Published0.7.30 contains neither this parent protocol nor the helper;
+no public updater capability is claimed. Trust hosting, supported ticket policy,
+installed lifecycle ownership and exact signed install/rollback/ack qualification
+remain required before enabling automatic installation.
+
 ## Remaining gates
 
 An explicit supported system-ticket policy still needs resolution; no silent
-downgrade is allowed. Authenticated packaged helper admission, parent custody/
-cancellation/output controls, durable atomic install/rollback/first-launch ack,
+downgrade is allowed. Final packaged helper admission on the exact installed release, production
+lifecycle integration of the implemented custody/cancellation/output controls,
+durable atomic install/rollback/first-launch ack,
 trusted updater key hosting and exact installed candidate checks remain open.
