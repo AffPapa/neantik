@@ -14,13 +14,13 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.7.28 (91), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.28). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.28.json).
+Последний опубликованный выпуск: [NeAntik 0.7.29 (92), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.29). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.29.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-`0.7.28` добавляет отдельный relay для HTTP/SOCKS5 с авторизацией, изоляцию паролей MCP-библиотек и доступные карточки профилей. Runtime сохранён без пересборки. Safe Browsing отключён; full backup, центр расширений, атомарный updater и major 1.0 остаются в работе. `0.7.27` сохранён для отката. Снимки настроек не являются backup BrowserData.
+`0.7.29` добавляет центр расширений закрытого профиля с поиском, сохранённым статусом и понятным переходом к штатному управлению Chromium. HTTP/SOCKS5 relay с авторизацией и изоляция MCP сохранены. Runtime не пересобирался. Safe Browsing отключён; production backup, HTTPS relay, атомарный updater и версия 1.0 остаются в работе. `0.7.28` сохранён для отката. Снимки настроек не являются backup BrowserData.
 
 Скачать напрямую: [browser.free](https://browser.free).
 

@@ -1,4 +1,9 @@
-> Current public release: 0.7.28/build91 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.28.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+> Current public release: 0.7.29/build92 public-alpha; Chromium156.0.8078.12. Source of truth: `releases/v0.7.29.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+
+## Выпуск 0.7.29 / build 92 — 11 октября 2026
+
+Опубликованы подписанные ZIP/DMG, прошли notarization/stapling/Gatekeeper, скачанные байты, свежий запуск в окне браузера и MCP с тестовой metadata. Browser.free — Sites 131. Центр расширений закрытого профиля доставлен; запуск, изменения и изоляция собственного расширения проверены в Dev, отдельно от проверок точного артефакта. Единый контекст backup и отдельная QA-подпись проверены, production-включение удерживается до квалификации подписи/Keychain. HTTPS relay, наблюдение маршрута и атомарный updater остаются открытыми. [Точные результаты и ограничения](../releases/v0.7.29.json).
+
 
 ## Выпуск 0.7.28 / build91 — 10 октября 2026
 
