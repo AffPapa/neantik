@@ -67,13 +67,13 @@ private final class OwnZIPFixture: @unchecked Sendable {
         try bytes.write(to: source)
     }
     deinit { try? FileManager.default.removeItem(at: root) }
-    func prepare(publicArchive: Bool = false) throws -> PreparedUpdateArchive {
+    func prepare(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.12") throws -> PreparedUpdateArchive {
         let version = publicArchive ? "0.7.29" : "0.7.30", build = publicArchive ? 92 : 93
         let payload = UpdateManifestPayload(schemaVersion: 1, product: "NeAntik", edition: "Direct", version: version, build: build,
             issuedAt: now.addingTimeInterval(-60), expiresAt: now.addingTimeInterval(86_400),
             archiveName: "NeAntik-\(version)-arm64-notarized.zip", downloadURL: "https://browser.free/downloads/NeAntik-\(version)-arm64-notarized.zip",
             sha256: BackupFS.hex(SHA256.hash(data: bytes)), minimumOS: "14.0", architecture: "arm64",
-            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.12")
+            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: chromiumVersion)
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let body = try encoder.encode(payload)
         let manifest = try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519", keyID: "own-zip-fixture",
@@ -321,8 +321,8 @@ struct DirectUpdateZIPTests {
             }
             #expect(task.terminationStatus == 0)
         }
-        let observed = try DirectUpdateCodeSignature.inspectStage(app)
-        #expect(observed.count == 3 && observed.allSatisfy(\.developerIDVerified))
+        let observed = try DirectUpdateRuntimeProvenance.inspectStage(app)
+        #expect(observed.chromiumVersion == "156.0.8078.12" && observed.machoCount == 16)
         try app.discard(); try prepared.discard(); #expect(f.retainedApps.isEmpty)
     }
 
@@ -345,9 +345,8 @@ struct DirectUpdateZIPTests {
         let fixture = try OwnZIPFixture(bytes), prepared = try fixture.prepare()
         let app = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: fixture.apps)
         #expect(app.inventory.entries.contains(where: { $0.path == "NeAntik.app/Contents/embedded.provisionprofile" && $0.kind == .file }))
-        let observed = try DirectUpdateCodeSignature.inspectStage(app)
-        #expect(observed.count == 3 && observed[0].version == "0.7.30" && observed[0].build == "93")
-        #expect(observed.allSatisfy { $0.developerIDVerified })
+        let observed = try DirectUpdateRuntimeProvenance.inspectStage(app)
+        #expect(observed.chromiumVersion == "156.0.8078.12" && observed.machoCount == 16)
         try app.discard(); try prepared.discard(); #expect(fixture.retainedApps.isEmpty)
         // An otherwise intact, signed/provisioned app cannot satisfy a different
         // fixture manifest. This synthetic signing key is not production trust.
@@ -393,5 +392,14 @@ struct DirectUpdateZIPTests {
         catch { #expect(error is CancellationError) }
         try app.withValidatedApp { _ in }
         try app.discard(); try prepared.discard(); #expect(f.retainedApps.isEmpty)
+    }
+
+    @Test func unknownRuntimeCannotChooseItsOwnProvenancePolicy() throws {
+        let fixture = try OwnZIPFixture(ZIPFixture([appDirectory]).bytes)
+        let prepared = try fixture.prepare(chromiumVersion: "157.0.0.0")
+        let stage = try DirectUpdateZIPExtraction.extractSynchronously(prepared, destinationParent: fixture.apps)
+        #expect(throws: DirectUpdateRuntimeProvenanceError.unsupported) { try DirectUpdateRuntimeProvenance.inspectStage(stage) }
+        try stage.withValidatedApp { _ in }
+        try stage.discard(); try prepared.discard(); #expect(fixture.retainedApps.isEmpty)
     }
 }

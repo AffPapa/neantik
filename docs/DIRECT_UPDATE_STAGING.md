@@ -106,9 +106,9 @@ Real 0.7.29 manager/runtime/framework Developer ID and certified timestamps,
 the exact owned ZIP stage, a technically valid ad-hoc signature refusal and a
 signed test-manifest version mismatch were exercised. Scalar-policy controls
 are unit evidence; they do not replace those actual code-signature checks.
-The result remains a signing observation: full runtime payload provenance,
-notarization/Gatekeeper, lifecycle admission and durable installation gates are
-still required. See Apple's
+The result remains a signing observation. The separate fixed-runtime closure
+observation below covers current exact bytes; notarization/Gatekeeper, lifecycle
+admission and durable installation gates are still required. See Apple's
 [signature validation API](https://developer.apple.com/documentation/security/secstaticcodecheckvalidity(_:_:_:))
 and [certified timestamp definition](https://developer.apple.com/documentation/security/kseccodeinfotimestamp).
 
@@ -154,6 +154,59 @@ Optional actual fixtures are explicitly skipped unless selected by environment.
 Cancellation prevents publishing a result after cancellation; the synchronous
 Security call is not proven promptly interruptible. Profile expiry/custody must
 be revalidated again immediately before a future installation commit.
+
+## Fixed M156 runtime and evidence observation
+
+`DirectUpdateRuntimeProvenance` admits only the previously qualified unchanged
+signed `156.0.8078.12` payload. Trusted pins are compiled into the installed
+manager; neither the ZIP nor a signed update manifest chooses a reference key,
+source hash, policy, report schema or runtime hash. Future runtimes and changed
+nested signatures/evidence refuse until a reviewed policy is shipped. This is
+deliberately a narrow same-runtime update primitive, not a general Chromium
+update channel.
+
+The actual runtime closure includes its root, every directory mode, regular
+file mode/size/SHA-256, resource/signature envelopes and exact symlink targets:
+946 entries, 411,177,721 regular bytes, 16 thin ARM64 Mach-O files. The evidence
+closure includes 114 entries and 49,527,984 regular bytes, including the full
+reviewed source/patch projections. Evidence links refuse. All files are read
+through owned no-follow descriptors with inode/size/time/mode/namespace checks;
+late changes to previously hashed leaves are revalidated before returning.
+Large evidence is streamed and hashed, not parsed or executed. Report capture
+is bounded to 64 KiB, hashed against its compiled exact pin and then parsed from
+those same captured bytes. Changed/duplicate JSON cannot pass that byte pin.
+The schema separately requires the exact source-evidence mode, explicit absence
+of a fresh whole-tree observation, source/report hashes and Metal declaration.
+This does not prove actual Metal operations on the receiving Mac.
+
+The closure transcript has domain `neantik-exact-runtime-closure-v1\0`, a
+UInt32 big-endian length-prefixed UTF-8 scope and UInt32 entry count. Records
+are sorted by raw UTF-8 bytes of admitted NFC relative paths. Each record has a
+length-prefixed path, one kind byte (D/F/L), directory/file mode UInt32 (0777),
+file size UInt64 and raw SHA-256 for files, or a length-prefixed exact target
+for links. Root path is empty. Link mode is deliberately absent: `symlinkat`
+does not restore archive permission bits. Link targets are never normalized.
+Paths are NFC despite decomposed APFS enumeration, matching ZIP admission.
+No UID, inode, timestamps, compression or CRC enter the reproducible digest;
+they remain separate current-custody checks.
+
+`scripts/verify-direct-update-runtime-pins.py` independently reproduces the
+transcript and compares the already qualified reference app and packaged M156
+source projections to the reviewed checkout. It never generates/replaces pins.
+The Python/Swift golden includes an empty file, UTF-8 path and symlink. Actual
+owned extraction of both exact published 0.7.29 and 0.7.30 ZIPs passed the native
+signature/profile and fixed runtime/evidence gates with identical closure pins.
+Synthetic negatives cover content/mode/namespace/link spelling, foreign Mach-O,
+hardlink/ancestor/leaf races, a late earlier-leaf overwrite, limits and actual
+Task cancellation. Unknown Chromium refuses before signature/report parsing.
+
+All signing and runtime observations are bracketed by the extracted stage's
+full seal. Separate custody scopes avoid re-entering its nonrecursive lock.
+The asynchronous entry point keeps streaming work off the UI actor and fences
+caller/worker cancellation. The returned observation has no decoded/public
+constructor and grants no installation permission, source rebuild proof,
+fresh certificate status, notarization/Gatekeeper result or perpetually valid
+authority. A future install commit must acquire and recheck all required gates.
 
 ## Remaining installation gates
 
