@@ -11,4 +11,10 @@ int neantik_zip_decode_fd(int input, uint64_t offset, uint64_t compressed,
                          int output, uint64_t expanded, uint16_t method,
                          uint32_t crc, neantik_zip_cancelled cancelled, void *context);
 uint32_t neantik_zip_crc32(const void *bytes, size_t count);
+/* Bounded validation without filesystem writes. Optional output is caller
+ * allocated and must fit expanded bytes; NULL validates/discards chunks. */
+int neantik_zip_verify_memory(const void *input, size_t compressed,
+                             uint64_t expanded, uint16_t method, uint32_t crc,
+                             void *output, size_t capacity,
+                             neantik_zip_cancelled cancelled, void *context);
 #endif

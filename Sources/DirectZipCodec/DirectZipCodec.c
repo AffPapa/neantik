@@ -10,6 +10,55 @@ uint32_t neantik_zip_crc32(const void *bytes, size_t count) {
     return (uint32_t)crc32(0L, bytes, (uInt)count);
 }
 
+int neantik_zip_verify_memory(const void *input, size_t compressed,
+                             uint64_t expanded, uint16_t method, uint32_t expected_crc,
+                             void *output, size_t capacity,
+                             neantik_zip_cancelled cancelled, void *context) {
+    const uint64_t bound = UINT64_C(256) * 1024 * 1024;
+    if (compressed > bound || expanded > bound || (!input && compressed) ||
+        (output && expanded > capacity)) return NEANTIK_ZIP_LIMIT;
+    if (method != 0 && method != 8) return NEANTIK_ZIP_INVALID;
+    const unsigned char *bytes = input;
+    unsigned char chunk[65536];
+    uint64_t written = 0;
+    uLong crc = crc32(0L, Z_NULL, 0);
+    if (method == 0) {
+        if (compressed != expanded) return NEANTIK_ZIP_INVALID;
+        while (written < expanded) {
+            if (cancelled && cancelled(context)) return NEANTIK_ZIP_CANCELLED;
+            size_t n = (size_t)((expanded - written < sizeof(chunk)) ? expanded - written : sizeof(chunk));
+            crc = crc32(crc, bytes + written, (uInt)n);
+            if (output) memcpy((unsigned char *)output + written, bytes + written, n);
+            written += n;
+        }
+    } else {
+        z_stream stream; memset(&stream, 0, sizeof(stream));
+        if (inflateInit2(&stream, -MAX_WBITS) != Z_OK) return NEANTIK_ZIP_INVALID;
+        stream.next_in = (Bytef *)bytes; stream.avail_in = (uInt)compressed;
+        int result = NEANTIK_ZIP_OK;
+        for (;;) {
+            if (cancelled && cancelled(context)) { result = NEANTIK_ZIP_CANCELLED; break; }
+            stream.next_out = chunk; stream.avail_out = sizeof(chunk);
+            uInt before = stream.avail_in;
+            int status = inflate(&stream, Z_NO_FLUSH);
+            size_t n = sizeof(chunk) - stream.avail_out;
+            if ((uint64_t)n > expanded - written) { result = NEANTIK_ZIP_LIMIT; break; }
+            crc = crc32(crc, chunk, (uInt)n);
+            if (output && n) memcpy((unsigned char *)output + written, chunk, n);
+            written += n;
+            if (status == Z_STREAM_END) {
+                if (stream.avail_in || written != expanded) result = NEANTIK_ZIP_INVALID;
+                break;
+            }
+            if (status != Z_OK || (n == 0 && before == stream.avail_in)) { result = NEANTIK_ZIP_INVALID; break; }
+        }
+        inflateEnd(&stream);
+        if (result) return result;
+    }
+    if (cancelled && cancelled(context)) return NEANTIK_ZIP_CANCELLED;
+    return (uint32_t)crc == expected_crc ? NEANTIK_ZIP_OK : NEANTIK_ZIP_CRC;
+}
+
 static int read_exact(int fd, unsigned char *bytes, size_t count, uint64_t offset) {
     size_t done = 0;
     while (done < count) {

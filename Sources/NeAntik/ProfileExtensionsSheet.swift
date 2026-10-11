@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// A closed-profile metadata view. Chromium remains the authority for actions
 /// and effective permissions; this view never rewrites browser preferences.
@@ -17,6 +18,12 @@ struct ProfileExtensionsSheet: View {
     @State private var errorMessage: String?
     @State private var task: Task<Void, Never>?
     @State private var requestID: UUID?
+    @State private var package: CRXPackageInspection?
+    @State private var packageBusy = false
+    @State private var packageError: String?
+    @State private var packageTask: Task<Void, Never>?
+    @State private var packageRequestID: UUID?
+    @State private var showPackage = false
 
     private var records: [ProfileExtensionRecord] {
         guard let snapshot else { return [] }
@@ -38,6 +45,20 @@ struct ProfileExtensionsSheet: View {
             }
             Text("Список из сохранённых настроек закрытого профиля. Установка, переключатели и удаление доступны в браузере.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Button("Проверить файл CRX…", systemImage: "checkmark.shield", action: inspectPackage)
+                    .disabled(packageBusy)
+                    .help("Проверяет подпись, содержимое архива и запрошенные разрешения без установки расширения.")
+                if packageBusy {
+                    ProgressView().controlSize(.small)
+                    Button("Отменить проверку") { packageRequestID = nil; packageTask?.cancel(); packageBusy = false }
+                }
+                Spacer()
+            }
+            if let packageError {
+                Label(packageError, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if busy {
                 HStack { ProgressView().controlSize(.small); Text("Читаем список расширений…") }
             } else if let errorMessage {
@@ -98,7 +119,8 @@ struct ProfileExtensionsSheet: View {
         }
         .padding(24).frame(minWidth: 680, idealWidth: 800, maxWidth: 980, minHeight: 330)
         .task { refresh() }
-        .onDisappear { requestID = nil; task?.cancel() }
+        .onDisappear { requestID = nil; task?.cancel(); packageRequestID = nil; packageTask?.cancel() }
+        .sheet(isPresented: $showPackage) { if let package { CRXPackagePreview(inspection: package) } }
     }
 
     private func details(_ record: ProfileExtensionRecord) -> some View {
@@ -166,6 +188,79 @@ struct ProfileExtensionsSheet: View {
                 if requestID == id { errorMessage = "Чтение отменено. Обнови список, чтобы повторить." }
             } catch {
                 if requestID == id { errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
+    private func inspectPackage() {
+        let panel = NSOpenPanel()
+        panel.title = "Проверить пакет расширения"
+        panel.message = "Проверка не устанавливает и не запускает расширение. Выбери файл CRX3 от разработчика."
+        panel.allowedContentTypes = [UTType(filenameExtension: "crx") ?? .data]
+        panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        packageTask?.cancel()
+        let id = UUID(); packageRequestID = id; packageBusy = true; packageError = nil; package = nil
+        packageTask = Task { @MainActor in
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer {
+                if scoped { url.stopAccessingSecurityScopedResource() }
+                if packageRequestID == id { packageBusy = false; packageTask = nil }
+            }
+            let worker = Task.detached(priority: .userInitiated) { try CRXPackageInspection.read(url) }
+            do {
+                let result = try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
+                try Task.checkCancellation()
+                guard packageRequestID == id else { return }
+                package = result; showPackage = true
+            } catch is CancellationError { }
+            catch {
+                guard packageRequestID == id else { return }
+                // Never surface an OS error containing a selected private path.
+                packageError = (error as? CRXPackageInspectionError)?.localizedDescription
+                    ?? CRXPackageInspectionError.unsafeFile.localizedDescription
+            }
+        }
+    }
+}
+
+private struct CRXPackagePreview: View {
+    let inspection: CRXPackageInspection
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Проверка пакета расширения").font(.title2.bold())
+            Label("Подпись разработчика и целостность архива проверены", systemImage: "checkmark.shield")
+            Text("Это не проверка безопасности автора или кода. Расширение не установлено и не запускалось.")
+                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    LabeledContent("Название", value: inspection.name)
+                    if inspection.localizedName { Text("Название задано ключом перевода; увидишь его после загрузки в Chromium.").foregroundStyle(.secondary) }
+                    LabeledContent("Версия", value: inspection.version)
+                    LabeledContent("Manifest", value: String(inspection.manifestVersion))
+                    if inspection.manifestVersion == 2 { Text("Manifest V2: совместимость с текущим Chromium этой проверкой не подтверждена.").foregroundStyle(.orange) }
+                    Text("ID: \(inspection.extensionID)").font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
+                    Text("SHA-256: \(inspection.packageSHA256)").font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Записей: \(inspection.entryCount) · Объём без сжатия: \(ByteCountFormatter.string(fromByteCount: Int64(inspection.expandedBytes), countStyle: .file))")
+                        .foregroundStyle(.secondary)
+                    Divider()
+                    permissions("Запрошенные разрешения", inspection.permissions)
+                    permissions("Необязательные разрешения", inspection.optionalPermissions)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }.frame(maxHeight: 360)
+            Text("Фактически выданные права и возможность установки определяет Chromium. Для управления открой chrome://extensions/ в нужном профиле.")
+                .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack { Spacer(); Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction) }
+        }.padding(24).frame(width: 650)
+    }
+    private func permissions(_ title: String, _ values: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.headline)
+            if values.isEmpty { Text("Не указаны в manifest").foregroundStyle(.secondary) }
+            ForEach(Array(values.enumerated()), id: \.offset) { _, value in
+                Text(value).font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
             }
         }
     }

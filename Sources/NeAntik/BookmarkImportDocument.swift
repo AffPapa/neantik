@@ -36,7 +36,7 @@ struct BookmarkImportDocument: Sendable {
         var budget = BookmarkBudget()
         let roots: [[ImportedBookmark]]
         if text.trimmingCharacters(in: .whitespacesAndNewlines).first == "{" {
-            try BookmarkJSONShape.validate(Data(text.utf8))
+            try ImportJSONShape.validate(Data(text.utf8))
             guard let object = try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
                   let version = object["version"] as? NSNumber,
                   CFGetTypeID(version) != CFBooleanGetTypeID(), version.doubleValue == 1,
@@ -117,7 +117,7 @@ private struct BookmarkBudget {
 
 /// Structural preflight before Foundation parsing: bounded nesting and exact
 /// duplicate-key rejection (including escaped equivalent spellings).
-private struct BookmarkJSONShape {
+struct ImportJSONShape {
     let bytes: [UInt8]; var index = 0, values = 0
     static func validate(_ data: Data) throws {
         try Task.checkCancellation()

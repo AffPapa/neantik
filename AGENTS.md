@@ -5,13 +5,14 @@
 - For Swift/UI iteration use `./Develop-NeAntik.command`; it is isolated from
   production profiles and release state. Use `./Release-NeAntik.command` only
   for one exact final candidate after local tests are green.
-- Public release truth is GitHub `AffPapa/neantik` plus
-  `https://affpapa.org/neantik`.
-- Before release or site work run:
-
-  ```bash
-  ./scripts/neantik-affpapa-release doctor
-  ```
+- Authorized publication scope is GitHub `AffPapa/neantik` and
+  `https://browser.free` through its existing OpenAI Sites project. Follow the
+  current Direct release preflight and Sites workflow for these channels.
+- The user explicitly excluded `affpapa.org/neantik` on 2026-10-12 and updates
+  it manually. Do not run its doctor, seek its deploy key, or publish there.
+  Missing AffPapa credentials do not block GitHub or browser.free.
+- The retained restricted AffPapa client below is legacy documentation for a
+  future explicitly authorized AffPapa task, not the current release workflow.
 
 - Do not use raw SSH, SCP, SFTP, rsync, or edit the live server directly.
   Both Codex and Claude must use the same least-privilege client:
