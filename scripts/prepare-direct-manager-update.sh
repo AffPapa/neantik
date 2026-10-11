@@ -109,7 +109,7 @@ verify_reviewed_runtime_evidence() {
   local comparisons=(
     "$source_provenance:$evidence/source-provenance.json"
     "$runtime_candidate_lock:$evidence/fingerprint-chromium.lock.json"
-    "$PROJECT_DIR/runtime/security-baseline.json:$evidence/security-baseline.json"
+    "$PROJECT_DIR/runtime/security-baseline.json:$evidence/release-security-baseline.json"
     "$PROJECT_DIR/runtime/nevision-patches/series.json:$evidence/neantik-patch-series.json"
     "$PROJECT_DIR/runtime/apple-device-tuples.json:$evidence/apple-device-tuples.json"
     "$source_contract:$evidence/$packaged_contract_name"
@@ -318,6 +318,9 @@ cp \
   "$CANDIDATE_APP/Contents/Resources/ru.lproj/"
 printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"
+python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
+  --project-root "$PROJECT_DIR" \
+  --evidence "$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence"
 verify_reviewed_runtime_evidence
 
 verify_runtime_unchanged
