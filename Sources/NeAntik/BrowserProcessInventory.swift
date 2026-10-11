@@ -10,6 +10,18 @@ fileprivate struct BrowserProcessInventoryEntry: Sendable {
     let executablePath: String
     let browserDataPaths: Set<String>
     let relayOwnerIntent: Bool
+    #if DEBUG
+    let qualificationHasUnsafeDataPath: Bool
+    #endif
+
+    init(executablePath: String, browserDataPaths: Set<String>, relayOwnerIntent: Bool, unsafeDataPath: Bool) {
+        self.executablePath = executablePath
+        self.browserDataPaths = browserDataPaths
+        self.relayOwnerIntent = relayOwnerIntent
+        #if DEBUG
+        qualificationHasUnsafeDataPath = unsafeDataPath
+        #endif
+    }
 
     var retainedByteCount: Int {
         executablePath.utf8.count +
@@ -145,7 +157,7 @@ struct BrowserProcessInventory: Sendable {
                     fileURLWithPath: process.executablePath
                 ).standardizedFileURL.path,
                 browserDataPaths: extraction.paths,
-                relayOwnerIntent: Self.isRelayOwnerIntent(process)
+                relayOwnerIntent: Self.isRelayOwnerIntent(process), unsafeDataPath: extraction.unsafePathExists
             )
             unsafePathExists =
                 unsafePathExists || extraction.unsafePathExists
@@ -241,6 +253,18 @@ struct BrowserProcessInventory: Sendable {
         return unreadableLiveProcessExists ? .unknown : .absent
     }
 
+    #if DEBUG
+    /// Only the isolated qualification quit uses this stricter argv binding.
+    /// Multiple data directories are never authority to close a QA process.
+    func inspectExactQualificationProcess(_ lock: BrowserProcessLock) -> BrowserProcessIdentityInspection {
+        guard inspectProcess(lock) == .expected else { return .unknown }
+        let expected = URL(fileURLWithPath: lock.browserDataPath).standardizedFileURL.path
+        guard let process = processes[lock.pid], !process.qualificationHasUnsafeDataPath,
+              process.browserDataPaths == Set([expected]) else { return .unrelated }
+        return .expected
+    }
+    #endif
+
     /// An unclassifiable lease may have lost its relay PID. A complete fresh
     /// inventory must prove absence of every possible owner before cleanup.
     /// This is deliberately conservative and does not exempt signed owners.
@@ -290,7 +314,7 @@ struct BrowserProcessInventory: Sendable {
                     fileURLWithPath: process.executablePath
                 ).standardizedFileURL.path,
                 browserDataPaths: extraction.paths,
-                relayOwnerIntent: isRelayOwnerIntent(process)
+                relayOwnerIntent: isRelayOwnerIntent(process), unsafeDataPath: extraction.unsafePathExists
             ),
             extraction.unsafePathExists
         )
