@@ -12,12 +12,19 @@ protocol BackupCompatibilityScopeBackend: Sendable {
 
 struct SecurityBackupCompatibilityScopeBackend: BackupCompatibilityScopeBackend {
     let service: String
+    let accessGroup: String?
+    init(service: String, accessGroup: String? = nil) {
+        self.service = service
+        self.accessGroup = accessGroup
+    }
     private var query: [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
+        var query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
          kSecAttrService as String: service,
          kSecAttrAccount as String: "browser-data-backup-scope-v1",
          kSecAttrSynchronizable as String: false,
          kSecUseDataProtectionKeychain as String: true]
+        if let accessGroup { query[kSecAttrAccessGroup as String] = accessGroup }
+        return query
     }
     func read() throws -> Data? {
         var query = query
@@ -38,6 +45,12 @@ struct SecurityBackupCompatibilityScopeBackend: BackupCompatibilityScopeBackend 
         guard status == errSecSuccess else { throw KeychainError(status: status) }
         return true
     }
+}
+
+/// Release audits cannot access or create backup keys, including recovery.
+struct UnavailableBackupCompatibilityScopeBackend: BackupCompatibilityScopeBackend {
+    func read() throws -> Data? { throw BackupCompatibilityScopeError.unavailable }
+    func insertIfAbsent(_ bytes: Data) throws -> Bool { throw BackupCompatibilityScopeError.unavailable }
 }
 
 enum BackupCompatibilityScopeError: LocalizedError, Equatable {

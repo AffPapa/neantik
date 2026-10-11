@@ -9,7 +9,11 @@ import Security
 /// synthetic root and the actual backup service. It has no file fallback.
 enum BackupScopeQualification {
     static let argument = "--neantik-qualify-backup-scope-v1"
-    static let bundleIdentifier = "app.neantik.desktop.backup-qa"
+    static let bundleIdentifier = BackupGUIQualificationContext.bundleIdentifier
+    static let accessGroup = BackupGUIQualificationContext.accessGroup
+    static func scopeService(_ runID: UUID) -> String {
+        bundleIdentifier + ".browser-data-backup-scope." + runID.uuidString.lowercased()
+    }
     enum Phase: String, Codable {
         case create, read, removeOwnedItem, assertMissing
         case prepareData, exportData, restoreData, wrongPassword, corruptArchive, missingScopeData, interruptBeforeDecision, interruptAfterDecision, recoverData
@@ -88,8 +92,8 @@ enum BackupScopeQualification {
     }
 
     private static func perform(_ request: Request) throws -> Result {
-        let service = bundleIdentifier + ".browser-data-backup-scope." + request.runID.uuidString.lowercased()
-        let backend = SecurityBackupCompatibilityScopeBackend(service: service)
+        let service = scopeService(request.runID)
+        let backend = SecurityBackupCompatibilityScopeBackend(service: service, accessGroup: accessGroup)
         let store = BackupCompatibilityScopeStore(backend: backend)
         switch request.phase {
         case .create:
@@ -103,7 +107,8 @@ enum BackupScopeQualification {
             guard try store.digest(createForExport: false) == request.expectedDigest else { throw Failure.unexpectedItem }
             let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                 kSecAttrService as String: service, kSecAttrAccount as String: "browser-data-backup-scope-v1",
-                kSecAttrSynchronizable as String: false, kSecUseDataProtectionKeychain as String: true]
+                kSecAttrSynchronizable as String: false, kSecUseDataProtectionKeychain as String: true,
+                kSecAttrAccessGroup as String: accessGroup]
             let status = SecItemDelete(query as CFDictionary)
             guard status == errSecSuccess else { throw KeychainError(status: status) }
             return .init(passed: try backend.read() == nil, status: nil, digest: nil)
@@ -151,7 +156,7 @@ enum BackupScopeQualification {
         let profile = store.profile(withID: id)
         guard request.phase == .recoverData || (store.hasTrustedMetadata && profile != nil) else { throw Failure.unexpectedItem }
         let scope = BackupCompatibilityScopeStore(backend: SecurityBackupCompatibilityScopeBackend(
-            service: bundleIdentifier + ".browser-data-backup-scope." + request.runID.uuidString.lowercased()))
+            service: scopeService(request.runID), accessGroup: accessGroup))
         if request.phase != .missingScopeData {
             guard try scope.digest(createForExport: false) == request.expectedDigest else { throw Failure.unexpectedItem }
         }
@@ -204,7 +209,7 @@ enum BackupScopeQualification {
                 guard request.phase == .missingScopeData else { throw BackupCompatibilityScopeError.unavailable }
                 let after = try BackupTree.capture(paths.browserDataDirectory(for: id)); defer { after.close() }
                 let metadataAfter = try Data(contentsOf: paths.profilesFile)
-                let backend = SecurityBackupCompatibilityScopeBackend(service: bundleIdentifier + ".browser-data-backup-scope." + request.runID.uuidString.lowercased())
+                let backend = SecurityBackupCompatibilityScopeBackend(service: scopeService(request.runID), accessGroup: accessGroup)
                 let missing = try backend.read() == nil
                 try BrowserDataRestoreTransaction.requireNoPending(rootURL: root)
                 result.passed = contents == after.entries && before == metadataAfter && missing

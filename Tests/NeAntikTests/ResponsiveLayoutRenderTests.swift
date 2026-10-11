@@ -60,7 +60,7 @@ struct ResponsiveLayoutRenderTests {
                 profile: profileA,
                 processState: .stopped,
                 browserDataPath:
-                    "/Users/example/Library/Application Support/NeAntik Development/Profiles/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/BrowserData",
+                    "/private/tmp/neantik-layout-synthetic/Profiles/BrowserData",
                 environmentSnapshot: ProfileEnvironmentInspector.snapshot(
                     profile: profileA,
                     runtime: nil,
@@ -460,7 +460,7 @@ struct ResponsiveLayoutRenderTests {
                     profile: profile,
                     processState: .stopped,
                     browserDataPath:
-                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                        "/private/tmp/neantik-layout-synthetic/Profiles/BrowserData",
                     environmentSnapshot: ProfileEnvironmentInspector.snapshot(
                         profile: profile,
                         runtime: nil,
@@ -484,7 +484,7 @@ struct ResponsiveLayoutRenderTests {
                     profile: profile,
                     processState: .stopped,
                     browserDataPath:
-                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                        "/private/tmp/neantik-layout-synthetic/Profiles/BrowserData",
                     clipboardNotice: nil,
                     onCopyProxyUsername: {},
                     onCopyProxyPassword: {}
@@ -585,6 +585,7 @@ struct ResponsiveLayoutRenderTests {
                         fileURL: paths.proxyHealthFile
                     ),
                     keychain: keychain,
+                    backupComposition: .unavailable,
                     credentialCleanup:
                         DeletedProfileCredentialCleanup(
                             paths: paths,
@@ -646,6 +647,7 @@ struct ResponsiveLayoutRenderTests {
                             fileURL: paths.proxyHealthFile
                         ),
                         keychain: keychain,
+                        backupComposition: .unavailable,
                         credentialCleanup:
                             DeletedProfileCredentialCleanup(
                                 paths: paths,

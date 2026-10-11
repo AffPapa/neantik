@@ -77,6 +77,14 @@ extension KeychainStore {
         environment: NeAntikApplicationEnvironment, paths: AppPaths, fixtureRoot: String?
     ) -> Bool {
         #if DEBUG
+        if environment.isDevelopment,
+           let qualification = try? BackupGUIQualificationContext.resolve(
+               bundleIdentifier: Bundle.main.bundleIdentifier,
+               runID: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.runIDKey) as? String,
+               root: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.rootKey) as? String
+           ), qualification.root.path == paths.rootDirectory.path {
+            return true
+        }
         guard environment.isDevelopment, let fixtureRoot, fixtureRoot.hasPrefix("/") else { return false }
         let root = URL(fileURLWithPath: fixtureRoot, isDirectory: true).standardizedFileURL
         return paths.rootDirectory.standardizedFileURL.path == root.path &&
@@ -119,15 +127,3 @@ struct DevelopmentFixtureBackupScope: BackupCompatibilityScopeBackend {
     }
 }
 #endif
-
-extension BackupCompatibilityScopeStore {
-    static func applicationStore(environment: NeAntikApplicationEnvironment, paths: AppPaths,
-                                 fixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String) -> BackupCompatibilityScopeStore {
-        #if DEBUG
-        if KeychainStore.usesDisposableDevelopmentBackend(environment: environment, paths: paths, fixtureRoot: fixtureRoot) {
-            return BackupCompatibilityScopeStore(backend: DevelopmentFixtureBackupScope(paths: paths))
-        }
-        #endif
-        return BackupCompatibilityScopeStore(backend: SecurityBackupCompatibilityScopeBackend(service: environment.bundleIdentifier + ".browser-data-backup-scope"))
-    }
-}

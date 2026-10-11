@@ -178,6 +178,7 @@ struct ContentView: View {
         ProxyHealthCoordinator
 
     let keychain: KeychainStore
+    let backupComposition: BackupApplicationComposition
     let credentialCleanup: DeletedProfileCredentialCleanup
     let runtimeLocator: BrowserRuntimeLocator
     let launchIntent: NeAntikLaunchIntent
@@ -286,18 +287,8 @@ struct ContentView: View {
         return profileCommandSet(for: selectedProfile)
     }
 
-    private var allowsDevelopmentBrowserDataBackup: Bool {
-        #if DEBUG
-        return Bundle.main.object(forInfoDictionaryKey: "NeAntikBrowserDataBackupDevelopmentEnabled") as? Bool == true &&
-            KeychainStore.usesDisposableDevelopmentBackend(environment: NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier), paths: store.paths,
-                fixtureRoot: Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String)
-        #else
-        return false
-        #endif
-    }
-
     @ViewBuilder private func browserDataBackupActions(_ commands: ProfileCommandSet, profile: BrowserProfile) -> some View {
-        if allowsDevelopmentBrowserDataBackup {
+        if backupComposition.allowsNewOperations {
             Button("Создать копию данных…", systemImage: "externaldrive") {
                 browserDataBackupRequest = .init(profile: profile, mode: .export)
             }.disabled(!commands.presentation.editIsEnabled || runtime == nil)
@@ -690,10 +681,9 @@ struct ContentView: View {
         }
         .sheet(item: $browserDataBackupRequest) { request in
             if let runtime {
-                let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier)
                 let paths = store.paths
                 let service = ProfileBrowserDataBackupService(paths: paths, processes: processes,
-                    scope: BackupCompatibilityScopeStore.applicationStore(environment: environment, paths: paths), inspectRuntime: {
+                    scope: backupComposition.scope, inspectRuntime: {
                         BrowserRuntimeInspector.inspect(executableURL: runtime.executableURL)
                     })
                 ProfileBrowserDataBackupSheet(request: request, service: service) {
@@ -707,10 +697,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingBackupRecovery) {
             if let runtime {
-                let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier)
                 let paths = store.paths
                 let service = ProfileBrowserDataBackupService(paths: paths, processes: processes,
-                    scope: BackupCompatibilityScopeStore.applicationStore(environment: environment, paths: paths), inspectRuntime: {
+                    scope: backupComposition.scope, inspectRuntime: {
                         BrowserRuntimeInspector.inspect(executableURL: runtime.executableURL)
                     })
                 ProfileBrowserDataRecoverySheet(service: service) { result in

@@ -8,6 +8,27 @@ struct BrowserDataBackupStorageTests {
     private let password = "storage fixture password 🔐"
     private let fs = FileManager.default
 
+    @Test func unsafeDestinationRefusesWithUsefulRedactedMessage() throws {
+        let root = try fixture(); defer { try? fs.removeItem(at: root) }
+        let source = try populate(root), before = try bytes(source)
+        let actual = root.appendingPathComponent("owned-destination")
+        try fs.createDirectory(at: actual, withIntermediateDirectories: false)
+        let alias = root.appendingPathComponent("unsupported-alias")
+        try fs.createSymbolicLink(at: alias, withDestinationURL: actual)
+        do {
+            _ = try BrowserDataBackupStorage.export(browserData: source, context: context(),
+                destination: alias.appendingPathComponent("own.nabackup"), password: password)
+            Issue.record("Symlink destination was accepted")
+        } catch let error as BrowserDataBackupStorageError {
+            #expect(error == .unsafeEntry)
+            #expect(error.localizedDescription.contains("Выбери новый файл"))
+            #expect(!error.localizedDescription.contains(root.path))
+            #expect(!error.localizedDescription.contains("ошибка 0"))
+        }
+        #expect(try bytes(source) == before)
+        #expect(try fs.contentsOfDirectory(atPath: actual.path).isEmpty)
+    }
+
     @Test func encryptedExportAndPrivateStagePreserveOwnBrowserDataBytes() throws {
         let root = try fixture(); defer { try? fs.removeItem(at: root) }
         let source = try populate(root), archive = root.appendingPathComponent("own.nabackup")

@@ -16,6 +16,7 @@ struct NeAntikApp: App {
         ProxyHealthCoordinator
 
     private let keychain: KeychainStore
+    private let backupComposition: BackupApplicationComposition
     private let credentialCleanup: DeletedProfileCredentialCleanup
     private let runtimeLocator = BrowserRuntimeLocator()
     private let launchIntent: NeAntikLaunchIntent
@@ -103,13 +104,33 @@ struct NeAntikApp: App {
             bundleIdentifier: Bundle.main.bundleIdentifier
         )
         let auditRoot = fingerprintEvidenceReleaseContext?.request.managerDataRoot
+        let backupQualification: BackupGUIQualificationContext?
+        do {
+            backupQualification = auditRoot == nil ? try BackupGUIQualificationContext.resolve(
+                bundleIdentifier: Bundle.main.bundleIdentifier,
+                runID: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.runIDKey) as? String,
+                root: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.rootKey) as? String
+            ) : nil
+        } catch {
+            Self.writeControlErrorAndExit("Не удалось подтвердить изолированный стенд копий данных.\n", code: EX_NOPERM)
+        }
         let paths: AppPaths
         if let auditRoot {
             paths = AppPaths(rootDirectory: auditRoot)
+        } else if let backupQualification {
+            paths = AppPaths(rootDirectory: backupQualification.root)
         } else if environment.isDevelopment {
             paths = AppPaths(rootDirectory: environment.applicationSupportRoot())
         } else {
             paths = AppPaths()
+        }
+        do {
+            backupComposition = try BackupApplicationComposition.resolve(
+                environment: environment, paths: paths, validatedReleaseAudit: auditRoot != nil,
+                qualification: backupQualification
+            )
+        } catch {
+            Self.writeControlErrorAndExit("Не удалось подтвердить доступ к копиям данных.\n", code: EX_NOPERM)
         }
         let keychain = auditRoot == nil
             ? KeychainStore.applicationStore(environment: environment, paths: paths)
@@ -143,6 +164,7 @@ struct NeAntikApp: App {
                 fingerprintObservationStore: fingerprintObservationStore,
                 proxyHealthCoordinator: proxyHealthCoordinator,
                 keychain: keychain,
+                backupComposition: backupComposition,
                 credentialCleanup: credentialCleanup,
                 runtimeLocator: runtimeLocator,
                 launchIntent: launchIntent,

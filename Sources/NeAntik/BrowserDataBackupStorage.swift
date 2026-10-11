@@ -2,8 +2,22 @@ import CryptoKit
 import Darwin
 import Foundation
 
-enum BrowserDataBackupStorageError: Error, Equatable {
+enum BrowserDataBackupStorageError: LocalizedError, Equatable {
     case unsafeEntry, changed, limitExceeded, incompatibleContext, destinationInsideSource
+    var errorDescription: String? {
+        switch self {
+        case .unsafeEntry:
+            "Не удалось безопасно открыть файл или папку копии. Выбери новый файл в своей папке без символических ссылок. Если ошибка повторяется, сохрани данные профиля и обратись в поддержку."
+        case .changed:
+            "Файлы изменились во время операции. Закрой профиль и другие версии NeAntik, затем повтори."
+        case .limitExceeded:
+            "Размер или количество файлов превышает лимит копии. Очисти кэш закрытого профиля и повтори."
+        case .incompatibleContext:
+            "Копия относится к другому профилю, Mac или движку. Выбери исходную совместимую копию."
+        case .destinationInsideSource:
+            "Копию нельзя сохранять внутри данных этого профиля. Выбери другую папку."
+        }
+    }
 }
 enum BrowserDataBackupStoragePoint { case scanned, outputIdentity(Int32), restoreRootIdentity(Int32), frameWritten(Int), beforePublish, restoreBegan, restoredChunk(Int), restoreVerified }
 

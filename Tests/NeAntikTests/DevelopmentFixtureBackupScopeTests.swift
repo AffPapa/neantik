@@ -9,9 +9,9 @@ struct DevelopmentFixtureBackupScopeTests {
         try paths.prepareBaseDirectories(); defer { try? FileManager.default.removeItem(at: paths.rootDirectory) }
         let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: NeAntikApplicationEnvironment.developmentBundleIdentifier)
         try #require(KeychainStore.usesDisposableDevelopmentBackend(environment: environment, paths: paths, fixtureRoot: paths.rootDirectory.path))
-        let first = BackupCompatibilityScopeStore.applicationStore(environment: environment, paths: paths, fixtureRoot: paths.rootDirectory.path)
+        let first = try BackupApplicationComposition.resolve(environment: environment, paths: paths, validatedReleaseAudit: false, fixtureRoot: paths.rootDirectory.path).scope
         let digest = try first.digest(createForExport: true)
-        let second = BackupCompatibilityScopeStore.applicationStore(environment: environment, paths: paths, fixtureRoot: paths.rootDirectory.path)
+        let second = try BackupApplicationComposition.resolve(environment: environment, paths: paths, validatedReleaseAudit: false, fixtureRoot: paths.rootDirectory.path).scope
         #expect(try second.digest(createForExport: false) == digest)
     }
     @Test func corruptOrSymlinkFixtureScopeIsNotRepaired() throws {
