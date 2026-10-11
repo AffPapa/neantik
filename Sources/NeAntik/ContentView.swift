@@ -191,6 +191,7 @@ struct ContentView: View {
     @State private var showingQuickCommands = false
     @State private var proxyDiagnosticProfile: BrowserProfile?
     @State private var cacheMaintenanceProfile: BrowserProfile?
+    @State private var extensionsProfile: BrowserProfile?
     @State private var browserDataBackupRequest: ProfileBrowserDataBackupRequest?
     @State private var backupRecoveryRequired = false
     @State private var showingBackupRecovery = false
@@ -300,7 +301,7 @@ struct ContentView: View {
 
     private var isWorkspaceModalPresented: Bool {
         showingManagerLibrary || showingQuickCommands ||
-            cacheMaintenanceProfile != nil || proxyDiagnosticProfile != nil || browserDataBackupRequest != nil ||
+            cacheMaintenanceProfile != nil || extensionsProfile != nil || proxyDiagnosticProfile != nil || browserDataBackupRequest != nil ||
             showingBackupRecovery ||
             editorRequest != nil ||
             folderNameRequest != nil ||
@@ -711,6 +712,26 @@ struct ContentView: View {
                     try await proxyHealthCoordinator.remove(profileID: result.profileID)
                 }
             } else { Text("Движок недоступен. Проверь установку NeAntik перед восстановлением.").padding(24) }
+        }
+        .sheet(item: $extensionsProfile, onDismiss: completeManagerSheetAction) { snapshot in
+            ProfileExtensionsSheet(profile: snapshot, paths: store.paths, processes: processes,
+                validateSnapshot: {
+                    try await store.refreshExternalMetadata(force: true)
+                    return store.profile(withID: snapshot.id).map {
+                        $0.revision == snapshot.revision && $0.identity == snapshot.identity
+                    } ?? false
+                }, manageInBrowser: {
+                    pendingManagerAction = {
+                        guard let current = store.profile(withID: snapshot.id),
+                              current.revision == snapshot.revision, current.identity == snapshot.identity,
+                              profileCommandSet(for: current).presentation.extensionsIsEnabled else {
+                            localError = "Профиль изменился или уже запущен. Проверь его состояние и открой расширения ещё раз."
+                            return
+                        }
+                        launch(current, target: .extensions)
+                    }
+                    extensionsProfile = nil
+                })
         }
         .sheet(item: $cacheMaintenanceProfile) { snapshot in
             ProfileCacheMaintenanceSheet(profile: snapshot, paths: store.paths, processes: processes) {
@@ -3227,7 +3248,7 @@ struct ContentView: View {
     private func openProfileExtensions(profileID: UUID) {
         guard let current = store.profile(withID: profileID),
               profileCommandSet(for: current).presentation.extensionsIsEnabled else { return }
-        launch(current, target: .extensions)
+        extensionsProfile = current
     }
 
     private func launch(_ profile: BrowserProfile, target: BrowserUserLaunchTarget = .profileStart) {
@@ -4126,7 +4147,7 @@ struct ProfileDetailView: View {
                     )
                     Button("Расширения профиля…", systemImage: "puzzlepiece.extension", action: onOpenExtensions)
                         .disabled(!canOpenExtensions)
-                        .help("Сначала останови профиль. Откроется встроенная страница Chromium с версией, разрешениями и переключателями расширений.")
+                        .help("Сначала останови профиль. Список и инструкция откроются здесь; установка, включение и удаление выполняются в Chromium.")
                 }
                 .font(.subheadline)
                 .padding(.vertical, 4)

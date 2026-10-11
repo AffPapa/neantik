@@ -1,7 +1,9 @@
 import Foundation
 
-/// Trusted internal destinations; profile URL input still accepts only the
-/// existing public-page schemes. Opening extensions never edits Preferences.
+/// A management launch preserves the saved start page and all network policy.
+/// Headed M156 rejects chrome://extensions as a command-line startup URL
+/// (startup::ValidateLaunchUrlWebUnsafe). Use a blank page and native navigation;
+/// never pretend that passing an internal URL actually opened that page.
 enum BrowserUserLaunchTarget: Equatable, Sendable {
     case profileStart
     case extensions
@@ -9,7 +11,7 @@ enum BrowserUserLaunchTarget: Equatable, Sendable {
     var startURLOverride: URL? {
         switch self {
         case .profileStart: nil
-        case .extensions: URL(string: "chrome://extensions/")
+        case .extensions: URL(string: "about:blank")
         }
     }
 }

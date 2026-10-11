@@ -23,7 +23,7 @@ struct ProfileCommandPresentationTests {
         let profile = BrowserProfile(name: "Fixture", startURL: "https://owned.test/start")
         let failure = LaunchPreparationFailure(profileID: profile.id, message: "Controlled preflight failure", target: .extensions)
         let retry = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: URL(fileURLWithPath: "/private/tmp/neantik-owned-retry"), startURLOverride: failure.target.startURLOverride)
-        #expect(retry.last == "chrome://extensions/")
+        #expect(retry.last == "about:blank")
         #expect(profile.startURL == "https://owned.test/start")
         #expect(LaunchPreparationFailure(profileID: profile.id, message: "Ordinary failure").target == .profileStart)
     }

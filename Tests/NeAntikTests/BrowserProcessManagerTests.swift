@@ -25,7 +25,7 @@ struct BrowserProcessManagerTests {
             try await Task.sleep(for: .milliseconds(5))
         }
         let arguments = try String(contentsOf: captured, encoding: .utf8).split(separator: "\n").map(String.init)
-        #expect(arguments.last == "chrome://extensions/")
+        #expect(arguments.last == "about:blank")
         #expect(arguments.contains("--user-data-dir=" + paths.browserDataDirectory(for: profile.id).path))
         #expect(profile.startURL == "https://owned.test/start")
         try await Task.sleep(for: .milliseconds(250))

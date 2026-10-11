@@ -34,7 +34,7 @@ struct BrowserLaunchBuilderTests {
                 let normal = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory, proxyTransportOverride: relay)
                 let extensions = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory,
                     startURLOverride: BrowserUserLaunchTarget.extensions.startURLOverride, proxyTransportOverride: relay)
-                #expect(extensions.last == "chrome://extensions/")
+                #expect(extensions.last == "about:blank")
                 #expect(Array(extensions.dropLast()) == Array(normal.dropLast()))
                 #expect(extensions.contains("--user-data-dir=" + directory.path))
                 #expect(!extensions.joined().contains("fixture-user"))
