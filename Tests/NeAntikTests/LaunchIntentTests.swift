@@ -3,6 +3,25 @@ import Testing
 @testable import NeAntik
 
 struct LaunchIntentTests {
+    @Test func updateAuditUsesAuthenticatedContextWithoutAutomaticFingerprintRun() {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let output = "/private/tmp/neantik-update-audit-" + UUID().uuidString.lowercased() + "/update-audit.json"
+        let valid = [executable, NeAntikLaunchIntent.releaseUpdateAuditArgument,
+                     "--candidate-manifest", "/private/tmp/owned-manifest.json", "--output", output]
+        let intent = NeAntikLaunchIntent.parse(arguments: valid)
+        #expect(intent.requiresUpdateAuditAuthority)
+        #expect(intent.releaseFingerprintAuditRequest != nil)
+        #expect(!intent.opensFingerprintAudit)
+        for bad in ["relative.json", "/private/tmp/update-audit.json", output.replacingOccurrences(of: "update-audit.json", with: "other.json"),
+                    output.replacingOccurrences(of: "/private/tmp/", with: "/tmp/"),
+                    output.replacingOccurrences(of: "neantik-update-audit-", with: "neantik-user-")] {
+            var arguments = valid; arguments[5] = bad
+            #expect(NeAntikLaunchIntent.parse(arguments: arguments).mode == .invalidControlArguments)
+        }
+        for bad in [Array(valid.dropLast()), valid + ["extra"], [executable, NeAntikLaunchIntent.releaseUpdateAuditArgument + "=true"]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: bad).mode == .invalidControlArguments)
+        }
+    }
     @Test func existingCanonicalPrivateTemporaryBundleKeepsItsKernelPath() throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-launch-layout-" + UUID().uuidString.lowercased())
         defer { try? FileManager.default.removeItem(at: root) }

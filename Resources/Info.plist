@@ -60,5 +60,7 @@
 	<string>rzTPKEc90XEogR/MO7oCCfZOWCC3TFkoyw6nuOfPz2w=</string>
 	<key>NeAntikUpdatePublicKeyID</key>
 	<string>neantik-direct-20261012-v1</string>
+	<key>NeAntikBrowserDataBackupEnabled</key>
+	<true/>
 </dict>
 </plist>

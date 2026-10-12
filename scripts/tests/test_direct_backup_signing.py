@@ -12,6 +12,22 @@ from direct_provisioning_contract import ContractError, PRODUCTION
 
 
 class DirectBackupSigningTests(unittest.TestCase):
+    def test_preparation_rejects_missing_opt_in_before_mutation_or_crypto(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as temporary:
+            root = Path(temporary); app = self.app(root)
+            approved = root / "Approved.plist"
+            approved.write_bytes(plistlib.dumps({"CFBundleIdentifier": PRODUCTION, signing.CAPABILITY: True}))
+            before = (app / "Contents/Info.plist").read_bytes(); calls = []
+            with self.assertRaises(ContractError):
+                signing.preflight_selection(app, approved, signing.CERTIFICATE, {}, calls.append)
+            self.assertEqual(calls, []); self.assertEqual((app / "Contents/Info.plist").read_bytes(), before)
+            selected = {"NEANTIK_BROWSER_DATA_BACKUP_ENABLED": "1", "NEANTIK_DIRECT_PROVISIONING_PROFILE": "/synthetic/profile"}
+            signing.preflight_selection(app, approved, signing.CERTIFICATE, selected, calls.append)
+            self.assertEqual(len(calls), 1); self.assertIn("--profile", calls[0])
+            self.assertEqual((app / "Contents/Info.plist").read_bytes(), before)
+            approved.write_bytes(plistlib.dumps({"CFBundleIdentifier": PRODUCTION, signing.CAPABILITY: 1}))
+            with self.assertRaises(ContractError): signing.preflight_selection(app, approved, signing.CERTIFICATE, selected, calls.append)
+
     def app(self, root, **extra):
         app = root / "Owned.app"
         (app / "Contents").mkdir(parents=True)

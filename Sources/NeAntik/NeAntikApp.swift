@@ -81,7 +81,7 @@ struct NeAntikApp: App {
                 "Неверные параметры защищённого режима NeAntik.\n",
                 code: EX_USAGE
             )
-        case let .interactive(request):
+        case let .interactive(request, _):
             self.launchIntent = launchIntent
             if let request {
                 do {
@@ -104,6 +104,11 @@ struct NeAntikApp: App {
                             bundle: releaseBundle
                         ) {
                     case let .audit(context):
+                        if launchIntent.requiresUpdateAuditAuthority {
+                            // A parsed manifest alone cannot grant a GUI that
+                            // avoids the automatic fingerprint signing path.
+                            try context.authenticateUpdateAuditIsolation()
+                        }
                         fingerprintEvidenceReleaseContext = context
                     case .recovered:
                         Darwin.exit(EXIT_SUCCESS)

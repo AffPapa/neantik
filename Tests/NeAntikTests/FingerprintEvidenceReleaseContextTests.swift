@@ -6,6 +6,33 @@ import Testing
 @testable import NeAntik
 
 struct FingerprintEvidenceReleaseContextTests {
+    @Test func interactiveUpdateAuditProvesAuthorityWithoutClaimOrReport() throws {
+        let fixture = makeContext()
+        try fixture.context.authenticateUpdateAuditIsolation()
+        #expect(fixture.claimStore.claimCount == 0)
+        #expect(fixture.output.commitCount == 0)
+        #expect(fixture.abandonedSessions.values.isEmpty)
+    }
+
+    @Test(arguments: ["missing", "different-key", "wrong-proof"])
+    func interactiveUpdateAuditRefusesUnenrolledOrWrongSigningAuthority(control: String) throws {
+        let fixture = makeContext()
+        let foreign = SoftwareP256FingerprintEvidenceSigner()
+        let expected = try fixture.binding.validated().publicKey.x963Representation
+        let context = FingerprintEvidenceReleaseContext(
+            request: fixture.context.request, candidateManifest: fixture.manifest,
+            metadata: fixture.context.metadata, binding: fixture.binding,
+            signerProvider: {
+                if control == "missing" { throw FingerprintEvidenceReleaseError.operationFailed(Int(EX_NOPERM)) }
+                if control == "different-key" { return foreign }
+                return UpdateAuditWrongProofSigner(publicKeyX963: expected, foreign: foreign)
+            }, abandonAuthority: { _ in }, claimStore: fixture.claimStore,
+            recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: fixture.output
+        )
+        #expect(throws: (any Error).self) { try context.authenticateUpdateAuditIsolation() }
+        #expect(fixture.claimStore.claimCount == 0)
+        #expect(fixture.output.commitCount == 0)
+    }
     @Test(arguments: [0o700, 0o755])
     func authenticatedAuditCreatesPrivateBrowserRootWithoutUsingSigner(parentMode: Int) throws {
         let parent = URL(fileURLWithPath: "/private/tmp/neantik-browser-release-" + UUID().uuidString)
@@ -1255,6 +1282,12 @@ private final class PreexistingEnrollmentOutput:
     }
 
     func rollback() {}
+}
+
+private struct UpdateAuditWrongProofSigner: FingerprintEvidenceSigning {
+    let publicKeyX963: Data
+    let foreign: SoftwareP256FingerprintEvidenceSigner
+    func signatureDER(for transcript: Data) throws -> Data { try foreign.signatureDER(for: transcript) }
 }
 
 private final class LockedSessions: @unchecked Sendable {

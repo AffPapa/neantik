@@ -1,7 +1,11 @@
-# BrowserData backup: Direct 0.7.30 public alpha
+# BrowserData backup: capability and qualification
 
-The explicitly opted-in Direct 0.7.30 (93) application enables this operation
-for a stopped profile. It is not exposed through MCP. Configuration export and metadata snapshots
+The published Direct 0.7.34 (97) metadata does not enable creation of BrowserData
+backups. The unpublished 0.7.35/98 qualification candidate explicitly requests
+this capability and the matching macOS Developer ID provisioning profile; it
+is not a published delivery. Preparation refuses a missing explicit selection
+before compilation or metadata replacement. The operation targets a stopped
+profile and is not exposed through MCP. Configuration export and metadata snapshots
 remain separate operations and do not contain BrowserData.
 
 The archive contains BrowserData only. Restore preserves the profile's settings,

@@ -87,6 +87,21 @@ def seal_capability(app: Path, info: dict, original: bytes) -> None:
         os.close(directory)
 
 
+def preflight_selection(source: Path, approved_info: Path, identity: str,
+                        environment: dict[str, str], run=run_checked) -> None:
+    """Reject a lost backup opt-in before copying metadata or compiling."""
+    info = plistlib.loads(read_regular(approved_info))
+    approved = info.get(CAPABILITY, False)
+    if type(approved) is not bool or info.get("CFBundleIdentifier") != PRODUCTION:
+        raise ContractError("Approved backup metadata refused")
+    profile = environment.get("NEANTIK_DIRECT_PROVISIONING_PROFILE")
+    enabled = validate_selection(environment.get("NEANTIK_BROWSER_DATA_BACKUP_ENABLED", "0"), profile, identity)
+    if (approved or capability_state(source)) and not enabled:
+        raise ContractError("Backup preparation requires explicit provisioning; no capability downgrade")
+    if enabled:
+        run(["python3", str(Path(__file__).resolve().parent / "direct_provisioning_contract.py"), "--profile", profile])
+
+
 def sign_manager(app: Path, identity: str, environment: dict[str, str], run=run_checked) -> None:
     scripts = Path(__file__).resolve().parent
     profile = environment.get("NEANTIK_DIRECT_PROVISIONING_PROFILE")
@@ -134,7 +149,7 @@ def sign_manager(app: Path, identity: str, environment: dict[str, str], run=run_
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("sign", "state"))
+    parser.add_argument("operation", choices=("sign", "state", "preflight"))
     parser.add_argument("app", type=Path)
     parser.add_argument("identity", nargs="?")
     args = parser.parse_args()
@@ -144,8 +159,13 @@ def main() -> None:
         else:
             if args.identity is None:
                 raise ContractError("Signing identity required")
-            sign_manager(args.app, args.identity, dict(os.environ))
-            print("PASS: manager signed; opt-in provisioning postcheck completed when enabled.")
+            if args.operation == "preflight":
+                preflight_selection(args.app, Path(__file__).resolve().parents[1] / "Resources/Info.plist",
+                                    args.identity, dict(os.environ))
+                print("PASS: explicit backup selection and provisioning checked before preparation.")
+            else:
+                sign_manager(args.app, args.identity, dict(os.environ))
+                print("PASS: manager signed; opt-in provisioning postcheck completed when enabled.")
     except (ContractError, OSError, ValueError, subprocess.SubprocessError):
         parser.exit(65, "Direct manager signing/capability contract refused; candidate is not enrolled.\n")
 

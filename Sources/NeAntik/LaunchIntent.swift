@@ -3,6 +3,7 @@ import Foundation
 struct NeAntikLaunchIntent: Equatable, Sendable {
     static let releaseFingerprintAuditArgument =
         "--neantik-release-fingerprint-audit"
+    static let releaseUpdateAuditArgument = "--neantik-release-update-audit"
     static let fingerprintEnrollmentArgument =
         "--neantik-enroll-fingerprint-evidence"
     static let candidateManifestArgument = "--candidate-manifest"
@@ -14,7 +15,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
 
     enum Mode: Equatable, Sendable {
         case interactive(
-            releaseFingerprintAudit: FingerprintEvidenceReleaseRequest?
+            releaseFingerprintAudit: FingerprintEvidenceReleaseRequest?,
+            automaticallyOpensFingerprintAudit: Bool = true
         )
         case fingerprintEnrollment(outputURL: URL)
         case mcpStdio(dataRoot: URL)
@@ -26,8 +28,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     let mode: Mode
 
     var opensFingerprintAudit: Bool {
-        if case let .interactive(releaseFingerprintAudit) = mode {
-            return releaseFingerprintAudit != nil
+        if case let .interactive(request, automatic) = mode {
+            return request != nil && automatic
         }
         return false
     }
@@ -35,10 +37,17 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     var releaseFingerprintAuditRequest:
         FingerprintEvidenceReleaseRequest?
     {
-        if case let .interactive(request) = mode {
+        if case let .interactive(request, _) = mode {
             return request
         }
         return nil
+    }
+
+    var requiresUpdateAuditAuthority: Bool {
+        if case let .interactive(request, automatic) = mode {
+            return request != nil && !automatic
+        }
+        return false
     }
 
     static func applicationBundleURL(
@@ -103,13 +112,17 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         }
         if arguments.count == 6,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
-           arguments[1] == releaseFingerprintAuditArgument,
+           [releaseFingerprintAuditArgument, releaseUpdateAuditArgument].contains(arguments[1]),
            arguments[2] == candidateManifestArgument,
            isCanonicalAbsoluteFilePath(arguments[3]),
            arguments[4] == outputArgument,
            isCanonicalAbsoluteFilePath(arguments[5]),
            arguments[3] != arguments[5]
         {
+            let updateAudit = arguments[1] == releaseUpdateAuditArgument
+            if updateAudit && !isUpdateAuditOutput(arguments[5]) {
+                return Self(mode: .invalidControlArguments)
+            }
             return Self(
                 mode: .interactive(
                     releaseFingerprintAudit:
@@ -120,7 +133,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
                             evidenceOutputURL: URL(
                                 fileURLWithPath: arguments[5]
                             )
-                        )
+                        ),
+                    automaticallyOpensFingerprintAudit: !updateAudit
                 )
             )
         }
@@ -131,13 +145,25 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
                 $0.hasPrefix(mcpStdioArgument) ||
                 $0 == candidateManifestArgument ||
                 $0.hasPrefix(fingerprintEnrollmentArgument) ||
-                $0.hasPrefix(releaseFingerprintAuditArgument)
+                $0.hasPrefix(releaseFingerprintAuditArgument) ||
+                $0.hasPrefix(releaseUpdateAuditArgument)
         }) {
             return Self(mode: .invalidControlArguments)
         }
         return Self(
             mode: .interactive(releaseFingerprintAudit: nil)
         )
+    }
+
+    private static func isUpdateAuditOutput(_ path: String) -> Bool {
+        let url = URL(fileURLWithPath: path)
+        guard url.lastPathComponent == "update-audit.json" else { return false }
+        let parent = url.deletingLastPathComponent()
+        let prefix = "neantik-update-audit-"
+        guard parent.deletingLastPathComponent().path == "/private/tmp",
+              parent.lastPathComponent.hasPrefix(prefix) else { return false }
+        let identifier = String(parent.lastPathComponent.dropFirst(prefix.count))
+        return UUID(uuidString: identifier)?.uuidString.lowercased() == identifier
     }
 
     private static func isCanonicalAbsoluteOutputPath(

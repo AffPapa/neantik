@@ -2,6 +2,20 @@
 
 Статус: реализован source-контракт, локальные тесты. Полное обновление подписанного old → new через GUI ещё не квалифицировано. Публичный updater выключен.
 
+Для интерактивной проверки используется отдельный защищённый control mode
+`--neantik-release-update-audit --candidate-manifest MANIFEST --output OUTPUT`.
+OUTPUT допустим только в приватном каталоге
+`/private/tmp/neantik-update-audit-<lowercase UUID>/update-audit.json`.
+Manifest проходит тот же exact executable/version/build/binding loader. Затем
+приложение подтверждает доступ к уже enrolled Secure Enclave authority отдельной
+domain-separated подписью до создания manager-data. Отсутствующий ключ, другой
+публичный ключ или неверная подпись отклоняются. Один pathname не даёт полномочий.
+Режим сохраняет изоляцию и native mock Keychain браузера, но не запускает
+fingerprint-проверку автоматически и не создаёт evidence PASS. Это позволяет
+пройти настоящий интерфейс updater. Обычный запуск и обязательный release
+fingerprint gate остаются прежними. 29 targeted tests и полный последовательный
+прогон 1417 tests /162 suites прошли; это ещё не квалификация установки.
+
 ## Причина
 
 После существующего bootstrap handshake новый процесс переходил к обычному startup без предыдущего release-audit root. Такая проверка могла выбрать production AppPaths. Не следует запускать этот эксперимент на реальных профилях. Нельзя загружать прежний FingerprintEvidenceReleaseContext заново: он привязан к прежним version/build/executable и содержит отдельные полномочия подписи и challenge.

@@ -224,6 +224,7 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
 esac
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
+  python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" preflight "$SOURCE_APP" "$NEANTIK_SIGNING_IDENTITY"
 fi
 runtime_candidate_lock="$(resolve_runtime_candidate_lock)"
 

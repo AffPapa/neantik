@@ -275,6 +275,24 @@ final class FingerprintEvidenceReleaseContext {
         self.output = output
     }
 
+    /// Prove access to the already enrolled authority before starting an
+    /// interactive updater experiment. This signs no release report, consumes
+    /// no qualification claim and transfers no signer to the next app.
+    func authenticateUpdateAuditIsolation() throws {
+        let validated = try binding.validated()
+        let signer = try signerProvider()
+        guard signer.publicKeyX963 == validated.publicKey.x963Representation else {
+            throw FingerprintEvidenceError.signingAuthorityMismatch
+        }
+        var transcript = Data("NeAntik update audit authorization v1\u{0}".utf8)
+        transcript.append(Data(SHA256.hash(data: candidateManifest)))
+        transcript.append(Data(UUID().uuidString.utf8))
+        let signature = try P256.Signing.ECDSASignature(derRepresentation: signer.signatureDER(for: transcript))
+        guard validated.publicKey.isValidSignature(signature, for: transcript) else {
+            throw FingerprintEvidenceError.invalidSignature
+        }
+    }
+
     @discardableResult
     func persist(
         report: FingerprintAuditReport
