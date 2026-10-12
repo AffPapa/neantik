@@ -14,13 +14,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.33 (96), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.33). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.33.json).
+Latest published release: [NeAntik 0.7.34 (97), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.34). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.34.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.33` adds a readable manual update window and installation admission that waits for profile operations. Chromium156.0.8078.12, HTTP/HTTPS/SOCKS5 relay, encrypted BrowserData backup and the extension center are retained. Automatic installation and the full CRX installer are not yet qualified. Backup requires the original stopped profile, same Mac, original Keychain and exact runtime; cross-Mac login transfer is unsupported. Safe Browsing is disabled. Immutable `0.7.32` remains for rollback. GitHub and browser.free are updated; the user updates AffPapa manually.
+`0.7.34` protects audit temporary data and cancellation cleanup, corrects the SOCKS relay handler and clarifies CRX instructions. Chromium 156.0.8078.12, authenticated relay, encrypted BrowserData backup and extension center are retained. Automatic updater remains disabled and full CRX installation is not qualified. Backup requires the original stopped profile, Mac, Keychain and exact runtime. Safe Browsing is disabled. Rollback: 0.7.33. GitHub/browser.free updated; AffPapa handled manually by the user.
 
 Direct downloads: [browser.free](https://browser.free).
 

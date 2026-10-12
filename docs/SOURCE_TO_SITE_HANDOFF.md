@@ -1,4 +1,8 @@
-> Current public release: 0.7.33/build96 public-alpha; Chromium 156.0.8078.12. Source of truth: `releases/v0.7.33.json`. Major1.0 remains open. Older entries below are historical, not current qualification.
+> Current public release: 0.7.34/build 97 public-alpha; Chromium 156.0.8078.12. Source of truth: `releases/v0.7.34.json`. Major 1.0 remains open. Older entries are historical.
+
+## Выпуск 0.7.34 / build 97 — 12 октября 2026
+
+Защищены временные папки проверки профиля: перед запуском и очисткой проверяются владение и идентичность каталога. Подмена папки или symlink приводит к отказу, а чужие данные не удаляются. Исправлен SOCKS5-обработчик relay и уточнена работа с CRX. Прошли 1392 теста, Dev.app с клавиатурой, точный подписанный кандидат, проверки публичных ZIP/DMG и свежего скачанного приложения. GitHub и browser.free, Sites 135 и API показывают 0.7.34 (97). Автоматический updater выключен; полный CRX installer остаётся в работе. Откат: 0.7.33. AffPapa пользователь обновляет самостоятельно. [Отчёт](../releases/v0.7.34.json).
 
 ## Выпуск 0.7.33 / build96 — 12 октября 2026
 

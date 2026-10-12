@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "limitations": [
+    "Public alpha; full production hardware cohorts open.",
+    "macOS27beta ARM64 tests, not every Mac/OS or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Bounded route/failure observations only; public OS-default-trusted authenticated HTTPS CONNECT e2e separately unmeasured.",
+    "Backup BrowserData-only for original stopped profile/Mac/Keychain/exact runtime; prior matching signed QA restore retained, no cross-Mac OS secret portability or fresh production Keychain use.",
+    "CRX native packed installation qualification and full product installer remain open; extension center retained.",
+    "Automatic updater remains disabled; full signed old-to-new install, interruption recovery and rollback still need isolated GUI qualification and publishing feed. Audit-only synthetic storage custody is now wired and qualified independently; it is not the full install gate."
+  ],
+  "tag": "v0.7.34",
+  "version": "0.7.34",
+  "build": 97,
+  "releasedAt": "2026-10-12",
+  "sourceCommit": "fd3af5638aa20ec134dd98281bce8ef24599d3d6",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.34",
+  "rollbackRelease": "v0.7.33",
+  "distributionDirectory": "dist/distribution/v0.7.34-97-20261012T003213Z-66077",
+  "candidateManifestSHA256": "26f1736da2a5e4949f5a289808ee7d98a7f84ab18781b1c1f4bc48a89ddea47d",
+  "candidateSourceBindingSHA256": "d80f3d97cec9c34425a9d3806a37ea40a4d56ba56b36d49d69f979d5b092d575",
+  "archive": {
+    "name": "NeAntik-0.7.34-arm64-notarized.zip",
+    "sizeBytes": 189456599,
+    "sha256": "b5b2c3c6d2102f01147a723a39c14fded33ff3c6247262364524bd14b7f5dc94"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.34-arm64-notarized.dmg",
+    "sizeBytes": 213262646,
+    "sha256": "cf539912aa29a6c845b154cdd65c5d32936c5b057d7b3052ccf35d7e3b749efb"
+  },
+  "verification": {
+    "developerId": "passed, same pinned certificate 474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "b4c41708-1e10-4f62-a243-ceb1404bfd0e",
+    "dmgNotarySubmissionId": "64af84d2-2080-4a6b-8288-db26f0fbbbd7",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "swiftTests": {
+      "reportedTests": 1392,
+      "suites": 161,
+      "seconds": 69.021,
+      "status": "passed",
+      "optionalSkippedCaseLogCount": 52
+    },
+    "fingerprint": "fresh authenticated exact signed candidate and fresh downloaded headed audit; critical files match; owned processes drained",
+    "managerSHA256": "b3c5cdef426deebf876f068fcee124ebdce82154e1b3f4ab55e01a4e229856f5",
+    "exactCandidateMCP": "PASS: 18 management/7 read; metadata, revision and access-control negatives, EOF/reconnect",
+    "downloadedMCP": "PASS: same bounded metadata/access-control scenarios; no browser/proxy/Keychain operations",
+    "hostedDownload": "PASS: fresh ZIP/DMG download, hash/size, signing/stapling/Gatekeeper, runtime provenance and privacy",
+    "downloadedHeaded": "PASS: fresh enrollment, all critical files equal, isolated headed audit, owned processes drained",
+    "devUI": "PASS: empty startup, manual updater, Escape, Cmd-N, Tab, synthetic creation and quit/reopen metadata persistence. Browser launch covered separately by exact signed headed audit; physical VoiceOver not run.",
+    "updater": "Automatic channel false; audit-only authenticated private storage capability, pre-exec directory custody, cancellation and no replaced-tree deletion controls verified. Full signed old-to-new installation not qualified.",
+    "relay": "Manager SOCKS handler uses internal relay alias where authenticated session has relay; unchanged network TLS route/failure proof retained from v0.7.32, not claimed as freshly repeated.",
+    "privacy": "8 explicit changed source/test/doc inputs328676bytes and reachable5072blobs/8601objects recognized formats PASS; public artifact PASS. Sites214tarentries/5696873bytes all-byte patterns and3session-literal scan PASS;115AppleDouble+1DS_Store separately scanned;98regular entries/privacy reviewed incl2synthetic /Users/YOU examples. Unknown formats not guaranteed.",
+    "siteTests": "Vinext build and32tests PASS, same archive saved/deployed",
+    "liveAPI": "ordinary HTTPS200: version0.7.34/build97, hash andZIP/DMG URLs match"
+  },
+  "changes": [
+    "Authenticated release-audit private storage context before ProfileStore and audit-only mock SafeStorage",
+    "Directory identity/no-symlink custody before browser execution and cancellation cleanup",
+    "Replaced-directory cleanup refuses to delete sentinel/external tree; one-shot reservations drain after failure",
+    "SOCKS handler recognizes internal relay alias",
+    "CRX instruction and Finder workflow clarification"
+  ],
+  "sitePublication": {
+    "status": "succeeded",
+    "projectId": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "versionNumber": 135,
+    "versionId": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_6a0bb20c96b4819197114122a159735d",
+    "sourceCommit": "1c6e47c016782ae346344e90473f85bd2407ea6b",
+    "deploymentId": "appgdep_6acc2c8c1d28819197d4a170e512183a",
+    "nativeURL": "https://neantik-browser.iryadom.chatgpt.site",
+    "customDomain": "https://browser.free/",
+    "audience": "public unchanged",
+    "liveAPI": "ordinary HTTPS200,version/build/SHA256/URLs match",
+    "liveUI": "Cua AX confirms0.7.34(97),visible download links and release info; screenshot obtained"
+  },
+  "githubPublication": {
+    "status": "published",
+    "releaseId": 410014871,
+    "tag": "v0.7.34",
+    "targetCommit": "fd3af5638aa20ec134dd98281bce8ef24599d3d6",
+    "assetsImmutable": true
+  }
+}

@@ -14,13 +14,13 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.7.33 (96), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.33). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.33.json).
+Последний опубликованный выпуск: [NeAntik 0.7.34 (97), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.34). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.7.34.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-`0.7.33` добавляет понятное окно ручного обновления и защиту установки от параллельных операций с профилями. Chromium156.0.8078.12, relay HTTP/HTTPS/SOCKS5, зашифрованная копия BrowserData и центр расширений сохранены. Автоматическая установка и полный CRX installer ещё не квалифицированы. Backup требует исходный закрытый профиль, этот Mac, исходную Связку ключей и точный runtime; перенос авторизации между Mac не поддерживается. Safe Browsing отключён. `0.7.32` сохранён для отката. GitHub и browser.free обновлены; AffPapa пользователь обновляет самостоятельно.
+`0.7.34` защищает временные данные проверок и очистку при отмене, исправляет SOCKS relay handler и уточняет работу с CRX. Chromium 156.0.8078.12, relay HTTP/HTTPS/SOCKS5, зашифрованная копия BrowserData и центр расширений сохранены. Автоматический updater выключен, полный CRX installer ещё не квалифицирован. Backup требует исходный закрытый профиль, этот Mac, исходную Связку ключей и точный runtime. Safe Browsing отключён. Rollback: 0.7.33. GitHub/browser.free обновлены; AffPapa пользователь обновляет сам.
 
 Скачать напрямую: [browser.free](https://browser.free).
 
