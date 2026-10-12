@@ -1,5 +1,14 @@
 # NeAntik changelog
 
+## Direct 0.7.39 (102)
+
+Final public-alpha candidate; exact paired shipping installation and publication gates are pending.
+
+- Исправлены admission и bootstrap updater: историческое происхождение runtime проверяется отдельно от подписанной справки о текущем релизе, с общими ограничениями размера.
+- Подписанный канал описания обновлений, ручной выбор оригинального ZIP, подтверждение установки и перезапуск. Private key остаётся вне Git и сайта.
+- 1420 Swift-тестов/162suites PASS. Chromium156.0.8078.12, Developer ID сертификат, per-profile relay, закрытый зашифрованный BrowserData backup и управление расширениями сохранены.
+- Полные CRX lifecycle, перенос OS-encrypted входов на другой Mac и production hardware cohorts не объявляются квалифицированными.
+
 ## Direct 0.7.38 (101)
 
 Release candidate; publication awaits exact paired installation and rollback.
