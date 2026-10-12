@@ -1,5 +1,16 @@
 # NeAntik changelog
 
+## Direct 0.8.0 (111)
+
+Public-alpha candidate; not yet published. Exact signed app, notarization, hosted bytes and WebKit smoke remain release gates. Chromium 156.0.8078.12 is unchanged.
+
+- При создании профиля можно выбрать Chromium или системный WebKit — движок Safari. WebKit открывается в собственном окне NeAntik с адресной строкой и командами навигации; это не Safari.app и не эмуляция Safari в Chromium.
+- У WebKit-профиля отдельное постоянное хранилище cookies, LocalStorage и IndexedDB. Изоляция двух синтетических профилей и сохранение после штатного перезапуска проверены в Dev.app; старые профили остаются Chromium. Движок существующего профиля менять нельзя.
+- Движок сохраняется в настройках, копировании, шаблонах и MCP metadata tools. Данные с WebKit используют schema 2: старые версии менеджера не должны их открывать. Перед обновлением сохраните отдельную копию настроек; она не является backup данных WebKit.
+- WebKit — preview: только прямое подключение, одно окно без вкладок; прокси, расширения Chromium, полный backup, очистка кэша и удаление явно недоступны. Профиль можно архивировать. Запуск через MCP stdio требует будущего GUI IPC и сейчас отклоняется. [Возможности и ограничения](docs/WEBKIT_PROFILES.md).
+- Внутренний протокол relay передаёт привязанное к сессии наблюдение маршрута с проверкой срока действия и revision. Полная HTTPS/DNS-квалификация не завершена; MCP по-прежнему не объявляет маршрут Chromium доказанным.
+- Интеграция: 1467 тестов / 166 suites PASS, 56 явных skips; signed QA подтвердил HTTP browser ACK и отрицательный HTTPS-контроль. Это не заменяет проверку поставляемого кандидата.
+
 ## Direct 0.7.47 (110)
 
 Published public alpha on GitHub and browser.free (Sites 136). Chromium 156.0.8078.12 is unchanged. [Release evidence](releases/v0.7.47.json).
