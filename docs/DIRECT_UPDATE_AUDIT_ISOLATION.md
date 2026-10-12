@@ -17,10 +17,19 @@
 - Отсутствующая запись или старый reply не подтверждают audit handoff. Повреждённая запись не означает ordinary fallback.
 - После Continue candidate повторно проверяет запись/root, затем передаёт только изоляцию в app startup. Нет наследования fingerprint signer, challenge, baseline или qualification.
 - Manager audit proxy credentials хранятся только в памяти, без legacy migration; backup composition unavailable. Это не проверка сохранения proxy passwords.
+- Chromium в аутентифицированном release-audit и его продолжении получает native `--use-mock-keychain`. Обычный Release startup не получает этот флаг по имени временного каталога, argv, Info.plist или MCP. Отдельный capability создаётся до ProfileStore и удерживает приватный root/parent.
+- Перед exec выбранный BrowserData должен находиться под закреплённым manager-data. Вся цепочка каталогов открывается с nofollow, проверяется на mode0700, UID, ACL/flags и повторно сверяется через parent→child entries. Descriptors имеют CLOEXEC и удерживаются через старт процесса. Это проверка custody, не filesystem sandbox против произвольного процесса того же пользователя после последней проверки.
+- Только audit fingerprint reservations создаются в `manager-data/FingerprintAuditSessions`; существующий обычный путь сохранён. Foundation переписывает существующий `/private/tmp` в `/tmp`; custody сохраняет исходный nofollow path и сравнивает reservation aliases отдельно от проверки доступа.
 - Обычный no-audit NUI1 и bootstrap reply остаются совместимыми. Оба будущих подписанных кандидата должны содержать один и тот же обновлённый owner helper; старые immutable assets не меняются.
 
 ## Проверки и ограничения
 
 Локальные controls покрывают сохранение inode, замену root/parent, symlink, hardlink, mode, ACL, flags, изменённую/обрезанную запись, неверный request, init/offer binding и manifest limits. Реальный дочерний процесс со старым reply отказывается до readiness/commit и завершается под контролем родителя.
 
-Эти проверки не заменяют exact signed/notarized old→new, реальный GUI restart, browser cookie/LocalStorage/IndexedDB/tab persistence и rollback. Для будущего браузерного эксперимента отдельно обеспечить временный user-data-dir и native mock Keychain; перенос manager root сам по себе не изолирует Chromium Safe Storage. Включение updater требует собственного доверенного pinned manifest key/channel и всех Direct release gates. Сертификат Developer ID и runtime в этом source-срезе не изменялись.
+Дополнительные локальные controls покрывают фактический argv собственного fake executable: ordinary, audit normal и audit fingerprint. После final pre-exec refusal executable не запускается, provisional lease удаляется. Замена открытого промежуточного каталога обнаруживается, даже если root не менялся. Initial report parent должен быть приватным0700 — это также существующий контракт настоящего release-context loader; injected unit context не считается прохождением loader.
+
+Эти проверки не заменяют exact signed/notarized old→new, реальный GUI restart, фактическую изоляцию Chromium Safe Storage, browser cookie/LocalStorage/IndexedDB/tab persistence и rollback. Native mock storage wiring реализован в source; qualified signed browser experiment ещё требуется. Включение updater требует собственного доверенного pinned manifest key/channel и всех Direct release gates. Сертификат Developer ID и runtime в этом source-срезе не изменялись.
+
+## Владение временным каталогом fingerprint-проверки
+
+Подтверждённый отрицательным контролем дефект: обычный резерв принимал свой pathname после замены каталога на symlink. Теперь менеджер удерживает parent/data descriptors и исходные inode; проверяет их до подготовки lease и перед exec. Захват сохраняет custody до конца очистки и освобождает неиспользованный резерв при любом выходе. Очистка сверяет identity, проверяет nofollow tree и удаляет через parent FD. Подменённый каталог или дерево с unsafe entry сохраняется, а не удаляется по устаревшему пути. Это защита локальной проверки, не обещание filesystem sandbox.

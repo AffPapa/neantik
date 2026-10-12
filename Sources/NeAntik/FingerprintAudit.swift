@@ -1913,6 +1913,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
             httpLoopbackPort: UInt16(auditServer.url.port!)
         )
         let dataDirectory = auditReservation.dataDirectory
+        defer { processes.releaseFingerprintAuditReservation(auditReservation) }
+        let directoryCustody = try processes.retainFingerprintAuditDirectory(auditReservation)
 
         let portFile = dataDirectory.appendingPathComponent(
             "DevToolsActivePort"
@@ -1967,7 +1969,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
             }
             try await waitUntilStopped(profileID: processProfile.id)
             activeProfileID = nil
-            try? FileManager.default.removeItem(at: dataDirectory)
+            try? directoryCustody.discard()
 
             return FingerprintCapture(
                 profileID: profile.id,
@@ -1983,14 +1985,14 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     try await waitUntilStopped(
                         profileID: processProfile.id
                     )
-                    try? FileManager.default.removeItem(at: dataDirectory)
+                    try? directoryCustody.discard()
                 } catch {
                     // Keep the disposable directory while a browser may still
                     // use it. The system temporary-directory cleanup can
                     // remove it after the process has exited.
                 }
             } else {
-                try? FileManager.default.removeItem(at: dataDirectory)
+                try? directoryCustody.discard()
             }
             activeProfileID = nil
             throw error

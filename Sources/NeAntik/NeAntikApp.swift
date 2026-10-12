@@ -180,8 +180,18 @@ struct NeAntikApp: App {
             }) }
         } else { makeUpdateClient = { DirectUpdateOwnerClient() } }
         _updateController = StateObject(wrappedValue: ApplicationUpdateController(makeClient: makeUpdateClient))
+        let browserIsolation: ReleaseAuditBrowserIsolation?
+        do {
+            if let updateAuditIsolation {
+                browserIsolation = try .authenticatedContinuation(updateAuditIsolation)
+            } else if let context = fingerprintEvidenceReleaseContext {
+                browserIsolation = try .authenticatedRelease(context)
+            } else { browserIsolation = nil }
+        } catch {
+            Self.writeControlErrorAndExit("Не удалось подтвердить временное хранилище браузера для проверки выпуска.\n", code: EX_NOPERM)
+        }
         _store = StateObject(wrappedValue: ProfileStore(paths: paths))
-        _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths))
+        _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths, releaseAuditBrowserIsolation: browserIsolation))
         _telemetry = StateObject(
             wrappedValue: TelemetryController(edition: .direct)
         )

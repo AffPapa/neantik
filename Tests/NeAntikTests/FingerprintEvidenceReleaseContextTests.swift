@@ -6,6 +6,41 @@ import Testing
 @testable import NeAntik
 
 struct FingerprintEvidenceReleaseContextTests {
+    @Test(arguments: [0o700, 0o755])
+    func authenticatedAuditCreatesPrivateBrowserRootWithoutUsingSigner(parentMode: Int) throws {
+        let parent = URL(fileURLWithPath: "/private/tmp/neantik-browser-release-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false, attributes: [.posixPermissions: parentMode])
+        defer { try? FileManager.default.removeItem(at: parent) }
+        let template = makeContext()
+        let request = FingerprintEvidenceReleaseRequest(candidateManifestURL: parent.appendingPathComponent("manifest.json"),
+            evidenceOutputURL: parent.appendingPathComponent("evidence.json"))
+        let context = FingerprintEvidenceReleaseContext(request: request, candidateManifest: template.manifest,
+            metadata: template.context.metadata, binding: template.binding,
+            signerProvider: { throw FingerprintEvidenceReleaseError.operationFailed(Int(EX_NOPERM)) },
+            abandonAuthority: { _ in }, claimStore: template.claimStore,
+            recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: template.output)
+        if parentMode != 0o700 {
+            // An injected unit context is not proof that the real loader would
+            // admit this parent. Both require a private report directory.
+            #expect(throws: (any Error).self) { try ReleaseAuditBrowserIsolation.authenticatedRelease(context) }
+            #expect(!FileManager.default.fileExists(atPath: request.managerDataRoot.path))
+            return
+        }
+        // A context is the authority; the factory creates only its manager-data
+        // child and never calls the signer, consumes a claim or writes output.
+        let isolation = try ReleaseAuditBrowserIsolation.authenticatedRelease(context)
+        let paths = AppPaths(rootDirectory: request.managerDataRoot)
+        let attrs = try FileManager.default.attributesOfItem(atPath: request.managerDataRoot.path)
+        #expect(attrs[.posixPermissions] as? Int == 0o700)
+        #expect(try isolation.arguments(paths: paths, browserDataDirectory: paths.browserDataDirectory(for: UUID())) == ["--use-mock-keychain"])
+        #expect(template.claimStore.claimCount == 0 && template.output.commitCount == 0)
+        #expect(chmod(request.managerDataRoot.path, 0o755) == 0)
+        #expect(throws: (any Error).self) { try ReleaseAuditBrowserIsolation.authenticatedRelease(context) }
+        #expect(chmod(request.managerDataRoot.path, 0o700) == 0)
+        #expect(chmod(parent.path, 0o777) == 0)
+        #expect(throws: (any Error).self) { try isolation.validate() }
+        #expect(throws: (any Error).self) { try ReleaseAuditBrowserIsolation.authenticatedRelease(context) }
+    }
     @Test
     func legacyFontListCannotConsumeReleaseAuthority() {
         let fixture = makeContext()

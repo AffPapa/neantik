@@ -558,6 +558,7 @@ final class BrowserProcessManager: ObservableObject {
     @Published var lastError: String?
 
     private let paths: AppPaths
+    private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
     private let validatesPersistedProfiles: Bool
     private let processIdentityInspector:
         (BrowserProcessLock) -> BrowserProcessIdentityInspection
@@ -610,6 +611,7 @@ final class BrowserProcessManager: ObservableObject {
     private var passiveInventoryObservationTask: Task<Void, Never>?
     private var fingerprintAuditReservations:
         [UUID: FingerprintAuditLaunchReservation] = [:]
+    private var fingerprintAuditDirectoryCustody: [UUID: FingerprintAuditDirectoryCustody] = [:]
     private var consumedProxyPreparationKeys =
         Set<BrowserLaunchPreparationConsumptionKey>()
 
@@ -626,8 +628,9 @@ final class BrowserProcessManager: ObservableObject {
         !pendingReconciliationProfileIDs.isEmpty || reconcileTask != nil || queuedReconcile != nil
     }
 
-    init(paths: AppPaths) {
+    init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil) {
         self.paths = paths
+        self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = true
         self.processIdentityInspector = {
             BrowserProcessManager.inspectProcess($0)
@@ -657,6 +660,7 @@ final class BrowserProcessManager: ObservableObject {
     init(
         paths: AppPaths,
         processIdentityValidator: @escaping (BrowserProcessLock) -> Bool,
+        releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
         processLivenessValidator: @escaping (pid_t) -> Bool = {
             BrowserProcessManager.isProcessAlive($0)
         },
@@ -679,6 +683,7 @@ final class BrowserProcessManager: ObservableObject {
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
+        self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = {
             processIdentityValidator($0) ? .expected : .unrelated
@@ -822,7 +827,7 @@ final class BrowserProcessManager: ObservableObject {
                 "Проверка может открывать только свой локальный адрес."
             )
         }
-        let root = FileManager.default.temporaryDirectory
+        let root = try releaseAuditBrowserIsolation?.reservationRoot(paths: paths) ?? FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "app.neantik.fingerprint-audit",
                 isDirectory: true
@@ -834,13 +839,22 @@ final class BrowserProcessManager: ObservableObject {
             )
             do {
                 try paths.createPrivateDirectoryExclusively(directory)
+                let custody: FingerprintAuditDirectoryCustody
+                do {
+                    custody = try FingerprintAuditDirectoryCustody(directory)
+                    try custody.validate()
+                } catch {
+                    _ = rmdir(directory.path)
+                    throw error
+                }
                 let reservation = FingerprintAuditLaunchReservation(
                     id: UUID(),
-                    dataDirectory: directory.standardizedFileURL,
+                    dataDirectory: releaseAuditBrowserIsolation == nil ? directory.standardizedFileURL : directory,
                     startURL: startURL,
                     httpLoopbackPort: httpLoopbackPort
                 )
                 fingerprintAuditReservations[reservation.id] = reservation
+                fingerprintAuditDirectoryCustody[reservation.id] = custody
                 return reservation
             } catch let error as POSIXError
                 where error.code == .EEXIST
@@ -851,6 +865,21 @@ final class BrowserProcessManager: ObservableObject {
         throw NeAntikError.fingerprintAuditFailed(
             "Не удалось безопасно подготовить временные данные браузера."
         )
+    }
+
+    func retainFingerprintAuditDirectory(_ reservation: FingerprintAuditLaunchReservation) throws -> FingerprintAuditDirectoryCustody {
+        guard fingerprintAuditReservations[reservation.id] == reservation,
+              let custody = fingerprintAuditDirectoryCustody[reservation.id] else {
+            throw NeAntikError.fingerprintAuditFailed("Резерв временных данных проверки недоступен.")
+        }
+        return custody
+    }
+
+    /// Releasing admission is independent of filesystem cleanup and idempotent.
+    func releaseFingerprintAuditReservation(_ reservation: FingerprintAuditLaunchReservation) {
+        guard fingerprintAuditReservations[reservation.id] == reservation else { return }
+        fingerprintAuditReservations[reservation.id] = nil
+        fingerprintAuditDirectoryCustody[reservation.id] = nil
     }
 
     private func startInventoryReconcile(
@@ -1956,6 +1985,7 @@ final class BrowserProcessManager: ObservableObject {
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
         let ownsFreshFingerprintAuditDirectory: Bool
+        let fingerprintDirectoryCustody: FingerprintAuditDirectoryCustody?
         switch purpose {
         case .normal:
             guard fingerprintAuditReservation == nil else {
@@ -1964,15 +1994,18 @@ final class BrowserProcessManager: ObservableObject {
                 )
             }
             ownsFreshFingerprintAuditDirectory = false
+            fingerprintDirectoryCustody = nil
         case let .fingerprintAudit(httpLoopbackPort):
             guard let reservation = fingerprintAuditReservation,
                   let browserDataDirectoryOverride,
                   let startURLOverride,
                   reservation.httpLoopbackPort == httpLoopbackPort,
-                  reservation.dataDirectory ==
-                    browserDataDirectoryOverride.standardizedFileURL,
+                  (reservation.dataDirectory == browserDataDirectoryOverride.standardizedFileURL ||
+                    (releaseAuditBrowserIsolation != nil && reservation.dataDirectory.standardizedFileURL ==
+                        browserDataDirectoryOverride.standardizedFileURL)),
                   reservation.startURL == startURLOverride,
                   fingerprintAuditReservations[reservation.id] == reservation,
+                  let custody = fingerprintAuditDirectoryCustody[reservation.id],
                   Self.fingerprintAuditArgumentsAreSafe(
                       additionalArguments
                   )
@@ -1981,7 +2014,11 @@ final class BrowserProcessManager: ObservableObject {
                     "Локальный запуск проверки не соответствует своему резерву."
                 )
             }
+            do { try custody.validate() }
+            catch { throw NeAntikError.fingerprintAuditFailed("Временный каталог проверки изменился. Повторите проверку.") }
+            fingerprintDirectoryCustody = custody
             fingerprintAuditReservations[reservation.id] = nil
+            fingerprintAuditDirectoryCustody[reservation.id] = nil
             ownsFreshFingerprintAuditDirectory = true
         }
         let profileDirectoryExistedBeforeLaunch =
@@ -1994,6 +2031,7 @@ final class BrowserProcessManager: ObservableObject {
         let process = Process()
         let launchNow = Date()
         process.executableURL = runtime.executableURL
+        let auditStorageArguments = try releaseAuditBrowserIsolation?.arguments(paths: paths, browserDataDirectory: browserDataDirectory)
         process.arguments = BrowserLaunchBuilder.arguments(
             profile: profile,
             browserDataDirectory: browserDataDirectory,
@@ -2003,10 +2041,10 @@ final class BrowserProcessManager: ObservableObject {
             proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
             now: launchNow,
             purpose: purpose
-        ) + KeychainStore.disposableBrowserArguments(
+        ) + (auditStorageArguments ?? KeychainStore.disposableBrowserArguments(
             environment: NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier),
             paths: paths
-        )
+        ))
         process.environment = BrowserLaunchBuilder.environment(
             profile: profile,
             runtimeCapabilities: runtime.capabilities,
@@ -2109,7 +2147,10 @@ final class BrowserProcessManager: ObservableObject {
 
         do {
             try prepareDiagnosticLog(logURL)
+            try fingerprintDirectoryCustody?.validate()
+            let auditDirectoryCustody = try releaseAuditBrowserIsolation?.validateBeforeExec(paths: paths, browserDataDirectory: browserDataDirectory)
             try process.run()
+            withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
             processes[profile.id] = process
             runningProfileIDs.insert(profile.id)
             try? appendDiagnostic(
