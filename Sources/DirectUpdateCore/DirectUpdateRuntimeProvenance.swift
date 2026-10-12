@@ -71,6 +71,18 @@ package struct DirectRuntimeClosureMeasurement: Sendable, Equatable {
 }
 
 package enum DirectUpdateRuntimeProvenance {
+    /// Admission and post-swap bootstrap share the same bounded publication
+    /// observation. Historical counts exclude this signed, separately checked
+    /// leaf; traversal still budgets its actual bytes and namespace entry.
+    package static func measureEvidence(_ url: URL) throws -> DirectRuntimeClosureMeasurement {
+        let evidence = try DirectRuntimeClosure.measure(url, scope: "evidence",
+            maximumEntries: DirectUpdateRuntimePins.evidenceEntries + 1,
+            maximumBytes: DirectUpdateRuntimePins.evidenceBytes + 65_536)
+        guard let baseline = evidence.publicationBaseline else { throw DirectUpdateRuntimeProvenanceError.metadata }
+        try DirectUpdatePublicationBaseline.validate(baseline)
+        return evidence
+    }
+
     package static func inspectStage(_ stage: ExtractedUpdateApp) throws -> DirectUpdateRuntimeProvenanceObservation {
         try Task.checkCancellation()
         guard stage.archiveIntegrity.chromiumVersion == DirectUpdateRuntimePins.chromiumVersion else {
@@ -108,15 +120,11 @@ package enum DirectUpdateRuntimeProvenance {
             let runtime = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntik Browser.app"),
                 scope: "runtime", maximumEntries: DirectUpdateRuntimePins.runtimeEntries,
                 maximumBytes: DirectUpdateRuntimePins.runtimeBytes)
-            let evidence = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntikRuntimeEvidence"),
-                scope: "evidence", maximumEntries: DirectUpdateRuntimePins.evidenceEntries + 1,
-                maximumBytes: DirectUpdateRuntimePins.evidenceBytes + 65_536)
+            let evidence = try measureEvidence(resources.appendingPathComponent("NeAntikRuntimeEvidence"))
             try validateMeasurements(runtime, evidence)
             // This signed publication observation changes between release
             // days. It is not an immutable source/build input. The stage's
             // genuine signature and custody still cover its exact bytes.
-            guard let baseline = evidence.publicationBaseline else { throw DirectUpdateRuntimeProvenanceError.metadata }
-            try DirectUpdatePublicationBaseline.validate(baseline)
             // Hash the very same bounded descriptor-read report bytes before
             // parsing. Unknown JSON, duplicate keys or altered scalar types
             // cannot pass the pinned byte-level report digest.

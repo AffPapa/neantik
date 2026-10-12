@@ -80,8 +80,7 @@ enum DirectUpdateCandidateBootstrap {
             _ = try DirectUpdateCodeSignature.inspect(runtimeURL.appendingPathComponent("Contents/Frameworks/NeAntik Browser Framework.framework"), role: .framework)
             let runtime = try DirectRuntimeClosure.measure(runtimeURL, scope: "runtime",
                 maximumEntries: DirectUpdateRuntimePins.runtimeEntries, maximumBytes: DirectUpdateRuntimePins.runtimeBytes)
-            let evidence = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntikRuntimeEvidence"), scope: "evidence",
-                maximumEntries: DirectUpdateRuntimePins.evidenceEntries, maximumBytes: DirectUpdateRuntimePins.evidenceBytes)
+            let evidence = try DirectUpdateRuntimeProvenance.measureEvidence(resources.appendingPathComponent("NeAntikRuntimeEvidence"))
             try DirectUpdateRuntimeProvenance.validateMeasurements(runtime, evidence)
             phase = "report"
             guard let report = evidence.capturedReport, BackupFS.hex(SHA256.hash(data: report)) == DirectUpdateRuntimePins.reportDigest,

@@ -24,6 +24,38 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
 }
 
 @Suite(.serialized) struct DirectUpdateRuntimeProvenanceTests {
+    @Test func bootstrapAndAdmissionBudgetPublicationBytesBeyondHistoricalClosure() throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-runtime-budget-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700])
+        defer { try? FileManager.default.removeItem(at: root) }
+        for index in 0..<(DirectUpdateRuntimePins.evidenceEntries - 1) {
+            let file = root.appendingPathComponent(String(format: "history-%03d", index))
+            let fd = open(file.path, O_CREAT | O_EXCL | O_WRONLY, 0o600)
+            guard fd >= 0 else { throw BackupFS.posix() }
+            defer { close(fd) }
+            if index == 0 {
+                guard ftruncate(fd, off_t(DirectUpdateRuntimePins.evidenceBytes)) == 0 else { throw BackupFS.posix() }
+            }
+        }
+        let leaf = root.appendingPathComponent("release-security-baseline.json")
+        try publication().write(to: leaf)
+        guard chmod(leaf.path, 0o600) == 0 else { throw BackupFS.posix() }
+        // The previously shipped bootstrap budget rejects the real-size
+        // transcript before readiness, even though admission would accept it.
+        #expect(throws: (any Error).self) {
+            try DirectRuntimeClosure.measure(root, scope: "evidence",
+                maximumEntries: DirectUpdateRuntimePins.evidenceEntries,
+                maximumBytes: DirectUpdateRuntimePins.evidenceBytes)
+        }
+        let accepted = try DirectUpdateRuntimeProvenance.measureEvidence(root)
+        #expect(accepted.entries == DirectUpdateRuntimePins.evidenceEntries)
+        #expect(accepted.regularBytes == DirectUpdateRuntimePins.evidenceBytes)
+        #expect(accepted.publicationBaseline != nil)
+        try Data("{}".utf8).write(to: leaf)
+        #expect(throws: (any Error).self) { try DirectUpdateRuntimeProvenance.measureEvidence(root) }
+    }
+
     @Test func canonicalTranscriptMatchesIndependentPythonGoldenAndIsRepeatable() throws {
         let fixture = try RuntimeClosureFixture(), first = try fixture.measure(), repeated = try fixture.measure()
         #expect(first == repeated)
