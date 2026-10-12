@@ -119,6 +119,42 @@ case "$SUITE" in
   ProxyRelaySocketOwnerInspectorTests|\
   ProxyRelayWireCodecTests|\
   StoppedProfileRestoreAuthorityTests|\
+  ApplicationUpdateAdmissionTests|\
+  ApplicationUpdateControllerTests|\
+  BackupApplicationCompositionTests|\
+  BrowserRelayActivityTests|\
+  BrowserStartupModeTests|\
+  CRXPackageInspectionTests|\
+  CRXPackagePreparationTests|\
+  DirectAssessmentParentTests|\
+  DirectInstallFilesystemTests|\
+  DirectProvisioningCMSTests|\
+  DirectUpdateAssessmentTests|\
+  DirectUpdateAuditIsolationTests|\
+  DirectUpdateCodeSignatureTests|\
+  DirectUpdateCoreBoundaryTests|\
+  DirectUpdateInstallSessionTests|\
+  DirectUpdateInstalledPolicyTests|\
+  DirectUpdateOwnerClientTests|\
+  DirectUpdateOwnerPipeTests|\
+  DirectUpdateOwnerProtocolTests|\
+  DirectUpdateOwnerTransportTests|\
+  DirectUpdateOwnerWorkspaceTests|\
+  DirectUpdateProvisioningTests|\
+  DirectUpdateRuntimeProvenanceTests|\
+  DirectUpdateStageStorageTests|\
+  DirectUpdateStoppedAuthorityTests|\
+  DirectUpdateZIPTests|\
+  InstallLifecycleTests|\
+  ManagerClarityRegressionTests|\
+  PlatformLaunchReceiptTests|\
+  ProfileExtensionInventoryTests|\
+  ProxyRelayObservationProtocolTests|\
+  ProxyRelayObservationSocketTests|\
+  ProxyRelayQualificationQuitTests|\
+  ProxyRelayTLSQualificationTests|\
+  ReleaseAuditBrowserIsolationTests|\
+  SignedUpdateManifestFetcherTests|\
   UpdateManifestTests)
     ;;
   *)
@@ -163,6 +199,7 @@ TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
     swift test \
       --build-system native \
       --jobs 2 \
+      --no-parallel \
       --disable-sandbox \
       --scratch-path "$SWIFT_TEST_ROOT/build" \
       --filter "$SUITE"

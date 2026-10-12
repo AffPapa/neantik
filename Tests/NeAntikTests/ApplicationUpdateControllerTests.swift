@@ -7,6 +7,83 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ApplicationUpdateControllerTests {
+    @Test func disabledDiscoveryMakesNoNetworkRequestOrOwner() async throws {
+        let fetch = UpdateDiscoveryGate(), transport = UpdateUITransportFixture()
+        let controller = ApplicationUpdateController(channelEnabled: false, admission: ApplicationUpdateAdmission(),
+            makeClient: { transport }, fetchManifest: { try await fetch.fetch() })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates()
+        await Task.yield()
+        #expect(await fetch.calls == 0)
+        #expect(await transport.inspectCount == 0)
+        #expect(controller.phase == .idle && !controller.hasRetrievedManifest)
+        controller.close()
+    }
+    @Test func discoveryCancellationWaitsForDrainAndRejectsLateResult() async throws {
+        let fetch = UpdateDiscoveryGate(), gate = ApplicationUpdateAdmission()
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate,
+            fetchManifest: { try await fetch.fetch() })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates(); controller.checkForUpdates()
+        for _ in 0..<2_000 { if await fetch.calls == 1 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.phase == .discovering && !controller.canClose)
+        controller.cancel(); controller.close(); controller.checkForUpdates()
+        #expect(controller.phase == .cancelling && gate.isUpdating && controller.isPresented)
+        #expect(throws: ApplicationUpdateAdmissionError.self) { try gate.beginActivity() }
+        await fetch.release(try ManifestDiscoveryFixture().retrieved())
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(await fetch.calls == 1)
+        #expect(controller.phase == .idle && !controller.hasRetrievedManifest && controller.manifestVersion == nil)
+        #expect(gate.isUpdating)
+        controller.close(); #expect(!gate.isUpdating)
+    }
+    @Test func authenticDiscoveryDoesNotOfferInstallAndPassesExactBytesToOwner() async throws {
+        let manifest = try ManifestDiscoveryFixture().retrieved(), transport = UpdateUITransportFixture(offerSuccess: true)
+        let gate = ApplicationUpdateAdmission()
+        var quits = 0
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate, makeClient: { transport },
+            terminate: { quits += 1 }, fetchManifest: { manifest })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates()
+        for _ in 0..<2_000 { if controller.hasRetrievedManifest { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.manifestVersion == "0.7.35 (98)" && controller.phase == .idle)
+        #expect(controller.offeredVersion == nil)
+        controller.installAndRestart()
+        #expect(quits == 0 && controller.phase == .idle)
+        #expect(await transport.commitCount == 0)
+        #expect(await transport.inspectCount == 0)
+        controller.beginInspection(archive: URL(fileURLWithPath: "/synthetic-update.zip"))
+        for _ in 0..<2_000 { if await transport.inspectCount == 1 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(await transport.receivedManifest == manifest.bytes)
+        controller.cancel(); await transport.releaseInspection()
+        for _ in 0..<2_000 { if await transport.drainCount == 1 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        await transport.releaseDrain()
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        controller.close(); #expect(!gate.isUpdating)
+    }
+    @Test func fetchFailureIsSanitizedAndAllowsRetryWithoutReleasingFence() async throws {
+        let gate = ApplicationUpdateAdmission()
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate, fetchManifest: {
+            throw NSError(domain: "synthetic-sensitive-diagnostic", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "synthetic-private-path-and-token"])
+        })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates()
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.phase == .idle && gate.isUpdating)
+        #expect(controller.message != nil && !controller.message!.contains("synthetic-private"))
+        #expect(!controller.hasRetrievedManifest)
+        controller.close(); #expect(!gate.isUpdating)
+    }
+    @Test func sameReleaseDiscoveryDoesNotRetainAnInstallCandidate() async throws {
+        let fixture = ManifestDiscoveryFixture(), bytes = try fixture.envelope()
+        let verified = try UpdateManifestVerifier.verify(bytes, configuration: fixture.trust,
+            installedVersion: "0.7.35", installedBuild: 98, now: ManifestDiscoveryFixture.date)
+        let gate = ApplicationUpdateAdmission()
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate,
+            fetchManifest: { .init(bytes: bytes, verified: verified) })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates()
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.phase == .idle && controller.message != nil)
+        #expect(!controller.hasRetrievedManifest && controller.manifestVersion == nil && controller.offeredVersion == nil)
+        controller.close(); #expect(!gate.isUpdating)
+    }
     @Test func disabledChannelNeverAcquiresInstallAuthority() throws {
         let gate = ApplicationUpdateAdmission()
         let activity = try gate.beginActivity()
@@ -137,11 +214,13 @@ struct ApplicationUpdateControllerTests {
 }
 private actor UpdateUITransportFixture: ApplicationUpdateTransport {
     private(set) var inspectCount = 0, drainCount = 0, commitCount = 0
+    private(set) var receivedManifest: Data?
     private let cleanupFailure: Bool, offerSuccess: Bool
     init(cleanupFailure: Bool = false, offerSuccess: Bool = false) { self.cleanupFailure = cleanupFailure; self.offerSuccess = offerSuccess }
     private var inspecting: CheckedContinuation<Void, Never>?, draining: CheckedContinuation<Void, Never>?, committing: CheckedContinuation<Void, Never>?
     func inspect(archive: URL, manifest: Data) async throws -> DirectUpdateOwnerOffer {
         inspectCount += 1
+        receivedManifest = manifest
         await withCheckedContinuation { inspecting = $0 }
         if offerSuccess {
             let request = try DirectUpdateOwnerInit(archive: archive, manifest: manifest)
@@ -159,4 +238,15 @@ private actor UpdateUITransportFixture: ApplicationUpdateTransport {
     func releaseInspection() { inspecting?.resume(); inspecting = nil }
     func releaseCommit() { committing?.resume(); committing = nil }
     func releaseDrain() { draining?.resume(); draining = nil }
+}
+
+private actor UpdateDiscoveryGate {
+    private(set) var calls = 0
+    private var continuation: CheckedContinuation<RetrievedUpdateManifest, Error>?
+    func fetch() async throws -> RetrievedUpdateManifest {
+        calls += 1
+        // Deliberately ignores cancellation until released: detects stale UI publication.
+        return try await withCheckedThrowingContinuation { continuation = $0 }
+    }
+    func release(_ manifest: RetrievedUpdateManifest) { continuation?.resume(returning: manifest); continuation = nil }
 }

@@ -31,6 +31,7 @@ echo \
     swift test \
       --build-system native \
       --jobs 2 \
+      --no-parallel \
       --disable-sandbox \
       --scratch-path "$SWIFT_TEST_ROOT/build"
 )

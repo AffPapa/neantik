@@ -15,11 +15,12 @@ extension DirectUpdateOwnerClient: ApplicationUpdateTransport {}
 /// after the owner has drained, or retained until ordinary application exit.
 @MainActor
 final class ApplicationUpdateController: ObservableObject {
-    enum Phase: Equatable { case idle, checking, offered, cancelling, committing, restartRequired }
+    enum Phase: Equatable { case idle, discovering, checking, offered, cancelling, committing, restartRequired }
     @Published private(set) var isPresented = false
     @Published private(set) var phase = Phase.idle
     @Published private(set) var offeredVersion: String?
     @Published private(set) var message: String?
+    @Published private(set) var manifestVersion: String?
     let channelEnabled: Bool
     private let admission: ApplicationUpdateAdmission
     private var fence: UUID?
@@ -29,22 +30,32 @@ final class ApplicationUpdateController: ObservableObject {
     private var inspection: Task<Void, Never>?
     private var archiveAccess: URL?
     private var cleanupUnconfirmed = false
+    private var retrievedManifest: RetrievedUpdateManifest?
+    private var discovery: Task<Void, Never>?
+    private let fetchManifest: @Sendable () async throws -> RetrievedUpdateManifest
 
     init(channelEnabled: Bool = UpdateChannelConfiguration.fromBundle().isEnabled,
          admission: ApplicationUpdateAdmission? = nil,
          makeClient: (@MainActor () -> any ApplicationUpdateTransport)? = nil,
-         terminate: (@MainActor () -> Void)? = nil) {
+         terminate: (@MainActor () -> Void)? = nil,
+         fetchManifest: (@Sendable () async throws -> RetrievedUpdateManifest)? = nil) {
         self.channelEnabled = channelEnabled; self.admission = admission ?? .shared
         self.makeClient = makeClient ?? { DirectUpdateOwnerClient() }
         self.terminate = terminate ?? { NSApplication.shared.terminate(nil) }
+        let installedApp = Bundle.main.bundleURL
+        self.fetchManifest = fetchManifest ?? {
+            try await SignedUpdateManifestFetcher().fetchInstalled(app: installedApp)
+        }
     }
     var holdsFence: Bool { fence != nil }
     var canClose: Bool { phase == .idle }
-    var canCancel: Bool { phase == .checking || phase == .offered }
+    var canCancel: Bool { phase == .discovering || phase == .checking || phase == .offered }
+    var hasRetrievedManifest: Bool { retrievedManifest != nil }
 
     func present(workspaceIsBusy: Bool) {
         guard !isPresented, fence == nil else { return }
         message = nil; offeredVersion = nil; phase = .idle; cleanupUnconfirmed = false
+        retrievedManifest = nil; manifestVersion = nil
         if channelEnabled {
             guard !workspaceIsBusy, !ManagerLaunchAdmission.shared.isPreparing else {
                 message = "Закрой браузерные окна и дождись завершения операций с профилями. Затем снова открой обновление."
@@ -56,6 +67,29 @@ final class ApplicationUpdateController: ObservableObject {
         isPresented = true
     }
 
+    func checkForUpdates() {
+        guard channelEnabled, holdsFence, phase == .idle else { return }
+        phase = .discovering; message = nil; manifestVersion = nil; retrievedManifest = nil
+        let fetch = fetchManifest
+        discovery = Task { @MainActor in
+            do {
+                let manifest = try await fetch()
+                try Task.checkCancellation()
+                guard phase == .discovering else { return }
+                if manifest.verified.isNewerThanInstalled {
+                    retrievedManifest = manifest
+                    manifestVersion = "\(manifest.verified.payload.version) (\(manifest.verified.payload.build))"
+                    message = "Подпись описания обновления проверена. Выбери ZIP этого выпуска: приложение и архив будут проверены отдельно до установки."
+                } else { message = "В подписанном канале нет версии новее установленной." }
+                phase = .idle; discovery = nil
+            } catch {
+                guard phase == .discovering else { return }
+                message = "Не удалось получить и проверить описание обновления. Повтори позже или выбери ZIP и подписанный manifest вручную."
+                phase = .idle; discovery = nil
+            }
+        }
+    }
+
     func chooseFiles() {
         guard channelEnabled, holdsFence, phase == .idle else { return }
         let archivePanel = NSOpenPanel()
@@ -64,6 +98,10 @@ final class ApplicationUpdateController: ObservableObject {
         archivePanel.allowedContentTypes = [.zip]; archivePanel.canChooseDirectories = false
         archivePanel.allowsMultipleSelection = false
         guard archivePanel.runModal() == .OK, let archive = archivePanel.url else { return }
+        if retrievedManifest != nil {
+            beginInspection(archive: archive)
+            return
+        }
         let manifestPanel = NSOpenPanel()
         manifestPanel.title = "Выбрать подписанный manifest обновления"
         manifestPanel.message = "Нужен manifest этого же выпуска. Обычный файл SHA-256 его не заменяет."
@@ -73,16 +111,26 @@ final class ApplicationUpdateController: ObservableObject {
         beginInspection(archive: archive, manifest: manifest)
     }
 
+    func beginInspection(archive: URL) {
+        guard let retrievedManifest else { return }
+        beginInspection(archive: archive, manifestAccess: nil, read: { retrievedManifest.bytes })
+    }
+
     func beginInspection(archive: URL, manifest: URL) {
         guard channelEnabled, holdsFence, phase == .idle else { return }
+        beginInspection(archive: archive, manifestAccess: manifest, read: { try Self.readManifest(manifest) })
+    }
+
+    private func beginInspection(archive: URL, manifestAccess: URL?, read: @escaping @Sendable () throws -> Data) {
+        guard channelEnabled, holdsFence, phase == .idle else { return }
         if archive.startAccessingSecurityScopedResource() { archiveAccess = archive }
-        let manifestScoped = manifest.startAccessingSecurityScopedResource()
+        let manifestScoped = manifestAccess?.startAccessingSecurityScopedResource() ?? false
         let client = makeClient(); self.client = client
         phase = .checking; message = nil
         inspection = Task { @MainActor in
-            defer { if manifestScoped { manifest.stopAccessingSecurityScopedResource() } }
+            defer { if manifestScoped { manifestAccess?.stopAccessingSecurityScopedResource() } }
             do {
-                let bytes = try await Task.detached(priority: .utility) { try Self.readManifest(manifest) }.value
+                let bytes = try await Task.detached(priority: .utility) { try read() }.value
                 try Task.checkCancellation()
                 let offer = try await client.inspect(archive: archive, manifest: bytes)
                 guard phase != .cancelling else { return }
@@ -105,6 +153,16 @@ final class ApplicationUpdateController: ObservableObject {
     }
 
     func cancel() {
+        if phase == .discovering {
+            phase = .cancelling; message = "Завершение проверки…"
+            let pending = discovery; pending?.cancel()
+            Task { @MainActor in
+                await pending?.value
+                discovery = nil; retrievedManifest = nil; manifestVersion = nil
+                phase = .idle; message = nil
+            }
+            return
+        }
         guard canCancel, let client else { return }
         phase = .cancelling; message = "Завершение проверки…"
         let checking = inspection
@@ -147,6 +205,7 @@ final class ApplicationUpdateController: ObservableObject {
         stopArchiveAccess()
         if let fence { admission.releaseUpdate(fence) }
         fence = nil; isPresented = false; message = nil
+        retrievedManifest = nil; manifestVersion = nil
     }
     private func stopArchiveAccess() {
         archiveAccess?.stopAccessingSecurityScopedResource(); archiveAccess = nil

@@ -22,6 +22,11 @@ Run:
 ./scripts/verify-native-swift-release.sh
 ```
 
+The native test scripts explicitly run suites serially (`--no-parallel`) while
+compilation uses two jobs. This avoids launching hundreds of independent
+process and disk fixtures together. Tests of concurrent operations still create
+their own controlled workers; cancellation latency limits remain unchanged.
+
 For day-to-day SwiftUI and manager work, use the isolated fast loop instead:
 
 ```bash

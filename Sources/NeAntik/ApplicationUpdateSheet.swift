@@ -13,8 +13,12 @@ struct ApplicationUpdateSheet: View {
                     LabeledContent("Проверенный кандидат", value: version).font(.headline)
                     Text("Нажатие кнопки ниже разрешает установку и перезапуск.").foregroundStyle(.secondary)
                 }
-                if controller.phase == .checking || controller.phase == .cancelling || controller.phase == .committing {
-                    ProgressView(controller.phase == .checking ? "Проверка файлов…" : "Завершение операции…")
+                if let version = controller.manifestVersion, controller.offeredVersion == nil {
+                    LabeledContent("Версия в подписанном канале", value: version)
+                    Text("Архив ещё не проверен и установка не началась.").foregroundStyle(.secondary)
+                }
+                if controller.phase == .discovering || controller.phase == .checking || controller.phase == .cancelling || controller.phase == .committing {
+                    ProgressView(controller.phase == .discovering ? "Проверка подписанного канала…" : controller.phase == .checking ? "Проверка файлов…" : "Завершение операции…")
                 }
             } else {
                 Text("В этой версии обновление выполняется вручную.").font(.headline)
@@ -26,7 +30,7 @@ struct ApplicationUpdateSheet: View {
             }
             Divider()
             HStack {
-                Link("Скачать с сайта", destination: URL(string: "https://browser.free/#download")!)
+                Link("Скачать с сайта", destination: URL(string: "https://browser.free/#install")!)
                 Spacer()
                 if controller.canCancel {
                     Button("Отменить проверку", action: controller.cancel).keyboardShortcut(.cancelAction)
@@ -34,7 +38,8 @@ struct ApplicationUpdateSheet: View {
                     Button("Закрыть", action: controller.close).keyboardShortcut(.cancelAction)
                 }
                 if controller.phase == .idle, controller.holdsFence {
-                    Button("Выбрать файлы…", action: controller.chooseFiles).keyboardShortcut(.defaultAction)
+                    Button("Проверить обновления", action: controller.checkForUpdates)
+                    Button(controller.hasRetrievedManifest ? "Выбрать ZIP…" : "Выбрать файлы…", action: controller.chooseFiles).keyboardShortcut(.defaultAction)
                 }
                 if controller.phase == .offered {
                     Button("Установить и перезапустить", action: controller.installAndRestart).keyboardShortcut(.defaultAction)

@@ -110,17 +110,12 @@ struct ProxyRelayLeaseReceiptTests {
         let manager = BrowserProcessManager(paths: paths, processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { pid in pid == 123 && alive }, browserDataProcessInspector: { _ in .absent }, potentialRelayOwnerInspector: { .absent })
         defer { manager.suspendPassiveObservations() }
-        let acquired = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
-        let guardTask = Task.detached {
-            try paths.withProcessLockGuard(for: browser.id) {
-                acquired.signal(); _ = release.wait(timeout: .now() + 5)
-            }
-        }
-        // Wait on a detached executor, never block the manager actor.
-        let ready = await Task.detached { acquired.wait(timeout: .now() + 3) == .success }.value
-        try #require(ready)
+        // Keep the real flock until the injected failure has occurred. A
+        // five-second auto-release races a busy MainActor in the full suite.
+        let lease = try paths.acquireProcessMaintenanceGuard(for: browser.id)
+        defer { lease.release() }
         await manager.retainUnconfirmedRelayStartup(fence, expectedLease: provisional)
-        release.signal(); try await guardTask.value
+        lease.release()
         #expect(try Data(contentsOf: paths.lockFile(for: browser.id)) == original)
         let observed = corrupt ? Data("{not-json".utf8) : original
         if corrupt { try paths.writePrivateFile(observed, to: paths.lockFile(for: browser.id)) }

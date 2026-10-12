@@ -122,6 +122,49 @@ jobs:
           - ProxyRelayLiveCodeVerifierTests
           - ProxyRelayLoopbackServerTests
           - UpdateManifestTests
+          - SignedUpdateManifestFetcherTests
+          - ApplicationUpdateAdmissionTests
+          - ApplicationUpdateControllerTests
+          - BackupApplicationCompositionTests
+          - BackupScopeQualificationTests
+          - BrowserRelayActivityTests
+          - BrowserStartupModeTests
+          - CRXPackageInspectionTests
+          - CRXPackagePreparationTests
+          - DirectAssessmentParentTests
+          - DirectInstallFilesystemTests
+          - DirectProvisioningCMSTests
+          - DirectUpdateAssessmentTests
+          - DirectUpdateAuditIsolationTests
+          - DirectUpdateCodeSignatureTests
+          - DirectUpdateCoreBoundaryTests
+          - DirectUpdateInstallSessionTests
+          - DirectUpdateInstalledPolicyTests
+          - DirectUpdateOwnerClientTests
+          - DirectUpdateOwnerPipeTests
+          - DirectUpdateOwnerProtocolTests
+          - DirectUpdateOwnerTransportTests
+          - DirectUpdateOwnerWorkspaceTests
+          - DirectUpdateProvisioningTests
+          - DirectUpdateRuntimeProvenanceTests
+          - DirectUpdateStageStorageTests
+          - DirectUpdateStoppedAuthorityTests
+          - DirectUpdateZIPTests
+          - InstallLifecycleTests
+          - ManagerClarityRegressionTests
+          - PlatformLaunchReceiptTests
+          - ProfileExtensionInventoryTests
+          - ProxyRelayBindingGateTests
+          - ProxyRelayLeaseReceiptTests
+          - ProxyRelayObservationProtocolTests
+          - ProxyRelayObservationSocketTests
+          - ProxyRelayOwnerProtocolTests
+          - ProxyRelayOwnerQualificationTests
+          - ProxyRelayPrivatePipeTests
+          - ProxyRelayQualificationQuitTests
+          - ProxyRelaySessionAuthorityTests
+          - ProxyRelayTLSQualificationTests
+          - ReleaseAuditBrowserIsolationTests
           - DirectUpdateArchiveIntegrityTests
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
