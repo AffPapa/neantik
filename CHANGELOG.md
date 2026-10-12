@@ -1,5 +1,13 @@
 # NeAntik changelog
 
+## Direct 0.7.36 (99)
+
+Development qualification candidate; not published.
+
+- Same qualified Chromium156.0.8078.12 and Developer ID certificate as public0.7.34.
+- Paired with private notarized0.7.35/98 to qualify the shipping updater, retained synthetic browser data, refusal and rollback. These installation results are pending.
+- Signed update policy and explicit backup provisioning selection retained; public0.7.34 and its immutable downloads remain unchanged.
+
 ## Direct 0.7.35 (98)
 
 Development qualification candidate; not published.
