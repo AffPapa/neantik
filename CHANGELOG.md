@@ -1,5 +1,13 @@
 # NeAntik changelog
 
+## Direct 0.7.43 (106)
+
+Public-alpha candidate. Publication requires the exact signed .42 → .43 installation, controlled rollback and BrowserData persistence checks.
+
+- Рабочий updater сохраняет дескрипторы для запуска новой версии после закрытия manager. Подписанный канал, явное согласие, проверка приложения и откат сохранены.
+- 1421 Swift-тест / 162 suites прошли, включая реальные subprocess controls старого отказа и исправленного запуска. Повторный полный прогон для изменения только номера версии не требуется.
+- Chromium 156.0.8078.12 и Developer ID сертификат сохранены. Авторизованный relay, зашифрованная копия закрытого профиля, центр расширений и MCP входят в кандидат; перенос OS-encrypted входов между Mac и полный CRX installer остаются ограничениями.
+
 ## Direct 0.7.42 (105)
 
 Private corrected qualification candidate; not published.
