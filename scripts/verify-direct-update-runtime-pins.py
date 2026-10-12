@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -68,6 +69,7 @@ def measure(root: Path, scope: str) -> dict:
                 raise ValueError('hardlinked reference file')
             kind = b'F'
             total += before.st_size
+            publication = scope == 'evidence' and relative == 'release-security-baseline.json'
             fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
             try:
                 actual = os.fstat(fd)
@@ -88,7 +90,12 @@ def measure(root: Path, scope: str) -> dict:
             payload = struct.pack('>IQ', mode, before.st_size) + digest.digest()
         else:
             raise ValueError('reference special file')
-        records.append((relative, sized(relative) + kind + payload))
+        if kind == b'F' and publication:
+            if mode != 0o600 or not 1 <= before.st_size <= 65_536:
+                raise ValueError('publication baseline bounds/mode')
+            total -= before.st_size
+        else:
+            records.append((relative, sized(relative) + kind + payload))
         if kind == b'D':
             for child in path.iterdir():
                 # Match admitted NFC paths despite APFS decomposed enumeration.
@@ -141,8 +148,16 @@ def main() -> int:
         from chromium_15612_packaged_evidence import process
         evidence = resources / 'NeAntikRuntimeEvidence'
         process(PROJECT, evidence, json.loads((evidence / 'fingerprint-chromium.lock.json').read_bytes()))
+        # Publication is separately signed with the manager. It must match
+        # today's reviewed release input, never the historical build date.
+        spec = importlib.util.spec_from_file_location('update_publication_baseline',
+            PROJECT / 'scripts/package-manager-release-baseline.py')
+        publication = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(publication)
+        publication.verify(PROJECT, evidence)
         print(json.dumps({'pass': True, 'scope': 'read-only reference reproducibility; not installer authority',
-                          'goldenTranscript': True, 'reviewedSourceProjections': True, **result}, sort_keys=True))
+                          'goldenTranscript': True, 'reviewedSourceProjections': True,
+                          'publicationBaselineSeparatelyVerified': True, **result}, sort_keys=True))
         return 0
     except (OSError, ValueError) as error:
         print('Fixed runtime pin verification refused: ' + str(error))

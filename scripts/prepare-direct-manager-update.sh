@@ -330,6 +330,9 @@ python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
 verify_reviewed_runtime_evidence
 
 verify_runtime_unchanged
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json")" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-direct-update-runtime-pins.py" --reference-app "$CANDIDATE_APP"
+fi
 
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
   if [[ "${NEANTIK_BROWSER_DATA_BACKUP_ENABLED:-0}" != "0" || -n "${NEANTIK_DIRECT_PROVISIONING_PROFILE:-}" ]]; then

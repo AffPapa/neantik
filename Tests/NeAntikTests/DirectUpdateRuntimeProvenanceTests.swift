@@ -129,6 +129,64 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         }
     }
 
+    private func publication(_ checked: String = "2026-10-12") throws -> Data {
+        try JSONSerialization.data(withJSONObject: ["schemaVersion": 1, "checkedAt": checked,
+            "publishedAt": "2026-10-06", "maximumAgeDays": 0, "minimumPublicChromiumVersion": "155.0.8059.40",
+            "alsoObservedPublicChromiumVersions": ["155.0.8059.39"], "channel": "Desktop Stable", "platforms": ["macOS"],
+            "securityFixCount": 247, "reference": "https://chromereleases.googleblog.com/2026/10/stable.html",
+            "referenceTitle": "Stable Channel Update", "sourceLabel": "Chrome Releases",
+            "releaseBoundary": "Publication gate, not historical provenance", "policy": "Current reviewed minimum"] as [String: Any])
+    }
+
+    @Test func advancingPublicationDatePreservesHistoricalClosureButRetainsExactSignedBytes() throws {
+        let fixture = try RuntimeClosureFixture()
+        try FileManager.default.removeItem(at: fixture.root.appendingPathComponent("link"))
+        let firstBytes = try publication("2026-10-11"), secondBytes = try publication()
+        try fixture.write("release-security-baseline.json", firstBytes)
+        func measure() throws -> DirectRuntimeClosureMeasurement {
+            try DirectRuntimeClosure.measure(fixture.root, scope: "evidence", maximumEntries: 20, maximumBytes: 100_000)
+        }
+        let first = try measure()
+        try fixture.write("release-security-baseline.json", secondBytes)
+        let second = try measure()
+        #expect(first.digest == second.digest && first.entries == second.entries && first.regularBytes == second.regularBytes)
+        #expect(first.publicationBaseline == firstBytes && second.publicationBaseline == secondBytes && firstBytes != secondBytes)
+        let now = Date(timeIntervalSince1970: 1_791_849_600)
+        try DirectUpdatePublicationBaseline.validate(firstBytes, now: now)
+        try DirectUpdatePublicationBaseline.validate(secondBytes, now: now)
+        try fixture.write("dir/a.txt", Data("BROKEN".utf8))
+        #expect(try measure().digest != first.digest)
+        // Renaming the release observation cannot remove another evidence
+        // file from the immutable closure.
+        try FileManager.default.moveItem(at: fixture.root.appendingPathComponent("release-security-baseline.json"),
+            to: fixture.root.appendingPathComponent("other-baseline.json"))
+        #expect(try measure().publicationBaseline == nil)
+        #expect(try measure().digest != first.digest)
+    }
+
+    @Test func publicationBaselineRejectsContradictionsAndUnsafeFileKinds() throws {
+        let valid = try publication(), now = Date(timeIntervalSince1970: 1_791_849_600)
+        let original = try #require(JSONSerialization.jsonObject(with: valid) as? [String: Any])
+        let controls: [(String, Any)] = [("schemaVersion", true), ("maximumAgeDays", 7), ("securityFixCount", -1),
+            ("checkedAt", "2026-10-30"), ("checkedAt", "2026-02-30"), ("publishedAt", "2026-10-20"),
+            ("minimumPublicChromiumVersion", "154.0.0.0"), ("minimumPublicChromiumVersion", "157.0.0.0"),
+            ("minimumPublicChromiumVersion", "0155.0.8059.40"), ("platforms", ["Windows"]),
+            ("reference", "https://evil.example/stable.html"), ("reference", "https://user:secret@chromereleases.googleblog.com/stable.html"),
+            ("unknown", "not admitted")]
+        for (key, value) in controls {
+            var broken = original; broken[key] = value
+            #expect(throws: (any Error).self) {
+                try DirectUpdatePublicationBaseline.validate(JSONSerialization.data(withJSONObject: broken), now: now)
+            }
+        }
+        let fixture = try RuntimeClosureFixture()
+        try FileManager.default.removeItem(at: fixture.root.appendingPathComponent("link"))
+        try fixture.write("release-security-baseline.json", valid, mode: 0o644)
+        #expect(throws: DirectUpdateRuntimeProvenanceError.metadata) {
+            try DirectRuntimeClosure.measure(fixture.root, scope: "evidence", maximumEntries: 20, maximumBytes: 100_000)
+        }
+    }
+
     @Test(arguments: [false, true]) func cancellationBeforeStartAndAtLastChunkCannotReturnMeasurement(atLastChunk: Bool) async throws {
         let fixture = try RuntimeClosureFixture()
         let task = Task {

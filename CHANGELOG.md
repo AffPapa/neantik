@@ -12,6 +12,9 @@ Development qualification candidate; not published.
 
 Development qualification candidate; not published.
 
+- Исправлено смешение исторической provenance движка и даты публикации: смена checkedAt больше не блокирует тот же точный runtime. Данные текущего релиза проверяются отдельно под подписью приложения.
+- Упаковка сверяет runtime pins до подписи. После изменения: 1419 Swift-тестов / 162 suites, целевые отрицательные контроли и независимые Python измерения PASS; whole installation ещё проверяется.
+
 - Pinned Ed25519 update policy and offline release-envelope signer; automatic downloads remain disabled.
 - Authenticated interactive updater audit retains disposable storage and proves enrolled authority before startup; no fingerprint PASS is produced by this mode.
 - Explicit macOS provisioning selection for BrowserData backup is checked before preparation. Public0.7.34 did not enable creation; the current candidate requests it using the existing certificate/profile.

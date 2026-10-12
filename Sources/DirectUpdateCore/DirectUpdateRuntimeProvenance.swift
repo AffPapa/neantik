@@ -23,10 +23,10 @@ package enum DirectUpdateRuntimeProvenanceError: LocalizedError, Equatable {
 package enum DirectUpdateRuntimePins {
     package static let chromiumVersion = "156.0.8078.12"
     package static let runtimeDigest = "176c65a1e1e069dcc36ef56ab6210753db7fc23527efc5bfbcb4afc5714a6efe"
-    package static let evidenceDigest = "f16a5b823ffaf05da6e0882ec89ef09684a0302c097aa39a6d85cd5384425b6b"
+    package static let evidenceDigest = "fdd445c8f874b0b69c860e48ced8ba87c8f333744e53830d16cbf16e671bcb1c"
     package static let reportDigest = "a367417b75da00de4655c6c0c1c03a1c0fe2ee5f30f38743c44549775c2f94a9"
-    package static let runtimeEntries = 946, evidenceEntries = 114
-    package static let runtimeBytes: Int64 = 411_177_721, evidenceBytes: Int64 = 49_527_984
+    package static let runtimeEntries = 946, evidenceEntries = 113
+    package static let runtimeBytes: Int64 = 411_177_721, evidenceBytes: Int64 = 49_526_627
     package static let executable = "Contents/MacOS/NeAntik Browser"
     package static let frameworkPrefix = "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/"
     package static let framework = frameworkPrefix + "NeAntik Browser Framework"
@@ -67,6 +67,7 @@ package struct DirectRuntimeClosureMeasurement: Sendable, Equatable {
     package let digest: String, entries: Int, regularBytes: Int64
     package let machoPaths: Set<String>
     package let capturedReport: Data?
+    package let publicationBaseline: Data?
 }
 
 package enum DirectUpdateRuntimeProvenance {
@@ -108,9 +109,14 @@ package enum DirectUpdateRuntimeProvenance {
                 scope: "runtime", maximumEntries: DirectUpdateRuntimePins.runtimeEntries,
                 maximumBytes: DirectUpdateRuntimePins.runtimeBytes)
             let evidence = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntikRuntimeEvidence"),
-                scope: "evidence", maximumEntries: DirectUpdateRuntimePins.evidenceEntries,
-                maximumBytes: DirectUpdateRuntimePins.evidenceBytes)
+                scope: "evidence", maximumEntries: DirectUpdateRuntimePins.evidenceEntries + 1,
+                maximumBytes: DirectUpdateRuntimePins.evidenceBytes + 65_536)
             try validateMeasurements(runtime, evidence)
+            // This signed publication observation changes between release
+            // days. It is not an immutable source/build input. The stage's
+            // genuine signature and custody still cover its exact bytes.
+            guard let baseline = evidence.publicationBaseline else { throw DirectUpdateRuntimeProvenanceError.metadata }
+            try DirectUpdatePublicationBaseline.validate(baseline)
             // Hash the very same bounded descriptor-read report bytes before
             // parsing. Unknown JSON, duplicate keys or altered scalar types
             // cannot pass the pinned byte-level report digest.
@@ -200,6 +206,7 @@ package enum DirectRuntimeClosure {
         var records: [Record] = [], total: Int64 = 0, machoPaths: Set<String> = []
         var captured: [String: BackupIdentity] = [:]
         var capturedReport: Data?
+        var publicationBaseline: Data?
         func add(_ path: String, _ bytes: Data) throws {
             guard records.count < maximumEntries else { throw DirectUpdateRuntimeProvenanceError.limit }
             records.append(.init(path: path, bytes: bytes))
@@ -250,7 +257,8 @@ package enum DirectRuntimeClosure {
                     guard try BackupFS.identity(child) == before else { throw DirectUpdateRuntimeProvenanceError.changed }
                     try fault?(.opened(relative)); try Task.checkCancellation()
                     var hash = SHA256(), offset: Int64 = 0, report: Data?
-                    if scope == "evidence", relative == "runtime-verification.json" {
+                    let publication = scope == "evidence" && relative == "release-security-baseline.json"
+                    if scope == "evidence", relative == "runtime-verification.json" || publication {
                         guard (1...65_536).contains(before.size) else { throw DirectUpdateRuntimeProvenanceError.limit }
                         report = Data()
                     }
@@ -271,9 +279,14 @@ package enum DirectRuntimeClosure {
                     guard offset == before.size, try BackupFS.identity(child) == before else {
                         throw DirectUpdateRuntimeProvenanceError.changed
                     }
-                    if let report { capturedReport = report }
-                    var record = try prefix(relative, 70); record.appendBE(UInt32(before.mode & 0o777))
-                    record.appendBE(UInt64(before.size)); record.append(contentsOf: hash.finalize()); try add(relative, record)
+                    if publication {
+                        guard before.mode & 0o777 == 0o600, let report else { throw DirectUpdateRuntimeProvenanceError.metadata }
+                        publicationBaseline = report
+                    } else {
+                        if let report { capturedReport = report }
+                        var record = try prefix(relative, 70); record.appendBE(UInt32(before.mode & 0o777))
+                        record.appendBE(UInt64(before.size)); record.append(contentsOf: hash.finalize()); try add(relative, record)
+                    }
                 } else if before.mode & mode_t(S_IFMT) == mode_t(S_IFLNK) {
                     guard scope == "runtime", before.links == 1 else { throw DirectUpdateRuntimeProvenanceError.changed }
                     var bytes = [CChar](repeating: 0, count: 1_025)
@@ -314,7 +327,8 @@ package enum DirectRuntimeClosure {
             try Task.checkCancellation(); hash.update(data: record.bytes)
         }
         return .init(digest: BackupFS.hex(hash.finalize()), entries: records.count,
-                     regularBytes: total, machoPaths: machoPaths, capturedReport: capturedReport)
+                     regularBytes: total - Int64(publicationBaseline?.count ?? 0), machoPaths: machoPaths,
+                     capturedReport: capturedReport, publicationBaseline: publicationBaseline)
     }
 
     package static func isMachO(_ bytes: Data) -> Bool {
