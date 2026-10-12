@@ -585,6 +585,7 @@ final class BrowserProcessManager: ObservableObject {
         let executableURL: URL
         let lock: BrowserProcessLock
         let port: UInt16
+        var routePolicySHA256: String? = nil
     }
     private var preparedRelayLaunches: [UUID: PreparedRelayLaunch] = [:]
     private var pendingRelayLaunchTokens: [UUID: UUID] = [:]
@@ -1853,7 +1854,8 @@ final class BrowserProcessManager: ObservableObject {
                 schemaVersion: 3, ownerToken: token, managerPID: getpid(), phase: .starting, relay: relayReceipt)
             try writeOwnedLease(ownedStarting, profileID: profile.id, ownerToken: token, at: paths.lockFile(for: profile.id))
             preparedRelayLaunches[profile.id] = PreparedRelayLaunch(profile: profile, executableURL: runtime.executableURL,
-                lock: try Self.decodeLock(Self.encodeLock(ownedStarting)), port: prepared.port)
+                lock: try Self.decodeLock(Self.encodeLock(ownedStarting)), port: prepared.port,
+                routePolicySHA256: target.routeProbePlan?.policySHA256)
             #if DEBUG
             let fixtureArguments = ProxyRelayOwnerQualification.browserArguments(paths: paths)
             #else
@@ -2204,7 +2206,8 @@ final class BrowserProcessManager: ObservableObject {
                 generation: ownerToken, lock: try Self.decodeLock(Self.encodeLock(lock)),
                 runtimeVersion: ManagedBrowserSessionReceipt.safeRuntimeVersion(runtime.inspection.version),
                 configuredRoute: route, profileRevision: profile.revision,
-                browserIdentity: ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier)
+                browserIdentity: ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier),
+                routePolicySHA256: preparedRelay?.routePolicySHA256
             )
         } catch {
             if process.isRunning {
@@ -2288,15 +2291,16 @@ final class BrowserProcessManager: ObservableObject {
                 guard receipt.matches(current) else { return false }
                 return Self.inspectProcess(current) == .expected
             }
-            guard verified else { return (false, Optional<BrowserRelayActivity.Snapshot>.none) }
-            var transport: BrowserRelayActivity.Snapshot?
+            guard verified else { return (false, Optional<ProxyRelayObservationProtocol.Observation>.none) }
+            var transport: ProxyRelayObservationProtocol.Observation?
             do {
                 if let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedRevision),
                    let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier {
                     let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
                     // Never hold the filesystem guard while waiting for IPC or
                     // Security. An observation failure does not stop a browser.
-                    transport = try ProxyRelayObservationSocket.query(binding: binding, expectedOwnerCode: code)
+                    transport = try ProxyRelayObservationSocket.queryObservation(binding: binding, expectedOwnerCode: code,
+                        expectedPolicySHA256: receipt.routePolicySHA256)
                 }
             } catch is CancellationError { throw CancellationError() }
             catch { transport = nil }
@@ -2312,7 +2316,7 @@ final class BrowserProcessManager: ObservableObject {
             }
             return (unchanged, unchanged ? transport : nil)
         }
-        let result: (Bool, BrowserRelayActivity.Snapshot?)
+        let result: (Bool, ProxyRelayObservationProtocol.Observation?)
         do {
             result = try await withTaskCancellationHandler {
                 try await task.value
@@ -2329,7 +2333,8 @@ final class BrowserProcessManager: ObservableObject {
             readyForGracefulQuit: managedBrowserReadyForQuit(profileID: profileID),
             runtimeVersion: receipt.runtimeVersion,
             configuredRoute: receipt.configuredRoute,
-            sessionGeneration: receipt.generation, relayTransport: result.1, launchContext: receipt
+            sessionGeneration: receipt.generation, relayTransport: result.1?.activity,
+            sampledRouteProbe: result.1?.routeProbe?.current(), launchContext: receipt
         )
     }
 

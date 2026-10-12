@@ -117,7 +117,8 @@ enum ProxyRelayOwner {
                 configurationSHA256: bootstrap.configurationSHA256,
                 owner: .init(pid: getpid(), identity: ownerIdentity), browser: .init(pid: bind.browserPID, identity: browser))
             observation = try ProxyRelayObservationSocket.start(binding: observationBinding, expectedManagerCode: managerCode,
-                sessionValid: { observationActivation.isActive && admitted.browserIsAlive() }, snapshot: { relay.activitySnapshot() })
+                sessionValid: { observationActivation.isActive && admitted.browserIsAlive() }, snapshot: { relay.activitySnapshot() },
+                routeSnapshot: { routeProbe?.snapshot() })
             try routeProbe?.activate(port: port)
             try ProxyRelayPrivatePipe.writeFrame(STDOUT_FILENO,
                 data: encoder.encode(ProxyRelayOwnerProtocol.Active(schemaVersion: 1, nonce: bootstrap.nonce, active: true)), timeout: 2)

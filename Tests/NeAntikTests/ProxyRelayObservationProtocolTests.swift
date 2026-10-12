@@ -10,6 +10,62 @@ struct ProxyRelayObservationProtocolTests {
                      runtimeExecutableSHA256: String(repeating: "a", count: 64), runtimeFrameworkSHA256: String(repeating: "b", count: 64),
                      configurationSHA256: String(repeating: "c", count: 64), owner: .init(pid: 700, identity: identity), browser: .init(pid: 701, identity: identity))
     }
+    private func routeSnapshot() -> BrowserRouteProbe.Snapshot {
+        .init(status: .complete, httpResponseAcknowledged: true, httpsResponseAcknowledged: true,
+              hostnameDelegationObserved: true, dnsResolution: "notObserved", policySHA256: String(repeating: "e", count: 64),
+              expiresAtUptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 60_000_000_000)
+    }
+    @Test func routeObservationIsExplicitPolicyBoundAndLegacySafe() throws {
+        let context = binding(), probe = routeSnapshot(), activity = BrowserRelayActivity().snapshot()
+        let request = ProxyRelayObservationProtocol.Request(schema: 2, challenge: UUID(), binding: context)
+        let data = try JSONEncoder().encode(ProxyRelayObservationProtocol.Reply(schema: 2, challenge: request.challenge,
+            binding: context, activity: activity, routeProbe: probe))
+        let result = try ProxyRelayObservationProtocol.readObservation(data, request: request, expectedPolicySHA256: probe.policySHA256)
+        #expect(result.activity == activity && result.routeProbe == probe)
+        #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readObservation(data, request: request, expectedPolicySHA256: nil) }
+        #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readObservation(data, request: request, expectedPolicySHA256: String(repeating: "f", count: 64)) }
+        let missing = try JSONEncoder().encode(ProxyRelayObservationProtocol.Reply(schema: 2, challenge: request.challenge, binding: context, activity: activity))
+        #expect(try ProxyRelayObservationProtocol.readObservation(missing, request: request, expectedPolicySHA256: nil).routeProbe == nil)
+        #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readObservation(missing, request: request, expectedPolicySHA256: probe.policySHA256) }
+        let legacy = ProxyRelayObservationProtocol.Request(schema: 1, challenge: request.challenge, binding: context)
+        #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readReply(data, request: legacy) }
+        let replay = ProxyRelayObservationProtocol.Request(schema: 2, challenge: UUID(), binding: context)
+        #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readObservation(data, request: replay, expectedPolicySHA256: probe.policySHA256) }
+    }
+    @Test func routeReceiptRefusesImpossiblePhasesForeignDNSAndHiddenPayload() throws {
+        let context = binding(), probe = routeSnapshot()
+        let request = ProxyRelayObservationProtocol.Request(schema: 2, challenge: UUID(), binding: context)
+        let bytes = try JSONEncoder().encode(ProxyRelayObservationProtocol.Reply(schema: 2, challenge: request.challenge,
+            binding: context, activity: BrowserRelayActivity().snapshot(), routeProbe: probe))
+        let original = try #require(try JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        let controls: [(String, Any)] = [("status", "waitingHTTPS"), ("status", "waitingHTTP"), ("status", "notStarted"),
+            ("httpResponseAcknowledged", false), ("httpsResponseAcknowledged", false), ("dnsResolution", "verified"),
+            ("policySHA256", String(repeating: "E", count: 64)), ("expiresAtUptimeNanoseconds", 0),
+            ("expiresAtUptimeNanoseconds", UInt64.max), ("endpoint", "https://private.example.test/"),
+            ("httpsResponseAcknowledged", 1)]
+        for (field, value) in controls {
+            var changed = original, fields = try #require(original["routeProbe"] as? [String: Any])
+            fields[field] = value; changed["routeProbe"] = fields
+            let data = try JSONSerialization.data(withJSONObject: changed)
+            #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readObservation(data, request: request, expectedPolicySHA256: probe.policySHA256) }
+        }
+        var omitted = original; omitted.removeValue(forKey: "routeProbe")
+        let data = try JSONSerialization.data(withJSONObject: omitted)
+        #expect(throws: (any Error).self) { try ProxyRelayObservationProtocol.readObservation(data, request: request, expectedPolicySHA256: nil) }
+        #expect(try ProxyRelayObservationProtocol.readObservation(bytes, request: request, expectedPolicySHA256: probe.policySHA256).routeProbe?.status == .complete)
+    }
+    @Test func probeExpiresAcrossIPCAndRemainsPrivateInMCP() throws {
+        let probe = routeSnapshot()
+        #expect(probe.current(at: probe.expiresAtUptimeNanoseconds - 1).status == .complete)
+        let expired = probe.current(at: probe.expiresAtUptimeNanoseconds)
+        #expect(expired.status == .expired && expired.httpResponseAcknowledged && expired.httpsResponseAcknowledged)
+        try expired.validate(expectedPolicySHA256: probe.policySHA256)
+        let dto = BrowserSessionObservation(state: .observed, ownership: .thisSession, readyForGracefulQuit: true,
+            runtimeVersion: "156.0.8078.12", configuredRoute: .httpProxy, sampledRouteProbe: probe)
+        #expect(dto.mcpValue["chromiumRoute"] as? String == "notObserved")
+        #expect(dto.mcpValue["routeProbe"] == nil)
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: dto.mcpValue), as: UTF8.self).contains(probe.policySHA256))
+    }
     @Test func exactReplyRequiresChallengeAndAllContextFields() throws {
         let context = binding(), ledger = BrowserRelayActivity()
         let request = ProxyRelayObservationProtocol.Request(schema: 1, challenge: UUID(), binding: context)
@@ -67,13 +123,14 @@ struct ProxyRelayObservationProtocolTests {
             schemaVersion: 3, ownerToken: context.sessionGeneration, managerPID: getpid(), phase: .running, relay: relay)
         let identity = ProxyRelayOwnerProcessIdentity(generation: .init(startSeconds: context.browser.seconds, startMicroseconds: context.browser.microseconds), userID: context.browser.uid, parentProcessID: 1)
         var receipt = ManagedBrowserSessionReceipt(generation: context.sessionGeneration, lock: lease, runtimeVersion: "156.0.8078.12", configuredRoute: .httpProxy,
-            profileRevision: 4, browserIdentity: identity)
+            profileRevision: 4, browserIdentity: identity, routePolicySHA256: String(repeating: "e", count: 64))
         #expect(try receipt.relayBinding(profileID: context.profileID, expectedRevision: 4) == context)
         #expect(try receipt.relayBinding(profileID: context.profileID, expectedRevision: 5) == nil)
         #expect(try receipt.relayBinding(profileID: UUID(), expectedRevision: 4) == nil)
         let original = BrowserProfile(id: context.profileID, name: "Bookkeeping", revision: 4)
         var recorded = original; recorded.revision = 5; recorded.lastLaunchedAt = Date(); recorded.updatedAt = Date()
         #expect(try receipt.recordLaunchMetadata(from: original, to: recorded))
+        #expect(receipt.routePolicySHA256 == String(repeating: "e", count: 64))
         #expect(try receipt.relayBinding(profileID: context.profileID, expectedRevision: 5) == context)
         #expect(try receipt.relayBinding(profileID: context.profileID, expectedRevision: 4) == nil)
         var changed = recorded; changed.proxy = .init(kind: .http, host: "changed.example.test", port: 8080, username: "")

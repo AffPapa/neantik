@@ -37,7 +37,8 @@ enum ProxyRelayObservationSocket {
         private let task: Task<Void, Never>
         fileprivate init(endpoint: Endpoint, binding: Binding, code: ProxyRelayExpectedCode,
                          sessionValid: @escaping @Sendable () -> Bool,
-                         snapshot: @escaping @Sendable () -> BrowserRelayActivity.Snapshot) {
+                         snapshot: @escaping @Sendable () -> BrowserRelayActivity.Snapshot,
+                         routeSnapshot: @escaping @Sendable () -> BrowserRouteProbe.Snapshot?) {
             task = Task.detached(priority: .utility) {
                 defer { endpoint.cleanup() }
                 while !Task.isCancelled && endpoint.isCurrent {
@@ -57,7 +58,8 @@ enum ProxyRelayObservationSocket {
                               ProxyRelayControlPeerInspector.matchesLiveCode(peer, expected: code), endpoint.isCurrent,
                               sessionValid(), binding.processesAreCurrent else { throw Failure.unavailable }
                         let request = try ProxyRelayObservationProtocol.readRequest(data, expected: binding)
-                        let reply = ProxyRelayObservationProtocol.Reply(schema: 1, challenge: request.challenge, binding: binding, activity: snapshot())
+                        let reply = ProxyRelayObservationProtocol.Reply(schema: request.schema, challenge: request.challenge, binding: binding, activity: snapshot(),
+                            routeProbe: request.schema == 2 ? routeSnapshot() : nil)
                         guard sessionValid(), binding.processesAreCurrent, endpoint.isCurrent,
                               ProxyRelayControlPeerInspector.matchesLiveCode(peer, expected: code) else { throw Failure.changed }
                         try ProxyRelayPrivatePipe.writeFrame(client, data: JSONEncoder().encode(reply), timeout: remaining(deadline))
@@ -84,8 +86,9 @@ enum ProxyRelayObservationSocket {
     /// Collision refuses creation. Never adopt/remove an existing endpoint.
     static func start(binding: Binding, expectedManagerCode: ProxyRelayExpectedCode,
                       sessionValid: @escaping @Sendable () -> Bool,
-                      snapshot: @escaping @Sendable () -> BrowserRelayActivity.Snapshot) throws -> Server {
-        try create(binding: binding, expectedManagerCode: expectedManagerCode, sessionValid: sessionValid, snapshot: snapshot)
+                      snapshot: @escaping @Sendable () -> BrowserRelayActivity.Snapshot,
+                      routeSnapshot: @escaping @Sendable () -> BrowserRouteProbe.Snapshot? = { nil }) throws -> Server {
+        try create(binding: binding, expectedManagerCode: expectedManagerCode, sessionValid: sessionValid, snapshot: snapshot, routeSnapshot: routeSnapshot)
     }
 #if DEBUG
     static func startForTesting(binding: Binding, expectedManagerCode: ProxyRelayExpectedCode,
@@ -97,6 +100,7 @@ enum ProxyRelayObservationSocket {
     private static func create(binding: Binding, expectedManagerCode: ProxyRelayExpectedCode,
                                sessionValid: @escaping @Sendable () -> Bool,
                                snapshot: @escaping @Sendable () -> BrowserRelayActivity.Snapshot,
+                               routeSnapshot: @escaping @Sendable () -> BrowserRouteProbe.Snapshot? = { nil },
                                afterSocketCapture: (() throws -> Void)? = nil) throws -> Server {
         try binding.validate()
         let root = rootPath(binding.sessionGeneration)
@@ -130,7 +134,7 @@ enum ProxyRelayObservationSocket {
                   Darwin.listen(listener, 4) == 0 else { throw Failure.unsafeEndpoint }
             let endpoint = Endpoint(root: root, directory: directory, listener: listener, directoryEntry: Entry(info), socketEntry: Entry(boundSocket))
             guard endpoint.isCurrent else { throw Failure.unsafeEndpoint }
-            return Server(endpoint: endpoint, binding: binding, code: expectedManagerCode, sessionValid: sessionValid, snapshot: snapshot)
+            return Server(endpoint: endpoint, binding: binding, code: expectedManagerCode, sessionValid: sessionValid, snapshot: snapshot, routeSnapshot: routeSnapshot)
         } catch {
             if listener >= 0 { _ = Darwin.close(listener) }
             // Remove only entries captured from our successful bind. Replaced
@@ -150,16 +154,19 @@ enum ProxyRelayObservationSocket {
     /// Neither path, UID nor echoed request confers authority: pin live owner
     /// code and kernel generation before and after the complete exchange.
     static func query(binding: Binding, expectedOwnerCode: ProxyRelayExpectedCode) throws -> BrowserRelayActivity.Snapshot {
-        try performQuery(binding: binding, expectedOwnerCode: expectedOwnerCode, acknowledge: true)
+        try performQuery(binding: binding, expectedOwnerCode: expectedOwnerCode, acknowledge: true, schema: 1, expectedPolicySHA256: nil).activity
     }
 #if DEBUG
     /// Fault control for the signed isolated QA parent: close after reading a
     /// validated reply, without the receipt that keeps kernel peer PID alive.
     static func abandonReplyForQualification(binding: Binding, expectedOwnerCode: ProxyRelayExpectedCode) throws -> BrowserRelayActivity.Snapshot {
-        try performQuery(binding: binding, expectedOwnerCode: expectedOwnerCode, acknowledge: false)
+        try performQuery(binding: binding, expectedOwnerCode: expectedOwnerCode, acknowledge: false, schema: 1, expectedPolicySHA256: nil).activity
     }
 #endif
-    private static func performQuery(binding: Binding, expectedOwnerCode: ProxyRelayExpectedCode, acknowledge: Bool) throws -> BrowserRelayActivity.Snapshot {
+    static func queryObservation(binding: Binding, expectedOwnerCode: ProxyRelayExpectedCode, expectedPolicySHA256: String?) throws -> ProxyRelayObservationProtocol.Observation {
+        try performQuery(binding: binding, expectedOwnerCode: expectedOwnerCode, acknowledge: true, schema: 2, expectedPolicySHA256: expectedPolicySHA256)
+    }
+    private static func performQuery(binding: Binding, expectedOwnerCode: ProxyRelayExpectedCode, acknowledge: Bool, schema: Int, expectedPolicySHA256: String?) throws -> ProxyRelayObservationProtocol.Observation {
         try binding.validate(); try Task.checkCancellation()
         guard binding.processesAreCurrent,
               let identity = ProxyRelaySocketOwnerInspector.processIdentity(binding.owner.pid),
@@ -188,7 +195,7 @@ enum ProxyRelayObservationSocket {
         guard case .matched(let connectedPeer) = ProxyRelayControlPeerInspector.inspect(descriptor: fd, expectedProcessID: binding.owner.pid, expectedProcess: identity),
               ProxyRelayControlPeerInspector.matchesLiveCode(connectedPeer, expected: expectedOwnerCode), binding.processesAreCurrent
         else { throw Failure.peerRefused }
-        let request = ProxyRelayObservationProtocol.Request(schema: 1, challenge: UUID(), binding: binding)
+        let request = ProxyRelayObservationProtocol.Request(schema: schema, challenge: UUID(), binding: binding)
         try ProxyRelayPrivatePipe.writeFrame(fd, data: JSONEncoder().encode(request), timeout: remaining(deadline))
         let data = try ProxyRelayPrivatePipe.readFrame(fd, timeout: remaining(deadline))
         var currentRoot = stat(), currentSocket = stat()
@@ -196,11 +203,11 @@ enum ProxyRelayObservationSocket {
               lstat(path, &currentSocket) == 0, Entry(socket).matches(currentSocket),
               ProxyRelayControlPeerInspector.matchesLiveCode(connectedPeer, expected: expectedOwnerCode), binding.processesAreCurrent
         else { throw Failure.changed }
-        let activity = try ProxyRelayObservationProtocol.readReply(data, request: request)
+        let observation = try ProxyRelayObservationProtocol.readObservation(data, request: request, expectedPolicySHA256: expectedPolicySHA256)
         guard ProxyRelayControlPeerInspector.matchesLiveCode(connectedPeer, expected: expectedOwnerCode), binding.processesAreCurrent else { throw Failure.changed }
         try Task.checkCancellation()
         if acknowledge { try ProxyRelayPrivatePipe.writeFrame(fd, data: Data(request.challenge.uuidString.utf8), timeout: remaining(deadline)) }
-        return activity
+        return .init(activity: observation.activity, routeProbe: observation.routeProbe?.current())
     }
     static func rootPath(_ generation: UUID) -> String { "/private/tmp/neantik-relay-observation-" + generation.uuidString.lowercased() }
     private static func prepare(_ fd: Int32) throws {

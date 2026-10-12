@@ -44,20 +44,49 @@ enum ProxyRelayObservationProtocol {
         }
     }
     struct Request: Codable, Sendable { let schema: Int; let challenge: UUID; let binding: Binding }
-    struct Reply: Codable, Sendable { let schema: Int; let challenge: UUID; let binding: Binding; let activity: BrowserRelayActivity.Snapshot }
+    struct Reply: Codable, Sendable {
+        let schema: Int; let challenge: UUID; let binding: Binding; let activity: BrowserRelayActivity.Snapshot
+        var routeProbe: BrowserRouteProbe.Snapshot? = nil
+        private enum CodingKeys: String, CodingKey { case schema, challenge, binding, activity, routeProbe }
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(schema, forKey: .schema); try c.encode(challenge, forKey: .challenge)
+            try c.encode(binding, forKey: .binding); try c.encode(activity, forKey: .activity)
+            if schema == 2 { try c.encode(routeProbe, forKey: .routeProbe) }
+        }
+    }
+    struct Observation: Sendable {
+        let activity: BrowserRelayActivity.Snapshot
+        let routeProbe: BrowserRouteProbe.Snapshot?
+    }
 
     static func readRequest(_ data: Data, expected: Binding) throws -> Request {
         try shape(data, keys: ["schema", "challenge", "binding"])
         let request = try JSONDecoder().decode(Request.self, from: data)
         try request.binding.validate()
-        guard request.schema == 1, request.binding == expected else { throw Failure.changed }
+        guard (1...2).contains(request.schema), request.binding == expected else { throw Failure.changed }
         return request
     }
     static func readReply(_ data: Data, request: Request) throws -> BrowserRelayActivity.Snapshot {
-        try shape(data, keys: ["schema", "challenge", "binding", "activity"])
+        guard request.schema == 1 else { throw Failure.malformed }
+        return try readObservation(data, request: request, expectedPolicySHA256: nil).activity
+    }
+    static func readObservation(_ data: Data, request: Request, expectedPolicySHA256: String?) throws -> Observation {
+        guard (1...2).contains(request.schema), request.schema == 2 || expectedPolicySHA256 == nil else { throw Failure.malformed }
+        var keys: Set<String> = ["schema", "challenge", "binding", "activity"]
+        if request.schema == 2 { keys.insert("routeProbe") }
+        try shape(data, keys: keys)
         let reply = try JSONDecoder().decode(Reply.self, from: data)
         try reply.binding.validate()
-        guard reply.schema == 1, reply.challenge == request.challenge, reply.binding == request.binding else { throw Failure.changed }
+        guard reply.schema == request.schema, reply.challenge == request.challenge, reply.binding == request.binding else { throw Failure.changed }
+        if let probe = reply.routeProbe {
+            guard let expectedPolicySHA256,
+                  let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let fields = object["routeProbe"] as? [String: Any],
+                  Set(fields.keys) == ["status", "httpResponseAcknowledged", "httpsResponseAcknowledged", "hostnameDelegationObserved", "dnsResolution", "policySHA256", "expiresAtUptimeNanoseconds"]
+            else { throw Failure.changed }
+            try probe.validate(expectedPolicySHA256: expectedPolicySHA256)
+        } else if expectedPolicySHA256 != nil { throw Failure.changed }
         let s = reply.activity, limit: UInt64 = 9_007_199_254_740_991
         let counts = [s.sequence, s.admittedConnections, s.upstreamTunnels, s.successRepliesSent,
                       s.completedConnections, s.failedConnections, s.cancelledConnections]
@@ -70,7 +99,7 @@ enum ProxyRelayObservationProtocol {
         if !s.countersSaturated {
             guard s.completedConnections + s.failedConnections + s.cancelledConnections + UInt64(s.activeConnections) == s.admittedConnections else { throw Failure.malformed }
         }
-        return s
+        return Observation(activity: s, routeProbe: reply.routeProbe?.current())
     }
     private static func shape(_ data: Data, keys: Set<String>) throws {
         guard !data.isEmpty, data.count <= ProxyRelayPrivatePipe.maximumFrameBytes else { throw Failure.malformed }

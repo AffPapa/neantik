@@ -15,6 +15,8 @@ struct BrowserSessionObservation: Sendable, CustomReflectable, CustomStringConve
     let configuredRoute: Route
     var sessionGeneration: UUID? = nil
     var relayTransport: BrowserRelayActivity.Snapshot? = nil
+    var sampledRouteProbe: BrowserRouteProbe.Snapshot? = nil
+    var routeProbe: BrowserRouteProbe.Snapshot? { sampledRouteProbe?.current() }
     var launchContext: ManagedBrowserSessionReceipt? = nil
     var description: String { "BrowserSessionObservation(<redacted>)" }
     var customMirror: Mirror { Mirror(self, children: [:]) }
@@ -44,6 +46,7 @@ struct ManagedBrowserSessionReceipt: Equatable, Sendable {
     var profileRevision: UInt64? = nil
     var browserIdentity: ProxyRelayOwnerProcessIdentity? = nil
     var observedMetadataRevision: UInt64? = nil
+    var routePolicySHA256: String? = nil
 
     /// markLaunched advances metadata after the immutable relay bootstrap.
     /// Accept only that exact single bookkeeping transition, never a newer

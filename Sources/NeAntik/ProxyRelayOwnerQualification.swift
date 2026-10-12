@@ -14,6 +14,7 @@ enum ProxyRelayOwnerQualification {
         var expectedQuitSnapshot: ProxyRelayQualificationQuit.Snapshot? = nil
         var observeTransport: Bool? = nil
         var expectedLaunchRevision: UInt64? = nil
+        var routeProbe: BrowserRouteProbe.Plan? = nil
         var fixtureHost: String { kind == .https ? "localhost" : "127.0.0.1" }
     }
     struct Result: Codable {
@@ -29,6 +30,7 @@ enum ProxyRelayOwnerQualification {
         var launchMetadataObservationVerified: Bool? = nil
         var abandonedObservationDidNotStopSession: Bool? = nil
         var launchRevision: UInt64? = nil
+        var routeProbeObservation: BrowserRouteProbe.Snapshot? = nil
     }
     static func runAndExit() -> Never {
         Task.detached {
@@ -55,6 +57,16 @@ enum ProxyRelayOwnerQualification {
         else { throw Failure.missingBundle }
         let request = try JSONDecoder().decode(Request.self, from: ProxyRelayPrivatePipe.readFrame(STDIN_FILENO, timeout: 5))
         let root = try validatedRoot(request)
+        if let plan = request.routeProbe {
+            try plan.validate()
+            // Private-pipe QA accepts only destinations implemented by the
+            // synthetic loopback upstream. No arbitrary external endpoint.
+            guard request.managerIntegration == true, request.observeTransport == true,
+                  request.kind == .http,
+                  plan.httpEndpoint.absoluteString == "http://route-qualification.test/check",
+                  plan.httpsEndpoint.absoluteString == "https://route-qualification.test/check"
+            else { throw Failure.invalidFixtureProtocol }
+        }
         guard let resources = Bundle.main.resourceURL, let manager = Bundle.main.executableURL,
               let browser = Bundle(url: resources.appendingPathComponent("NeAntik Browser.app"))?.executableURL
         else { throw Failure.missingBundle }
@@ -134,7 +146,8 @@ enum ProxyRelayOwnerQualification {
         @MainActor func launchFixture() async throws {
             // Qualify the same selector as UI/MCP, including HTTPS. The only
             // fixture difference is the DEBUG localhost trust configuration.
-            try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
+            try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain,
+                target: request.routeProbe.map { .routeProbe($0) } ?? .profileStart)
         }
         if request.cancelBeforeActivation == true {
             let task = Task { @MainActor in
@@ -189,14 +202,15 @@ enum ProxyRelayOwnerQualification {
             let deadline = ContinuousClock.now + .seconds(12)
             repeat {
                 let observed = try await processes.observeManagedBrowserSession(profileID: profile.id, expectedRevision: recorded.revision)
-                if let transport = observed.relayTransport, transport.admittedConnections > 0,
+                let probeReady = request.routeProbe == nil || observed.routeProbe?.httpResponseAcknowledged == true
+                if let transport = observed.relayTransport, transport.admittedConnections > 0, probeReady,
                    try await processes.revalidateManagedBrowserObservation(observed, profileID: profile.id, expectedProfile: recorded) {
-                    result.transportObservation = transport; break
+                    result.transportObservation = transport; result.routeProbeObservation = observed.routeProbe; break
                 }
                 try await Task.sleep(for: .milliseconds(50))
             } while ContinuousClock.now < deadline
             let stale = try await processes.observeManagedBrowserSession(profileID: profile.id, expectedRevision: profile.revision)
-            guard result.transportObservation != nil, stale.relayTransport == nil else { throw Failure.unsafeRoot }
+            guard result.transportObservation != nil, stale.relayTransport == nil, stale.routeProbe == nil else { throw Failure.unsafeRoot }
             result.staleRevisionObservationRefused = true
             result.launchMetadataObservationVerified = true
             result.launchRevision = profile.revision

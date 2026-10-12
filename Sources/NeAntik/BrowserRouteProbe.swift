@@ -76,6 +76,43 @@ enum BrowserRouteProbe {
         let hostnameDelegationObserved: Bool
         let dnsResolution: String
         let policySHA256: String
+        var expiresAtUptimeNanoseconds: UInt64 = 0
+
+        /// Owner and manager share the same boot's monotonic clock. Carry the
+        /// deadline internally so IPC/Security waits cannot preserve a green
+        /// result after expiry. This field is not a public MCP timestamp.
+        func current(at uptime: UInt64 = DispatchTime.now().uptimeNanoseconds) -> Self {
+            guard status != .cancelled, status != .expired,
+                  expiresAtUptimeNanoseconds > 0, uptime >= expiresAtUptimeNanoseconds else { return self }
+            return .init(status: .expired, httpResponseAcknowledged: httpResponseAcknowledged,
+                         httpsResponseAcknowledged: httpsResponseAcknowledged,
+                         hostnameDelegationObserved: hostnameDelegationObserved,
+                         dnsResolution: dnsResolution, policySHA256: policySHA256,
+                         expiresAtUptimeNanoseconds: expiresAtUptimeNanoseconds)
+        }
+
+        /// A closed scalar receipt, never arbitrary endpoint data. Historical
+        /// ACKs may survive expiry/cancellation, but must not contradict phases.
+        func validate(expectedPolicySHA256: String, uptime: UInt64 = DispatchTime.now().uptimeNanoseconds) throws {
+            guard policySHA256 == expectedPolicySHA256,
+                  policySHA256.utf8.count == 64,
+                  policySHA256.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+                  uptime <= UInt64.max - 120_000_000_000,
+                  expiresAtUptimeNanoseconds <= uptime + 120_000_000_000,
+                  dnsResolution == "notObserved",
+                  !httpsResponseAcknowledged || httpResponseAcknowledged else { throw Failure.invalidReceipt }
+            switch status {
+            case .notStarted:
+                guard !httpResponseAcknowledged, !httpsResponseAcknowledged, !hostnameDelegationObserved else { throw Failure.invalidReceipt }
+            case .waitingHTTP:
+                guard expiresAtUptimeNanoseconds > 0, !httpResponseAcknowledged, !httpsResponseAcknowledged else { throw Failure.invalidReceipt }
+            case .waitingHTTPS:
+                guard expiresAtUptimeNanoseconds > 0, httpResponseAcknowledged, !httpsResponseAcknowledged else { throw Failure.invalidReceipt }
+            case .complete:
+                guard expiresAtUptimeNanoseconds > 0, httpResponseAcknowledged, httpsResponseAcknowledged else { throw Failure.invalidReceipt }
+            case .expired, .cancelled: break
+            }
+        }
     }
     struct Response: Sendable {
         let bytes: Data
@@ -149,7 +186,8 @@ enum BrowserRouteProbe {
             if deadline != nil, status != .cancelled { _ = try? checkLive() }
             return .init(status: status, httpResponseAcknowledged: httpAcknowledged,
                          httpsResponseAcknowledged: httpsAcknowledged, hostnameDelegationObserved: delegated,
-                         dnsResolution: "notObserved", policySHA256: plan.policySHA256)
+                         dnsResolution: "notObserved", policySHA256: plan.policySHA256,
+                         expiresAtUptimeNanoseconds: deadline ?? 0)
         }
         func respond(to data: Data) throws -> Response {
             guard let request = try HTTP.parse(data) else { throw Failure.invalidRequest }
