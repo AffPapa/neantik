@@ -67,14 +67,71 @@ def binding_for(app, manifest):
     }
 
 
-def verdict_passes(report):
+def receipt_matches(receipt, expected):
+    return isinstance(receipt, dict) and receipt.keys() == expected.keys() and all(
+        type(receipt[key]) is type(value) and receipt[key] == value for key, value in expected.items()
+    )
+
+
+def verdict_passes(report, *, contract="negative-controls", control_receipt=None, expected_controls=None):
+    """Accept the oracle's explicit contract; missing control evidence is not PASS."""
     if not isinstance(report, dict):
+        return False
+    if report.get("status") in ("failed", "inconclusive"):
         return False
     passed = report.get("passed") is True or (
         str(report.get("status", "")).startswith("verified-scoped-") and report.get("issues") == []
     )
-    controls = report.get("negativeControls", [])
-    return passed and all(item.get("rejected") is True for item in controls)
+    if not passed:
+        return False
+    if contract == "drawing":
+        return receipt_matches(report.get("controls"), {
+            "positiveFixturePassed": True, "behaviorNegativeControlsRejected": 6,
+            "pngNegativeControlsRejected": 4, "pngFilterColorPositiveControls": 10,
+        })
+    independent = {
+        "platform-state": ("verified-scoped-platform-operations", 2, 20),
+        "webgpu-native": ("verified-scoped-native-baseline", 1, 11),
+    }
+    if contract in independent:
+        status, positives, negatives = independent[contract]
+        return report.get("status") == status and report.get("issues") == [] and receipt_matches(control_receipt, {
+            "positiveControls": positives, "negativeControls": negatives, "actualBrowser": False,
+        })
+    if contract == "observation":
+        return report.get("status") in ("verified-observation", "lawful-unavailable")
+    if contract != "negative-controls":
+        return False
+    controls = report.get("negativeControls")
+    if not isinstance(controls, list) or not controls:
+        return False
+    names = []
+    for item in controls:
+        if not isinstance(item, dict) or item.get("rejected") is not True:
+            return False
+        name = item.get("name")
+        if not isinstance(name, str) or not name or name in names:
+            return False
+        names.append(name)
+    return expected_controls is not None and set(names) == set(expected_controls)
+
+
+def voices_verdict(data, expected_source):
+    """A bounded capture timeout is valid evidence of incompleteness, not qualification."""
+    if not isinstance(data, dict) or data.get("sourceSHA256") != expected_source:
+        return {"passed": False, "captureValid": False, "status": "failed"}
+    observed = data.get("result")
+    if not isinstance(observed, dict):
+        return {"passed": False, "captureValid": False, "status": "failed"}
+    count = observed.get("count")
+    good_count = isinstance(count, str) and count.isascii() and count.isdigit() and len(count) <= 3 and 0 <= int(count) <= 256
+    available = observed.get("availability") == "available"
+    complete = observed.get("observation") == "observed" and available and good_count
+    absent = observed.get("observation") == "unavailable" and observed.get("availability") == "unavailable" and count == "unavailable"
+    timeout = observed.get("observation") == "timeout" and available and count == "unavailable"
+    return {"passed": complete or absent, "captureValid": complete or absent or timeout,
+            "status": "verified-observation" if complete else "lawful-unavailable" if absent else "inconclusive" if timeout else "failed",
+            "scope": "bounded native voices; no names or IDs; timeout does not qualify voices"}
 
 
 def verifier_command(vector, verifier, observation):
@@ -221,6 +278,24 @@ CASES = [
     ("media", [15], "media-capture-probe.js", None, "neantik-configured", "run-headed-m156.mjs"),
 ]
 
+# A truncated oracle report must fail even if its remaining controls rejected.
+# Changes to an oracle's required controls need an explicit contract update.
+EXPECTED_CONTROL_NAMES = {
+    "collector": ("absent", "unstable", "timeout", "invalid-rect-0", "invalid-rect-1", "invalid-rect-2"),
+    "font-load": tuple("wrong-font missing-worker-load worker-width ascent capture-error".split()),
+    "realms": tuple("canvas-crop shader-draw missing-operations silence-noise worklet-audio worklet-forged-fetch server-receipt request-nonce corrupt-PNG actual-nine-live-before-teardown".split()),
+    "webgl-read": tuple("payload padding crop pbo error shader".split()),
+    "webgl-behavior": tuple("advertised-extension-broken bad-shader-accepted bad-link-accepted framebuffer-error-swallowed integer-corruption restore-event-missing msaa-resolve-broken".split()),
+    "audio-worklet": tuple("missing-completion early-receipt wrong-output clamped-dc silent-noise fft-frequency error-swallowed".split()),
+    "audio-events": tuple("legacy-event-name listener-missing attribute-removed-wrongly untrusted-event cancelable-error duplicate-event-alias non-silent-failure".split()),
+    "audio-lifetime": tuple("generator-not-stopped channel-clamped quantum-skipped processor-error-lost throw-not-silenced".split()),
+    "identity": tuple("memory-contradiction UA-mismatch lang-mismatch full-version-mismatch unexpected-worker-hint missing-operation".split()),
+    "service-worker": tuple("platform-contradiction memory-contradiction version-contradiction missing-controller foreign-interception synthetic-response-no-server duplicate-server timeout wrong-runtime cleanup".split()),
+    "geometry": tuple("wrong-runtime wrong-zoom source-drift range-union collapsed-width crop-scroll fullscreen-state fullscreen-event static-window media-dpr cleanup missing-operation".split()),
+    "media": tuple("missing-frame no-processing wrong-denial no-revocation-event live-track".split()),
+}
+EXPECTED_CONTROL_NAMES["geometry-zoom"] = EXPECTED_CONTROL_NAMES["geometry"]
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -268,6 +343,7 @@ def main():
                NEANTIK_PLATFORM_LAUNCH_RECEIPT=str(launch_path.resolve()))
     cases = [c for c in CASES if not args.only or c[0] == args.only]
     summaries = []
+    control_receipts = {}
     vector = working / "vector-semantics"
 
     def run(command, name, timeout=240):
@@ -288,6 +364,7 @@ def main():
             if code or control != {"positiveControls": positives, "negativeControls": negatives, "actualBrowser": False}:
                 raise ValueError("Independent operation controls failed")
             write_once(args.output / (case_name + "-controls.json"), control)
+            control_receipts[case_name] = control
 
     # The separate ordinary Chrome control has its own binding; it does not
     # substitute for the configured candidate's identity or operation checks.
@@ -334,26 +411,24 @@ def main():
                 try: reports.append(json.loads(line))
                 except ValueError: pass
             verdict = reports[-1] if reports else {"passed": False, "reason": "Verifier returned no JSON verdict"}
-            passed = code == 0 and verdict_passes(verdict)
+            contract = "drawing" if name == "drawing" else name if name in control_receipts else "negative-controls"
+            passed = code == 0 and verdict_passes(verdict, contract=contract, control_receipt=control_receipts.get(name),
+                                                  expected_controls=EXPECTED_CONTROL_NAMES.get(name))
         else:
             data = document["data"]
             if name == "collector": verdict = collector_verdict(data, digest(source))
             elif name == "media": verdict = checked_media_verdict(data)
             elif name == "webgpu-policy":
-                verdict = {"passed": data.get("observation") in ("api-absent", "adapter-null"), "scope": "disabled configured WebGPU policy"}
+                allowed = data.get("observation") in ("api-absent", "adapter-null")
+                verdict = {"passed": allowed, "status": "verified-observation" if allowed else "failed",
+                           "scope": "disabled configured WebGPU policy"}
             else:
-                observed = data.get("result", {})
-                count = observed.get("count")
-                good_count = isinstance(count, str) and count.isdigit() and 0 <= int(count) <= 256
-                verdict = {"passed": data.get("sourceSHA256") == digest(source) and (
-                    observed.get("observation") == "observed" and observed.get("availability") == "available" and good_count or
-                    observed.get("observation") == "unavailable" and observed.get("availability") == "unavailable" and count == "unavailable" or
-                    observed.get("observation") == "timeout" and observed.get("availability") == "available" and count == "unavailable"),
-                    "scope": "bounded native voices; loading timeout is explicitly inconclusive; no names or IDs"}
-            passed = verdict_passes(verdict)
+                verdict = voices_verdict(data, digest(source))
+            passed = verdict_passes(verdict, contract="observation" if name in ("voices", "webgpu-policy") else "negative-controls",
+                                    expected_controls=EXPECTED_CONTROL_NAMES.get(name))
         write_once(args.output / (name + "-verdict.json"), verdict)
         summaries.append({"case": name, "rows": rows, "passed": passed, "observationSHA256": digest(observation),
-            "verdictSHA256": digest(args.output / (name + "-verdict.json"))})
+            "verdictSHA256": digest(args.output / (name + "-verdict.json")), "status": verdict.get("status", "verified" if passed else "failed")})
         print(name + (": PASS" if passed else ": FAIL"), flush=True)
     binding_for(app, args.manifest)
     summary = {"schemaVersion": 1, "scope": "headed signed platform operations, first15 automated coverage",
@@ -361,6 +436,7 @@ def main():
         "passed": len(summaries) == len(cases) and all(c["passed"] for c in summaries),
         "limitations": ["No second physical display", "No physical power or network change events",
             "HTTP loopback identity; external HTTPS route is a separate gate", "Not complete production/1.0 qualification"]}
+    summary["limitations"] += [c["case"] + ": evidence inconclusive" for c in summaries if c.get("status") == "inconclusive"]
     write_once(args.output / ("summary-" + (args.only or "all") + ".json"), summary)
     return 0 if summary["passed"] else 2
 
