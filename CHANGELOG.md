@@ -1,5 +1,13 @@
 # NeAntik changelog
 
+## Direct 0.7.41 (104)
+
+Public-alpha candidate; exact paired .40 → .41 installer, rollback, persistence and publication are pending.
+
+- Same manager and fixed helper code as private .40; version-only transition for real signed updater qualification.
+- Окно закрывается до выхода приложения; истёкшее предложение установки требует новой проверки.
+- Сохранены подписанный канал, авторизованный relay, зашифрованный backup закрытого профиля, центр расширений и MCP. Ограничения каталога установки, CRX и переноса OS-encrypted данных на другой Mac остаются явными.
+
 ## Direct 0.7.40 (103)
 
 Private paired qualification candidate; not published.
