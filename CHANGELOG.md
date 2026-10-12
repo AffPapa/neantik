@@ -1,5 +1,15 @@
 # NeAntik changelog
 
+## Direct 0.7.47 (110)
+
+Published public alpha on GitHub and browser.free (Sites 136). Chromium 156.0.8078.12 is unchanged. [Release evidence](releases/v0.7.47.json).
+
+- Исправлены два подтверждённых отказа updater: закрытые standard descriptors мешали bootstrap; сериализация одинакового подписанного plist давала различный порядок ключей. Сравнение учитывает все значения, типы и порядок массивов; доверие подписи не ослаблено.
+- 1426 тестов / 164 suites PASS; реальные отрицательные контроли воспроизводят прежние отказы. Точная подписанная установка 0.7.46 → 0.7.47, управляемый сбой до ACK, откат, успешный commit и автоматический перезапуск проверены на изолированных данных.
+- После установки восстановлены две вкладки и свежие cookies/LocalStorage/IndexedDB тестового профиля A; профиль B не получил эти данные. Исходная .46 — отдельная подписанная QA-база, не публичный и не нотарифицированный релиз.
+- ZIP/DMG прошли Developer ID, notarization, stapling, Gatekeeper, проверку скачанных байтов и свежий headed запуск. Сайт отдаёт подписанный Ed25519 feed; установленная .47 проверила его по HTTPS в настоящем интерфейсе.
+- Создание зашифрованного backup включено в квалифицированной упаковке; сохраняются ограничения исходного профиля/Mac/Keychain/runtime. Полный CRX installer и окончательная квалификация наблюдения маршрута остаются открытыми. Предыдущий публичный релиз .34 сохранён без изменения assets.
+
 ## Direct 0.7.43 (106)
 
 Public-alpha candidate. Publication requires the exact signed .42 → .43 installation, controlled rollback and BrowserData persistence checks.

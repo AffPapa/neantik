@@ -1,4 +1,8 @@
-> Current public release: 0.7.34/build 97 public-alpha; Chromium 156.0.8078.12. Source of truth: `releases/v0.7.34.json`. Major 1.0 remains open. Older entries are historical.
+> Current public release: 0.7.47/build 110 public-alpha; Chromium 156.0.8078.12. Source of truth: `releases/v0.7.47.json`. Major 1.0 remains open. Older entries are historical.
+
+## Выпуск 0.7.47 / build 110 — 12 октября 2026
+
+GitHub и browser.free опубликованы. Точные ZIP/DMG, публичные скачанные байты, Gatekeeper и свежий headed запуск проверены. Реальная установка .46 → .47 завершилась commit/ACK и автоматическим перезапуском; отдельный сбой до ACK вернул .46. Сохранились две вкладки и cookies/LocalStorage/IndexedDB синтетического A; B изолирован. Подписанный HTTPS feed проверен установленной .47 через UI. Sites 136, source `c2123410316b45c5af06740144ccbb2048b744ec`, API/главная показывают 0.7.47 (110). Скомпилированный source `098f7279ee595baf0dc1d06481340480b6b39177`; последующий documentation commit не является source бинарника. Chromium и сертификат сохранены. Rollback public .34 сохранён. AffPapa исключён пользователем. CRX installer и финальная квалификация browser-route observation открыты. [Отчёт](../releases/v0.7.47.json).
 
 ## Выпуск 0.7.34 / build 97 — 12 октября 2026
 
