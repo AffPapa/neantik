@@ -208,6 +208,13 @@ echo "Секреты не запрашиваются: подпись и notariza
 echo "Этапы: сборка → проверка профилей → Apple notarization → готовый ZIP."
 echo
 
+# This script can also be invoked without the outer release entrypoint.
+# Never move a bundle still used by a manager or its embedded browser.
+if [[ -e "$APP_PATH" ]]; then
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$APP_PATH" --timeout 2
+fi
+
 mkdir -p "$ATTEMPT_STATE_ROOT"
 chmod 0700 "$ATTEMPT_STATE_ROOT"
 echo "Private attempt state: $ATTEMPT_STATE_ROOT"

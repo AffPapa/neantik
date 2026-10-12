@@ -1,6 +1,8 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 import tempfile
+import subprocess
+import os
 import unittest
 from unittest import mock
 
@@ -77,6 +79,39 @@ class RuntimeDrainTests(unittest.TestCase):
             text=True,
             timeout=10,
         )
+
+    def test_unavailable_inventory_never_means_drained(self) -> None:
+        with mock.patch.object(MODULE, "read_process_table", side_effect=RuntimeError("unavailable")):
+            self.assertFalse(MODULE.wait_for_drain(self.app, 0.03, 0.01, 2))
+
+    def test_live_owned_candidate_refuses_then_accepts_after_exit(self) -> None:
+        # Actual native process, not a fabricated inventory. No browser or
+        # user profile is involved; the process is a short owned fixture.
+        executable = self.app / "Contents" / "MacOS" / "NeAntik"
+        executable.symlink_to("/bin/sleep")
+        child = subprocess.Popen([str(executable), "30"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            self.assertIsNone(child.poll())
+            self.assertGreater(MODULE.candidate_process_count(self.app, MODULE.read_process_table(), os.getuid()), 0)
+            blocked = subprocess.run(["python3", str(SCRIPT), "--app", str(self.app), "--timeout", "0.2", "--poll-interval", "0.03"], capture_output=True, text=True, timeout=5)
+            self.assertEqual(blocked.returncode, 67)
+            self.assertNotIn("PASS", blocked.stdout)
+        finally:
+            child.terminate()
+            child.wait(timeout=5)
+        accepted = subprocess.run(["python3", str(SCRIPT), "--app", str(self.app), "--timeout", "1", "--poll-interval", "0.03"], capture_output=True, text=True, timeout=5)
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+
+    def test_release_guards_precede_bundle_mutations(self) -> None:
+        for script, mutation, target in (
+            (ROOT / "Release-NeAntik.command", 'mv "$artifact"', '$PROJECT_DIR/dist/NeAntik.app'),
+            (ROOT / "scripts/Run-NeAntik-Release.command", 'mv "$APP_PATH"', '$APP_PATH'),
+            (ROOT / "scripts/prepare-direct-manager-update.sh", 'rm -rf "$CANDIDATE_APP"', '$CANDIDATE_APP'),
+        ):
+            source = script.read_text()
+            guard = source.index('"$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py"')
+            self.assertLess(guard, source.index(mutation))
+            self.assertIn('--app "' + target + '" --timeout 2', source[guard:guard + 200])
 
 
 if __name__ == "__main__":

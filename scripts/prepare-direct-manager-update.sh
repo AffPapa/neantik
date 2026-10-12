@@ -299,6 +299,12 @@ if [[ ! -x "$MANAGER_BINARY" ]]; then
   exit 70
 fi
 
+# Recheck at the destructive boundary: a launch may have happened during
+# compilation, including when this preparation script is called directly.
+if [[ -e "$CANDIDATE_APP" ]]; then
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$CANDIDATE_APP" --timeout 2
+fi
 rm -rf "$CANDIDATE_APP"
 ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"
 cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"

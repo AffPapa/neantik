@@ -28,6 +28,13 @@ if [[ ! -x "$RELEASE_SCRIPT" ]]; then
   exit 66
 fi
 
+# A manager or embedded browser may still use resources from this bundle.
+# Refuse before moving archives or letting the inner workflow replace it.
+if [[ -e "$PROJECT_DIR/dist/NeAntik.app" ]]; then
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$PROJECT_DIR/dist/NeAntik.app" --timeout 2
+fi
+
 echo "NeAntik $VERSION — единый Direct release"
 echo "Канал выпуска: Direct Distribution."
 echo
