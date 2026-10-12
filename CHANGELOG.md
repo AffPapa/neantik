@@ -1,5 +1,14 @@
 # NeAntik changelog
 
+## Direct 0.7.38 (101)
+
+Release candidate; publication awaits exact paired installation and rollback.
+
+- Исправлена проверка provenance при обновлении даты security baseline; исторические runtime bytes и reports остаются неизменными.
+- Подписанный updater проверяет Ed25519 manifest, точный ZIP, Developer ID, runtime и системную оценку; установка требует подтверждения и закрытых профилей.
+- Существующий Chromium156.0.8078.12, авторизованный per-profile relay, закрытый зашифрованный BrowserData backup и управление расширениями сохранены. Ограничения восстановления на другом Mac и CRX-инсталляции не скрыты.
+- Локально:1419 Swift-тестов/162suites; положительные и отрицательные контроли публикационной provenance. Точная квалификация релиза записывается отдельно.
+
 ## Direct 0.7.37 (100)
 
 Private qualification candidate; not published. Fixes the publication-baseline closure defect found in private0.7.35/0.7.36. Qualified earlier local artifacts are retained unchanged. Paired shipping installation remains pending.
