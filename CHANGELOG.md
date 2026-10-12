@@ -1,5 +1,14 @@
 # NeAntik changelog
 
+## Direct 0.8.1 (112)
+
+Development candidate; not published. Includes the WebKit preview from 0.8.0 below; Chromium 156.0.8078.12 is unchanged. Exact signed app, persistence, distribution and hosted-byte checks remain release gates.
+
+- Импортируемые адреса и учётные данные прокси скрыты от стандартного debug-вывода Swift; парсинг и сохранение значений не изменены. Отрицательный контроль воспроизвёл прежний отказ, 13 targeted tests PASS.
+- Изолированная авторизованная проверка updater явно открывает окно manager после предыдущего закрытого окна. Она не запускает fingerprint-аудит автоматически и не обходит авторизацию. 12 targeted launch tests PASS.
+- В осмотре установленных расширений доступны локализованные имена вместо `__MSG_*`; это не новый центр управления и не доказательство native packed CRX installation.
+- Qualification aggregator требует полные отрицательные контроли; timeout наблюдения голосов означает inconclusive, а не PASS. Это изменение harness, не browser fingerprint policy.
+
 ## Direct 0.8.0 (111)
 
 Public-alpha candidate; not yet published. Exact signed app, notarization, hosted bytes and WebKit smoke remain release gates. Chromium 156.0.8078.12 is unchanged.
