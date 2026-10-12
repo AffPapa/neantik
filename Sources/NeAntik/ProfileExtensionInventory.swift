@@ -27,6 +27,8 @@ struct ProfileExtensionRecord: Identifiable, Equatable, Sendable {
     let source: Source
     let metadataNeedsBrowser: Bool
     let conflictingMetadata: Bool
+    /// Default-locale disk label, not the running browser's chosen UI language.
+    let nameLocale: String?
 }
 
 struct ProfileExtensionSnapshot: Equatable, Sendable {
@@ -43,6 +45,8 @@ enum ProfileExtensionInventory {
     static let maximumPreferencesBytes = 8 * 1_024 * 1_024
     static let maximumDirectoryEntries = 1_024
     static let maximumRecords = 256
+    static let maximumLocaleBytes = 256 * 1_024
+    static let maximumTotalLocaleBytes = 8 * 1_024 * 1_024
 
     static func scan(browserData: URL, beforeValidation: (() throws -> Void)? = nil) throws -> ProfileExtensionSnapshot {
         try Task.checkCancellation()
@@ -62,30 +66,43 @@ enum ProfileExtensionInventory {
         let ordinary = try settings(preferenceData?.data), secure = try settings(secureData?.data)
         let combined = ordinary.merging(secure) { _, secured in secured }
         var records: [ProfileExtensionRecord] = [], omitted = 0
+        var localeCaptures: [LocaleCapture] = [], localeBytes = 0
         guard combined.count <= maximumRecords else { throw ProfileExtensionInventoryError.limitExceeded }
         for id in combined.keys.sorted() {
             try Task.checkCancellation()
             guard validID(id), let value = combined[id] as? [String: Any] else { omitted += 1; continue }
             let manifest = value["manifest"] as? [String: Any] ?? [:]
             let rawName = safeText(manifest["name"], maximumBytes: 512)
-            let resolvedName = rawName.flatMap { $0.hasPrefix("__MSG_") ? nil : $0 }
-            let unresolved = resolvedName == nil
             let conflict: Bool
             if let lhs = ordinary[id], let rhs = secure[id] { conflict = !NSDictionary(dictionary: ["entry": lhs]).isEqual(to: ["entry": rhs]) }
             else { conflict = false }
             // Exact M156 ManifestLocation hides internal component extensions
             // from user management. A conflicting record is never hidden.
             if !conflict, let location = integer(value["location"]), [5, 10].contains(location) { continue }
+            var resolvedName = rawName.flatMap { $0.hasPrefix("__MSG_") ? nil : $0 }
+            var nameLocale: String?
+            if resolvedName == nil, !conflict, savedSource(value) == .packaged,
+               let rawName, let locale = safeText(manifest["default_locale"], maximumBytes: 32),
+               validLocale(locale), let version = safeText(manifest["version"], maximumBytes: 128) {
+                var capture = LocaleCapture()
+                resolvedName = try localizedName(rawName, locale: locale, version: version, id: id,
+                    savedPath: value["path"], browserData: browserData, profile: profile,
+                    capture: &capture, totalBytes: &localeBytes)
+                localeCaptures.append(capture)
+                if resolvedName != nil { nameLocale = locale }
+            }
+            let unresolved = resolvedName == nil
             records.append(.init(id: id, name: resolvedName ?? "Расширение \(id.prefix(8))",
                 version: safeText(manifest["version"], maximumBytes: 128),
                 manifestVersion: integer(manifest["manifest_version"]),
                 permissions: try strings(manifest["permissions"]) + strings(manifest["host_permissions"]),
                 optionalPermissions: try strings(manifest["optional_permissions"]) + strings(manifest["optional_host_permissions"]),
                 state: conflict ? .unknown : savedState(value), source: conflict ? .unknown : savedSource(value),
-                metadataNeedsBrowser: unresolved || manifest.isEmpty, conflictingMetadata: conflict))
+                metadataNeedsBrowser: unresolved || manifest.isEmpty, conflictingMetadata: conflict, nameLocale: nameLocale))
         }
         try beforeValidation?()
         try packages.validate(parent: profile)
+        for capture in localeCaptures { try capture.validate(profile: profile) }
         try validateRead(profile, "Preferences", preferenceData)
         try validateRead(profile, "Secure Preferences", secureData)
         guard try BackupFS.identity(profile) == before else { throw ProfileExtensionInventoryError.changed }
@@ -94,6 +111,111 @@ enum ProfileExtensionInventory {
         try Task.checkCancellation()
         return .init(records: records, packageCount: packages.identities.count, preferencesPresent: preferenceData != nil || secureData != nil,
                      omittedRecords: omitted, capturedAt: Date())
+    }
+
+    /// Captures every traversed entry, including missing directories/files.
+    /// Reopening relative to Default after the scan catches swaps and changes
+    /// without retaining hundreds of file descriptors for a large inventory.
+    private struct LocaleCapture {
+        struct Step { let name: String; let identity: BackupIdentity?; let isDirectory: Bool }
+        var steps: [Step] = []
+        mutating func openDirectory(_ parent: Int32, _ name: String) throws -> Int32? {
+            let fd = try childDirectory(parent, name)
+            do {
+                steps.append(.init(name: name, identity: try fd.map { try BackupFS.identity($0) }, isDirectory: true))
+                return fd
+            } catch {
+                if let fd { Darwin.close(fd) }
+                throw error
+            }
+        }
+        func validate(profile: Int32) throws {
+            var parent = profile
+            var opened: [Int32] = []
+            defer { for fd in opened { Darwin.close(fd) } }
+            for step in steps {
+                try Task.checkCancellation()
+                guard try BackupFS.entry(parent, step.name) == step.identity else { throw ProfileExtensionInventoryError.changed }
+                if !step.isDirectory || step.identity == nil { return }
+                guard let fd = try childDirectory(parent, step.name) else { throw ProfileExtensionInventoryError.changed }
+                opened.append(fd)
+                guard try BackupFS.identity(fd) == step.identity else { throw ProfileExtensionInventoryError.changed }
+                parent = fd
+            }
+        }
+    }
+
+    private static func validLocale(_ text: String) -> Bool {
+        text.utf8.first.map { (65...90).contains($0) || (97...122).contains($0) } == true &&
+        text.utf8.allSatisfy { (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0) || $0 == 95 || $0 == 45 }
+    }
+
+    private static func localizedName(_ raw: String, locale: String, version: String, id: String,
+        savedPath: Any?, browserData: URL, profile: Int32, capture: inout LocaleCapture, totalBytes: inout Int) throws -> String? {
+        guard raw.hasPrefix("__MSG_"), raw.hasSuffix("__"), raw.utf8.count > 8 else { return nil }
+        let key = String(raw.dropFirst(6).dropLast(2)).lowercased()
+        guard !key.isEmpty, key.utf8.allSatisfy({ (97...122).contains($0) || (48...57).contains($0) || $0 == 95 }),
+              version.utf8.allSatisfy({ (48...57).contains($0) || $0 == 46 }) else { return nil }
+        guard let packages = try capture.openDirectory(profile, "Extensions") else { return nil }
+        defer { Darwin.close(packages) }
+        guard let package = try capture.openDirectory(packages, id) else { return nil }
+        defer { Darwin.close(package) }
+        let names = try directoryNames(package).filter { name in
+            if name == version { return true }
+            guard name.hasPrefix(version + "_") else { return false }
+            let suffix = name.dropFirst(version.count + 1)
+            return !suffix.isEmpty && suffix.utf8.allSatisfy { (48...57).contains($0) }
+        }
+        // Multiple versions of the same manifest version are ambiguous. Never
+        // guess an active package from lexical order or follow Preferences.path.
+        guard names.count == 1, let selected = names.first else { return nil }
+        if let savedPath {
+            let relative = "\(id)/\(selected)"
+            let absolute = browserData.appendingPathComponent("Default/Extensions/" + relative).path
+            guard let path = savedPath as? String, path == relative || path == absolute else { return nil }
+        }
+        guard let versionDirectory = try capture.openDirectory(package, selected) else { return nil }
+        defer { Darwin.close(versionDirectory) }
+        guard let locales = try capture.openDirectory(versionDirectory, "_locales") else { return nil }
+        defer { Darwin.close(locales) }
+        guard let language = try capture.openDirectory(locales, locale) else { return nil }
+        defer { Darwin.close(language) }
+        let file = try read(language, "messages.json", maximum: maximumLocaleBytes)
+        capture.steps.append(.init(name: "messages.json", identity: file?.identity, isDirectory: false))
+        guard let file else { return nil }
+        totalBytes += file.data.count
+        guard totalBytes <= maximumTotalLocaleBytes else { throw ProfileExtensionInventoryError.limitExceeded }
+        guard (try? ImportJSONShape.validate(file.data)) != nil,
+              let messages = try? JSONSerialization.jsonObject(with: file.data) as? [String: Any], messages.count <= 4_096 else { return nil }
+        let matches = messages.filter { $0.key.lowercased() == key }
+        guard matches.count == 1, let message = matches.first?.value as? [String: Any],
+              let label = safeText(message["message"], maximumBytes: 512), !label.contains("$") else { return nil }
+        // Placeholder expansion belongs to Chromium. A partial rendering must
+        // not be passed off as the extension's actual name.
+        return label
+    }
+
+    private static func directoryNames(_ directory: Int32) throws -> [String] {
+        let before = try BackupFS.identity(directory)
+        let copy = dup(directory); guard copy >= 0 else { throw ProfileExtensionInventoryError.unsafeEntry }
+        guard let stream = fdopendir(copy) else { Darwin.close(copy); throw ProfileExtensionInventoryError.unsafeEntry }
+        defer { closedir(stream) }
+        var names: [String] = []
+        while true {
+            try Task.checkCancellation(); errno = 0
+            guard let entry = readdir(stream) else {
+                if errno != 0 { throw ProfileExtensionInventoryError.unsafeEntry }
+                break
+            }
+            guard let name = withUnsafePointer(to: &entry.pointee.d_name, { pointer in
+                pointer.withMemoryRebound(to: CChar.self, capacity: Int(NAME_MAX) + 1) { String(validatingCString: $0) }
+            }) else { throw ProfileExtensionInventoryError.unsafeEntry }
+            if name == "." || name == ".." { continue }
+            names.append(name)
+            guard names.count <= maximumDirectoryEntries else { throw ProfileExtensionInventoryError.limitExceeded }
+        }
+        guard try BackupFS.identity(directory) == before else { throw ProfileExtensionInventoryError.changed }
+        return names
     }
 
     private static func settings(_ data: Data?) throws -> [String: Any] {

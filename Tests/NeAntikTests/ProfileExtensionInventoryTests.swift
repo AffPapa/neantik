@@ -7,6 +7,123 @@ struct ProfileExtensionInventoryTests {
     private let firstID = String(repeating: "a", count: 32)
     private let secondID = String(repeating: "b", count: 32)
 
+    @Test func packagedLocalizedNameIsReadableWithoutOpeningBrowser() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        var value = entry(); value["location"] = 1
+        var manifest = value["manifest"] as! [String: Any]
+        manifest["name"] = "__MSG_ExtensionName__"; manifest["default_locale"] = "en_US"
+        value["manifest"] = manifest
+        try preferences(root, records: [firstID: value])
+        let messages = root.appendingPathComponent("Default/Extensions/\(firstID)/1.0_0/_locales/en_US/messages.json")
+        try FileManager.default.createDirectory(at: messages.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: ["extensionname": ["message": "Local fixture name"]]).write(to: messages)
+        let record = try #require(try ProfileExtensionInventory.scan(browserData: root).records.first)
+        #expect(record.name == "Local fixture name")
+        #expect(!record.metadataNeedsBrowser)
+        #expect(record.state == .unknown) // Resolving a label never proves enabled state.
+        #expect(record.nameLocale == "en_US")
+    }
+
+    @Test(arguments: ["missing", "badJSON", "caseCollision", "placeholder", "unsafeText", "unsafeLocale", "externalPath", "unpacked", "ambiguousVersion"])
+    func uncertainLocaleMetadataKeepsExplicitFallback(kind: String) throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        var value = localizedEntry()
+        if kind == "unsafeLocale" {
+            var manifest = value["manifest"] as! [String: Any]; manifest["default_locale"] = "../../external"; value["manifest"] = manifest
+        }
+        if kind == "externalPath" { value["path"] = "/private/tmp/not-an-installed-extension" }
+        if kind == "unpacked" { value["location"] = 4 }
+        try preferences(root, records: [firstID: value])
+        let messages = try localeFile(root)
+        switch kind {
+        case "missing": break
+        case "badJSON": try Data("{".utf8).write(to: messages)
+        case "caseCollision": try JSONSerialization.data(withJSONObject: ["name": ["message": "one"], "NAME": ["message": "two"]]).write(to: messages)
+        case "placeholder": try localeMessages("$product$", to: messages)
+        case "unsafeText": try localeMessages("name\nsecond line", to: messages)
+        default: try localeMessages("Synthetic name", to: messages)
+        }
+        if kind == "ambiguousVersion" {
+            try FileManager.default.createDirectory(at: root.appendingPathComponent("Default/Extensions/\(firstID)/1.0_1"), withIntermediateDirectories: false)
+        }
+        let record = try #require(try ProfileExtensionInventory.scan(browserData: root).records.first)
+        #expect(record.name == "Расширение aaaaaaaa" && record.metadataNeedsBrowser)
+        #expect(record.nameLocale == nil && record.state == .unknown)
+    }
+
+    @Test(arguments: ["fileSymlink", "fileHardlink", "localeSymlink", "oversize"])
+    func unsafeLocaleFilesAreNotRead(kind: String) throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        try preferences(root, records: [firstID: localizedEntry()])
+        let messages = try localeFile(root)
+        let outside = root.appendingPathComponent("protected")
+        let protected = Data("do not read or change".utf8); try protected.write(to: outside)
+        switch kind {
+        case "fileSymlink": try FileManager.default.createSymbolicLink(at: messages, withDestinationURL: outside)
+        case "fileHardlink": try FileManager.default.linkItem(at: outside, to: messages)
+        case "localeSymlink":
+            try FileManager.default.removeItem(at: messages.deletingLastPathComponent())
+            try FileManager.default.createSymbolicLink(at: messages.deletingLastPathComponent(), withDestinationURL: root)
+        default: try Data(repeating: 0, count: ProfileExtensionInventory.maximumLocaleBytes + 1).write(to: messages)
+        }
+        #expect(throws: kind == "oversize" ? ProfileExtensionInventoryError.limitExceeded : .unsafeEntry) {
+            try ProfileExtensionInventory.scan(browserData: root)
+        }
+        #expect(try Data(contentsOf: outside) == protected)
+    }
+
+    @Test(arguments: ["fileChanged", "fileReplaced", "localeMoved", "missingFileAppears"])
+    func changedLocaleCannotPublishStaleLabel(kind: String) throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        try preferences(root, records: [firstID: localizedEntry()])
+        let messages = try localeFile(root)
+        if kind != "missingFileAppears" { try localeMessages("Initial label", to: messages) }
+        #expect(throws: ProfileExtensionInventoryError.changed) {
+            try ProfileExtensionInventory.scan(browserData: root, beforeValidation: {
+                switch kind {
+                case "fileReplaced":
+                    try FileManager.default.removeItem(at: messages)
+                    try self.localeMessages("Replacement label", to: messages)
+                case "localeMoved":
+                    try FileManager.default.moveItem(at: messages.deletingLastPathComponent(),
+                        to: messages.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("moved"))
+                default: try self.localeMessages("Different label", to: messages)
+                }
+            })
+        }
+    }
+
+    @Test func localeBudgetBoundsWholeInventory() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        var records: [String: Any] = [:]
+        let alphabet = Array("abcdefghijklmnop")
+        for index in 0..<35 {
+            let id = String(repeating: "a", count: 30) + String(alphabet[index / 16]) + String(alphabet[index % 16])
+            records[id] = localizedEntry()
+            let file = try localeFile(root, id: id)
+            let data = try JSONSerialization.data(withJSONObject: ["name": ["message": "Synthetic label"], "padding": String(repeating: "x", count: 250_000)])
+            #expect(data.count < ProfileExtensionInventory.maximumLocaleBytes)
+            try data.write(to: file)
+        }
+        try preferences(root, records: records)
+        #expect(throws: ProfileExtensionInventoryError.limitExceeded) { try ProfileExtensionInventory.scan(browserData: root) }
+    }
+
+    private func localizedEntry() -> [String: Any] {
+        var value = entry(); value["location"] = 1
+        var manifest = value["manifest"] as! [String: Any]
+        manifest["name"] = "__MSG_name__"; manifest["default_locale"] = "en_US"
+        value["manifest"] = manifest; return value
+    }
+    private func localeFile(_ root: URL, id: String? = nil) throws -> URL {
+        let file = root.appendingPathComponent("Default/Extensions/\(id ?? firstID)/1.0_0/_locales/en_US/messages.json")
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        return file
+    }
+    private func localeMessages(_ name: String, to url: URL) throws {
+        try JSONSerialization.data(withJSONObject: ["NAME": ["message": name]]).write(to: url)
+    }
+
     @Test func secureOnlyUnpackedAndResidualPackagesAreDistinct() throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         try preferences(root, file: "Secure Preferences", records: [firstID: entry()])

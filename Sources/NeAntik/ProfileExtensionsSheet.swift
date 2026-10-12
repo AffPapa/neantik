@@ -143,6 +143,10 @@ struct ProfileExtensionsSheet: View {
             LabeledContent("Сохранённый статус", value: stateText(record.state))
             LabeledContent("Источник установки", value: sourceText(record.source))
             if let version = record.version { LabeledContent("Версия", value: version) }
+            if let locale = record.nameLocale {
+                Text("Название из файлов расширения, язык \(locale). В браузере оно может быть переведено иначе.")
+                    .font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             if let manifest = record.manifestVersion { LabeledContent("Manifest", value: String(manifest)) }
             if record.conflictingMetadata {
                 Text("Сохранённые записи расходятся. Актуальный статус проверь в браузере.").foregroundStyle(.orange)
