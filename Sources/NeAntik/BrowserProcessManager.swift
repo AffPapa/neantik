@@ -1751,6 +1751,12 @@ final class BrowserProcessManager: ObservableObject {
     func launchUserProfile(profile: BrowserProfile, runtime: BrowserRuntime,
                            preparationReceipt: BrowserLaunchPreparationReceipt?, keychain: KeychainStore,
                            target: BrowserUserLaunchTarget = .profileStart) async throws {
+        if let plan = target.routeProbePlan {
+            try plan.validate()
+            guard let proxy = profile.proxy, !proxy.username.isEmpty else {
+                throw NeAntikError.runtimeValidationFailed("Проверка маршрута пока доступна только для прокси с авторизацией через локальный relay.")
+            }
+        }
         if let proxy = profile.proxy, !proxy.username.isEmpty {
             guard let preparationReceipt else { throw NeAntikError.proxyPreparationRequired }
             try await launchWithAuthenticatedRelay(profile: profile, runtime: runtime,
@@ -1768,6 +1774,7 @@ final class BrowserProcessManager: ObservableObject {
         preparationReceipt: BrowserLaunchPreparationReceipt,
         keychain: KeychainStore, target: BrowserUserLaunchTarget = .profileStart
     ) async throws {
+        try target.routeProbePlan?.validate()
         try ManagerLaunchAdmission.shared.requireSafePressure()
         guard let proxy = profile.proxy, proxy.isValid, !proxy.username.isEmpty,
               !profile.isArchived, !runningProfileIDs.contains(profile.id),
@@ -1814,6 +1821,7 @@ final class BrowserProcessManager: ObservableObject {
                 runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
                 configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profile.id,
                     revision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port, username: proxy.username))
+            bootstrap.routeProbe = target.routeProbePlan
             #if DEBUG
             if let anchor = relayQualificationAnchorDER {
                 guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
@@ -1843,7 +1851,7 @@ final class BrowserProcessManager: ObservableObject {
             #else
             let fixtureArguments: [String] = []
             #endif
-            try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, additionalArguments: fixtureArguments, startURLOverride: target.startURLOverride)
+            try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, additionalArguments: fixtureArguments, startURLOverride: try target.startURLOverride(relayPort: prepared.port))
             guard let process = processes[profile.id], process.isRunning else { throw NeAntikError.processLaunchFailed("") }
             try await prepared.bind(browserPID: process.processIdentifier)
             try Task.checkCancellation()

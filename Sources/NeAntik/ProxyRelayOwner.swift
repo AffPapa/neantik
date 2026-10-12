@@ -62,21 +62,22 @@ enum ProxyRelayOwner {
         else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
         let gate = try ProxyRelayBindingGate(), box = AuthorityBox()
         let credentials = bootstrap.username.isEmpty ? nil : try ProxyRelayCredentials(username: bootstrap.username, password: bootstrap.password)
+        let routeProbe = try bootstrap.routeProbe.map { try BrowserRouteProbe.Session(plan: $0) }
         let relay: ProxyRelayLoopbackServer
         #if DEBUG
         if let anchor = bootstrap.qualificationAnchorDER {
             guard ownID == "app.neantik.desktop.relay-qualification" else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
             relay = try ProxyRelayLoopbackServer(qualification: .init(anchorDER: anchor),
-                upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials,
+                upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials, routeProbe: routeProbe,
                 waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
         } else {
             relay = try ProxyRelayLoopbackServer(upstreamKind: bootstrap.kind,
-                upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials,
+                upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials, routeProbe: routeProbe,
                 waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
         }
         #else
         relay = try ProxyRelayLoopbackServer(upstreamKind: bootstrap.kind,
-            upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials,
+            upstream: .init(host: bootstrap.host, port: bootstrap.port), credentials: credentials, routeProbe: routeProbe,
             waitForBinding: { try await gate.wait() }, admit: { box.admit($0) })
         #endif
         var authority: ProxyRelaySessionAuthority?
@@ -117,6 +118,7 @@ enum ProxyRelayOwner {
                 owner: .init(pid: getpid(), identity: ownerIdentity), browser: .init(pid: bind.browserPID, identity: browser))
             observation = try ProxyRelayObservationSocket.start(binding: observationBinding, expectedManagerCode: managerCode,
                 sessionValid: { observationActivation.isActive && admitted.browserIsAlive() }, snapshot: { relay.activitySnapshot() })
+            try routeProbe?.activate(port: port)
             try ProxyRelayPrivatePipe.writeFrame(STDOUT_FILENO,
                 data: encoder.encode(ProxyRelayOwnerProtocol.Active(schemaVersion: 1, nonce: bootstrap.nonce, active: true)), timeout: 2)
             try await gate.open()

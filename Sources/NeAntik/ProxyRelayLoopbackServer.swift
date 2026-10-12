@@ -31,14 +31,16 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     private var startFinish: ((Result<UInt16, Error>) -> Void)?
     private var startDeadline: DispatchWorkItem?
     private let activity = BrowserRelayActivity()
+    private let routeProbe: BrowserRouteProbe.Session?
 
     init(upstreamKind: ProxyKind, upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
          maximumConnections: Int = 8,
+         routeProbe: BrowserRouteProbe.Session? = nil,
          waitForBinding: @escaping @Sendable () async throws -> Void = {},
          admit: @escaping @Sendable (Peer) throws -> Bool) throws {
         guard (1...64).contains(maximumConnections) else { throw Failure.invalidLimit }
         self.upstreamKind = upstreamKind; self.upstream = upstream; self.credentials = credentials
-        limit = maximumConnections; self.admit = admit
+        limit = maximumConnections; self.admit = admit; self.routeProbe = routeProbe
         self.waitForBinding = waitForBinding
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .init("127.0.0.1"), port: .any)
@@ -47,13 +49,14 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     #if DEBUG
     convenience init(qualification: ProxyRelayTLSQualification.Configuration,
                      upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
+                     routeProbe: BrowserRouteProbe.Session? = nil,
                      waitForBinding: @escaping @Sendable () async throws -> Void,
                      admit: @escaping @Sendable (Peer) throws -> Bool) throws {
         // Validate before constructing a listener; configuration is assigned
         // once, before start exposes any connection or detached task.
         _ = try qualification.parameters(for: upstream)
         try self.init(upstreamKind: .https, upstream: upstream, credentials: credentials,
-                      waitForBinding: waitForBinding, admit: admit)
+                      routeProbe: routeProbe, waitForBinding: waitForBinding, admit: admit)
         tlsQualification = qualification
     }
     #endif
@@ -107,7 +110,7 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
     private func stopOnQueue(error: Error) {
         guard !stopped else { return }
         stopped = true; stopError = error; startDeadline?.cancel(); startDeadline = nil
-        activity.listenerDidStop()
+        activity.listenerDidStop(); routeProbe?.cancel()
         listener.stateUpdateHandler = nil; listener.newConnectionHandler = nil; listener.cancel()
         let finish = startFinish; startFinish = nil; finish?(.failure(error))
         for task in sessions.values { task.cancel() }
@@ -168,10 +171,33 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
                     // the only operation that may send upstream credentials.
                     failure = .admissionRevoked
                     try Task.checkCancellation(); guard try admit(peer) else { throw Failure.refused }
+                    // Only an admitted browser may address the fixed virtual
+                    // diagnostic resource. No credential-bearing upstream is
+                    // opened for local entry/callback requests.
+                    if let routeProbe, routeProbe.isVirtual(destination) {
+                        failure = .browserReplyFailed
+                        let boundFrame = try ProxyRelayWireCodec.socksConnect(.init(host: "127.0.0.1", port: Int(peer.relayPort)))
+                        try await front.send(Data([5,0,0]) + boundFrame.dropFirst(3), timeout: remaining())
+                        failure = .clientNegotiationFailed
+                        while try BrowserRouteProbe.HTTP.target(buffer) == nil {
+                            guard buffer.count < BrowserRouteProbe.HTTP.maximumBytes else { throw Failure.malformed }
+                            let chunk = try await front.receive(maximumBytes: BrowserRouteProbe.HTTP.maximumBytes - buffer.count, timeout: remaining())
+                            guard !chunk.data.isEmpty else { throw Failure.malformed }; buffer.append(chunk.data)
+                        }
+                        failure = .admissionRevoked
+                        try Task.checkCancellation(); guard try admit(peer) else { throw Failure.refused }
+                        failure = .clientNegotiationFailed
+                        let response = try routeProbe.respond(to: buffer)
+                        failure = .browserReplyFailed
+                        try await front.send(response.bytes, timeout: remaining()); try await front.finishWrite(timeout: remaining())
+                        return
+                    }
                     failure = .upstreamNegotiationFailed
                     let early = try await back.establish(destination: destination, credentials: credentials, timeout: remaining(),
                                                          authorizeCredentials: { try self.admit(peer) })
                     activity.established(admitted)
+                    routeProbe?.observeTunnel(destination)
+                    let requestObservation = routeProbe.map { HTTPForwardObservation(probe: $0, destination: destination) }
                     failure = .browserReplyFailed
                     let bound = try await back.localBoundEndpoint()
                     let boundFrame = try ProxyRelayWireCodec.socksConnect(bound)
@@ -179,9 +205,9 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
                     activity.replySent(admitted)
                     failure = .streamFailed
                     if !early.isEmpty { try await front.send(early) }
-                    if !buffer.isEmpty { try await back.send(buffer) }
+                    if !buffer.isEmpty { try await back.send(buffer); requestObservation?.sent(buffer) }
                     try await withThrowingTaskGroup(of: Void.self) { group in
-                        group.addTask { try await Self.copy(front, back) }
+                        group.addTask { try await Self.copy(front, back, observeSent: { requestObservation?.sent($0) }) }
                         group.addTask { try await Self.copy(back, front) }
                         do { while try await group.next() != nil {} }
                         catch { front.cancel(); back.cancel(); group.cancelAll(); throw error }
@@ -196,7 +222,32 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
             }
         }
     }
-    private static func copy(_ from: ProxyRelayUpstreamTransport, _ to: ProxyRelayUpstreamTransport) async throws {
+    /// Bounded HTTP header observation only for the explicitly approved probe
+    /// endpoint. TLS and ordinary browsing payloads are never inspected.
+    private final class HTTPForwardObservation: @unchecked Sendable {
+        private let lock = NSLock()
+        private let probe: BrowserRouteProbe.Session
+        private let destination: ProxyRelayDestination
+        private var header = Data()
+        private var finished: Bool
+        init(probe: BrowserRouteProbe.Session, destination: ProxyRelayDestination) {
+            self.probe = probe; self.destination = destination
+            finished = !probe.matchesHTTP(destination)
+        }
+        func sent(_ data: Data) {
+            lock.lock(); defer { lock.unlock() }
+            guard !finished else { return }
+            guard header.count + data.count <= BrowserRouteProbe.HTTP.maximumBytes else { finished = true; header.removeAll(); return }
+            header.append(data)
+            do {
+                if try BrowserRouteProbe.HTTP.target(header) != nil {
+                    probe.observeForwardedHTTP(header, destination: destination); finished = true; header.removeAll()
+                }
+            } catch { finished = true; header.removeAll() }
+        }
+    }
+    private static func copy(_ from: ProxyRelayUpstreamTransport, _ to: ProxyRelayUpstreamTransport,
+                             observeSent: (@Sendable (Data) -> Void)? = nil) async throws {
         while true {
             try Task.checkCancellation()
             // The owning session cancels both directions. A quiet established
@@ -204,7 +255,7 @@ final class ProxyRelayLoopbackServer: @unchecked Sendable {
             // deadline. Production browser/session revocation is still a
             // separate gate before this development listener can be enabled.
             let chunk = try await from.receive(timeout: nil)
-            if !chunk.data.isEmpty { try await to.send(chunk.data) }
+            if !chunk.data.isEmpty { try await to.send(chunk.data); observeSent?(chunk.data) }
             if chunk.endOfStream { try await to.finishWrite(); return }
         }
     }

@@ -21,6 +21,7 @@ enum ProxyRelayOwnerProtocol {
         let runtimeExecutableSHA256: String
         let runtimeFrameworkSHA256: String
         let configurationSHA256: String
+        var routeProbe: BrowserRouteProbe.Plan? = nil
         #if DEBUG
         var qualificationAnchorDER: Data? = nil
         #endif
@@ -40,6 +41,7 @@ enum ProxyRelayOwnerProtocol {
                 _ = try ProxyRelayTLSQualification.Configuration(anchorDER: qualificationAnchorDER)
             }
             #endif
+            try routeProbe?.validate()
             _ = try ProxyRelayDestination(host: host, port: port)
             if username.isEmpty {
                 guard password.isEmpty else { throw Failure.invalidBootstrap }
