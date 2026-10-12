@@ -75,5 +75,22 @@ int main(int argc,char **argv) {
     if (neantik_update_pipe_read_frame(0,bytes,sizeof(bytes),&count,neantik_update_pipe_deadline(3000),1000,never_cancel,NULL)) return 20;
     if (neantik_update_pipe_write_frame(1,bytes,count,neantik_update_pipe_deadline(1000),never_cancel,NULL)) return 21;
     if (neantik_update_pipe_expect_eof(0,neantik_update_pipe_deadline(3000),never_cancel,NULL)) return 22;
+    if (!strcmp(mode,"detach-stdio") || !strcmp(mode,"closed-stdio")) {
+        if (!strcmp(mode,"detach-stdio")) {
+            if (!neantik_update_owner_detach_standard_io()) return 28;
+        } else { close(0); close(1); close(2); }
+        unsigned char request[192]={0};
+        extern int stdio_probe_admit(pid_t,void *);
+        extern int stdio_probe_ready(pid_t,const uint8_t *,size_t,void *);
+        NeAntikBootstrapResult result=neantik_update_bootstrap_run("/usr/bin/true",request,1000,
+            stdio_probe_admit,stdio_probe_ready,never_cancel,NULL);
+        if (!strcmp(mode,"detach-stdio")) {
+            if (result.status!=NUB_OUTPUT || result.process_id<=0 || !result.reaped) return 29;
+        } else if (result.status!=NUB_IO || result.process_id!=0) return 30;
+    }
     return 0;
+}
+int stdio_probe_admit(pid_t pid,void *context) { (void)context; return pid>0; }
+int stdio_probe_ready(pid_t pid,const uint8_t *bytes,size_t count,void *context) {
+    (void)pid;(void)bytes;(void)count;(void)context;return 0;
 }

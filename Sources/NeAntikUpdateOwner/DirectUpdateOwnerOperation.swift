@@ -73,7 +73,11 @@ enum DirectUpdateOwnerOperation {
             try auditIsolation?.validate()
             try writeFrame(DirectUpdateOwnerConsent.accepted(request: request, offer: offer))
             try DirectUpdateOwnerPipe.expectEOF(STDIN_FILENO)
-            close(STDIN_FILENO); close(STDOUT_FILENO); close(STDERR_FILENO)
+            // End manager transport without allowing bootstrap pipes to take
+            // fd 0..2. Closed standard IO previously refused before spawn.
+            guard neantik_update_owner_detach_standard_io() == 1 else {
+                throw DirectUpdateInstallSessionError.io
+            }
             try await trust.waitForManagerExit()
             try DirectUpdateStoppedAuthority.requireQuietInventory()
             let lease = try InstallFilesystemLease(parentURL: trust.installation.deletingLastPathComponent())

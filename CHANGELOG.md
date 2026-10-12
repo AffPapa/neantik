@@ -1,5 +1,13 @@
 # NeAntik changelog
 
+## Direct 0.7.42 (105)
+
+Private corrected qualification candidate; not published.
+
+- Исправлен отказ рабочего updater до запуска новой версии: после завершения диалога старые каналы заменяются на `/dev/null`, а дескрипторы 0–2 остаются занятыми для безопасного создания приватных bootstrap pipes.
+- Реальные subprocess regression controls: прежнее закрытие stdio отказывает до spawn; исправленный handoff запускает и дожидается своего дочернего процесса. Подпись, согласие, custody, ACK и rollback gates сохранены.
+- Точная подписанная установка, контролируемый сбой, BrowserData persistence и публикация ещё не квалифицированы.
+
 ## Direct 0.7.41 (104)
 
 Public-alpha candidate; exact paired .40 → .41 installer, rollback, persistence and publication are pending.

@@ -36,6 +36,10 @@ int neantik_update_owner_begin(const char *helper, uint32_t timeout_ms,
 pid_t neantik_update_owner_pid(const NeAntikUpdateOwnerSession *session);
 /* An absolute monotonic deadline. Zero means invalid duration/clock. */
 uint64_t neantik_update_pipe_deadline(uint32_t timeout_ms);
+/* Close the manager transport by replacing standard IO with /dev/null.
+ * Descriptors 0..2 must remain reserved before bootstrap private pipes open.
+ * Fixed OS device only; no caller path, inherited output or credentials. */
+int neantik_update_owner_detach_standard_io(void);
 /* Four-byte big-endian length followed by 1..128KiB. The body gets a separate
  * bounded budget starting at the first header byte, capped by the absolute
  * phase deadline: slow header/body bytes cannot reset either deadline. These

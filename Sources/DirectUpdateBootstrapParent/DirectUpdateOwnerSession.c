@@ -80,6 +80,20 @@ static int owner_poll(int fd, short events, uint64_t deadline, NeAntikBootstrapC
     return s ? owner_stderr(s):NUB_COMPLETE;
 }
 static int owner_uncancelled(void *context) { (void)context; return 0; }
+int neantik_update_owner_detach_standard_io(void) {
+    int fd=open("/dev/null",O_RDWR|O_NOFOLLOW|O_CLOEXEC);
+    if (fd<0) return 0;
+    struct stat st;
+    if (fstat(fd,&st) || !S_ISCHR(st.st_mode)) { close(fd); return 0; }
+    for (int target=0;target<3;target++) {
+        if (dup2(fd,target)<0 || fcntl(target,F_SETFD,0)<0) {
+            if (fd>2) close(fd);
+            return 0;
+        }
+    }
+    if (fd>2) close(fd);
+    return 1;
+}
 static int owner_read(int fd, uint8_t *buffer, size_t capacity, size_t *received,
     uint64_t deadline, uint32_t frame_ms, NeAntikBootstrapCancel cancel, void *context, NeAntikUpdateOwnerSession *s, int boundary) {
     if (received) *received=0;

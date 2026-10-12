@@ -76,7 +76,7 @@ private func ownerBoundaryCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
         #expect(result.reaped == 1 && result.status == NUB_COMPLETE)
         #expect(neantik_update_owner_dispose(session) == NUB_COMPLETE)
     }
-    @Test(arguments: ["ok", "environment", "descriptor", "maximum", "idle-delay"])
+    @Test(arguments: ["ok", "environment", "descriptor", "maximum", "idle-delay", "detach-stdio", "closed-stdio"])
     func actualInteractiveRoundtripAndExplicitHandoff(mode: String) throws {
         let (root, helper) = try fixture(mode == "maximum" ? "ok":mode); defer { try? FileManager.default.removeItem(at:root) }
         let context = OwnerPipeContext(helper: helper)
