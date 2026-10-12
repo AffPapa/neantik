@@ -78,6 +78,15 @@ package struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
         self.fields = fields; self.profileValidity = profileValidity
         self.signedPlist = signedPlist; self.signingCertificate = signingCertificate
     }
+    package static func == (lhs: Self, rhs: Self) -> Bool {
+        // Foundation can serialize identical authenticated dictionaries in a
+        // different key order after other allocations. Byte equality of that
+        // derived serialization incorrectly refused an unchanged candidate.
+        // The CodeDirectory and certificate remain exact byte comparisons.
+        lhs.fields == rhs.fields && lhs.profileValidity == rhs.profileValidity &&
+            lhs.signingCertificate == rhs.signingCertificate &&
+            DirectUpdateSignedPlistComparison.equal(lhs.signedPlist, rhs.signedPlist)
+    }
     /// Only a genuine Security.framework observation can supply update policy.
     /// Parsing an unsigned Bundle dictionary cannot construct this value.
     package func installedUpdateMetadata() throws -> DirectUpdateInstalledMetadata {
