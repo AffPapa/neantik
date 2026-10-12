@@ -51,6 +51,34 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             self.assertGreaterEqual(objects, 3)
             self.assertEqual(blobs, 1)
 
+    def test_header_only_python_prefix_check_is_not_private_key_material(self) -> None:
+        header = "-----BEGIN " + "PRIVATE KEY-----\\n"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); self.make_repo(root)
+            source = root / "check.py"
+            source.write_text('if not key.startswith(b"' + header + '"):\n    raise ValueError("encoding")\n')
+            self.commit_all(root, "public encoding check")
+            self.assertEqual(MODULE.audit(root)[1], 1)
+
+    def test_material_beside_marker_checks_still_fails_without_printing_values(self) -> None:
+        header = "-----BEGIN " + "PRIVATE KEY-----\\n"
+        controls = [
+            'key = b"' + header + 'never-print-owned-test-material"\n',
+            'key.startswith(b"' + header + 'never-print-owned-test-material")\n',
+            'key.startswith(b"' + header + '" + b"never-print-owned-test-material")\n',
+            'key.startswith(b"' + header + '")\nsecret = b"' + header + 'never-print-owned-test-material"\n',
+            'key.startswith(b"' + header + '"',  # Invalid source fails closed.
+            "-----BEGIN " + "PRIVATE KEY-----\nnever-print-owned-test-material\n",
+        ]
+        for source in controls:
+            with self.subTest(control=controls.index(source)), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); self.make_repo(root)
+                (root / "check.py").write_text(source)
+                self.commit_all(root, "synthetic negative")
+                with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "private key") as context:
+                    MODULE.audit(root)
+                self.assertNotIn("never-print-owned-test-material", str(context.exception))
+
     def test_shallow_clone_cannot_claim_complete_history(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

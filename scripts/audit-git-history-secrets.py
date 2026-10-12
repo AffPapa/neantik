@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import subprocess
 import sys
@@ -44,6 +45,35 @@ SECRET_PATTERNS = {
 
 class HistorySecretAuditError(RuntimeError):
     pass
+
+
+def nonsecret_pem_check_spans(data: bytes, paths: set[str]) -> list[tuple[int, int]]:
+    """A header-only startswith check contains no key bytes. Everything else
+    retains the original marker refusal, including incomplete/invalid source.
+    There are no filename hashes or per-repository secret exceptions.
+    """
+    if not paths or not all(Path(path).suffix == ".py" for path in paths):
+        return []
+    try:
+        tree = ast.parse(data.decode("utf-8"))
+    except (SyntaxError, UnicodeError, ValueError, RecursionError):
+        return []
+    lines = data.splitlines(keepends=True); offsets = [0]
+    for line in lines: offsets.append(offsets[-1] + len(line))
+    headers = {"-----BEGIN " + kind + "PRIVATE KEY-----\n" for kind in ("", "RSA ", "EC ", "OPENSSH ")}
+    spans = []
+    for call in ast.walk(tree):
+        if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "startswith" and len(call.args) == 1 and not call.keywords):
+            continue
+        value = call.args[0]
+        if not isinstance(value, ast.Constant) or not isinstance(value.value, (str, bytes)):
+            continue
+        content = value.value.decode("ascii", errors="replace") if isinstance(value.value, bytes) else value.value
+        if content in headers:
+            spans.append((offsets[value.lineno - 1] + value.col_offset,
+                          offsets[value.end_lineno - 1] + value.end_col_offset))
+    return spans
 
 
 def git_output(repo: Path, *arguments: str) -> bytes:
@@ -139,7 +169,10 @@ def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
                 if object_type == "blob":
                     window = tail + chunk
                     for label, pattern in SECRET_PATTERNS.items():
-                        if pattern.search(window):
+                        matches = list(pattern.finditer(window))
+                        marker_spans = nonsecret_pem_check_spans(window, paths) if label == "private key" and matches else []
+                        if any(not any(start <= match.start() and match.end() <= end for start, end in marker_spans)
+                               for match in matches):
                             matched_labels.add(label)
                     tail = window[-SCAN_OVERLAP_BYTES:]
             if process.stdout.read(1) != b"\n":

@@ -7,6 +7,11 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
+Current source development preview: `0.7.35 (98)`. Signed updating and explicitly
+enabled BrowserData backup creation remain under qualification; this candidate
+has not been published. Public 0.7.34 disables both automatic updating and new
+BrowserData backup creation.
+
 ## Download
 
 Download the signed and notarized application from

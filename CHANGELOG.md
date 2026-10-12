@@ -1,5 +1,15 @@
 # NeAntik changelog
 
+## Direct 0.7.35 (98)
+
+Development qualification candidate; not published.
+
+- Pinned Ed25519 update policy and offline release-envelope signer; automatic downloads remain disabled.
+- Authenticated interactive updater audit retains disposable storage and proves enrolled authority before startup; no fingerprint PASS is produced by this mode.
+- Explicit macOS provisioning selection for BrowserData backup is checked before preparation. Public0.7.34 did not enable creation; the current candidate requests it using the existing certificate/profile.
+-29 targeted Swift,1417/162 full Swift and32 targeted Python checks passed. Whole signed installation, bootstrap and rollback qualification remain open.
+- Restored exact public0.7.34 checksum source sidecars missing from the release record; immutable public assets unchanged.
+
 ## Direct 0.7.34 (97) — public alpha
 
 - Исправлена защита временных данных проверки: заменённая папка или symlink не используются для запуска и не удаляются при отмене. Неиспользованные разрешения запуска освобождаются.

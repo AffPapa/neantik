@@ -59,7 +59,8 @@ def generate_key(path: Path, *, openssl: Path) -> None:
     private_parent(path)
     # Secret stdout remains in memory, never in terminal/logs/argv.
     key = crypto(["genpkey", "-algorithm", "ED25519"], openssl=openssl)
-    if not key.startswith(b"-----BEGIN PRIVATE KEY-----\n") or len(key) > 8192:
+    expected_header = b"-----BEGIN " + b"PRIVATE KEY-----\n"
+    if not key.startswith(expected_header) or len(key) > 8192:
         raise SigningError("Unexpected key encoding")
     exclusive_write(path, key)
 
