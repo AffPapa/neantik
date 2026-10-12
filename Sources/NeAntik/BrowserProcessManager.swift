@@ -557,6 +557,8 @@ final class BrowserProcessManager: ObservableObject {
     @Published private(set) var runningProfileIDs = Set<UUID>()
     @Published var lastError: String?
 
+    private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
+    private var webKitTerminationObservation: AnyCancellable?
     private let paths: AppPaths
     private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
     private let validatesPersistedProfiles: Bool
@@ -891,7 +893,7 @@ final class BrowserProcessManager: ObservableObject {
     ) {
         guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let paths = paths
-        let profileIDs = profiles.map(\.id)
+        let profileIDs = profiles.map(\.id).filter { webKitBrowsers[$0] == nil }
         reconcileTask = Task { [weak self] in
             defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             let evidence = await Task.detached(priority: .utility) {
@@ -1034,7 +1036,7 @@ final class BrowserProcessManager: ObservableObject {
             processes.compactMap { key, process in
                 process.isRunning ? key : nil
             }
-        )
+        ).union(webKitBrowsers.keys)
 
         for profile in profiles {
             reconcileProfile(
@@ -1174,6 +1176,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
+        if webKitBrowsers[profileID] != nil { return .managed }
         if processes[profileID]?.isRunning == true {
             return .managed
         }
@@ -1206,7 +1209,7 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         _ destructiveOperation: () throws -> T
     ) throws -> T {
-        if processes[profileID]?.isRunning == true {
+        if webKitBrowsers[profileID] != nil || processes[profileID]?.isRunning == true {
             throw BrowserProfileDeletionBlockedError(
                 reason: .managedProcess
             )
@@ -1429,6 +1432,11 @@ final class BrowserProcessManager: ObservableObject {
         relayOwnerInspection: BrowserDataProcessInspection,
         expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
     ) {
+        if webKitBrowsers[profileID] != nil {
+            pendingReconciliationProfileIDs.remove(profileID)
+            runningProfileIDs.insert(profileID)
+            return
+        }
         // An async relay preparation owns a durable starting lease before
         // creating Process. Passive reconciliation must not adopt it as an
         // external recovery session while its own task is still responsible.
@@ -1965,6 +1973,7 @@ final class BrowserProcessManager: ObservableObject {
             FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
+        guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
         try ManagerLaunchAdmission.shared.requireSafePressure()
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
@@ -2376,7 +2385,44 @@ final class BrowserProcessManager: ObservableObject {
         return valid && sessionObservationIsCurrent(observation, profileID: profileID)
     }
 
+    func launchWebKitProfile(_ profile: BrowserProfile) throws {
+        if webKitTerminationObservation == nil {
+            webKitTerminationObservation = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
+                .sink { [weak self] _ in
+                    // AppKit sends this notification synchronously on main.
+                    // A queued Task could run after application termination.
+                    MainActor.assumeIsolated { self?.closeWebKitWindows() }
+                }
+        }
+        try WebKitProfilePolicy.validate(profile)
+        try ManagerLaunchAdmission.shared.requireSafePressure()
+        guard webKitBrowsers[profile.id] == nil,
+              processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
+        let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
+        do {
+            let metadataLease = try paths.acquireWebKitMetadataGuard(for: profile.id)
+            let makeBrowser = { [weak self] in try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease) { [weak self] in
+                self?.webKitBrowsers.removeValue(forKey: profile.id)
+                self?.runningProfileIDs.remove(profile.id)
+            } }
+            let browser = try validatesPersistedProfiles
+                ? ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths, operation: makeBrowser)
+                : makeBrowser()
+            webKitBrowsers[profile.id] = browser
+            runningProfileIDs.insert(profile.id)
+            browser.show()
+        } catch { lease.release(); throw error }
+    }
+
+    /// System WebKit pages are hosted by this manager; close them before quit.
+    /// Chromium processes retain their existing independent lifetime contract.
+    func closeWebKitWindows() {
+        for browser in Array(webKitBrowsers.values) { browser.close() }
+    }
+
     func stop(profileID: UUID) {
+        if let browser = webKitBrowsers[profileID] { browser.close(); return }
+
         if let process = processes[profileID] {
             if process.isRunning {
                 let identity = ObjectIdentifier(process)

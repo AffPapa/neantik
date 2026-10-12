@@ -157,6 +157,7 @@ struct ProfileEditorView: View {
   @State private var showsNoteEditor: Bool
   @State private var selectedFolderID: UUID?
   @State private var startURL: String
+  @State private var engine: BrowserEngine
   @State private var startupMode: BrowserStartupMode
   @State private var usesProxy: Bool
   @State private var proxyKind: ProxyKind
@@ -183,7 +184,7 @@ struct ProfileEditorView: View {
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -235,6 +236,7 @@ struct ProfileEditorView: View {
         : nil
     )
     _startURL = State(initialValue: profile.startURL)
+    _engine = State(initialValue: profile.engine)
     _startupMode = State(initialValue: profile.startupMode)
     _usesProxy = State(initialValue: profile.proxy != nil)
     _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
@@ -267,7 +269,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, profile.startupMode.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -383,6 +385,16 @@ struct ProfileEditorView: View {
           }
         }
         Section("Профиль") {
+          Picker("Движок браузера", selection: $engine) {
+            ForEach(BrowserEngine.allCases) { Text($0.title).tag($0) }
+          }
+          .disabled(original != nil)
+          Text(engine == .webkit
+            ? "Системный WebKit в отдельном окне NeAntik. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS; прокси, расширения и восстановление вкладок пока недоступны."
+            : "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения.")
+            .font(.callout).foregroundStyle(.secondary)
+          if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
+
           TextField("Название", text: $name)
             .accessibilityLabel("Название профиля")
             .focused($focusedField, equals: .name)
@@ -411,6 +423,7 @@ struct ProfileEditorView: View {
           validationLabel(for: .name)
         }
 
+        if engine == .chromium {
         Section("Сеть") {
           HelpLink(topic: .proxy)
           Toggle("Использовать прокси", isOn: $usesProxy)
@@ -606,6 +619,7 @@ struct ProfileEditorView: View {
           }
         }
 
+        }
         if showsAdvancedOptions {
         Section("Организация и заметки") {
           folderControl
@@ -680,17 +694,19 @@ struct ProfileEditorView: View {
           )
 
           if showsAdvancedOptions {
+            if engine == .chromium {
             Picker("При запуске", selection: $startupMode) {
               ForEach(BrowserStartupMode.allCases, id: \.self) { mode in
                 Text(mode.title).tag(mode)
               }
             }
             .accessibilityLabel("При запуске профиля")
+            }
             TextField("Стартовая страница", text: $startURL)
               .accessibilityLabel("Стартовая страница")
               .focused($focusedField, equals: .startURL)
               .id(ProfileEditorField.startURL)
-            Text(startupMode == .restoreSession
+            Text(engine == .chromium && startupMode == .restoreSession
               ? "При первом запуске откроется этот адрес, затем — сохранённые вкладки. Вкладки сохраняются после штатного закрытия браузера."
               : "Этот адрес открывается при каждом запуске профиля. Для пустой страницы укажи about:blank.")
               .font(.callout)
@@ -901,6 +917,9 @@ struct ProfileEditorView: View {
     .onChange(of: proxyPort) { _, _ in
       clearValidation(for: .proxyPort)
       proxyInputDidChange()
+    }
+    .onChange(of: engine) { _, value in
+      if value == .webkit { proxyTestTask?.cancel(); proxyTestTask = nil; isTesting = false; validationIssue = nil; errorMessage = nil }
     }
     .onChange(of: proxyUsername) { _, _ in
       proxyInputDidChange()
@@ -1167,7 +1186,7 @@ struct ProfileEditorView: View {
   }
 
   private func save() {
-    if usesProxy && proxyEntryMode == .paste {
+    if engine == .chromium && usesProxy && proxyEntryMode == .paste {
       guard importProxy(source: proxyImportText) else { return }
     }
     if let issue = ProfileEditorValidation.firstIssue(
@@ -1175,7 +1194,7 @@ struct ProfileEditorView: View {
       tags: tags,
       note: note,
       startURL: startURL,
-      usesProxy: usesProxy,
+      usesProxy: engine == .chromium && usesProxy,
       proxyKind: proxyKind,
       proxyHost: proxyHost,
       proxyPort: proxyPort,
@@ -1198,6 +1217,7 @@ struct ProfileEditorView: View {
         id: draftProfileID,
         name: cleanName
       )
+      profile.engine = engine
       profile.name = cleanName
       profile.colorHex = colorHex
       profile.symbolName = symbolName
@@ -1210,8 +1230,8 @@ struct ProfileEditorView: View {
       profile.tags = normalizedTags
       profile.note = normalizedNote
       profile.startURL = cleanStartURL.absoluteString
-      profile.startupMode = startupMode
-      let proxy = try makeProxy()
+      profile.startupMode = engine == .webkit ? .startPage : startupMode
+      let proxy = engine == .webkit ? nil : try makeProxy()
       profile.proxy = proxy
       let locationMatchesProxy = proxy != nil && proxy == detectedProxy
       profile.identity = profile.identity.replacingProxyContext(

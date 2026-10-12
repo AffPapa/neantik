@@ -290,7 +290,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder private func browserDataBackupActions(_ commands: ProfileCommandSet, profile: BrowserProfile) -> some View {
-        if backupComposition.allowsNewOperations {
+        if backupComposition.allowsNewOperations && profile.engine == .chromium {
             Button("Создать копию данных…", systemImage: "externaldrive") {
                 browserDataBackupRequest = .init(profile: profile, mode: .export)
             }.disabled(!commands.presentation.editIsEnabled || runtime == nil)
@@ -437,7 +437,7 @@ struct ContentView: View {
     }
 
     private var fingerprintAuditProfiles: [BrowserProfile] {
-        store.profiles.filter { !$0.isArchived }
+        store.profiles.filter { !$0.isArchived && $0.engine == .chromium }
     }
 
     private var canRunFingerprintAudit: Bool {
@@ -1141,7 +1141,7 @@ struct ContentView: View {
             await loadProxyHealth()
         }
         .task(id: selectedLifecycleScanID) {
-            guard let profile = selectedProfile else { return }
+            guard let profile = selectedProfile, profile.engine == .chromium else { return }
             do {
                 let artifacts = try await ProfileArtifactProvenanceSnapshot
                     .inspectAsync(profileID: profile.id, paths: store.paths)
@@ -1344,8 +1344,9 @@ struct ContentView: View {
                             systemImage: "folder"
                         )
                     }
+                    .disabled(!commands.presentation.browserDataIsAvailable)
                     Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
-                        .disabled(!commands.presentation.editIsEnabled)
+                        .disabled(!commands.presentation.editIsEnabled || !commands.presentation.browserDataIsAvailable)
                     browserDataBackupActions(commands, profile: profile)
                     Divider()
                     Button(role: .destructive, action: commands.delete) {
@@ -1448,12 +1449,14 @@ struct ContentView: View {
     }
 
     private func revealProfile(_ profile: BrowserProfile) {
+        guard profile.engine == .chromium else { localError = "Данными WebKit управляет macOS; каталог Chromium к этому профилю не относится."; return }
         NSWorkspace.shared.activateFileViewerSelecting([
             store.paths.profileDirectory(for: profile.id)
         ])
     }
 
     private func requestProfileDeletion(_ profile: BrowserProfile) {
+        guard profile.engine == .chromium else { localError = "Удаление данных WebKit пока недоступно. Профиль можно убрать в архив."; return }
         guard !processes.runningProfileIDs.contains(profile.id) else {
             localError = "Сначала останови профиль, потом удаляй."
             return
@@ -2426,7 +2429,7 @@ struct ContentView: View {
                         let launchAction = BrowserLaunchActionPresentation.resolve(
                             processState: processState,
                             isArchived: profile.isArchived,
-                            runtimeAvailability: runtimeAvailability,
+                            runtimeAvailability: profile.engine == .webkit ? .ready : runtimeAvailability,
                             isProxyTesting: isProxyTestInFlight(
                                 profileID: profile.id
                             ),
@@ -2909,7 +2912,7 @@ struct ContentView: View {
             .disabled(!commands.presentation.extensionsIsEnabled)
         Divider()
         Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
-            .disabled(!commands.presentation.editIsEnabled)
+            .disabled(!commands.presentation.editIsEnabled || !commands.presentation.browserDataIsAvailable)
         Divider()
         Button(
             "Удалить профиль",
@@ -2929,6 +2932,7 @@ struct ContentView: View {
             systemImage: commands.presentation.pinSystemImage,
             action: commands.togglePinned
         )
+        .disabled(!commands.presentation.pinIsEnabled)
         Button(
             "Копировать настройки",
             systemImage: "plus.square.on.square",
@@ -2989,7 +2993,7 @@ struct ContentView: View {
         let launchAction = BrowserLaunchActionPresentation.resolve(
             processState: processState,
             isArchived: profile.isArchived,
-            runtimeAvailability: runtimeAvailability,
+            runtimeAvailability: profile.engine == .webkit ? .ready : runtimeAvailability,
             isProxyTesting: isProxyTestInFlight(profileID: profile.id),
             isLaunchPreparation:
                 launchPreparingProfileIDs.contains(profile.id)
@@ -3033,7 +3037,10 @@ struct ContentView: View {
             toggleArchived: { toggleArchived(profile) },
             revealInFinder: { revealProfile(profile) },
             delete: { requestProfileDeletion(profile) },
-            clearCache: { cacheMaintenanceProfile = profile },
+            clearCache: {
+                guard profile.engine == .chromium else { localError = "Очистка кэша WebKit пока недоступна."; return }
+                cacheMaintenanceProfile = profile
+            },
             openExtensions: { openProfileExtensions(profileID: profile.id) }
         )
     }
@@ -3048,7 +3055,7 @@ struct ContentView: View {
                 profile: profile,
                 processState: presentedProcessState(for: profile),
                 browserDataPath: store.paths.browserDataDirectory(for: profile.id).path,
-                lifecycleHealth: lifecycleHealthByProfileID[profile.id]
+                lifecycleHealth: profile.engine == .webkit ? .empty : lifecycleHealthByProfileID[profile.id]
                     ?? ProfileLifecycleHealthSnapshot.inspect(
                         profileID: profile.id,
                         lastLaunchedAt: profile.lastLaunchedAt,
@@ -3276,6 +3283,15 @@ struct ContentView: View {
         }
         do {
             try store.validateLaunchSnapshot(profile)
+            if profile.engine == .webkit {
+                guard target == .profileStart else { throw NeAntikError.invalidProfile }
+                let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+                defer { ManagerLaunchAdmission.shared.finish(token: token) }
+                try processes.launchWebKitProfile(profile)
+                guard store.markLaunched(profile.id) else { processes.stop(profileID: profile.id); throw NeAntikError.profileLaunchStateNotPersisted }
+                store.managerLibrary.record(.launch, .succeeded)
+                return
+            }
             let runtime = try launchReadyRuntime()
             switch BrowserLaunchPreparationPolicy.resolveForUserStart(
                 profile: profile
@@ -4149,7 +4165,13 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            networkAndEnvironment
+            if profile.engine == .chromium { networkAndEnvironment }
+            else {
+                ProfileDetailCard("WebKit · движок Safari") {
+                    Text("Отдельное окно NeAntik и постоянное хранилище сайтов этого профиля. Используются настоящие WebKit и параметры твоего Mac, без подмены на Chromium. Прокси и расширения WebKit пока не поддерживаются.")
+                        .font(.body)
+                }
+            }
 
             ProfileDetailCard("Основное") {
                 VStack(alignment: .leading, spacing: 10) {
@@ -4167,9 +4189,11 @@ struct ProfileDetailView: View {
                         "Cookies, настройки и данные сайтов хранятся отдельно",
                         systemImage: "person.crop.rectangle.stack"
                     )
+                    if profile.engine == .chromium {
                     Button("Расширения профиля…", systemImage: "puzzlepiece.extension", action: onOpenExtensions)
                         .disabled(!canOpenExtensions)
                         .help("Сначала останови профиль. Список и инструкция откроются здесь; установка, включение и удаление выполняются в Chromium.")
+                }
                 }
                 .font(.subheadline)
                 .padding(.vertical, 4)
@@ -4205,6 +4229,7 @@ struct ProfileDetailView: View {
                 }
             }
 
+            if profile.engine == .chromium {
             ProfileDiagnosticsSummaryView(
                 lifecycle: lifecycleHealth,
                 privacyPanel: privacyPanel,
@@ -4266,6 +4291,7 @@ struct ProfileDetailView: View {
                         .truncationMode(.middle)
                 }
                 .padding(.top, 10)
+            }
             }
 
         }

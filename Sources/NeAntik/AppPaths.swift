@@ -438,6 +438,18 @@ struct AppPaths: Sendable {
         )
     }
 
+    /// WebKit launch bookkeeping uses the metadata guard, so session edits
+    /// need a separate immediate fence to avoid blocking their own launcher.
+    func acquireWebKitMetadataGuard(for id: UUID) throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(at: lockGuardFile(for: id).appendingPathExtension("webkit"), waitPolicy: .immediate,
+            busyError: ProfileProcessBusyError())
+    }
+
+    func acquireWebKitSessionGuard(for id: UUID) throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(at: lockGuardFile(for: id), waitPolicy: .immediate,
+            busyError: ProfileProcessBusyError())
+    }
+
     /// Kept across a stopped profile's off-main maintenance operation. Launch,
     /// deletion and another manager use the same inode and fail while held.
     func acquireProcessMaintenanceGuard(for id: UUID) throws -> PrivateFileGuardLease {
@@ -506,6 +518,7 @@ struct AppPaths: Sendable {
     }
 
     private enum PrivateGuardWaitPolicy: Equatable {
+        case immediate
         case boundedCommand
         case cancellableOperation
     }
@@ -557,6 +570,7 @@ struct AppPaths: Sendable {
             if lockResult == 0 { break }
             let lockError = errno
             if lockError == EWOULDBLOCK {
+                if waitPolicy == .immediate { throw busyError }
                 if !contentionObserved {
                     contentionObserved = true
                     guardAcquisitionHooks.onFirstContention?()

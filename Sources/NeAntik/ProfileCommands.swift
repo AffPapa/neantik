@@ -15,6 +15,9 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     let archiveIsEnabled: Bool
     let deleteIsEnabled: Bool
     var extensionsIsEnabled = false
+    var engine: BrowserEngine = .chromium
+    var pinIsEnabled: Bool { profileName != nil && (engine == .chromium || editIsEnabled) }
+    var browserDataIsAvailable: Bool { profileName != nil && engine == .chromium }
 
     static let unavailable = ProfileCommandPresentation(
         profileName: nil,
@@ -57,8 +60,9 @@ struct ProfileCommandPresentation: Equatable, Sendable {
                     ? "arrow.uturn.backward"
                     : "archivebox",
             archiveIsEnabled: !processState.isRunning,
-            deleteIsEnabled: !processState.isRunning,
-            extensionsIsEnabled: processState == .stopped && !profile.isArchived && launchAction.isEnabled
+            deleteIsEnabled: !processState.isRunning && profile.engine == .chromium,
+            extensionsIsEnabled: profile.engine == .chromium && processState == .stopped && !profile.isArchived && launchAction.isEnabled,
+            engine: profile.engine
         )
     }
 }
@@ -390,7 +394,7 @@ struct ProfileCommandMenu: Commands {
                 systemImage: resolved.presentation.pinSystemImage,
                 action: resolved.togglePinned
             )
-            .disabled(!resolved.hasProfile)
+            .disabled(!resolved.presentation.pinIsEnabled)
 
             Button(
                 "Копировать настройки",
@@ -443,10 +447,10 @@ struct ProfileCommandMenu: Commands {
                 systemImage: "folder",
                 action: resolved.revealInFinder
             )
-            .disabled(!resolved.hasProfile)
+            .disabled(!resolved.presentation.browserDataIsAvailable)
 
             Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: resolved.clearCache)
-                .disabled(!resolved.presentation.editIsEnabled)
+                .disabled(!resolved.presentation.editIsEnabled || !resolved.presentation.browserDataIsAvailable)
                 .help("Посчитать и удалить HTTP Cache и Code Cache остановленного профиля, сохранив данные сайтов.")
 
             Divider()

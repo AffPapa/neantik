@@ -292,7 +292,7 @@ enum ProfileMetadataImportTransaction {
             .prettyPrinted, .sortedKeys, .withoutEscapingSlashes
         ]
         encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(profiles)
+        let data = try ProfileStore.encodeProfiles(profiles, encoder: encoder)
         if synchronizeRecoverySnapshot {
             try paths.writePrivateFile(data, to: paths.profilesBackupFile)
             try paths.writePrivateFile(data, to: paths.profilesFile)

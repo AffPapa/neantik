@@ -3,6 +3,20 @@ import Testing
 @testable import NeAntik
 
 struct ProfileCommandPresentationTests {
+    @Test func webKitMenusDoNotOfferChromiumMaintenanceOrActiveMetadataWrites() {
+        let profile = BrowserProfile(name: "WebKit", engine: .webkit)
+        for state in [BrowserProfileProcessState.stopped, .managed] {
+            let action = BrowserLaunchActionPresentation.resolve(processState: state, isArchived: false, runtimeAvailability: .ready)
+            let presentation = ProfileCommandPresentation.resolve(profile: profile, processState: state, launchAction: action)
+            #expect(!presentation.browserDataIsAvailable)
+            #expect(!presentation.extensionsIsEnabled && !presentation.deleteIsEnabled)
+            #expect(presentation.pinIsEnabled == (state == .stopped))
+        }
+        let chromium = BrowserProfile(name: "Chromium")
+        let action = BrowserLaunchActionPresentation.resolve(processState: .managed, isArchived: false, runtimeAvailability: .ready)
+        let presentation = ProfileCommandPresentation.resolve(profile: chromium, processState: .managed, launchAction: action)
+        #expect(presentation.browserDataIsAvailable && presentation.pinIsEnabled)
+    }
     @Test func extensionsRequireStoppedReadyUnarchivedProfile() {
         for state in [BrowserProfileProcessState.stopped, .managed, .externalVerified, .checking, .externalUnverified, .externalManualOnly, .recoveryRequired] {
             for archived in [false, true] {

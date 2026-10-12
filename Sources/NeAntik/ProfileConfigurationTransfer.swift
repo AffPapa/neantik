@@ -8,7 +8,7 @@ import Foundation
 /// profile IDs and a new browser identity so a configuration file cannot clone
 /// a live session or silently reuse an identity.
 struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
     static let maximumProfileCount = ProfileStorageLimits.maximumProfileCount
 
     let schemaVersion: Int
@@ -27,7 +27,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             throw ProfileConfigurationTransferError.invalidDate
         }
 
-        self.schemaVersion = Self.currentSchemaVersion
+        self.schemaVersion = profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1
         self.exportedAt = exportedAt
         self.profiles = try profiles.map { profile in
             let folderName = folderNameByProfileID[profile.id]
@@ -44,7 +44,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             Int.self,
             forKey: .schemaVersion
         )
-        guard schemaVersion == Self.currentSchemaVersion else {
+        guard [1, 2].contains(schemaVersion) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         let exportedAt = try container.decode(Date.self, forKey: .exportedAt)
@@ -55,6 +55,9 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             [ProfileConfigurationTransferEntry].self,
             forKey: .profiles
         )
+        guard schemaVersion == 2 || !profiles.contains(where: { $0.engine == .webkit }) else {
+            throw ProfileConfigurationTransferError.unsupportedSchema
+        }
         guard !profiles.isEmpty else {
             throw ProfileConfigurationTransferError.emptyDocument
         }
@@ -89,6 +92,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
                 isArchived: entry.isArchived,
                 startURL: entry.startURL,
                 startupMode: entry.startupMode ?? .startPage,
+                engine: entry.engine ?? .chromium,
                 proxy: entry.proxy,
                 identity: BrowserIdentity(),
                 createdAt: now,
@@ -132,6 +136,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
     let isArchived: Bool
     let startURL: String
     let startupMode: BrowserStartupMode?
+    let engine: BrowserEngine?
     let proxy: ProxyConfiguration?
     let folderName: String?
 
@@ -144,6 +149,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         isArchived: Bool,
         startURL: String,
         startupMode: BrowserStartupMode? = nil,
+        engine: BrowserEngine? = nil,
         proxy: ProxyConfiguration?,
         folderName: String?
     ) {
@@ -155,6 +161,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         self.isArchived = isArchived
         self.startURL = startURL
         self.startupMode = startupMode
+        self.engine = engine
         self.proxy = proxy
         self.folderName = folderName
     }
@@ -178,6 +185,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         isArchived = normalized.isArchived
         startURL = normalized.startURL
         startupMode = normalized.startupMode
+        engine = normalized.engine
         proxy = normalized.proxy
         self.folderName = folderName
     }
@@ -193,6 +201,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
             isArchived: isArchived,
             startURL: startURL,
             startupMode: startupMode ?? .startPage,
+            engine: engine ?? .chromium,
             proxy: proxy,
             identity: BrowserIdentity()
         )

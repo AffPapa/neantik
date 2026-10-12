@@ -74,7 +74,7 @@ import Foundation
                 profiles[index].revision += 1; profiles[index].updatedAt = Date()
                 let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]; encoder.dateEncodingStrategy = .iso8601
                 return try BrowserDataRestoreTransaction.commit(paths: paths, stage: stage, expectedMain: latest.bytes,
-                    nextDocument: encoder.encode(profiles), authority: authority, validateContext: {
+                    nextDocument: ProfileStore.encodeProfiles(profiles, encoder: encoder), authority: authority, validateContext: {
                         guard try Self.validRuntime(inspect()) == runtime,
                               try scope.digest(createForExport: false) == localScope else { throw BrowserDataBackupStorageError.incompatibleContext }
                     }, fault: restoreFault)
@@ -162,6 +162,7 @@ import Foundation
         return value
     }
     private nonisolated static func context(_ profile: BrowserProfile, _ runtime: BrowserRuntimeInspection, _ scope: String) throws -> EncryptedBackupArchive.Manifest {
+        guard profile.engine == .chromium else { throw BrowserDataBackupStorageError.incompatibleContext }
         // Match the transaction's canonical hash of disk-decoded identity,
         // including proxy-context timestamps rounded during ISO8601 storage.
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]

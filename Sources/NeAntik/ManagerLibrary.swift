@@ -8,6 +8,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     let tags: [String]
     let startURL: String
     let startupMode: BrowserStartupMode?
+    let engine: BrowserEngine?
 
     init(name: String, profile: BrowserProfile, folderID: UUID?) throws {
         guard let name = ProfileFolder.normalizedName(name),
@@ -20,6 +21,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
         self.tags = tags
         self.startURL = profile.startURL
         self.startupMode = profile.startupMode
+        self.engine = profile.engine
     }
 
     // A template is reusable metadata, not a place to retain URL credentials
@@ -34,7 +36,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     }
 
     func makeProfile() -> BrowserProfile {
-        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage)
+        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium)
     }
 }
 
@@ -116,7 +118,8 @@ struct ManagerLibraryDocument: Codable, Equatable, Sendable {
     }
 
     func validate() throws {
-        guard schemaVersion == 1,
+        guard [1, 2].contains(schemaVersion),
+              schemaVersion == 2 || !templates.contains(where: { $0.engine == .webkit }),
               templates.count <= Self.maximumItems, filters.count <= Self.maximumItems,
               events.count <= Self.maximumEvents,
               Set(templates.map(\.id)).count == templates.count,
@@ -127,6 +130,11 @@ struct ManagerLibraryDocument: Codable, Equatable, Sendable {
                   BrowserProfile.normalizedTags(template.tags) == template.tags,
                   UserProfileTemplate.isSafeStartURL(template.startURL)
             else { throw ManagerLibraryError.invalidTemplate }
+            if template.engine == .webkit {
+                guard template.startupMode != .restoreSession,
+                      let url = BrowserLaunchBuilder.validatedStartURL(template.startURL),
+                      WebKitProfilePolicy.permits(url) else { throw ManagerLibraryError.invalidTemplate }
+            }
         }
         for filter in filters {
             guard ProfileFolder.normalizedName(filter.name) == filter.name,
@@ -175,6 +183,8 @@ actor ManagerLibraryRepository {
             try Task.checkCancellation()
             var document = try read()
             try change(&document)
+            // Older managers must not turn a WebKit template into Chromium.
+            document.schemaVersion = document.templates.contains(where: { $0.engine == .webkit }) ? 2 : 1
             try document.validate()
             let data = try JSONEncoder().encode(document)
             guard data.count <= ManagerLibraryDocument.maximumBytes else { throw ManagerLibraryError.invalidDocument }

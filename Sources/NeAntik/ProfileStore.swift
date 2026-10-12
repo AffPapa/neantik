@@ -939,7 +939,13 @@ final class ProfileStore: ObservableObject {
             throw NeAntikError.invalidProfile
         }
         let current = profiles.first(where: { $0.id == value.id })
+        // Separate from the process guard: callers may already hold that
+        // guard for an ordinary stopped-profile command. Only launch metadata
+        // bookkeeping bypasses this WebKit session fence.
+        let webKitFence = current?.engine == .webkit ? try paths.acquireWebKitMetadataGuard(for: value.id) : nil
+        defer { webKitFence?.release() }
         if let current {
+            guard value.engine == current.engine else { throw NeAntikError.invalidProfile }
             guard value.revision == current.revision else {
                 throw BrowserProfileRevisionConflictError(
                     profileID: value.id
@@ -1151,6 +1157,7 @@ final class ProfileStore: ObservableObject {
         guard let current = profiles.first(where: { $0.id == profile.id }) else {
             throw BrowserProfileDeletedError()
         }
+        guard current.engine == .chromium else { throw WebKitProfileError.unsupported("Удаление данных WebKit пока недоступно. Профиль можно убрать в архив.") }
         guard current.revision == profile.revision else {
             throw ProfileDeleteRevisionConflictError()
         }
@@ -1504,7 +1511,7 @@ final class ProfileStore: ObservableObject {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(profiles)
+        let data = try Self.encodeProfiles(profiles, encoder: encoder)
         if synchronizeRecoverySnapshot {
             try paths.writePrivateFile(
                 data,
@@ -1683,6 +1690,7 @@ final class ProfileStore: ObservableObject {
             let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
             let persistedExpectedIdentity = try decoder.decode(BrowserIdentity.self, from: encoder.encode(expected.identity))
             guard current.revision == expected.revision,
+                  current.engine == expected.engine,
                   current.proxy == expected.proxy,
                   current.identity == persistedExpectedIdentity,
                   current.startURL == expected.startURL,
@@ -1704,17 +1712,28 @@ final class ProfileStore: ObservableObject {
         return try decodeProfiles(Data(contentsOf: url))
     }
 
+    /// The v2 envelope prevents older managers from treating WebKit data as
+    /// Chromium. Keep array writes for Chromium-only workspaces.
+    nonisolated static func encodeProfiles(_ profiles: [BrowserProfile], encoder: JSONEncoder) throws -> Data {
+        try profiles.contains(where: { $0.engine == .webkit })
+            ? encoder.encode(EngineProfilesDocument(schemaVersion: 2, profiles: profiles))
+            : encoder.encode(profiles)
+    }
+
     nonisolated static func decodeProfiles(_ data: Data) throws -> [BrowserProfile] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
             let document = try decoder.decode(LegacyProfilesDocument.self, from: data)
-            guard document.schemaVersion == 1 else {
+            guard [1, 2].contains(document.schemaVersion),
+                  document.schemaVersion == 2 || !document.profiles.contains(where: { $0.engine == .webkit }) else {
                 throw UnsupportedProfilesSchemaError()
             }
             return document.profiles
         }
-        return try decoder.decode([BrowserProfile].self, from: data)
+        let profiles = try decoder.decode([BrowserProfile].self, from: data)
+        guard !profiles.contains(where: { $0.engine == .webkit }) else { throw UnsupportedProfilesSchemaError() }
+        return profiles
     }
 
     nonisolated static func readProfilesWithRecovery(
@@ -2028,7 +2047,7 @@ private struct LegacyProfilesDocument: Decodable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
         // Check the contract before interpreting an unknown payload shape.
-        guard schemaVersion == 1 else { throw UnsupportedProfilesSchemaError() }
+        guard [1, 2].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
         profiles = try values.decode([BrowserProfile].self, forKey: .profiles)
     }
 }
@@ -2116,4 +2135,9 @@ private struct ProfileStorageUnavailableError: LocalizedError {
     var errorDescription: String? {
         "Не удалось загрузить профили. NeAntik не изменит повреждённое хранилище. Перезапусти приложение. Если ошибка повторится, скопируй сведения об ошибке и обратись в поддержку."
     }
+}
+
+private struct EngineProfilesDocument: Encodable {
+    let schemaVersion: Int
+    let profiles: [BrowserProfile]
 }

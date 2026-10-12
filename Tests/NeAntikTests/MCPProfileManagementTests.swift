@@ -4,6 +4,26 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func webKitCreationAndMetadataKeepEngineAndRejectUnsupportedActions() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "WebKit MCP", "engine": "webkit", "changes": ["startURL": "about:blank"]])
+        #expect(created["engine"] as? String == "webkit")
+        var args = request(created); args["changes"] = ["name": "Renamed WebKit", "tags": ["qa"]]
+        let edited = try await engine.call("profile_update", args)
+        #expect(edited["engine"] as? String == "webkit")
+        args = request(edited); args["changes"] = ["startupMode": "restoreSession"]
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1]
+        await #expect(throws: Error.self) { try await engine.call("profile_set_proxy", args) }
+        args = request(edited); args["name"] = "WebKit copy"
+        let duplicate = try await engine.call("profile_duplicate", args)
+        #expect(duplicate["engine"] as? String == "webkit" && duplicate["id"] as? String != edited["id"] as? String)
+        await #expect(throws: Error.self) { try await engine.call("profile_start", request(edited)) }
+        let id = try #require(UUID(uuidString: edited["id"] as! String))
+        #expect(engine.processes.processState(for: id) == .stopped)
+    }
+
     @Test func startupModeIsRevisionCheckedAndPersistsWithoutStartingBrowser() async throws {
         let (root, engine, _) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -35,7 +55,7 @@ struct MCPProfileManagementTests {
         let list = try await read.call("template_list", [:])
         let rows = try #require(list["templates"] as? [[String: Any]])
         #expect(rows.count == 1 && rows[0]["id"] as? String == template.id.uuidString)
-        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "startupMode", "tags", "folderID"])
+        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "startupMode", "engine", "tags", "folderID"])
         #expect(!(String(decoding: try JSONSerialization.data(withJSONObject: list), as: UTF8.self)).contains("synthetic-private-note"))
         let args: [String: Any] = ["name": "New QA", "templateID": template.id.uuidString,
             "expectedOrganizationRevision": list["organizationRevision"]!]

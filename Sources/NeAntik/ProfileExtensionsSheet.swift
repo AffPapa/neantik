@@ -178,6 +178,7 @@ struct ProfileExtensionsSheet: View {
     }
 
     private func refresh() {
+        guard profile.engine == .chromium else { errorMessage = "Расширения WebKit пока не поддерживаются."; return }
         task?.cancel()
         guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let id = UUID(); requestID = id

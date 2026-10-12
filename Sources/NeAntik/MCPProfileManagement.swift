@@ -45,7 +45,7 @@ final class MCPProfileManagement {
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
-            ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. No automatic retry: a repeat creates another profile.", ["name": text, "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
+            ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. No automatic retry: a repeat creates another profile.", ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
             ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only; input may enter AI history. HTTP/HTTPS/SOCKS5 authentication uses the local relay; HTTPS verifies the upstream certificate before authentication. Configuration is not a route test.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
@@ -54,7 +54,7 @@ final class MCPProfileManagement {
             ("folder_rename", "Rename a project folder using its current organization revision.", ["folderID": uuid, "name": text, "expectedOrganizationRevision": optionalUUID], ["folderID", "name", "expectedOrganizationRevision"]),
             ("folder_remove", "Remove only the folder; retain all profiles and website data, moving them to unfiled.", ["folderID": uuid, "expectedOrganizationRevision": optionalUUID], ["folderID", "expectedOrganizationRevision"]),
             ("profile_check_proxy", "Check proxy availability using existing bounded diagnostics; does not qualify Chromium route or change profile context.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
-            ("profile_start", "Start via the normal manager pipeline; fresh proxy preparation, no direct fallback. Browser remains open after MCP disconnect.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
+            ("profile_start", "Start Chromium via the normal manager pipeline; fresh proxy preparation, no direct fallback. Chromium remains open after MCP disconnect. WebKit requires the NeAntik GUI and is explicitly refused here.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
             ("profile_stop", "Request graceful close of a browser owned by this live session. Poll profile_status; pending is not stopped.", ["profileID": uuid], ["profileID"])
         ]
         return specs.filter { allowsManagement || readTools.contains($0.0) }.map { name, description, properties, required in
@@ -90,7 +90,7 @@ final class MCPProfileManagement {
             try await store.refreshExternalMetadata(force: true)
             try Task.checkCancellation()
             return ["templates": library.templates.map { template -> [String: Any] in
-                ["id": template.id.uuidString, "name": template.name, "startURL": template.startURL, "startupMode": (template.startupMode ?? .startPage).rawValue,
+                ["id": template.id.uuidString, "name": template.name, "startURL": template.startURL, "startupMode": (template.startupMode ?? .startPage).rawValue, "engine": (template.engine ?? .chromium).rawValue,
                  "tags": template.tags, "folderID": template.folderID.flatMap {
                      store.organization.folder(withID: $0)?.id.uuidString
                  } as Any? ?? NSNull()]
@@ -140,6 +140,10 @@ final class MCPProfileManagement {
             }
             let requestedName = try string(args, "name")
             var profile = template?.makeProfile() ?? BrowserProfile(name: requestedName)
+            if args["engine"] != nil {
+                guard let engine = BrowserEngine(rawValue: try string(args, "engine")) else { throw Failure.invalid }
+                profile.engine = engine
+            }
             profile.name = requestedName
             try apply(args["changes"] as? [String: Any] ?? [:], to: &profile)
             try validate(profile)
@@ -230,6 +234,7 @@ final class MCPProfileManagement {
             case "profile_move":
                 profile = try store.upsert(profile, toFolderID: nullableID(args, "folderID"), expectedOrganizationRevision: .some(organizationRevision(args)))
             case "profile_set_proxy":
+                guard profile.engine == .chromium else { throw WebKitProfileError.unsupported("Прокси для WebKit пока не поддерживаются.") }
                 let draft = try parseProxy(args)
                 profile.proxy = draft?.configuration
                 profile.identity = profile.identity.replacingProxyContext(timezoneIdentifier: nil, localeIdentifier: nil, evidence: nil)
@@ -257,6 +262,7 @@ final class MCPProfileManagement {
     private func launch(_ initial: BrowserProfile) async throws -> [String: Any] {
         try await observe(initial.id)
         guard processes.processState(for: initial.id) == .stopped else { throw Failure.running }
+        guard initial.engine == .chromium else { throw WebKitProfileError.unsupported("WebKit-профиль создан. Открой его из окна NeAntik: запуск WebKit через MCP пока недоступен.") }
         let locator = BrowserRuntimeLocator()
         guard let runtime = await Task.detached(priority: .userInitiated, operation: { locator.preferredRuntime() }).value else { throw Failure.unavailable }
         let preflight = await Task.detached { BrowserRuntimePreflightValidator.validate(runtime) }.value
@@ -317,6 +323,7 @@ final class MCPProfileManagement {
     /// Metadata edits retain the existing proxy and never read its write-only
     /// password. Credential admission belongs to set-proxy/duplicate/launch.
     private func validateMetadata(_ profile: BrowserProfile) throws {
+        if profile.engine == .webkit { try WebKitProfilePolicy.validateConfiguration(profile) }
         guard profile.normalizedForPersistence() != nil,
               ProfileEditorValidation.firstIssue(name: profile.name, tags: profile.tags,
                   note: profile.note, startURL: profile.startURL, usesProxy: false,
@@ -325,6 +332,7 @@ final class MCPProfileManagement {
     }
 
     private func validate(_ profile: BrowserProfile, password: String = "") throws {
+        if profile.engine == .webkit { try WebKitProfilePolicy.validateConfiguration(profile) }
         guard profile.normalizedForPersistence() != nil else { throw Failure.invalid }
         if ProfileEditorValidation.firstIssue(name: profile.name, tags: profile.tags, note: profile.note, startURL: profile.startURL,
             usesProxy: profile.proxy != nil, proxyKind: profile.proxy?.kind ?? .http, proxyHost: profile.proxy?.host ?? "", proxyPort: String(profile.proxy?.port ?? 0), proxyUsername: profile.proxy?.username ?? "", proxyPassword: password) != nil { throw Failure.invalid }
@@ -345,7 +353,7 @@ final class MCPProfileManagement {
         return ProxyImportDraft(configuration: configuration, password: password)
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
-        ["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue,
+        ["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "engine": profile.engine.rawValue,
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()]
