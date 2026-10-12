@@ -10,8 +10,8 @@ enum CRXPreparationError: LocalizedError, Equatable {
         case .incompatible: "Подготовка поддерживает Manifest V3 и глубину папок до 26 уровней. Пакет не изменён."
         case .keyMismatch: "Ключ в manifest не соответствует проверенной подписи CRX. Нужен исходный пакет от разработчика."
         case .changed: "Данные или профиль изменились во время подготовки. Выбери пакет заново."
-        case .alreadyPrepared: "Такая папка уже существует. Она не перезаписана: проверь расширение в Chromium."
-        case .storage: "Не удалось подготовить папку. Проверь свободное место и доступ к данным профиля."
+        case .alreadyPrepared: "Этот пакет уже подготовлен. Существующие файлы не перезаписаны: проверь расширение в Chromium."
+        case .storage: "Не удалось подготовить пакет. Проверь свободное место и доступ к данным профиля."
         case .retained: "Подготовка не завершена. Каталог сохранён, потому что его безопасное удаление не подтверждено. Не загружай его в Chromium."
         }
     }
@@ -26,7 +26,22 @@ struct PreparedCRXPackage: Sendable {
     let manifestKeyAdded: Bool
 }
 
-/// Prepares code for an explicit native Load unpacked action. Never writes
+/// Original, signature-verified bytes retained for a native install prompt.
+/// This is neither an unpacked extension nor proof of installation.
+struct RetainedCRXPackage: Sendable {
+    let originalCRX: URL
+    let inspection: CRXPackageInspection
+
+    /// Freshly checks the file before revealing it; Finder and Chromium must
+    /// still perform their own admission when the user subsequently drags it.
+    func validateForReveal() throws {
+        guard try CRXPackageInspection.capture(originalCRX).inspection == inspection else {
+            throw CRXPreparationError.changed
+        }
+    }
+}
+
+/// Retains signed CRX bytes or prepares a native Load unpacked folder. Never writes
 /// Chromium preferences, grants permissions, launches code or marks installed.
 /// Published folders remain: Chromium can modify metadata after native loading.
 enum CRXPackagePreparation {
@@ -42,38 +57,67 @@ enum CRXPackagePreparation {
         let files: [String: String]
         let status: String
     }
+    struct PackedReceipt: Codable {
+        let schema: Int
+        let extensionID: String
+        let packageSHA256: String
+        let developerSPKISHA256: String
+        let status: String
+    }
+    private struct Publication { let directory: URL; let manifestKeyAdded: Bool }
 
     /// The caller must hold stopped-profile maintenance authority for the
     /// entire operation. Tests supply only synthetic authority/fault controls.
     static func prepare(_ package: CRXPackageInspection.Captured, expected: CRXPackageInspection,
                         browserData: URL, validate: @Sendable () throws -> Void,
                         fault: @Sendable (Point, URL) throws -> Void = { _, _ in }) throws -> PreparedCRXPackage {
+        let result = try publish(package, expected: expected, browserData: browserData, unpack: true, validate: validate, fault: fault)
+        return PreparedCRXPackage(payload: result.directory.appendingPathComponent("payload"),
+                                  originalCRX: result.directory.appendingPathComponent("original.crx"),
+                                  extensionID: expected.extensionID, manifestKeyAdded: result.manifestKeyAdded)
+    }
+
+    /// Keeps the exact signed CRX, without rewriting or extracting its manifest.
+    /// The caller holds the same stopped-profile authority as unpacked preparation.
+    static func retainPacked(_ package: CRXPackageInspection.Captured, expected: CRXPackageInspection,
+                             browserData: URL, validate: @Sendable () throws -> Void,
+                             fault: @Sendable (Point, URL) throws -> Void = { _, _ in }) throws -> RetainedCRXPackage {
+        let result = try publish(package, expected: expected, browserData: browserData, unpack: false, validate: validate, fault: fault)
+        return RetainedCRXPackage(originalCRX: result.directory.appendingPathComponent("original.crx"), inspection: expected)
+    }
+
+    private static func publish(_ package: CRXPackageInspection.Captured, expected: CRXPackageInspection,
+                                browserData: URL, unpack: Bool, validate: @Sendable () throws -> Void,
+                                fault: @Sendable (Point, URL) throws -> Void) throws -> Publication {
         guard package.inspection == expected else { throw CRXPreparationError.changed }
-        guard expected.manifestVersion == 3,
-              package.archive.inventory.allSatisfy({ $0.path.split(separator: "/").count <= 26 }) else {
-            throw CRXPreparationError.incompatible
+        if unpack {
+            guard expected.manifestVersion == 3,
+                  package.archive.inventory.allSatisfy({ $0.path.split(separator: "/").count <= 26 }) else {
+                throw CRXPreparationError.incompatible
+            }
         }
         // A generated manifest is explicitly derived, never labelled signed.
         guard var manifest = try JSONSerialization.jsonObject(with: package.archive.manifest) as? [String: Any] else { throw CRXPackageInspectionError.manifest }
         let spki = package.proof.developerSPKI
-        let added = manifest["key"] == nil
-        if let key = manifest["key"] {
+        let added = unpack && manifest["key"] == nil
+        if unpack, let key = manifest["key"] {
             guard let encoded = key as? String, Data(base64Encoded: encoded) == spki else { throw CRXPreparationError.keyMismatch }
-        } else { manifest["key"] = spki.base64EncodedString() }
+        } else if added { manifest["key"] = spki.base64EncodedString() }
         let generated = added ? try JSONSerialization.data(withJSONObject: manifest, options: [.sortedKeys]) : package.archive.manifest
         try Task.checkCancellation(); try validate()
         let canonical = try DirectUpdateArchiveIntegrityService.platformFileURL(browserData)
         let root = try BackupFS.directory(canonical); defer { close(root) }
         let rootIdentity = try BackupFS.identity(root)
         guard rootIdentity.mode & 0o077 == 0 else { throw CRXPreparationError.changed }
-        let namespace = try childDirectory(root, "NeAntikPreparedExtensions"); defer { close(namespace) }
+        let namespaceName = unpack ? "NeAntikPreparedExtensions" : "NeAntikRetainedCRX"
+        let namespace = try childDirectory(root, namespaceName); defer { close(namespace) }
         let nsIdentity = try BackupFS.identity(namespace)
         let parent = try childDirectory(namespace, expected.extensionID); defer { close(parent) }
         let parentIdentity = try BackupFS.identity(parent)
         func validateParents() throws {
             try validate(); try BackupFS.validateDirectoryPath(canonical, rootIdentity)
             guard try BackupFS.identity(root).mode == rootIdentity.mode,
-                  try BackupFS.entry(root, "NeAntikPreparedExtensions")?.sameObject(nsIdentity) == true,
+                  try BackupFS.entry(root, namespaceName)?.sameObject(nsIdentity) == true,
                   try BackupFS.identity(namespace).mode == nsIdentity.mode,
                   try BackupFS.entry(namespace, expected.extensionID)?.sameObject(parentIdentity) == true,
                   try BackupFS.identity(parent).mode == parentIdentity.mode else {
@@ -88,16 +132,18 @@ enum CRXPackagePreparation {
         guard stage >= 0 else { throw CRXPreparationError.retained }
         defer { close(stage) }
         let stageIdentity = try BackupFS.identity(stage)
-        let stageURL = canonical.appendingPathComponent("NeAntikPreparedExtensions").appendingPathComponent(expected.extensionID).appendingPathComponent(stageName)
+        let stageURL = canonical.appendingPathComponent(namespaceName).appendingPathComponent(expected.extensionID).appendingPathComponent(stageName)
         var tree = Tree(root: stage, identity: stageIdentity)
         var published = false
         do {
             try fault(.created, stageURL)
-            try tree.makeDirectory("payload")
+            if unpack { try tree.makeDirectory("payload") }
+            try Task.checkCancellation(); try validateParents()
+            if !unpack { try fault(.writing, stageURL) }
             let original = try tree.createFile("original.crx", bytes: package.bytes)
             defer { close(original) }
             guard try BackupFS.hash(original, size: Int64(package.bytes.count)) == expected.packageSHA256 else { throw CRXPreparationError.changed }
-            for entry in package.archive.inventory {
+            for entry in unpack ? package.archive.inventory : [] {
                 try Task.checkCancellation(); try validateParents()
                 try fault(.writing, stageURL)
                 let destination = "payload/" + entry.path
@@ -121,11 +167,18 @@ enum CRXPackagePreparation {
                 }
             }
             try fault(.extracted, stageURL)
-            let receipt = Receipt(schema: 1, extensionID: expected.extensionID, packageSHA256: expected.packageSHA256,
+            let receiptData: Data
+            if unpack {
+                let receipt = Receipt(schema: 1, extensionID: expected.extensionID, packageSHA256: expected.packageSHA256,
                 developerSPKISHA256: digest(spki), originalManifestSHA256: digest(package.archive.manifest),
                 preparedManifestSHA256: digest(generated), manifestKeyAdded: added,
                 files: tree.hashes.filter { $0.key.hasPrefix("payload/") }, status: "prepared-not-installed")
-            let receiptFD = try tree.createFile("receipt.json", bytes: JSONEncoder().encode(receipt)); close(receiptFD)
+                receiptData = try JSONEncoder().encode(receipt)
+            } else {
+                receiptData = try JSONEncoder().encode(PackedReceipt(schema: 1, extensionID: expected.extensionID,
+                    packageSHA256: expected.packageSHA256, developerSPKISHA256: digest(spki), status: "retained-not-installed"))
+            }
+            let receiptFD = try tree.createFile("receipt.json", bytes: receiptData); close(receiptFD)
             try tree.sealDirectories()
             try fault(.sealed, stageURL)
             try tree.verify()
@@ -142,9 +195,7 @@ enum CRXPackagePreparation {
             try validateParents()
             guard try BackupFS.entry(parent, expected.packageSHA256)?.sameObject(stageIdentity) == true else { throw CRXPreparationError.retained }
             let publishedDirectory = stageURL.deletingLastPathComponent().appendingPathComponent(expected.packageSHA256)
-            return PreparedCRXPackage(payload: publishedDirectory.appendingPathComponent("payload"),
-                                      originalCRX: publishedDirectory.appendingPathComponent("original.crx"),
-                                      extensionID: expected.extensionID, manifestKeyAdded: added)
+            return Publication(directory: publishedDirectory, manifestKeyAdded: added)
         } catch {
             // Never delete a visible published folder: native loading can have
             // started. Unknown/replaced staging objects are retained as well.

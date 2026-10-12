@@ -89,5 +89,36 @@ class ControlledBrowserRouteObserverTests(unittest.TestCase):
         with self.assertRaises(observer.RouteObservationError):
             observer.observe_https_success(self.fixture(), expected_url=self.url.replace('https:', 'http:'), expected_proxy_chain=self.chain)
 
+    def test_malformed_tls_values_cannot_be_reported_as_success(self):
+        for field, values in {
+            'version': [True, False, 1, {}, 'TLS 9', ''],
+            'cipher_suite': [True, False, '4865', 0, -1, 65536, 4865.0],
+            'net_error': [False, True, '0', 0.0, 1, -(2**31)-1],
+            'next_proto': [True, {}, [], 'x'*65],
+        }.items():
+            for value in values:
+                fixture = self.fixture(); fixture['events'][8]['params'][field] = value
+                with self.subTest(field=field, value=value), self.assertRaises(observer.RouteObservationError):
+                    self.observe(fixture)
+        for index in [0, 10]:
+            for value in [False, True, '0', 0.0]:
+                fixture = self.fixture(); fixture['events'][index]['params']['net_error'] = value
+                with self.subTest(index=index, value=value), self.assertRaises(observer.RouteObservationError):
+                    self.observe(fixture)
+
+    def test_malformed_type_and_phase_identity_are_not_integer_aliases(self):
+        for field, value in [('type', True), ('phase', True), ('phase', 3)]:
+            fixture = self.fixture(); fixture['events'][0][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(observer.RouteObservationError):
+                self.observe(fixture)
+        fixture = self.fixture(); fixture['constants']['logEventTypes']['URL_REQUEST_START_JOB'] = True
+        with self.assertRaises(observer.RouteObservationError): self.observe(fixture)
+        fixture = self.fixture(); fixture['constants']['logEventPhase'] = {'PHASE_BEGIN': True, 'PHASE_END': 2}
+        with self.assertRaises(observer.RouteObservationError): self.observe(fixture)
+        for index in [7, 9]:
+            fixture = self.fixture(); extra = copy.deepcopy(fixture['events'][index]); extra['phase'] = 0
+            fixture['events'].append(extra)
+            with self.subTest(extra=index), self.assertRaises(observer.RouteObservationError): self.observe(fixture)
+
 
 if __name__ == '__main__': unittest.main()

@@ -172,6 +172,125 @@ struct CRXPackagePreparationTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: root.path).isEmpty)
     }
 
+    private func packedParent(_ root: URL, _ package: CRXPackageInspection.Captured) -> URL {
+        root.appendingPathComponent("NeAntikRetainedCRX").appendingPathComponent(package.inspection.extensionID)
+    }
+
+    @Test func packedRetentionKeepsSignedBytesWithoutUnpackedRestrictions() throws {
+        let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+        let deep = Array(repeating: "level", count: 26).joined(separator: "/") + "/leaf"
+        for package in [try captured(version: 2), try captured(key: "different-manifest-key"),
+                        try captured(extra: [(deep, Data("deep".utf8))])] {
+            let retained = try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {})
+            #expect(try Data(contentsOf: retained.originalCRX) == package.bytes)
+            try retained.validateForReveal()
+            let directory = retained.originalCRX.deletingLastPathComponent()
+            #expect(Set(try FileManager.default.contentsOfDirectory(atPath: directory.path)) == ["original.crx", "receipt.json"])
+            let receipt = try JSONDecoder().decode(CRXPackagePreparation.PackedReceipt.self, from: Data(contentsOf: directory.appendingPathComponent("receipt.json")))
+            #expect(receipt.schema == 1 && receipt.status == "retained-not-installed")
+            #expect(receipt.packageSHA256 == package.inspection.packageSHA256 && receipt.extensionID == package.proof.extensionID)
+            #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("Default/Preferences").path))
+            #expect(throws: CRXPreparationError.alreadyPrepared) {
+                try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {})
+            }
+        }
+    }
+
+    @Test func packedAndUnpackedPublicationsDoNotCollide() throws {
+        let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+        let package = try captured()
+        let retained = try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {})
+        let unpacked = try CRXPackagePreparation.prepare(package, expected: package.inspection, browserData: root, validate: {})
+        #expect(retained.originalCRX != unpacked.originalCRX)
+        #expect(try Data(contentsOf: retained.originalCRX) == Data(contentsOf: unpacked.originalCRX))
+    }
+
+    @Test(arguments: [CRXPackagePreparation.Point.created, .writing, .extracted, .sealed, .beforePublish])
+    func packedFailureOrCancellationBeforePublicationCleansOnlyOwnedStage(_ point: CRXPackagePreparation.Point) throws {
+        for cancellation in [false, true] {
+            let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+            let package = try captured()
+            do {
+                _ = try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {}, fault: { reached, _ in
+                    if reached == point {
+                        if cancellation { throw CancellationError() }
+                        throw POSIXError(.ENOSPC)
+                    }
+                })
+                Issue.record("Injected failure was not reached")
+            } catch {
+                #expect(cancellation ? error is CancellationError : error is POSIXError)
+            }
+            #expect(try FileManager.default.contentsOfDirectory(atPath: packedParent(root, package).path).isEmpty)
+        }
+    }
+
+    @Test func packedFailureAfterRenameRetainsPublishedBytes() throws {
+        let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+        let package = try captured()
+        #expect(throws: CRXPreparationError.retained) {
+            try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {}, fault: { point, _ in
+                if case .published = point { throw POSIXError(.EIO) }
+            })
+        }
+        let final = packedParent(root, package).appendingPathComponent(package.inspection.packageSHA256)
+        #expect(try Data(contentsOf: final.appendingPathComponent("original.crx")) == package.bytes)
+    }
+
+    @Test func packedUnknownReplacementOrHardlinkCannotBePublishedOrRemoved() throws {
+        for kind in ["unknown", "replacement", "hardlink", "ancestor"] {
+            let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+            let package = try captured()
+            #expect(throws: CRXPreparationError.retained) {
+                try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {}, fault: {
+                    if case .beforePublish = $0 {
+                        let original = $1.appendingPathComponent("original.crx")
+                        switch kind {
+                        case "unknown": try Data("external".utf8).write(to: $1.appendingPathComponent("unknown"))
+                        case "replacement": try Data("external".utf8).write(to: original, options: .atomic)
+                        case "hardlink": try FileManager.default.linkItem(at: original, to: $1.appendingPathComponent("unknown"))
+                        default:
+                            let parent = $1.deletingLastPathComponent()
+                            try FileManager.default.moveItem(at: parent, to: parent.appendingPathExtension("displaced"))
+                            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+                        }
+                    }
+                })
+            }
+            let parent = packedParent(root, package)
+            #expect(!FileManager.default.fileExists(atPath: parent.appendingPathComponent(package.inspection.packageSHA256).path))
+            if kind == "ancestor" { #expect(try FileManager.default.contentsOfDirectory(atPath: parent.path).isEmpty) }
+            else {
+                let names = try FileManager.default.contentsOfDirectory(atPath: parent.path)
+                #expect(names.count == 1 && names[0].hasPrefix(".stage-"))
+            }
+        }
+    }
+
+    @Test func packedNamespaceSymlinkAndChangedInspectionRefuseBeforeWrites() throws {
+        let outside = try root(), root = try root(); defer { try? FileManager.default.removeItem(at: root); try? FileManager.default.removeItem(at: outside) }
+        let package = try captured(), other = try captured()
+        #expect(throws: CRXPreparationError.changed) {
+            try CRXPackagePreparation.retainPacked(package, expected: other.inspection, browserData: root, validate: {})
+        }
+        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent("NeAntikRetainedCRX"), withDestinationURL: outside)
+        #expect(throws: CRXPreparationError.changed) {
+            try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {})
+        }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: outside.path).isEmpty)
+    }
+
+    @Test func retainedFileMustPassFreshSignatureAndIdentityCheckBeforeReveal() throws {
+        let root = try root(); defer { try? FileManager.default.removeItem(at: root) }
+        let package = try captured(), other = try captured()
+        let retained = try CRXPackagePreparation.retainPacked(package, expected: package.inspection, browserData: root, validate: {})
+        try other.bytes.write(to: retained.originalCRX, options: .atomic)
+        #expect(throws: CRXPreparationError.changed) { try retained.validateForReveal() }
+        var damaged = package.bytes; damaged[damaged.count - 1] ^= 1
+        try damaged.write(to: retained.originalCRX, options: .atomic)
+        #expect(throws: CRXPackageInspectionError.signature) { try retained.validateForReveal() }
+    }
+
     /// Explicit opt-in artifact for native GUI QA. Never runs in normal tests;
     /// contains only our inert popup and software-generated ephemeral key.
     @Test func writeOwnNativeGUIFixtureWhenRequested() throws {

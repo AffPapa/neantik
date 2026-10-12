@@ -28,6 +28,7 @@ struct ProfileExtensionsSheet: View {
     @State private var preparationBusy = false
     @State private var preparationError: String?
     @State private var preparedPackage: PreparedCRXPackage?
+    @State private var retainedPackage: RetainedCRXPackage?
     @State private var preparationTask: Task<Void, Never>?
 
     private var records: [ProfileExtensionRecord] {
@@ -128,7 +129,9 @@ struct ProfileExtensionsSheet: View {
         .sheet(isPresented: $showPackage) {
             if let package {
                 CRXPackagePreview(inspection: package, busy: preparationBusy, error: preparationError, prepared: preparedPackage,
-                                  prepare: preparePackage, cancel: { preparationTask?.cancel() })
+                                  retained: retainedPackage, prepare: { preparePackage(unpack: true) },
+                                  retain: { preparePackage(unpack: false) }, reveal: revealRetainedPackage,
+                                  cancel: { preparationTask?.cancel() })
             }
         }
     }
@@ -226,7 +229,7 @@ struct ProfileExtensionsSheet: View {
                 let result = try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
                 try Task.checkCancellation()
                 guard packageRequestID == id else { return }
-                package = result; packageURL = url; preparedPackage = nil; preparationError = nil; showPackage = true
+                package = result; packageURL = url; preparedPackage = nil; retainedPackage = nil; preparationError = nil; showPackage = true
             } catch is CancellationError { }
             catch {
                 guard packageRequestID == id else { return }
@@ -237,7 +240,7 @@ struct ProfileExtensionsSheet: View {
         }
     }
 
-    private func preparePackage() {
+    private func preparePackage(unpack: Bool) {
         guard !preparationBusy, let url = packageURL, let expected = package else { return }
         guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         preparationBusy = true; preparationError = nil
@@ -248,21 +251,49 @@ struct ProfileExtensionsSheet: View {
             do {
                 guard try await validateSnapshot() else { throw CRXPreparationError.changed }
                 let browserData = paths.browserDataDirectory(for: profile.id)
-                let result = try await processes.withVerifiedStoppedProfileMaintenance(profile: profile) { authority in
+                let result = try await processes.withVerifiedStoppedProfileMaintenance(profile: profile) { authority -> (PreparedCRXPackage?, RetainedCRXPackage?) in
                     try authority.validate(browserData: browserData)
                     let captured = try CRXPackageInspection.capture(url)
-                    return try CRXPackagePreparation.prepare(captured, expected: expected, browserData: browserData,
-                        validate: { try authority.validate(browserData: browserData) })
+                    if unpack {
+                        return (try CRXPackagePreparation.prepare(captured, expected: expected, browserData: browserData,
+                            validate: { try authority.validate(browserData: browserData) }), Optional<RetainedCRXPackage>.none)
+                    }
+                    return (Optional<PreparedCRXPackage>.none,
+                            try CRXPackagePreparation.retainPacked(captured, expected: expected, browserData: browserData,
+                                validate: { try authority.validate(browserData: browserData) }))
                 }
                 guard try await validateSnapshot() else { throw CRXPreparationError.retained }
                 // Once published, cancellation must not pretend no data were written.
-                preparedPackage = result
+                if let prepared = result.0 { preparedPackage = prepared }
+                if let retained = result.1 { retainedPackage = retained }
             } catch is CancellationError {
                 preparationError = "Подготовка отменена. Расширение не установлено."
             } catch {
                 preparationError = (error as? CRXPreparationError)?.localizedDescription
                     ?? (error as? CRXPackageInspectionError)?.localizedDescription
                     ?? "Не удалось подготовить расширение. Закрой профиль и проверь доступ к его данным."
+            }
+        }
+    }
+
+    private func revealRetainedPackage() {
+        guard !preparationBusy, let retainedPackage else { return }
+        guard let activity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
+        preparationBusy = true; preparationError = nil
+        preparationTask = Task { @MainActor in
+            defer {
+                ApplicationUpdateAdmission.shared.finishActivity(activity)
+                preparationBusy = false; preparationTask = nil
+            }
+            let worker = Task.detached(priority: .userInitiated) { try retainedPackage.validateForReveal() }
+            do {
+                try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
+                try Task.checkCancellation()
+                guard try await validateSnapshot() else { throw CRXPreparationError.changed }
+                NSWorkspace.shared.activateFileViewerSelecting([retainedPackage.originalCRX])
+            } catch is CancellationError { }
+            catch {
+                preparationError = "Сохранённый CRX изменился или недоступен. Выбери исходный файл и проверь его заново."
             }
         }
     }
@@ -274,7 +305,10 @@ private struct CRXPackagePreview: View {
     let busy: Bool
     let error: String?
     let prepared: PreparedCRXPackage?
+    let retained: RetainedCRXPackage?
     let prepare: () -> Void
+    let retain: () -> Void
+    let reveal: () -> Void
     let cancel: () -> Void
     @Environment(\.dismiss) private var dismiss
     var body: some View {
@@ -298,6 +332,7 @@ private struct CRXPackagePreview: View {
                     Divider()
                     permissions("Запрошенные разрешения", inspection.permissions)
                     permissions("Необязательные разрешения", inspection.optionalPermissions)
+                    if retained != nil { retainedInstructions }
                     if let prepared { preparedInstructions(prepared) }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.frame(maxHeight: 480)
@@ -306,25 +341,34 @@ private struct CRXPackagePreview: View {
             if let error { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
             HStack {
                 if busy { ProgressView().controlSize(.small); Button("Отменить подготовку", action: cancel) }
-                else if prepared == nil && inspection.manifestVersion == 3 {
-                    Button("Подготовить папку для Chromium…", action: prepare)
-                        .help("Распакует проверенные файлы в закрытый профиль. Установка выполняется отдельно в Chromium.")
+                else {
+                    if retained == nil {
+                        Button("Подготовить исходный CRX", action: retain)
+                            .help("Сохранит проверенный подписанный файл без изменений. Установка выполняется отдельно в Chromium.")
+                    }
+                    if prepared == nil && inspection.manifestVersion == 3 {
+                        Button("Подготовить распакованную папку", action: prepare)
+                            .help("Альтернатива для режима разработчика. Создаст папку с файлами расширения в закрытом профиле.")
+                    }
                 }
                 Spacer(); Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
             }
         }.padding(24).frame(width: 650).interactiveDismissDisabled(busy)
     }
+    private var retainedInstructions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            Label("Исходный CRX сохранён без изменений", systemImage: "doc.badge.checkmark")
+            Text("В нужном профиле открой chrome://extensions/, включи режим разработчика и перетащи CRX из Finder на страницу. Перед установкой проверь название и запрошенные разрешения. Chromium может отказать в установке несовместимого пакета.")
+            Button("Показать проверенный CRX в Finder", action: reveal).disabled(busy)
+            Text("Расширение ещё не установлено. Подпись подтверждает целостность файла, а не безопасность его кода.")
+                .font(.subheadline).foregroundStyle(.secondary)
+        }.fixedSize(horizontal: false, vertical: true)
+    }
     private func preparedInstructions(_ prepared: PreparedCRXPackage) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
             Label("Папка подготовлена. Расширение ещё не установлено", systemImage: "folder.badge.checkmark")
-            Text("Исходный CRX").font(.headline)
-            Text("Покажи файл в Finder. В выбранном профиле открой chrome://extensions/, включи режим разработчика и перетащи CRX на страницу. Проверь запрос разрешений перед подтверждением установки.")
-            Button("Показать CRX в Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting([prepared.originalCRX])
-            }
-            Divider()
-            Text("Альтернатива: распакованная папка").font(.headline)
             Text("Открой этот профиль → chrome://extensions/ → Режим разработчика → Загрузить распакованное расширение. В выборе папки нажми ⌘⇧G и вставь скопированный путь.")
             if prepared.manifestKeyAdded { Text("В manifest добавлен публичный ключ подписи, чтобы Chromium сохранил ID. Исходный CRX сохранён рядом.").foregroundStyle(.secondary) }
             Button("Копировать путь к папке") {

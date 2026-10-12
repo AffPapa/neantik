@@ -18,6 +18,9 @@ def _index(trace):
         if constants['logCaptureMode'] != 'Default':
             raise RouteObservationError('capture mode')
         types = constants['logEventTypes']
+        if not isinstance(types, dict) or any(not isinstance(key, str) or not key or
+                type(value) is not int or not 0 <= value <= 2**31 - 1 for key, value in types.items()):
+            raise RouteObservationError('event types')
         names = {value: key for key, value in types.items()}
         if len(names) != len(types):
             raise RouteObservationError('ambiguous event types')
@@ -33,12 +36,22 @@ def _index(trace):
             # exact; do not drop those contexts or coerce them to another ID.
             if not isinstance(sid, int) or isinstance(sid, bool) or not -(2**31) <= sid <= 2**31 - 1 or sid == 0:
                 raise RouteObservationError('source identity')
-            if event['type'] not in names or not isinstance(event.get('params', {}), dict):
+            if type(event['type']) is not int or event['type'] not in names or not isinstance(event.get('params', {}), dict):
                 raise RouteObservationError('event structure')
+            if type(event.get('phase')) is not int or event['phase'] not in (0, 1, 2):
+                raise RouteObservationError('event phase')
             groups.setdefault(sid, []).append(event)
         return names, events, groups
     except (KeyError, TypeError, AttributeError) as error:
         raise RouteObservationError('trace structure') from error
+
+
+def _net_error(params):
+    # bool is an int subclass in Python, but not a Chromium error number.
+    value = params.get('net_error', 0)
+    if type(value) is not int or not -(2**31) <= value <= 0:
+        raise RouteObservationError('invalid network error')
+    return value
 
 
 def observe_https_success(trace, *, expected_url, expected_proxy_chain):
@@ -78,10 +91,12 @@ def observe_https_success(trace, *, expected_url, expected_proxy_chain):
 
     phases = trace['constants'].get('logEventPhase', {})
     begin, end = phases.get('PHASE_BEGIN', 1), phases.get('PHASE_END', 2)
+    if type(begin) is not int or type(end) is not int or (begin, end) != (1, 2):
+        raise RouteObservationError('phase constants')
     sockets = set()
     protocols = set()
     for sid in starts:
-        if any(e.get('params', {}).get('net_error', 0) < 0 for e in groups[sid]):
+        if any(_net_error(e.get('params', {})) < 0 for e in groups[sid]):
             raise RouteObservationError('request error')
         if not named(sid, 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS'):
             raise RouteObservationError('response absent')
@@ -96,19 +111,22 @@ def observe_https_success(trace, *, expected_url, expected_proxy_chain):
         tls = named(socket, 'SSL_CONNECT')
         opened = [e for e in tls if e['phase'] == begin]
         completed = [e for e in tls if e['phase'] == end]
-        if len(opened) != 1 or len(completed) != 1:
+        if len(tls) != 2 or len(opened) != 1 or len(completed) != 1:
             raise RouteObservationError('TLS incomplete or ambiguous')
         params = completed[0].get('params', {})
-        if params.get('net_error', 0) != 0 or not params.get('version') or not params.get('cipher_suite'):
+        cipher = params.get('cipher_suite')
+        if _net_error(params) != 0 or params.get('version') not in ('TLS 1.2', 'TLS 1.3') or type(cipher) is not int or not 1 <= cipher <= 65535:
             raise RouteObservationError('TLS failed or unmeasured')
         tunnel = named(socket, 'SOCKS5_CONNECT')
         tunnel_opened = [e for e in tunnel if e['phase'] == begin]
         tunnel_completed = [e for e in tunnel if e['phase'] == end]
-        if len(tunnel_opened) != 1 or len(tunnel_completed) != 1 or tunnel_completed[0].get('params', {}).get('net_error', 0) != 0:
+        if len(tunnel) != 2 or len(tunnel_opened) != 1 or len(tunnel_completed) != 1 or _net_error(tunnel_completed[0].get('params', {})) != 0:
             raise RouteObservationError('SOCKS tunnel incomplete')
         sockets.add(socket)
         # Only known protocol labels may leave this observer.
         protocol = params.get('next_proto', '')
+        if not isinstance(protocol, str) or len(protocol) > 64:
+            raise RouteObservationError('invalid negotiated protocol')
         protocols.add(protocol if protocol in ('h2', 'http/1.1', '') else 'other')
     return {'nonceRequestAttempts': len(starts), 'boundTLSConnections': len(sockets),
             'allRequestsSelectedExpectedRelay': True, 'allRequestsBoundToSuccessfulSOCKSAndTLS': True,
