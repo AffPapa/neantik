@@ -23,11 +23,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.7.34</string>
+	<string>0.7.35</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>97</string>
+	<string>98</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -53,12 +53,12 @@
 	<key>NeAntikUpdateAutoDownload</key>
 	<false/>
 	<key>NeAntikUpdateChannelEnabled</key>
-	<false/>
+	<true/>
 	<key>NeAntikUpdateManifestURL</key>
-	<string></string>
+	<string>https://browser.free/api/update.json</string>
 	<key>NeAntikUpdatePublicKeyBase64</key>
-	<string></string>
+	<string>rzTPKEc90XEogR/MO7oCCfZOWCC3TFkoyw6nuOfPz2w=</string>
 	<key>NeAntikUpdatePublicKeyID</key>
-	<string></string>
+	<string>neantik-direct-20261012-v1</string>
 </dict>
 </plist>

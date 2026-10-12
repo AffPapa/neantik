@@ -71,11 +71,19 @@ class DirectUpdatePolicyTests(unittest.TestCase):
                 with self.assertRaises(MODULE.UpdatePolicyError):
                     MODULE.verify(info_plist=actual, expected_info_plist=expected)
 
-    def test_current_direct_policy_is_disabled_and_fail_closed(self) -> None:
+    def test_current_direct_candidate_has_complete_pinned_policy_and_no_auto_download(self) -> None:
         message = MODULE.verify()
-
-        self.assertIn("disabled-manual", message)
+        info = plistlib.loads(MODULE.INFO_PLIST.read_bytes())
+        self.assertIn("configured", message)
+        self.assertEqual(info["NeAntikUpdateManifestURL"], "https://browser.free/api/update.json")
+        self.assertEqual(info["NeAntikUpdatePublicKeyID"], "neantik-direct-20261012-v1")
         self.assertIn("automatic download disabled", message)
+
+    def test_complete_disabled_policy_still_requires_manual_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "Info.plist"
+            path.write_bytes(plistlib.dumps(self.base_info()))
+            self.assertIn("disabled-manual", MODULE.verify(info_plist=path))
 
     def test_rejects_disabled_policy_with_partial_key_material(self) -> None:
         info = self.base_info()
