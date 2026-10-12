@@ -135,6 +135,7 @@ private final class OwnerClientWorker: @unchecked Sendable {
             if cancellation.isRequested { throw CancellationError() }
             offer = found; return found
         } catch {
+            DirectUpdateOwnerDiagnostics.refused(error)
             if cancellation.isRequested, session != nil {
                 do { try cancelAndDrain() } catch { throw DirectUpdateOwnerClientError.cleanup }
                 throw CancellationError()
@@ -222,7 +223,9 @@ private final class OwnerClientWorker: @unchecked Sendable {
         switch Int(status) {
         case NUB_COMPLETE: return
         case NUB_CANCELLED: throw CancellationError()
-        default: throw DirectUpdateOwnerClientError.transport
+        default:
+            DirectUpdateOwnerDiagnostics.transport(status)
+            throw DirectUpdateOwnerClientError.transport
         }
     }
 }

@@ -9,10 +9,13 @@ import Foundation
 enum DirectUpdateOwnerOperation {
     static func run() async throws {
         var cancellationReply = DirectUpdateOwnerCancellationReply()
+        DirectUpdateOwnerDiagnostics.phase(.authenticate)
         let trust = try DirectUpdateOwnerAuthentication.authenticate()
+        DirectUpdateOwnerDiagnostics.phase(.request)
         let request = try DirectUpdateOwnerInit.parse(DirectUpdateOwnerPipe.readFrame(STDIN_FILENO, timeoutMS: 10_000))
         let manifest = try DirectUpdateOwnerPipe.readFrame(STDIN_FILENO, timeoutMS: 10_000)
         try request.validateManifest(manifest); try trust.validate(requireParent: true)
+        DirectUpdateOwnerDiagnostics.phase(.audit)
         let auditIsolation = try request.auditFrame.map { try DirectUpdateAuditIsolation.adoptAuthenticatedFrame($0) }
         let metadata = trust.policy.metadata
         let coordinator = DirectUpdateAdmissionCoordinator(configuration: metadata.configuration,
@@ -20,9 +23,12 @@ enum DirectUpdateOwnerOperation {
             assessmentHelper: { try trust.workspace.validate(); return trust.workspace.assessment })
         let control = OwnerDecisionControl(request: request)
         let inspection = Task {
+            DirectUpdateOwnerDiagnostics.phase(.inspection)
             let result = try await coordinator.inspectLocalArchive(request.archive, signedManifest: manifest,
-                archiveParent: trust.workspace.archives, extractionParent: trust.workspace.apps)
+                archiveParent: trust.workspace.archives, extractionParent: trust.workspace.apps,
+                beforePhase: { DirectUpdateOwnerDiagnostics.admissionPhase($0) })
             guard case .observed = result.system.reply else { throw DirectUpdateOwnerProtocolError.reply }
+            DirectUpdateOwnerDiagnostics.phase(.retainedCandidate)
             let candidate = try await coordinator.validateRetainedCandidate(ownerCDHash: metadata.owner.cdHash)
             try trust.validate(requireParent: true)
             return (result, candidate)
@@ -49,12 +55,15 @@ enum DirectUpdateOwnerOperation {
             throw error
         }
         do {
+            DirectUpdateOwnerDiagnostics.phase(.trust)
             try trust.validate(requireParent: true)
             try auditIsolation?.validate()
+            DirectUpdateOwnerDiagnostics.phase(.offer)
             let offer = try DirectUpdateOwnerOffer(request: request, observation: result)
             try control.publishOffer()
             try writeFrame(offer.bytes)
             let command = try await decisionReader.value
+            DirectUpdateOwnerDiagnostics.phase(.consent)
             if command == DirectUpdateOwnerConsent.earlyCancel(request: request) {
                 try cancellationReply.acknowledge(request); return
             }
@@ -78,6 +87,7 @@ enum DirectUpdateOwnerOperation {
             guard neantik_update_owner_detach_standard_io() == 1 else {
                 throw DirectUpdateInstallSessionError.io
             }
+            DirectUpdateOwnerDiagnostics.phase(.managerExit)
             try await trust.waitForManagerExit()
             try DirectUpdateStoppedAuthority.requireQuietInventory()
             let lease = try InstallFilesystemLease(parentURL: trust.installation.deletingLastPathComponent())
@@ -101,6 +111,7 @@ enum DirectUpdateOwnerOperation {
                 return try ProxyRelayExpectedCode.qualifiedPin(at: app, expectedIdentifier: DirectUpdateCodeRole.manager.identifier,
                     expectedTeamIdentifier: DirectUpdateCodeSignature.team, expectedCDHash: result.system.managerCDHash)
             }
+            DirectUpdateOwnerDiagnostics.phase(.install)
             let installed = try await DirectUpdateInstallDriver.run(lease: lease, slot: slot, expectedCode: code,
                 cdHash: result.system.managerCDHash, build: UInt64(result.build), runtimeSHA256: result.runtime.runtimeSHA256,
                 validateCandidate: validateCandidate, auditIsolation: auditIsolation,

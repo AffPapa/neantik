@@ -14,7 +14,7 @@ import Security
             // Fixed production mode authenticates the actual live parent and
             // itself before reading any input. No DEBUG policy is accepted.
             do { try await DirectUpdateOwnerOperation.run(); exit(0) }
-            catch { exit(EX_NOPERM) }
+            catch { DirectUpdateOwnerDiagnostics.refused(error); exit(EX_NOPERM) }
         }
         #if DEBUG
         let arguments = CommandLine.arguments

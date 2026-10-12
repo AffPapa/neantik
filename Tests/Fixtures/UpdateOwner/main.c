@@ -70,7 +70,12 @@ int main(int argc,char **argv) {
         if (!raw_write(first,2)) return 25;
         char ready[4096]; snprintf(ready,sizeof(ready),"%s.frame-started",argv[0]);
         int mark=open(ready,O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW,0600); if (mark<0) return 26; close(mark);
-        usleep(200000); if (!raw_write(rest,6)) return 27;
+        /* Wait for the parent's actual first read callback, not a guessed
+         * scheduler delay. The already-written partial header stays in flight. */
+        char proceed[4096]; snprintf(proceed,sizeof(proceed),"%s.frame-continue",argv[0]);
+        int acknowledged=0;
+        for (int n=0;n<2000;n++) { if (access(proceed,F_OK)==0) { acknowledged=1; break; } usleep(1000); }
+        if (!acknowledged || !raw_write(rest,6)) return 27;
     } else if (neantik_update_pipe_write_frame(1,bytes,count,neantik_update_pipe_deadline(1000),never_cancel,NULL)) return 19;
     if (neantik_update_pipe_read_frame(0,bytes,sizeof(bytes),&count,neantik_update_pipe_deadline(3000),1000,never_cancel,NULL)) return 20;
     if (neantik_update_pipe_write_frame(1,bytes,count,neantik_update_pipe_deadline(1000),never_cancel,NULL)) return 21;

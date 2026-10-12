@@ -33,8 +33,19 @@ private func ownerPipeCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
     return Unmanaged<OwnerPipeContext>.fromOpaque(raw).takeUnretainedValue().isCancelled ? 1:0
 }
 private final class OwnerBoundaryCancellation {
+    let frameContinuation: URL
+    init(frameContinuation: URL) { self.frameContinuation = frameContinuation }
     private(set) var checks = 0
-    func check() -> Int32 { checks += 1; return checks >= 2 ? 1 : 0 }
+    func check() -> Int32 {
+        checks += 1
+        if checks == 1 {
+            // Tell the real child that parsing began. No timing guess controls
+            // whether its partial header is resumed before cancellation.
+            let fd = open(frameContinuation.path, O_CREAT | O_EXCL | O_WRONLY | O_NOFOLLOW, 0o600)
+            if fd < 0 { return 1 }; close(fd)
+        }
+        return checks >= 2 ? 1 : 0
+    }
 }
 private func ownerBoundaryCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
     guard let raw else { return 1 }
@@ -141,9 +152,11 @@ private func ownerBoundaryCancel(_ raw: UnsafeMutableRawPointer?) -> Int32 {
             let context = OwnerPipeContext(helper: helper), (_, value) = begin(context)
             let session = try #require(value); defer { cleanup(session) }
             #expect(write(Data([7]), session: session, context: context) == NUB_COMPLETE)
-            for _ in 0..<100 where !FileManager.default.fileExists(atPath: helper.path + ".frame-started") { usleep(1000) }
+            let readinessDeadline = ContinuousClock.now.advanced(by: .seconds(2))
+            while !FileManager.default.fileExists(atPath: helper.path + ".frame-started"), ContinuousClock.now < readinessDeadline { usleep(1000) }
             try #require(FileManager.default.fileExists(atPath: helper.path + ".frame-started"))
-            let cancellation = OwnerBoundaryCancellation(), raw = Unmanaged.passUnretained(cancellation).toOpaque()
+            let cancellation = OwnerBoundaryCancellation(frameContinuation: URL(fileURLWithPath: helper.path + ".frame-continue"))
+            let raw = Unmanaged.passUnretained(cancellation).toOpaque()
             var data = Data(count: 1024), received = 0
             let status = data.withUnsafeMutableBytes { bytes in
                 if boundary {
