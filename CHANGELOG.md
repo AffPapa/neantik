@@ -1,8 +1,16 @@
 # NeAntik changelog
 
+## Direct 0.7.40 (103)
+
+Private paired qualification candidate; not published.
+
+- Окно обновления закрывается до штатного выхода manager: AppKit больше не получает запрос завершения при открытом modal sheet. То же правило применяется к безопасному выходу после ошибки.
+- Предложение установки ограничено сроком: до timeout owner оно снимается, owner завершается и требуется новая проверка файлов.
+- 1421 Swift-тест / 162 suites PASS. Реальные installation, rollback и сохранность синтетических BrowserData остаются обязательными gates.
+
 ## Direct 0.7.39 (102)
 
-Final public-alpha candidate; exact paired shipping installation and publication gates are pending.
+Private candidate retained; native update-sheet termination defect was reproduced before publication. Not published.
 
 - Исправлены admission и bootstrap updater: историческое происхождение runtime проверяется отдельно от подписанной справки о текущем релизе, с общими ограничениями размера.
 - Подписанный канал описания обновлений, ручной выбор оригинального ZIP, подтверждение установки и перезапуск. Private key остаётся вне Git и сайта.

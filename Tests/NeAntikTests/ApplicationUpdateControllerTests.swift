@@ -134,7 +134,9 @@ struct ApplicationUpdateControllerTests {
     @Test func cancelledInspectionCleanupFailureRemainsTerminalAfterSuccessfulDrain() async throws {
         let gate = ApplicationUpdateAdmission(), transport = UpdateUITransportFixture(cleanupFailure: true)
         let manifest = try manifestFixture(); defer { try? FileManager.default.removeItem(at: manifest) }
-        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate, makeClient: { transport })
+        var quits = 0
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate,
+            makeClient: { transport }, terminate: { quits += 1 })
         controller.present(workspaceIsBusy: false)
         controller.beginInspection(archive: manifest, manifest: manifest)
         for _ in 0..<2_000 { if await transport.inspectCount > 0 { break }; try await Task.sleep(for: .milliseconds(1)) }
@@ -146,6 +148,11 @@ struct ApplicationUpdateControllerTests {
         controller.close()
         #expect(controller.isPresented && gate.isUpdating)
         #expect(throws: ApplicationUpdateAdmissionError.self) { try gate.beginActivity() }
+        controller.dismissForTermination()
+        #expect(!controller.isPresented && quits == 0 && gate.isUpdating)
+        controller.sheetDidDisappear(); controller.sheetDidDisappear()
+        for _ in 0..<2_000 { if quits > 0 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(quits == 1 && gate.isUpdating)
     }
     @Test func automaticFailureDrainDisablesCancelAndRetryUntilItsCompletion() async throws {
         let gate = ApplicationUpdateAdmission(), transport = UpdateUITransportFixture()
@@ -187,6 +194,9 @@ struct ApplicationUpdateControllerTests {
         #expect(await transport.commitCount == 1)
         #expect(await transport.drainCount == 0)
         await transport.releaseCommit()
+        for _ in 0..<2_000 { if !controller.isPresented { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(!controller.isPresented && quits == 0 && gate.isUpdating)
+        controller.sheetDidDisappear(); controller.sheetDidDisappear()
         for _ in 0..<2_000 { if quits > 0 { break }; try await Task.sleep(for: .milliseconds(1)) }
         #expect(quits == 1 && gate.isUpdating)
         // State fixture does not claim a real signed filesystem installation.
@@ -206,6 +216,25 @@ struct ApplicationUpdateControllerTests {
         #expect(throws: (any Error).self) { try ApplicationUpdateController.readManifest(fifo) }
         try Data(count: 128 * 1024 + 1).write(to: file)
         #expect(throws: (any Error).self) { try ApplicationUpdateController.readManifest(file) }
+    }
+    @Test func expiredOfferDrainsOwnerAndRemovesInstallBeforeRetry() async throws {
+        let gate = ApplicationUpdateAdmission(), transport = UpdateUITransportFixture(offerSuccess: true)
+        let manifest = try manifestFixture(); defer { try? FileManager.default.removeItem(at: manifest) }
+        var quits = 0
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate,
+            makeClient: { transport }, terminate: { quits += 1 }, offerLifetime: .milliseconds(30))
+        controller.present(workspaceIsBusy: false)
+        controller.beginInspection(archive: manifest, manifest: manifest)
+        for _ in 0..<2_000 { if await transport.inspectCount > 0 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        await transport.releaseInspection()
+        for _ in 0..<2_000 { if await transport.drainCount > 0 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.phase == .cancelling && gate.isUpdating)
+        controller.installAndRestart(); controller.close()
+        #expect(await transport.commitCount == 0 && quits == 0 && controller.isPresented)
+        await transport.releaseDrain()
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.offeredVersion == nil && controller.message != nil)
+        controller.close(); #expect(!gate.isUpdating)
     }
     private func manifestFixture() throws -> URL {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-update-ui-" + UUID().uuidString + ".json")

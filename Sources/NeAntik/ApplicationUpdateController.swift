@@ -30,6 +30,9 @@ final class ApplicationUpdateController: ObservableObject {
     private var inspection: Task<Void, Never>?
     private var archiveAccess: URL?
     private var cleanupUnconfirmed = false
+    private var terminationAfterDismissal = false
+    private var offerExpiration: Task<Void, Never>?
+    private let offerLifetime: Duration
     private var retrievedManifest: RetrievedUpdateManifest?
     private var discovery: Task<Void, Never>?
     private let fetchManifest: @Sendable () async throws -> RetrievedUpdateManifest
@@ -38,10 +41,12 @@ final class ApplicationUpdateController: ObservableObject {
          admission: ApplicationUpdateAdmission? = nil,
          makeClient: (@MainActor () -> any ApplicationUpdateTransport)? = nil,
          terminate: (@MainActor () -> Void)? = nil,
+         offerLifetime: Duration = .seconds(240),
          fetchManifest: (@Sendable () async throws -> RetrievedUpdateManifest)? = nil) {
         self.channelEnabled = channelEnabled; self.admission = admission ?? .shared
         self.makeClient = makeClient ?? { DirectUpdateOwnerClient() }
         self.terminate = terminate ?? { NSApplication.shared.terminate(nil) }
+        self.offerLifetime = offerLifetime
         let installedApp = Bundle.main.bundleURL
         self.fetchManifest = fetchManifest ?? {
             try await SignedUpdateManifestFetcher().fetchInstalled(app: installedApp)
@@ -126,6 +131,9 @@ final class ApplicationUpdateController: ObservableObject {
         if archive.startAccessingSecurityScopedResource() { archiveAccess = archive }
         let manifestScoped = manifestAccess?.startAccessingSecurityScopedResource() ?? false
         let client = makeClient(); self.client = client
+        // The owner bounds consent to 300 seconds from operation start. Stop
+        // offering before that deadline; never display a dead owner as ready.
+        let offerDeadline = ContinuousClock.now.advanced(by: offerLifetime)
         phase = .checking; message = nil
         inspection = Task { @MainActor in
             defer { if manifestScoped { manifestAccess?.stopAccessingSecurityScopedResource() } }
@@ -135,6 +143,13 @@ final class ApplicationUpdateController: ObservableObject {
                 let offer = try await client.inspect(archive: archive, manifest: bytes)
                 guard phase != .cancelling else { return }
                 offeredVersion = "\(offer.version) (\(offer.build))"; phase = .offered
+                offerExpiration = Task { @MainActor [weak self] in
+                    do { try await ContinuousClock().sleep(until: offerDeadline) }
+                    catch { return }
+                    guard let self, self.phase == .offered else { return }
+                    self.phase = .cancelling
+                    await self.drain(client, failureMessage: "Время подтверждения истекло. Проверь файлы ещё раз перед установкой.")
+                }
             } catch {
                 // A later no-session drain must not erase a previous unknown
                 // cleanup result, including an inspection cancelled by UI.
@@ -153,6 +168,7 @@ final class ApplicationUpdateController: ObservableObject {
     }
 
     func cancel() {
+        offerExpiration?.cancel(); offerExpiration = nil
         if phase == .discovering {
             phase = .cancelling; message = "Завершение проверки…"
             let pending = discovery; pending?.cancel()
@@ -187,17 +203,33 @@ final class ApplicationUpdateController: ObservableObject {
     }
     func installAndRestart() {
         guard phase == .offered, holdsFence, let client else { return }
+        offerExpiration?.cancel(); offerExpiration = nil
         phase = .committing; message = "Подготовка к перезапуску…"
         Task { @MainActor in
             do {
                 try await client.consentAndHandoff()
                 // Accepted is consent, not installation success. The owner
                 // waits for actual manager exit before the filesystem swap.
-                terminate()
+                dismissForTermination()
             } catch {
                 phase = .restartRequired
                 message = "Установщик не подтвердил перезапуск. Закрой NeAntik и проверь версию при следующем запуске перед повторной установкой."
             }
+        }
+    }
+    /// AppKit refuses termination while a SwiftUI sheet is presented. Keep
+    /// install authority fenced until process exit, but dismiss the sheet first.
+    func dismissForTermination() {
+        guard phase == .committing || phase == .restartRequired else { return }
+        terminationAfterDismissal = true
+        isPresented = false
+    }
+    func sheetDidDisappear() {
+        guard terminationAfterDismissal, !isPresented else { return }
+        terminationAfterDismissal = false
+        Task { @MainActor in
+            await Task.yield()
+            terminate()
         }
     }
     func close() {

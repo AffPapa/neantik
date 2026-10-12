@@ -45,11 +45,12 @@ struct ApplicationUpdateSheet: View {
                     Button("Установить и перезапустить", action: controller.installAndRestart).keyboardShortcut(.defaultAction)
                 }
                 if controller.phase == .restartRequired {
-                    Button("Закрыть NeAntik") { NSApplication.shared.terminate(nil) }
+                    Button("Закрыть NeAntik", action: controller.dismissForTermination)
                 }
             }
         }
         .padding(24).frame(minWidth: 520, idealWidth: 600, maxWidth: 680)
         .interactiveDismissDisabled(true)
+        .onDisappear { controller.sheetDidDisappear() }
     }
 }
