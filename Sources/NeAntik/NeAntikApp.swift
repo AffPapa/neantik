@@ -258,8 +258,8 @@ struct NeAntikApp: App {
         }
         // Audit entry is explicit: do not depend on macOS restoring a main
         // scene after a previous stdio-only or closed-window session.
-        .onChange(of: launchIntent.opensFingerprintAudit, initial: true) {
-            if launchIntent.opensFingerprintAudit {
+        .onChange(of: launchIntent.opensAuditWindow, initial: true) {
+            if launchIntent.opensAuditWindow {
                 Task { @MainActor in
                     await Task.yield() // Let SwiftUI register the named scene.
                     openWindow(id: "main")

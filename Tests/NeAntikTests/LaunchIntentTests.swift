@@ -3,6 +3,17 @@ import Testing
 @testable import NeAntik
 
 struct LaunchIntentTests {
+    @Test func noninteractiveControlModesNeverRequestAnAuditWindow() {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-owned-control-test")
+        for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner,
+                     .mcpStdio(dataRoot: root), .mcpManagement(dataRoot: root),
+                     .fingerprintEnrollment(outputURL: root.appendingPathComponent("enrollment.json"))] {
+            let intent = NeAntikLaunchIntent(mode: mode)
+            #expect(!intent.opensAuditWindow)
+            #expect(!intent.opensFingerprintAudit)
+        }
+    }
+
     @Test func updateAuditUsesAuthenticatedContextWithoutAutomaticFingerprintRun() {
         let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
         let output = "/private/tmp/neantik-update-audit-" + UUID().uuidString.lowercased() + "/update-audit.json"
@@ -12,6 +23,7 @@ struct LaunchIntentTests {
         #expect(intent.requiresUpdateAuditAuthority)
         #expect(intent.releaseFingerprintAuditRequest != nil)
         #expect(!intent.opensFingerprintAudit)
+        #expect(intent.opensAuditWindow)
         for bad in ["relative.json", "/private/tmp/update-audit.json", output.replacingOccurrences(of: "update-audit.json", with: "other.json"),
                     output.replacingOccurrences(of: "/private/tmp/", with: "/tmp/"),
                     output.replacingOccurrences(of: "neantik-update-audit-", with: "neantik-user-")] {
@@ -52,6 +64,7 @@ struct LaunchIntentTests {
         )
 
         #expect(!intent.opensFingerprintAudit)
+        #expect(!intent.opensAuditWindow)
     }
 
     @Test
@@ -94,6 +107,7 @@ struct LaunchIntentTests {
         )
 
         #expect(intent.opensFingerprintAudit)
+        #expect(intent.opensAuditWindow)
         #expect(
             intent.releaseFingerprintAuditRequest ==
                 FingerprintEvidenceReleaseRequest(

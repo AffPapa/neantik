@@ -27,6 +27,10 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
 
     let mode: Mode
 
+    /// Both audit modes need a visible manager window. Authentication of the
+    /// selected release context still happens before the app creates scenes.
+    var opensAuditWindow: Bool { releaseFingerprintAuditRequest != nil }
+
     var opensFingerprintAudit: Bool {
         if case let .interactive(request, automatic) = mode {
             return request != nil && automatic
