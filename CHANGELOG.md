@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 0.7.37 (100)
+
+Private qualification candidate; not published. Fixes the publication-baseline closure defect found in private0.7.35/0.7.36. Qualified earlier local artifacts are retained unchanged. Paired shipping installation remains pending.
+
 ## Direct 0.7.36 (99)
 
 Development qualification candidate; not published.
