@@ -1,8 +1,14 @@
 import Foundation
 
-struct ProxyImportDraft: Equatable, Sendable {
+struct ProxyImportDraft: Equatable, Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let configuration: ProxyConfiguration
     let password: String
+
+    // Imported endpoints and credentials must not appear in accidental debug
+    // output. The explicit UI summary has its own redaction policy below.
+    var description: String { "ProxyImportDraft(<redacted>)" }
+    var debugDescription: String { description }
+    var customMirror: Mirror { Mirror(self, children: [:]) }
 
     var redactedSummary: String {
         let authentication = configuration.username.isEmpty

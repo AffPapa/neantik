@@ -162,6 +162,30 @@ struct ProxyImportParserTests {
         #expect(throws: (any Error).self) { try ProxyImportParser.parse("\(boundary)a:secret@proxy.example:1080", kind: .socks5) }
     }
 
+    @Test func diagnosticRepresentationsDoNotRevealImportedCredentials() throws {
+        let username = "qa-credential-user"
+        let password = "qa-credential-password"
+        let host = "qa-private-endpoint.example"
+        let draft = try ProxyImportParser.parse("\(username):\(password)@\(host):8443", kind: .https)
+        var dumped = ""
+        dump(draft, to: &dumped)
+        let diagnostics = [String(describing: draft), String(reflecting: draft), dumped]
+        for value in diagnostics {
+            #expect(!value.contains(username))
+            #expect(!value.contains(password))
+            #expect(!value.contains(host))
+        }
+        #expect(Mirror(reflecting: draft).children.isEmpty)
+        // Redaction must not alter the values the importer actually saves.
+        #expect(draft.configuration.username == username)
+        #expect(draft.configuration.host == host)
+        #expect(draft.password == password)
+        #expect(draft == (try ProxyImportParser.parse("\(username):\(password)@\(host):8443", kind: .https)))
+        // Negative control: the same diagnostic check notices an unredacted container.
+        struct Unredacted { let password: String }
+        #expect(String(reflecting: Unredacted(password: password)).contains(password))
+    }
+
     @Test func summariesAndErrorsNeverRevealPassword() throws {
         let password = "unique-super-secret"
         let draft = try ProxyImportParser.parse(
