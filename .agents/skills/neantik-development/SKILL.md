@@ -35,6 +35,11 @@ Unknown/shared inputs select full regression. Planning never means PASS.
 - Preserve execution receipts before parsing. Classify a failure as product,
   harness, setup or environment; diagnose two identical failures before retry.
   Fix analysis offline on retained traces when browser inputs did not change.
+- Local full Python contracts include owned loopback listeners and own-PID
+  `/bin/ps`. Establish those capabilities before the expensive run; use the
+  already authorized QA execution environment. Sandbox denial is a setup
+  failure: rerun only affected modules there, retain the original failure and
+  never report that first invocation as an all-green run.
 - Keep ordinary CI separate from opt-in native fixtures. The clean CI shards
   share a cache within each job and execute each selected suite in a separate
   process. Nonzero exits and zero tests stop the shard.

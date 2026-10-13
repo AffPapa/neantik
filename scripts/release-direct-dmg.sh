@@ -13,6 +13,18 @@ fail() {
   exit 65
 }
 
+# Resume bypasses packaging and version-floor checks, but the transaction
+# requires the exact source/policy binding and retains all native final gates.
+if (( $# > 0 )); then
+  [[ $# == 2 && "$1" == "--resume" ]] || fail "usage: $0 [--resume <transaction-root>]"
+  RESUME_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
+  exec python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/notarize_dmg_transaction.py" \
+    --project-root "$PROJECT_DIR" \
+    --destination "$PROJECT_DIR/dist/NeAntik-$RESUME_VERSION-arm64-notarized.dmg" \
+    --notary-profile "$NOTARY_PROFILE" --resume "$2"
+fi
+
 [[ -d "$PREPARED_APP_PATH" ]] ||
   fail "missing signed app: $PREPARED_APP_PATH"
 [[ -f "$PREPARED_INFO_PLIST" ]] ||
@@ -42,6 +54,12 @@ python3 "$PROJECT_DIR/scripts/verify-direct-version-bump.py" --floor-only
   fail "final DMG already exists; verify or move it before rebuilding: $DMG_PATH"
 [[ ! -e "$CHECKSUM_PATH" ]] ||
   fail "DMG checksum already exists; verify or move it before rebuilding: $CHECKSUM_PATH"
+
+# Refuse an earlier retained transaction before extracting/signing another image.
+python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+  "$PROJECT_DIR/scripts/notarize_dmg_transaction.py" \
+  --project-root "$PROJECT_DIR" --destination "$DMG_PATH" \
+  --notary-profile "$NOTARY_PROFILE" --check-new
 
 python3 "$PROJECT_DIR/scripts/verify-direct-notarized-archive.py" \
   --project-root "$PROJECT_DIR" \
@@ -185,81 +203,14 @@ codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/NeAntik.app"
 hdiutil detach "$MOUNT_POINT" >/dev/null
 MOUNTED=0
 
-SUBMIT_LOG="$NOTARY_LOG_DIR/$(basename "$DMG_PATH").notary-submit.log"
-NOTARY_RECEIPT="$NOTARY_LOG_DIR/$(basename "$DMG_PATH").notary-receipt.json"
-rm -f "$SUBMIT_LOG"
-rm -f "$NOTARY_RECEIPT"
-xcrun notarytool submit \
-  "$TEMP_DMG" \
-  --keychain-profile "$NOTARY_PROFILE" \
-  --wait \
-  --output-format json |
-  tee "$SUBMIT_LOG"
-
-read -r SUBMISSION_ID NOTARY_STATUS <<<"$(
-  python3 - "$SUBMIT_LOG" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-submission_id = payload.get("id")
-status = payload.get("status")
-if not isinstance(submission_id, str) or not submission_id.strip():
-    raise SystemExit("notary submission JSON has no id")
-if status not in {"Accepted", "Invalid", "In Progress", "Rejected"}:
-    raise SystemExit("notary submission JSON has an invalid status")
-print(submission_id, status)
-PY
-)"
-[[ "$NOTARY_STATUS" == "Accepted" ]] ||
-  fail "Apple notarization status is ${NOTARY_STATUS:-unknown}; see $SUBMIT_LOG"
-xcrun notarytool log \
-  "$SUBMISSION_ID" \
-  --keychain-profile "$NOTARY_PROFILE" \
-  "$NOTARY_RECEIPT"
-python3 -m json.tool "$NOTARY_RECEIPT" >/dev/null
-
-xcrun stapler staple "$TEMP_DMG"
-xcrun stapler validate "$TEMP_DMG"
-codesign --verify --verbose=2 "$TEMP_DMG"
-DMG_SIGNATURE="$(codesign --display --verbose=4 "$TEMP_DMG" 2>&1)"
-print -r -- "$DMG_SIGNATURE" |
-  grep -q '^Authority=Developer ID Application:' ||
-  fail "stapled DMG lost its Developer ID Application signature"
-print -r -- "$DMG_SIGNATURE" | grep -q '^Timestamp=' ||
-  fail "stapled DMG signature has no trusted timestamp"
-spctl \
-  --assess \
-  --type open \
-  --context context:primary-signature \
-  --verbose=4 \
-  "$TEMP_DMG"
-hdiutil verify "$TEMP_DMG"
-
-hdiutil attach \
-  -readonly \
-  -nobrowse \
-  -mountpoint "$MOUNT_POINT" \
-  "$TEMP_DMG" >/dev/null
-MOUNTED=1
-codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/NeAntik.app"
-xcrun stapler validate "$MOUNT_POINT/NeAntik.app"
-spctl --assess --type execute --verbose=4 "$MOUNT_POINT/NeAntik.app"
-hdiutil detach "$MOUNT_POINT" >/dev/null
-MOUNTED=0
-
-(
-  cd "$(dirname "$TEMP_DMG")"
-  shasum -a 256 "$(basename "$TEMP_DMG")"
-) >"$TEMP_DMG.sha256"
-"$PROJECT_DIR/scripts/verify-direct-notarized-dmg.sh" "$TEMP_DMG"
-
-mv "$TEMP_DMG" "$DMG_PATH"
-mv "$TEMP_DMG.sha256" "$CHECKSUM_PATH"
+# The transaction copies this prepared image to durable private storage before
+# contacting Apple. EXIT cleanup may then remove only the disposable staging.
+python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+  "$PROJECT_DIR/scripts/notarize_dmg_transaction.py" \
+  --project-root "$PROJECT_DIR" --destination "$DMG_PATH" \
+  --notary-profile "$NOTARY_PROFILE" --dmg "$TEMP_DMG" --zip "$ZIP_PATH"
 
 echo
 echo "PASS: signed, notarized and stapled DMG verified."
 echo "DMG: $DMG_PATH"
 echo "SHA-256: $(awk '{print $1}' "$CHECKSUM_PATH")"
-echo "Notary log: $SUBMIT_LOG"

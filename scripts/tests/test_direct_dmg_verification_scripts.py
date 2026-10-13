@@ -62,12 +62,13 @@ class DirectDMGVerificationScriptTests(unittest.TestCase):
         self.assertIn('[[ "$DOWNLOADED_SIZE" == "$EXPECTED_SIZE" ]]', text)
         self.assertGreaterEqual(text.count("verify-direct-notarized-dmg.sh"), 2)
 
-    def test_release_runs_independent_verifier_before_final_move(self) -> None:
+    def test_release_runs_independent_verifier_before_exclusive_publication(self) -> None:
         text = (ROOT / "scripts" / "release-direct-dmg.sh").read_text()
-        verify_index = text.index('verify-direct-notarized-dmg.sh" "$TEMP_DMG"')
-        move_index = text.index('mv "$TEMP_DMG" "$DMG_PATH"')
-        self.assertLess(verify_index, move_index)
-        self.assertIn('mv "$TEMP_DMG.sha256" "$CHECKSUM_PATH"', text)
+        self.assertIn('notarize_dmg_transaction.py', text)
+        driver = (ROOT / "scripts/notarize_dmg_transaction.py").read_text()
+        self.assertLess(driver.index('verify-direct-notarized-dmg.sh'), driver.index('publish_or_adopt_sealed_file'))
+        self.assertIn('"sidecar-committed"', driver)
+        self.assertNotIn('mv "$TEMP_DMG"', text)
 
     def test_hosted_wrapper_is_read_only_and_version_driven(self) -> None:
         wrapper = (
