@@ -40,14 +40,38 @@ def clean_environment(source):
     return {key: value for key, value in source.items() if not key.startswith("NEANTIK_")}
 
 
+def failure_diagnostics(text):
+    """Bounded compiler/assertion evidence; never dump the complete test log."""
+    lines = []
+    for line in text.splitlines():
+        if not re.search(r'error:|Issue recorded|Expectation failed|✘ Test', line):
+            continue
+        line = re.sub(r'(github_pat_|gh[pousr]_)[A-Za-z0-9_]+', '[credential]', line)
+        line = re.sub(r'(?i)(password|token|secret|authorization|username)\s*[:=]\s*(?:"[^"]*"|\S+)', r'\1=[redacted]', line)
+        line = re.sub(r'(https?|socks5)://[^/\s]+@', r'\1://[redacted]@', line)
+        line = re.sub(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '[address]', line)
+        line = re.sub(r'/Users/[^/\s]+', '/Users/[user]', line)
+        line = line[:512]
+        if line not in lines: lines.append(line)
+        if len(lines) == 20: break
+    return lines
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--shard", type=int, required=True)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--shard", type=int)
+    selection.add_argument("--suite", help="One exact ordinary CI suite for diagnosis; not a full shard PASS")
     parser.add_argument("--shards", type=int, default=4)
     parser.add_argument("--plan", action="store_true")
     args = parser.parse_args()
     try:
-        chosen = partition(catalog(), args.shard, args.shards)
+        available = catalog()
+        if args.suite:
+            fast.selection([args.suite], available)
+            chosen = [args.suite]
+        else:
+            chosen = partition(available, args.shard, args.shards)
     except ValueError as error:
         parser.error(str(error))
     if args.plan:
@@ -58,7 +82,7 @@ def main():
     env["DEVELOPER_DIR"] = subprocess.check_output([str(ROOT / "scripts/resolve-compatible-developer-dir.sh")], cwd=ROOT, text=True).strip()
     if not env["DEVELOPER_DIR"]:
         parser.error("Empty developer-dir resolver")
-    cache = ROOT / ".build/neantik-ci" / str(args.shard)
+    cache = ROOT / ".build/neantik-ci" / ("diagnostic" if args.suite else str(args.shard))
     env["CLANG_MODULE_CACHE_PATH"] = str(cache / "clang-module-cache")
     env["SWIFTPM_MODULECACHE_OVERRIDE"] = env["CLANG_MODULE_CACHE_PATH"]
     before = fast.input_digest(ROOT)
@@ -88,6 +112,8 @@ def main():
             (logs / "summary.json").write_text(json.dumps(report, indent=2) + "\n")
             print(json.dumps(row), flush=True)
             if row["status"] != "pass" or not unchanged:
+                print(json.dumps({"failureDiagnostics": failure_diagnostics(log.read_text(errors="replace")),
+                                  "scope": "bounded redacted error lines; full log retained privately"}), flush=True)
                 return 1
     return 0
 

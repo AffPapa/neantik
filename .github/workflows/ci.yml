@@ -10,6 +10,10 @@ on:
         description: "Only diagnose installed Xcode; no build or tests"
         type: boolean
         default: false
+      diagnostic_suite:
+        description: "One exact ordinary CI suite; empty runs full CI"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -27,7 +31,7 @@ jobs:
         run: ./scripts/resolve-compatible-developer-dir.sh
 
   swift-tests:
-    if: ${{ ! inputs.toolchain_probe }}
+    if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
     name: Swift / shard ${{ matrix.shard }}
     runs-on: macos-latest
     timeout-minutes: 30
@@ -43,7 +47,7 @@ jobs:
         run: python3 -B scripts/test-manager-ci.py --shard "${{ matrix.shard }}" --shards 4
 
   release-contracts:
-    if: ${{ ! inputs.toolchain_probe }}
+    if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
     name: Release and privacy contracts
     runs-on: macos-latest
     timeout-minutes: 15
@@ -81,3 +85,15 @@ jobs:
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: AffPapa release regression tests
         run: python3 -m unittest discover -s ops/affpapa/tests -p 'test_*.py'
+
+  manager-diagnostic:
+    if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite != '' }}
+    runs-on: macos-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      DIAGNOSTIC_SUITE: ${{ inputs.diagnostic_suite }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Diagnose one manager suite
+        run: python3 -B scripts/test-manager-ci.py --suite "$DIAGNOSTIC_SUITE"

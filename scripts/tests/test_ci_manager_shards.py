@@ -13,6 +13,25 @@ SPEC.loader.exec_module(MOD)
 
 
 class CIManagerShardTests(unittest.TestCase):
+    def test_failure_diagnostics_are_bounded_redacted_and_actionable(self):
+        text = 'ordinary secret text\nfile.swift:4: error: missing API\nerror: token=ghp_ABC123 password="private value" http://u:p@host/ 203.0.113.8 /Users/example/file\n'
+        lines = MOD.failure_diagnostics(text + ''.join(f'error: extra {i}\n' for i in range(40)))
+        self.assertEqual(len(lines), 20)
+        self.assertIn('missing API', lines[0])
+        self.assertNotIn('ghp_ABC123', '\n'.join(lines))
+        self.assertNotIn('private value', '\n'.join(lines))
+        self.assertNotIn('u:p@', '\n'.join(lines))
+        self.assertNotIn('203.0.113.8', '\n'.join(lines))
+        self.assertNotIn('ordinary secret text', '\n'.join(lines))
+        self.assertLessEqual(max(map(len, lines)), 512)
+
+    def test_diagnostic_suite_is_exact_and_ordinary(self):
+        with patch.object(MOD.sys, 'argv', ['ci', '--suite', 'AppPathsTests', '--plan']), redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(MOD.main(), 0)
+            self.assertEqual(json.loads(output.getvalue())['suites'], ['AppPathsTests'])
+        for suite in ['.*', 'UnknownTests', 'LiveProxyTests']:
+            with self.subTest(suite=suite), patch.object(MOD.sys, 'argv', ['ci', '--suite', suite, '--plan']), redirect_stdout(io.StringIO()), patch.object(MOD.sys, 'stderr', io.StringIO()):
+                with self.assertRaises(SystemExit): MOD.main()
     def test_ci_removes_mixed_suite_and_presence_based_local_qa_overrides(self):
         env = {"PATH": "/bin", "LANG": "en_US.UTF-8", "NEANTIK_WEBKIT_LIVE": "1",
                "NEANTIK_RELAY_PUBLIC_TLS_FIXTURE": "1", "NEANTIK_UPDATE_TEST_ROOT": "/private/tmp/owned-qa",
