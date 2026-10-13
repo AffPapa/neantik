@@ -5,6 +5,10 @@
 - For Swift/UI iteration use `./Develop-NeAntik.command`; it is isolated from
   production profiles and release state. Use `./Release-NeAntik.command` only
   for one exact final candidate after local tests are green.
+- For daily targeted tests use `python3 -B scripts/test-manager-fast.py --suite
+  SuiteNameTests` (repeat `--suite` to batch related suites). It reuses local
+  build caches with jobs=2 and serial execution. `--all` is local regression;
+  clean CI and signed/runtime/hosted release gates remain separate.
 - Authorized publication scope is GitHub `AffPapa/neantik` and
   `https://browser.free` through its existing OpenAI Sites project. Follow the
   current Direct release preflight and Sites workflow for these channels.

@@ -199,9 +199,17 @@ Developer ID-кандидата без software fallback. Подробности
 Понадобятся Mac с Apple Silicon, macOS 14+ и Xcode 26+.
 
 ```bash
-./scripts/verify-native-swift-tests.sh
+python3 -B scripts/test-manager-fast.py --suite ProxyImportParserTests
 ./Develop-NeAntik.command
 ```
+
+Для ежедневных правок запускайте связанные наборы за одну сборку:
+`python3 -B scripts/test-manager-fast.py --suite ProxyImportParserTests --suite BrowserRouteProbeTests`.
+Команда сохраняет локальный кэш, использует jobs=2, проверяет непустой результат
+и сохраняет отчёт. `--list` показывает актуальные наборы, `--all` запускает
+полную локальную регрессию. Чистый прогон с отдельным кэшем остаётся доступен
+через `./scripts/verify-native-swift-tests.sh`.
+См. [короткий цикл разработки](docs/DEVELOPMENT_WORKFLOW.md).
 
 `Develop-NeAntik.command` — быстрый цикл для интерфейса и Swift-кода. Он один
 раз создаёт APFS-клон встроенного Chromium, затем пересобирает только менеджер
