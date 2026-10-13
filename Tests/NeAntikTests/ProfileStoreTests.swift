@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
@@ -684,6 +685,22 @@ struct ProfileStoreTests {
         let paths = AppPaths(rootDirectory: root)
         let store = ProfileStore(paths: paths)
         let count = 5_000
+        // This benchmark retains owned directory descriptors for the batch.
+        // A smaller inherited soft limit exercises the separate budget-refusal
+        // tests instead of organization sorting. Change only this test process.
+        var limits = rlimit()
+        try #require(getrlimit(RLIMIT_NOFILE, &limits) == 0)
+        let originalSoftLimit = limits.rlim_cur
+        let benchmarkLimit = rlim_t(count * 3 + 1_024)
+        if limits.rlim_cur < benchmarkLimit {
+            try #require(limits.rlim_max >= benchmarkLimit)
+            limits.rlim_cur = benchmarkLimit
+            try #require(setrlimit(RLIMIT_NOFILE, &limits) == 0)
+        }
+        defer {
+            limits.rlim_cur = originalSoftLimit
+            #expect(setrlimit(RLIMIT_NOFILE, &limits) == 0)
+        }
         let profiles = (0..<count).map { index in
             BrowserProfile(
                 name: "Imported \(index)",

@@ -5,6 +5,11 @@ from unittest.mock import patch
 ROOT=(Path(__file__).resolve().parents[3] / 'artifacts/neantik/looper-goals/20261008-fury-major')
 NAME='verify-domain-cache-replay-attempt-8.py'
 class Domain8LaunchTests(unittest.TestCase):
+ def setUp(self):
+  # These controls belong to an owned, archived native-build attempt. The
+  # public checkout has independent synthetic postbuild controls; it does not
+  # contain the private launcher/configuration or claim this runtime receipt.
+  if not (ROOT/NAME).is_file():self.skipTest('Owned attempt8 archive unavailable; native replay not qualified')
  def load(self):
   raw=(ROOT/NAME).read_bytes();m=types.ModuleType('owned_domain8');m.__file__=str(ROOT/NAME);m.AUTHENTICATED_EXECUTED_BUFFER_SHA256=hashlib.sha256(raw).hexdigest();exec(compile(raw,str(ROOT/NAME),'exec'),m.__dict__);return raw,m
  def test_code_config_loader_bounds_reject_without_unbounded_read(self):

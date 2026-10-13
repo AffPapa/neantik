@@ -3,8 +3,10 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import struct
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import chromium_15612_python311_cache as helper
 from chromium_15612_generated_cache import M156CacheError
@@ -36,8 +38,11 @@ class Python311CacheTests(unittest.TestCase):
         wrong = snapshot([source, {**cache, 'sha256': 'b'*64}])
         with self.assertRaises(M156CacheError): helper.compare_observed_target_caches(after, wrong)
 
-    @unittest.skipUnless(helper.PYTHON311.exists(), 'Observed CPython3.11 unavailable')
     def test_actual_cache_and_rebound_tamper_controls_never_execute_source(self):
+        if not helper.PYTHON311.exists():
+            self.skipTest('Observed pinned CPython3.11 unavailable; native derivation not qualified')
+        if hashlib.sha256(helper.read_pinned_system_tool()).hexdigest() != helper.PYTHON311_SHA256:
+            self.skipTest('Installed CPython3.11 differs from observed build; native derivation not qualified')
         with tempfile.TemporaryDirectory(prefix='neantik311-cache-') as temp:
             root = Path(temp); (root/'tools').mkdir()
             source = root/'tools/owned.py'; sentinel = root/'no-source-execution'
@@ -58,5 +63,28 @@ class Python311CacheTests(unittest.TestCase):
             with self.assertRaises(M156CacheError): helper.verify311(root, saved)
             with self.assertRaises(M156CacheError): helper.verify311(root, record(), Path('/usr/bin/python3'))
             self.assertFalse(sentinel.exists())
+
+    def test_changed_interpreter_refused_before_execution(self):
+        # No private interpreter is required to prove the pinned-tool boundary.
+        with tempfile.TemporaryDirectory(prefix='neantik311-tool-refusal-') as temp:
+            root = Path(temp); (root/'tools/__pycache__').mkdir(parents=True)
+            source = root/'tools/owned.py'; source.write_bytes(b'value = None\n')
+            cache = root/'tools/__pycache__/owned.cpython-311.pyc'
+            integer = lambda n: struct.pack('<i', n)
+            string = lambda data: b's' + integer(len(data)) + data
+            text = lambda data: b'z' + bytes([len(data)]) + data
+            empty = b')\x00'
+            body = (b'c' + integer(0)*3 + integer(1) + integer(0) + string(b'') +
+                    empty*3 + string(b'') + text(b'/fixture.py') + text(b'owned')*2 +
+                    integer(1) + string(b'')*2)
+            cache.write_bytes(bytes(16) + body)  # Bounded synthetic code, never decoded/executed.
+            record = {'cache': str(cache.relative_to(root)), 'source': str(source.relative_to(root)),
+                      'cacheSHA256': hashlib.sha256(cache.read_bytes()).hexdigest(),
+                      'sourceSHA256': hashlib.sha256(source.read_bytes()).hexdigest(), 'cacheBytes': cache.stat().st_size}
+            with patch.object(helper, 'read_pinned_system_tool', return_value=b'unpinned tool'), \
+                 patch.object(helper.subprocess, 'run', side_effect=AssertionError('Must not execute')) as execute:
+                with self.assertRaisesRegex(M156CacheError, 'CPython3.11 tool changed'):
+                    helper.verify311(root, record)
+                execute.assert_not_called()
 
 if __name__ == '__main__': unittest.main()

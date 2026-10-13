@@ -76,6 +76,7 @@ class BinaryBinding9Tests(unittest.TestCase):
     def test_actual_running9_refused_before_any_app_access(self):
         import json
         path=(Path(__file__).resolve().parents[3] / 'artifacts/neantik/looper-goals/20261008-fury-major/m156-native-build-attempt-9-state.json')
+        if not path.is_file():self.skipTest('Owned native9 state unavailable; native refusal not qualified')
         actual=json.loads(path.read_bytes())
         if actual['status']!='single-native-build-running':self.skipTest('Owned native9 already terminal')
         with patch.object(binding,'observe_regular',side_effect=AssertionError('Must not read app')) as reader:

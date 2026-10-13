@@ -5,6 +5,8 @@ from unittest.mock import patch
 ROOT=(Path(__file__).resolve().parents[3] / 'artifacts/neantik/looper-goals/20261008-fury-major')
 NAME='verify-domain-cache-replay-attempt-9.py'
 class Domain9LaunchTests(unittest.TestCase):
+ def setUp(self):
+  if not (ROOT/NAME).is_file():self.skipTest('Owned attempt9 archive unavailable; native replay not qualified')
  def load(self):
   raw=(ROOT/NAME).read_bytes();m=types.ModuleType('owned_domain9');m.__file__=str(ROOT/NAME);m.AUTHENTICATED_EXECUTED_BUFFER_SHA256=hashlib.sha256(raw).hexdigest();exec(compile(raw,str(ROOT/NAME),'exec'),m.__dict__);return raw,m
  def test_code_config_loader_bounds_reject_without_unbounded_read(self):
