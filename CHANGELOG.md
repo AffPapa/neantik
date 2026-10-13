@@ -1,5 +1,14 @@
 # NeAntik changelog
 
+## Direct 0.8.2 (113)
+
+Published public alpha on GitHub and browser.free Sites140. Chromium156.0.8078.12 and the Developer ID are unchanged. [Exact results and limits](releases/v0.8.2.json).
+
+- Исправлено воспроизведённое падение карточки прокси при чтении accessibility label. Выбор, изменение и сохранение проверены в точном подписанном ZIP.
+- Штатный authenticated HTTP relay, HTTP/HTTPS destination, отказ upstream и Direct negative control проверены на синтетических профилях; это ограниченные наблюдения, не whole-session DNS/UDP guarantee.
+- Fast developer tests используют общий project cache и batched suites, jobs2/serial; пустая выборка не даёт PASS.1477reported tests/168suites/59optional skips,74.088s.
+- ZIP/DMG notarization/stapling/Gatekeeper и публичные байты PASS; скачанный manager/Chromium и metadata MCP PASS. WebKit preview и прежние ограничения сохранены; rollbackv0.8.1.
+
 ## Direct 0.8.1 (112)
 
 Published public alpha on GitHub and browser.free Sites139. Includes WebKit preview from unpublished0.8.0. Chromium156.0.8078.12 unchanged. Exact signed, WebKit native persistence, Developer ID/notarization/stapling/Gatekeeper, public ZIP/DMG bytes, downloaded headed/MCP and live feed PASS. [Results and limits](releases/v0.8.1.json).

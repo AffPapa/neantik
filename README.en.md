@@ -7,9 +7,12 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published version: `0.8.1 (112)`, public alpha. The exact signed release passed
-Apple gates, public-download, MCP and full-restart WebKit persistence checks.
+Published version: `0.8.2 (113)`, public alpha. The exact signed release passed
+Apple gates, public-download and MCP checks. Full-restart WebKit persistence
+evidence from0.8.1 is retained for its unchanged implementation.
 The complete product improvement program remains open.
+
+`0.8.2` fixes the proxy-card accessibility crash and adds a cached local test workflow. Chromium and experimental WebKit capabilities are unchanged. Normal shipping relay/failure behavior, public bytes and isolated downloaded launch were checked.
 
 ## Download
 
@@ -18,7 +21,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.1 (112), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.1). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.1.json).
+Latest published release: [NeAntik 0.8.2 (113), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.2). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.2.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
