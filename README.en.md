@@ -1,7 +1,5 @@
 # NeAntik
 
-Local `0.8.3 (114)` is a development preview with WebKit tabs and explicit engine selection. It is not published; the public release is listed below.
-
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
 source-pinned Chromium runtime. It does not require Electron, an account, a
@@ -9,12 +7,10 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published version: `0.8.2 (113)`, public alpha. The exact signed release passed
-Apple gates, public-download and MCP checks. Full-restart WebKit persistence
-evidence from0.8.1 is retained for its unchanged implementation.
-The complete product improvement program remains open.
-
-`0.8.2` fixes the proxy-card accessibility crash and adds a cached local test workflow. Chromium and experimental WebKit capabilities are unchanged. Normal shipping relay/failure behavior, public bytes and isolated downloaded launch were checked.
+Published **0.8.3 (114), public alpha** adds WebKit tabs, same-profile
+new-tab links and explicit engine selection. The signed release passed Apple,
+public-download, isolated launch, WebKit restart isolation and metadata MCP
+checks. The full 1.0 product program remains open.
 
 ## Download
 
@@ -23,13 +19,11 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.2 (113), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.2). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.2.json).
+Latest published release: [NeAntik 0.8.3 (114), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.3). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.3.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
-
-`0.8.1` adds experimental system WebKit profiles in NeAntik windows and fixes false launch refusal for an unreadable unrelated signed process. Update discovery waits for network invalidation. Relay, encrypted stopped-Chromium-profile backup, extension inventory and MCP remain enabled; an own packed CRX passed native lifecycle checks. Exact signed .81 WebKit retained separate cookies/LocalStorage/IndexedDB across full quit/restart. WebKit is direct-only with no tabs/proxy/extensions/full backup/deletion; stdio MCP launch is refused. Chromium is unchanged; Safe Browsing remains disabled. DNS and default-trusted authenticated HTTPS upstream positive remain separate limitations. Immutable v0.7.47 is retained; never open schema2 metadata with an older manager. GitHub and browser.free are updated; the user handles AffPapa manually.
 
 Direct downloads: [browser.free](https://browser.free).
 
@@ -41,6 +35,13 @@ the exact public binary contents are defined by its release notes and assets.
 1. Create a profile and give it a clear name.
 2. Paste a proxy if needed; NeAntik parses it locally.
 3. Click **Launch**. Cookies and site data stay inside that profile.
+
+## Experimental WebKit
+
+Choose Chromium or system WebKit when creating a profile. WebKit uses a NeAntik
+window with separate site data and tabs (CmdT/CmdW). Proxy, downloads,
+extensions, full backup and stdio MCP launch remain unavailable.
+[Guide and verification limits](docs/WEBKIT_PROFILES.md).
 
 ## What it does
 
