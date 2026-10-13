@@ -66,6 +66,10 @@ class DirectDMGReleaseScriptTests(unittest.TestCase):
         self.assertIn('verify-direct-notarized-dmg.sh', driver)
         self.assertIn('publish_or_adopt_sealed_file', driver)
         self.assertNotIn('--wait', driver)
+        preflight = driver[driver.index('if args.check_new:'):driver.index('if args.resume:', driver.index('if args.check_new:'))]
+        self.assertIn('source.capture_release_source(project, closure=POLICY_CLOSURE)', preflight)
+        self.assertNotIn('start(', preflight.split('# Catch')[0])
+        self.assertNotIn('notarytool', preflight)
         self.assertLess(driver.index('verify-direct-notarized-dmg.sh'), driver.index('publish_or_adopt_sealed_file'))
 
     def test_wrapper_has_no_placeholder_identity_or_secret_prompt(self) -> None:

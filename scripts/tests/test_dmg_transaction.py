@@ -442,5 +442,29 @@ class DMGContentsTests(unittest.TestCase):
                 path.unlink()
 
 
+class DMGPreflightTests(unittest.TestCase):
+    def test_source_refusal_precedes_packaging_or_apple_effect(self):
+        self._check(source_error=True)
+
+    def test_source_acceptance_has_no_packaging_or_apple_effect(self):
+        self._check(source_error=False)
+
+    def _check(self, *, source_error):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary).resolve() / 'project'
+            project.mkdir(mode=0o700)
+            (project / 'dist').mkdir(mode=0o700)
+            destination = project / 'dist/NeAntik-9.1.0-arm64-notarized.dmg'
+            error = ValueError('synthetic source refusal') if source_error else None
+            with mock.patch.object(sys, 'argv', ['dmg', '--project-root', str(project), '--destination', str(destination), '--check-new']), mock.patch.object(dmg.source, 'capture_release_source', side_effect=error) as capture, mock.patch.object(dmg, 'start') as start, mock.patch.object(dmg, 'run') as run:
+                result = dmg.main()
+                self.assertEqual(result, 65 if source_error else 0)
+                capture.assert_called_once_with(project, closure=dmg.POLICY_CLOSURE)
+                start.assert_not_called()
+                run.assert_not_called()
+                private = project / 'dist/private/dmg-transactions'
+                self.assertEqual([p for p in private.iterdir() if p.is_dir()], [])
+
+
 if __name__ == "__main__":
     unittest.main()

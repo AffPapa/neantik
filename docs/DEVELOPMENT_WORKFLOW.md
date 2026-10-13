@@ -155,3 +155,14 @@ Developer ID, Apple notarization, stapling и Gatekeeper. Сохранённый
 должен продолжаться после остановки без второй отправки; квалифицировать
 публичные байты отдельно. Локальные fault tests не закрывают этот native gate.
 Повторный полный release pipeline не используется для диагностики DMG.
+
+### Результат нативной проверки DMG и быстрый отказ
+
+0.8.5 завершила настоящую DMG transaction: Apple Accepted, stapling,
+Gatekeeper и публичные байты проверены. Повторная отправка не нужна.
+`--check-new` дополнительно проверяет source receipt до дорогой распаковки
+и hdiutil. При executable Python cache рядом с исходниками он отказывает
+заранее; ничего не удаляет. `start()` повторно фиксирует source, чтобы
+предварительная проверка не заменила конечную привязку.
+Disposable DeviceMemory harness использует explicit mock Keychain и
+allowlisted environment; временный HOME сам по себе не изолирует Keychain.

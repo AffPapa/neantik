@@ -24,7 +24,16 @@ export function isFixtureProcess(group, command, ownedGroup, root) {
   return group === ownedGroup || (` ${command} `).includes(` ${marker} `);
 }
 
+export function ownedEnvironment(root, environment = process.env) {
+  return { PATH: environment.PATH, HOME: root, TMPDIR: root, LANG: 'en_US.UTF-8', NEANTIK_PROFILE_SEED: '21' };
+}
+
 if (process.argv[2] === '--self-test') {
+  const isolated = ownedEnvironment('/synthetic/root', { PATH: '/usr/bin', HOME: '/user/home', FAKE_SECRET: 'must-not-inherit', NEANTIK_PROFILE_SEED: '999' });
+  assert.equal(isolated.HOME, '/synthetic/root');
+  assert.equal(isolated.TMPDIR, '/synthetic/root');
+  assert.equal(isolated.NEANTIK_PROFILE_SEED, '21');
+  assert.equal('FAKE_SECRET' in isolated, false);
   assert.equal(isCoherent(8, '8', '8'), true);
   assert.equal(isCoherent(8, '32', '32'), false);
   assert.equal(isCoherent(8, null, '8'), false);
@@ -171,6 +180,7 @@ try {
     '--remote-debugging-address=127.0.0.1',
     '--remote-debugging-port=0',
     '--remote-allow-origins=http://neantik.local',
+    '--use-mock-keychain',
     '--no-first-run',
     '--disable-background-networking',
     '--disable-component-update',
@@ -178,7 +188,9 @@ try {
     '--disable-extensions',
     `${origin}/`,
   ], {
-    env: { ...process.env, NEANTIK_PROFILE_SEED: '21' },
+    // A temporary HOME does not isolate the system Keychain; the explicit
+    // mock flag above prevents OSCrypt from accessing user secrets.
+    env: ownedEnvironment(profile),
     stdio: 'ignore',
     detached: true,
   });

@@ -563,7 +563,11 @@ def main():
                 print("Existing DMG transaction: " + str(retained[0]), flush=True)
             if args.resume or args.dmg or args.zip or retained:
                 raise DMGError("Retained transaction exists; use explicit resume")
-            print('{"status":"new-transaction-allowed"}')
+            # Catch executable source caches/dirty inputs before native packaging.
+            # start() still captures and seals again; this check grants no Apple
+            # or publication authority and never deletes working files.
+            source.capture_release_source(project, closure=POLICY_CLOSURE)
+            print('{"status":"new-transaction-allowed","sourcePreflight":"PASS"}')
             return 0
         if args.resume:
             root = canonical(args.resume)
