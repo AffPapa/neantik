@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "tag": "v0.8.5",
+  "version": "0.8.5",
+  "build": 116,
+  "channel": "public-alpha",
+  "sourceCommit": "58788e5ef5ca458d926b3fea58aa8f2de9e4de9c",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.5",
+  "rollbackRelease": "v0.8.3",
+  "distributionDirectory": "dist/distribution/v0.8.5-116-c6bc031",
+  "candidateManifestSHA256": "333ca1ca4dee29c2b1b4db13b53e6fd273f8225cd1a2bfe3a36b3fb1e4452c9b",
+  "candidateSourceBindingSHA256": "e9f59fece8ec5b782c6891407be12318d8b816a08a642f2618049166f55f56a2",
+  "changes": [
+    "Preserve proxy preflight across a proven saved launch transition; configuration or password changes invalidate it.",
+    "Avoid unnecessary Keychain reads for profiles without proxy authorization; authenticated copy failure preserves metadata.",
+    "Classify process shutdown waiting separately from corrupt data.",
+    "Use UTC security-check dates consistently locally and in CI.",
+    "Correct DMG custody/native xattr workflow and bounded CI URLProtocol fixture settlement; these tooling changes are separate from app source."
+  ],
+  "limitations": [
+    "Public alpha; major1.0 and complete hardware/macOS qualification remain open.",
+    "Headed ARM64/macOS27 tests do not prove execution on every Mac, macOS14 or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "OS-default-trusted authenticated HTTPS upstream positive deferred explicitly by user; private-anchor QA and HTTPS destination are distinct evidence.",
+    "Encrypted BrowserData backup requires original stopped Chromium profile, Mac, Keychain and exact runtime; no cross-Mac OS-secret portability. Existing separate signed QA recovery/interruption evidence retained, production secrets not used for tests.",
+    "Own verified packed CRX native install/restart/disable/enable/remove and profile isolation passed; cancel-install dialog unobserved; not universal third-party extension compatibility.",
+    "MCP exact and downloaded smoke covers metadata, revision/access controls and WebKit refusals, not every tool/browser action or every external AI client.",
+    "Bounded actual shipping HTTP/HTTPS/refusal observations and separate signed DEBUG DNS NXDOMAIN controls do not prove continuous whole-system DNS/UDP isolation. Product DNS remains notObserved.",
+    "WebKit remains experimental and direct only: no proxy, downloads, session restore, extensions, full backup or deletion. Stdio MCP WebKit launch is refused; metadata tools remain available.",
+    "Updater .46→.47 installation/rollback evidence retained; no fresh .82→.83 install qualification yet.",
+    "Swift1484/168 suites locally; later fixture correction18reported/17pass/1skip and CI305. No claim all full CI jobs rerun green."
+  ],
+  "verification": {
+    "developerId": "same pinned474F7C78F33EE324C24F6F5AE0443EB713E85E60; existing macOS provisioning contract",
+    "notarization": {
+      "ZIP": "Accepted",
+      "ZIPSubmission": "a42ecac3-ee93-4aba-8042-fafdf0408351",
+      "DMG": "Accepted",
+      "DMGSubmission": "dd5bb53f-05df-459a-82dd-0722c34e6af7"
+    },
+    "stapling": "PASS",
+    "Gatekeeper": "PASS: Notarized Developer ID",
+    "DirectDoctor": {
+      "passed": 13,
+      "blocked": 0,
+      "channel": "public-alpha"
+    },
+    "tests": {
+      "reported": 1484,
+      "suites": 168,
+      "seconds": 95.756,
+      "jobs": 2,
+      "parallel": false,
+      "result": "PASS",
+      "scope": "local full Swift after product changes; 59 skip log lines; later fixture correction separately targeted and CI305"
+    },
+    "MCPExactSigned": {
+      "result": "PASS",
+      "managementTools": 18,
+      "readTools": 7,
+      "scope": "isolated metadata/revision/refusal/no-auth copy, not all external AI clients"
+    },
+    "unchangedPriorNativeEvidence": {
+      "backup": "signed stopped Chromium cookie/LS/IDB/tabs restore and real process interruption; original Mac/Keychain only",
+      "CRX": "own packed native install/restart/disable/enable/remove and profile B absence; unchanged runtime",
+      "updater": "actual .46→.47 install, controlled failure/pre-ACK rollback, automatic relaunch and retained metadata; unchanged install services, no fresh .81→.82 claim"
+    },
+    "cloudCI": {
+      "url": "https://github.com/AffPapa/neantik/actions/runs/38479361294",
+      "sourceCommit": "c6bc031d11049202329062bc25d8741e534d97e1",
+      "result": "PASS",
+      "scope": "one SignedUpdateManifestFetcherTests diagnostic; other jobs skipped by design; CI304 full run retains two prior fixture ordering failures"
+    },
+    "hostedZIP": {
+      "archiveName": "NeAntik-0.8.5-arm64-notarized.zip",
+      "downloadURL": "https://github.com/AffPapa/neantik/releases/download/v0.8.5/NeAntik-0.8.5-arm64-notarized.zip",
+      "sha256": "c5684c38ffdbbddc603fbdde3f770ff9339603feb0896af1941fb68808134481",
+      "sizeBytes": 189673659,
+      "status": "hosted-zip-byte-identical-gatekeeper-candidate-and-evidence-verified",
+      "retainedDownloadSHA256": "c5684c38ffdbbddc603fbdde3f770ff9339603feb0896af1941fb68808134481"
+    },
+    "hostedDMG": {
+      "status": "PASS",
+      "sha256": "f57464fea2879097fe8d9e1e3fd3ef126358a2cf8c1741cde7be9e1bb24178a0",
+      "sizeBytes": 214518236,
+      "anonymousDownload": true,
+      "integritySigningStaplingGatekeeper": "PASS",
+      "version": "0.8.5",
+      "build": 116
+    },
+    "downloadedHeaded": {
+      "status": "PASS",
+      "version": "0.8.5",
+      "build": 116,
+      "runtimeVersion": "156.0.8078.12",
+      "archiveSHA256": "c5684c38ffdbbddc603fbdde3f770ff9339603feb0896af1941fb68808134481",
+      "headed": true,
+      "freshEnrollment": true,
+      "allCriticalFilesMatch": true,
+      "ownedProcessesDrained": true,
+      "productionProfilesUsed": false,
+      "scope": "isolated authenticated headed fingerprint audit; not final manager relay qualification"
+    },
+    "unchangedWebKitEvidence": {
+      "version": "0.8.3",
+      "scope": "prior isolated tabs/keyboard/persistence observations; unchanged engine/UI source, not a fresh0.8.5 WebKit execution"
+    },
+    "downloadedMCP": {
+      "pass": true,
+      "scope": "Exact signed release executable; owned temporary workspace; metadata-only; no proxy credentials, browser launch, Keychain operations or network",
+      "managementTools": 18,
+      "readTools": 7,
+      "allOwnedMCPProcessesExited": true
+    },
+    "liveSite": {
+      "status": "PASS",
+      "site": "https://browser.free",
+      "version": "0.8.5",
+      "build": 116,
+      "anonymousHTTPS": true,
+      "signedManifestVerified": true,
+      "keyID": "neantik-direct-20261012-v1",
+      "downloadLinksMatch": true,
+      "scope": "anonymous route/content/link/feed verification; downloaded bytes/native behavior separate"
+    },
+    "controlledManagerHTTP": {
+      "result": "PASS",
+      "headed": true,
+      "scope": "GUI synthetic authenticated HTTP profile edit/save/preflight/Chromium own-origin request/stop; not DNS/WebRTC/full-session route qualification"
+    },
+    "Python": {
+      "appSource": "1339 PASS19skips",
+      "workflow": "1344 PASS19skips before final guard; final39targeted PASS"
+    }
+  },
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.5-arm64-notarized.zip",
+      "sha256": "c5684c38ffdbbddc603fbdde3f770ff9339603feb0896af1941fb68808134481",
+      "sizeBytes": 189673659,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.5/NeAntik-0.8.5-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.5-arm64-notarized.dmg",
+      "sha256": "f57464fea2879097fe8d9e1e3fd3ef126358a2cf8c1741cde7be9e1bb24178a0",
+      "sizeBytes": 214518236,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.5/NeAntik-0.8.5-arm64-notarized.dmg"
+    }
+  ],
+  "workflowCommit": "c6bc031d11049202329062bc25d8741e534d97e1",
+  "sitePublication": {
+    "projectID": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "version": 142,
+    "sourceCommit": "4f6a372dba12736a6e963d69dd69b70adc5b0576",
+    "savedVersionID": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_941a81dc9d38819191c570e9b0e0e43a",
+    "deploymentID": "appgdep_6aceb70d76988191bd182cf17c8cf101",
+    "status": "succeeded"
+  }
+}

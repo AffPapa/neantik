@@ -7,7 +7,7 @@ Chromium runtime, собранный из зафиксированных исх�
 
 [English version](README.en.md)
 
-Опубликована **0.8.3 (114), public alpha**. В WebKit появились вкладки,
+Опубликована **0.8.5 (116), public alpha**. Исправлены статус прокси и копирование профилей без лишнего обращения к Связке ключей. В WebKit появились вкладки,
 ссылки в новой вкладке и понятный выбор движка при создании профиля.
 Подписанный выпуск прошёл проверки Apple, публичного скачивания и запуска,
 изоляции WebKit после перезапуска и metadata-инструментов MCP.
@@ -20,7 +20,7 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.8.3 (114), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.3). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.3.json).
+Последний опубликованный выпуск: [NeAntik 0.8.5 (116), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.5). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.5.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
