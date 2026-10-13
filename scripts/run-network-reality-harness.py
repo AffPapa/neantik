@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Measure a minimized, self-hosted loopback HTTP network smoke report.
+"""Run a legacy localhost transport fixture without claiming a browser route.
 
-This intentionally reports only partial evidence. It proves that a local
-HTTP request reached a temporary self-hosted endpoint; it does not prove proxy
-egress, DNS behavior, TLS, HTTP/2/3, or WebRTC behavior.
+Python's HTTP request is a transport smoke, not Chromium evidence. Even when
+it succeeds, this browser-route contract remains unverified. Owned Chromium
+NetLog/endpoint observations are handled separately by the route observer.
 """
 
 from __future__ import annotations
@@ -73,17 +73,9 @@ def run() -> dict[str, object]:
         ) as response:
             if response.status != 200 or response.read() != b"neantik-network-harness\n":
                 raise RuntimeError("self-hosted endpoint returned an unexpected response")
-        report = {
-            "status": "partial",
-            "routeMode": "direct",
-            "effectiveHTTPRouteObserved": True,
-            "dnsPath": "not_observed",
-            "negotiatedProtocol": "http1",
-            "tlsObserved": False,
-            "webrtcDirectCandidates": 0,
-            "bypassDetected": False,
-            "generatedAt": _utc_now(),
-        }
+        # This producer never launches Chromium or binds a runtime/session.
+        # Do not label Python's HTTP/1 connection as the browser's route.
+        report = _unverified_report()
     except (OSError, RuntimeError, TimeoutError, URLError):
         report = _unverified_report()
     finally:

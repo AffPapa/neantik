@@ -29,7 +29,7 @@ candidates, headers, paths, or free-form notes are permitted.
 | --- | --- |
 | `status` | `verified`, `partial`, `failed`, `blocked`, or `unverified` |
 | `routeMode` | `direct`, `proxied`, or `unknown` |
-| `effectiveHTTPRouteObserved` | boolean; true only when the producer observed the HTTP route |
+| `effectiveHTTPRouteObserved` | boolean; true only when the producer observed the browser's HTTP route |
 | `dnsPath` | `observed`, `not_observed`, or `blocked` |
 | `negotiatedProtocol` | `http1`, `http2`, `http3`, or `unknown` |
 | `tlsObserved` | boolean |
@@ -59,12 +59,15 @@ The verifier does not infer status from configuration and does not upgrade a
 report. The producer must explicitly set `effectiveHTTPRouteObserved`.
 
 The repository includes `scripts/run-network-reality-harness.py`, a local
-self-hosted HTTP smoke producer. It starts a temporary loopback endpoint and
-performs one request with ambient system proxy settings disabled, then emits
-`partial` evidence with HTTP/1 observation. It deliberately leaves DNS, TLS,
-HTTP/2/3, proxy egress, and WebRTC as unobserved. If the local socket cannot
-be created or cleaned up, it emits `unverified`; that is not DNS-block
-evidence. A successful run must not be upgraded to `verified`.
+self-hosted transport fixture. It starts a temporary loopback endpoint and
+performs one Python request with ambient system proxy settings disabled. It
+always emits `unverified`, `effectiveHTTPRouteObserved=false`, and unknown
+browser route/protocol. A successful Python connection cannot establish any
+Chromium HTTP, proxy, DNS, TLS or WebRTC behavior. This legacy fixture tests
+local wiring and report compatibility; it is not a browser qualification gate.
+Actual owned Chromium traces use `scripts/controlled-browser-route-observer.py`
+with separate runtime/session and endpoint evidence. That observer also has a
+bounded scope; its result is not a continuous DNS or leak guarantee.
 
 ## CLI
 
