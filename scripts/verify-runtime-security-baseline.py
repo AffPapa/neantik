@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 
@@ -169,7 +169,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--lock", type=Path, default=DEFAULT_LOCK)
     parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
-    parser.add_argument("--today", type=date.fromisoformat, default=date.today())
+    # Source receipts and CI use UTC. A host timezone must not make the same
+    # review appear future-dated on one machine and current on another.
+    parser.add_argument("--today", type=date.fromisoformat,
+                        default=datetime.now(timezone.utc).date())
     parser.add_argument(
         "--allow-public-alpha-tuples",
         action="store_true",

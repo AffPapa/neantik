@@ -12,7 +12,7 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 
@@ -103,7 +103,10 @@ def run_check(
     return result
 
 
-def run_audit() -> dict[str, object]:
+def run_audit(today: date | None = None) -> dict[str, object]:
+    # Explicit dates support deterministic orchestration tests. The normal
+    # command always evaluates the current UTC day; freshness remains strict.
+    today = today if today is not None else datetime.now(timezone.utc).date()
     checks = [
         run_check(
             "profile-isolation-harness",
@@ -129,7 +132,7 @@ def run_audit() -> dict[str, object]:
                 sys.executable,
                 "scripts/verify-runtime-security-baseline.py",
                 "--today",
-                datetime.now(timezone.utc).date().isoformat(),
+                today.isoformat(),
             ],
             expected_blocker="Public Direct release blocked:",
         ),

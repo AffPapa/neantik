@@ -1,6 +1,8 @@
 import importlib.util
+import json
 import sys
 import unittest
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -39,7 +41,8 @@ class LocalAuditTests(unittest.TestCase):
         self.assertEqual(check["exitCode"], 1)
 
     def test_local_audit_keeps_release_blocked(self):
-        report = MODULE.run_audit()
+        reviewed = date.fromisoformat(json.loads((SCRIPT.parents[1] / "runtime/security-baseline.json").read_text())["checkedAt"])
+        report = MODULE.run_audit(today=reviewed)
         self.assertEqual(report["schemaVersion"], 1)
         self.assertEqual(report["releaseDecision"], "blocked-until-exact-runtime-and-live-gates")
         self.assertIn(report["overallStatus"], {"partial", "blocked"})
@@ -48,10 +51,17 @@ class LocalAuditTests(unittest.TestCase):
             report["checks"][0]["verifierExitCode"],
             0,
         )
-        self.assertEqual(
-            report["checks"][1]["verifierExitCode"],
-            0,
-        )
+        self.assertEqual(report["checks"][1]["verifierExitCode"], 0)
+
+    def test_future_and_stale_review_are_not_accepted_as_expected_blockers(self):
+        baseline = json.loads((SCRIPT.parents[1] / "runtime/security-baseline.json").read_text())
+        reviewed = date.fromisoformat(baseline["checkedAt"])
+        for day in (reviewed - timedelta(days=1), reviewed + timedelta(days=baseline["maximumAgeDays"] + 1)):
+            with self.subTest(day=day):
+                report = MODULE.run_audit(today=day)
+                self.assertEqual(report["checks"][2]["status"], "failed")
+                self.assertEqual(report["overallStatus"], "failed")
+                self.assertEqual(report["releaseDecision"], "blocked-until-exact-runtime-and-live-gates")
 
 
 if __name__ == "__main__":

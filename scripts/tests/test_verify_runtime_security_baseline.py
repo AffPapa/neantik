@@ -1,8 +1,10 @@
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -17,6 +19,15 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeSecurityBaselineTests(unittest.TestCase):
+    def test_cli_default_day_uses_utc_not_host_calendar(self) -> None:
+        # At this instant Bangkok is already October14, while UTC is October13.
+        instant = datetime(2026, 10, 13, 21, 16, tzinfo=timezone.utc)
+        with patch.object(MODULE, "datetime") as clock, patch.object(MODULE, "verify", return_value="verified") as verify, patch.object(sys, "argv", [str(SCRIPT)]), patch("builtins.print"):
+            clock.now.return_value = instant
+            MODULE.main()
+        clock.now.assert_called_once_with(timezone.utc)
+        self.assertEqual(verify.call_args.args[2], date(2026, 10, 13))
+
     def write_json(self, root: Path, name: str, value: object) -> Path:
         path = root / name
         path.write_text(json.dumps(value), encoding="utf-8")
