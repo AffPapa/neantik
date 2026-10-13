@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import re
+import importlib.util
 import subprocess
 import unittest
 
@@ -30,6 +31,10 @@ OPEN_SOURCE_VERIFIER = (
 )
 SWIFT_TESTS = Path(__file__).resolve().parents[2] / "Tests" / "NeAntikTests"
 RUNTIME_FIXTURE_SUITES = Path(__file__).resolve().parents[1] / "swift-runtime-fixture-suites.json"
+
+CI_SPEC = importlib.util.spec_from_file_location("ci_contract", SCRIPT.parent / "test-manager-ci.py")
+CI_RUNNER = importlib.util.module_from_spec(CI_SPEC)
+CI_SPEC.loader.exec_module(CI_RUNNER)
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
@@ -66,52 +71,27 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("UpdateManifestTests)", text)
         self.assertIn('--filter "$SUITE"', text)
 
-    def test_ci_suite_runner_includes_authenticated_evidence_tests(
-        self,
-    ) -> None:
-        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-
-        self.assertIn("- FingerprintEvidenceEnvelopeTests", workflow)
-        self.assertIn("FingerprintEvidenceEnvelopeTests|\\", runner)
-        self.assertIn(
-            "- SecureEnclaveFingerprintEvidenceSignerTests",
-            workflow,
-        )
-        self.assertIn(
-            "SecureEnclaveFingerprintEvidenceSignerTests|\\",
-            runner,
-        )
-
-    def test_ci_matrix_suites_are_allowed_by_runner(self) -> None:
-        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-        matrix_suites = re.findall(
-            r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
-            workflow,
-            flags=re.MULTILINE,
-        )
-
-        self.assertGreater(len(matrix_suites), 0)
-        for suite in matrix_suites:
-            self.assertIn(suite, runner)
+    def test_ci_shards_include_authenticated_evidence_and_use_separate_processes(self) -> None:
+        chosen = CI_RUNNER.catalog()
+        self.assertIn("FingerprintEvidenceEnvelopeTests", chosen)
+        self.assertIn("SecureEnclaveFingerprintEvidenceSignerTests", chosen)
+        workflow = CI_WORKFLOW.read_text()
+        self.assertIn('shard: [0, 1, 2, 3]', workflow)
+        self.assertIn('scripts/test-manager-ci.py', workflow)
+        self.assertNotIn('Authenticated fingerprint evidence contract', workflow)
+        self.assertIn("unittest discover -s scripts/tests", workflow)
 
     def test_ci_runs_every_non_live_swift_suite_and_excludes_live_suites(
         self,
     ) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")
-        matrix_suites = set(
-            re.findall(
-                r"^\s+- ([A-Za-z][A-Za-z0-9]+Tests)$",
-                workflow,
-                flags=re.MULTILINE,
-            )
-        )
-        discovered_suites = {
-            path.stem
-            for path in SWIFT_TESTS.glob("*Tests.swift")
-        }
+        matrix_suites = set(CI_RUNNER.catalog())
+        # A file may extend an existing suite or declare several suites.
+        # Coverage follows actual types, never a guessed filename filter.
+        discovered_suites = set()
+        for path in SWIFT_TESTS.glob("*.swift"):
+            discovered_suites.update(re.findall(r"\b(?:struct|class|actor|enum)\s+([A-Za-z_][A-Za-z0-9_]*Tests)\b", path.read_text()))
         live_suites = {
             suite for suite in discovered_suites if suite.startswith("Live")
         }
@@ -136,8 +116,8 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
 
         self.assertEqual(matrix_suites, non_live_suites)
         self.assertTrue(live_suites.isdisjoint(matrix_suites))
-        for suite in non_live_suites:
-            self.assertIn(suite, runner)
+        shards = [CI_RUNNER.partition(sorted(matrix_suites), i, 4) for i in range(4)]
+        self.assertEqual(len([s for shard in shards for s in shard]), len(non_live_suites))
 
     def test_suite_runner_requires_a_positive_test_count(self) -> None:
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")

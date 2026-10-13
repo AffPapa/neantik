@@ -1,4 +1,4 @@
-> Current public release:0.8.2/build113 public-alpha; Chromium156.0.8078.12 unchanged. Canonical report: `releases/v0.8.2.json`. browser.free Sites140, source2a069c80d608df0e516f43f78e7b1c8ea545ce5a. Major1.0 remains open.
+> Current public release: 0.8.2/build113 public-alpha; Chromium 156.0.8078.12. Canonical evidence: `releases/v0.8.2.json`. Major 1.0 remains open; dated entries below are historical.
 
 > Historical release:0.8.1/build112 public-alpha; Chromium156.0.8078.12 unchanged. Source of truth: `releases/v0.8.1.json`. Major1.0 remains open. Older entries below are historical.
 

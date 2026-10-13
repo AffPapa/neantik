@@ -159,5 +159,17 @@
       "sha256": "c972b1205e4d2d9c89986b2fbcd1deef0e88f38f6117959cb2a68535acc4c66d",
       "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.2/NeAntik-0.8.2-arm64-notarized.zip.sha256"
     }
-  ]
+  ],
+  "archive": {
+    "name": "NeAntik-0.8.2-arm64-notarized.zip",
+    "sizeBytes": 189652203,
+    "sha256": "cd309b0e1c5207859f8274599cbe934c9de6fd12f3d36a0c1eb14de22dc7e316",
+    "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.2/NeAntik-0.8.2-arm64-notarized.zip"
+  },
+  "dmg": {
+    "name": "NeAntik-0.8.2-arm64-notarized.dmg",
+    "sizeBytes": 214531558,
+    "sha256": "dbfb2651d0f61ec7470abb75aaac8336f87c4abb74d88341ba5e287a978acace",
+    "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.2/NeAntik-0.8.2-arm64-notarized.dmg"
+  }
 }

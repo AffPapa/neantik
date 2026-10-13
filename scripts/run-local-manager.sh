@@ -4,6 +4,11 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DEVELOPMENT_ROOT="$PROJECT_DIR/.build/neantik-local"
+# Hold the same cache lease as the fast test runner through build and packaging.
+# The inherited descriptor makes wrapper re-entry explicit without a second lock.
+if ! python3 -B "$PROJECT_DIR/scripts/native_cache_lock.py" --root "$DEVELOPMENT_ROOT" --is-held; then
+  exec python3 -B "$PROJECT_DIR/scripts/native_cache_lock.py" --root "$DEVELOPMENT_ROOT" -- "$0" "$@"
+fi
 SOURCE_APP="$PROJECT_DIR/dist/NeAntik.app"
 DEVELOPMENT_APP="$DEVELOPMENT_ROOT/NeAntik-Dev.app"
 DEVELOPMENT_RUNTIME_APP="$DEVELOPMENT_APP/Contents/Resources/NeAntik Browser.app"

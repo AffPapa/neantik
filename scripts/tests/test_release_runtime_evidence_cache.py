@@ -307,15 +307,16 @@ exit $?
         wait = text.index('wait "$GUI_PID"', launch)
         second_drain = text.index(
             "wait-for-neantik-runtime-drain.py",
-            first_drain + 1,
+            launch,
         )
+        # The candidate is also drained before each attempt. Select the
+        # first drain after launch so an early post-launch drain still fails,
+        # without mistaking that additional pre-launch guard for teardown.
+        evaluator = text.index("evaluate_current_gui_attempt ||", wait)
+        loop_end = text.index("\ndone", evaluator)
         final_drain = text.index(
             "wait-for-neantik-runtime-drain.py",
-            second_drain + 1,
-        )
-        evaluator = text.index(
-            "evaluate_current_gui_attempt ||",
-            wait,
+            loop_end,
         )
         notarization = text.index(
             "[3/4] Отправляю кандидат в Apple notarization…"

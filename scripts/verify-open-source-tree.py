@@ -415,6 +415,17 @@ def verify_release_metadata() -> None:
             )
 
 
+def verify_ci_suite_coverage(suites: set[str]) -> None:
+    required = {
+        "UpdateManifestTests", "BrowserProcessInventoryTests",
+        "FingerprintEvidenceEnrollmentTests", "ProfileOrganizationTests",
+        "SecureEnclaveFingerprintEvidenceSignerTests",
+    }
+    missing = sorted(required - suites)
+    if missing:
+        fail("GitHub Actions omits required Swift suites: " + ", ".join(missing))
+
+
 def verify_required_contracts() -> None:
     missing = sorted(
         path
@@ -428,20 +439,36 @@ def verify_required_contracts() -> None:
         PROJECT_ROOT / ".github/workflows/ci.yml"
     ).read_text(encoding="utf-8")
     for marker in [
-        "UpdateManifestTests",
-        "BrowserProcessInventoryTests",
-        "FingerprintEvidenceEnrollmentTests",
-        "ProfileOrganizationTests",
-        "SecureEnclaveFingerprintEvidenceSignerTests",
+        'scripts/test-manager-ci.py --shard "${{ matrix.shard }}" --shards 4',
+        "shard: [0, 1, 2, 3]",
         "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",
         "verify-open-source-tree.py",
         "verify-public-workflow-references.py",
-        "test_direct_candidate_manifest",
-        "test_fingerprint_evidence_schema8",
+        "python3 -m unittest discover -s scripts/tests -p 'test_*.py'",
     ]:
         if marker not in ci_text:
             fail(f"GitHub Actions does not enforce {marker}")
+
+    # Ask the same read-only selector used by CI. Filenames and old matrix
+    # labels cannot prove that a declared suite is actually selected.
+    selected: set[str] = set()
+    for index in range(4):
+        result = subprocess.run(
+            [sys.executable, "-B", str(PROJECT_ROOT / "scripts/test-manager-ci.py"),
+             "--shard", str(index), "--shards", "4", "--plan"],
+            cwd=PROJECT_ROOT, text=True, capture_output=True, check=True,
+        )
+        names = json.loads(result.stdout)["suites"]
+        if not isinstance(names, list) or any(not isinstance(name, str) for name in names):
+            fail("invalid CI suite plan")
+        if selected.intersection(names):
+            fail("CI suite appears in more than one shard")
+        selected.update(names)
+    verify_ci_suite_coverage(selected)
+    for name in ("test_direct_candidate_manifest.py", "test_fingerprint_evidence_schema8.py"):
+        if not (PROJECT_ROOT / "scripts/tests" / name).is_file():
+            fail(f"Python discovery is missing required contract {name}")
 
     result = subprocess.run(
         [

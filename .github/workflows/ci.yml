@@ -11,165 +11,19 @@ permissions:
 
 jobs:
   swift-tests:
-    name: Swift / ${{ matrix.suite }}
+    name: Swift / shard ${{ matrix.shard }}
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - ApplicationEnvironmentTests
-          - AppPathsTests
-          - AccessibilityPresentationTests
-          - BrowserLaunchActionPresentationTests
-          - BrowserLaunchBuilderTests
-          - BrowserLaunchPreparationPolicyTests
-          - BrowserLaunchPolicyTests
-          - BrowserProcessInventoryTests
-          - BrowserProcessManagerTests
-          - BrowserSessionObservationTests
-          - BrowserRuntimeInspectorTests
-          - BrowserRuntimePreflightTests
-          - BulkProxyActionProjectionTests
-          - BulkProxyImportTests
-          - CRX3SignatureVerifierTests
-          - DisplayDateFormattingTests
-          - EnvironmentDiagnosticAssessmentTests
-          - FingerprintAuditReadinessPolicyTests
-          - FingerprintAuditLoopbackSTUNServerTests
-          - FingerprintAuditAutomationPolicyTests
-          - FingerprintAuditObservationTests
-          - FingerprintAuditTriggerPolicyTests
-          - EncryptedBackupFramingTests
-          - EncryptedBackupArchiveTests
-          - BrowserDataBackupStorageTests
-          - BackupCompatibilityScopeStoreTests
-          - DevelopmentFixtureBackupScopeTests
-          - ProxyRelayWireCodecTests
-          - ProxyRelayClientWireCodecTests
-          - ProxyRelaySocketOwnerInspectorTests
-          - ProfileBrowserDataBackupServiceTests
-          - BrowserDataRestoreTransactionTests
-          - StoppedProfileRestoreAuthorityTests
-          - FingerprintAuditTests
-          - FingerprintEvidenceEnrollmentTests
-          - FingerprintEvidenceEnvelopeTests
-          - FingerprintEvidenceReleaseContextTests
-          - FirstProfileBootstrapTests
-          - ProfileArtifactProvenanceTests
-          - ProfileDiagnosticsSummaryTests
-          - RedactedSupportBundleTests
-          - SecureEnclaveFingerprintEvidenceSignerTests
-          - KeychainStoreTests
-          - LaunchIntentTests
-          - NativeMenuLocalizationTests
-          - ProfileCommandPresentationTests
-          - ProfileConfigurationTransferFileImportTests
-          - ProfileConfigurationTransferTests
-          - ProfileEditorPasswordTests
-          - ProfileEditorPresentationTests
-          - ProfileSnapshotSaveSummaryTests
-          - ProfileEditorValidationTests
-          - ProfileEnvironmentAccessibilityTests
-          - ProfileEnvironmentInspectorTests
-          - ProfileEnvironmentPresentationTests
-          - ProfileLifecycleHealthTests
-          - ProfileListProjectionTests
-          - ProfileManagerPerformanceBudgetTests
-          - ProfileOrganizationTests
-          - ProfileOrganizationPersistenceTests
-          - ProfilePostSaveRevealPolicyTests
-          - ProfilePrivacyPanelTests
-          - ProxyCheckSummaryTests
-          - ProfileSnapshotTests
-          - SiteCompatibilityAssessmentTests
-          - ProfileRevisionAndTransactionTests
-          - ProfileTagAppearanceTests
-          - ProfileTagEditorTests
-          - ManagedBrowserQuitTests
-          - ManagerLaunchAdmissionTests
-          - ManagerLibraryTests
-          - ManagerSearchBenchmarkTests
-          - ProfileMetadataUndoTests
-          - ProfileStoreTests
-          - PrivateGuardLeaseTests
-          - ProxyHealthTests
-          - ProxyImportParserTests
-          - ProxyTestOperationRegistryTests
-          - ProxyTesterTests
-          - ResponsiveLayoutRenderTests
-          - RuntimeProvenanceCardTests
-          - WorkspaceDomainTests
-          - WorkspaceLayoutTests
-          - WorkspaceQueryStateTests
-          - RuntimePreferenceStoreTests
-          - TelemetryTests
-          - DevelopmentWorkspaceFixtureTests
-          - HelpContentTests
-          - MCPInteroperabilityTests
-          - MCPProfileManagementTests
-          - MCPStdioServerTests
-          - MCPWorkspaceQueryTests
-          - ProfileQuickCommandProjectionTests
-          - ProxyTesterLiveFixtureTests
-          - BookmarkImportTests
-          - DevelopmentFixtureKeychainTests
-          - OwnedProfileDirectoryTests
-          - ProfileCacheMaintenanceTests
-          - ProxyDiagnosticTests
-          - ProxyRelayBrowserRoleDecoderTests
-          - ProxyRelayControlPeerInspectorTests
-          - ProxyRelayLiveCodeVerifierTests
-          - ProxyRelayLoopbackServerTests
-          - UpdateManifestTests
-          - SignedUpdateManifestFetcherTests
-          - ApplicationUpdateAdmissionTests
-          - ApplicationUpdateControllerTests
-          - BackupApplicationCompositionTests
-          - BackupScopeQualificationTests
-          - BrowserRelayActivityTests
-          - BrowserStartupModeTests
-          - CRXPackageInspectionTests
-          - CRXPackagePreparationTests
-          - DirectAssessmentParentTests
-          - DirectInstallFilesystemTests
-          - DirectProvisioningCMSTests
-          - DirectUpdateAssessmentTests
-          - DirectUpdateAuditIsolationTests
-          - DirectUpdateCodeSignatureTests
-          - DirectUpdateCoreBoundaryTests
-          - DirectUpdateInstallSessionTests
-          - DirectUpdateInstalledPolicyTests
-          - DirectUpdateOwnerClientTests
-          - DirectUpdateOwnerPipeTests
-          - DirectUpdateOwnerProtocolTests
-          - DirectUpdateOwnerTransportTests
-          - DirectUpdateOwnerWorkspaceTests
-          - DirectUpdateProvisioningTests
-          - DirectUpdateRuntimeProvenanceTests
-          - DirectUpdateStageStorageTests
-          - DirectUpdateStoppedAuthorityTests
-          - DirectUpdateZIPTests
-          - InstallLifecycleTests
-          - ManagerClarityRegressionTests
-          - PlatformLaunchReceiptTests
-          - ProfileExtensionInventoryTests
-          - ProxyRelayBindingGateTests
-          - ProxyRelayLeaseReceiptTests
-          - ProxyRelayObservationProtocolTests
-          - ProxyRelayObservationSocketTests
-          - ProxyRelayOwnerProtocolTests
-          - ProxyRelayOwnerQualificationTests
-          - ProxyRelayPrivatePipeTests
-          - ProxyRelayQualificationQuitTests
-          - ProxyRelaySessionAuthorityTests
-          - ProxyRelayTLSQualificationTests
-          - ReleaseAuditBrowserIsolationTests
-          - DirectUpdateArchiveIntegrityTests
+        shard: [0, 1, 2, 3]
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - name: Run Swift suite
-        run: ./scripts/verify-native-swift-suite.sh "${{ matrix.suite }}"
+      - name: Run clean Swift shard
+        run: python3 -B scripts/test-manager-ci.py --shard "${{ matrix.shard }}" --shards 4
 
   release-contracts:
     name: Release and privacy contracts
@@ -205,12 +59,6 @@ jobs:
         run: python3 scripts/verify-mcp-documentation.py
       - name: Public workflow dependency closure
         run: python3 scripts/verify-public-workflow-references.py
-      - name: Authenticated fingerprint evidence contract
-        run: >-
-          python3 -m unittest
-          scripts.tests.test_fingerprint_evidence_schema8
-          scripts.tests.test_fingerprint_evidence_schema9
-          scripts.tests.test_direct_candidate_manifest
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: AffPapa release regression tests

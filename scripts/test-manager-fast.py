@@ -2,7 +2,6 @@
 """Cached local Swift tests. Does not package, sign, launch or publish an app."""
 import argparse
 import datetime
-import fcntl
 import hashlib
 import json
 import os
@@ -13,12 +12,14 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+from native_cache_lock import cache_lock, CacheBusy, supervise
 
 
 def suites(root=ROOT):
     found = set()
-    for path in (root / "Tests/NeAntikTests").glob("*.swift"):
-        found.update(re.findall(r"\b(?:struct|class)\s+([A-Za-z_][A-Za-z0-9_]*Tests)\b", path.read_text()))
+    for path in (root / "Tests/NeAntikTests").rglob("*.swift"):
+        found.update(re.findall(r"\b(?:struct|class|actor|enum)\s+([A-Za-z_][A-Za-z0-9_]*Tests)\b", path.read_text()))
     return sorted(found)
 
 
@@ -79,11 +80,7 @@ def main(argv=None):
         print(json.dumps({"mode": "full" if opts.all else "targeted", "suites": sorted(set(opts.suite or [])),
                           "jobs": 2, "parallel": False, "cache": "project-owned persistent", "release": False})); return 0
     cache.mkdir(parents=True, exist_ok=True)
-    with (cache / ".fast-tests.lock").open("a") as guard:
-        try:
-            fcntl.flock(guard, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            print("Another fast test run owns this checkout; wait for its receipt.", file=sys.stderr); return 75
+    with cache_lock(cache) as cache_fd:
         env = os.environ.copy()
         env["DEVELOPER_DIR"] = subprocess.check_output([str(ROOT / "scripts/resolve-compatible-developer-dir.sh")], cwd=ROOT, text=True).strip()
         if not env["DEVELOPER_DIR"]:
@@ -96,13 +93,13 @@ def main(argv=None):
         before = input_digest(ROOT); started = time.monotonic()
         with log.open("xb") as output:
             os.chmod(log, 0o600)
-            result = subprocess.run(args, cwd=ROOT, env=env, stdout=output, stderr=subprocess.STDOUT)
+            exit_code = supervise(args, cwd=ROOT, env=env, stdout=output, stderr=subprocess.STDOUT, pass_fds=(cache_fd,))
         record = {"schemaVersion": 1, "mode": "full" if opts.all else "targeted", "selectedSuites": sorted(set(opts.suite or [])),
                   "inputSHA256": before, "sourceUnchangedDuringRun": before == input_digest(ROOT),
                   "seconds": round(time.monotonic() - started, 3), "jobs": 2, "parallel": False,
                   "developerDir": env["DEVELOPER_DIR"],
-                  "status": "fail", "log": str(log), "exitCode": result.returncode, "releaseGate": False}
-        if result.returncode == 0 and record["sourceUnchangedDuringRun"]:
+                  "status": "fail", "log": str(log), "exitCode": exit_code, "releaseGate": False}
+        if exit_code == 0 and record["sourceUnchangedDuringRun"]:
             try:
                 record.update(positive_result(log.read_text(errors="replace")), status="pass")
             except ValueError:
@@ -115,4 +112,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except CacheBusy as error:
+        print(str(error), file=sys.stderr)
+        raise SystemExit(75)

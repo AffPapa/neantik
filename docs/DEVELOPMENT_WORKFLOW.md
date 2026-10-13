@@ -3,7 +3,7 @@
 ## Обычная правка
 
 1. Прочитать CURRENT/checkpoint и выбрать одну изменяемую поверхность.
-2. Запустить связанные наборы одной командой, например:
+2. Получить read-only план через `python3 -B scripts/plan-manager-checks.py --base HEAD`, проверить зависимости и запустить связанные наборы одной командой, например:
 
    ```bash
    python3 -B scripts/test-manager-fast.py --suite ProxyImportParserTests --suite BrowserRouteProbeTests
@@ -18,8 +18,7 @@
 входном имени, нулевое число тестов или изменение исходников во время прогона
 дают отказ. Кэш тот же, что у локальной manager-сборки; SwiftPM пересобирает
 изменённые зависимости. Сами тесты исполняются каждый раз: cached build не
-означает cached PASS. Два fast test runner в одном checkout не идут одновременно.
-Этот lock не объявляется блокировкой всех сторонних сборок на Mac.
+означает cached PASS. Fast tests и Dev build/package используют общую lease физического кэша. Конкурирующая команда получает exit75; SIGTERM/SIGINT отменяют свою child process group и дожидаются settlement. Это координация наших wrappers, не глобальная блокировка всех компиляторов на Mac.
 
 ## Что замедляло работу
 
@@ -61,3 +60,15 @@ Jobs остаются2: это ограничение нагрузки, не и�
 Подробный лог/receipt хранится локально в `.build/neantik-local/test-receipts`;
 обычный вывод содержит короткий итог, не весь compiler/test transcript.
 Публичная команда не читает секреты и не запускает signing/notarization/deploy.
+
+## CI и выбор проверок
+
+- Четыре чистых CI shards вместо148сборочных jobs. Каждый shard строит общий target в собственном cache и запускает suites последовательными отдельными процессами. Между CI jobs/runs кэш не переносится. Native execution обоих labels и code paths не заменяется Python mock.
+- Каталог следует реальным типам Swift, включая несколько suites в одном файле и extensions существующей suite. Вложенные файлы включены. Неподдержанная unscoped @Test declaration даёт отказ; wholly opt-in и Live suites исключены из обычного CI. Mixed QA flags/data-root overrides удаляются из child environment.
+- Plan-manager-checks показывает команды и дополнительные gates, но ничего не запускает. Rename/delete/untracked входят в diff; неизвестные/shared inputs требуют full regression. Карта рекомендаций не заменяет анализ зависимостей.
+- Workflow changes проверяются targeted Python contracts и одним достаточным реальным native integration. Новая сборка приложения не нужна для правки instructions/check planner.
+- После завершения среза записать в CURRENT один следующий шаг; накопленный state остаётся историей. Большие manifests читать по нужным полям.
+
+## Правила для процесса агента
+
+Не подключать skill/MCP ради количества. Project implementation workflow находится в `.agents/skills/neantik-development/SKILL.md`; runtime audit загружается только для нужного runtime scope. AGENTS хранит короткие неизменные границы, workflow — skill/scripts, история — receipts/memory router. API cache knobs не являются настройками desktop; модель, reasoning, permissions и credential scope не меняются ради недоказанного ускорения.

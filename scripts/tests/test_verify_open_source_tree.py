@@ -18,6 +18,14 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_ci_contract_detects_a_required_suite_removed_from_shards(self) -> None:
+        required = {"UpdateManifestTests", "BrowserProcessInventoryTests",
+                    "FingerprintEvidenceEnrollmentTests", "ProfileOrganizationTests",
+                    "SecureEnclaveFingerprintEvidenceSignerTests"}
+        MODULE.verify_ci_suite_coverage(required)
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            MODULE.verify_ci_suite_coverage(required - {"UpdateManifestTests"})
+
     def test_markdown_public_release_record_is_parsed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "v0.7.3.md"

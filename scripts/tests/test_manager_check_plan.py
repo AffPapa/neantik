@@ -1,0 +1,58 @@
+import importlib.util
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+SPEC = importlib.util.spec_from_file_location("manager_plan", Path(__file__).resolve().parents[1] / "plan-manager-checks.py")
+MOD = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MOD)
+
+
+class ManagerCheckPlanTests(unittest.TestCase):
+    def test_document_only_does_not_rebuild_but_is_not_a_pass(self):
+        plan = MOD.plan(["docs/DEVELOPMENT_WORKFLOW.md"], ["WebKitProfileTests"])
+        self.assertEqual(plan["swiftMode"], "none")
+        self.assertEqual(plan["status"], "not-run")
+        self.assertTrue(plan["requiredAdditionalGates"])
+
+    def test_signed_artifact_is_not_misclassified_as_release_documentation(self):
+        for path in ['releases/v0.8.2/NeAntik.zip', 'dist/NeAntik.dmg', 'dist/NeAntik.app/Contents/MacOS/NeAntik']:
+            plan = MOD.plan([path], ['WebKitProfileTests'])
+            self.assertEqual(plan['reasons'][0]['surface'], 'release-delivery')
+            self.assertTrue(plan['releaseSurface'])
+            self.assertFalse(plan['releaseGate'])
+            self.assertTrue(any('Gatekeeper' in g for g in plan['requiredAdditionalGates']))
+
+    def test_unknown_or_shared_inputs_require_full_regression(self):
+        for path in ["Sources/NeAntik/NewFeature.swift", "Sources/NeAntik/BrowserProfile.swift", "Package.swift", "Resources/Info.plist", "Tests/Fixtures/Helper.swift"]:
+            plan = MOD.plan([path], ["WebKitProfileTests"])
+            self.assertEqual(plan["swiftMode"], "full", path)
+            self.assertIn("--all", plan["commands"][0])
+
+    def test_known_surface_and_its_dependency_suites_are_batched(self):
+        plan = MOD.plan(["Sources/NeAntik/WebKitProfileBrowser.swift"], ["WebKitProfileTests", "MCPProfileManagementTests", "UnrelatedTests"])
+        self.assertEqual(plan["selectedSuites"], ["MCPProfileManagementTests", "WebKitProfileTests"])
+        self.assertEqual(plan["swiftMode"], "targeted")
+        self.assertTrue(any("headed" in g for g in plan["requiredAdditionalGates"]))
+
+    def test_missing_or_deleted_suite_never_yields_empty_targeted_success(self):
+        self.assertEqual(MOD.plan(["Tests/NeAntikTests/RemovedTests.swift"], [])['swiftMode'], "full")
+        self.assertEqual(MOD.plan(["Sources/NeAntik/WebKitProfileBrowser.swift"], [])['swiftMode'], "full")
+
+    def test_absolute_traversal_or_secrets_path_is_refused(self):
+        for path in ["/absolute/path", "../../data", ".secrets/token", ""]:
+            with self.assertRaises(ValueError): MOD.plan([path], [])
+
+    def test_git_collects_staged_unstaged_untracked_and_both_rename_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args): return subprocess.check_output(["git", *args], cwd=root, stderr=subprocess.DEVNULL)
+            git("init"); git("config", "user.name", "Owned fixture"); git("config", "user.email", "qa@example.test")
+            for name in ["first.md", "second.md", "old.md"]: (root/name).write_text("before")
+            git("add", "."); git("commit", "-m", "fixture")
+            (root/"first.md").write_text("staged"); git("add", "first.md")
+            (root/"second.md").write_text("unstaged"); (root/"new.md").write_text("new")
+            git("mv", "old.md", "renamed.md")
+            _, paths = MOD.changed_paths("HEAD", root)
+            self.assertEqual(paths, ["first.md", "new.md", "old.md", "renamed.md", "second.md"])

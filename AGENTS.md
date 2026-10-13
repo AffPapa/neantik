@@ -1,36 +1,23 @@
 # NeAntik agent instructions
 
-- NeAntik uses Direct Distribution only. Never use App Store Connect or the
-  Mac App Store.
-- For Swift/UI iteration use `./Develop-NeAntik.command`; it is isolated from
-  production profiles and release state. Use `./Release-NeAntik.command` only
-  for one exact final candidate after local tests are green.
-- For daily targeted tests use `python3 -B scripts/test-manager-fast.py --suite
-  SuiteNameTests` (repeat `--suite` to batch related suites). It reuses local
-  build caches with jobs=2 and serial execution. `--all` is local regression;
-  clean CI and signed/runtime/hosted release gates remain separate.
-- Authorized publication scope is GitHub `AffPapa/neantik` and
-  `https://browser.free` through its existing OpenAI Sites project. Follow the
-  current Direct release preflight and Sites workflow for these channels.
-- The user explicitly excluded `affpapa.org/neantik` on 2026-10-12 and updates
-  it manually. Do not run its doctor, seek its deploy key, or publish there.
-  Missing AffPapa credentials do not block GitHub or browser.free.
-- The retained restricted AffPapa client below is legacy documentation for a
-  future explicitly authorized AffPapa task, not the current release workflow.
-
-- Do not use raw SSH, SCP, SFTP, rsync, or edit the live server directly.
-  Both Codex and Claude must use the same least-privilege client:
-
-  ```bash
-  ./scripts/neantik-affpapa-release publish /absolute/path/to/release-dir
-  ```
-
-- A release directory must contain exactly the six files documented in
-  `ops/affpapa/README.md`.
-- `publish` validates locally, verifies notarized Apple artifacts, uploads only
-  allowlisted files, validates staging, deploys atomically, and verifies live.
-- The deploy key and pinned host key remain outside Git under
-  `../.secrets/ssh/` relative to this checkout. Never print or copy the private
-  key.
-- The restricted server identity must not gain shell, PTY, SFTP/SCP, port
-  forwarding, or permission to upload executable PHP/Blade files.
+- Direct Distribution only: GitHub `AffPapa/neantik` and browser.free via the
+  existing Sites project. Preserve Developer ID, notarization, stapling,
+  Gatekeeper, immutable assets and rollback. Never use App Store Connect.
+- AffPapa is excluded by the user. Only after new explicit authorization read
+  `ops/affpapa/README.md` and use its restricted client. Never use raw SSH,
+  SCP/SFTP/rsync or direct server edits; missing AffPapa keys do not block us.
+- Swift iteration: `./Develop-NeAntik.command` with disposable fixtures;
+  targeted tests: `python3 -B scripts/test-manager-fast.py --suite NameTests`
+  (repeat suites). Use the project's developer-dir resolver, local caches,
+  jobs2 and serial tests. Do not change inputs of a running build.
+- Substantive manager/workflow changes use
+  `.agents/skills/neantik-development/SKILL.md`; the read-only check planner
+  explains selection. Unknown/shared inputs require full regression. Small
+  prose fixes need relevant diff/claim/link review. Planning is never PASS.
+- Read one CURRENT linked by the parent `docs/PROJECT_CONTEXT_INDEX.md`.
+  Historical receipts answer specific questions. App/runtime/Site/hosted
+  evidence are separate; repeat a gate only for changed inputs or a failure.
+- Finish authorized local work to its acceptance gate. Diagnose two identical
+  failures before retrying. Preserve real profiles, BrowserData and Keychain;
+  QA uses owned synthetic roots and mock Keychain where required. Never put
+  credentials/private traces in output, source, prompts or public artifacts.

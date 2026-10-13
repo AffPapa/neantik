@@ -1,4 +1,4 @@
-> Current public release:0.8.1/build112 public-alpha; Chromium156.0.8078.12 unchanged. Source of truth: `releases/v0.8.1.json`. Major1.0 remains open. Older entries below are historical.
+> Current public release: 0.8.2/build113 public-alpha; Chromium 156.0.8078.12. Canonical evidence: `releases/v0.8.2.json`. Major 1.0 remains open; dated entries below are historical.
 
 ## Выпуск0.8.1 — 13 октября2026
 
