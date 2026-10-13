@@ -29,6 +29,9 @@ Unknown/shared inputs select full regression. Planning never means PASS.
 - UI work uses the canonical isolated Dev bundle and disposable fixture.
   A build is not native behavior. Bind GUI checks to its actual app/PID/root;
   after quit verify exit rather than rediscovering/relaunching the app.
+  A shared bundle ID can retarget an ordinary instance. On reselect, inspect AX
+  without emitting it and require the owned fixture markers plus live PID/root
+  before any action. On mismatch stop UI actions; clean up only owned processes.
 - Preserve execution receipts before parsing. Classify a failure as product,
   harness, setup or environment; diagnose two identical failures before retry.
   Fix analysis offline on retained traces when browser inputs did not change.

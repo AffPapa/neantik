@@ -30,6 +30,15 @@ class ManagerCheckPlanTests(unittest.TestCase):
             self.assertEqual(plan["swiftMode"], "full", path)
             self.assertIn("--all", plan["commands"][0])
 
+    def test_reviewed_standalone_fixture_has_targeted_controls_only(self):
+        result = MOD.plan(['scripts/runtime-network/manager-route-fixture.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest', 'scripts.tests.test_shipping_manager_route_fixture']])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertIn('owned network', result['requiredAdditionalGates'][0])
+        unknown = MOD.plan(['scripts/runtime-network/new-unknown.py'], [])
+        self.assertIn('discover', unknown['commands'][0])
+
     def test_known_surface_and_its_dependency_suites_are_batched(self):
         plan = MOD.plan(["Sources/NeAntik/WebKitProfileBrowser.swift"], ["WebKitProfileTests", "MCPProfileManagementTests", "UnrelatedTests"])
         self.assertEqual(plan["selectedSuites"], ["MCPProfileManagementTests", "WebKitProfileTests"])

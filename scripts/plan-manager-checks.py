@@ -32,6 +32,13 @@ FEATURES = [
      "exact isolated stdio capability/revision/refusal integration"),
 ]
 
+# Reviewed stdlib-only harness boundaries. These do not link Swift or share
+# production code. Changes outside this explicit map remain conservative.
+STANDALONE_HARNESSES = {
+    'scripts/runtime-network/manager-route-fixture.py': 'scripts.tests.test_shipping_manager_route_fixture',
+    'scripts/runtime-network/analyze-manager-route.py': 'scripts.tests.test_shipping_manager_route_analysis',
+}
+
 
 def safe_path(value):
     path = PurePosixPath(value)
@@ -76,6 +83,10 @@ def plan(paths, catalog):
             gates.add(match[3]); reasons.append({"path": path, "surface": match[1]}); continue
         if path.startswith("scripts/tests/") and re.fullmatch(r"test_[A-Za-z0-9_]+\.py", PurePosixPath(path).name):
             python.add(path[:-3].replace("/", ".")); reasons.append({"path": path, "surface": "python-test"}); continue
+        if path in STANDALONE_HARNESSES:
+            python.add(STANDALONE_HARNESSES[path])
+            gates.add('owned network fixture controls; offline analysis is distinct from fresh headed execution')
+            reasons.append({'path': path, 'surface': 'standalone-network-harness'}); continue
         if path.startswith(("scripts/", ".github/")):
             python_full = True; gates.add("changed workflow integration; clean CI is distinct from local tests")
             reasons.append({"path": path, "surface": "workflow"}); continue
