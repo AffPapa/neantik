@@ -1,6 +1,8 @@
-# Профили WebKit — development preview
+> Published in 0.8.1/112 as experimental WebKit. Exact signed ZIP A/B cookies/LocalStorage/IndexedDB persistence across full manager restart PASS on macOS27 ARM64. Unsupported capabilities remain refused. See `releases/v0.8.1.json`; earlier development evidence below is historical.
 
-NeAntik может открыть профиль в собственном окне на системном WebKit — движке Safari. Это окно NeAntik с отдельными данными сайтов. Возможность добавлена в исходники и Dev.app; это не объявление публичного релиза.
+# Профили WebKit — экспериментальный режим0.8.1
+
+NeAntik может открыть профиль в собственном окне на системном WebKit — движке Safari. Это окно NeAntik с отдельными данными сайтов. Возможность опубликована в0.8.1 как экспериментальный режим. На точном подписанном кандидате проверены изоляция и сохранение после полного перезапуска; ограничения ниже остаются в силе.
 
 ## Как создать профиль
 

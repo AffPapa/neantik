@@ -7,8 +7,8 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published version: `0.7.47 (110)`, public alpha. Signed updating passed actual
-installation, automatic relaunch and controlled pre-acknowledgement rollback.
+Published version: `0.8.1 (112)`, public alpha. The exact signed release passed
+Apple gates, public-download, MCP and full-restart WebKit persistence checks.
 The complete product improvement program remains open.
 
 ## Download
@@ -18,13 +18,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.7.47 (110), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.7.47). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.7.47.json).
+Latest published release: [NeAntik 0.8.1 (112), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.1). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.1.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-`0.7.47` fixes updater bootstrap and authenticated plist comparison. The signed update feed is live; installation requires consent and a supported user-owned directory. Actual 0.7.46 → 0.7.47 installation, pre-ACK rollback, two restored tabs and synthetic cookies/LocalStorage/IndexedDB passed. Chromium is unchanged. HTTP/HTTPS/SOCKS5 relay, the extension center and encrypted BrowserData backup creation are enabled. Backup requires the original stopped profile, Mac, Keychain and exact runtime; cross-Mac sign-in portability is not promised. Full CRX installation and final browser-route observation qualification remain open. Safe Browsing is disabled. Previous public rollback: 0.7.34. GitHub/browser.free are updated; AffPapa is handled manually by the user.
+`0.8.1` adds experimental system WebKit profiles in NeAntik windows and fixes false launch refusal for an unreadable unrelated signed process. Update discovery waits for network invalidation. Relay, encrypted stopped-Chromium-profile backup, extension inventory and MCP remain enabled; an own packed CRX passed native lifecycle checks. Exact signed .81 WebKit retained separate cookies/LocalStorage/IndexedDB across full quit/restart. WebKit is direct-only with no tabs/proxy/extensions/full backup/deletion; stdio MCP launch is refused. Chromium is unchanged; Safe Browsing remains disabled. DNS and default-trusted authenticated HTTPS upstream positive remain separate limitations. Immutable v0.7.47 is retained; never open schema2 metadata with an older manager. GitHub and browser.free are updated; the user handles AffPapa manually.
 
 Direct downloads: [browser.free](https://browser.free).
 

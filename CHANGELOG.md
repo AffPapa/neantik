@@ -2,7 +2,10 @@
 
 ## Direct 0.8.1 (112)
 
-Development candidate; not published. Includes the WebKit preview from 0.8.0 below; Chromium 156.0.8078.12 is unchanged. Exact signed app, persistence, distribution and hosted-byte checks remain release gates.
+Published public alpha on GitHub and browser.free Sites139. Includes WebKit preview from unpublished0.8.0. Chromium156.0.8078.12 unchanged. Exact signed, WebKit native persistence, Developer ID/notarization/stapling/Gatekeeper, public ZIP/DMG bytes, downloaded headed/MCP and live feed PASS. [Results and limits](releases/v0.8.1.json).
+
+- Исправлена live-code классификация посторонних процессов и ожидание завершения транспорта updater.1477reported Swift tests/168suitesPASS.
+- Native packed CRX lifecycle и exact WebKit A/B full restart PASS; это ограниченные синтетические сценарии. DNS/default-trusted HTTPS upstream и major1.0 остаются открытыми. Rollbackv0.7.47; schema2 metadata не открывать старым manager.
 
 - Импортируемые адреса и учётные данные прокси скрыты от стандартного debug-вывода Swift; парсинг и сохранение значений не изменены. Отрицательный контроль воспроизвёл прежний отказ, 13 targeted tests PASS.
 - Изолированная авторизованная проверка updater явно открывает окно manager после предыдущего закрытого окна. Она не запускает fingerprint-аудит автоматически и не обходит авторизацию. 12 targeted launch tests PASS.

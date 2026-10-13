@@ -1,3 +1,9 @@
+> Current public release:0.8.1/build112 public-alpha; Chromium156.0.8078.12 unchanged. Source of truth: `releases/v0.8.1.json`. Major1.0 remains open. Older entries below are historical.
+
+## Выпуск0.8.1 — 13 октября2026
+
+Experimental WebKit, live process classification and updater transport cleanup delivered. Exact signed WebKit persistence/MCP, DeviceMemory/isolation, notarized/stapled/Gatekeeper ZIP/DMG, public bytes and downloaded headed/MCP PASS. browser.free Sites139/API/feed synced. Backup/relay/updater evidence reused only for unchanged surfaces; no new cross-Mac/all-Mac claim. DNS and OS-default-trusted authenticated HTTPS upstream remain open; native cancel-install CRX unobserved. Rollbackv0.7.47; preserve old metadata before schema2 upgrade. AffPapa excluded. [Report](../releases/v0.8.1.json).
+
 > Current public release: 0.7.47/build 110 public-alpha; Chromium 156.0.8078.12. Source of truth: `releases/v0.7.47.json`. Major 1.0 remains open. Older entries are historical.
 
 ## Выпуск 0.7.47 / build 110 — 12 октября 2026
