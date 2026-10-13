@@ -1,5 +1,11 @@
 # NeAntik changelog
 
+## Direct 0.8.6 (117) — development candidate — WebKit downloads
+
+- WebKit получает собственные загрузки: выбор места сохранения, прогресс, отмена и показ файла в Finder. Сохранение через временный файл и exclusive rename не перезаписывает существующие файлы.
+- Закрытие профиля и выход ждут подтверждённой отмены; pending policy conversion учитывается до появления WKDownload.
+- Реальные синтетические HTTP/attachment/blob, cookiesA/B, отмена, раннее закрытие и Dev SavePanel/⌘Q проверены; финальный подписанный кандидат и публикация ещё ожидаются. Chromium156.0.8078.12 сохранён.
+
 ## Direct 0.8.5 (116) — published public alpha — profile management and UTC release checks
 
 - Сохранены исправления статуса прокси, завершения процессов и копирования профилей без лишнего обращения к Связке ключей из кандидата 0.8.4.

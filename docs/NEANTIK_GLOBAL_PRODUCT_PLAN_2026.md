@@ -1,4 +1,8 @@
-> Current public release: 0.8.3/build114, Chromium156.0.8078.12, public-alpha. GitHub/browser.free Sites141 verified. See releases/v0.8.3.json; older sections below are historical pointers, not current acceptance.
+# Current public release: 0.8.5/build116 · Chromium156.0.8078.12 · [report](../releases/v0.8.5.json)
+
+0.8.5 published on GitHub and browser.free. Exact signed manager, hosted ZIP/DMG, downloaded headed/MCP and signed update feed passed scoped checks. App source58788e5, packagingc6bc031; Chromium unchanged. Full1.0 remains open; [remaining program](MAJOR_1_0_PLAN.md).
+
+0.8.6/build117 is a development candidate for WebKit downloads, not published. Prior dated sections below are historical evidence pointers, not current release qualification. AffPapa excluded.
 
 ## Выпуск0.8.1 — 13 октября2026
 

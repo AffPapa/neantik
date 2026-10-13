@@ -131,9 +131,13 @@ private final class WebKitBrowserTab {
     var observations: [NSKeyValueObservation] = []
     var status = "WebKit · данные этого профиля · параметры устройства определяет macOS"
     init(view: WKWebView) { self.view = view }
-    func detach() {
-        observations.removeAll(); view.stopLoading()
-        view.navigationDelegate = nil; view.uiDelegate = nil
+    func detach(preserveNavigationDelegate: Bool = false) {
+        observations.removeAll()
+        // stopLoading can abort policy→download conversion without delivering
+        // didBecome. Keep that view only until its reserved conversion arrives,
+        // then cancel the actual WKDownload and stop the navigation.
+        if !preserveNavigationDelegate { view.stopLoading(); view.navigationDelegate = nil }
+        view.uiDelegate = nil
         view.removeFromSuperview(); row.removeFromSuperview()
     }
 }
@@ -159,10 +163,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var lease: PrivateFileGuardLease?
     private var metadataLease: PrivateFileGuardLease?
     private var onClose: (() -> Void)?
+    private(set) var downloads: WebKitDownloads!
     var tabCount: Int { isClosed ? 0 : order.ids.count }
     var selectedTabID: UUID { order.selected }
 
-    init(profile: BrowserProfile, lease: PrivateFileGuardLease, metadataLease: PrivateFileGuardLease, onClose: @escaping () -> Void) throws {
+    init(profile: BrowserProfile, lease: PrivateFileGuardLease, metadataLease: PrivateFileGuardLease,
+         downloadPicker: WebKitDownloads.Picker? = nil, onClose: @escaping () -> Void) throws {
         try WebKitProfilePolicy.validate(profile)
         profileID = profile.id
         self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
@@ -180,6 +186,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         super.init()
         window.browser = self; window.delegate = self; window.isReleasedWhenClosed = false
+        downloads = WebKitDownloads(window: window, picker: downloadPicker)
         window.title = "\(profile.name) — WebKit · NeAntik"
         window.minSize = NSSize(width: 640, height: 420); window.center()
         address.placeholderString = "Адрес сайта"; address.font = .systemFont(ofSize: 14)
@@ -187,7 +194,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         address.setAccessibilityLabel("Адрес сайта")
         let bar = NSStackView(views: [button(backButton, title: "←", help: "Назад · ⌘[", action: #selector(back)),
             button(forwardButton, title: "→", help: "Вперёд · ⌘]", action: #selector(forward)),
-            button(NSButton(), title: "↻", help: "Обновить · ⌘R", action: #selector(reload)), address])
+            button(NSButton(), title: "↻", help: "Обновить · ⌘R", action: #selector(reload)), address, downloads.button])
         bar.orientation = .horizontal; bar.spacing = 8
         bar.edgeInsets = NSEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
         address.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -309,7 +316,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if order.ids.count == 1 { close(); return }
         let wasSelected = id == order.selected
         guard order.remove(id) else { return }
-        tabStrip.removeArrangedSubview(tab.row); tab.detach(); tabs.removeValue(forKey: id)
+        tabStrip.removeArrangedSubview(tab.row)
+        tab.detach(preserveNavigationDelegate: downloads.hasReservations(for: tab.view))
+        tabs.removeValue(forKey: id)
         if wasSelected { presentSelectedTab() }
     }
     @objc private func selectTabButton(_ sender: NSButton) {
@@ -351,11 +360,15 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     func windowWillClose(_ notification: Notification) {
         guard !isClosed else { return }; isClosed = true
         if let commandMonitor { NSEvent.removeMonitor(commandMonitor); self.commandMonitor = nil }
-        for tab in tabs.values { tab.detach() }; tabs.removeAll()
+        let closingViews = tabs.values.map(\.view)
+        for tab in tabs.values { tab.detach(preserveNavigationDelegate: downloads.hasReservations(for: tab.view)) }; tabs.removeAll()
         window.contentView = nil; window.delegate = nil; window.browser = nil
-        let callback = onClose; onClose = nil
-        metadataLease?.release(); metadataLease = nil; lease?.release(); lease = nil
-        callback?()
+        downloads.close { [self, closingViews] in
+            for view in closingViews { view.navigationDelegate = nil }
+            let callback = onClose; onClose = nil
+            metadataLease?.release(); metadataLease = nil; lease?.release(); lease = nil
+            callback?()
+        }
     }
     private func owns(_ view: WKWebView) -> Bool { !isClosed && tabs.values.contains { $0.view === view } }
     private func setStatus(_ value: String, for view: WKWebView) {
@@ -363,11 +376,37 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         tab.status = value; refreshTab(tab.id)
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if owns(webView), action.shouldPerformDownload, let url = action.request.url,
+           WebKitProfilePolicy.permits(url) || url.scheme?.lowercased() == "blob" {
+            let admitted = downloads.reserve(action, from: webView)
+            decisionHandler(admitted ? .download : .cancel)
+            if admitted { downloads.policyAccepted() }
+            return
+        }
         guard owns(webView), let url = action.request.url, WebKitProfilePolicy.permits(url) else {
             setStatus("Этот тип ссылки пока не поддерживается в WebKit-профиле.", for: webView)
             decisionHandler(.cancel); return
         }
         decisionHandler(.allow)
+    }
+    func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse,
+                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        guard owns(webView) else { decisionHandler(.cancel); return }
+        let attachment = (response.response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Disposition")?
+            .lowercased().hasPrefix("attachment") == true
+        if !response.canShowMIMEType || attachment {
+            let admitted = downloads.reserve(response, from: webView)
+            decisionHandler(admitted ? .download : .cancel)
+            if admitted { downloads.policyAccepted() }
+        } else { decisionHandler(.allow) }
+    }
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        downloads.adopt(download, token: navigationAction, allowed: owns(webView))
+        if !owns(webView), !downloads.hasReservations(for: webView) { webView.stopLoading(); webView.navigationDelegate = nil }
+    }
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        downloads.adopt(download, token: navigationResponse, allowed: owns(webView))
+        if !owns(webView), !downloads.hasReservations(for: webView) { webView.stopLoading(); webView.navigationDelegate = nil }
     }
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         guard WebKitProfilePolicy.permitsPopup(profileID: profileID, openerIsOwned: owns(webView),
@@ -388,6 +427,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private func navigationFailed(_ view: WKWebView, _ error: Error) {
         // Cancellation is normal when a navigation is replaced. Never show
         // NSError userInfo/URL: it may contain credentials or private data.
+        // WebKit ends NAVIGATION with legacy policy error102 when converting
+        // to a download. It does not settle that download or its reservation.
+        let native = error as NSError
+        if native.domain == "WebKitErrorDomain", native.code == 102 { return }
+        // Other navigation/iframe failures cannot identify which pending
+        // download converted; only didBecome consumes its exact token.
         guard (error as NSError).code != NSURLErrorCancelled else { return }
         setStatus("Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу.", for: view)
     }

@@ -7,10 +7,10 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published **0.8.3 (114), public alpha** adds WebKit tabs, same-profile
-new-tab links and explicit engine selection. The signed release passed Apple,
-public-download, isolated launch, WebKit restart isolation and metadata MCP
-checks. The full 1.0 product program remains open.
+Published **0.8.5 (116), public alpha** fixes proxy status, profile copying
+and UTC release checks. Exact signing, notarization, hosted bytes, isolated
+headed launch and metadata MCP checks passed. WebKit tabs from0.8.3 remain
+available; the full1.0 product program remains open.
 
 ## Download
 
@@ -19,7 +19,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.3 (114), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.3). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.3.json).
+Latest published release: [NeAntik 0.8.5 (116), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.5). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.5.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;

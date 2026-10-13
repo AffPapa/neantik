@@ -558,6 +558,8 @@ final class BrowserProcessManager: ObservableObject {
     @Published var lastError: String?
 
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
+    private var webKitQuitPending = false
+    var hasActiveWebKitDownloads: Bool { webKitBrowsers.values.contains { $0.downloads.activeCount > 0 } }
     private var webKitTerminationObservation: AnyCancellable?
     private let paths: AppPaths
     private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
@@ -2407,7 +2409,7 @@ final class BrowserProcessManager: ObservableObject {
         }
         try WebKitProfilePolicy.validate(profile)
         try launchAdmission.requireSafePressure()
-        guard webKitBrowsers[profile.id] == nil,
+        guard !webKitQuitPending, webKitBrowsers[profile.id] == nil,
               processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
         let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
         do {
@@ -2429,6 +2431,20 @@ final class BrowserProcessManager: ObservableObject {
     /// Chromium processes retain their existing independent lifetime contract.
     func closeWebKitWindows() {
         for browser in Array(webKitBrowsers.values) { browser.close() }
+    }
+
+    /// Application termination must not end the process before WKDownload
+    /// cancellation completes. Refuse quit on timeout; never claim settlement.
+    func drainWebKitForQuit() async -> Bool {
+        guard !webKitQuitPending else { return false }
+        webKitQuitPending = true
+        defer { webKitQuitPending = false }
+        closeWebKitWindows()
+        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+        while !webKitBrowsers.isEmpty, ContinuousClock.now < deadline {
+            do { try await Task.sleep(for: .milliseconds(50)) } catch { return false }
+        }
+        return webKitBrowsers.isEmpty
     }
 
     func stop(profileID: UUID) {

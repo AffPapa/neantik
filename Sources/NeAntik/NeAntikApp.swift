@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct NeAntikApp: App {
+    @NSApplicationDelegateAdaptor(NeAntikApplicationDelegate.self) private var applicationDelegate
     @Environment(\.openWindow) private var openWindow
     @StateObject private var helpNavigation = HelpNavigation()
     @StateObject private var updateController: ApplicationUpdateController
@@ -239,6 +240,7 @@ struct NeAntikApp: App {
                 .frame(width: 0, height: 0)
             }
             .onAppear {
+                NeAntikApplicationDelegate.processes = processes
                 NativeMenuLocalization.applyAfterMenuCreation()
             }
             .onReceive(
