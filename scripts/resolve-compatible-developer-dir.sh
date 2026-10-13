@@ -2,6 +2,11 @@
 
 set -euo pipefail
 
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROBE_SOURCE="$PROJECT_DIR/scripts/fixtures/swift-sdk-compatibility.swift"
+PROBE_ROOT="$(mktemp -d "${TMPDIR:-/private/tmp}/neantik-toolchain-probe.XXXXXXXX")"
+trap 'rm -rf "$PROBE_ROOT"' EXIT
+
 report_toolchain() {
   if [[ "${NEANTIK_DEVELOPER_DIR_DIAGNOSTICS:-0}" == "1" ]]; then
     print -r -- "$1" >&2
@@ -15,6 +20,7 @@ toolchain_is_compatible() {
   local sdk_interface
   local compiler_signature
   local sdk_signature
+  local compiler_version
 
   [[ -d "$developer_dir" ]] || { report_toolchain "Xcode candidate absent: $developer_dir"; return 1; }
   swiftc_path="$(
@@ -37,6 +43,13 @@ toolchain_is_compatible() {
     "$swiftc_path" --version 2>/dev/null |
       sed -n 's/.*(\(swiftlang-[^)]*\)).*/\1/p'
   )"
+  compiler_version="$("$swiftc_path" --version 2>/dev/null | sed -n 's/.*Swift version \([0-9]*\)\.\([0-9]*\).*/\1 \2/p' | head -n 1)"
+  local major="${compiler_version%% *}" minor="${compiler_version#* }"
+  [[ "$major" == <-> && "$minor" == <-> ]] || return 1
+  (( major > 6 || (major == 6 && minor >= 2) )) || {
+    report_toolchain "Swift 6.2 or newer required by Package.swift: $developer_dir"
+    return 1
+  }
   sdk_signature="$(
     sed -n \
       's@// swift-compiler-version:.*(\(swiftlang-[^)]*\)).*@\1@p' \
@@ -44,10 +57,24 @@ toolchain_is_compatible() {
       head -n 1
   )"
   report_toolchain "Xcode candidate: $developer_dir; compiler=$compiler_signature; SDK=$sdk_signature"
-  [[
-    -n "$compiler_signature" &&
-    "$compiler_signature" == "$sdk_signature"
-  ]]
+  [[ -n "$compiler_signature" && -n "$sdk_signature" ]] || return 1
+  # Stable SDK modules may be built by an older compiler. Build identifiers
+  # are provenance, not a compatibility test. Import and typecheck the APIs
+  # used by our manager against this exact compiler/SDK, without linking or
+  # executing a program. An explicitly pinned failing Xcode never falls back.
+  mkdir -p "$PROBE_ROOT/module-cache"
+  if DEVELOPER_DIR="$developer_dir" "$swiftc_path" -typecheck \
+      -sdk "$sdk_path" -target arm64-apple-macosx14.0 -swift-version 5 \
+      -module-cache-path "$PROBE_ROOT/module-cache" "$PROBE_SOURCE" \
+      >"$PROBE_ROOT/probe.log" 2>&1; then
+    report_toolchain "SDK API typecheck passed: $developer_dir"
+    return 0
+  fi
+  report_toolchain "SDK API typecheck failed: $developer_dir"
+  if [[ "${NEANTIK_DEVELOPER_DIR_DIAGNOSTICS:-0}" == "1" ]]; then
+    head -c 4096 "$PROBE_ROOT/probe.log" >&2
+  fi
+  return 1
 }
 
 typeset -a developer_candidates
@@ -72,6 +99,6 @@ for candidate in "${developer_candidates[@]}"; do
 done
 
 echo \
-  "No compatible Xcode developer directory has matching Swift compiler and macOS SDK builds." \
+  "No Xcode developer directory passed the manager's Swift/SDK API typecheck." \
   >&2
 exit 69

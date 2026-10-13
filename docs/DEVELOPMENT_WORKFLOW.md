@@ -63,6 +63,16 @@ Jobs остаются2: это ограничение нагрузки, не и�
 
 ## CI и выбор проверок
 
+- Resolver проверяет реальный импорт и typecheck публичных SDK API менеджера
+  для ARM64/macOS14, Swift5 language mode, compiler не ниже Swift6.2.
+  Различие build-номеров compiler и SDK само по себе допустимо при module
+  stability. Explicit DEVELOPER_DIR не заменяется другой установкой при отказе.
+  Probe не линкует и не запускает приложение; полный build/tests остаются
+  отдельными проверками. Проверка локально занимает около3с, поэтому это
+  дополнительное время к ранее измеренному тёплому native run.
+- `workflow_dispatch` с `toolchain_probe=true` выполняет только эту диагностику.
+  Она не означает PASS тестов приложения и позволяет исправить setup до
+  повторного запуска четырёх сборочных групп.
 - Четыре чистых CI shards вместо148сборочных jobs. Каждый shard строит общий target в собственном cache и запускает suites последовательными отдельными процессами. Между CI jobs/runs кэш не переносится. Native execution обоих labels и code paths не заменяется Python mock.
 - Каталог следует реальным типам Swift, включая несколько suites в одном файле и extensions существующей suite. Вложенные файлы включены. Неподдержанная unscoped @Test declaration даёт отказ; wholly opt-in и Live suites исключены из обычного CI. Mixed QA flags/data-root overrides удаляются из child environment.
 - Plan-manager-checks показывает команды и дополнительные gates, но ничего не запускает. Rename/delete/untracked входят в diff; неизвестные/shared inputs требуют full regression. Карта рекомендаций не заменяет анализ зависимостей.

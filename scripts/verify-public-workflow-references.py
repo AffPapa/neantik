@@ -29,7 +29,7 @@ LOCAL_REFERENCE = re.compile(
     r"|(?<![A-Za-z0-9_./-])(?:\./)?"
     r")"
     r"(?P<path>(?:scripts|docs)/[A-Za-z0-9_./-]+"
-    r"\.(?:py|sh|command|md))"
+    r"\.(?:py|sh|command|md|swift))"
 )
 SCRIPT_DIR_REFERENCE = re.compile(
     r"\$SCRIPT_DIR/"
