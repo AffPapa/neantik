@@ -22,6 +22,7 @@ class DeveloperDirectoryDiscoveryTests(unittest.TestCase):
         shutil.copyfile(ROOT / 'scripts/fixtures/swift-sdk-compatibility.swift', fixtures / 'swift-sdk-compatibility.swift')
         # Resolver's project root is normally one level above scripts/.
         self.script = self.root / 'scripts/resolver.sh'; self.script.write_text(text)
+        shutil.copyfile(ROOT / 'scripts/native_cache_lock.py', self.root / 'scripts/native_cache_lock.py')
         self.env = dict(os.environ, PATH=str(self.bin) + ':/usr/bin:/bin', FAKE_SELECTED=str(self.selected))
         self.env.pop('DEVELOPER_DIR', None); self.env.pop('NEANTIK_DEVELOPER_DIR_DIAGNOSTICS', None)
 
@@ -30,7 +31,7 @@ class DeveloperDirectoryDiscoveryTests(unittest.TestCase):
 
     def installation(self, path, compiler='swiftlang-good clang-good', sdk='swiftlang-good clang-good', interface=True, probe=True):
         path.mkdir(parents=True, exist_ok=True)
-        p = path / 'swiftc'; p.write_text('#!/bin/sh\nif [ "$1" = "--version" ]; then\necho "Apple Swift version 6.3 (' + compiler + ')"\nexit 0\nfi\n[ "$1" = "-typecheck" ] || exit 9\nfor arg; do last="$arg"; done\n[ -f "$last" ] || exit 8\n[ -f "$DEVELOPER_DIR/probe-pass" ] || exit 7\n'); p.chmod(0o700)
+        p = path / 'swiftc'; p.write_text('#!/bin/sh\nif [ "$1" = "--version" ]; then\necho "Apple Swift version 6.3 (' + compiler + ')"\nexit 0\nfi\n[ "$#" -eq 10 ] && [ "$1" = "-typecheck" ] || exit 9\n[ "$2" = "-sdk" ] && [ "$3" = "$DEVELOPER_DIR/SDK" ] || exit 9\n[ "$4" = "-target" ] && [ "$5" = "arm64-apple-macosx14.0" ] || exit 9\n[ "$6" = "-swift-version" ] && [ "$7" = "5" ] || exit 9\n[ "$8" = "-module-cache-path" ] || exit 9\ncase "$9" in */cache.*/module-cache) ;; *) exit 9;; esac\nfor arg; do last="$arg"; done\n[ -f "$last" ] || exit 8\n[ -f "$DEVELOPER_DIR/probe-pass" ] || exit 7\n'); p.chmod(0o700)
         marker = path / 'probe-pass'
         if probe: marker.touch()
         elif marker.exists(): marker.unlink()

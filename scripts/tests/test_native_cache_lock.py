@@ -16,6 +16,21 @@ SPEC.loader.exec_module(MOD)
 
 
 class NativeCacheLockTests(unittest.TestCase):
+    def test_deadline_cancels_child_and_releases_owned_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); late = root / 'late'
+            code = 'import pathlib,time;time.sleep(2);pathlib.Path(' + repr(str(late)) + ').write_text("wrong")'
+            result = subprocess.run([sys.executable, '-B', str(SCRIPT), '--root', str(root), '--timeout', '.2', '--', sys.executable, '-c', code], capture_output=True, timeout=8)
+            self.assertEqual(result.returncode, 124, result.stderr)
+            self.assertFalse(late.exists())
+            with MOD.cache_lock(root): pass
+
+    def test_deadline_does_not_change_success_and_bad_limit_starts_nothing(self):
+        self.assertEqual(MOD.supervise([sys.executable, '-c', 'pass'], env=os.environ.copy(), timeout=3), 0)
+        for value in [0, -1, True, float('nan'), float('inf')]:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                MOD.supervise(['/nonexistent-do-not-start'], env={}, timeout=value)
+
     def test_second_owner_cannot_start_child_and_unrelated_cache_can(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "cache"

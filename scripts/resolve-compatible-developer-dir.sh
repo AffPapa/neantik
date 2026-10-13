@@ -62,10 +62,15 @@ toolchain_is_compatible() {
   # are provenance, not a compatibility test. Import and typecheck the APIs
   # used by our manager against this exact compiler/SDK, without linking or
   # executing a program. An explicitly pinned failing Xcode never falls back.
-  mkdir -p "$PROBE_ROOT/module-cache"
-  if DEVELOPER_DIR="$developer_dir" "$swiftc_path" -typecheck \
+  local candidate_cache
+  candidate_cache="$(mktemp -d "$PROBE_ROOT/cache.XXXXXXXX")"
+  # Apple's /usr/bin/python3 launcher also consumes DEVELOPER_DIR. Bootstrap
+  # the supervisor independently, then pin only its compiler child.
+  if env -u DEVELOPER_DIR python3 -B \
+      "$PROJECT_DIR/scripts/native_cache_lock.py" --root "$candidate_cache" --timeout 60 -- \
+      /usr/bin/env "DEVELOPER_DIR=$developer_dir" "$swiftc_path" -typecheck \
       -sdk "$sdk_path" -target arm64-apple-macosx14.0 -swift-version 5 \
-      -module-cache-path "$PROBE_ROOT/module-cache" "$PROBE_SOURCE" \
+      -module-cache-path "$candidate_cache/module-cache" "$PROBE_SOURCE" \
       >"$PROBE_ROOT/probe.log" 2>&1; then
     report_toolchain "SDK API typecheck passed: $developer_dir"
     return 0

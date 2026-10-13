@@ -4,6 +4,7 @@ import argparse
 from contextlib import contextmanager
 import fcntl
 import json
+import math
 import os
 import signal
 from pathlib import Path
@@ -40,11 +41,16 @@ def inherited_fd(root):
     return None
 
 
-def supervise(command, *, env, pass_fds=(), stdout=None, stderr=None, cwd=None):
+def supervise(command, *, env, pass_fds=(), stdout=None, stderr=None, cwd=None, timeout=None):
     """Cancel only this child group; settle it before releasing a cache lease."""
+    if timeout is not None and (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
+                                or not math.isfinite(timeout) or timeout <= 0):
+        raise ValueError("Timeout must be positive and finite")
     process = subprocess.Popen(command, env=env, pass_fds=pass_fds, stdout=stdout, stderr=stderr,
                                cwd=cwd, start_new_session=True)
     cancelled = []
+    deadline = time.monotonic() + timeout if timeout is not None else None
+    timed_out = False
 
     def forward(signum, _frame):
         if not cancelled:
@@ -61,14 +67,17 @@ def supervise(command, *, env, pass_fds=(), stdout=None, stderr=None, cwd=None):
                 try: os.killpg(process.pid, 0)
                 except ProcessLookupError:
                     process.wait()
-                    return 128 + signum
+                    return 124 if timed_out else 128 + signum
                 if time.monotonic() - started >= 5:
                     try: os.killpg(process.pid, signal.SIGKILL)
                     except ProcessLookupError: pass
                     process.wait()
-                    return 128 + signum
+                    return 124 if timed_out else 128 + signum
             elif process.poll() is not None:
                 return process.returncode
+            elif deadline is not None and time.monotonic() >= deadline:
+                timed_out = True
+                forward(signal.SIGTERM, None)
             time.sleep(0.05)
     finally:
         for sig, handler in previous.items(): signal.signal(sig, handler)
@@ -100,6 +109,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--is-held", action="store_true")
+    parser.add_argument("--timeout", type=float, help="Optional child deadline; default has no time limit")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.is_held:
@@ -111,7 +121,7 @@ def main():
         with cache_lock(args.root) as fd:
             env = os.environ.copy()
             env[ENV] = json.dumps({"root": str(args.root.resolve()), "fd": fd})
-            return supervise(command, env=env, pass_fds=(fd,))
+            return supervise(command, env=env, pass_fds=(fd,), timeout=args.timeout)
     except CacheBusy as error:
         print(str(error), file=sys.stderr)
         return 75
