@@ -115,7 +115,7 @@ struct ProxyRelayControlPeerInspectorTests {
         #expect(posix_spawn_file_actions_addclose(&actions, pair.first) == 0)
         #expect(posix_spawn_file_actions_addclose(&actions, pair.second) == 0)
         let script = "import socket;s=socket.socket(fileno=64);s.settimeout(5);s.sendall(b'R');assert s.recv(1)==b'Q'"
-        let strings = ["/usr/bin/python3", "-c", script].map { strdup($0) }
+        let strings = ["/usr/bin/python3", "-c", script].map { (value: String) in strdup(value) }
         defer { strings.forEach { free($0) } }
         var argv = strings + [nil], environment: [UnsafeMutablePointer<CChar>?] = [nil]
         var child: pid_t = 0
@@ -192,7 +192,7 @@ struct ProxyRelayControlPeerInspectorTests {
         #expect(posix_spawn_file_actions_adddup2(&actions, pair.second, 64) == 0)
         #expect(posix_spawn_file_actions_addclose(&actions, pair.first) == 0)
         #expect(posix_spawn_file_actions_addclose(&actions, pair.second) == 0)
-        let strings = [first, second].map { strdup($0) }; defer { strings.forEach { free($0) } }
+        let strings = [first, second].map { (value: String) in strdup(value) }; defer { strings.forEach { free($0) } }
         var argv = strings + [nil], env: [UnsafeMutablePointer<CChar>?] = [nil], child: pid_t = 0
         #expect(posix_spawn(&child, first, &actions, &attributes, &argv, &env) == 0)
         guard child > 0 else { throw Failure.activity }

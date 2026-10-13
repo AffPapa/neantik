@@ -79,7 +79,7 @@ struct DirectUpdateAssessmentTests {
         }
     }
     private func admits(_ entries: [String]) -> Int32 {
-        let memory = entries.map { strdup($0)! }
+        let memory = entries.map { (value: String) in strdup(value)! }
         defer { memory.forEach { free($0) } }
         return (memory.map(Optional.some) + [nil]).withUnsafeBufferPointer {
             neantik_assessment_environment_admitted($0.baseAddress)
