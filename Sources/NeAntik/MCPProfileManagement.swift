@@ -243,7 +243,7 @@ final class MCPProfileManagement {
                     try self.keychain.updateProxyPasswordForProfileEdit(draft?.password, profileID: saved.id)
                 })
             case "profile_duplicate":
-                let password = try keychain.proxyPassword(profileID: profileID)
+                let password = try keychain.configuredProxyPassword(for: profile)
                 var copy = profile.duplicated(); copy.name = try string(args, "name"); try validate(copy, password: password ?? "")
                 profile = try store.duplicateProfile(profile, name: copy.name, afterPersist: { saved in
                     if let password { try self.keychain.updateProxyPasswordForProfileEdit(password, profileID: saved.id) }

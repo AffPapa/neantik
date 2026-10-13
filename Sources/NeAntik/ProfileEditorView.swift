@@ -250,9 +250,7 @@ struct ProfileEditorView: View {
       _proxyPassword = State(initialValue: "")
     } else {
       do {
-        let password = try keychain.proxyPassword(
-          profileID: profile.id
-        )
+        let password = try keychain.configuredProxyPassword(for: profile)
         originalProxyPassword = password
         proxyPasswordReadFailed = false
         _proxyPassword = State(

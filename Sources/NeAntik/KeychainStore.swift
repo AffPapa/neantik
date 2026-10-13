@@ -192,6 +192,14 @@ struct KeychainStore: Sendable {
         }
     }
 
+    /// Editing or copying a profile only needs Keychain when its configured
+    /// proxy uses authentication. Direct and unauthenticated profiles must
+    /// remain usable when Keychain is locked or unavailable.
+    func configuredProxyPassword(for profile: BrowserProfile) throws -> String? {
+        guard let proxy = profile.proxy, !proxy.username.isEmpty else { return nil }
+        return try proxyPassword(profileID: profile.id)
+    }
+
     func proxyPassword(profileID: UUID) throws -> String? {
         if let current = try backend.data(
             service: service,

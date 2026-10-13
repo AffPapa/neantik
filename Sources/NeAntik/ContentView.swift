@@ -2040,9 +2040,7 @@ struct ContentView: View {
     private func duplicate(_ profile: BrowserProfile) {
         do {
             let copy = profile.duplicated()
-            let password = try keychain.proxyPassword(
-                profileID: profile.id
-            )
+            let password = try keychain.configuredProxyPassword(for: profile)
             let saved = try store.duplicateProfile(
                 profile, name: copy.name
             ) { saved in

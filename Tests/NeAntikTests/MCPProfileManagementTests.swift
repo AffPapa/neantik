@@ -96,8 +96,14 @@ struct MCPProfileManagementTests {
     final class Backend: KeychainBackend, @unchecked Sendable {
         var values: [UUID: Data] = [:]
         var fail = false
+        var failRead = false
+        var reads = 0
         struct Failure: Error {}
-        func data(service: String, profileID: UUID) throws -> Data? { values[profileID] }
+        func data(service: String, profileID: UUID) throws -> Data? {
+            reads += 1
+            if failRead { throw Failure() }
+            return values[profileID]
+        }
         func upsert(_ data: Data, service: String, profileID: UUID) throws { if fail { throw Failure() }; values[profileID] = data }
         func delete(service: String, profileID: UUID) throws { if fail { throw Failure() }; values[profileID] = nil }
     }
@@ -233,6 +239,42 @@ struct MCPProfileManagementTests {
         let copied = try await engine.call("profile_duplicate", args)
         let copy = try #require(engine.store.profile(withID: UUID(uuidString: copied["id"] as! String)))
         #expect(copy.id != original.id); #expect(copy.identity != original.identity); #expect(copy.note.isEmpty)
+    }
+    @Test func duplicateWithoutAuthenticationDoesNotAccessUnavailableKeychain() async throws {
+        let (root, engine, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        // A backend that refuses every read detects accidental Keychain access.
+        backend.failRead = true
+        for kind in ["chromium", "webkit"] {
+            let original = try await engine.call("profile_create", ["name": "Direct", "engine": kind])
+            var args = request(original); args["name"] = "Direct copy"
+            let copied = try await engine.call("profile_duplicate", args)
+            #expect(copied["id"] as? String != original["id"] as? String)
+            #expect(copied["engine"] as? String == kind)
+        }
+        let profile = try await create(engine)
+        let id = try #require(UUID(uuidString: profile["id"] as! String))
+        var configured = try #require(engine.store.profile(withID: id))
+        configured.proxy = ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 8080, username: "")
+        configured = try engine.store.upsert(configured)
+        _ = try await engine.call("profile_duplicate", ["profileID": id.uuidString, "expectedRevision": String(configured.revision), "name": "Unauthenticated copy"])
+        #expect(backend.reads == 0)
+        // An authenticated profile must still fail safely when its password
+        // cannot be read; it must not silently create a credentialless copy.
+        configured.proxy?.username = "synthetic"
+        configured = try engine.store.upsert(configured)
+        let before = try Data(contentsOf: engine.store.paths.profilesFile)
+        await #expect(throws: Backend.Failure.self) {
+            _ = try await engine.call("profile_duplicate", ["profileID": id.uuidString, "expectedRevision": String(configured.revision), "name": "Must not exist"])
+        }
+        #expect(backend.reads == 1)
+        #expect(try Data(contentsOf: engine.store.paths.profilesFile) == before)
+        backend.failRead = false
+        backend.values[id] = Data("owned-synthetic-password".utf8)
+        let copied = try await engine.call("profile_duplicate", ["profileID": id.uuidString, "expectedRevision": String(configured.revision), "name": "Authenticated copy"])
+        let copiedID = try #require(UUID(uuidString: copied["id"] as! String))
+        #expect(copiedID != id)
+        #expect(backend.values[copiedID] == backend.values[id])
     }
     @Test func refreshPreservesDraftAndLastGoodStateOnCorruption() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }

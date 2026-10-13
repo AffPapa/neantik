@@ -200,7 +200,7 @@ final class MCPManagementSession {
             case is ProfileMetadataBusyError: code = "storage_busy"; message = "Profile metadata is busy in another operation. Wait for it to finish, re-read current state, then retry intentionally."
             case let error as ManagerLaunchAdmissionError: code = "launch_busy"; message = error.localizedDescription
             case is CancellationError: code = "cancelled"; message = "Operation cancelled. Re-read current state before retry; a completed disk commit may remain."
-            case MCPProfileManagement.Failure.invalid, is ProxyImportError: code = "invalid_fields"; message = "Invalid fields. Check the tool schema, URL, tags and proxy protocol/port. Authenticated SOCKS5 is unsupported."
+            case MCPProfileManagement.Failure.invalid, is ProxyImportError: code = "invalid_fields"; message = "Invalid fields. Check the tool schema, URL, tags and proxy protocol/port."
             case MCPProfileManagement.Failure.conflict, is BrowserProfileRevisionConflictError, is ProfileMetadataUndoConflict: code = "revision_conflict"; message = "Revision conflict. Re-read profile and folder_list, then retry intentionally."
             case is BrowserProfileDeletionBlockedError, MCPProfileManagement.Failure.running: code = "profile_not_stopped"; message = "Profile is running or ownership is uncertain. Close its browser, then retry."
             case MCPProfileManagement.Failure.stopRefused: code = "stop_refused"; message = "Browser is not ready for graceful close or macOS refused quit. Retry after startup or use the browser Quit menu. No forced termination."
