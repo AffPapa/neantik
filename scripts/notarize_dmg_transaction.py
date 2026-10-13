@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 from dataclasses import asdict
+import importlib.util
 import json
 import os
 from pathlib import Path
 import plistlib
 import re
+import select
 import stat
 import sys
 import tempfile
@@ -30,6 +33,7 @@ POLICY_CLOSURE = tuple(sorted(set(source.RELEASE_SOURCE_CLOSURE) | {
     ("scripts/dmg_contents.py", "dmg-content-comparison"),
     ("scripts/release-direct-dmg.sh", "dmg-packaging"),
     ("scripts/verify-direct-notarized-dmg.sh", "dmg-verification"),
+    ("scripts/export-direct-distribution.py", "notary-output-copy"),
 }))
 
 
@@ -143,6 +147,114 @@ def checked(runner, command, project):
     return result.output
 
 
+def verify_image_copy(seal, action):
+    """Native image readers may write checksum/provenance xattrs.
+
+    Run them on a disposable exact copy. The retained image keeps its full
+    inode/ctime seal; the copy must retain identical bytes, mode and identity.
+    Its ctime may change because hdiutil caches a checksum in an xattr.
+    """
+    def verify():
+        with tempfile.TemporaryDirectory(prefix="verify-image-", dir=seal.path.parent.parent) as directory:
+            image = Path(directory).resolve() / seal.path.name
+            snapshot.snapshot_release_input(seal.path, image, maximum_bytes=MAX_BYTES)
+            copied = transaction.seal_regular_file(image, maximum_bytes=MAX_BYTES)
+            if copied.sha256 != seal.sha256:
+                raise DMGError("Native image copy differs from retained bytes")
+            transaction.write_checksum_sidecar(copied, image.with_name(image.name + ".sha256"))
+            return observe_native_image_copy(copied, lambda: action(image))
+    return transaction.observe_sealed_phase(seal, verify, maximum_bytes=MAX_BYTES)
+
+
+def observe_native_image_copy(seal, action):
+    """Reject transient writes; allow only observed native checksum/provenance metadata."""
+    if not hasattr(select, "kqueue"):
+        raise DMGError("Native image copy requires macOS vnode observation")
+    transaction.assert_sealed(seal, maximum_bytes=MAX_BYTES)
+    descriptor = os.open(seal.path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    queue = select.kqueue()
+    unsafe = (select.KQ_NOTE_WRITE | select.KQ_NOTE_EXTEND | select.KQ_NOTE_LINK |
+              select.KQ_NOTE_RENAME | select.KQ_NOTE_DELETE | select.KQ_NOTE_REVOKE)
+    def attributes():
+        return image_attributes(descriptor)
+    try:
+        before = attributes()
+        queue.control([select.kevent(descriptor, filter=select.KQ_FILTER_VNODE,
+            flags=select.KQ_EV_ADD | select.KQ_EV_CLEAR, fflags=unsafe | select.KQ_NOTE_ATTRIB)], 0, 0)
+        error = None
+        result = None
+        try:
+            result = action()
+        except BaseException as caught:
+            error = caught
+        events = queue.control(None, 8, 0)
+        after = transaction.seal_regular_file(seal.path, maximum_bytes=MAX_BYTES)
+        named = seal.path.stat(follow_symlinks=False)
+        opened = os.fstat(descriptor)
+        after_attributes = attributes()
+        events += queue.control(None, 8, 0)
+        changed = {key for key in before.keys() | after_attributes.keys()
+                   if before.get(key) != after_attributes.get(key)}
+        if (any(event.fflags & unsafe for event in events) or
+                any(getattr(seal, key) != getattr(after, key) for key in
+                    ("sha256", "size", "device", "inode", "mtime_ns", "uid", "mode")) or
+                named.st_nlink != 1 or opened.st_nlink != 1 or
+                (opened.st_dev, opened.st_ino) != (seal.device, seal.inode) or
+                changed - {"com.apple.diskimages.recentcksum", "com.apple.provenance"} or
+                (after.ctime_ns != seal.ctime_ns and not changed)):
+            raise DMGError("Native image verification changed its input or unapproved metadata") from error
+        if error is not None:
+            raise error
+        return result
+    finally:
+        queue.close()
+        os.close(descriptor)
+
+
+def image_attributes(descriptor):
+    """Bounded descriptor-based Darwin xattr reads; values never enter diagnostics."""
+    libc = ctypes.CDLL("/usr/lib/libSystem.B.dylib", use_errno=True)
+    libc.flistxattr.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
+    libc.flistxattr.restype = ctypes.c_ssize_t
+    libc.fgetxattr.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p,
+                             ctypes.c_size_t, ctypes.c_uint32, ctypes.c_int]
+    libc.fgetxattr.restype = ctypes.c_ssize_t
+    size = libc.flistxattr(descriptor, None, 0, 0)
+    if not 0 <= size <= 65536:
+        raise DMGError("Native image attribute inventory refused")
+    names = ctypes.create_string_buffer(size or 1)
+    length = libc.flistxattr(descriptor, names, size, 0)
+    if length != size:
+        raise DMGError("Native image attributes changed during inventory")
+    result = {}
+    for name in names.raw[:length].split(b"\0"):
+        if not name:
+            continue
+        value_size = libc.fgetxattr(descriptor, name, None, 0, 0, 0)
+        if not 0 <= value_size <= 1024 * 1024:
+            raise DMGError("Native image attribute size refused")
+        value = ctypes.create_string_buffer(value_size or 1)
+        if libc.fgetxattr(descriptor, name, value, value_size, 0, 0) != value_size:
+            raise DMGError("Native image attribute changed during read")
+        result[name.decode("utf-8", errors="strict")] = value.raw[:value_size]
+    return result
+
+
+def copy_notary_zip(archive, destination):
+    """Export the known notary output without weakening general snapshot custody."""
+    spec = importlib.util.spec_from_file_location("dmg_notary_export", Path(__file__).with_name("export-direct-distribution.py"))
+    exporter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(exporter)
+    checksum = archive.with_name(archive.name + ".sha256")
+    copied_checksum = destination.with_name(destination.name + ".sha256")
+    checksum_record = exporter.copy_verified(checksum, copied_checksum, maximum_bytes=4096)
+    match = re.fullmatch(r"([a-f0-9]{64})  " + re.escape(archive.name) + r"\n", copied_checksum.read_text())
+    if not match:
+        raise DMGError("Notary ZIP checksum format is invalid")
+    archive_record = exporter.copy_verified(archive, destination, match[1], maximum_bytes=MAX_BYTES)
+    return copied_checksum, archive_record, checksum_record, match[1]
+
+
 def qualify_contents(project, dmg, archive, runner, manifest, channel):
     """Native signature/container checks and byte-for-byte qualified ZIP contents."""
     if dmg.stat().st_size < 50_000_000:
@@ -237,9 +349,12 @@ def run(root, project, destination, profile, *, runner=native_runner,
         return checked(runner, command, project)
 
     if not receipts.reached("qualified"):
+        progress("checking qualified ZIP")
         immutable(lambda: call([str(project / "scripts/verify-direct-notarized-archive.py"),
                               "--project-root", str(project), "--archive", str(archive.path)]))
-        immutable(lambda: qualify(project, submitted.path, archive.path, runner, manifest.path, data["channel"]))
+        progress("checking signed image contents")
+        immutable(lambda: verify_image_copy(submitted, lambda image:
+            qualify(project, image, archive.path, runner, manifest.path, data["channel"])))
         advance("qualified")
     if not receipts.reached("submit-intent"):
         immutable(lambda: notary.preflight_notary_profile(project_root=project, notary_profile=profile, runner=runner))
@@ -281,10 +396,12 @@ def run(root, project, destination, profile, *, runner=native_runner,
         checksum_seal = transaction.write_checksum_sidecar(final_seal, checksum)
         immutable(lambda: transaction.observe_sealed_phase(final_seal, lambda:
             transaction.observe_sealed_phase(checksum_seal, lambda:
-                call([str(project / "scripts/verify-direct-notarized-dmg.sh"), str(final)]),
+                verify_image_copy(final_seal, lambda image:
+                    call([str(project / "scripts/verify-direct-notarized-dmg.sh"), str(image)])),
                 maximum_bytes=4096), maximum_bytes=MAX_BYTES))
         immutable(lambda: transaction.observe_sealed_phase(final_seal, lambda:
-            qualify(project, final, archive.path, runner, manifest.path, data["channel"]), maximum_bytes=MAX_BYTES))
+            verify_image_copy(final_seal, lambda image:
+                qualify(project, image, archive.path, runner, manifest.path, data["channel"])), maximum_bytes=MAX_BYTES))
         advance("final-verified", final=encode_seal(final_seal), checksum=encode_seal(checksum_seal))
     final_seal = decode_seal(receipts.data["final"], final)
     checksum_seal = decode_seal(receipts.data["checksum"], checksum)
@@ -369,14 +486,18 @@ def start(root, project, destination, profile, dmg, archive, *, capture=source.c
         raise DMGError("DMG/ZIP names do not agree")
     captured = capture(project, closure=POLICY_CLOSURE)
     seals = {}
-    for name, path, output in (("submitted", dmg, root / "submitted" / destination.name),
-                               ("archive", archive, root / "archive" / archive.name)):
-        snapshot.snapshot_release_input(path, output, maximum_bytes=MAX_BYTES)
-        seals[name] = encode_seal(transaction.seal_regular_file(output, maximum_bytes=MAX_BYTES))
-    checksum = archive.with_name(archive.name + ".sha256")
-    pinned_checksum = root / "archive" / checksum.name
-    snapshot.snapshot_release_input(checksum, pinned_checksum, maximum_bytes=4096)
+    submitted = root / "submitted" / destination.name
+    snapshot.snapshot_release_input(dmg, submitted, maximum_bytes=MAX_BYTES)
+    seals["submitted"] = encode_seal(transaction.seal_regular_file(submitted, maximum_bytes=MAX_BYTES))
+    pinned_archive = root / "archive" / archive.name
+    pinned_checksum, archive_record, checksum_record, expected_zip = copy_notary_zip(archive, pinned_archive)
+    archive_seal = transaction.seal_regular_file(pinned_archive, maximum_bytes=MAX_BYTES)
     checksum_seal = transaction.seal_regular_file(pinned_checksum, maximum_bytes=4096)
+    if ((archive_seal.sha256, archive_seal.size) != (archive_record["sha256"], archive_record["bytes"]) or
+            (checksum_seal.sha256, checksum_seal.size) != (checksum_record["sha256"], checksum_record["bytes"]) or
+            archive_seal.sha256 != expected_zip):
+        raise DMGError("Copied notary ZIP inputs changed before binding")
+    seals["archive"] = encode_seal(archive_seal)
     transaction.assert_checksum_matches_archive(decode_seal(seals["archive"], root / "archive" / archive.name), checksum_seal)
     seals["archiveChecksum"] = encode_seal(checksum_seal)
     candidate = root / "candidate/direct-candidate-manifest.json"
@@ -475,9 +596,9 @@ def main():
         # Our messages are fixed labels, never raw command/account output.
         print("DMG continuation refused: " + str(error), file=sys.stderr)
         return 65
-    except Exception:
+    except Exception as error:
         # Do not include external output/paths/account data in diagnostics.
-        print("DMG continuation refused; retained state requires inspection. No automatic resubmission.", file=sys.stderr)
+        print("DMG continuation refused (" + type(error).__name__ + "); retained state requires inspection. No automatic resubmission.", file=sys.stderr)
         return 65
     finally:
         if lock >= 0:

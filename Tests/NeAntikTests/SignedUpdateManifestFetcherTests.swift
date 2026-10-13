@@ -158,16 +158,31 @@ struct SignedUpdateManifestFetcherTests {
     }
     @Test func cancellationStopsActiveTransferAndReturnsNoManifest() async throws {
         let fixture = ManifestDiscoveryFixture()
-        ManifestURLProtocol.configure { _ in /* Hold transfer until cancellation. */ }
+        let generation = ManifestURLProtocol.configure { _ in /* Hold transfer until cancellation. */ }
         let configuration = SignedUpdateManifestFetcher.sessionConfiguration()
         configuration.protocolClasses = [ManifestURLProtocol.self]
         let service = SignedUpdateManifestFetcher(configuration: configuration)
         let task = Task { try await load(service, fixture: fixture) }
-        for _ in 0..<2_000 { if !ManifestURLProtocol.requests.isEmpty { break }; try await Task.sleep(for: .milliseconds(1)) }
+        defer { task.cancel() }
+        do {
+            try #require(try await ManifestURLProtocol.waitFor(generation, stopped: false))
+        } catch {
+            // A failed start observation must not leave an unstructured held
+            // transfer running into the next fixture generation.
+            task.cancel(); _ = try? await task.value
+            throw error
+        }
         #expect(ManifestURLProtocol.requests.count == 1)
         task.cancel()
         await #expect(throws: CancellationError.self) { try await task.value }
-        #expect(ManifestURLProtocol.stopCount == 1)
+        try #require(try await ManifestURLProtocol.waitFor(generation, stopped: true))
+        #expect(ManifestURLProtocol.snapshot(generation) == .init(started: 1, stopped: 1))
+        #expect(ManifestURLProtocol.snapshot(generation).active == 0)
+    }
+    @Test func missingTransferNotificationCannotPassTheDrainObserver() async throws {
+        let generation = ManifestURLProtocol.configure { _ in }
+        #expect(try await ManifestURLProtocol.waitFor(generation, stopped: true, timeout: .milliseconds(20)) == false)
+        #expect(ManifestURLProtocol.snapshot(generation) == .init(started: 0, stopped: 0))
     }
     @Test func resourceDeadlineTerminatesAStalledTransfer() async throws {
         let fixture = ManifestDiscoveryFixture()
@@ -230,7 +245,7 @@ struct SignedUpdateManifestFetcherTests {
         let fixture = ManifestDiscoveryFixture()
         let service = fetcher(chunks: [])
         let sender = ManifestChallengeSender()
-        ManifestURLProtocol.configure { instance in
+        let generation = ManifestURLProtocol.configure { instance in
             sender.instance = instance
             let space = URLProtectionSpace(host: "browser.free", port: 443, protocol: "https",
                 realm: "QA", authenticationMethod: NSURLAuthenticationMethodHTTPBasic)
@@ -242,7 +257,10 @@ struct SignedUpdateManifestFetcherTests {
         // URLSession completes cancellation internally without calling the
         // custom protocol's challenge sender. Assert task drain, typed delegate
         // refusal above, no supplied credential and no retry instead.
-        #expect(ManifestURLProtocol.stopCount == 1 && !sender.usedCredential)
+        try #require(try await ManifestURLProtocol.waitFor(generation, stopped: true))
+        #expect(ManifestURLProtocol.snapshot(generation) == .init(started: 1, stopped: 1))
+        #expect(ManifestURLProtocol.snapshot(generation).active == 0)
+        #expect(!sender.usedCredential)
         #expect(ManifestURLProtocol.requests.count == 1)
     }
 }
@@ -266,22 +284,46 @@ private final class ManifestURLProtocol: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
     private static var handler: ((ManifestURLProtocol) -> Void)?
     private static var recorded = [URLRequest](), stops = 0
+    struct TransferSnapshot: Equatable {
+        var started = 0, stopped = 0
+        var active: Int { started - stopped }
+    }
     private static var run: UInt64 = 0
+    private static var generations: [UInt64: TransferSnapshot] = [:]
     private var startedRun: UInt64?
     static var requests: [URLRequest] { lock.lock(); defer { lock.unlock() }; return recorded }
     static var stopCount: Int { lock.lock(); defer { lock.unlock() }; return stops }
-    static func configure(_ value: @escaping (ManifestURLProtocol) -> Void) {
+    @discardableResult static func configure(_ value: @escaping (ManifestURLProtocol) -> Void) -> UInt64 {
         lock.lock(); defer { lock.unlock() }; run &+= 1; handler = value; recorded = []; stops = 0
+        generations[run] = .init(); return run
+    }
+    static func snapshot(_ generation: UInt64) -> TransferSnapshot {
+        lock.lock(); defer { lock.unlock() }
+        return generations[generation] ?? .init()
+    }
+    /// Observe the particular transfer instead of assuming Foundation callback
+    /// ordering. Missing or duplicate callbacks still fail the exact assertions.
+    static func waitFor(_ generation: UInt64, stopped: Bool,
+                        timeout: Duration = .seconds(2)) async throws -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: timeout)
+        while true {
+            let value = snapshot(generation)
+            if value.started == 1 && (!stopped || value.stopped == 1) { return true }
+            if ContinuousClock.now >= deadline { return false }
+            try await Task.sleep(for: .milliseconds(1))
+        }
     }
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
-        Self.lock.lock(); startedRun = Self.run; Self.recorded.append(request); let handler = Self.handler; Self.lock.unlock()
+        Self.lock.lock(); startedRun = Self.run; Self.recorded.append(request); Self.generations[Self.run, default: .init()].started += 1; let handler = Self.handler; Self.lock.unlock()
         handler?(self)
     }
     override func stopLoading() {
         Self.lock.lock(); defer { Self.lock.unlock() }
-        // A late callback from another fixture must never create a false PASS.
+        // Keep the original generation until its late callback settles. A later
+        // configure may reset current counters, but cannot satisfy an old wait.
+        if let startedRun { Self.generations[startedRun, default: .init()].stopped += 1 }
         if startedRun == Self.run { Self.stops += 1 }
     }
 }

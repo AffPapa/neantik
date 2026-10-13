@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import select
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -196,6 +197,7 @@ class DMGTransactionTests(unittest.TestCase):
         for folder, name in (("submitted", self.destination.name), ("archive", self.archive.name)):
             path = self.root / folder / name
             original = path.read_bytes()
+            path.chmod(0o600)
             path.write_bytes(b"changed")
             with self.assertRaises(dmg.transaction.ReleaseTransactionError):
                 self.continue_transaction()
@@ -259,6 +261,84 @@ class DMGTransactionTests(unittest.TestCase):
         finally:
             os.close(first)
 
+    def test_known_notary_zip_hardlinks_become_independent_pinned_inputs(self):
+        os.link(self.archive, self.base / "notary-zip-link")
+        sidecar = self.archive.with_name(self.archive.name + ".sha256")
+        os.link(sidecar, self.base / "notary-checksum-link")
+        root = self.output / "hardlinked-input"
+        dmg.start(root, self.project, self.destination, "QA-notary", self.prepared,
+                  self.archive, capture=self.capture)
+        for original in (self.archive, sidecar):
+            pinned = root / "archive" / original.name
+            self.assertEqual(pinned.read_bytes(), original.read_bytes())
+            self.assertEqual(pinned.stat().st_nlink, 1)
+            self.assertNotEqual(pinned.stat().st_ino, original.stat().st_ino)
+            self.assertEqual(original.stat().st_nlink, 2)
+
+    def test_notary_zip_third_link_and_wrong_checksum_refuse_before_apple(self):
+        os.link(self.archive, self.base / "first-link")
+        os.link(self.archive, self.base / "second-link")
+        with self.assertRaises(ValueError):
+            dmg.start(self.output / "third-link", self.project, self.destination,
+                      "QA-notary", self.prepared, self.archive, capture=self.capture)
+        self.assertEqual(self.count("submit"), 0)
+
+    def test_consistent_replaced_zip_and_sidecar_cannot_inherit_copy_records(self):
+        original = dmg.copy_notary_zip
+        def replace_pair(archive, destination):
+            result = original(archive, destination)
+            changed = b"another self-consistent ZIP"
+            destination.chmod(0o600); destination.write_bytes(changed); destination.chmod(0o400)
+            checksum = result[0]
+            checksum.chmod(0o600)
+            checksum.write_text(hashlib.sha256(changed).hexdigest() + "  " + archive.name + "\n")
+            checksum.chmod(0o400)
+            return result
+        with mock.patch.object(dmg, "copy_notary_zip", side_effect=replace_pair), self.assertRaisesRegex(dmg.DMGError, "changed before binding"):
+            root = self.output / "paired-replacement"
+            dmg.start(root, self.project, self.destination, "QA-notary", self.prepared,
+                      self.archive, capture=self.capture)
+        self.assertFalse((root / "00-created.json").exists())
+        self.assertEqual(self.count("submit"), 0)
+
+    def test_native_xattr_writes_are_confined_to_work_copies_in_both_phases(self):
+        initial = dmg.transaction.seal_regular_file(self.root / "submitted" / self.destination.name,
+                                                   maximum_bytes=dmg.MAX_BYTES)
+        def native_qualify(*args):
+            self.qualify(*args)
+            subprocess.run(["/usr/bin/xattr", "-w", "com.apple.diskimages.recentcksum", "synthetic checksum", str(args[1])], check=True, capture_output=True)
+        def native_runner(command, project):
+            if command[0].endswith("verify-direct-notarized-dmg.sh"):
+                subprocess.run(["/usr/bin/xattr", "-w", "com.apple.diskimages.recentcksum", "synthetic checksum", command[-1]], check=True, capture_output=True)
+            return self.runner(command, project)
+        dmg.run(self.root, self.project, self.destination, "QA-notary", runner=native_runner,
+                capture=self.capture, qualify=native_qualify)
+        dmg.transaction.assert_sealed(initial, maximum_bytes=dmg.MAX_BYTES)
+        self.assertEqual(self.count("submit"), 1)
+        self.assertEqual(self.destination.read_bytes(), b"signed DMG input stapled")
+
+    def test_work_copy_write_restore_replace_mode_and_foreign_xattr_refuse(self):
+        seal = dmg.transaction.seal_regular_file(self.prepared, maximum_bytes=dmg.MAX_BYTES)
+        def rewrite(image):
+            old = image.read_bytes(); old_times = image.stat()
+            image.write_bytes(b"changed")
+            image.write_bytes(old)
+            os.utime(image, ns=(old_times.st_atime_ns, old_times.st_mtime_ns))
+        def replace(image):
+            replacement = image.with_name("replacement")
+            replacement.write_bytes(image.read_bytes()); replacement.chmod(0o600)
+            os.replace(replacement, image)
+        for action in (rewrite, replace, lambda image: image.chmod(0o400),
+                       lambda image: subprocess.run(["/usr/bin/xattr", "-w", "com.neantik.qa.unapproved", "synthetic", str(image)], check=True, capture_output=True)):
+            with self.subTest(action=action), self.assertRaises((dmg.DMGError, dmg.transaction.ReleaseTransactionError)):
+                dmg.verify_image_copy(seal, action)
+            dmg.transaction.assert_sealed(seal, maximum_bytes=dmg.MAX_BYTES)
+
+    def test_native_work_copy_cannot_hide_a_write_to_retained_original(self):
+        seal = dmg.transaction.seal_regular_file(self.prepared, maximum_bytes=dmg.MAX_BYTES)
+        with self.assertRaises(dmg.transaction.ReleaseTransactionError):
+            dmg.verify_image_copy(seal, lambda image: self.prepared.write_bytes(b"changed original"))
+
     def test_new_cli_start_detects_existing_uncertain_or_complete_transaction(self):
         private = self.output / "private"
         private.mkdir(mode=0o700)
@@ -273,6 +353,7 @@ class DMGTransactionTests(unittest.TestCase):
 
     def test_zip_sidecar_is_pinned_and_damage_is_rejected(self):
         path = self.root / "archive" / (self.archive.name + ".sha256")
+        path.chmod(0o600)
         path.write_bytes(b"wrong checksum")
         with self.assertRaises(dmg.transaction.ReleaseTransactionError):
             self.continue_transaction()
