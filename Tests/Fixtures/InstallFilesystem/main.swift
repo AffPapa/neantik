@@ -40,7 +40,11 @@ do {
                 } else if byte == 101 {
                     // Exec the same isolated fixture: all participant FDs must
                     // close, otherwise its new external-owner role self-blocks.
-                    var pointers = [args[0], "intent", root.path, "none"].map { strdup($0) }
+                    // URL also exposes path(percentEncoded:). Give older
+                    // Swift typecheckers the element type before overload
+                    // resolution, while preserving these exact exec args.
+                    let arguments: [String] = [args[0], "intent", root.path, "none"]
+                    var pointers = arguments.map { strdup($0) }
                     pointers.append(nil)
                     _ = pointers.withUnsafeMutableBufferPointer { execv(args[0], $0.baseAddress!) }
                     exit(74)
