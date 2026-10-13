@@ -39,7 +39,9 @@ class CIManagerShardTests(unittest.TestCase):
         self.assertEqual(MOD.clean_environment(env), {"PATH": "/bin", "LANG": "en_US.UTF-8"})
 
     def test_failed_empty_or_changed_source_stops_before_next_suite(self):
-        for exit_code, output, changed in [(1, b"failed", False), (0, b"Test run with 0 tests in 0 suites passed", False), (0, b"Test run with 1 test in 1 suite passed", True)]:
+        for exit_code, output, changed in [(1, b"failed", False), (0, b"Test run with 0 tests in 0 suites passed", False),
+                                          (0, "➜ Test requiresHardware() skipped: unavailable\n✔ Test run with 1 test in 1 suite passed".encode(), False),
+                                          (0, "✔ Test works() passed after 0.1 seconds.\n✔ Test run with 1 test in 1 suite passed".encode(), True)]:
             with self.subTest(exit_code=exit_code, changed=changed), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory); calls = []
                 def fake(command, **kwargs):

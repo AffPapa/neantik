@@ -3,6 +3,19 @@ import Foundation
 import Testing
 @testable import NeAntik
 
+private func profileStoreLargeImportBenchmarkHasDescriptorBudget() -> Bool {
+    var limits = rlimit()
+    guard getrlimit(RLIMIT_NOFILE, &limits) == 0,
+          limits.rlim_cur >= 16_024 else { return false }
+    // 5000 owned creations hold three descriptors each until commit/rollback.
+    // Never raise process/system limits to force an unavailable benchmark.
+    var kernelLimit: Int32 = 0
+    var size = MemoryLayout<Int32>.size
+    guard sysctlbyname("kern.maxfilesperproc", &kernelLimit, &size, nil, 0) == 0,
+          size == MemoryLayout<Int32>.size, kernelLimit > 0 else { return false }
+    return kernelLimit >= 16_024
+}
+
 @MainActor
 @Suite(.serialized)
 struct ProfileStoreTests {
@@ -676,7 +689,8 @@ struct ProfileStoreTests {
         )
     }
 
-    @Test
+    @Test(.enabled(if: profileStoreLargeImportBenchmarkHasDescriptorBudget(),
+                   "5000-profile filesystem benchmark requires known inherited and OS descriptor capacity >=16024. Separate low-budget refusal tests remain mandatory."))
     func importingThousandsOfDistinctFoldersBatchesOrganizationSorting() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -685,22 +699,6 @@ struct ProfileStoreTests {
         let paths = AppPaths(rootDirectory: root)
         let store = ProfileStore(paths: paths)
         let count = 5_000
-        // This benchmark retains owned directory descriptors for the batch.
-        // A smaller inherited soft limit exercises the separate budget-refusal
-        // tests instead of organization sorting. Change only this test process.
-        var limits = rlimit()
-        try #require(getrlimit(RLIMIT_NOFILE, &limits) == 0)
-        let originalSoftLimit = limits.rlim_cur
-        let benchmarkLimit = rlim_t(count * 3 + 1_024)
-        if limits.rlim_cur < benchmarkLimit {
-            try #require(limits.rlim_max >= benchmarkLimit)
-            limits.rlim_cur = benchmarkLimit
-            try #require(setrlimit(RLIMIT_NOFILE, &limits) == 0)
-        }
-        defer {
-            limits.rlim_cur = originalSoftLimit
-            #expect(setrlimit(RLIMIT_NOFILE, &limits) == 0)
-        }
         let profiles = (0..<count).map { index in
             BrowserProfile(
                 name: "Imported \(index)",

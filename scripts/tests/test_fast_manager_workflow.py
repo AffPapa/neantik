@@ -22,9 +22,12 @@ class FastManagerWorkflowTests(unittest.TestCase):
             self.assertEqual(MOD.suites(root), ["BrandNewTests"])
 
     def test_empty_success_output_is_not_a_pass(self):
-        for output in ["Build complete!", "Test run with 0 tests in 0 suites passed", "Test run failed"]:
+        for output in ["Build complete!", "Test run with 0 tests in 0 suites passed", "Test run failed",
+                       "Test run with 17 tests in 2 suites passed",
+                       "➜ Test requiresHardware() skipped: unavailable\n✔ Test run with 1 test in 1 suite passed"]:
             with self.assertRaises(ValueError): MOD.positive_result(output)
-        self.assertEqual(MOD.positive_result("Test run with 17 tests in 2 suites passed"), {"tests": 17, "suites": 2})
+        self.assertEqual(MOD.positive_result("✔ Test works() passed after 0.1 seconds.\n➜ Test hardware() skipped: unavailable\n✔ Test run with 17 tests in 2 suites passed"),
+                         {"tests": 17, "suites": 2, "passedTestLogLines": 1, "skippedTestLogLines": 1})
 
     def test_repeated_input_does_not_require_cold_cache_and_changed_input_changes_digest(self):
         with tempfile.TemporaryDirectory() as directory:

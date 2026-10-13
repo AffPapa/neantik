@@ -35,7 +35,14 @@ def positive_result(text):
     matches = re.findall(r"Test run with ([1-9][0-9]*) tests? in ([1-9][0-9]*) suites? passed", text)
     if not matches:
         raise ValueError("No positive Swift Testing count; an empty selection is not PASS")
-    return {"tests": int(matches[-1][0]), "suites": int(matches[-1][1])}
+    # Swift Testing's summary includes disabled tests. Require an actual
+    # passed operation as well, and expose skip lines without claiming they ran.
+    passed = re.findall(r"^\s*✔ Test (?!run with ).+ passed(?: after |\.)", text, re.MULTILINE)
+    skipped = re.findall(r"^\s*➜ Test .+ skipped(?:[:.]|$)", text, re.MULTILINE)
+    if not passed:
+        raise ValueError("No passed Swift Testing operation; skipped-only output is not PASS")
+    return {"tests": int(matches[-1][0]), "suites": int(matches[-1][1]),
+            "passedTestLogLines": len(passed), "skippedTestLogLines": len(skipped)}
 
 
 def command(root, cache, pattern):
