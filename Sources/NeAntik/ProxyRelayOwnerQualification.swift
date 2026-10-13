@@ -15,6 +15,7 @@ enum ProxyRelayOwnerQualification {
         var observeTransport: Bool? = nil
         var expectedLaunchRevision: UInt64? = nil
         var routeProbe: BrowserRouteProbe.Plan? = nil
+        var requireCompleteRouteProbe: Bool? = nil
         var fixtureHost: String { kind == .https ? "localhost" : "127.0.0.1" }
     }
     struct Result: Codable {
@@ -57,16 +58,7 @@ enum ProxyRelayOwnerQualification {
         else { throw Failure.missingBundle }
         let request = try JSONDecoder().decode(Request.self, from: ProxyRelayPrivatePipe.readFrame(STDIN_FILENO, timeout: 5))
         let root = try validatedRoot(request)
-        if let plan = request.routeProbe {
-            try plan.validate()
-            // Private-pipe QA accepts only destinations implemented by the
-            // synthetic loopback upstream. No arbitrary external endpoint.
-            guard request.managerIntegration == true, request.observeTransport == true,
-                  request.kind == .http,
-                  plan.httpEndpoint.absoluteString == "http://route-qualification.test/check",
-                  plan.httpsEndpoint.absoluteString == "https://route-qualification.test/check"
-            else { throw Failure.invalidFixtureProtocol }
-        }
+        try validateRouteFixture(request)
         guard let resources = Bundle.main.resourceURL, let manager = Bundle.main.executableURL,
               let browser = Bundle(url: resources.appendingPathComponent("NeAntik Browser.app"))?.executableURL
         else { throw Failure.missingBundle }
@@ -97,6 +89,27 @@ enum ProxyRelayOwnerQualification {
         }
         try await launch(request: request, root: root, manager: manager, browser: browser, version: version,
                          executableHash: executableHash, frameworkHash: frameworkHash)
+    }
+    /// Fail closed even when a malformed request omits the probe or chooses
+    /// an early-return restart path. A transport observation is not a route ACK.
+    static func validateRouteFixture(_ request: Request) throws {
+        guard request.requireCompleteRouteProbe != true || (request.routeProbe != nil && request.observeRestart != true)
+        else { throw Failure.invalidFixtureProtocol }
+        if let plan = request.routeProbe {
+            try plan.validate()
+            // Two fixed fixtures only: the loopback negative control and our
+            // public TLS destination. This selector is absent from release.
+            let localFixture = plan.httpEndpoint.absoluteString == "http://route-qualification.test/check"
+                && plan.httpsEndpoint.absoluteString == "https://route-qualification.test/check"
+            let trustedTLSFixture = plan.httpEndpoint.absoluteString == "http://route-qualification.test/check"
+                && plan.httpsEndpoint.absoluteString == "https://browser.free/api/route-qa/https"
+                && plan.verificationKey == Data(base64Encoded: "mT19pqlD/5uCjezfSL1yyY5dp/7G4biCkPFbJsRqLqo=")
+            guard request.managerIntegration == true, request.observeTransport == true,
+                  request.kind == .http,
+                  localFixture || trustedTLSFixture,
+                  request.requireCompleteRouteProbe != true || trustedTLSFixture
+            else { throw Failure.invalidFixtureProtocol }
+        }
     }
     /// Never available in release and never keyed by a public endpoint/domain.
     /// These arguments exist only for this explicitly invoked signed QA mode.
@@ -202,7 +215,9 @@ enum ProxyRelayOwnerQualification {
             let deadline = ContinuousClock.now + .seconds(12)
             repeat {
                 let observed = try await processes.observeManagedBrowserSession(profileID: profile.id, expectedRevision: recorded.revision)
-                let probeReady = request.routeProbe == nil || observed.routeProbe?.httpResponseAcknowledged == true
+                let probeReady = request.routeProbe == nil || (request.requireCompleteRouteProbe == true
+                    ? observed.routeProbe?.status == .complete
+                    : observed.routeProbe?.httpResponseAcknowledged == true)
                 if let transport = observed.relayTransport, transport.admittedConnections > 0, probeReady,
                    try await processes.revalidateManagedBrowserObservation(observed, profileID: profile.id, expectedProfile: recorded) {
                     result.transportObservation = transport; result.routeProbeObservation = observed.routeProbe; break

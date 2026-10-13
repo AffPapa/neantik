@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import Security
 
 struct BrowserProcessArguments: Equatable, Sendable {
     let executablePath: String
@@ -542,11 +543,63 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
         pid: pid_t
     ) -> Bool {
         guard let executablePath = executablePath(pid: pid) else {
-            // If even the executable identity is unavailable, keep the old
-            // fail-closed behavior.
-            return true
+            // Some hardened applications deny proc_pidpath. A valid live
+            // kernel guest can still identify an unrelated signed executable.
+            // Never trust app display names, argv[0], or filesystem code alone.
+            guard let generation = currentProcessIdentity(pid),
+                  let evidence = verifiedLiveExecutable(pid: pid, generation: generation)
+            else { return true }
+            return executableCanUseNeAntikProfile(evidence.path)
+                || BrowserProcessInventory.isManagerExecutable(evidence.path)
+                || evidence.identifier.hasPrefix("app.neantik.")
+                || evidence.identifier.hasPrefix("app.nevision.")
         }
         return executableCanUseNeAntikProfile(executablePath) || BrowserProcessInventory.isManagerExecutable(executablePath)
+    }
+
+    struct LiveExecutableEvidence: Equatable {
+        let path: String
+        let identifier: String
+        let cdHash: Data
+    }
+
+    /// A filesystem link alone is not a secure live identity (SecCode.h).
+    /// Validate the kernel guest around each signing-info read, then repeat
+    /// with a fresh guest. Missing, changed, or invalid evidence stays unknown.
+    static func verifiedLiveExecutable(pid: pid_t, generation: BrowserProcessKernelIdentity) -> LiveExecutableEvidence? {
+        guard pid > 0, currentProcessIdentity(pid) == generation else { return nil }
+        var result: LiveExecutableEvidence?
+        for _ in 0..<2 {
+            var guest: SecCode?
+            let attributes = [kSecGuestAttributePid as String: NSNumber(value: pid)] as CFDictionary
+            guard SecCodeCopyGuestWithAttributes(nil, attributes, SecCSFlags(), &guest) == errSecSuccess,
+                  let guest, SecCodeCheckValidity(guest, SecCSFlags(), nil) == errSecSuccess
+            else { return nil }
+            var staticCode: SecStaticCode?
+            guard SecCodeCopyStaticCode(guest, SecCSFlags(), &staticCode) == errSecSuccess,
+                  let staticCode else { return nil }
+            var information: CFDictionary?
+            guard SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &information) == errSecSuccess,
+                  let fields = information as? [String: Any],
+                  let identifier = fields[kSecCodeInfoIdentifier as String] as? String, !identifier.isEmpty,
+                  let hash = fields[kSecCodeInfoUnique as String] as? Data, hash.count == 20,
+                  let url = fields[kSecCodeInfoMainExecutable as String] as? URL,
+                  url.isFileURL, url.path.hasPrefix("/"), url.path.utf8.count <= 4096,
+                  SecCodeCheckValidity(guest, SecCSFlags(), nil) == errSecSuccess,
+                  currentProcessIdentity(pid) == generation
+            else { return nil }
+            // Swift requires an explicit static-code translation. Bind its
+            // reported CodeDirectory hash back to the live kernel guest.
+            let hashText = hash.map { String(format: "%02x", $0) }.joined()
+            var requirement: SecRequirement?
+            guard SecRequirementCreateWithString("cdhash H\"\(hashText)\"" as CFString, SecCSFlags(), &requirement) == errSecSuccess,
+                  let requirement, SecCodeCheckValidity(guest, SecCSFlags(), requirement) == errSecSuccess,
+                  currentProcessIdentity(pid) == generation else { return nil }
+            let evidence = LiveExecutableEvidence(path: url.standardizedFileURL.path, identifier: identifier, cdHash: hash)
+            guard result == nil || result == evidence else { return nil }
+            result = evidence
+        }
+        return result
     }
 
     private static func executablePath(pid: pid_t) -> String? {

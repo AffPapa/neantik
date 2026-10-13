@@ -57,6 +57,24 @@ class ControlledBrowserRouteObserverTests(unittest.TestCase):
                 fixture['events'].append({'type': fixture['constants']['logEventTypes']['HTTP_TRANSACTION_READ_RESPONSE_HEADERS'], 'source': {'id': 99}, 'phase': 0})
                 with self.assertRaises(observer.RouteObservationError): self.observe(fixture)
 
+    def test_redirect_legs_do_not_share_a_controller_or_response(self):
+        fixture = self.fixture(); types = fixture['constants']['logEventTypes']
+        prefix = [
+            {'type': types['URL_REQUEST_START_JOB'], 'source': {'id': 1}, 'phase': 1, 'params': {'url': 'http://owned.example.test/start'}},
+            {'type': types['HTTP_STREAM_JOB_CONTROLLER_BOUND'], 'source': {'id': 1}, 'phase': 0, 'params': {'source_dependency': {'id': 20}}},
+            {'type': types['HTTP_TRANSACTION_READ_RESPONSE_HEADERS'], 'source': {'id': 1}, 'phase': 0, 'params': {}}]
+        fixture['events'] = prefix + fixture['events']
+        self.assertTrue(self.observe(fixture)['responseHeadersObserved'])
+        # A different URL's response cannot replace the exact leg's response.
+        broken = copy.deepcopy(fixture)
+        del broken['events'][4]
+        with self.assertRaises(observer.RouteObservationError): self.observe(broken)
+        # A successful later retry cannot hide a failed matching attempt.
+        broken = copy.deepcopy(fixture)
+        failed = copy.deepcopy(broken['events'][3]); failed['params']['net_error'] = -7
+        broken['events'].insert(3, failed)
+        with self.assertRaises(observer.RouteObservationError): self.observe(broken)
+
     def test_wrong_route_tls_and_request_errors(self):
         for surface in ['route', 'tls', 'request', 'nonce', 'job-owner']:
             with self.subTest(surface=surface):

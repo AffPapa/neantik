@@ -266,16 +266,22 @@ private final class ManifestURLProtocol: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
     private static var handler: ((ManifestURLProtocol) -> Void)?
     private static var recorded = [URLRequest](), stops = 0
+    private static var run: UInt64 = 0
+    private var startedRun: UInt64?
     static var requests: [URLRequest] { lock.lock(); defer { lock.unlock() }; return recorded }
     static var stopCount: Int { lock.lock(); defer { lock.unlock() }; return stops }
     static func configure(_ value: @escaping (ManifestURLProtocol) -> Void) {
-        lock.lock(); defer { lock.unlock() }; handler = value; recorded = []; stops = 0
+        lock.lock(); defer { lock.unlock() }; run &+= 1; handler = value; recorded = []; stops = 0
     }
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
-        Self.lock.lock(); Self.recorded.append(request); let handler = Self.handler; Self.lock.unlock()
+        Self.lock.lock(); startedRun = Self.run; Self.recorded.append(request); let handler = Self.handler; Self.lock.unlock()
         handler?(self)
     }
-    override func stopLoading() { Self.lock.lock(); Self.stops += 1; Self.lock.unlock() }
+    override func stopLoading() {
+        Self.lock.lock(); defer { Self.lock.unlock() }
+        // A late callback from another fixture must never create a false PASS.
+        if startedRun == Self.run { Self.stops += 1 }
+    }
 }

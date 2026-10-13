@@ -82,7 +82,7 @@ package struct SignedUpdateManifestFetcher: Sendable {
 }
 
 /// Delegate callbacks use one serial queue; cancellation may arrive anywhere.
-/// Cancellation/refusal resumes only after URLSession confirms task completion,
+/// Cancellation/refusal resumes only after URLSession confirms invalidation,
 /// so the caller's operation fence never outlives an active transfer unnoticed.
 private final class ManifestResponseLoader: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     private let lock = NSLock()
@@ -150,11 +150,18 @@ private final class ManifestResponseLoader: NSObject, URLSessionDataDelegate, @u
     }
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         lock.lock()
+        failure = failure ?? error; self.task = nil
+        lock.unlock()
+        // Task completion can precede URLProtocol.stopLoading. Keep the
+        // operation fence until this private session has actually invalidated.
+        session.finishTasksAndInvalidate()
+    }
+    func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
+        lock.lock()
         let continuation = continuation; self.continuation = nil
         let failure = failure ?? error, bytes = bytes
         self.session = nil; self.task = nil; self.bytes = Data()
         lock.unlock()
-        session.finishTasksAndInvalidate()
         if let failure { continuation?.resume(throwing: failure) }
         else { continuation?.resume(returning: bytes) }
     }

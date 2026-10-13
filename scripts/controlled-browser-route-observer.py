@@ -68,14 +68,25 @@ def observe_https_success(trace, *, expected_url, expected_proxy_chain):
     if not isinstance(expected_proxy_chain, str) or not expected_proxy_chain.startswith('[socks5://'):
         raise RouteObservationError('expected SOCKS relay')
     names, events, groups = _index(trace)
-    starts = {e['source']['id'] for e in events
-              if names[e['type']] == 'URL_REQUEST_START_JOB'
-              and e.get('params', {}).get('url') == expected_url}
-    if not 1 <= len(starts) <= 4:
+    # Chromium retains the URLRequest source ID across redirects. Bind only
+    # the exact nonce-bearing leg, rather than borrowing another leg's job,
+    # controller or response. Keep all its failed/repeated attempts visible.
+    legs = []
+    for sid, request_events in groups.items():
+        boundaries = [i for i, e in enumerate(request_events)
+                      if names[e['type']] == 'URL_REQUEST_START_JOB'
+                      and 'url' in e.get('params', {})]
+        for index, start in enumerate(boundaries):
+            if request_events[start]['params']['url'] == expected_url:
+                end = boundaries[index + 1] if index + 1 < len(boundaries) else len(request_events)
+                legs.append((sid, request_events[start:end]))
+    if not 1 <= len(legs) <= 4:
         raise RouteObservationError('nonce request absent or excessive')
 
+    request_override = {}
+
     def named(source, name):
-        return [e for e in groups.get(source, []) if names[e['type']] == name]
+        return [e for e in request_override.get(source, groups.get(source, [])) if names[e['type']] == name]
 
     def one_dependency(source, name):
         values = [e.get('params', {}).get('source_dependency', {}).get('id') for e in named(source, name)]
@@ -95,8 +106,9 @@ def observe_https_success(trace, *, expected_url, expected_proxy_chain):
         raise RouteObservationError('phase constants')
     sockets = set()
     protocols = set()
-    for sid in starts:
-        if any(_net_error(e.get('params', {})) < 0 for e in groups[sid]):
+    for sid, request_events in legs:
+        request_override = {sid: request_events}
+        if any(_net_error(e.get('params', {})) < 0 for e in request_events):
             raise RouteObservationError('request error')
         if not named(sid, 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS'):
             raise RouteObservationError('response absent')
@@ -128,7 +140,7 @@ def observe_https_success(trace, *, expected_url, expected_proxy_chain):
         if not isinstance(protocol, str) or len(protocol) > 64:
             raise RouteObservationError('invalid negotiated protocol')
         protocols.add(protocol if protocol in ('h2', 'http/1.1', '') else 'other')
-    return {'nonceRequestAttempts': len(starts), 'boundTLSConnections': len(sockets),
+    return {'nonceRequestAttempts': len(legs), 'boundTLSConnections': len(sockets),
             'allRequestsSelectedExpectedRelay': True, 'allRequestsBoundToSuccessfulSOCKSAndTLS': True,
             'responseHeadersObserved': True, 'protocols': sorted(protocols),
             'scope': 'point-in-time HTTPS fixture; not continuous route, DNS leak or OS-default upstream trust qualification'}
