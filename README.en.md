@@ -1,5 +1,7 @@
 # NeAntik
 
+Local `0.8.3 (114)` is a development preview with WebKit tabs and explicit engine selection. It is not published; the public release is listed below.
+
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
 source-pinned Chromium runtime. It does not require Electron, an account, a

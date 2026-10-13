@@ -74,4 +74,3 @@ class NativeCacheLockTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 with MOD.cache_lock(root): pass
             self.assertEqual(target.read_text(), "kept")
-

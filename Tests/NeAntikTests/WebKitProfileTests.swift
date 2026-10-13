@@ -5,6 +5,16 @@ import WebKit
 @testable import NeAntik
 
 @MainActor
+private final class WebKitPopupCounter: NSObject, WKUIDelegate {
+    var attempts = 0
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+                 for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        attempts += 1
+        return nil // Observe the request without creating another context.
+    }
+}
+
+@MainActor
 @Suite(.serialized)
 struct WebKitProfileTests {
     private func encoder() -> JSONEncoder { let value = JSONEncoder(); value.dateEncodingStrategy = .iso8601; return value }
@@ -16,6 +26,43 @@ struct WebKitProfileTests {
         #expect(WebKitWindowCommand.resolve(characters: "l", keyCode: 37, modifiers: []) == nil)
         #expect(WebKitWindowCommand.resolve(characters: "l", keyCode: 37, modifiers: [.command, .option]) == nil)
         #expect(WebKitWindowCommand.resolve(characters: "x", keyCode: 7, modifiers: .command) == nil)
+        #expect(WebKitWindowCommand.resolve(characters: "t", keyCode: 17, modifiers: .command) == .newTab)
+        #expect(WebKitWindowCommand.resolve(characters: "е", keyCode: 17, modifiers: .command) == .newTab)
+        #expect(WebKitWindowCommand.resolve(characters: "]", keyCode: 30, modifiers: [.command, .shift]) == .nextTab)
+        #expect(WebKitWindowCommand.resolve(characters: "[", keyCode: 33, modifiers: [.command, .shift]) == .previousTab)
+        #expect(WebKitWindowCommand.resolve(characters: "t", keyCode: 17, modifiers: [.command, .shift]) == nil)
+        #expect(WebKitWindowCommand.resolve(characters: "t", keyCode: 17, modifiers: []) == nil)
+    }
+
+    @Test func tabClosurePreservesBackgroundSelectionAndChoosesAdjacentTab() {
+        let a = UUID(), b = UUID(), c = UUID(), unknown = UUID()
+        var order = WebKitTabOrder(first: a)
+        order.append(b); order.append(c); order.select(b)
+        #expect(!order.select(unknown) && order.selected == b)
+        #expect(!order.remove(unknown) && order.ids == [a, b, c])
+        #expect(order.remove(a) && order.selected == b)
+        order.append(b) // A duplicate must not change selection or order.
+        #expect(order.ids == [b, c] && order.selected == b)
+        #expect(order.remove(b) && order.selected == c)
+        #expect(!order.remove(c) && order.ids == [c])
+        order.append(a); order.append(b)
+        order.cycle(1); #expect(order.selected == c)
+        order.cycle(-1); #expect(order.selected == b)
+        #expect(order.remove(b) && order.selected == a)
+    }
+
+    @Test func popupOwnershipRejectsForeignDefaultAndEphemeralStores() {
+        let a = UUID(), b = UUID(), url = URL(string: "https://example.com/")!
+        #expect(WebKitProfilePolicy.permitsPopup(profileID: a, openerIsOwned: true, storeID: a, persistent: true, url: url))
+        #expect(!WebKitProfilePolicy.permitsPopup(profileID: a, openerIsOwned: false, storeID: a, persistent: true, url: url))
+        #expect(!WebKitProfilePolicy.permitsPopup(profileID: a, openerIsOwned: true, storeID: b, persistent: true, url: url))
+        #expect(!WebKitProfilePolicy.permitsPopup(profileID: a, openerIsOwned: true, storeID: nil, persistent: true, url: url))
+        #expect(!WebKitProfilePolicy.permitsPopup(profileID: a, openerIsOwned: true, storeID: a, persistent: false, url: url))
+        #expect(!WebKitProfilePolicy.permitsPopup(profileID: a, openerIsOwned: true, storeID: a, persistent: true, url: URL(string: "file:///fixture")))
+        #expect(WebKitProfilePolicy.canOpenTab(count: 1))
+        #expect(WebKitProfilePolicy.canOpenTab(count: 31))
+        #expect(!WebKitProfilePolicy.canOpenTab(count: 32))
+        #expect(!WebKitProfilePolicy.canOpenTab(count: -1))
     }
 
     @Test func legacyProfilesStayChromiumAndUnknownEngineIsRejected() throws {
@@ -166,6 +213,25 @@ struct WebKitProfileTests {
         let firstValue = UUID().uuidString, secondValue = UUID().uuidString
         do {
         let firstView = try #require(first?.webView), secondView = try #require(second?.webView)
+        #expect(try await firstView.evaluateJavaScript("window.neantikAutomaticPopupAttempted") as? Bool == true)
+        #expect(try await firstView.evaluateJavaScript("window.neantikAutomaticPopupOpened") as? Bool == false)
+        #expect(first?.tabCount == 1 && second?.tabCount == 1)
+        // Negative control: without protection the same real page requests a
+        // popup. Merely returning an empty result would not pass this observer.
+        let counter = WebKitPopupCounter()
+        let popupConfig = WKWebViewConfiguration()
+        popupConfig.websiteDataStore = WKWebsiteDataStore(forIdentifier: a.id)
+        popupConfig.preferences.javaScriptCanOpenWindowsAutomatically = true
+        let popupControl = WKWebView(frame: NSRect(x: 0, y: 0, width: 640, height: 420), configuration: popupConfig)
+        popupControl.uiDelegate = counter
+        let controlWindow = NSWindow(contentRect: popupControl.frame, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        controlWindow.isReleasedWhenClosed = false
+        defer { popupControl.stopLoading(); popupControl.uiDelegate = nil; controlWindow.contentView = nil; controlWindow.close() }
+        controlWindow.title = "Own WebKit popup negative control"
+        controlWindow.contentView = popupControl; controlWindow.makeKeyAndOrderFront(nil)
+        popupControl.load(URLRequest(url: url)); try await loaded(popupControl, url: url)
+        #expect(counter.attempts > 0)
+        popupControl.stopLoading(); popupControl.uiDelegate = nil; controlWindow.contentView = nil; controlWindow.close()
         #expect(try await storage(secondView, value: nil)["local"] as? String == nil)
         _ = try await storage(firstView, value: firstValue)
         let emptyB = try await storage(secondView, value: nil)
@@ -175,6 +241,25 @@ struct WebKitProfileTests {
         let readA = try await storage(firstView, value: nil)
         #expect(readA["local"] as? String == firstValue && readA["idb"] as? String == firstValue)
         #expect((readA["cookie"] as? String ?? "").contains(firstValue))
+        let initialTab = try #require(first?.selectedTabID)
+        let previousPressure = ManagerLaunchAdmission.shared.pressured
+        ManagerLaunchAdmission.shared.setPressureForTesting(true)
+        #expect(first?.openTab(at: url) == nil && first?.tabCount == 1)
+        ManagerLaunchAdmission.shared.setPressureForTesting(previousPressure)
+        let ownTab = try #require(first?.openTab(at: url))
+        #expect(!ownTab.configuration.preferences.javaScriptCanOpenWindowsAutomatically)
+        try await loaded(ownTab, url: url)
+        let sameProfile = try await storage(ownTab, value: nil)
+        #expect(sameProfile["local"] as? String == firstValue && sameProfile["idb"] as? String == firstValue)
+        #expect((sameProfile["cookie"] as? String ?? "").contains(firstValue))
+        #expect(first?.tabCount == 2)
+        #expect(first?.openTab(at: URL(string: "file:///fixture")!) == nil && first?.tabCount == 2)
+        let secondTab = try #require(first?.selectedTabID)
+        first?.selectTab(initialTab)
+        #expect(first?.webView === firstView)
+        first?.closeTab(secondTab)
+        #expect(first?.tabCount == 1 && first?.selectedTabID == initialTab)
+        #expect(try await storage(secondView, value: nil)["local"] as? String == secondValue)
         // Negative control for the observer: deliberately sharing A's store
         // must expose A's value. A test that merely always returns null fails.
         let config = WKWebViewConfiguration(); config.websiteDataStore = WKWebsiteDataStore(forIdentifier: a.id)

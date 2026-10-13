@@ -1,3 +1,5 @@
+> Development: вкладки реализованы и проверяются локально; в опубликованной 0.8.2 их ещё нет.
+
 > Published in 0.8.1/112 as experimental WebKit. Exact signed ZIP A/B cookies/LocalStorage/IndexedDB persistence across full manager restart PASS on macOS27 ARM64. Unsupported capabilities remain refused. See `releases/v0.8.1.json`; earlier development evidence below is historical.
 
 # Профили WebKit — экспериментальный режим0.8.1
@@ -22,7 +24,7 @@ NeAntik может открыть профиль в собственном ок�
 ## Границы первой версии
 
 - Устройство, WebKit и его web APIs предоставляет macOS. Fingerprint-политика Chromium не переносится на WebKit; отдельный seed не создаёт изменённый WebKit-отпечаток.
-- Поддерживаются HTTP, HTTPS и `about:blank`. Не поддержаны вкладки, загрузки, специальные URL и восстановление вкладок.
+- Поддерживаются HTTP, HTTPS и `about:blank`. Кандидат 0.8.3 добавляет вкладки: ⌘T — новая, ⌘W — закрыть текущую, ⌘⇧[ / ⌘⇧] — переключить. Данные вкладок одного профиля общие. До 32 вкладок; всплывающие окна без действия пользователя заблокированы. Загрузки, специальные URL и восстановление вкладок пока не поддержаны.
 - Прокси WebKit пока запрещён: профиль с настроенным прокси не запускается. Прямое подключение вместо заданного прокси не выполняется. Измерения DNS/WebRTC/маршрута Chromium не относятся к WebKit.
 - Расширения Chromium, очистка Chromium-кэша и полный BrowserData backup не применяются к WebKit. Удаление WebKit пока недоступно; профиль можно архивировать.
 - MCP может создавать, редактировать, искать и копировать настройки WebKit-профилей. Запуск из stdio явно отклоняется: собственное окно требует GUI NeAntik. GUI IPC ещё не реализован.

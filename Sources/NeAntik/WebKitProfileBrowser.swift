@@ -18,9 +18,11 @@ enum WebKitProfileError: LocalizedError {
     }
 }
 
-/// Public system WebKit does not inherit Chromium's fingerprint or route
-/// policies. Refuse unsupported launches before constructing a web view.
+/// System WebKit has its own APIs and networking. Refuse unsupported launches
+/// before constructing views rather than falling back to another route.
 enum WebKitProfilePolicy {
+    static let maximumTabs = 32
+    static func canOpenTab(count: Int) -> Bool { (0..<maximumTabs).contains(count) }
     static func validate(_ profile: BrowserProfile) throws {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
@@ -45,6 +47,37 @@ enum WebKitProfilePolicy {
     static func permits(_ url: URL) -> Bool {
         ["http", "https"].contains(url.scheme?.lowercased() ?? "") || url.absoluteString == "about:blank"
     }
+
+    static func permitsPopup(profileID: UUID, openerIsOwned: Bool, storeID: UUID?, persistent: Bool, url: URL?) -> Bool {
+        guard openerIsOwned, persistent, storeID == profileID, let url else { return false }
+        return permits(url)
+    }
+}
+
+/// Keep selection stable when a background tab closes; closing the selected
+/// tab chooses its right neighbour, or the last remaining tab at the edge.
+struct WebKitTabOrder {
+    private(set) var ids: [UUID]
+    private(set) var selected: UUID
+    init(first: UUID) { ids = [first]; selected = first }
+    mutating func append(_ id: UUID) {
+        guard !ids.contains(id) else { return }
+        ids.append(id); selected = id
+    }
+    @discardableResult mutating func select(_ id: UUID) -> Bool {
+        guard ids.contains(id) else { return false }
+        selected = id; return true
+    }
+    @discardableResult mutating func remove(_ id: UUID) -> Bool {
+        guard ids.count > 1, let index = ids.firstIndex(of: id) else { return false }
+        ids.remove(at: index)
+        if selected == id { selected = ids[min(index, ids.count - 1)] }
+        return true
+    }
+    mutating func cycle(_ direction: Int) {
+        guard let index = ids.firstIndex(of: selected) else { return }
+        selected = ids[(index + (direction < 0 ? ids.count - 1 : 1)) % ids.count]
+    }
 }
 
 @MainActor
@@ -57,108 +90,133 @@ private final class WebKitBrowserWindow: NSWindow {
 }
 
 enum WebKitWindowCommand: Equatable {
-    case address, reload, close, back, forward
+    case address, reload, close, back, forward, newTab, previousTab, nextTab
     static func resolve(characters: String?, keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> Self? {
-        guard modifiers.intersection([.command, .option, .control, .shift]) == .command else { return nil }
+        let keys = modifiers.intersection([.command, .option, .control, .shift])
+        if keys == [.command, .shift] {
+            switch keyCode { case 33: return .previousTab; case 30: return .nextTab; default: return nil }
+        }
+        guard keys == .command else { return nil }
         switch characters?.lowercased() {
         case "l": return .address
         case "r": return .reload
         case "w": return .close
+        case "t": return .newTab
         case "[": return .back
         case "]": return .forward
         default: break
         }
-        // A Cyrillic layout reports Cyrillic characters for these physical
-        // keys. Keep the usual Mac shortcuts without intercepting plain input.
+        // Preserve familiar shortcuts with a Cyrillic keyboard layout, while
+        // leaving ordinary text and other modifier combinations untouched.
         guard characters?.unicodeScalars.contains(where: { !$0.isASCII }) == true else { return nil }
-        switch keyCode { case 37: return .address; case 15: return .reload; case 13: return .close; case 33: return .back; case 30: return .forward; default: return nil }
+        switch keyCode {
+        case 37: return .address
+        case 15: return .reload
+        case 13: return .close
+        case 17: return .newTab
+        case 33: return .back
+        case 30: return .forward
+        default: return nil
+        }
     }
 }
 
-/// One profile owns one window and a stable persistent UUID data store.
-/// The process guard is held for the entire window lifetime; another manager
-/// cannot edit, launch or run Chromium maintenance against this profile.
+@MainActor
+private final class WebKitBrowserTab {
+    let id = UUID()
+    let view: WKWebView
+    let titleButton = NSButton()
+    let closeButton = NSButton()
+    let row = NSStackView()
+    var observations: [NSKeyValueObservation] = []
+    var status = "WebKit · данные этого профиля · параметры устройства определяет macOS"
+    init(view: WKWebView) { self.view = view }
+    func detach() {
+        observations.removeAll(); view.stopLoading()
+        view.navigationDelegate = nil; view.uiDelegate = nil
+        view.removeFromSuperview(); row.removeFromSuperview()
+    }
+}
+
+/// A profile owns one window with tabs and one persistent UUID data store.
+/// Lifetime guards belong to the whole window, not to an individual tab.
 @MainActor
 final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, NSTextFieldDelegate {
     let profileID: UUID
-    let webView: WKWebView
+    private(set) var webView: WKWebView
+    private let dataStore: WKWebsiteDataStore
     private let window: WebKitBrowserWindow
+    private let pageArea = NSView()
+    private let tabStrip = NSStackView()
     private let address = NSTextField()
     private let message = NSTextField(labelWithString: "")
     private let backButton = NSButton()
     private let forwardButton = NSButton()
-    private var observations: [NSKeyValueObservation] = []
+    private var order: WebKitTabOrder
+    private var tabs: [UUID: WebKitBrowserTab]
+    private var isClosed = false
     private var commandMonitor: Any?
     private var lease: PrivateFileGuardLease?
     private var metadataLease: PrivateFileGuardLease?
     private var onClose: (() -> Void)?
+    var tabCount: Int { isClosed ? 0 : order.ids.count }
+    var selectedTabID: UUID { order.selected }
 
     init(profile: BrowserProfile, lease: PrivateFileGuardLease, metadataLease: PrivateFileGuardLease, onClose: @escaping () -> Void) throws {
         try WebKitProfilePolicy.validate(profile)
         profileID = profile.id
-        self.lease = lease
-        self.metadataLease = metadataLease
-        self.onClose = onClose
+        self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
+        dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
+        dataStore.proxyConfigurations = []
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = WKWebsiteDataStore(forIdentifier: profile.id)
-        // Never use the default (shared) store, inject a UA, or reuse a
-        // Chromium identity seed. The system engine supplies its actual APIs.
-        configuration.websiteDataStore.proxyConfigurations = []
+        configuration.websiteDataStore = dataStore
+        configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+        // The system engine supplies its APIs; never inject Chromium identity
+        // or use the shared default website store.
         webView = WKWebView(frame: .zero, configuration: configuration)
+        let first = WebKitBrowserTab(view: webView)
+        tabs = [first.id: first]; order = WebKitTabOrder(first: first.id)
         window = WebKitBrowserWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         super.init()
-        window.browser = self
-        window.delegate = self
-        window.isReleasedWhenClosed = false
+        window.browser = self; window.delegate = self; window.isReleasedWhenClosed = false
         window.title = "\(profile.name) — WebKit · NeAntik"
-        window.minSize = NSSize(width: 640, height: 420)
-        window.center()
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
-        webView.allowsBackForwardNavigationGestures = true
-        address.placeholderString = "Адрес сайта"
-        address.font = .systemFont(ofSize: 14)
-        address.delegate = self
-        address.target = self
-        address.action = #selector(openAddress)
+        window.minSize = NSSize(width: 640, height: 420); window.center()
+        address.placeholderString = "Адрес сайта"; address.font = .systemFont(ofSize: 14)
+        address.delegate = self; address.target = self; address.action = #selector(openAddress)
         address.setAccessibilityLabel("Адрес сайта")
         let bar = NSStackView(views: [button(backButton, title: "←", help: "Назад · ⌘[", action: #selector(back)),
             button(forwardButton, title: "→", help: "Вперёд · ⌘]", action: #selector(forward)),
             button(NSButton(), title: "↻", help: "Обновить · ⌘R", action: #selector(reload)), address])
-        bar.orientation = .horizontal
-        bar.spacing = 8
-        bar.edgeInsets = NSEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+        bar.orientation = .horizontal; bar.spacing = 8
+        bar.edgeInsets = NSEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
         address.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        message.font = .systemFont(ofSize: 13)
-        message.textColor = .secondaryLabelColor
-        message.lineBreakMode = .byWordWrapping
-        message.maximumNumberOfLines = 2
-        message.stringValue = "WebKit · отдельные данные сайтов · параметры устройства определяет macOS"
-        let content = NSView()
-        window.contentView = content
-        for view in [bar, webView, message] { view.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(view) }
+        tabStrip.orientation = .horizontal; tabStrip.spacing = 6; tabStrip.alignment = .centerY
+        let scroll = NSScrollView()
+        scroll.documentView = tabStrip; scroll.hasHorizontalScroller = true
+        scroll.hasVerticalScroller = false; scroll.autohidesScrollers = true; scroll.drawsBackground = false
+        tabStrip.translatesAutoresizingMaskIntoConstraints = false
+        let tabBar = NSStackView(views: [scroll, button(NSButton(), title: "+", help: "Новая вкладка · ⌘T", action: #selector(newTab))])
+        tabBar.orientation = .horizontal; tabBar.spacing = 8
+        tabBar.edgeInsets = NSEdgeInsets(top: 0, left: 12, bottom: 6, right: 12)
+        message.font = .systemFont(ofSize: 13); message.textColor = .secondaryLabelColor
+        message.lineBreakMode = .byWordWrapping; message.maximumNumberOfLines = 2
+        let content = NSView(); window.contentView = content
+        for view in [bar, tabBar, pageArea, message] { view.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(view) }
         NSLayoutConstraint.activate([
             bar.topAnchor.constraint(equalTo: content.topAnchor), bar.leadingAnchor.constraint(equalTo: content.leadingAnchor), bar.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            webView.topAnchor.constraint(equalTo: bar.bottomAnchor), webView.leadingAnchor.constraint(equalTo: content.leadingAnchor), webView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            message.topAnchor.constraint(equalTo: webView.bottomAnchor, constant: 6), message.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
+            tabBar.topAnchor.constraint(equalTo: bar.bottomAnchor), tabBar.leadingAnchor.constraint(equalTo: content.leadingAnchor), tabBar.trailingAnchor.constraint(equalTo: content.trailingAnchor), tabBar.heightAnchor.constraint(equalToConstant: 42),
+            tabStrip.leadingAnchor.constraint(equalTo: scroll.contentView.leadingAnchor), tabStrip.topAnchor.constraint(equalTo: scroll.contentView.topAnchor), tabStrip.heightAnchor.constraint(equalTo: scroll.contentView.heightAnchor),
+            pageArea.topAnchor.constraint(equalTo: tabBar.bottomAnchor), pageArea.leadingAnchor.constraint(equalTo: content.leadingAnchor), pageArea.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            message.topAnchor.constraint(equalTo: pageArea.bottomAnchor, constant: 6), message.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
             message.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -12), message.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -6)
         ])
-        observations = [webView.observe(\.url, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor in self?.refreshNavigation() }
-        }, webView.observe(\.canGoBack, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor in self?.refreshNavigation() }
-        }, webView.observe(\.canGoForward, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor in self?.refreshNavigation() }
-        }]
-        refreshNavigation()
-        // WKWebView may consume key equivalents before NSWindow's responder
-        // path. Observe only this window's command events, never other apps.
+        configure(first); presentSelectedTab()
         commandMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.window === self.window else { return event }
             return self.handleCommand(event) ? nil : event
         }
-        if let startURL = BrowserLaunchBuilder.validatedStartURL(profile.startURL) { webView.load(URLRequest(url: startURL)) }
+        if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) { webView.load(URLRequest(url: url)) }
     }
 
     private func button(_ button: NSButton, title: String, help: String, action: Selector) -> NSButton {
@@ -166,65 +224,174 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         button.setAccessibilityLabel(help); button.target = self; button.action = action
         return button
     }
-
-    func show() { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
-    func close() { window.performClose(nil) }
-    func focusAddress() { window.makeFirstResponder(address); address.selectText(nil) }
+    private func configure(_ tab: WebKitBrowserTab) {
+        tab.view.navigationDelegate = self; tab.view.uiDelegate = self
+        tab.view.allowsBackForwardNavigationGestures = true
+        let title = button(tab.titleButton, title: "Новая вкладка", help: "Переключить вкладку", action: #selector(selectTabButton(_:)))
+        title.identifier = NSUserInterfaceItemIdentifier(tab.id.uuidString)
+        title.setButtonType(.pushOnPushOff)
+        title.font = .systemFont(ofSize: 14); title.lineBreakMode = .byTruncatingTail
+        let close = button(tab.closeButton, title: "×", help: "Закрыть вкладку", action: #selector(closeTabButton(_:)))
+        close.identifier = title.identifier
+        tab.row.orientation = .horizontal; tab.row.spacing = 2
+        tab.row.addArrangedSubview(title); tab.row.addArrangedSubview(close)
+        title.widthAnchor.constraint(equalToConstant: 170).isActive = true
+        close.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        tabStrip.addArrangedSubview(tab.row)
+        let id = tab.id
+        tab.observations = [tab.view.observe(\.url, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor in self?.refreshTab(id) }
+        }, tab.view.observe(\.title, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor in self?.refreshTab(id) }
+        }, tab.view.observe(\.canGoBack, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor in self?.refreshTab(id) }
+        }, tab.view.observe(\.canGoForward, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor in self?.refreshTab(id) }
+        }]
+    }
+    private func presentSelectedTab() {
+        guard !isClosed, let selected = tabs[order.selected] else { return }
+        webView.removeFromSuperview(); webView = selected.view
+        webView.translatesAutoresizingMaskIntoConstraints = false; pageArea.addSubview(webView)
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: pageArea.topAnchor), webView.bottomAnchor.constraint(equalTo: pageArea.bottomAnchor),
+            webView.leadingAnchor.constraint(equalTo: pageArea.leadingAnchor), webView.trailingAnchor.constraint(equalTo: pageArea.trailingAnchor)
+        ])
+        address.stringValue = webView.url?.absoluteString ?? "about:blank"
+        message.stringValue = selected.status
+        for id in order.ids { refreshTab(id) }
+        tabStrip.layoutSubtreeIfNeeded()
+        tabStrip.scrollToVisible(selected.row.frame)
+    }
+    private func refreshTab(_ id: UUID) {
+        guard !isClosed, let tab = tabs[id] else { return }
+        let title = tab.view.title.flatMap { $0.isEmpty ? nil : $0 } ?? (tab.view.url?.host ?? "Новая вкладка")
+        tab.titleButton.title = title
+        tab.titleButton.setAccessibilityLabel("Вкладка: \(title)")
+        tab.titleButton.state = order.selected == id ? .on : .off
+        tab.titleButton.font = order.selected == id ? .boldSystemFont(ofSize: 14) : .systemFont(ofSize: 14)
+        tab.titleButton.contentTintColor = order.selected == id ? .controlAccentColor : nil
+        if order.selected == id {
+            if window.firstResponder !== address.currentEditor() { address.stringValue = tab.view.url?.absoluteString ?? "about:blank" }
+            backButton.isEnabled = tab.view.canGoBack; forwardButton.isEnabled = tab.view.canGoForward
+            message.stringValue = tab.status
+        }
+    }
+    @discardableResult private func appendTab(configuration: WKWebViewConfiguration) -> WKWebView? {
+        guard !isClosed, configuration.websiteDataStore.identifier == profileID else { return nil }
+        guard WebKitProfilePolicy.canOpenTab(count: order.ids.count) else {
+            setStatus("В этом окне уже 32 вкладки. Закрой ненужную, чтобы открыть новую.", for: webView)
+            return nil
+        }
+        do { try ManagerLaunchAdmission.shared.requireSafePressure() }
+        catch ManagerLaunchAdmissionError.pressure {
+            setStatus("Сейчас мало свободной памяти. Закрой ненужные вкладки или профили и попробуй снова.", for: webView)
+            return nil
+        }
+        catch {
+            setStatus("Приложение завершает текущую операцию. Попробуй открыть вкладку после её окончания.", for: webView)
+            return nil
+        }
+        let tab = WebKitBrowserTab(view: WKWebView(frame: .zero, configuration: configuration))
+        tabs[tab.id] = tab; order.append(tab.id); configure(tab); presentSelectedTab()
+        return tab.view
+    }
+    @discardableResult func openTab(at url: URL) -> WKWebView? {
+        guard WebKitProfilePolicy.permits(url) else { return nil }
+        let config = WKWebViewConfiguration(); config.websiteDataStore = dataStore
+        config.preferences.javaScriptCanOpenWindowsAutomatically = false
+        guard let view = appendTab(configuration: config) else { return nil }
+        view.load(URLRequest(url: url)); return view
+    }
+    func selectTab(_ id: UUID) { if !isClosed, order.select(id) { presentSelectedTab() } }
+    func closeTab(_ id: UUID) {
+        guard !isClosed, let tab = tabs[id] else { return }
+        if order.ids.count == 1 { close(); return }
+        let wasSelected = id == order.selected
+        guard order.remove(id) else { return }
+        tabStrip.removeArrangedSubview(tab.row); tab.detach(); tabs.removeValue(forKey: id)
+        if wasSelected { presentSelectedTab() }
+    }
+    @objc private func selectTabButton(_ sender: NSButton) {
+        if let raw = sender.identifier?.rawValue, let id = UUID(uuidString: raw) { selectTab(id) }
+    }
+    @objc private func closeTabButton(_ sender: NSButton) {
+        if let raw = sender.identifier?.rawValue, let id = UUID(uuidString: raw) { closeTab(id) }
+    }
+    @objc private func newTab() {
+        if openTab(at: URL(string: "about:blank")!) != nil { focusAddress() }
+    }
+    func show() { guard !isClosed else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
+    /// Manager Stop closes the entire profile, whereas Command-W closes a tab.
+    func close() { if !isClosed { window.performClose(nil) } }
+    func focusAddress() { if !isClosed { window.makeFirstResponder(address); address.selectText(nil) } }
     fileprivate func handleCommand(_ event: NSEvent) -> Bool {
-        guard let command = WebKitWindowCommand.resolve(characters: event.charactersIgnoringModifiers, keyCode: event.keyCode, modifiers: event.modifierFlags) else { return false }
-        switch command { case .address: focusAddress(); case .reload: reload(); case .close: close(); case .back: back(); case .forward: forward() }
+        guard !isClosed, let command = WebKitWindowCommand.resolve(characters: event.charactersIgnoringModifiers, keyCode: event.keyCode, modifiers: event.modifierFlags) else { return false }
+        switch command {
+        case .address: focusAddress()
+        case .reload: reload()
+        case .close: closeTab(order.selected)
+        case .back: back()
+        case .forward: forward()
+        case .newTab: newTab()
+        case .previousTab: order.cycle(-1); presentSelectedTab()
+        case .nextTab: order.cycle(1); presentSelectedTab()
+        }
         return true
     }
-    @objc func back() { webView.goBack() }
-    @objc func forward() { webView.goForward() }
-    @objc func reload() { webView.reload() }
+    @objc func back() { if !isClosed { webView.goBack() } }
+    @objc func forward() { if !isClosed { webView.goForward() } }
+    @objc func reload() { if !isClosed { webView.reload() } }
     @objc private func openAddress() {
-        guard let url = BrowserLaunchBuilder.validatedStartURL(address.stringValue), WebKitProfilePolicy.permits(url) else {
-            message.stringValue = "Введи адрес http:// или https://. Для пустой страницы — about:blank."
-            return
+        guard !isClosed, let url = BrowserLaunchBuilder.validatedStartURL(address.stringValue), WebKitProfilePolicy.permits(url) else {
+            message.stringValue = "Введи адрес http:// или https://. Для пустой страницы — about:blank."; return
         }
         webView.load(URLRequest(url: url)); window.makeFirstResponder(webView)
     }
-    private func refreshNavigation() {
-        if window.firstResponder !== address.currentEditor() { address.stringValue = webView.url?.absoluteString ?? "" }
-        backButton.isEnabled = webView.canGoBack; forwardButton.isEnabled = webView.canGoForward
-    }
     func windowWillClose(_ notification: Notification) {
-        webView.stopLoading(); observations.removeAll()
+        guard !isClosed else { return }; isClosed = true
         if let commandMonitor { NSEvent.removeMonitor(commandMonitor); self.commandMonitor = nil }
-        webView.navigationDelegate = nil; webView.uiDelegate = nil
-        // AppKit may retain a closed window. Detach its content so that the
-        // window cannot keep a website data store/session alive after close.
-        window.contentView = nil
-        window.delegate = nil; window.browser = nil
+        for tab in tabs.values { tab.detach() }; tabs.removeAll()
+        window.contentView = nil; window.delegate = nil; window.browser = nil
         let callback = onClose; onClose = nil
-        metadataLease?.release(); metadataLease = nil
-        lease?.release(); lease = nil
+        metadataLease?.release(); metadataLease = nil; lease?.release(); lease = nil
         callback?()
     }
+    private func owns(_ view: WKWebView) -> Bool { !isClosed && tabs.values.contains { $0.view === view } }
+    private func setStatus(_ value: String, for view: WKWebView) {
+        guard !isClosed, let tab = tabs.values.first(where: { $0.view === view }) else { return }
+        tab.status = value; refreshTab(tab.id)
+    }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        guard let url = action.request.url, WebKitProfilePolicy.permits(url) else {
-            message.stringValue = "Этот тип ссылки пока не поддерживается в WebKit-профиле."
+        guard owns(webView), let url = action.request.url, WebKitProfilePolicy.permits(url) else {
+            setStatus("Этот тип ссылки пока не поддерживается в WebKit-профиле.", for: webView)
             decisionHandler(.cancel); return
         }
         decisionHandler(.allow)
     }
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        // Keep popup navigation within the same profile; never launch Safari
-        // or create an unconfigured view backed by a shared data store.
-        if let url = action.request.url, WebKitProfilePolicy.permits(url) { webView.load(action.request) }
-        return nil
+        guard WebKitProfilePolicy.permitsPopup(profileID: profileID, openerIsOwned: owns(webView),
+            storeID: configuration.websiteDataStore.identifier, persistent: configuration.websiteDataStore.isPersistent,
+            url: action.request.url) else { return nil }
+        // WebKit supplies this configuration to preserve opener semantics.
+        // Return the owned view; WebKit performs navigation itself.
+        return appendTab(configuration: configuration)
+    }
+    func webViewDidClose(_ webView: WKWebView) {
+        if let tab = tabs.values.first(where: { $0.view === webView }) { closeTab(tab.id) }
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        message.stringValue = "WebKit · отдельные данные сайтов · параметры устройства определяет macOS"
+        setStatus("WebKit · данные этого профиля · параметры устройства определяет macOS", for: webView)
     }
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { navigationFailed(error) }
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { navigationFailed(error) }
-    private func navigationFailed(_ error: Error) {
-        // Do not display an NSError's URL/userinfo: it may contain secrets.
-        message.stringValue = "Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу."
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { navigationFailed(webView, error) }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { navigationFailed(webView, error) }
+    private func navigationFailed(_ view: WKWebView, _ error: Error) {
+        // Cancellation is normal when a navigation is replaced. Never show
+        // NSError userInfo/URL: it may contain credentials or private data.
+        guard (error as NSError).code != NSURLErrorCancelled else { return }
+        setStatus("Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу.", for: view)
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        message.stringValue = "Процесс страницы завершился. Нажми «Обновить», чтобы открыть её снова."
+        setStatus("Процесс страницы завершился. Нажми «Обновить», чтобы открыть её снова.", for: webView)
     }
 }

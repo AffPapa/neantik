@@ -388,9 +388,10 @@ struct ProfileEditorView: View {
           Picker("Движок браузера", selection: $engine) {
             ForEach(BrowserEngine.allCases) { Text($0.title).tag($0) }
           }
+          .pickerStyle(.segmented)
           .disabled(original != nil)
           Text(engine == .webkit
-            ? "Системный WebKit в отдельном окне NeAntik. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS; прокси, расширения и восстановление вкладок пока недоступны."
+            ? "Системный WebKit в окне NeAntik с вкладками. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS; прокси, расширения и восстановление вкладок пока недоступны."
             : "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения.")
             .font(.callout).foregroundStyle(.secondary)
           if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }

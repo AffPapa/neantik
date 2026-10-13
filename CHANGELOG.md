@@ -1,5 +1,16 @@
 # NeAntik changelog
 
+## Direct 0.8.3 (114)
+
+Development candidate; not published. Chromium 156.0.8078.12 is unchanged. Direct release qualification and public-byte checks are pending.
+
+- WebKit: вкладки, ⌘T/⌘W, переключение и ссылки в новой вкладке внутри того же профиля. Закрытие последней вкладки останавливает профиль; команда Stop закрывает всё его окно.
+- Выбор Chromium/WebKit двумя видимыми кнопками. Активная вкладка выделена; добавлены подсказки клавиатуры и справка.
+- Всплывающие окна без действия пользователя заблокированы; до 32 вкладок, при нехватке памяти новые не создаются.
+- 1479 Swift tests / 168 suites passed locally. Headed own WebKit fixtures verify same-profile sharing, A/B cookie/LocalStorage/IndexedDB isolation, cleanup and popup negative control. Dev GUI tested; these are not signed shipping qualification.
+- CI uses four clean shards with separate suite processes, scoped check recommendations and one lease per physical developer cache. Release gates are retained.
+- WebKit proxy, downloads, session restore, extensions, full backup and stdio MCP launch remain unsupported. This is a public-alpha candidate, not major 1.0.
+
 ## Direct 0.8.2 (113)
 
 Published public alpha on GitHub and browser.free Sites140. Chromium156.0.8078.12 and the Developer ID are unchanged. [Exact results and limits](releases/v0.8.2.json).

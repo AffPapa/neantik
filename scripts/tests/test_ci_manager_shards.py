@@ -64,4 +64,3 @@ class CIManagerShardTests(unittest.TestCase):
             self.assertEqual(MOD.catalog(root), ['NestedActorTests'])
             (tests/'TopLevel.swift').write_text('@Test func unscoped() {}')
             with self.assertRaises(ValueError): MOD.catalog(root)
-
