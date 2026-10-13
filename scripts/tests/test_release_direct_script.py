@@ -258,7 +258,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("run-isolated-release-python.py", text)
         self.assertEqual(
             text.count("run-isolated-release-python.py"),
-            4,
+            5,  # Existing four gates plus registered location validation.
         )
         self.assertIn("verify-browser-identity-issuance.py", text)
         self.assertIn("notary_transaction_inspector.py", text)

@@ -104,7 +104,7 @@ class RuntimeDrainTests(unittest.TestCase):
 
     def test_release_guards_precede_bundle_mutations(self) -> None:
         for script, mutation, target in (
-            (ROOT / "Release-NeAntik.command", 'mv "$artifact"', '$PROJECT_DIR/dist/NeAntik.app'),
+            (ROOT / "Release-NeAntik.command", 'mv "$artifact"', '$CANDIDATE_APP'),
             (ROOT / "scripts/Run-NeAntik-Release.command", 'mv "$APP_PATH"', '$APP_PATH'),
             (ROOT / "scripts/prepare-direct-manager-update.sh", 'rm -rf "$CANDIDATE_APP"', '$CANDIDATE_APP'),
         ):

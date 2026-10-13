@@ -20,6 +20,7 @@ import notary_transaction_state as state
 import release_input_snapshot as snapshot
 import release_source_receipt as source
 import release_transaction as transaction
+import release_candidate_location as location
 
 MAX_BYTES = 16 * 1024**3
 STAGES = ("created", "qualified", "submit-intent", "submission-known",
@@ -350,7 +351,8 @@ def export_apple_receipts(root, project, name, apple_log, identifier):
                                                maximum_bytes=8 * 1024**2)
 
 
-def start(root, project, destination, profile, dmg, archive, *, capture=source.capture_release_source):
+def start(root, project, destination, profile, dmg, archive, *, capture=source.capture_release_source,
+          candidate_manifest=None):
     """Copy inputs once. No rebuild, signing, or Apple action occurs here."""
     for path in (root, project, destination, dmg, archive):
         canonical(path)
@@ -378,7 +380,7 @@ def start(root, project, destination, profile, dmg, archive, *, capture=source.c
     transaction.assert_checksum_matches_archive(decode_seal(seals["archive"], root / "archive" / archive.name), checksum_seal)
     seals["archiveChecksum"] = encode_seal(checksum_seal)
     candidate = root / "candidate/direct-candidate-manifest.json"
-    snapshot.snapshot_release_input(project / "dist/direct-candidate-manifest.json", candidate,
+    snapshot.snapshot_release_input(candidate_manifest or project / "dist/direct-candidate-manifest.json", candidate,
                                     maximum_bytes=16 * 1024**2)
     manifest_seal = transaction.seal_regular_file(candidate, maximum_bytes=16 * 1024**2)
     with candidate.open("rb") as stream:
@@ -420,6 +422,7 @@ def main():
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--dmg", type=Path)
     parser.add_argument("--zip", type=Path)
+    parser.add_argument("--candidate-manifest", type=Path)
     parser.add_argument("--check-new", action="store_true", help="Refuse an existing retained transaction before packaging")
     args = parser.parse_args()
     lock = -1
@@ -458,7 +461,13 @@ def main():
                 raise DMGError("Destination version differs from the current candidate")
             root = private / uuid.uuid4().hex
             print("DMG transaction retained at: " + str(root), flush=True)
-            start(root, project, destination, args.notary_profile, canonical(args.dmg), canonical(args.zip))
+            manifest = canonical(args.candidate_manifest or project / "dist/direct-candidate-manifest.json")
+            if manifest != project / "dist/direct-candidate-manifest.json":
+                if manifest.name != "direct-candidate-manifest.json":
+                    raise DMGError("Candidate manifest basename is invalid")
+                location.validate(project, manifest.parent)
+            start(root, project, destination, args.notary_profile, canonical(args.dmg), canonical(args.zip),
+                  candidate_manifest=manifest)
         result = run(root, project, destination, args.notary_profile,
                      progress=lambda stage: print("DMG stage: " + stage, flush=True))
         print(json.dumps(result, sort_keys=True))

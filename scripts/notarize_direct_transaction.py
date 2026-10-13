@@ -24,6 +24,7 @@ import release_input_snapshot as SNAPSHOT
 import release_source_receipt as SOURCE
 import release_transaction as TRANSACTION
 import notary_transaction_state as STATE
+import release_candidate_location as LOCATION
 
 
 MAXIMUM_ARCHIVE_BYTES = 16 * 1024 * 1024 * 1024
@@ -2234,11 +2235,17 @@ def run_transaction(
         raise DirectNotaryTransactionError(
             "dist directory is unsafe"
         )
-    expected_app = dist / "NeAntik.app"
-    if app.resolve() != expected_app.resolve():
+    try:
+        LOCATION.validate_inputs(project_root, app, {
+            "direct-candidate-manifest.json": manifest,
+            "direct-candidate-source.json": source_binding or manifest.parent / "direct-candidate-source.json",
+            "fingerprint-audit.json": evidence,
+            "fingerprint-audit-summary.json": attestation,
+        })
+    except (LOCATION.CandidateLocationError, OSError, ValueError) as error:
         raise DirectNotaryTransactionError(
-            "notarization requires the exact prepared dist/NeAntik.app"
-        )
+            "notarization requires the exact prepared dist/NeAntik.app or a registered private candidate"
+        ) from error
     if (
         release_channel not in {"public-alpha", "production"}
         or not notary_profile

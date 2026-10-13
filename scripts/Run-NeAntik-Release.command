@@ -11,6 +11,20 @@ APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
 REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
+SUMMARY_PATH="$PROJECT_DIR/dist/fingerprint-audit-summary.json"
+
+# Only a registered owned location may replace the default candidate paths.
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  APP_PATH="$CANDIDATE_ROOT/NeAntik.app"
+  CANDIDATE_MANIFEST="$CANDIDATE_ROOT/direct-candidate-manifest.json"
+  CANDIDATE_SOURCE_BINDING="$CANDIDATE_ROOT/direct-candidate-source.json"
+  REPORT_PATH="$CANDIDATE_ROOT/fingerprint-audit.json"
+  SUMMARY_PATH="$CANDIDATE_ROOT/fingerprint-audit-summary.json"
+fi
+
 ATTEMPT_STATE_ROOT="$PROJECT_DIR/artifacts/neantik/private-release-attempts/$(date -u '+%Y%m%dT%H%M%SZ')-$$"
 DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-152/build/source-provenance.json"
 EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
@@ -290,6 +304,7 @@ for EXISTING_SCHEMA8_SOURCE in \
       --candidate-manifest "$CANDIDATE_MANIFEST" \
       --release-channel "$NEANTIK_RELEASE_CHANNEL" \
       --not-before 1970-01-01T00:00:00Z \
+      --summary-output "$SUMMARY_PATH" \
       --output "$REPORT_PATH" \
       >>"$REUSE_CHECK_LOG" 2>&1; then
     echo
@@ -306,7 +321,8 @@ verify_current_gui_attempt_evidence() {
     --candidate-manifest "$CANDIDATE_MANIFEST" \
     --release-channel "$NEANTIK_RELEASE_CHANNEL" \
     --not-before "$GUI_NOT_BEFORE" \
-    --output "$REPORT_PATH"
+    --summary-output "$SUMMARY_PATH" \
+      --output "$REPORT_PATH"
 }
 
 evaluate_current_gui_attempt() {
@@ -339,7 +355,8 @@ while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
   python3 "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" \
     --prepare-attempt-state "$ATTEMPT_STATE_DIR" \
     --release-channel "$NEANTIK_RELEASE_CHANNEL" \
-    --output "$REPORT_PATH"
+    --summary-output "$SUMMARY_PATH" \
+      --output "$REPORT_PATH"
   SCHEMA8_SOURCE="$ATTEMPT_STATE_DIR/fingerprint-evidence-schema8.json"
   GUI_NOT_BEFORE="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   echo

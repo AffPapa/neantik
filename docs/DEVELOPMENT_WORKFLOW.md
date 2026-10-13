@@ -37,6 +37,15 @@
 ## Релиз и обновления
 
 - Сначала один законченный срез, затем один source-bound кандидат.
+- Для manager-only обновления с прежним runtime создать зарегистрированный
+  каталог командой `python3 -B scripts/release_candidate_location.py
+  --project-root "$PWD" --create`. Полученный полный путь передать как
+  `NEANTIK_DIRECT_CANDIDATE_ROOT` штатному `Release-NeAntik.command`.
+  App, manifest, source binding и отчёт проверки с его подтверждением остаются
+  вместе; публичные архивы по-прежнему выходят в `dist`.
+  Рабочая `dist/NeAntik.app` сохраняется. Прокси/профили пользователя не нужны
+  для QA; exact headed, enrollment, runtime hashes и Direct gates сохраняются.
+  Новый путь требует реальной квалификации кандидата перед публикацией.
 - Сохранять receipt каждой дорогой стадии: source/build, signed app,
   fingerprint, ZIP, Apple transaction ID, stapling, DMG, hosted bytes, Site.
 - Сбой локального продолжения после Apple Accepted не требует новой отправки:

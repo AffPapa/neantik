@@ -28,11 +28,21 @@ if [[ ! -x "$RELEASE_SCRIPT" ]]; then
   exit 66
 fi
 
+CANDIDATE_APP="$PROJECT_DIR/dist/NeAntik.app"
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  CANDIDATE_APP="$CANDIDATE_ROOT/NeAntik.app"
+fi
+# Never move immutable public-version assets even if invoked directly.
+python3 "$PROJECT_DIR/scripts/verify-direct-version-bump.py" --floor-only
+
 # A manager or embedded browser may still use resources from this bundle.
 # Refuse before moving archives or letting the inner workflow replace it.
-if [[ -e "$PROJECT_DIR/dist/NeAntik.app" ]]; then
+if [[ -e "$CANDIDATE_APP" ]]; then
   python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
-    --app "$PROJECT_DIR/dist/NeAntik.app" --timeout 2
+    --app "$CANDIDATE_APP" --timeout 2
 fi
 
 echo "NeAntik $VERSION — единый Direct release"

@@ -60,6 +60,7 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/notary_transaction_inspector.py", "transaction-diagnostics"),
     ("scripts/notary_transaction_state.py", "transaction-state"),
     ("scripts/release-direct.sh", "release-entrypoint"),
+    ("scripts/release_candidate_location.py", "candidate-location"),
     ("scripts/release_input_snapshot.py", "input-snapshot"),
     ("scripts/release_source_receipt.py", "source-provenance"),
     ("scripts/release_transaction.py", "transaction"),

@@ -10,10 +10,26 @@ export DEVELOPER_DIR="$(
 SOURCE_APP="${1:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
 CANDIDATE_APP="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
+
+# Only a registered owned location may replace the default candidate paths.
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  CANDIDATE_APP="$CANDIDATE_ROOT/NeAntik.app"
+  CANDIDATE_MANIFEST="$CANDIDATE_ROOT/direct-candidate-manifest.json"
+fi
+
 SOURCE_RUNTIME="$SOURCE_APP/Contents/Resources/NeAntik Browser.app"
 CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
 SECURITY_BASELINE_ARGS=()
+
+# Keep one owner of the actual release cache, including direct script invocation.
+if ! python3 -B "$PROJECT_DIR/scripts/native_cache_lock.py" --root "$BUILD_SUPPORT_DIR" --is-held; then
+  exec python3 -B "$PROJECT_DIR/scripts/native_cache_lock.py" --root "$BUILD_SUPPORT_DIR" -- "$0" "$@"
+fi
+
 
 resolve_source_provenance() {
   local configured="${NEANTIK_SOURCE_PROVENANCE:-}"
@@ -297,6 +313,11 @@ MANAGER_BINARY="$BIN_PATH/NeAntik"
 if [[ ! -x "$MANAGER_BINARY" ]]; then
   echo "Swift release binary is missing: $MANAGER_BINARY" >&2
   exit 70
+fi
+
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" && (-e "$CANDIDATE_APP" || -L "$CANDIDATE_APP") ]]; then
+  echo "Registered candidate already exists; refusing replacement. Create a new location." >&2
+  exit 65
 fi
 
 # Recheck at the destructive boundary: a launch may have happened during

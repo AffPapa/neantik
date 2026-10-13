@@ -70,6 +70,7 @@ class IsolatedReleasePythonTests(unittest.TestCase):
                 "release_input_snapshot.py",
                 "release_source_receipt.py",
                 "release_transaction.py",
+                "release_candidate_location.py",
             ):
                 shutil.copy2(RUNNER.parent / name, scripts / name)
             target = scripts / "notarize_direct_transaction.py"

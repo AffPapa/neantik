@@ -5,6 +5,16 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PREPARED_APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 PREPARED_INFO_PLIST="$PREPARED_APP_PATH/Contents/Info.plist"
+
+# Only a registered owned location may replace the default candidate paths.
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  PREPARED_APP_PATH="$CANDIDATE_ROOT/NeAntik.app"
+  PREPARED_INFO_PLIST="$CANDIDATE_ROOT/NeAntik.app/Contents/Info.plist"
+fi
+
 NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 NOTARY_LOG_DIR="$PROJECT_DIR/dist/notary"
 
@@ -208,7 +218,8 @@ MOUNTED=0
 python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
   "$PROJECT_DIR/scripts/notarize_dmg_transaction.py" \
   --project-root "$PROJECT_DIR" --destination "$DMG_PATH" \
-  --notary-profile "$NOTARY_PROFILE" --dmg "$TEMP_DMG" --zip "$ZIP_PATH"
+  --notary-profile "$NOTARY_PROFILE" --dmg "$TEMP_DMG" --zip "$ZIP_PATH" \
+  --candidate-manifest "$(dirname "$PREPARED_APP_PATH")/direct-candidate-manifest.json"
 
 echo
 echo "PASS: signed, notarized and stapled DMG verified."
