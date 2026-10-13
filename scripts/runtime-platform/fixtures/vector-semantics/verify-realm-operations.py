@@ -47,6 +47,11 @@ def verify(d):
    limits=g.get('limits',{});need(type(limits.get('maxTextureSize')) is int and limits['maxTextureSize']>=2048 and isinstance(limits.get('maxViewportDims'),list) and len(limits['maxViewportDims'])==2 and all(type(x) is int and x>=2048 for x in limits['maxViewportDims']),prefix+':valid-native-limits')
   dom=o.get('dom',{});is_window=i in (0,5,6,7,8);need(dom.get('available')==is_window,name+':DOM-availability')
   if is_window:
+   ready=dom.get('readiness',{});viewport=ready.get('viewport',[])
+   need(ready.get('ready') in ('interactive','complete') and ready.get('frames')==2 and ready.get('connected') is True and ready.get('bodyConnected') is True and isinstance(viewport,list) and len(viewport)==2 and all(type(x) in (int,float) and x>0 for x in viewport),name+':DOM-ready-connected')
+   if i>=5:
+    parent=v.get('parentFrame',{})
+    need(parent.get('connected') is True and type(parent.get('width')) in (int,float) and parent['width']>0 and type(parent.get('height')) in (int,float) and parent['height']>0,name+':parent-frame-layout')
    box={'x':10,'y':20,'width':31,'height':19};need(dom.get('box')==box and dom.get('repeat')==box,name+':actual-DOM-geometry')
    need(dom.get('rectCount')==1 and dom.get('clientWidth')==31 and dom.get('offsetWidth')==31,name+':DOM-invariants')
   audio=o.get('audio',{});need(audio.get('available')==is_window,name+':Audio-availability')
@@ -71,8 +76,12 @@ def verify(d):
 
 if __name__=='__main__':
  p=Path(sys.argv[1]);d=json.loads(p.read_text());r=verify(d);controls=[]
+ if not r['passed']:
+  r.update(negativeControls=[],negativeControlsQualified=False);print(json.dumps(r));sys.exit(2)
  mutations=[('canvas-crop',lambda x:x['data']['results'][1]['observation']['value']['operations']['canvas']['crop'].__setitem__(0,9)),('shader-draw',lambda x:x['data']['results'][3]['observation']['value']['operations']['webgl'][1]['draw'].__setitem__(0,9)),('missing-operations',lambda x:x['data']['results'][2]['observation']['value'].pop('operations')),('silence-noise',lambda x:x['data']['results'][5]['observation']['value']['operations']['audio']['silence'].__setitem__(0,0.001)),('worklet-audio',lambda x:x['data']['results'][4]['observation']['renderedSamples'].__setitem__(0,0)),('worklet-forged-fetch',lambda x:x['data']['results'][4]['observation']['value']['operations']['network'].__setitem__('available',True)),('server-receipt',lambda x:x['ownIdentityReceipts'].clear()),('request-nonce',lambda x:x['data']['results'][7]['observation']['value']['operations']['network'].__setitem__('requestNonce','wrong')),('corrupt-PNG',lambda x:x['data']['results'][6]['observation']['value']['operations']['canvas']['encoded'].__setitem__('pngBase64','AAAA'))]
  for name,change in mutations:
+  bad=copy.deepcopy(d);change(bad);controls.append({'name':name,'rejected':not verify(bad)['passed']})
+ for name,change in [('DOM-unready',lambda x:x['data']['results'][8]['observation']['value']['operations']['dom']['readiness'].__setitem__('frames',0)),('DOM-zero-rect',lambda x:x['data']['results'][8]['observation']['value']['operations']['dom'].__setitem__('box',{'x':0,'y':0,'width':0,'height':0})),('detached-parent-frame',lambda x:x['data']['results'][8]['observation']['value']['parentFrame'].__setitem__('connected',False))]:
   bad=copy.deepcopy(d);change(bad);controls.append({'name':name,'rejected':not verify(bad)['passed']})
  bad=copy.deepcopy(d);bad['data']['lifecycle']['receipts']=bad['data']['liveNegativeControl']['receipts'];controls.append({'name':'actual-nine-live-before-teardown','rejected':not verify(bad)['passed'],'actualBrowserControl':True})
  r.update(negativeControls=controls,negativeControlsQualified=r['passed'] and all(x['rejected'] for x in controls),label=d['label'],runtimeVersion=d['runtimeVersion'],executableSHA256=d['executableSHA256'],scope='nine independently bound/terminated realms; actual Canvas PNG/WebGL draw/Window+worklet Audio/realm HTTP; not exhaustive per-realm API paths')

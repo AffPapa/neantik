@@ -48,8 +48,13 @@ def verify_current_product_claims(root: Path) -> None:
     latest = max(reports, key=lambda item: tuple(int(v) for v in item['version'].split('.')))
     for filename in ('README.md', 'README.en.md'):
         text = (root / filename).read_text()
+        # Both the introductory announcement and download label describe the
+        # current release. A correct link must not mask a stale earlier build.
+        intro = text.split('\n## ', 1)[0]
+        intro_claims = re.findall(r'(\d+\.\d+\.\d+) \((\d+)\)', intro)
         claim = re.search(r'\[NeAntik (\d+\.\d+\.\d+) \((\d+)\)[^\]]*\]\((https://github\.com/AffPapa/neantik/releases/tag/v[^)]+)\)', text)
-        if (not claim or claim.groups() != (latest['version'], str(latest['build']),
+        if (not intro_claims or any(pair != (latest['version'], str(latest['build'])) for pair in intro_claims)
+                or not claim or claim.groups() != (latest['version'], str(latest['build']),
                 f"https://github.com/AffPapa/neantik/releases/tag/{latest['tag']}")
                 or f"releases/{latest['tag']}.json" not in text):
             raise ValueError('README release claim differs from published evidence: ' + filename)

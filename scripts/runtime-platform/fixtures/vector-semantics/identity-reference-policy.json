@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "runtimeVersion": "155.0.8059.40",
+  "mode": "unconfigured",
+  "label": "m156-control-fresh-chrome-identity",
+  "absentWorkerHeaders": [
+    "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform",
+    "sec-ch-ua-arch", "sec-ch-ua-bitness", "sec-ch-ua-platform-version",
+    "sec-ch-ua-full-version-list", "sec-ch-device-memory", "device-memory"
+  ]
+}

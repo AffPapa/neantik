@@ -1,6 +1,9 @@
 import copy
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,9 +12,117 @@ SOURCE = Path(__file__).resolve().parents[1] / "runtime-platform/qualify-candida
 SPEC = importlib.util.spec_from_file_location("platform_candidate_qualification", SOURCE)
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+IDENTITY_PATH = SOURCE.parent / 'fixtures/vector-semantics/verify-identity-m156.py'
+IDENTITY_SPEC = importlib.util.spec_from_file_location('identity_oracle', IDENTITY_PATH)
+IDENTITY = importlib.util.module_from_spec(IDENTITY_SPEC)
+IDENTITY_SPEC.loader.exec_module(IDENTITY)
 
 
 class PlatformQualificationTests(unittest.TestCase):
+    def reference_fixture(self):
+        policy_hash = MODULE.digest(IDENTITY.POLICY_PATH)
+        binding = {'runtimeVersion': '155.0.8059.40', 'runtimeExecutableSHA256': 'a' * 64,
+                   'runtimeFrameworkSHA256': 'b' * 64, 'policySHA256': policy_hash}
+        js = {'userAgent': 'owned synthetic Chrome control', 'languages': ['en-US'], 'deviceMemory': 8}
+        headers = {k: None for k in IDENTITY.ABSENT_HEADERS}
+        headers.update({'user-agent': js['userAgent'], 'accept-language': 'en-US,en;q=0.9'})
+        reference = {'runtimeVersion': binding['runtimeVersion'], 'executableSHA256': 'a' * 64,
+                     'runtimeFrameworkSHA256': 'b' * 64, 'candidateBindingSHA256': 'c' * 64,
+                     'headed': True, 'cleanupVerified': True, 'documentEvidence': {'loaded': True},
+                     'mode': 'unconfigured', 'label': IDENTITY.POLICY['label'],
+                     'data': {'js': js, 'worker': {'js': js, 'http': {'via': 'worker', 'headers': headers}}}}
+        return reference, binding
+
+    def test_reference_requires_bound_real_operation_and_explicit_absences(self):
+        reference, binding = self.reference_fixture()
+        self.assertTrue(IDENTITY.reference_valid(reference, binding, 'c' * 64))
+        self.assertFalse(IDENTITY.reference_valid(None, binding, 'c' * 64))
+        for key in reference:
+            bad = copy.deepcopy(reference); bad.pop(key)
+            self.assertFalse(IDENTITY.reference_valid(bad, binding, 'c' * 64), key)
+        for key in binding:
+            bad = dict(binding); bad[key] = 'wrong'
+            self.assertFalse(IDENTITY.reference_valid(reference, bad, 'c' * 64), key)
+        for key in IDENTITY.ABSENT_HEADERS:
+            for value in ('missing', 'unexpected'):
+                bad = copy.deepcopy(reference); h = bad['data']['worker']['http']['headers']
+                if value == 'missing': h.pop(key)
+                else: h[key] = 'present'
+                self.assertFalse(IDENTITY.reference_valid(bad, binding, 'c' * 64), key)
+        for field, value in [('mode', 'neantik-configured'), ('headed', False), ('cleanupVerified', False),
+                             ('runtimeVersion', '155.0.8059.39'), ('label', 'foreign')]:
+            bad = dict(reference, **{field: value})
+            self.assertFalse(IDENTITY.reference_valid(bad, binding, 'c' * 64), field)
+        bad = copy.deepcopy(reference); bad['data']['worker'] = {'error': 'timeout'}
+        self.assertFalse(IDENTITY.reference_valid(bad, binding, 'c' * 64))
+        for path in [('documentEvidence',), ('data',), ('data','worker'), ('data','worker','js'),
+                     ('data','worker','http'), ('data','worker','http','headers'), ('data','worker','js','languages')]:
+            for value in (None, [], 1):
+                bad = copy.deepcopy(reference); target = bad
+                for key in path[:-1]: target = target[key]
+                target[path[-1]] = value
+                self.assertFalse(IDENTITY.reference_valid(bad, binding, 'c' * 64), path)
+
+    def test_candidate_missing_header_is_not_observed_absence(self):
+        reference, binding = self.reference_fixture()
+        # Other identity signals intentionally incomplete; isolate the absence assertion.
+        candidate = copy.deepcopy(reference)
+        good = IDENTITY.verify(candidate, reference, binding, 'c' * 64)
+        self.assertNotIn('worker:observed-upstream-hint-availability', good['issues'])
+        for key in IDENTITY.ABSENT_HEADERS:
+            bad = copy.deepcopy(candidate); bad['data']['worker']['http']['headers'].pop(key)
+            self.assertIn('worker:observed-upstream-hint-availability',
+                          IDENTITY.verify(bad, reference, binding, 'c' * 64)['issues'])
+
+    def test_resumed_reference_requires_source_archive_and_policy(self):
+        reference, binding = self.reference_fixture()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); entries = []
+            for name in ('identity-probe.js', 'run-headed-m156.mjs'):
+                original = root / 'vector-semantics' / name; original.parent.mkdir(exist_ok=True)
+                original.write_text('owned synthetic '+name)
+                sha = MODULE.digest(original); archive = root / 'fixture-source-archive/blobs' / sha
+                archive.parent.mkdir(parents=True, exist_ok=True); archive.write_bytes(original.read_bytes())
+                entries.append({'path': 'vector-semantics/'+name, 'sha256': sha, 'bytes': original.stat().st_size})
+            reference.update(probeSHA256=entries[0]['sha256'], runnerSHA256=entries[1]['sha256'])
+            manifest = MODULE.hashlib.sha256(json.dumps(entries, separators=(',', ':')).encode()).hexdigest()
+            reference.update(fixtureProvenance={'files': entries, 'manifestSHA256': manifest},
+                             fixtureSourceArchive={'manifestSHA256': manifest})
+            path = root / 'binding.json'; MODULE.write_once(path, binding)
+            reference['candidateBindingSHA256'] = MODULE.digest(path)
+            valid = lambda r: MODULE.reference_binding_matches(r, binding, path, IDENTITY.POLICY_PATH, root)
+            self.assertTrue(valid(reference))
+            for field in ('fixtureProvenance', 'fixtureSourceArchive', 'candidateBindingSHA256', 'probeSHA256', 'runnerSHA256'):
+                bad = copy.deepcopy(reference); bad.pop(field)
+                self.assertFalse(valid(bad), field)
+            for entry in entries:
+                bad = copy.deepcopy(reference)
+                bad['fixtureProvenance']['files'] = [x for x in entries if x['path']!=entry['path']]
+                self.assertFalse(valid(bad), entry['path'])
+            archive.write_text('corrupted archive')
+            self.assertFalse(valid(reference))
+
+    def test_failed_identity_capture_emits_json_fail_without_mutating_missing_fields(self):
+        reference, rb = self.reference_fixture()
+        candidate = copy.deepcopy(reference)
+        candidate['data']['worker']['http']['headers'].pop(IDENTITY.ABSENT_HEADERS[0])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); capture = root / 'identity-observations.json'
+            rb_path = root / 'reference-binding.json'; MODULE.write_once(rb_path, rb)
+            reference['candidateBindingSHA256'] = MODULE.digest(rb_path)
+            (root/'m156-control-fresh-chrome-identity-observations.json').write_text(json.dumps(reference))
+            capture.write_text(json.dumps(candidate))
+            binding = root / 'candidate-binding.json'; MODULE.write_once(binding, rb)
+            env = dict(os.environ, NEANTIK_PLATFORM_BINDING=str(binding),
+                       NEANTIK_PLATFORM_CHROME_REFERENCE_BINDING=str(rb_path))
+            result = subprocess.run([sys.executable, '-B', str(IDENTITY_PATH), str(capture)],
+                                    env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            verdict = json.loads(result.stdout)
+            self.assertFalse(verdict['passed'])
+            self.assertIn('worker:observed-upstream-hint-availability', verdict['issues'])
+            self.assertEqual(verdict['negativeControls'], [])
+
     def test_canvas_cli_is_invoked_with_its_actual_supported_contract(self):
         command = MODULE.verifier_command(Path("fixtures"), "verify.py", Path("capture.json"))
         self.assertEqual(command[1:], ["fixtures/verify.py", "capture.json"])
@@ -101,6 +212,8 @@ class PlatformQualificationTests(unittest.TestCase):
             self.assertFalse(MODULE.capture_binding_matches(bad, binding), field)
         bad = dict(good, runtimeFrameworkSHA256="c" * 64)
         self.assertFalse(MODULE.capture_binding_matches(bad, binding))
+        for document in (None, {}, dict(good, documentEvidence=None), dict(good, documentEvidence=[])):
+            self.assertFalse(MODULE.capture_binding_matches(document, binding))
 
     def test_real_capture_requires_frame_processing_revocation_denial_and_cleanup(self):
         good = {"kind": "synthetic-media-capture", "errors": [], "cleanupVerified": True,

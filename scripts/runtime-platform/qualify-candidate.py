@@ -145,6 +145,8 @@ def verifier_command(vector, verifier, observation):
 
 
 def capture_binding_matches(document, binding):
+    if not isinstance(document, dict) or not isinstance(document.get("documentEvidence"), dict):
+        return False
     return all(document.get(field) == binding[field] for field in (
         "runtimeVersion", "runtimeFrameworkSHA256"
     )) and document.get("executableSHA256") == binding["runtimeExecutableSHA256"] and \
@@ -154,15 +156,24 @@ def capture_binding_matches(document, binding):
 
 def source_binding_matches(document, root):
     proof = document.get("fixtureProvenance", {})
-    if proof.get("manifestSHA256") != document.get("fixtureSourceArchive", {}).get("manifestSHA256"):
+    archive_proof = document.get("fixtureSourceArchive", {})
+    if not isinstance(proof, dict) or not isinstance(archive_proof, dict):
+        return False
+    if proof.get("manifestSHA256") != archive_proof.get("manifestSHA256"):
         return False
     entries = proof.get("files", [])
-    if not 1 <= len(entries) <= 32:
+    if not isinstance(entries, list) or not 1 <= len(entries) <= 32:
         return False
+    paths = set()
     for entry in entries:
-        relative = Path(entry.get("path", ""))
-        if relative.is_absolute() or ".." in relative.parts or not entry.get("sha256"):
+        if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not isinstance(entry.get("sha256"), str):
             return False
+        if len(entry["sha256"]) != 64 or any(c not in "0123456789abcdef" for c in entry["sha256"]):
+            return False
+        relative = Path(entry.get("path", ""))
+        if relative.is_absolute() or ".." in relative.parts or not entry.get("sha256") or str(relative) in paths:
+            return False
+        paths.add(str(relative))
         original = root / relative
         archive = root / "fixture-source-archive/blobs" / entry["sha256"]
         if not original.is_file() or not archive.is_file() or original.is_symlink() or archive.is_symlink():
@@ -171,6 +182,25 @@ def source_binding_matches(document, root):
             return False
     encoded = json.dumps(entries, separators=(",", ":"), ensure_ascii=False).encode()
     return hashlib.sha256(encoded).hexdigest() == proof["manifestSHA256"]
+
+
+def reference_binding_matches(document, binding, binding_path, policy_path, working):
+    """Reused Chrome captures require the same independent byte/source proof as fresh ones."""
+    policy = json.loads(Path(policy_path).read_text())
+    required = {"vector-semantics/identity-probe.js", "vector-semantics/run-headed-m156.mjs"}
+    proof = document.get("fixtureProvenance", {})
+    if not isinstance(proof, dict) or not isinstance(proof.get("files"), list):
+        return False
+    if not required.issubset({entry.get("path") for entry in proof["files"] if isinstance(entry, dict)}):
+        return False
+    return (binding.get("runtimeVersion") == policy["runtimeVersion"] and
+            binding.get("policySHA256") == digest(policy_path) and
+            capture_binding_matches(document, binding) and
+            document.get("candidateBindingSHA256") == digest(binding_path) and
+            document.get("mode") == policy["mode"] and document.get("label") == policy["label"] and
+            document.get("probeSHA256") == digest(working / "vector-semantics/identity-probe.js") and
+            document.get("runnerSHA256") == digest(working / "vector-semantics/run-headed-m156.mjs") and
+            source_binding_matches(document, working))
 
 
 def collector_probe(source):
@@ -283,13 +313,13 @@ CASES = [
 EXPECTED_CONTROL_NAMES = {
     "collector": ("absent", "unstable", "timeout", "invalid-rect-0", "invalid-rect-1", "invalid-rect-2"),
     "font-load": tuple("wrong-font missing-worker-load worker-width ascent capture-error".split()),
-    "realms": tuple("canvas-crop shader-draw missing-operations silence-noise worklet-audio worklet-forged-fetch server-receipt request-nonce corrupt-PNG actual-nine-live-before-teardown".split()),
+    "realms": tuple("canvas-crop shader-draw missing-operations silence-noise worklet-audio worklet-forged-fetch server-receipt request-nonce corrupt-PNG DOM-unready DOM-zero-rect detached-parent-frame actual-nine-live-before-teardown".split()),
     "webgl-read": tuple("payload padding crop pbo error shader".split()),
     "webgl-behavior": tuple("advertised-extension-broken bad-shader-accepted bad-link-accepted framebuffer-error-swallowed integer-corruption restore-event-missing msaa-resolve-broken".split()),
     "audio-worklet": tuple("missing-completion early-receipt wrong-output clamped-dc silent-noise fft-frequency error-swallowed".split()),
     "audio-events": tuple("legacy-event-name listener-missing attribute-removed-wrongly untrusted-event cancelable-error duplicate-event-alias non-silent-failure".split()),
     "audio-lifetime": tuple("generator-not-stopped channel-clamped quantum-skipped processor-error-lost throw-not-silenced".split()),
-    "identity": tuple("memory-contradiction UA-mismatch lang-mismatch full-version-mismatch unexpected-worker-hint missing-operation".split()),
+    "identity": tuple("memory-contradiction UA-mismatch lang-mismatch full-version-mismatch unexpected-worker-hint missing-operation missing-reference-headers wrong-reference-runtime reference-timeout wrong-reference-binding missing-candidate-header".split()),
     "service-worker": tuple("platform-contradiction memory-contradiction version-contradiction missing-controller foreign-interception synthetic-response-no-server duplicate-server timeout wrong-runtime cleanup".split()),
     "geometry": tuple("wrong-runtime wrong-zoom source-drift range-union collapsed-width crop-scroll fullscreen-state fullscreen-event static-window media-dpr cleanup missing-operation".split()),
     "media": tuple("missing-frame no-processing wrong-denial no-revocation-event live-track".split()),
@@ -370,23 +400,29 @@ def main():
     # substitute for the configured candidate's identity or operation checks.
     if any(c[0] == "identity" for c in cases):
         reference = vector / "m156-control-fresh-chrome-identity-observations.json"
+        policy_path = vector / "identity-reference-policy.json"
+        policy = json.loads(policy_path.read_text())
+        chrome = Path("/Applications/Google Chrome.app")
+        info = plistlib.loads((chrome / "Contents/Info.plist").read_bytes())
+        version = info["CFBundleShortVersionString"]
+        if version != policy["runtimeVersion"]:
+            raise ValueError("Ordinary Chrome reference version changed; review upstream hint policy")
+        executable = chrome / "Contents/MacOS" / info["CFBundleExecutable"]
+        framework = "Contents/Frameworks/Google Chrome Framework.framework/Versions/" + version + "/Google Chrome Framework"
+        reference_binding = {"schemaVersion": 1, "runtimeVersion": version,
+            "runtimeExecutableSHA256": digest(executable), "runtimeFrameworkSHA256": digest(chrome / framework),
+            "runtimeFrameworkRelativePath": framework, "policySHA256": digest(policy_path)}
+        reference_path = args.output / "chrome-reference-binding.json"
+        write_once(reference_path, reference_binding)
         if not reference.exists():
-            chrome = Path("/Applications/Google Chrome.app")
-            info = plistlib.loads((chrome / "Contents/Info.plist").read_bytes())
-            version = info["CFBundleShortVersionString"]
-            if version != "155.0.8059.39":
-                raise ValueError("Ordinary Chrome reference version changed; review upstream hint policy")
-            executable = chrome / "Contents/MacOS" / info["CFBundleExecutable"]
-            framework = "Contents/Frameworks/Google Chrome Framework.framework/Versions/" + version + "/Google Chrome Framework"
-            reference_binding = {"schemaVersion": 1, "runtimeVersion": version,
-                "runtimeExecutableSHA256": digest(executable), "runtimeFrameworkSHA256": digest(chrome / framework),
-                "runtimeFrameworkRelativePath": framework}
-            reference_path = args.output / "chrome-reference-binding.json"
-            write_once(reference_path, reference_binding)
             env["NEANTIK_PLATFORM_BINDING"] = str(reference_path.resolve())
             code, _ = run(["node", str(vector / "run-headed-m156.mjs"), str(chrome), "m156-control-fresh-chrome-identity", "unconfigured", digest(executable), "-", "identity-probe.js"], "ordinary-chrome")
             env["NEANTIK_PLATFORM_BINDING"] = str(binding_path.resolve())
             if code: raise ValueError("Ordinary Chrome control failed; inspect private log")
+        if not reference_binding_matches(json.loads(reference.read_text()), reference_binding,
+                                         reference_path, policy_path, working):
+            raise ValueError("Ordinary Chrome reference lacks matching byte/source/lifecycle proof")
+        env["NEANTIK_PLATFORM_CHROME_REFERENCE_BINDING"] = str(reference_path.resolve())
     for name, rows, probe, verifier, mode, runner in cases:
         observation = vector / (name + "-observations.json")
         if not observation.exists():

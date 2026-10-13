@@ -8,12 +8,27 @@ It never reads existing profiles, real camera/microphone input or production Key
 1. Prepare a Direct candidate and its authenticated candidate manifest.
 2. Run `PlatformLaunchReceiptTests` with `NEANTIK_PLATFORM_LAUNCH_RECEIPT` pointing
    at a fresh private JSON path. Use the project's native Swift caches and jobs2.
-3. Run `python3 scripts/runtime-platform/qualify-candidate.py --app ABS_APP
+3. Run `python3 -B scripts/runtime-platform/qualify-candidate.py --app ABS_APP
    --manifest ABS_MANIFEST --launch-receipt ABS_RECEIPT --output ABS_FRESH_DIRECTORY`.
    `--only` selects a targeted case. Keep output separate from source.
 4. Review every actual JSON verdict and scope. Nonzero exits, missing contexts,
    wrong runtime/framework/source bytes and failed negative controls fail the gate.
    A resumed run reuses immutable observations only when all inputs still match.
+
+The ordinary Chrome identity reference uses one explicit source policy in
+`fixtures/vector-semantics/identity-reference-policy.json`. A browser update
+requires review and a fresh reference capture; it cannot silently reuse another
+version. Both fresh and resumed captures require exact executable/framework,
+probe/runner source archives, loaded-document and cleanup proof. Nine absent
+worker hints must each be present as JSON null: an omitted header is not evidence
+of absence. Invalid or incomplete captures emit FAIL before dependent mutations.
+
+Window-realm geometry waits for DOM readiness, fonts and two animation frames
+with a bounded timeout. It records node/body connection, viewport and the parent
+iframe's layout. The exact rectangle assertions remain unchanged; a timeout or
+zero rectangle does not qualify. Preserve failures separately when fixing a
+fixture. Reanalyse retained matching captures after oracle-only changes rather
+than relaunching the browser without an input change.
 
 For the first15 public-alpha release, pass that receipt via
 `NEANTIK_PLATFORM_LAUNCH_RECEIPT` to `Release-NeAntik.command`. The wrapper runs
