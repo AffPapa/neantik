@@ -4355,6 +4355,11 @@ struct ProfileDetailView: View {
                     Image(systemName: "network")
                 }
                 .font(.body.weight(.medium))
+                // A selectable Text inside Label can make macOS SwiftUI ask
+                // the parent for its own label recursively. Expose one static
+                // endpoint element; the actions below keep independent roles.
+                .accessibilityElement(children: .ignore)
+                .accessibilityAddTraits(.isStaticText)
                 .accessibilityLabel(
                     "Прокси \(proxy.kind.title), сервер \(proxy.displayEndpoint)"
                 )

@@ -418,6 +418,7 @@ private struct EnvironmentOverviewFact: View {
                 .truncationMode(.middle)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 
