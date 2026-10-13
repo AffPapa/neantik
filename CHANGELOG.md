@@ -1,5 +1,12 @@
 # NeAntik changelog
 
+## Unreleased — proxy status and safe shutdown
+
+- Результат проверки прокси сохраняется при обычной отметке запуска. GUI и MCP используют подтверждение сохранённого перехода; смена пароля или конфигурации не наследует старый результат.
+- Ожидание вспомогательных процессов больше не обозначается как повреждение файла. Разблокировка по-прежнему требует безопасной проверки завершения.
+- Lifecycle-тесты получают явное состояние нагрузки; отдельные отрицательные проверки требуют отказ при нехватке памяти и критической температуре. Приложение продолжает использовать системный admission.
+- Local: 153 targeted tests passed; full Swift summary1483/168suites (59skip lines) and Python1307 (19skips) passed. Dev CmdN/create/select/save/quit verified on one disposable profile. Exact signed candidate and publication remain pending; public release is still0.8.3.
+
 ## Direct 0.8.3 (114)
 
 Published public alpha on GitHub and browser.free Sites141. Chromium156.0.8078.12 unchanged. Exact signing/notarization/stapling/Gatekeeper, public ZIP/DMG bytes, fresh downloaded headed launch and metadata MCP PASS. [Results and limits](releases/v0.8.3.json).

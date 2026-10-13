@@ -38,6 +38,21 @@ struct BrowserSessionObservation: Sendable, CustomReflectable, CustomStringConve
     }
 }
 
+/// Compare the configuration portion of a launch bookkeeping transition.
+/// This delta is not authority: health also requires a durable markLaunched
+/// receipt. Persisted metadata dates use second precision.
+enum ProfileLaunchMetadataTransition {
+    static func matches(from original: BrowserProfile, to recorded: BrowserProfile) throws -> Bool {
+        guard original.id == recorded.id, original.revision < UInt64.max,
+              recorded.revision == original.revision + 1, recorded.lastLaunchedAt != nil else { return false }
+        var comparable = recorded
+        comparable.revision = original.revision; comparable.updatedAt = original.updatedAt
+        comparable.lastLaunchedAt = original.lastLaunchedAt
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
+        return try encoder.encode(comparable) == encoder.encode(original)
+    }
+}
+
 struct ManagedBrowserSessionReceipt: Equatable, Sendable {
     let generation: UUID
     let lock: BrowserProcessLock
@@ -52,13 +67,8 @@ struct ManagedBrowserSessionReceipt: Equatable, Sendable {
     /// Accept only that exact single bookkeeping transition, never a newer
     /// proxy/identity/editor configuration or a guessed revision offset.
     mutating func recordLaunchMetadata(from original: BrowserProfile, to recorded: BrowserProfile) throws -> Bool {
-        guard profileRevision == original.revision, original.revision < UInt64.max,
-              recorded.revision == original.revision + 1, recorded.lastLaunchedAt != nil else { return false }
-        var comparable = recorded
-        comparable.revision = original.revision; comparable.updatedAt = original.updatedAt
-        comparable.lastLaunchedAt = original.lastLaunchedAt
-        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = .sortedKeys
-        guard try encoder.encode(comparable) == encoder.encode(original) else { return false }
+        guard profileRevision == original.revision,
+              try ProfileLaunchMetadataTransition.matches(from: original, to: recorded) else { return false }
         observedMetadataRevision = recorded.revision
         return true
     }

@@ -3372,11 +3372,12 @@ struct ContentView: View {
                                             preparationReceipt: BrowserLaunchPreparationReceipt?, target: BrowserUserLaunchTarget) async throws {
         try await processes.launchUserProfile(profile: profile, runtime: runtime,
                                               preparationReceipt: preparationReceipt, keychain: keychain, target: target)
-        guard store.markLaunched(profile.id) else {
+        guard let launchMetadata = store.markLaunchedWithReceipt(profile.id) else {
             processes.stop(profileID: profile.id)
             throw NeAntikError.profileLaunchStateNotPersisted
         }
-        if let recorded = store.profile(withID: profile.id) { processes.recordManagedLaunchMetadata(from: profile, to: recorded) }
+        processes.recordManagedLaunchMetadata(from: profile, to: launchMetadata.recorded)
+        await proxyHealthCoordinator.recordLaunchMetadata(from: profile, receipt: launchMetadata)
         store.managerLibrary.record(.launch, .succeeded)
         telemetry.record(.browserLaunched, snapshot: telemetrySnapshot)
     }

@@ -1049,16 +1049,22 @@ final class ProfileStore: ObservableObject {
 
     @discardableResult
     func markLaunched(_ id: UUID) -> Bool {
+        markLaunchedWithReceipt(id) != nil
+    }
+
+    /// A receipt is issued only after the launch timestamps are durable.
+    /// Password-only edits can also advance revision; they cannot mint this proof.
+    func markLaunchedWithReceipt(_ id: UUID) -> ProfileLaunchMetadataReceipt? {
         do { try updateAdmission.requireNewWork() }
-        catch { lastError = error.localizedDescription; return false }
+        catch { lastError = error.localizedDescription; return nil }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path) else {
             lastError = ProfileMetadataMutationInProgressError()
                 .localizedDescription
-            return false
+            return nil
         }
         guard storageIsAvailable else {
             lastError = ProfileStorageUnavailableError().localizedDescription
-            return false
+            return nil
         }
         do {
             return try paths.withProfilesMetadataGuard {
@@ -1070,9 +1076,10 @@ final class ProfileStore: ObservableObject {
                         where: { $0.id == id }
                     )
                 else {
-                    return false
+                    return nil
                 }
                 let previousProfiles = profiles
+                let original = profiles[index]
                 profiles[index].lastLaunchedAt = Date()
                 profiles[index].updatedAt = Date()
                 profiles[index].revision = try Self.nextRevision(
@@ -1084,11 +1091,11 @@ final class ProfileStore: ObservableObject {
                     profiles = previousProfiles
                     throw error
                 }
-                return true
+                return ProfileLaunchMetadataReceipt(original: original, recorded: profiles[index])
             }
         } catch {
             lastError = error.localizedDescription
-            return false
+            return nil
         }
     }
 
@@ -2140,4 +2147,14 @@ private struct ProfileStorageUnavailableError: LocalizedError {
 private struct EngineProfilesDocument: Encodable {
     let schemaVersion: Int
     let profiles: [BrowserProfile]
+}
+
+struct ProfileLaunchMetadataReceipt: Sendable {
+    let original: BrowserProfile
+    let recorded: BrowserProfile
+
+    fileprivate init(original: BrowserProfile, recorded: BrowserProfile) {
+        self.original = original
+        self.recorded = recorded
+    }
 }

@@ -296,8 +296,9 @@ final class MCPProfileManagement {
         }
         try Task.checkCancellation()
         try await processes.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: receipt, keychain: keychain)
-        guard store.markLaunched(profile.id) else { processes.stop(profileID: profile.id); throw Failure.unavailable }
-        if let recorded = store.profile(withID: profile.id) { processes.recordManagedLaunchMetadata(from: profile, to: recorded) }
+        guard let launchMetadata = store.markLaunchedWithReceipt(profile.id) else { processes.stop(profileID: profile.id); throw Failure.unavailable }
+        processes.recordManagedLaunchMetadata(from: profile, to: launchMetadata.recorded)
+        await health.recordLaunchMetadata(from: profile, receipt: launchMetadata)
         launched = true
         store.managerLibrary.record(.launch, .succeeded)
         return ["profileID": profile.id.uuidString, "processState": status(profile.id), "revision": String(store.profile(withID: profile.id)?.revision ?? profile.revision)]

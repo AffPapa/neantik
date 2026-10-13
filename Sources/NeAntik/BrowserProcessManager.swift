@@ -211,7 +211,7 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         case .externalUnverified:
             "NeAntik видит работающий процесс, но не может безопасно подтвердить его. Закрой окно браузера вручную; профиль разблокируется автоматически."
         case .recoveryRequired:
-            "Файл состояния запуска повреждён или недоступен. Закрой окно браузера вручную; NeAntik разблокирует профиль только после безопасной проверки."
+            "NeAntik проверяет, завершены ли все процессы браузера. Профиль разблокируется после безопасной проверки. Если окно осталось открытым, закрой его вручную."
         }
     }
 }
@@ -573,6 +573,7 @@ final class BrowserProcessManager: ObservableObject {
     private let processSignaler: (pid_t, Int32) -> Int32
     private let managedProcessTerminator: (Process) -> Bool
     private let allowsExternalProcessSignaling: Bool
+    private let launchAdmission: ManagerLaunchAdmission
     private let observationIntervalNanoseconds: UInt64
     private let startingLeaseTimeout: TimeInterval
     private let now: () -> Date
@@ -633,6 +634,7 @@ final class BrowserProcessManager: ObservableObject {
 
     init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil) {
         self.paths = paths
+        self.launchAdmission = .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = true
         self.processIdentityInspector = {
@@ -661,6 +663,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     init(
+        launchAdmission: ManagerLaunchAdmission? = nil,
         paths: AppPaths,
         processIdentityValidator: @escaping (BrowserProcessLock) -> Bool,
         releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
@@ -686,6 +689,7 @@ final class BrowserProcessManager: ObservableObject {
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
+        self.launchAdmission = launchAdmission ?? .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = {
@@ -706,6 +710,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     init(
+        launchAdmission: ManagerLaunchAdmission? = nil,
         paths: AppPaths,
         processIdentityInspector: @escaping
             (BrowserProcessLock) -> BrowserProcessIdentityInspection,
@@ -731,6 +736,7 @@ final class BrowserProcessManager: ObservableObject {
         now: @escaping () -> Date = Date.init
     ) {
         self.paths = paths
+        self.launchAdmission = launchAdmission ?? .shared
         self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = processIdentityInspector
         self.processLivenessValidator = processLivenessValidator
@@ -1784,7 +1790,7 @@ final class BrowserProcessManager: ObservableObject {
         keychain: KeychainStore, target: BrowserUserLaunchTarget = .profileStart
     ) async throws {
         try target.routeProbePlan?.validate()
-        try ManagerLaunchAdmission.shared.requireSafePressure()
+        try launchAdmission.requireSafePressure()
         guard let proxy = profile.proxy, proxy.isValid, !proxy.username.isEmpty,
               !profile.isArchived, !runningProfileIDs.contains(profile.id),
               preparedRelayLaunches[profile.id] == nil,
@@ -1976,7 +1982,7 @@ final class BrowserProcessManager: ObservableObject {
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
         guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
-        try ManagerLaunchAdmission.shared.requireSafePressure()
+        try launchAdmission.requireSafePressure()
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
         }
@@ -2400,7 +2406,7 @@ final class BrowserProcessManager: ObservableObject {
                 }
         }
         try WebKitProfilePolicy.validate(profile)
-        try ManagerLaunchAdmission.shared.requireSafePressure()
+        try launchAdmission.requireSafePressure()
         guard webKitBrowsers[profile.id] == nil,
               processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
         let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
