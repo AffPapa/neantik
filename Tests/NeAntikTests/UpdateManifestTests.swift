@@ -280,7 +280,7 @@ struct UpdateManifestTests {
         issuedAt: Date? = nil,
         expiresAt: Date? = nil,
         downloadURL: String? = nil,
-        chromiumVersion: String = "155.0.8059.40",
+        chromiumVersion: String = NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText,
         minimumOS: String = "14.0"
     ) -> UpdateManifestPayload {
         UpdateManifestPayload(

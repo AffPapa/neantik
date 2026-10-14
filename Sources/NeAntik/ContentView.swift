@@ -743,11 +743,20 @@ struct ContentView: View {
                 })
         }
         .sheet(item: $cacheMaintenanceProfile) { snapshot in
-            ProfileCacheMaintenanceSheet(profile: snapshot, paths: store.paths, processes: processes) {
-                try await store.refreshExternalMetadata(force: true)
-                return store.profile(withID: snapshot.id).map {
-                    $0.revision == snapshot.revision && $0.identity == snapshot.identity
-                } ?? false
+            if snapshot.engine == .webkit {
+                WebKitCacheMaintenanceSheet(profile: snapshot, processes: processes) {
+                    try await store.refreshExternalMetadata(force: true)
+                    return store.profile(withID: snapshot.id).map {
+                        $0.revision == snapshot.revision && $0.identity == snapshot.identity
+                    } ?? false
+                }
+            } else {
+                ProfileCacheMaintenanceSheet(profile: snapshot, paths: store.paths, processes: processes) {
+                    try await store.refreshExternalMetadata(force: true)
+                    return store.profile(withID: snapshot.id).map {
+                        $0.revision == snapshot.revision && $0.identity == snapshot.identity
+                    } ?? false
+                }
             }
         }
         .sheet(isPresented: $showingQuickCommands, onDismiss: completeManagerSheetAction) {
@@ -1350,7 +1359,7 @@ struct ContentView: View {
                     }
                     .disabled(!commands.presentation.browserDataIsAvailable)
                     Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
-                        .disabled(!commands.presentation.editIsEnabled || !commands.presentation.browserDataIsAvailable)
+                        .disabled(!commands.presentation.cacheIsEnabled)
                     browserDataBackupActions(commands, profile: profile)
                     Divider()
                     Button(role: .destructive, action: commands.delete) {
@@ -2916,7 +2925,7 @@ struct ContentView: View {
             .disabled(!commands.presentation.extensionsIsEnabled)
         Divider()
         Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: commands.clearCache)
-            .disabled(!commands.presentation.editIsEnabled || !commands.presentation.browserDataIsAvailable)
+            .disabled(!commands.presentation.cacheIsEnabled)
         Divider()
         Button(
             "Удалить профиль",
@@ -3042,7 +3051,6 @@ struct ContentView: View {
             revealInFinder: { revealProfile(profile) },
             delete: { requestProfileDeletion(profile) },
             clearCache: {
-                guard profile.engine == .chromium else { localError = "Очистка кэша WebKit пока недоступна."; return }
                 cacheMaintenanceProfile = profile
             },
             openExtensions: { openProfileExtensions(profileID: profile.id) }

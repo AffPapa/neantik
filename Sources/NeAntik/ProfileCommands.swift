@@ -17,6 +17,8 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     var extensionsIsEnabled = false
     var engine: BrowserEngine = .chromium
     var pinIsEnabled: Bool { profileName != nil && (engine == .chromium || editIsEnabled) }
+    var cacheIsEnabled: Bool { profileName != nil && editIsEnabled }
+    var cacheHelp: String { engine == .webkit ? "Очистить HTTP-кэш закрытого WebKit-профиля, сохранив входы и данные сайтов." : "Посчитать и удалить HTTP Cache и Code Cache остановленного профиля, сохранив данные сайтов." }
     var browserDataIsAvailable: Bool { profileName != nil && engine == .chromium }
 
     static let unavailable = ProfileCommandPresentation(
@@ -450,8 +452,8 @@ struct ProfileCommandMenu: Commands {
             .disabled(!resolved.presentation.browserDataIsAvailable)
 
             Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: resolved.clearCache)
-                .disabled(!resolved.presentation.editIsEnabled || !resolved.presentation.browserDataIsAvailable)
-                .help("Посчитать и удалить HTTP Cache и Code Cache остановленного профиля, сохранив данные сайтов.")
+                .disabled(!resolved.presentation.cacheIsEnabled)
+                .help(resolved.presentation.cacheHelp)
 
             Divider()
 

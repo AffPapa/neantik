@@ -664,7 +664,7 @@ struct ProfileEditorView: View {
               .font(.caption.weight(.semibold))
               .accessibilityHidden(true)
               VStack(alignment: .leading, spacing: 2) {
-                Text("Организация и оформление")
+                Text("Запуск и оформление")
                   .fontWeight(.semibold)
                 if !showsAdvancedOptions {
                   Text("Папка, теги, заметка, стартовая страница, значок и цвет")
@@ -682,7 +682,7 @@ struct ProfileEditorView: View {
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
-          .accessibilityLabel("Организация и оформление профиля")
+          .accessibilityLabel("Запуск и оформление профиля")
           .accessibilityValue(
             showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
           )

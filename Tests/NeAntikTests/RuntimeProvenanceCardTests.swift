@@ -56,7 +56,7 @@ struct RuntimeProvenanceCardTests {
         #expect(snapshot.preflight == "Готов к запуску")
         #expect(
             snapshot.publicReleaseStatus.contains(
-                "Ниже baseline 155.0.8059.40"
+                "Ниже baseline " + NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText
             )
         )
         #expect(!snapshot.source.contains("/private"))
@@ -83,7 +83,7 @@ struct RuntimeProvenanceCardTests {
             source: "Встроен",
             flavor: .fingerprintChromium,
             inspection: BrowserRuntimeInspection(
-                version: "155.0.8059.40",
+                version: NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText,
                 architectures: ["arm64"],
                 codeSignatureValid: true
             )
@@ -116,7 +116,17 @@ struct RuntimeProvenanceCardTests {
             preflight: BrowserRuntimePreflight(errors: [], warnings: [])
         )
 
-        #expect(snapshot.publicReleaseStatus.contains("155.0.8059.40"))
+        #expect(snapshot.publicReleaseStatus.contains(NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText))
         #expect(snapshot.publicReleaseStatus.contains("заблокирован"))
+    }
+
+    @Test(arguments: ["155.0.8059.40", "155.0.8059.79", "0155.0.8059.80", "155.0.8059.80 ", "155.0.8059"])
+    func staleAndMalformedVersionsDoNotMeetCurrentBaseline(version: String) {
+        #expect(!NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
+    }
+
+    @Test(arguments: ["155.0.8059.80", "155.0.8059.81", "156.0.8078.12"])
+    func currentAndNewerCanonicalVersionsMeetBaseline(version: String) {
+        #expect(NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }
 }

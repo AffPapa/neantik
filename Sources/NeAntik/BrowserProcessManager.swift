@@ -559,6 +559,8 @@ final class BrowserProcessManager: ObservableObject {
 
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
     private var webKitQuitPending = false
+    @Published private(set) var webKitMaintenanceProfileIDs = Set<UUID>()
+    var hasPendingWebKitWork: Bool { hasOpenWebKitProfiles || !webKitMaintenanceProfileIDs.isEmpty }
     var hasActiveWebKitDownloads: Bool { webKitBrowsers.values.contains { $0.downloads.activeCount > 0 } }
     var hasOpenWebKitProfiles: Bool { !webKitBrowsers.isEmpty }
     var hasFailedWebKitSessionSave: Bool { webKitBrowsers.values.contains { $0.sessionWriteFailed } }
@@ -632,7 +634,7 @@ final class BrowserProcessManager: ObservableObject {
     /// Local busy evidence is only an initial refusal. The owner still checks
     /// a fresh full-UID kernel inventory before launch and after manager exit.
     var hasWorkPreventingUpdate: Bool {
-        !runningProfileIDs.isEmpty || !processes.isEmpty ||
+        !webKitMaintenanceProfileIDs.isEmpty || !runningProfileIDs.isEmpty || !processes.isEmpty ||
         !preparedRelayLaunches.isEmpty || !pendingRelayLaunchTokens.isEmpty ||
         !unconfirmedRelayOwnerFences.isEmpty || !activeRelayOwners.isEmpty ||
         !externalLocks.isEmpty || !externalUnverifiedProfileIDs.isEmpty ||
@@ -1193,6 +1195,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
+        if webKitMaintenanceProfileIDs.contains(profileID) { return .checking }
         if webKitBrowsers[profileID] != nil { return .managed }
         if processes[profileID]?.isRunning == true {
             return .managed
@@ -1288,6 +1291,61 @@ final class BrowserProcessManager: ObservableObject {
                 reason: .inspectionUnavailable
             )
         }
+    }
+
+    /// System WebKit maintenance has UUID-store authority, not Chromium path
+    /// inventory. Both cooperating-manager fences live through the native
+    /// callback. Cancellation is effective only before dispatch.
+    func clearWebKitCache(
+        profile: BrowserProfile,
+        operation: @escaping @MainActor (UUID) async -> Void = WebKitCacheMaintenance.clear
+    ) async throws {
+        guard profile.engine == .webkit else { throw WebKitCacheMaintenanceError.wrongEngine }
+        guard !webKitQuitPending, processState(for: profile.id) == .stopped else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
+        webKitMaintenanceProfileIDs.insert(profile.id)
+        defer { webKitMaintenanceProfileIDs.remove(profile.id) }
+        let savedPaths = paths
+        let acquire = Task.detached(priority: .utility) {
+            let process = try savedPaths.acquireProcessMaintenanceGuard(for: profile.id)
+            do {
+                try Task.checkCancellation()
+                return (process, try savedPaths.acquireWebKitMetadataGuard(for: profile.id))
+            } catch { process.release(); throw error }
+        }
+        let (process, metadata) = try await withTaskCancellationHandler {
+            try await acquire.value
+        } onCancel: { acquire.cancel() }
+        defer { metadata.release(); process.release() }
+        try Task.checkCancellation()
+        guard webKitBrowsers[profile.id] == nil, processes[profile.id]?.isRunning != true else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        // No await between the final revision/authority check and dispatch.
+        try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {
+            try process.validateHeldFile(at: paths.lockGuardFile(for: profile.id))
+            try metadata.validateHeldFile(at: paths.lockGuardFile(for: profile.id).appendingPathExtension("webkit"))
+            switch try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try paths.privateFileEntryKind(paths.lockFile(for: profile.id)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        try Task.checkCancellation()
+        await operation(profile.id)
+        // Never throw CancellationError here: the native API may have removed
+        // caches already. It must finish before either fence can be released.
+        do {
+            try process.validateHeldFile(at: paths.lockGuardFile(for: profile.id))
+            try metadata.validateHeldFile(at: paths.lockGuardFile(for: profile.id).appendingPathExtension("webkit"))
+        } catch { throw WebKitCacheMaintenanceError.authorityChangedAfterCompletion }
     }
 
     /// Disk maintenance keeps process authority across awaits. Production
@@ -2460,11 +2518,11 @@ final class BrowserProcessManager: ObservableObject {
         defer { webKitQuitPending = false }
         closeWebKitWindows()
         let deadline = ContinuousClock.now.advanced(by: .seconds(10))
-        while !webKitBrowsers.isEmpty, ContinuousClock.now < deadline {
+        while hasPendingWebKitWork, ContinuousClock.now < deadline {
             if hasFailedWebKitSessionSave { return false }
             do { try await Task.sleep(for: .milliseconds(50)) } catch { return false }
         }
-        return webKitBrowsers.isEmpty
+        return !hasPendingWebKitWork
     }
 
     func stop(profileID: UUID) {

@@ -351,7 +351,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn(".contentShape(Rectangle())", advanced)
         self.assertIn(".accessibilityHidden(true)", advanced)
         self.assertIn(
-            '.accessibilityLabel("Организация и оформление профиля")',
+            '.accessibilityLabel("Запуск и оформление профиля")',
             advanced,
         )
         self.assertIn(

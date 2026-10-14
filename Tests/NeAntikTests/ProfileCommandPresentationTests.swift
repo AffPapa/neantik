@@ -11,6 +11,8 @@ struct ProfileCommandPresentationTests {
             #expect(!presentation.browserDataIsAvailable)
             #expect(!presentation.extensionsIsEnabled && !presentation.deleteIsEnabled)
             #expect(presentation.pinIsEnabled == (state == .stopped))
+            #expect(presentation.cacheIsEnabled == (state == .stopped))
+            #expect(presentation.cacheHelp.contains("HTTP-кэш") && !presentation.cacheHelp.contains("Code Cache"))
         }
         let chromium = BrowserProfile(name: "Chromium")
         let action = BrowserLaunchActionPresentation.resolve(processState: .managed, isArchived: false, runtimeAvailability: .ready)

@@ -163,7 +163,7 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
 
     private func publication(_ checked: String = "2026-10-12") throws -> Data {
         try JSONSerialization.data(withJSONObject: ["schemaVersion": 1, "checkedAt": checked,
-            "publishedAt": "2026-10-06", "maximumAgeDays": 0, "minimumPublicChromiumVersion": "155.0.8059.40",
+            "publishedAt": "2026-10-06", "maximumAgeDays": 0, "minimumPublicChromiumVersion": NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersionText,
             "alsoObservedPublicChromiumVersions": ["155.0.8059.39"], "channel": "Desktop Stable", "platforms": ["macOS"],
             "securityFixCount": 247, "reference": "https://chromereleases.googleblog.com/2026/10/stable.html",
             "referenceTitle": "Stable Channel Update", "sourceLabel": "Chrome Releases",

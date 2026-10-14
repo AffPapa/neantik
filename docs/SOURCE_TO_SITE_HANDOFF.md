@@ -1,4 +1,4 @@
-# Current public release: 0.8.6/build117 · Chromium156.0.8078.12 · [report](../releases/v0.8.6.json)
+> Current public release: 0.8.7/build118; Chromium156.0.8078.12; evidence `releases/v0.8.7.json`. Historical plan below is not current release acceptance.
 
 0.8.6 published on GitHub and browser.free Sites143. Real WebKit downloads/quit exact headed checks, Developer ID/notary/Gatekeeper, hosted ZIP/DMG, downloaded headed/MCP and signed feed passed scoped checks. Sourcebb02709; runtime unchanged. Full1.0 remains open. Next: safe opt-in WebKit session restore and remaining network/hardware gates. Prior dated sections below remain historical evidence pointers; AffPapa excluded.
 
