@@ -1,4 +1,6 @@
 import importlib.util
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -43,6 +45,80 @@ class ChromiumWebRTCPolicyTests(unittest.TestCase):
                 "contract changed",
             ):
                 MODULE.verify(root)
+
+    def test_rejects_comment_only_policy_markers(self) -> None:
+        for kind in ("block", "line", "spliced-line"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self.fixture(root)
+                for relative, markers in MODULE.REQUIRED_SOURCE_MARKERS.items():
+                    if kind == "block":
+                        text = "/*\n" + "\n".join(markers) + "\n*/\n"
+                    elif kind == "line":
+                        text = "\n".join("// " + m for m in markers)
+                    else:
+                        text = "\n".join("// hidden \\\n" + m for m in markers)
+                    (root / relative).write_text(text)
+                with self.assertRaisesRegex(MODULE.VerificationError, "contract changed"):
+                    MODULE.verify(root)
+
+    def test_rejects_raw_literal_policy_markers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            for relative, markers in MODULE.REQUIRED_SOURCE_MARKERS.items():
+                (root / relative).write_text('const char* unused = R"qa(' + "\n".join(markers) + ')qa";\n')
+            with self.assertRaisesRegex(MODULE.VerificationError, "contract changed"):
+                MODULE.verify(root)
+
+    def test_rejects_renderer_markers_inside_ordinary_string_literals(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            relative = "chrome/browser/renderer_preferences_util.cc"
+            (root / relative).write_text("\n".join('const char* unused = "' + marker + '";'
+                for marker in MODULE.REQUIRED_SOURCE_MARKERS[relative]))
+            with self.assertRaisesRegex(MODULE.VerificationError, "contract changed"):
+                MODULE.verify(root)
+
+    def test_comments_in_literals_do_not_hide_real_following_code(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            for relative in MODULE.REQUIRED_SOURCE_MARKERS:
+                path = root / relative
+                path.write_text('const char* url = "https://example.test/*literal*/";\n'
+                    'const char* raw = R"qa(// literal /* also literal */)qa";\n'
+                    "constexpr auto number = 1'000;\n"
+                    "constexpr auto hex = 0xAB'CD;\n"
+                    "constexpr auto wide = L'A';\n"
+                    "constexpr auto utf = u'B';\n" + path.read_text())
+            MODULE.verify(root)
+
+    def test_malformed_literals_and_comments_refuse_instead_of_passing(self) -> None:
+        for prefix in ('/*', '"', 'R"qa('):
+            with self.subTest(prefix=prefix):
+                with self.assertRaises(MODULE.VerificationError):
+                    MODULE.source_view(prefix + "\nrequired marker")
+
+    def test_commented_marker_before_real_marker_does_not_mask_positive(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            for relative in MODULE.REQUIRED_SOURCE_MARKERS:
+                path = root / relative
+                original = path.read_text()
+                path.write_text('/*\n' + original + '*/\n' + original)
+            MODULE.verify(root)
+
+    def test_cli_states_that_source_markers_do_not_prove_runtime_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            result = subprocess.run([sys.executable, "-B", str(SCRIPT), str(root)],
+                capture_output=True, text=True, check=True)
+            self.assertIn("Preprocessing, compilation and effective runtime policy are not proved", result.stdout)
+            self.assertNotIn(str(root), result.stdout)
 
 
 if __name__ == "__main__":

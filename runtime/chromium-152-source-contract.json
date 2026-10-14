@@ -62,7 +62,7 @@
     "scripts/preflight-runtime-rebase.py": "9e1f069fe917e7a02855162e6be9a77c4ffaf862f48cb29a758e119777afab36",
     "scripts/prepare-runtime-source.sh": "c982e14d1309ae0dd229fffa3b2cf02821a2c7fc2d4d717f95dff40a7e784399",
     "scripts/verify-runtime-source-pair.py": "f5861af3abc545d20f86066bed24b11152812fae1865eeb3d79ea7c27d8c6d57",
-    "scripts/verify-chromium-webrtc-policy.py": "7a307f5e77fb6e2e8aad3319272da657d83cae01a6441f6c57e7707d4dc4f970",
+    "scripts/verify-chromium-webrtc-policy.py": "55b6b9cc1a97ec6f9f095b8600ff79d701754da0e76d88032e050bb3524da274",
     "scripts/verify-chromium-launch-flags.py": "47f0c7b253e0899b18e5e7f28f5cfe1dc2f8f39dc5e89bb5b8b65d8468a30197"
   },
   "policy": "This contract describes the expected Chromium 152 source inputs only. It does not attest any existing binary. Binary binding remains blocked until a new build records the emitted source-provenance SHA-256 in its runtime verification report."

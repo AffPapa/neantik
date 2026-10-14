@@ -35,6 +35,10 @@ Unknown/shared inputs select full regression. Planning never means PASS.
 - A frozen candidate stays frozen while its delivery gate is open. Independent
   work during an external wait must not replace its bytes or restart finished
   stages. Give the pending gate priority when its concrete blocker changes.
+- Before changing a build/release checker, inspect its `ownedInputs` pins and
+  callers. Rebind only an explicitly unbuilt source contract to changed input;
+  preserve the prior hash and negative stale-pin control. Never rewrite a
+  historical or binary-bound contract to make a check pass.
 - Plan native QA setup, actions, evidence and cleanup before enrollment/launch.
   Reuse an authorized live authority for its exact app/private manifest until
   consumed or retired. A fixture retry alone does not require a new authority.

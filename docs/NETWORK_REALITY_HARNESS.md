@@ -69,6 +69,17 @@ Actual owned Chromium traces use `scripts/controlled-browser-route-observer.py`
 with separate runtime/session and endpoint evidence. That observer also has a
 bounded scope; its result is not a continuous DNS or leak guarantee.
 
+### WebRTC source check
+
+`scripts/verify-chromium-webrtc-policy.py` checks the expected Chrome switch,
+preference and renderer source markers. Comment-only markers and markers
+starting inside ordinary/raw literals are refused, including comments extended
+by C++ line splicing. This is a source check, not compilation or evaluation of
+preprocessor branches. Its PASS does not prove the effective browser policy.
+Exact headed UDP/STUN controls, preference/policy/exception/extension influence
+and process cleanup still need independent runtime evidence. A source-checker
+fix does not change or requalify the already published Chromium runtime.
+
 ## CLI
 
 Validate a file:
