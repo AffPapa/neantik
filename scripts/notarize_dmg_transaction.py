@@ -306,6 +306,21 @@ def native_runner(command, cwd):
     return result
 
 
+def verify_final_image_copy(seal, project, archive, runner, manifest, channel,
+                            *, qualify=qualify_contents):
+    """Run both final gates on one disposable copy under continuous observation.
+
+    No signing or stapling occurs between these readers. Keep the vnode
+    observer alive across both so a transient write cannot be hidden by
+    restoring the original bytes before the second gate.
+    """
+    def verify(image):
+        checked(runner, [str(project / "scripts/verify-direct-notarized-dmg.sh"),
+                         str(image)], project)
+        qualify(project, image, archive, runner, manifest, channel)
+    return verify_image_copy(seal, verify)
+
+
 def run(root, project, destination, profile, *, runner=native_runner,
         capture=source.capture_release_source, qualify=qualify_contents,
         fault=lambda stage: None, progress=lambda stage: None):
@@ -396,12 +411,10 @@ def run(root, project, destination, profile, *, runner=native_runner,
         checksum_seal = transaction.write_checksum_sidecar(final_seal, checksum)
         immutable(lambda: transaction.observe_sealed_phase(final_seal, lambda:
             transaction.observe_sealed_phase(checksum_seal, lambda:
-                verify_image_copy(final_seal, lambda image:
-                    call([str(project / "scripts/verify-direct-notarized-dmg.sh"), str(image)])),
+                verify_final_image_copy(final_seal, project, archive.path,
+                                        runner, manifest.path, data["channel"],
+                                        qualify=qualify),
                 maximum_bytes=4096), maximum_bytes=MAX_BYTES))
-        immutable(lambda: transaction.observe_sealed_phase(final_seal, lambda:
-            verify_image_copy(final_seal, lambda image:
-                qualify(project, image, archive.path, runner, manifest.path, data["channel"])), maximum_bytes=MAX_BYTES))
         advance("final-verified", final=encode_seal(final_seal), checksum=encode_seal(checksum_seal))
     final_seal = decode_seal(receipts.data["final"], final)
     checksum_seal = decode_seal(receipts.data["checksum"], checksum)

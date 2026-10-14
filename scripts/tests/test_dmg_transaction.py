@@ -317,6 +317,50 @@ class DMGTransactionTests(unittest.TestCase):
         self.assertEqual(self.count("submit"), 1)
         self.assertEqual(self.destination.read_bytes(), b"signed DMG input stapled")
 
+    def test_final_native_gates_share_one_observed_work_copy(self):
+        verified = []
+        def runner(command, project):
+            if command[0].endswith("verify-direct-notarized-dmg.sh"):
+                verified.append(Path(command[-1]))
+            return self.runner(command, project)
+        def qualify(*args):
+            self.qualify(*args)
+            if verified:
+                self.assertEqual(args[1], verified[-1])
+                self.assertNotEqual(args[1], self.root / "final" / self.destination.name)
+        dmg.run(self.root, self.project, self.destination, "QA-notary",
+                runner=runner, capture=self.capture, qualify=qualify)
+        self.assertEqual(len(verified), 1)
+        self.assertEqual(len(self.qualifications), 2)
+        self.assertEqual(self.destination.read_bytes(), b"signed DMG input stapled")
+
+    def test_transient_write_between_final_gates_cannot_be_published(self):
+        def runner(command, project):
+            result = self.runner(command, project)
+            if command[0].endswith("verify-direct-notarized-dmg.sh"):
+                image = Path(command[-1]); before = image.stat(); data = image.read_bytes()
+                image.write_bytes(b"transient corrupt image")
+                image.write_bytes(data)
+                os.utime(image, ns=(before.st_atime_ns, before.st_mtime_ns))
+            return result
+        with self.assertRaises(dmg.DMGError):
+            dmg.run(self.root, self.project, self.destination, "QA-notary",
+                    runner=runner, capture=self.capture, qualify=self.qualify)
+        self.assertEqual(len(self.qualifications), 2)
+        self.assertFalse((self.root / "05-final-verified.json").exists())
+        self.assertFalse(self.destination.exists())
+
+    def test_final_content_failure_does_not_publish_native_verified_image(self):
+        def qualify(*args):
+            self.qualify(*args)
+            if args[1].read_bytes().endswith(b" stapled"):
+                raise dmg.DMGError("controlled content mismatch")
+        with self.assertRaisesRegex(dmg.DMGError, "content mismatch"):
+            dmg.run(self.root, self.project, self.destination, "QA-notary",
+                    runner=self.runner, capture=self.capture, qualify=qualify)
+        self.assertFalse((self.root / "05-final-verified.json").exists())
+        self.assertFalse(self.destination.exists())
+
     def test_work_copy_write_restore_replace_mode_and_foreign_xattr_refuse(self):
         seal = dmg.transaction.seal_regular_file(self.prepared, maximum_bytes=dmg.MAX_BYTES)
         def rewrite(image):
