@@ -24,6 +24,11 @@ struct DirectUpdateCodeSignatureTests {
         var plist = try #require(info[kSecCodeInfoPList as String] as? [String: Any])
         plist["NSCameraUsageDescription"] = "Camera for user-approved website"
         plist["NSMicrophoneUsageDescription"] = "Microphone for user-approved website"
+        #expect(try DirectUpdateCodeSignature.managerMediaClaims(["NeAntikWebKitMediaPolicyEnabled": false]).isEmpty)
+        #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.managerMediaClaims(["NeAntikWebKitMediaPolicyEnabled": true]) }
+        #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.managerMediaClaims(["NeAntikWebKitMediaPolicyEnabled": 1]) }
+        #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.managerMediaClaims(plist.merging(["NeAntikWebKitMediaPolicyEnabled": false]) { _, rhs in rhs }) }
+        plist["NeAntikWebKitMediaPolicyEnabled"] = true
         let media = try DirectUpdateCodeSignature.managerMediaClaims(plist)
         let all = base.merging(media) { _, rhs in rhs }
         info[kSecCodeInfoPList as String] = plist; info[kSecCodeInfoEntitlementsDict as String] = all

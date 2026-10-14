@@ -75,7 +75,10 @@ class DirectUpdatePolicyTests(unittest.TestCase):
         message = MODULE.verify()
         info = plistlib.loads(MODULE.INFO_PLIST.read_bytes())
         self.assertIn("configured", message)
-        self.assertEqual(info["NeAntikUpdateManifestURL"], "https://browser.free/api/update.json")
+        self.assertEqual(info["NeAntikUpdateManifestURL"], "https://browser.free/api/update-v2.json")
+        self.assertIs(info["NeAntikWebKitMediaPolicyEnabled"], False)
+        self.assertNotIn("NSCameraUsageDescription", info)
+        self.assertNotIn("NSMicrophoneUsageDescription", info)
         self.assertEqual(info["NeAntikUpdatePublicKeyID"], "neantik-direct-20261012-v1")
         self.assertIn("automatic download disabled", message)
 

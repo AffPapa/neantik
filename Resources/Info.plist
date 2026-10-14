@@ -23,11 +23,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.8.8</string>
+	<string>0.8.9</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>119</string>
+	<string>120</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -40,10 +40,6 @@
 	<string>14.0</string>
 	<key>LSRequiresNativeExecution</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Камера используется только сайтом WebKit-профиля, которому вы разрешите доступ. Запретить доступ можно в настройках профиля.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Микрофон используется только сайтом WebKit-профиля, которому вы разрешите доступ. Запретить доступ можно в настройках профиля.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
@@ -59,11 +55,13 @@
 	<key>NeAntikUpdateChannelEnabled</key>
 	<true/>
 	<key>NeAntikUpdateManifestURL</key>
-	<string>https://browser.free/api/update.json</string>
+	<string>https://browser.free/api/update-v2.json</string>
 	<key>NeAntikUpdatePublicKeyBase64</key>
 	<string>rzTPKEc90XEogR/MO7oCCfZOWCC3TFkoyw6nuOfPz2w=</string>
 	<key>NeAntikUpdatePublicKeyID</key>
 	<string>neantik-direct-20261012-v1</string>
+	<key>NeAntikWebKitMediaPolicyEnabled</key>
+	<false/>
 	<key>NeAntikBrowserDataBackupEnabled</key>
 	<true/>
 </dict>

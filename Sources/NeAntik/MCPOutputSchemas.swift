@@ -58,6 +58,7 @@ enum MCPOutputSchemas {
                        "proxyKind": ["type": ["string", "null"], "enum": ["http", "https", "socks5", NSNull()]], "warning": text], optional: ["warning"])
     }
     private static func object(_ properties: [String: Any], optional: Set<String> = []) -> [String: Any] {
-        ["type": "object", "properties": properties, "required": properties.keys.filter { !optional.contains($0) }.sorted(), "additionalProperties": false]
+        let properties = WebKitMediaFeature.visibleFields(properties)
+        return ["type": "object", "properties": properties, "required": properties.keys.filter { !optional.contains($0) }.sorted(), "additionalProperties": false]
     }
 }

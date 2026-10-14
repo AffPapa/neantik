@@ -5,6 +5,30 @@ import WebKit
 
 @Suite(.serialized) @MainActor struct WebKitMediaPolicyTests {
     private func encoder() -> JSONEncoder { let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; return e }
+    @Test func shippingCapabilityIsExplicitAndDisabledHidesMCPInput() throws {
+        #expect(!WebKitMediaFeature.enabled(in: [:]))
+        #expect(WebKitMediaFeature.enabled(in: [:], development: true))
+        #expect(!WebKitMediaFeature.enabled(in: [WebKitMediaFeature.key: false], development: true))
+        #expect(WebKitMediaFeature.enabled(in: [WebKitMediaFeature.key: true]))
+        for value: Any in [1, "true", NSNull()] {
+            #expect(!WebKitMediaFeature.enabled(in: [WebKitMediaFeature.key: value], development: true))
+        }
+        let id = UUID()
+        #expect(WebKitMediaPolicy.ask.decision(owned: true, persistent: true, storeID: id,
+            profileID: id, secureOrigin: true, knownCaptureType: true, enabled: false) == .deny)
+        #expect(WebKitMediaFeature.visibleFields(["webKitMediaPolicy": "deny", "name": "own"], enabled: false).keys.sorted() == ["name"])
+        for enabled in [false, true] {
+            let definitions = MCPProfileManagement.definitions(allowsManagement: true, mediaPolicyEnabled: enabled)
+            let create = try #require(definitions.first(where: { $0["name"] as? String == "profile_create" }))
+            let input = try #require(create["inputSchema"] as? [String: Any])
+            let props = try #require(input["properties"] as? [String: Any])
+            let changes = try #require(props["changes"] as? [String: Any])
+            let fields = try #require(changes["properties"] as? [String: Any])
+            #expect((fields["webKitMediaPolicy"] != nil) == enabled)
+            #expect(changes["additionalProperties"] as? Bool == false)
+        }
+    }
+
     @Test func decisionsNeverGrantAndRejectInvalidAuthority() {
         let id = UUID()
         func decide(_ policy: WebKitMediaPolicy = .ask, owned: Bool = true,

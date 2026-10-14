@@ -26,6 +26,9 @@ enum WebKitProfilePolicy {
     static func validate(_ profile: BrowserProfile) throws {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
+        guard profile.webKitMediaPolicy == .ask || WebKitMediaFeature.isEnabled else {
+            throw WebKitProfileError.unsupported("Настройки камеры и микрофона WebKit ещё проходят проверку. Этот профиль требует версии с поддержкой этой настройки; запуск отменён.")
+        }
     }
 
     static func validateConfiguration(_ profile: BrowserProfile) throws {

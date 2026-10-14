@@ -24,6 +24,11 @@ class DirectProvisioningTests(unittest.TestCase):
                 "NSMicrophoneUsageDescription": "User-approved website microphone"}
         expected = {"com.apple.security.device.camera": True, "com.apple.security.device.audio-input": True}
         self.assertEqual(contract.media_claims(info), expected)
+        self.assertEqual(contract.media_claims({"NeAntikWebKitMediaPolicyEnabled": False}), {})
+        self.assertEqual(contract.media_claims({**info, "NeAntikWebKitMediaPolicyEnabled": True}), expected)
+        for bad in [{"NeAntikWebKitMediaPolicyEnabled": True}, {"NeAntikWebKitMediaPolicyEnabled": 1},
+                    {**info, "NeAntikWebKitMediaPolicyEnabled": False}]:
+            with self.assertRaises(contract.ContractError): contract.media_claims(bad)
         for broken in [{"NSCameraUsageDescription": "camera"},
                        {**info, "NSMicrophoneUsageDescription": " "},
                        {**info, "NSCameraUsageDescription": False}]:

@@ -219,6 +219,15 @@ package enum DirectUpdateCodeSignature {
     /// their immutable exact contract; only both valid strings admit media claims.
     package static func managerMediaClaims(_ plist: [String: Any]) throws -> [String: NSObject] {
         let keys = ["NSCameraUsageDescription", "NSMicrophoneUsageDescription"]
+        if let raw = plist["NeAntikWebKitMediaPolicyEnabled"] {
+            guard let flag = raw as? NSNumber, CFGetTypeID(flag) == CFBooleanGetTypeID() else {
+                throw DirectUpdateCodeSignatureError.policy
+            }
+            let present = keys.filter { plist[$0] != nil }.count
+            guard flag.boolValue ? present == 2 : present == 0 else {
+                throw DirectUpdateCodeSignatureError.policy
+            }
+        }
         guard keys.contains(where: { plist[$0] != nil }) else { return [:] }
         guard keys.allSatisfy({ (plist[$0] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }) else {
             throw DirectUpdateCodeSignatureError.policy

@@ -1,5 +1,12 @@
 # NeAntik changelog
 
+## Direct 0.8.9 (120) — development candidate — updater transition
+
+- Готовится переходный выпуск с прежними правами подписи. Новый validator умеет проверять будущие camera/audio-input claims по signed purpose strings; дополнительные и неполные права отклоняются. У уже выпущенного0.8.8 validator не меняется.
+- Камера и микрофон WebKit в этом кандидате отключены: нет новых прав устройства или purpose strings, настройки не показываются и MCP их не предлагает. Media-функция остаётся в разработке до реальной проверки capture, отказа, отзыва и прежнего разрешения сайта.
+- Signed Info кандидата указывает отдельный канал `/api/update-v2.json`; старый канал должен предложить переходную версию старым клиентам. Feeds, точный native переход и публикация пока не квалифицированы. Старые архивы и rollback сохраняются.
+- Полный Swift1529reported/178suites PASS. Python1354 первоначально обнаружил отсутствующий changelog нового кандидата; после добавления записи повторяются только затронутые documentation contracts. Developer ID/Apple/hosted и native install ещё не PASS.
+
 ## Direct 0.8.8 (119) — published public alpha — WebKit cache
 
 - Очистка HTTP-кэша закрытого WebKit-профиля стала доступна из меню профиля. Удаляются только временные файлы страниц в памяти и на диске; cookies, LocalStorage, IndexedDB, Service Worker, CacheStorage и предыдущие вкладки не входят в очистку. Точный объём WebKit не показывает.

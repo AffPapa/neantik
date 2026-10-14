@@ -27,6 +27,13 @@ class ContractError(ValueError):
 
 def media_claims(info: dict) -> dict:
     keys = ("NSCameraUsageDescription", "NSMicrophoneUsageDescription")
+    flag = info.get("NeAntikWebKitMediaPolicyEnabled")
+    if "NeAntikWebKitMediaPolicyEnabled" in info and type(flag) is not bool:
+        raise ContractError("Media capability flag must be a boolean")
+    if flag is True and not all(key in info for key in keys):
+        raise ContractError("Enabled media requires both purpose strings")
+    if flag is False and any(key in info for key in keys):
+        raise ContractError("Disabled media must not request device capabilities")
     if not any(key in info for key in keys):
         return {}
     if not all(isinstance(info.get(key), str) and info[key].strip() for key in keys):

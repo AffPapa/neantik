@@ -391,7 +391,7 @@ struct ProfileEditorView: View {
           .pickerStyle(.segmented)
           .disabled(original != nil)
           Text(engine == .webkit
-            ? "Системный WebKit в окне NeAntik с вкладками. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS. Можно открывать стартовую страницу или сохранять предыдущие вкладки; прокси и расширения пока недоступны."
+            ? "Системный WebKit в окне NeAntik с вкладками. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS. Можно открывать стартовую страницу или сохранять предыдущие вкладки; прокси и расширения пока недоступны." + (WebKitMediaFeature.isEnabled ? "" : " Камера и микрофон пока отключены.")
             : "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения.")
             .font(.callout).foregroundStyle(.secondary)
           if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
@@ -424,7 +424,7 @@ struct ProfileEditorView: View {
           validationLabel(for: .name)
         }
 
-        if engine == .webkit {
+        if engine == .webkit && WebKitMediaFeature.isEnabled {
           Section("Камера и микрофон") {
             Picker("Доступ сайтов", selection: $webKitMediaPolicy) {
               ForEach(WebKitMediaPolicy.allCases) { Text($0.title).tag($0) }
