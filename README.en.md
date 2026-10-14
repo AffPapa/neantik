@@ -7,8 +7,8 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published **0.8.5 (116), public alpha** fixes proxy status, profile copying
-and UTC release checks. Exact signing, notarization, hosted bytes, isolated
+Published **0.8.6 (117), public alpha** adds WebKit downloads, chosen destinations,
+progress/cancellation and graceful quit. Exact signing, notarization, hosted bytes, isolated
 headed launch and metadata MCP checks passed. WebKit tabs from0.8.3 remain
 available; the full1.0 product program remains open.
 
@@ -19,7 +19,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.5 (116), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.5). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.5.json).
+Latest published release: [NeAntik 0.8.6 (117), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.6). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.6.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
@@ -39,7 +39,7 @@ the exact public binary contents are defined by its release notes and assets.
 ## Experimental WebKit
 
 Choose Chromium or system WebKit when creating a profile. WebKit uses a NeAntik
-window with separate site data and tabs (CmdT/CmdW). Proxy, downloads,
+window with separate site data and tabs (CmdT/CmdW). Downloads support progress/cancel/Finder reveal. Proxy,
 extensions, full backup and stdio MCP launch remain unavailable.
 [Guide and verification limits](docs/WEBKIT_PROFILES.md).
 

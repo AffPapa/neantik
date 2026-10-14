@@ -1,8 +1,6 @@
-# Current public release: 0.8.5/build116 · Chromium156.0.8078.12 · [report](../releases/v0.8.5.json)
+# Current public release: 0.8.6/build117 · Chromium156.0.8078.12 · [report](../releases/v0.8.6.json)
 
-0.8.5 published on GitHub and browser.free. Exact signed manager, hosted ZIP/DMG, downloaded headed/MCP and signed update feed passed scoped checks. App source58788e5, packagingc6bc031; Chromium unchanged. Full1.0 remains open; [remaining program](MAJOR_1_0_PLAN.md).
-
-0.8.6/build117 is a development candidate for WebKit downloads, not published. Prior dated sections below are historical evidence pointers, not current release qualification. AffPapa excluded.
+0.8.6 published on GitHub and browser.free Sites143. Real WebKit downloads/quit exact headed checks, Developer ID/notary/Gatekeeper, hosted ZIP/DMG, downloaded headed/MCP and signed feed passed scoped checks. Sourcebb02709; runtime unchanged. Full1.0 remains open. Next: safe opt-in WebKit session restore and remaining network/hardware gates. Prior dated sections below remain historical evidence pointers; AffPapa excluded.
 
 ## Выпуск0.8.1 — 13 октября2026
 

@@ -1,6 +1,6 @@
 # Дорожная карта NeAntik
 
-Актуальный выпуск:0.8.5/build116 public-alpha. [Результаты и ограничения](../releases/v0.8.5.json). Исторические проверки ниже не определяют текущую доступность загрузки. Следующие задачи: proxy/WebKit, вкладки/downloads/WebKit, полный browser route/DNS matrix, переносимость backup и квалификация updater новой пары.
+Актуальный выпуск:0.8.6/build117 public-alpha. [Результаты и ограничения](../releases/v0.8.6.json). WebKit downloads реализованы и проверены. Следующие задачи: opt-in restore/WebKit, proxy authority, полный browser route/DNS matrix, переносимость backup и updater новой пары. Исторические проверки ниже не определяют текущую загрузку.
 
 NeAntik остаётся нативным локальным приложением только для Mac с Apple
 Silicon. Главный сценарий продукта:

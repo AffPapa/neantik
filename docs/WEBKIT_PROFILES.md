@@ -1,4 +1,4 @@
-> Published in 0.8.3/114: WebKit tabs and explicit engine selection. Exact signed A/B cookies/LocalStorage/IndexedDB and full-manager restart passed on macOS27 ARM64. Unsupported capabilities remain refused. See `releases/v0.8.3.json`; earlier development evidence is historical.
+> Published in 0.8.6/117: real downloads and graceful cancellation/quit; tabs from0.8.3 retained. Prior0.8.3 signed A/B cookies/LocalStorage/IndexedDB restart evidence is retained;0.8.6 has fresh signed download/cancel/profile-list-isolation/quit checks on macOS27 ARM64. Unsupported capabilities remain refused. See `releases/v0.8.6.json`; earlier development evidence is historical.
 
 # Профили WebKit — экспериментальный режим
 
@@ -22,7 +22,7 @@ NeAntik может открыть профиль в собственном ок�
 ## Границы первой версии
 
 - Устройство, WebKit и его web APIs предоставляет macOS. Fingerprint-политика Chromium не переносится на WebKit; отдельный seed не создаёт изменённый WebKit-отпечаток.
-- Поддерживаются HTTP, HTTPS и `about:blank`. В0.8.3 доступны вкладки: ⌘T — новая, ⌘W — закрыть текущую, ⌘⇧[ / ⌘⇧] — переключить. Данные вкладок одного профиля общие. До 32 вкладок; всплывающие окна без действия пользователя заблокированы. Загрузки, специальные URL и восстановление вкладок пока не поддержаны.
+- Поддерживаются HTTP, HTTPS и `about:blank`. В0.8.3 доступны вкладки: ⌘T — новая, ⌘W — закрыть текущую, ⌘⇧[ / ⌘⇧] — переключить. Данные вкладок одного профиля общие. До 32 вкладок; всплывающие окна без действия пользователя заблокированы. С0.8.6 доступны загрузки: место сохранения выбираете вы, прогресс и отмена — в списке профиля. Готовый файл можно показать в Finder. Существующие файлы не перезаписываются; закрытие отменяет активные загрузки. Автоматического продолжения после сбоя нет. Специальные URL и восстановление вкладок пока не поддержаны.
 - Прокси WebKit пока запрещён: профиль с настроенным прокси не запускается. Прямое подключение вместо заданного прокси не выполняется. Измерения DNS/WebRTC/маршрута Chromium не относятся к WebKit.
 - Расширения Chromium, очистка Chromium-кэша и полный BrowserData backup не применяются к WebKit. Удаление WebKit пока недоступно; профиль можно архивировать.
 - MCP может создавать, редактировать, искать и копировать настройки WebKit-профилей. Запуск из stdio явно отклоняется: собственное окно требует GUI NeAntik. GUI IPC ещё не реализован.
