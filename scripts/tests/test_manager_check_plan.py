@@ -10,6 +10,15 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_report_comparison_uses_related_controls_without_new_app_release(self):
+        result = MOD.plan(['scripts/compare-release-reports.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_compare_release_reports']])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+        self.assertIn('matching measurement conditions', result['requiredAdditionalGates'][0])
+
     def test_readiness_observer_needs_its_controls_and_real_observation_not_an_app_build(self):
         result = MOD.plan(['scripts/native-qa-readiness.py'], [])
         self.assertEqual(result['swiftMode'], 'none')

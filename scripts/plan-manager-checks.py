@@ -93,6 +93,10 @@ def plan(paths, catalog):
             python.add('scripts.tests.test_native_qa_readiness')
             gates.add('real read-only macOS resource observation; readiness is not native qualification')
             reasons.append({'path': path, 'surface': 'native-qa-readiness'}); continue
+        if path == 'scripts/compare-release-reports.py':
+            python.add('scripts.tests.test_compare_release_reports')
+            gates.add('actual public before/after records; matching measurement conditions and native behavior remain separate acceptance')
+            reasons.append({'path': path, 'surface': 'release-report-comparison'}); continue
         if path.startswith(("scripts/", ".github/")):
             python_full = True; gates.add("changed workflow integration; clean CI is distinct from local tests")
             reasons.append({"path": path, "surface": "workflow"}); continue
