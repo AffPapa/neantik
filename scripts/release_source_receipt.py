@@ -59,6 +59,8 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/notarize_direct_transaction.py", "orchestrator"),
     ("scripts/notary_transaction_inspector.py", "transaction-diagnostics"),
     ("scripts/notary_transaction_state.py", "transaction-state"),
+    ("scripts/prepared_manager_bundle.py", "manager-preparation"),
+    ("scripts/qualify-prepared-manager.sh", "manager-qualification"),
     ("scripts/release-direct.sh", "release-entrypoint"),
     ("scripts/release_candidate_location.py", "candidate-location"),
     ("scripts/release_input_snapshot.py", "input-snapshot"),

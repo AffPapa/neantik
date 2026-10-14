@@ -46,6 +46,16 @@
   не заменяет kernel pressure. Не повторять запуск при прежнем условии и не
   отключать защиту; нормальное наблюдение допускает попытку, но не даёт PASS.
 - Сначала один законченный срез, затем один source-bound кандидат.
+- Если нативный запуск временно запрещён ресурсной защитой, подготовка bundle
+  выполняется отдельно: `NEANTIK_MANAGER_PREPARATION_MODE=bundle-only` со
+  штатным `prepare-direct-manager-update.sh` и зарегистрированным candidate root.
+  Warm cache проверяет актуальность уже скомпилированного менеджера; runtime
+  не пересобирается. Подпись, исходники, параметры и inventory запечатываются
+  в приватных receipts; `releaseQualified:false`, authority не создаётся.
+  Когда ресурсы нормализуются, `zsh scripts/qualify-prepared-manager.sh`
+  проверяет те же байты/HEAD и выполняет enrollment без build/copy/sign.
+  Незавершённый enrollment не повторяется автоматически. Финальные headed,
+  doctor, нотарификация и публичные проверки обязательны по-прежнему.
 - Для manager-only обновления с прежним runtime создать зарегистрированный
   каталог командой `python3 -B scripts/release_candidate_location.py
   --project-root "$PWD" --create`. Полученный полный путь передать как

@@ -24,6 +24,17 @@ SOURCE_RUNTIME="$SOURCE_APP/Contents/Resources/NeAntik Browser.app"
 CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
 SECURITY_BASELINE_ARGS=()
+PREPARATION_MODE="${NEANTIK_MANAGER_PREPARATION_MODE:-complete}"
+case "$PREPARATION_MODE" in
+  complete) ;;
+  bundle-only)
+    if [[ -z "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" || "${NEANTIK_LOCAL_ADHOC:-0}" != "0" ]]; then
+      echo "Bundle-only preparation requires a registered Developer ID candidate." >&2
+      exit 64
+    fi
+    ;;
+  *) echo "Unknown manager preparation mode." >&2; exit 64 ;;
+esac
 
 # Keep one owner of the actual release cache, including direct script invocation.
 if ! python3 -B "$PROJECT_DIR/scripts/native_cache_lock.py" --root "$BUILD_SUPPORT_DIR" --is-held; then
@@ -264,6 +275,9 @@ mkdir -p \
 export CLANG_MODULE_CACHE_PATH="$BUILD_SUPPORT_DIR/clang"
 export SWIFTPM_MODULECACHE_OVERRIDE="$BUILD_SUPPORT_DIR/swiftpm"
 
+if [[ "$PREPARATION_MODE" == "bundle-only" ]]; then
+  python3 -B "$PROJECT_DIR/scripts/prepared_manager_bundle.py" begin --project-root "$PROJECT_DIR" --root "$CANDIDATE_ROOT"
+fi
 cd "$PROJECT_DIR"
 swift build \
   --build-system native \
@@ -391,6 +405,12 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
   exit 0
 fi
 PRIVATE_RELEASE_BASE="$PROJECT_DIR/dist/private"
+if [[ "$PREPARATION_MODE" == "bundle-only" ]]; then
+  python3 -B "$PROJECT_DIR/scripts/prepared_manager_bundle.py" finish --project-root "$PROJECT_DIR" --root "$CANDIDATE_ROOT"
+  echo "Signed bundle prepared; native qualification and publication remain pending."
+  exit 0
+fi
+python3 -B "$PROJECT_DIR/scripts/native-qa-readiness.py" --check
 if [[ -L "$PRIVATE_RELEASE_BASE" ||
       (-e "$PRIVATE_RELEASE_BASE" && ! -d "$PRIVATE_RELEASE_BASE") ]]; then
   echo "Private release state path is unsafe." >&2
