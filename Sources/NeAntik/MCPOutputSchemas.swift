@@ -54,6 +54,7 @@ enum MCPOutputSchemas {
         if name == "profile_start" { return object(["profileID": uuid, "processState": state, "revision": revision]) }
         if name == "profile_check_proxy" { return object(["profileID": uuid, "outcome": text, "chromiumRoute": ["type": "string", "const": "unverified"]]) }
         return object(["id": uuid, "revision": revision, "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "webKitMediaPolicy": ["type": ["string", "null"], "enum": WebKitMediaPolicy.allCases.map { $0.rawValue as Any } + [NSNull()]], "tags": ["type": "array", "items": text], "isPinned": boolean, "isArchived": boolean,
+                       "engineCapabilities": object(["persistentSiteData": boolean, "fingerprintConfiguration": boolean, "proxy": boolean, "mcpLaunch": boolean, "extensions": boolean, "browserDataBackup": boolean]),
                        "colorHex": text, "symbolName": text, "folderID": nullable, "organizationRevision": nullable,
                        "proxyKind": ["type": ["string", "null"], "enum": ["http", "https", "socks5", NSNull()]], "warning": text], optional: ["warning"])
     }

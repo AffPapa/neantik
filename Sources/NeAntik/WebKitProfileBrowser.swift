@@ -7,6 +7,22 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
     var title: String { self == .chromium ? "Chromium" : "WebKit · движок Safari" }
+
+    /// Static engine support, not evidence that a particular session or route
+    /// was measured. Never include profile identity, visits or credentials.
+    var managementCapabilities: [String: Bool] {
+        let configuredEngine = self == .chromium
+        return ["persistentSiteData": true,
+                "fingerprintConfiguration": configuredEngine,
+                "proxy": configuredEngine, "mcpLaunch": configuredEngine,
+                "extensions": configuredEngine, "browserDataBackup": configuredEngine]
+    }
+
+    var settingsSummary: String {
+        self == .chromium
+            ? "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения."
+            : "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для настройки окружения, прокси, расширений и запуска через AI выбери Chromium."
+    }
 }
 
 enum WebKitProfileError: LocalizedError {
@@ -26,6 +42,13 @@ enum WebKitProfilePolicy {
     static func validate(_ profile: BrowserProfile) throws {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
+        // Keep legacy metadata readable and unchanged; reject an unsupported
+        // launch rather than silently ignoring explicit Chromium context.
+        guard profile.identity.timezoneIdentifier == nil,
+              profile.identity.localeIdentifier == nil,
+              profile.identity.proxyContextEvidence == nil else {
+            throw WebKitProfileError.unsupported("В этом WebKit-профиле сохранены язык или часовой пояс Chromium. WebKit использует параметры macOS и не может применить эту настройку. Запуск отменён; для настройки окружения создай профиль Chromium.")
+        }
         guard profile.webKitMediaPolicy == .ask || WebKitMediaFeature.isEnabled else {
             throw WebKitProfileError.unsupported("Настройки камеры и микрофона WebKit ещё проходят проверку. Этот профиль требует версии с поддержкой этой настройки; запуск отменён.")
         }

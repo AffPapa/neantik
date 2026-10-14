@@ -359,6 +359,7 @@ final class MCPProfileManagement {
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
         WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
+         "engineCapabilities": profile.engine.managementCapabilities,
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()])

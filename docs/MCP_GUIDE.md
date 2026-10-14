@@ -43,7 +43,7 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 | `workspace_list_profiles` | Small allowlisted list; processState remains unverified |
 | `workspace_list_profiles_page` | Pages of 1–100 profiles, default 50; pass nextCursor unchanged; restart on workspace change |
 | `template_list` | Read up to 50 saved templates: id/name/startURL/startupMode/tags/resolved folderID and organizationRevision; no identity, notes, proxy or BrowserData |
-| `profile_get` | Current decimal-string revision, name, startURL, startupMode, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
+| `profile_get` | Current decimal-string revision, name, startURL, startupMode, engine, engineCapabilities, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
 | `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
 | `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
 | `profile_status` | Reconciled stopped/managed/checking/recovery/external state; optional revision-bound observation of this session's owned browser |
@@ -67,6 +67,8 @@ The four additional read tools are available in read mode. Other tools require m
 ## Safe workflow
 
 1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
+
+`profile_get`, creation and edit responses include `engineCapabilities`. Check these flags before offering an operation: `persistentSiteData`, `fingerprintConfiguration`, `proxy`, `mcpLaunch`, `extensions`, `browserDataBackup`. They describe supported operations, not the measured state of the current browser session. Chromium supports configured environment and these management operations; system WebKit currently supports separate persistent site data and metadata management, with launch through the NeAntik window. WebKit uses macOS identity/language/timezone and does not implement full fingerprint substitution. A false flag means the client must explain the limitation rather than retrying the unsupported command.
 2. Send `expectedRevision` exactly as a decimal **string**, not a floating-point JSON number.
 3. For folders/move, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes.
 4. Patches preserve omitted fields. `tags: []` clears tags. `folderID: null` unfiles; `proxy: null` disables.

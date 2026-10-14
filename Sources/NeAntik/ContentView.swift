@@ -3298,9 +3298,11 @@ struct ContentView: View {
             if profile.engine == .webkit {
                 guard target == .profileStart else { throw NeAntikError.invalidProfile }
                 let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
-                defer { ManagerLaunchAdmission.shared.finish(token: token) }
+                var launched = false
+                defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
                 try processes.launchWebKitProfile(profile)
                 guard store.markLaunched(profile.id) else { processes.stop(profileID: profile.id); throw NeAntikError.profileLaunchStateNotPersisted }
+                launched = true
                 store.managerLibrary.record(.launch, .succeeded)
                 return
             }

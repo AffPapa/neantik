@@ -215,4 +215,12 @@ struct ProfileEditorValidationTests {
         #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: String(repeating: "é", count: 128))?.field == .proxyPassword)
     }
 
+    @Test func socksValidationUsesPersistedLoginWithoutTrimmingPassword() {
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " \t\n", proxyPassword: "secret")?.field == .proxyPassword)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " user ", proxyPassword: " ") == nil)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " " + String(repeating: "a", count: 255) + " ", proxyPassword: "secret") == nil)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: String(repeating: "a", count: 256), proxyPassword: "secret")?.field == .proxyPassword)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " \t", proxyPassword: "") == nil)
+    }
+
 }

@@ -25,6 +25,16 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test func bareHostPortsWorkWithoutAllowingUnknownSchemesOrCredentials() {
+        for value in ["example.com:8443/path?x=1#part", "localhost:8080", "127.0.0.1:8080", "[::1]:8080/path", "[2001:db8::1]:443"] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value)?.absoluteString == "https://" + value)
+        }
+        for value in ["javascript:1234", "mailto:1234", "file:1234", "custom:1234", "example.com:0", "example.com:65536", "example.com:-1", "example.com:１２３", "example.com:443junk", "example.com:443@evil.example", "user:pass@example.com:443", "[example.com]:443", "[::1]:", "[::1]:443:1", "2001:db8::1:443", "https://example.com:65536"] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value) == nil)
+        }
+        #expect(BrowserLaunchBuilder.validatedStartURL("http://localhost:8080")?.absoluteString == "http://localhost:8080")
+        #expect(BrowserLaunchBuilder.validatedStartURL("https://singlelabel:8443")?.absoluteString == "https://singlelabel:8443")
+    }
     @Test func extensionsTargetPreservesProfileDataAndProxyIsolation() {
         let directory = URL(fileURLWithPath: "/private/tmp/neantik-owned-extension-data")
         for kind in [nil, ProxyKind.http, .https, .socks5] as [ProxyKind?] {

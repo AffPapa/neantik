@@ -390,9 +390,7 @@ struct ProfileEditorView: View {
           }
           .pickerStyle(.segmented)
           .disabled(original != nil)
-          Text(engine == .webkit
-            ? "Системный WebKit в окне NeAntik с вкладками. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS. Можно открывать стартовую страницу или сохранять предыдущие вкладки; прокси и расширения пока недоступны." + (WebKitMediaFeature.isEnabled ? "" : " Камера и микрофон пока отключены.")
-            : "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения.")
+          Text(engine.settingsSummary + (engine == .webkit && !WebKitMediaFeature.isEnabled ? " Камера и микрофон пока отключены." : ""))
             .font(.callout).foregroundStyle(.secondary)
           if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
 

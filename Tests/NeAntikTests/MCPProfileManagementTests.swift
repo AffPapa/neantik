@@ -22,6 +22,10 @@ struct MCPProfileManagementTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "WebKit MCP", "engine": "webkit", "changes": ["startURL": "about:blank"]])
         #expect(created["engine"] as? String == "webkit")
+        let capabilities = try #require(created["engineCapabilities"] as? [String: Bool])
+        #expect(capabilities == BrowserEngine.webkit.managementCapabilities)
+        #expect(capabilities["persistentSiteData"] == true)
+        #expect(capabilities["fingerprintConfiguration"] == false && capabilities["mcpLaunch"] == false && capabilities["proxy"] == false)
         var args = request(created); args["changes"] = ["name": "Renamed WebKit", "tags": ["qa"]]
         var edited = try await engine.call("profile_update", args)
         #expect(edited["engine"] as? String == "webkit")

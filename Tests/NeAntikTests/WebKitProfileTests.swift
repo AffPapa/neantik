@@ -145,6 +145,17 @@ struct WebKitProfileTests {
         #expect(WebKitProfilePolicy.permits(URL(string: "https://example.com/")!))
     }
 
+    @Test func unsupportedWebKitContextBlocksLaunchWithoutInvalidatingStoredMetadata() throws {
+        for identity in [BrowserIdentity(timezoneIdentifier: "Europe/London"), BrowserIdentity(localeIdentifier: "en-GB")] {
+            let profile = BrowserProfile(name: "Owned unsupported context", startURL: "about:blank", engine: .webkit, identity: identity)
+            try WebKitProfilePolicy.validateConfiguration(profile)
+            #expect(throws: WebKitProfileError.self) { try WebKitProfilePolicy.validate(profile) }
+            let bytes = try ProfileStore.encodeProfiles([profile], encoder: encoder())
+            #expect(try ProfileStore.decodeProfiles(bytes).first?.identity == identity)
+        }
+        try WebKitProfilePolicy.validate(BrowserProfile(name: "System settings", startURL: "about:blank", engine: .webkit))
+    }
+
     @Test func lifetimeGuardBlocksAnotherManagerAndMaintenanceWithoutWaiting() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-webkit-lock-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

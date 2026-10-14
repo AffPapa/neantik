@@ -115,9 +115,12 @@ enum ProfileEditorValidation {
 
         guard usesProxy else { return nil }
 
+        // Validate exactly the login persisted below. Password whitespace is
+        // significant and must never be normalized like a host or login.
+        let cleanUsername = proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines)
         if proxyKind == .socks5,
-           (!proxyUsername.isEmpty || !proxyPassword.isEmpty),
-           (proxyUsername.isEmpty || proxyUsername.utf8.count > 255 || proxyPassword.isEmpty || proxyPassword.utf8.count > 255) {
+           (!cleanUsername.isEmpty || !proxyPassword.isEmpty),
+           (cleanUsername.isEmpty || cleanUsername.utf8.count > 255 || proxyPassword.isEmpty || proxyPassword.utf8.count > 255) {
             return ProfileEditorValidationIssue(field: .proxyPassword,
                 message: "Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый.")
         }
@@ -143,9 +146,7 @@ enum ProfileEditorValidation {
             kind: proxyKind,
             host: cleanHost,
             port: port,
-            username: proxyUsername.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
+            username: cleanUsername
         )
         guard proxy.isValid else {
             return ProfileEditorValidationIssue(
