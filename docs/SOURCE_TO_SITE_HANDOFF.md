@@ -1,6 +1,6 @@
-> Current public release: 0.8.7/build118; Chromium156.0.8078.12; evidence `releases/v0.8.7.json`. Historical plan below is not current release acceptance.
+# Current public release: 0.8.8/build119 · Chromium156.0.8078.12 · [report](../releases/v0.8.8.json)
 
-0.8.6 published on GitHub and browser.free Sites143. Real WebKit downloads/quit exact headed checks, Developer ID/notary/Gatekeeper, hosted ZIP/DMG, downloaded headed/MCP and signed feed passed scoped checks. Sourcebb02709; runtime unchanged. Full1.0 remains open. Next: safe opt-in WebKit session restore and remaining network/hardware gates. Prior dated sections below remain historical evidence pointers; AffPapa excluded.
+0.8.8 published on GitHub/browser.free Sites146. Exact signed WebKit cache A/B and data-preservation checks, Apple ZIP/DMG, hosted bytes, downloaded headed/MCP and live signed feed passed. Manager source027d42c, catalog-only workflow3fa9e09; runtime unchanged. Cloud CI dispatch403, no cloudPASS. Full1.0 remains open; subsequent dated sections are historical pointers. AffPapa excluded.
 
 ## Выпуск0.8.1 — 13 октября2026
 

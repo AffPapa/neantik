@@ -1,11 +1,11 @@
 # NeAntik changelog
 
-## Direct 0.8.8 (119) — development candidate — WebKit cache
+## Direct 0.8.8 (119) — published public alpha — WebKit cache
 
 - Очистка HTTP-кэша закрытого WebKit-профиля стала доступна из меню профиля. Удаляются только временные файлы страниц в памяти и на диске; cookies, LocalStorage, IndexedDB, Service Worker, CacheStorage и предыдущие вкладки не входят в очистку. Точный объём WebKit не показывает.
 - Во время очистки запуск и изменение этого профиля защищены от второго менеджера. Выход и обновление ждут завершения операции. Отмена действует до обращения к WebKit; после него операция ждёт настоящего завершения.
 - Раздел редактора «Запуск и оформление» теперь прямо указывает, где настроить стартовую страницу и предыдущие вкладки. Прокси, расширения и полный backup WebKit остаются недоступны.
-- Статус development: публикация требует полного регрессионного прогона, Dev GUI, точного подписанного кандидата и Direct/hosted gates. Публичной остаётся0.8.7.
+- Full Swift1521reported/176suites и Python1352 PASS; отдельные native и exact signed UI подтвердили A v2/Bv1 с сохранением данных. Developer ID/Apple ZIP+DMG/stapling/Gatekeeper/hosted/headed/MCP/Sites146/live feed проверены. Cloud CI dispatch403; облачный PASS не заявляется. [Доказательства и ограничения](releases/v0.8.8.json).
 
 ## Direct 0.8.7 (118) — published public alpha — WebKit session restore
 

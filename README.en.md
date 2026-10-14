@@ -7,9 +7,9 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published **0.8.7 (118), public alpha** adds opt-in WebKit session restoration:
-previous addresses, order and selected tab after graceful exit. Downloads and
-isolated profile data remain available. Exact signing, notarization, hosted bytes,
+Published **0.8.8 (119), public alpha** adds closed-profile WebKit HTTP cache cleanup
+while retaining sign-ins, website data and previous tabs. Startup settings are
+easier to find. Downloads and isolated profile data remain available. Exact signing, notarization, hosted bytes,
 isolated headed launch and metadata MCP checks passed. The full1.0 product program remains open.
 
 ## Download
@@ -19,7 +19,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.7 (118), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.7). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.7.json).
+Latest published release: [NeAntik 0.8.8 (119), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.8). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.8.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
