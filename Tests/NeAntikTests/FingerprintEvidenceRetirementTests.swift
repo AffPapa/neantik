@@ -5,6 +5,41 @@ import Testing
 @testable import NeAntik
 
 struct FingerprintEvidenceRetirementTests {
+    @Test func frameworkLinksDoNotSkipVersionedHelpers() throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-retirement-framework-" + UUID().uuidString.lowercased())
+        defer { try? FileManager.default.removeItem(at: root) }
+        let dirs = [".", "Framework", "Framework/Versions", "Framework/Versions/156.0.8078.12",
+                    "Framework/Versions/156.0.8078.12/Helpers", "Framework/Versions/156.0.8078.12/Helpers/Helper.app",
+                    "Framework/Versions/156.0.8078.12/Helpers/Helper.app/Contents",
+                    "Framework/Versions/156.0.8078.12/Helpers/Helper.app/Contents/MacOS",
+                    "Framework/Versions/156.0.8078.12/Resources"]
+        let files = ["Framework/Versions/156.0.8078.12/Framework",
+                     "Framework/Versions/156.0.8078.12/Helpers/Helper.app/Contents/MacOS/Helper",
+                     "Framework/Versions/156.0.8078.12/Resources/owned.txt"]
+        let links = [("Framework/Framework", "Versions/Current/Framework"),
+                     ("Framework/Helpers", "Versions/Current/Helpers"),
+                     ("Framework/Resources", "Versions/Current/Resources"),
+                     ("Framework/Versions/Current", "156.0.8078.12")]
+        var rows = [[String: Any]]()
+        for dir in dirs {
+            let url = dir == "." ? root : root.appendingPathComponent(dir)
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            #expect(chmod(url.path, 0o700) == 0)
+            rows.append(["bundlePath": dir, "kind": "directory", "mode": 0o700])
+        }
+        let bytes = Data("own".utf8), hash = SHA256.hash(data: Data("own".utf8)).map { String(format: "%02x", $0) }.joined()
+        for file in files {
+            let url = root.appendingPathComponent(file); try bytes.write(to: url); #expect(chmod(url.path, 0o600) == 0)
+            rows.append(["bundlePath": file, "kind": "file", "mode": 0o600, "size": 3, "sha256": hash])
+        }
+        for (link, target) in links {
+            try FileManager.default.createSymbolicLink(atPath: root.appendingPathComponent(link).path, withDestinationPath: target)
+            rows.append(["bundlePath": link, "kind": "symlink", "target": target])
+        }
+        rows.sort { ($0["bundlePath"] as! String) < ($1["bundlePath"] as! String) }
+        let manifest = try JSONSerialization.data(withJSONObject: ["bundleInventory": rows, "postPreparationMutablePaths": ["Contents/CodeResources"]])
+        try FingerprintEvidenceRetirement.validateInventory(app: root, manifest: manifest)
+    }
     @Test(arguments: ["valid", "changed-file", "extra", "missing", "changed-mode", "foreign-link", "fifo", "mutable-policy"])
     func candidateInventoryRejectsEveryChangedSurface(control: String) throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-retirement-unit-" + UUID().uuidString.lowercased())

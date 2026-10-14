@@ -112,7 +112,8 @@ enum FingerprintEvidenceRetirement {
             case mode_t(S_IFDIR):
                 rows.append(["bundlePath": relative, "kind": "directory", "mode": Int(info.st_mode & 0o7777)])
             case mode_t(S_IFLNK):
-                walk.skipDescendants()
+                // DirectoryEnumerator does not follow symlinks. Calling
+                // skipDescendants here can skip the last real directory.
                 let target = try FileManager.default.destinationOfSymbolicLink(atPath: url.path)
                 guard url.resolvingSymlinksInPath().path.hasPrefix(app.resolvingSymlinksInPath().path + "/") else {
                     throw FingerprintEvidenceReleaseError.unsafeManifest
