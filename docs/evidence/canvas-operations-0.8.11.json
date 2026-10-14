@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.8.11",
+  "build": 122,
+  "checkedAt": "2026-10-14T08:15:27.158711+00:00",
+  "status": "passed-scoped-headed-canvas-operations",
+  "fullMajor1_0Qualified": false,
+  "shippingBytesChanged": false,
+  "rows": [
+    4,
+    41,
+    42
+  ],
+  "managerLaunchReceiptSHA256": "377643e6a9d80bed1efb6d87d4ddba6359d018a9fd2950687ac472a82eabd5a3",
+  "unchangedManagerArgumentsAndEnvironment": true,
+  "probeSHA256": "0f9a459857fbddf02f40c8d1ba723f48acc411fd67c448549a83a9a775c88d7f",
+  "oracleSHA256": "544e3f506733cc431f8774ba65454eda79921ec10db2ce9cd98ca7bbbfa7d907",
+  "cases": [
+    {
+      "case": "configured",
+      "mode": "neantik-configured",
+      "expectedPass": true,
+      "passed": true,
+      "headed": true,
+      "cleanupVerified": true,
+      "runtimeVersion": "156.0.8078.12",
+      "runtimeSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+      "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+      "probeSHA256": "0f9a459857fbddf02f40c8d1ba723f48acc411fd67c448549a83a9a775c88d7f",
+      "observationSHA256": "da97b40a91d5ad714fd25cbf8a54b861be486b82bec3482b8313ca042a2e5faa",
+      "verdictSHA256": "12f2da18046d28cbb713ced05e11105265a83cf3a61f6c139b2be6549f85523c",
+      "checks": 1465,
+      "negativeOracleControls": 13,
+      "issues": []
+    },
+    {
+      "case": "unconfigured",
+      "mode": "unconfigured",
+      "expectedPass": true,
+      "passed": true,
+      "headed": true,
+      "cleanupVerified": true,
+      "runtimeVersion": "156.0.8078.12",
+      "runtimeSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+      "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+      "probeSHA256": "0f9a459857fbddf02f40c8d1ba723f48acc411fd67c448549a83a9a775c88d7f",
+      "observationSHA256": "61553f32e6d0d98b33a813da294270c5517dceb7ad9d38cbe4592c01e5ff74c5",
+      "verdictSHA256": "bedfbb9b2490eefc8d3afd4d6e1c461eb14cd06662a5b5bf69b45dfa5b7d0a69",
+      "checks": 1465,
+      "negativeOracleControls": 13,
+      "issues": []
+    },
+    {
+      "case": "ordinaryChrome",
+      "mode": "unconfigured",
+      "expectedPass": true,
+      "passed": true,
+      "headed": true,
+      "cleanupVerified": true,
+      "runtimeVersion": "155.0.8059.80",
+      "runtimeSHA256": "5f423d624250e67f2ae453400d485e7547a533a2f872232c54bb551a79bf552d",
+      "runtimeFrameworkSHA256": "32fa7771f0277d5593f03e66813b5429c8d260d0f99cd86d7e036826a7c86209",
+      "probeSHA256": "0f9a459857fbddf02f40c8d1ba723f48acc411fd67c448549a83a9a775c88d7f",
+      "observationSHA256": "51ef46ff0c07be638040f125bde7346a2e6fb4c350e75d77cab6cefe0e5f1a00",
+      "verdictSHA256": "bedfbb9b2490eefc8d3afd4d6e1c461eb14cd06662a5b5bf69b45dfa5b7d0a69",
+      "checks": 1465,
+      "negativeOracleControls": 13,
+      "issues": []
+    },
+    {
+      "case": "brokenCopy",
+      "mode": "neantik-configured",
+      "expectedPass": false,
+      "passed": false,
+      "headed": true,
+      "cleanupVerified": true,
+      "runtimeVersion": "156.0.8078.12",
+      "runtimeSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+      "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+      "probeSHA256": "dfedf00b968fbd2c311040344e7005cd033ab493c8f9a6ff8a6ddc54ac849b7b",
+      "observationSHA256": "c7b5c45c3d414a719b2ccd9ac57c1dc60febd18e4324ca596e9653fc1f87c5dd",
+      "verdictSHA256": "630362e7a5fa7cf4fe250c61d08898815f7f7b8190bf4693e7709294026a0b37",
+      "checks": 1465,
+      "negativeOracleControls": 13,
+      "issues": [
+        "pixels-pixels"
+      ]
+    },
+    {
+      "case": "brokenResetBitmap",
+      "mode": "neantik-configured",
+      "expectedPass": false,
+      "passed": false,
+      "headed": true,
+      "cleanupVerified": true,
+      "runtimeVersion": "156.0.8078.12",
+      "runtimeSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+      "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+      "probeSHA256": "c528e5c6713f37c96114b0f9731fe18f191491e4b808226397fe9276e4926869",
+      "observationSHA256": "53c796c585cd9bd0a0aad4f828b2433caac5a836103b73355d3a0545de9cb161",
+      "verdictSHA256": "c33d0d6c5b799d8608881863d32737a75138a8cecf9f6a142cc9482aae75b558",
+      "checks": 1465,
+      "negativeOracleControls": 13,
+      "issues": [
+        "afterFill-pixels",
+        "blank-pixels"
+      ]
+    }
+  ],
+  "referencePolicy": {
+    "schemaVersion": 1,
+    "scope": "Canvas operation reference only; identity reference remains separate",
+    "runtimeVersion": "155.0.8059.80",
+    "mode": "unconfigured",
+    "label": "canvas-google-reference",
+    "vendorTeamID": "EQHXZ8M8AV",
+    "runtimeExecutableSHA256": "5f423d624250e67f2ae453400d485e7547a533a2f872232c54bb551a79bf552d",
+    "runtimeFrameworkSHA256": "32fa7771f0277d5593f03e66813b5429c8d260d0f99cd86d7e036826a7c86209",
+    "checks": {
+      "deepStrict": {
+        "exit": 0,
+        "diagnostic": ""
+      },
+      "googleTeam": {
+        "exit": 0,
+        "diagnostic": ""
+      },
+      "gatekeeper": {
+        "exit": 0,
+        "diagnostic": "/private/tmp/neantik-chrome-canvas-reference-20261014/expanded/GoogleChrome.pkg/Payload/Google Chrome.app: accepted\nsource=Notarized Developer ID"
+      }
+    },
+    "package": {
+      "source": "https://support.google.com/chrome/a/answer/9915669?hl=en",
+      "assetURL": "https://dl.google.com/chrome/mac/stable/accept_tos%3Dhttps%253A%252F%252Fwww.google.com%252Fintl%252Fen_ph%252Fchrome%252Fterms%252F%26_and_accept_tos%3Dhttps%253A%252F%252Fpolicies.google.com%252Fterms/googlechrome.pkg",
+      "sha256": "cfb7392681ee37213670ff9a180bc6784037e080dc02da97d5717714ceecfe22",
+      "size": 266368565,
+      "downloadedAt": "2026-10-14T08:10:25.414602+00:00"
+    }
+  },
+  "limitations": [
+    "Synthetic sRGB Canvas operations on one Mac; no general anonymity claim",
+    "Separate ordinary Chrome155.0.8059.80 operation reference; identity policy155.0.8059.40 unchanged",
+    "Installed user Chrome rejected before launch due invalid deep signature; no repair or user profile access",
+    "First probe had two indistinguishable cases; r1 retained and superseded only for this new slice",
+    "Other18 scoped platform captures reuse exact unchanged runtime and compiled launch arguments; no claim of full manager/network/hardware coverage"
+  ],
+  "sourceContracts": {
+    "fullDiscovery": {
+      "tests": 1376,
+      "skipped": 19,
+      "errors": 3,
+      "status": "failed on stale README.en and roadmap claims; retained log",
+      "logSHA256": "8204da6b64484f842fa15039464572e4c9d6afc51fca6e1979f17c241ed84fa8"
+    },
+    "affectedModulesAfterFix": {
+      "tests": 28,
+      "passed": true,
+      "modules": [
+        "test_verify_mcp_documentation",
+        "test_canvas_operations",
+        "test_platform_candidate_qualification"
+      ],
+      "logSHA256": "fb9b1f9761a6f122b4d8fae2742cfa879539dcf09c472f7651a75b8d6b4f9697"
+    },
+    "fullRerunRequired": false,
+    "scope": "Only release copy and diagnostic filename changed after full discovery; all affected modules rerun. Not a claim of an initially green full run."
+  }
+}

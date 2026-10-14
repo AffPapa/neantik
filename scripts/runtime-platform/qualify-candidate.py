@@ -292,6 +292,7 @@ CASES = [
     ("font-load", [1], "geometry-font-probe.js", "verify-geometry-font.py", "neantik-configured", "run-headed-m156.mjs"),
     ("realms", [2], "context-operations-probe.js", "verify-realm-operations.py", "neantik-configured", "run-headed-m156.mjs"),
     ("drawing", [3, 4, 6], "page-probe.js", "verify.py", "neantik-configured", "run-headed-m156.mjs"),
+    ("canvas-operations", [4], "canvas-operations-probe.js", "verify-canvas-operations.py", "neantik-configured", "run-headed-m156.mjs"),
     ("webgl-read", [5], "webgl-probe.js", "verify-webgl.py", "neantik-configured", "run-headed-m156.mjs"),
     ("webgl-behavior", [5], "webgl-capabilities-probe.js", "verify-webgl-capabilities.py", "neantik-configured", "run-headed-m156.mjs"),
     ("audio-worklet", [6], "audio-complete-probe.js", "verify-audio-complete.py", "neantik-configured", "run-headed-m156.mjs"),
@@ -313,6 +314,7 @@ CASES = [
 EXPECTED_CONTROL_NAMES = {
     "collector": ("absent", "unstable", "timeout", "invalid-rect-0", "invalid-rect-1", "invalid-rect-2"),
     "font-load": tuple("wrong-font missing-worker-load worker-width ascent capture-error".split()),
+    "canvas-operations": tuple("copy-pixel crop-offset put-dirty-offset colored-alpha premultiplied-color composite-alpha reset-state reset-clip copy-source-over reset-preserved-bitmap resize-not-clear missing-operation swallowed-error".split()),
     "realms": tuple("canvas-crop shader-draw missing-operations silence-noise worklet-audio worklet-forged-fetch server-receipt request-nonce corrupt-PNG DOM-unready DOM-zero-rect detached-parent-frame actual-nine-live-before-teardown".split()),
     "webgl-read": tuple("payload padding crop pbo error shader".split()),
     "webgl-behavior": tuple("advertised-extension-broken bad-shader-accepted bad-link-accepted framebuffer-error-swallowed integer-corruption restore-event-missing msaa-resolve-broken".split()),

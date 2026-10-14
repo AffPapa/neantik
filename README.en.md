@@ -7,11 +7,11 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-Published **0.8.10 (121), public alpha** preserves the previous signed updater
-helpers while using a separately verified V2 pair after restart. Real signed
-0.8.8→0.8.10 install and pre-ACK rollback passed with two isolated metadata-only
-profiles. WebKit camera and microphone remain disabled. Signing, notarization,
-public bytes, fresh headed launch and metadata MCP passed; the full1.0 program remains open.
+Published **0.8.11 (122), public alpha** makes saved proxy-check status expire
+instead of staying green indefinitely. Real signed 0.8.10→0.8.11 installation,
+restart and pre-ACK rollback passed with isolated test profiles. WebKit camera
+and microphone remain disabled. Signing, notarization, public downloads,
+fresh headed launch and metadata MCP passed; the full 1.0 program remains open.
 
 ## Download
 
@@ -20,7 +20,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.10 (121), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.10). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.10.json).
+Latest published release: [NeAntik 0.8.11 (122), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.11). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.11.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;

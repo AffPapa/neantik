@@ -32,7 +32,7 @@ than relaunching the browser without an input change.
 
 For the first15 public-alpha release, pass that receipt via
 `NEANTIK_PLATFORM_LAUNCH_RECEIPT` to `Release-NeAntik.command`. The wrapper runs
-all18 headed cases on the prepared signed app before notarization. Independent
+all19 headed cases on the prepared signed app before notarization. Independent
 platform-state and WebGPU positive/negative controls are recorded separately.
 The receipt also binds the current manager launch-builder source SHA256.
 
@@ -47,3 +47,10 @@ maintenance changes. Current source archives are created for each observation.
 These are NeAntik-authored helpers; no Fury AGPL application helper was copied.
 Test fixtures are not bundled in the application and do not enlarge its download.
 See AHEM-NOTICE.md for the separately licensed upstream font fixture.
+
+`--only canvas-operations` covers row4's separate missing operations: canvas and
+cropped image copying, copy compositing, dirty putImageData coordinates, colored
+alpha/premultiplication, source-over, explicit reset/resize and API errors.
+Opaque pixels, coordinates, reset state and alpha writes are exact; fractional
+color uses a documented 8-bit quantization bound. Its numerical controls do not
+replace actual headed configured/unconfigured/reference captures.

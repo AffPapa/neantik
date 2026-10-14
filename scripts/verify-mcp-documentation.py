@@ -63,7 +63,7 @@ def verify_current_product_claims(root: Path) -> None:
         if (f"Current public release: {latest['version']}/build{latest['build']}" not in header
                 or latest['runtime']['chromiumVersion'] not in header
                 or f"releases/{latest['tag']}.json" not in header):
-            raise ValueError('Current roadmap release claim differs from published evidence')
+            raise ValueError('Current roadmap release claim differs from published evidence: ' + filename)
     info = plistlib.loads((root / 'Resources/Info.plist').read_bytes())
     heading = f"## Direct {info['CFBundleShortVersionString']} ({info['CFBundleVersion']})"
     if heading not in (root / 'CHANGELOG.md').read_text():
