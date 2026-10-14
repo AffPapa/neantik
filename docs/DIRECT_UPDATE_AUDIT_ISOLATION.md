@@ -1,6 +1,6 @@
 # Изоляция данных при квалификации updater
 
-Статус: реализован source-контракт, локальные тесты. Полное обновление подписанного old → new через GUI ещё не квалифицировано. Публичный updater выключен.
+Статус: source-контракт и native переходы 0.8.8→0.8.10 и 0.8.10→0.8.11 проверены на отдельных metadata-only профилях с mock Keychain, включая ACK/relaunch и отказ до ACK с rollback. Публичный канал включён в квалифицированных alpha-выпусках. [Точный отчёт 0.8.11](../releases/v0.8.11.json). Полная программа 1.0, fresh-cookie durability и все модели Mac остаются открытыми.
 
 Для интерактивной проверки используется отдельный защищённый control mode
 `--neantik-release-update-audit --candidate-manifest MANIFEST --output OUTPUT`.
@@ -34,7 +34,7 @@ fingerprint gate остаются прежними. 29 targeted tests и пол�
 - Chromium в аутентифицированном release-audit и его продолжении получает native `--use-mock-keychain`. Обычный Release startup не получает этот флаг по имени временного каталога, argv, Info.plist или MCP. Отдельный capability создаётся до ProfileStore и удерживает приватный root/parent.
 - Перед exec выбранный BrowserData должен находиться под закреплённым manager-data. Вся цепочка каталогов открывается с nofollow, проверяется на mode0700, UID, ACL/flags и повторно сверяется через parent→child entries. Descriptors имеют CLOEXEC и удерживаются через старт процесса. Это проверка custody, не filesystem sandbox против произвольного процесса того же пользователя после последней проверки.
 - Только audit fingerprint reservations создаются в `manager-data/FingerprintAuditSessions`; существующий обычный путь сохранён. Foundation переписывает существующий `/private/tmp` в `/tmp`; custody сохраняет исходный nofollow path и сравнивает reservation aliases отдельно от проверки доступа.
-- Обычный no-audit NUI1 и bootstrap reply остаются совместимыми. Оба будущих подписанных кандидата должны содержать один и тот же обновлённый owner helper; старые immutable assets не меняются.
+- Обычный no-audit NUI1 и bootstrap reply остаются совместимыми. Новый кандидат сохраняет подписанную предыдущую primary-пару в фиксированном legacy-каталоге, а новая primary-пара отдельно закрепляется в V2. Каждый изменённый переход проверяется native; старые immutable assets не меняются.
 
 ## Проверки и ограничения
 

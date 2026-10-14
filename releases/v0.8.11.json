@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.8.11",
+  "version": "0.8.11",
+  "build": 122,
+  "channel": "public-alpha",
+  "sourceCommit": "1ad88915e9a4f1487202e0667ac36e9371cf588d",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.11",
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "rollbackRelease": "v0.8.10",
+  "distributionDirectory": "dist/distribution/v0.8.11-122-qualified",
+  "candidateManifestSHA256": "eb6e767a8d0b13adeffbdc408fe7c51707011dbebdcc3f0324b279ac6e47c7c4",
+  "candidateSourceBindingSHA256": "de5435335d8b556adc5456cf1a47c99ec84ccca554da81e3bff3ebbe83d71194",
+  "managerSHA256": "1849ad3b76b741ae92698e957cc0c7781fc56076cfb88161aa9c66ea9c50a16f",
+  "changes": [
+    "Cached preflightbadge age updates everyminute without networkrequests; expiredrecord no longer staysgreen",
+    "DeviceMemory harness waits exactnonce primedresponse/documentcomplete before browsernavigation; olddelayednegative and omittedAcceptCHcontrols retained",
+    "Dev bundle recreates accurate mediafeature flag; latestsourcearchivegate understands ZIP+DMG metadata"
+  ],
+  "limitations": [
+    "Publicalpha; all45 major1.0/hardware/macOS14/physicalVoiceOver gates remainopen",
+    "WebKit media/proxy/extensions/fullbackup/deletion/stdioGUIlaunch unavailable; media shipsdisabled",
+    "SafeBrowsing disabled; no anonymity/CAPTCHA/rulebypass guarantee",
+    "Native updater metadata-only0810\u21920811, no freshcookie or crossMacKeychain portability claim",
+    "Authenticated HTTPS upstream with OS-default-trustedcertificate positive deferred by user",
+    "BackgroundNetLog study is isolatedDEBUGQA, selectedroutes only; not completeP22/wireDNS/UDP absenceproof",
+    "Badge transition verified in Dev and source/unit; exactsignedrelease fingerprint/MCP/updaterUI checked separately"
+  ],
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.11-arm64-notarized.zip",
+      "sha256": "438c6e5db34f02bbfa0987c0ff7d7dc0a8ae869dc5468c246066395a81ba42e8",
+      "sizeBytes": 190374879,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.11/NeAntik-0.8.11-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.11-arm64-notarized.dmg",
+      "sha256": "dc4bdd83848a02a8111c9ae4a58abe6967733576dffb3454a4994c17cce1488f",
+      "sizeBytes": 214840676,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.11/NeAntik-0.8.11-arm64-notarized.dmg"
+    }
+  ],
+  "verification": {
+    "developerId": "same existing474F7C78F33EE324C24F6F5AE0443EB713E85E60/profile; no newcertificate",
+    "notarization": {
+      "ZIP": "Accepted",
+      "ZIPSubmission": "ae941bcb-be31-4c0c-9a65-4c77fcfa8f2e",
+      "DMG": "Accepted",
+      "DMGSubmission": "f04dc46f-9259-4dc6-9920-4227b54bd8fa"
+    },
+    "stapling": "PASS",
+    "Gatekeeper": "PASS localZIP/DMG and downloadedDMG",
+    "DirectDoctor": "13/13PASS",
+    "tests": {
+      "Swift": "1534reported/178suites;1464passedloglines/67skiploglines;PASS75.05s; source128ac",
+      "Python": "1367tests/19explicit skips;PASS168.282s; source128ac",
+      "Harness": "selftest+13releasecontracts;oldDelayedFAIL/fixedDelayedPASS/noAcceptCHFAIL on realexactruntime",
+      "site": "37PASS/0skip;officialbuildPASS"
+    },
+    "nativeUpdater": {
+      "exactShippingBinary": true,
+      "passed": true,
+      "transition": "0.8.10(121)\u21920.8.11(122)",
+      "UIOfferConfirmed": true,
+      "consentClicked": true,
+      "commitMarkerVerified": true,
+      "twoSyntheticProfilesRetained": true,
+      "newGUIObserved": true,
+      "keyboardCreateCancelVerified": true,
+      "ownedManagerQuitAndDrain": true,
+      "limitations": "metadata-only synthetic profiles; no freshcookie/keychain portability test"
+    },
+    "nativeRollback": {
+      "passed": true,
+      "beforeAcknowledgement": true,
+      "restoredVersion": "0.8.10",
+      "restoredBuild": 121,
+      "exactShippingBinary": true
+    },
+    "MCPExactSigned": "18management/7readonlyPASS;ownedmetadata workspace only",
+    "GUIFingerprint": "fresh authenticated headed exactcandidatePASS",
+    "hostedZIP": "anonymousSHA/sizeMATCH",
+    "hostedDMG": "anonymousSHA/sizeMATCH;integrity/signature/stapling/Gatekeeper/read-onlymountedcontentPASS",
+    "downloadedHeaded": "freshenrollment/criticalbytes/headed/drainPASS",
+    "downloadedMCP": "18/7metadata/refusalcontractsPASS",
+    "draftAssetDigests": "4GitHub serverdigestsMATCH",
+    "privacy": "5618Gitblobs/9624objects PASS;Sites108entriespatterns+privateliteralsPASS",
+    "liveSite": "anonymousrelease/download/changelog/home/notes/MCP;V2signature0811/classic0810PASS"
+  },
+  "sitePublication": {
+    "projectID": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "sourceCommit": "79d098ddd51f4f77b438cd12ff69ca18ab54f5d1",
+    "version": 148,
+    "savedVersionID": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_b69d079d35c481918836babbb03a6f7f",
+    "deploymentID": "appgdep_6acf2fee44d88191bdd95d744e60799f",
+    "status": "succeeded"
+  },
+  "migrations": {
+    "metadataSchemaChanged": false,
+    "profileIdentityChanged": false,
+    "classicFeed": "qualified0810bridge retained",
+    "v2Feed": "0811;expires2026-10-21;offlinekeyunchanged",
+    "rollback": "previous0810archives and native preACKrollback retained"
+  },
+  "major1Ready": false,
+  "managerBuildSourceCommit": "128ac1f06c39c3977e1afe97f7a5d99391dd287e",
+  "postBuildSourceDelta": "Only standalone ClientHints QA harness changed; compiledmanager/runtime inputs unchanged"
+}

@@ -1,11 +1,13 @@
 # NeAntik changelog
 
-## Direct 0.8.11 (122) — development candidate — proxy check freshness
+## Direct 0.8.11 (122) — published public alpha — proxy check freshness
 
 - Список профилей обновляет возраст сохранённой проверки прокси раз в минуту. Устаревший результат перестаёт выглядеть успешным даже при остановленных профилях. Это обновление текста/значка, без новых сетевых запросов и изменения настроек.
 - Исправлена подготовка кэшированной Dev.app, в которой отсутствовал новый служебный ключ. Проверка открытых исходников поддерживает текущие ZIP/DMG checksum records и прежний формат ZIP; конфликты и повреждения отклоняются.
 - Отдельный DEBUG QA-режим теперь измеряет фоновые попытки без отключения background/component/sync/extensions. В 80-секундной записи точного M156 все пять HTTP(S) попыток выбрали relay, одна завершилась ошибкой при отказе; настоящий Direct-контроль распознан. Это не доказательство отсутствия DNS/UDP на проводе и не новая пользовательская диагностика.
-- Chromium156.0.8078.12, profile identity/schema и существующий сертификат сохраняются. WebKit media/proxy/extensions/full backup остаются недоступны. Кандидат ещё не опубликован; подпись, точный runtime/GUI, updater hop, Apple и hosted gates предстоят. Глобальная1.0 остаётся открытой.
+- Chromium156.0.8078.12, profile identity/schema и существующий сертификат сохраняются. WebKit media/proxy/extensions/full backup остаются недоступны. Версия опубликована; подпись, точный runtime/GUI, updater hop, Apple и hosted gates пройдены. Глобальная1.0 остаётся открытой.
+
+- Exact headed/DeviceMemory/MCP18/7, doctor13, AppleZIP+DMG/stapling/Gatekeeper, native0810→0811install/ACK/relaunch+preACKrollback, 4GitHubdigests, anonymoushostedbytes/downloadedheaded/MCP/DMG, Sites148/live dualfeeds PASS. [Доказательства и ограничения](releases/v0.8.11.json).
 
 ## Direct 0.8.10 (121) — published public alpha — signed installer continuity
 
