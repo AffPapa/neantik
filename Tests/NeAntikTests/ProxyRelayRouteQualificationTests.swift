@@ -4,6 +4,37 @@ import Testing
 @testable import NeAntik
 
 struct ProxyRelayRouteQualificationTests {
+    @Test func backgroundCaptureDoesNotSuppressNormalNetworking() throws {
+        let log = URL(fileURLWithPath: "/private/tmp/owned-netlog.json")
+        let flags = ProxyRelayOwnerQualification.captureArguments(log: log, observeBackgroundNetworking: true)
+        #expect(flags == ["--use-mock-keychain", "--log-net-log=" + log.path, "--net-log-capture-mode=Default"])
+        let suppressed = ProxyRelayOwnerQualification.captureArguments(log: log, observeBackgroundNetworking: false)
+        for flag in ["--disable-background-networking", "--disable-component-update", "--disable-sync", "--disable-extensions"] {
+            #expect(!flags.contains(flag))
+            #expect(suppressed.contains(flag))
+        }
+    }
+    @Test func backgroundCaptureRefusesBiasedOrEarlyExitExperiments() throws {
+        var request = ProxyRelayOwnerQualification.Request(root: "", upstreamPort: 1, kind: .http)
+        request.observeBackgroundNetworking = true
+        #expect(throws: ProxyRelayOwnerQualification.Failure.self) {
+            try ProxyRelayOwnerQualification.validateRouteFixture(request)
+        }
+        request.managerIntegration = true
+        try ProxyRelayOwnerQualification.validateRouteFixture(request)
+        for option in [0, 1, 2, 3] {
+            var biased = request
+            switch option {
+            case 0: biased.observeRestart = true
+            case 1: biased.mutateBeforeActivation = true
+            case 2: biased.terminateAfterActivation = true
+            default: biased.cancelBeforeActivation = true
+            }
+            #expect(throws: ProxyRelayOwnerQualification.Failure.self) {
+                try ProxyRelayOwnerQualification.validateRouteFixture(biased)
+            }
+        }
+    }
     @Test func completeCannotBypassMissingProbeOrRestart() throws {
         var request = ProxyRelayOwnerQualification.Request(root: "", upstreamPort: 1, kind: .http)
         request.requireCompleteRouteProbe = true

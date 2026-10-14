@@ -16,6 +16,7 @@ enum ProxyRelayOwnerQualification {
         var expectedLaunchRevision: UInt64? = nil
         var routeProbe: BrowserRouteProbe.Plan? = nil
         var requireCompleteRouteProbe: Bool? = nil
+        var observeBackgroundNetworking: Bool? = nil
         var fixtureHost: String { kind == .https ? "localhost" : "127.0.0.1" }
     }
     struct Result: Codable {
@@ -93,6 +94,14 @@ enum ProxyRelayOwnerQualification {
     /// Fail closed even when a malformed request omits the probe or chooses
     /// an early-return restart path. A transport observation is not a route ACK.
     static func validateRouteFixture(_ request: Request) throws {
+        // Background measurement must use the actual manager launch path.
+        // Failure/early-exit controls are separate experiments, not idle evidence.
+        if request.observeBackgroundNetworking == true {
+            guard request.managerIntegration == true, request.observeRestart != true,
+                  request.mutateBeforeActivation != true, request.terminateAfterActivation != true,
+                  request.cancelBeforeActivation != true, request.routeProbe == nil
+            else { throw Failure.invalidFixtureProtocol }
+        }
         guard request.requireCompleteRouteProbe != true || (request.routeProbe != nil && request.observeRestart != true)
         else { throw Failure.invalidFixtureProtocol }
         if let plan = request.routeProbe {
@@ -117,10 +126,21 @@ enum ProxyRelayOwnerQualification {
         guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
               paths.rootDirectory.lastPathComponent.hasPrefix("neantik-relay-owner-qualification-")
         else { return [] }
-        return ["--use-mock-keychain", "--disable-background-networking", "--disable-component-update",
-                "--disable-sync", "--disable-extensions", "--log-net-log=" + paths.rootDirectory.appendingPathComponent("owned-session-netlog.json").path,
-                "--net-log-capture-mode=Default"]
+        let observesBackground = (try? paths.privateFileEntryKind(
+            paths.rootDirectory.appendingPathComponent("qa-observe-background"))) == .regular
+        return captureArguments(log: paths.rootDirectory.appendingPathComponent("owned-session-netlog.json"),
+                                observeBackgroundNetworking: observesBackground)
     }
+    /// Pure argument projection for controls. Only browserArguments above can
+    /// activate it in the uniquely identified disposable QA application.
+    static func captureArguments(log: URL, observeBackgroundNetworking: Bool) -> [String] {
+        let instrumentation = ["--use-mock-keychain", "--log-net-log=" + log.path,
+                               "--net-log-capture-mode=Default"]
+        if observeBackgroundNetworking { return instrumentation }
+        return ["--disable-background-networking", "--disable-component-update",
+                "--disable-sync", "--disable-extensions"] + instrumentation
+    }
+
     @MainActor private static func launchThroughManager(request: Request, root: URL, browser: URL,
                                                        inspection: BrowserRuntimeInspection) async throws -> Result {
         let paths = AppPaths(rootDirectory: root), store = ProfileStore(paths: AppPaths(rootDirectory: root))
@@ -136,6 +156,10 @@ enum ProxyRelayOwnerQualification {
         }
         if request.cancelBeforeActivation == true {
             try paths.writePrivateFile(Data("owned-negative-control".utf8), to: root.appendingPathComponent("qa-cancel-before-activation"))
+        }
+        if request.observeBackgroundNetworking == true {
+            try paths.writePrivateFile(Data("owned-background-observation".utf8),
+                                       to: root.appendingPathComponent("qa-observe-background"))
         }
         try paths.writePrivateFile(Data("owned-qualification-root-v1".utf8), to: root.appendingPathComponent("qa-owned-root"))
         let username = request.fixtureSlot == 2 ? "qualification-user-2" : "qualification-user"

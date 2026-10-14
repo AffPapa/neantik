@@ -32,6 +32,8 @@ Unknown/shared inputs select full regression. Planning never means PASS.
   A shared bundle ID can retarget an ordinary instance. On reselect, inspect AX
   without emitting it and require the owned fixture markers plus live PID/root
   before any action. On mismatch stop UI actions; clean up only owned processes.
+  For production-ID QA, prefer PID-bound native/CLI controls. CUA getApp(path)
+  can activate an ordinary instance before a marker check; use a unique QA ID.
 - Preserve execution receipts before parsing. Classify a failure as product,
   harness, setup or environment; diagnose two identical failures before retry.
   Fix analysis offline on retained traces when browser inputs did not change.

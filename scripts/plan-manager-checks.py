@@ -37,6 +37,7 @@ FEATURES = [
 STANDALONE_HARNESSES = {
     'scripts/runtime-network/manager-route-fixture.py': 'scripts.tests.test_shipping_manager_route_fixture',
     'scripts/runtime-network/analyze-manager-route.py': 'scripts.tests.test_shipping_manager_route_analysis',
+    'scripts/controlled-browser-route-observer.py': ('scripts.tests.test_controlled_browser_route_observer', 'scripts.tests.test_background_netlog_observer'),
 }
 
 
@@ -84,7 +85,8 @@ def plan(paths, catalog):
         if path.startswith("scripts/tests/") and re.fullmatch(r"test_[A-Za-z0-9_]+\.py", PurePosixPath(path).name):
             python.add(path[:-3].replace("/", ".")); reasons.append({"path": path, "surface": "python-test"}); continue
         if path in STANDALONE_HARNESSES:
-            python.add(STANDALONE_HARNESSES[path])
+            modules = STANDALONE_HARNESSES[path]
+            python.update((modules,) if isinstance(modules, str) else modules)
             gates.add('owned network fixture controls; offline analysis is distinct from fresh headed execution')
             reasons.append({'path': path, 'surface': 'standalone-network-harness'}); continue
         if path.startswith(("scripts/", ".github/")):

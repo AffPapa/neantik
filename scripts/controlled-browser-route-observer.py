@@ -144,3 +144,91 @@ def observe_https_success(trace, *, expected_url, expected_proxy_chain):
             'allRequestsSelectedExpectedRelay': True, 'allRequestsBoundToSuccessfulSOCKSAndTLS': True,
             'responseHeadersObserved': True, 'protocols': sorted(protocols),
             'scope': 'point-in-time HTTPS fixture; not continuous route, DNS leak or OS-default upstream trust qualification'}
+
+
+def observe_background_attempts(trace, *, expected_proxy_chain, owned_fixture_host):
+    """Redacted request inventory, including unresolved/failed and redirected legs.
+
+    A selected proxy is not a successful socket or an on-wire DNS measurement.
+    This function therefore never returns a general privacy/route PASS. Domain
+    categories describe addresses only; they do not prove a request's purpose.
+    """
+    import re
+    match = re.fullmatch(r'\[socks5://127\.0\.0\.1:([0-9]{1,5})\]', expected_proxy_chain or '')
+    if not match or not 1 <= int(match[1]) <= 65535:
+        raise RouteObservationError('expected owned relay')
+    if not isinstance(owned_fixture_host, str) or not re.fullmatch(r'[a-z0-9-]+(?:\.[a-z0-9-]+)*\.test', owned_fixture_host):
+        raise RouteObservationError('expected fixture host')
+    names, events, groups = _index(trace)
+    routes = ('expectedRelay', 'direct', 'other', 'mixed', 'unobserved')
+    categories = {key: dict(attempts=0, responseHeaders=0, failed=0,
+                           selectedRoutes={route: 0 for route in routes})
+                  for key in ('ownedFixture', 'vendorRelated', 'unclassified')}
+    unsupported = 0
+    positions = {id(event): index for index, event in enumerate(events)}
+    for request_events in groups.values():
+        starts = [i for i, e in enumerate(request_events)
+                  if names[e['type']] == 'URL_REQUEST_START_JOB' and 'url' in e.get('params', {})]
+        for position, start in enumerate(starts):
+            last = starts[position + 1] if position + 1 < len(starts) else len(request_events)
+            leg = request_events[start:last]
+            first_position = positions[id(leg[0])]
+            last_position = positions[id(request_events[last])] if last < len(request_events) else len(events)
+            raw_url = leg[0]['params']['url']
+            if not isinstance(raw_url, str) or len(raw_url) > 16384:
+                raise RouteObservationError('request URL structure')
+            try:
+                url = urlsplit(raw_url)
+                if url.username or url.password:
+                    raise RouteObservationError('credential-bearing URL')
+                hostname = url.hostname
+            except ValueError as error:
+                raise RouteObservationError('request URL structure') from error
+            if url.scheme not in ('http', 'https'):
+                unsupported += 1
+                continue
+            if not hostname:
+                raise RouteObservationError('request host missing')
+            vendor_roots = ('google.com', 'googleapis.com', 'gstatic.com', 'chromium.org', 'googleusercontent.com')
+            category = 'ownedFixture' if hostname == owned_fixture_host else (
+                'vendorRelated' if any(hostname == root or hostname.endswith('.' + root) for root in vendor_roots)
+                else 'unclassified')
+            counter = categories[category]
+            counter['attempts'] += 1
+            counter['responseHeaders'] += int(any(names[e['type']] == 'HTTP_TRANSACTION_READ_RESPONSE_HEADERS' for e in leg))
+            counter['failed'] += int(any(_net_error(e.get('params', {})) < 0 for e in leg))
+            selections = []
+            missing = False
+            for e in leg:
+                if names[e['type']] != 'HTTP_STREAM_JOB_CONTROLLER_BOUND':
+                    continue
+                dependency_record = e.get('params', {}).get('source_dependency')
+                if not isinstance(dependency_record, dict):
+                    raise RouteObservationError('invalid controller dependency')
+                dependency = dependency_record.get('id')
+                if type(dependency) is not int or dependency == 0 or not -(2**31) <= dependency <= 2**31 - 1:
+                    raise RouteObservationError('invalid controller dependency')
+                controller = groups.get(dependency)
+                if controller is None:
+                    missing = True
+                    continue
+                found = [e.get('params', {}).get('proxy_chain') for e in controller
+                         if names[e['type']] == 'HTTP_STREAM_JOB_CONTROLLER_PROXY_SERVER_RESOLVED'
+                         and first_position <= positions[id(e)] < last_position]
+                if not found:
+                    missing = True
+                for chain in found:
+                    if not isinstance(chain, str) or not chain or len(chain) > 1024:
+                        raise RouteObservationError('invalid selected route')
+                    selections.append('expectedRelay' if chain == expected_proxy_chain else (
+                        'direct' if chain == '[direct://]' else 'other'))
+            route = 'unobserved' if missing or not selections else (
+                selections[0] if len(set(selections)) == 1 else 'mixed')
+            counter['selectedRoutes'][route] += 1
+    return {'status': 'observation-only', 'destinations': categories,
+            'unsupportedRequestLegs': unsupported,
+            'dnsTransactionEvents': sum(names[e['type']].startswith('DNS_TRANSACTION') for e in events),
+            'udpEvents': sum(names[e['type']].startswith('UDP_') for e in events),
+            'successfulSocketRouteVerified': False, 'onWireDNSVerified': False,
+            'generalPrivacyQualified': False,
+            'scope': 'Default NetLog request legs; selected routes only; destination category does not prove purpose'}

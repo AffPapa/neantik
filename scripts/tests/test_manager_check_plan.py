@@ -39,6 +39,14 @@ class ManagerCheckPlanTests(unittest.TestCase):
         unknown = MOD.plan(['scripts/runtime-network/new-unknown.py'], [])
         self.assertIn('discover', unknown['commands'][0])
 
+    def test_route_observer_selects_background_and_existing_route_controls(self):
+        result = MOD.plan(['scripts/controlled-browser-route-observer.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_background_netlog_observer', 'scripts.tests.test_controlled_browser_route_observer']])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+
     def test_known_surface_and_its_dependency_suites_are_batched(self):
         plan = MOD.plan(["Sources/NeAntik/WebKitProfileBrowser.swift"], ["WebKitProfileTests", "MCPProfileManagementTests", "UnrelatedTests"])
         self.assertEqual(plan["selectedSuites"], ["MCPProfileManagementTests", "WebKitProfileTests"])

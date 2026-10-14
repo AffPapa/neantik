@@ -180,3 +180,26 @@ allowlisted environment; временный HOME сам по себе не из�
 Полный Swift-прогон включает собственные kernel-process и loopback/Unix-socket controls. В ограниченной среде заранее выбрать разрешённый QA execution context; Permission denied не исправляется ослаблением assertions. Если ограничения обнаружены в первом прогоне, сохранить его как setup failure и повторить только упавшие наборы с тем же input digest. Не объявлять первоначальный прогон зелёным.
 
 Каталог opt-in fixtures перечисляет необходимые environment inputs, включая URLs/roots; не каждый input является boolean enable-флагом. Проверять декларации реальных suite types, поскольку несколько suites могут находиться в одном файле. Каждая @Test в чисто opt-in suite должна иметь явный enabled guard; нулевой или только skipped результат остаётся отказом runner.
+
+### Фоновая сеть: отдельный режим измерения
+
+Старый DEBUG relay NetLog-стенд отключает background networking, component
+update, sync и extensions. Его пустой лог не доказывает отсутствие фоновых
+запросов при обычном запуске. `observeBackgroundNetworking` работает только
+в отдельной signed DEBUG QA.app с приватным root и обычным manager launch.
+Он добавляет только mock Keychain и Default NetLog; ранние failure/restart
+эксперименты и route probe в этом режиме отклоняются.
+
+`observe_background_attempts` в `controlled-browser-route-observer.py` выдаёт
+только счётчики и выбранные маршруты, включая missing/other/Direct. Redirect
+legs не заимствуют выбор маршрута друг у друга. Категория адреса не доказывает
+назначение запроса; выбор proxy не доказывает успешный socket, отсутствие DNS
+на проводе или общую приватность. Полный trace сохраняется приватно, публичный
+отчёт не содержит URL, headers, proxy address или сырые IP. Для изменения
+анализатора достаточно его двух наборов контролей и повторного анализа уже
+завершённого trace; новый запуск нужен при изменении browser/fixture inputs.
+
+Production-ID QA нельзя выбирать через CUA getApp по имени/пути: LaunchServices
+может активировать обычное окно с тем же ID. Использовать отдельный QA ID либо
+PID/generation/lease-bound native operations. Завершение процесса проверять
+напрямую; повторное getApp может открыть приложение снова.
