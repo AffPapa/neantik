@@ -1324,6 +1324,7 @@ struct ProfileStoreTests {
             restoreTrashedDirectory: restore
         )
         let processManager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -1340,6 +1341,7 @@ struct ProfileStoreTests {
         )
 
         let staleManager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -1421,6 +1423,7 @@ struct ProfileStoreTests {
             BrowserProfile(name: "Unknown Trash result")
         )
         let manager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -1489,6 +1492,7 @@ struct ProfileStoreTests {
             BrowserProfile(name: "Restore failure")
         )
         let manager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }

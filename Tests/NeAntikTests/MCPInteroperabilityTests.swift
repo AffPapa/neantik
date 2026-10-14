@@ -15,6 +15,79 @@ struct MCPInteroperabilityTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-modern-\(UUID())")
         return (root, MCPManagementSession(root: root, allowsManagement: false))
     }
+
+    @Test func stoppedAdmissionReasonsSurviveProtocolWithoutMetadataChanges() async throws {
+        let controls: [(BrowserDataProcessInspection, String?)] = [
+            (.unknown, "inspection_unavailable"),
+            (.found, "browser_data_in_use"),
+            (.absent, "lease_present"),
+            (.absent, "unsafe_lease"),
+            (.absent, nil)
+        ]
+        for modern in [false, true] {
+            for (inspection, expectedReason) in controls {
+                let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-admission-\(UUID())")
+                defer { try? FileManager.default.removeItem(at: root) }
+                let paths = AppPaths(rootDirectory: root)
+                let backend = MCPProfileManagementTests.Backend()
+                let engine = MCPProfileManagement(root: root, allowsManagement: true,
+                    keychain: KeychainStore(backend: backend, service: "synthetic-admission", legacyService: nil),
+                    processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+                        browserDataProcessInspector: { _ in inspection }, allowsExternalProcessSignaling: false))
+                let session = MCPManagementSession(root: root, allowsManagement: true, testingEngine: engine)
+                if !modern {
+                    _ = try await request(session, "initialize", ["protocolVersion": "2025-11-25", "capabilities": [:], "clientInfo": ["name": "owned-admission", "version": "1"]])
+                    _ = await session.handle(try JSONSerialization.data(withJSONObject: ["jsonrpc": "2.0", "method": "notifications/initialized"]))
+                }
+                let created = try await request(session, "tools/call", ["name": "profile_create", "arguments": ["name": "Owned before", "changes": ["startURL": "about:blank"]]], modern: modern)
+                let dto = try #require((created["result"] as? [String: Any])?["structuredContent"] as? [String: Any])
+                let id = try #require(UUID(uuidString: dto["id"] as! String))
+                let before = try Data(contentsOf: paths.profilesFile)
+                let organizationBefore = try? Data(contentsOf: paths.profileOrganizationFile)
+                let sentinel = paths.browserDataDirectory(for: id).appendingPathComponent("owned-data-sentinel")
+                try FileManager.default.createDirectory(at: sentinel.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+                let sentinelBytes = Data("owned-unchanged-data".utf8)
+                try sentinelBytes.write(to: sentinel)
+                if expectedReason == "lease_present" {
+                    try paths.writePrivateFile(Data("owned-reservation".utf8), to: paths.lockFile(for: id))
+                } else if expectedReason == "unsafe_lease" {
+                    try FileManager.default.createSymbolicLink(at: paths.lockFile(for: id), withDestinationURL: sentinel)
+                }
+                let reply = try await request(session, "tools/call", ["name": "profile_update", "arguments": [
+                    "profileID": id.uuidString, "expectedRevision": dto["revision"]!, "changes": ["name": "Owned after"]
+                ]], modern: modern)
+                let result = try #require(reply["result"] as? [String: Any])
+                if let expectedReason {
+                    #expect(result["isError"] as? Bool == true)
+                    let meta = try #require(result["_meta"] as? [String: Any])
+                    #expect(meta["app.neantik/errorCode"] as? String == "profile_not_stopped")
+                    #expect(meta["app.neantik/blockReason"] as? String == expectedReason)
+                    #expect(meta["app.neantik/automaticRetry"] as? Bool == false)
+                    let message = try #require(meta["app.neantik/nextAction"] as? String)
+                    if inspection == .unknown {
+                        #expect(message.contains("Could not verify"))
+                        #expect(!message.contains("Close its browser"))
+                        #expect(!message.contains("Profile browser is open"))
+                    }
+                    #expect(!message.contains(root.path))
+                    #expect(try Data(contentsOf: paths.profilesFile) == before)
+                    #expect((try? Data(contentsOf: paths.profileOrganizationFile)) == organizationBefore)
+                    #expect(engine.store.profile(withID: id)?.name == "Owned before")
+                    #expect(String(engine.store.profile(withID: id)!.revision) == dto["revision"] as? String)
+
+                } else {
+                    #expect(result["isError"] as? Bool != true)
+                    let changed = try #require(result["structuredContent"] as? [String: Any])
+                    #expect(changed["name"] as? String == "Owned after")
+                    #expect(changed["revision"] as? String != dto["revision"] as? String)
+                    #expect(try Data(contentsOf: paths.profilesFile) != before)
+                }
+                #expect(try Data(contentsOf: sentinel) == sentinelBytes)
+                #expect(backend.reads == 0)
+                #expect(backend.values.isEmpty)
+            }
+        }
+    }
     @Test func modernDiscoveryIsStatelessAndLegacyStillRequiresHandshake() async throws {
         let (root, session) = fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let discover = try await request(session, "server/discover", modern: true)["result"] as! [String: Any]

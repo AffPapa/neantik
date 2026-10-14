@@ -29,7 +29,10 @@ final class ManagerLaunchAdmission: ObservableObject {
     deinit { source?.cancel() }
     func requireSafePressure() throws {
         try ApplicationInstallLifecycle.requireNewWork()
-        guard !pressured, thermalState() != .serious, thermalState() != .critical else {
+        // Use one observation: critical followed by serious must not pass two
+        // separate inequality checks while the system temperature changes.
+        let thermal = thermalState()
+        guard !pressured, thermal != .serious, thermal != .critical else {
             throw ManagerLaunchAdmissionError.pressure
         }
     }

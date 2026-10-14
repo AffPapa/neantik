@@ -4,6 +4,20 @@ import Testing
 
 @MainActor
 struct ManagerLaunchAdmissionTests {
+    @Test func thermalAdmissionUsesOneSnapshotAndRejectsCriticalToSeriousTransition() throws {
+        var reads = 0
+        let admission = ManagerLaunchAdmission(observePressure: false, thermalState: {
+            reads += 1
+            return reads == 1 ? .critical : .serious
+        })
+        #expect(throws: ManagerLaunchAdmissionError.self) { try admission.begin(profileID: UUID()) }
+        #expect(reads == 1)
+        for state: ProcessInfo.ThermalState in [.nominal, .fair] {
+            let safe = ManagerLaunchAdmission(observePressure: false, thermalState: { state })
+            let token = try safe.begin(profileID: UUID())
+            safe.finish(token: token)
+        }
+    }
     @Test func oneSlotCancellationAndStaleCompletion() throws {
         let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
         let id = UUID(), now = Date()

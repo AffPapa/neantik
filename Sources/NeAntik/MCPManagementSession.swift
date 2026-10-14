@@ -18,6 +18,15 @@ final class MCPManagementSession {
 
     init(root: URL, allowsManagement: Bool) { self.root = root; self.allowsManagement = allowsManagement }
 
+    #if DEBUG
+    /// Exercises the serialized protocol with owned metadata and injected
+    /// process evidence, without opening the system Keychain or a browser.
+    convenience init(root: URL, allowsManagement: Bool, testingEngine: MCPProfileManagement) {
+        self.init(root: root, allowsManagement: allowsManagement)
+        engine = testingEngine
+    }
+    #endif
+
     func receive(_ line: Data) {
         guard !closed else { return }
         if let request = try? JSONSerialization.jsonObject(with: line) as? [String: Any], request["jsonrpc"] as? String == "2.0", request["id"] == nil {
@@ -195,6 +204,7 @@ final class MCPManagementSession {
         } catch {
             let message: String
             let code: String
+            var blockReason: String? = nil
             switch error {
             case let error as ApplicationInstallLifecycleError: code = "update_pending"; message = error.localizedDescription
             case is ProfileMetadataBusyError: code = "storage_busy"; message = "Profile metadata is busy in another operation. Wait for it to finish, re-read current state, then retry intentionally."
@@ -202,7 +212,31 @@ final class MCPManagementSession {
             case is CancellationError: code = "cancelled"; message = "Operation cancelled. Re-read current state before retry; a completed disk commit may remain."
             case MCPProfileManagement.Failure.invalid, is ProxyImportError: code = "invalid_fields"; message = "Invalid fields. Check the tool schema, URL, tags and proxy protocol/port."
             case MCPProfileManagement.Failure.conflict, is BrowserProfileRevisionConflictError, is ProfileMetadataUndoConflict: code = "revision_conflict"; message = "Revision conflict. Re-read profile and folder_list, then retry intentionally."
-            case is BrowserProfileDeletionBlockedError, MCPProfileManagement.Failure.running: code = "profile_not_stopped"; message = "Profile is running or ownership is uncertain. Close its browser, then retry."
+            case let error as BrowserProfileDeletionBlockedError:
+                // Preserve the existing error code for clients. The reason is
+                // allowlisted: never expose inspection paths, PIDs or raw errors.
+                code = "profile_not_stopped"
+                switch error.reason {
+                case .managedProcess:
+                    blockReason = "managed_process"
+                    message = "Profile browser is open. Close it normally, read profile_status and the current revision, then retry intentionally."
+                case .browserDataInUse:
+                    blockReason = "browser_data_in_use"
+                    message = "Profile browser data is in use. Close that browser normally, read profile_status and the current revision, then retry intentionally."
+                case .leasePresent:
+                    blockReason = "lease_present"
+                    message = "Profile has a launch reservation. Read profile_status; wait for preparation to finish or close its browser normally. Do not remove the reservation manually."
+                case .unsafeLease:
+                    blockReason = "unsafe_lease"
+                    message = "Saved launch state could not be verified. Change not applied. Open NeAntik to inspect recovery; do not delete launch-state files manually."
+                case .inspectionUnavailable:
+                    blockReason = "inspection_unavailable"
+                    message = "Could not verify that the profile is free. Change not applied. Read profile_status and profile_get; retry intentionally with the current revision only after ownership uncertainty is resolved."
+                }
+            case MCPProfileManagement.Failure.running:
+                code = "profile_not_stopped"
+                blockReason = "stopped_state_required"
+                message = "Profile is not confirmed stopped. Read profile_status; finish preparation or close a confirmed running browser normally before retrying."
             case MCPProfileManagement.Failure.stopRefused: code = "stop_refused"; message = "Browser is not ready for graceful close or macOS refused quit. Retry after startup or use the browser Quit menu. No forced termination."
             case MCPProfileManagement.Failure.manualClose: code = "manual_close_required"; message = "Browser belongs to another session or ownership is unverified. Close it manually; no signal sent."
             case MCPProfileManagement.Failure.proxyFailed: code = "proxy_preparation_failed"; message = "Proxy preparation did not establish required context. Check protocol/port and run profile_check_proxy. No direct fallback."
@@ -210,12 +244,14 @@ final class MCPManagementSession {
             case MCPProfileManagement.Failure.responseLimit: code = "response_limit"; message = "Response exceeds limit. Use a smaller page."
             default: code = "operation_unavailable"; message = "Operation unavailable or storage commit failed. Existing data retained; open NeAntik and inspect diagnostics before retry."
             }
-            return toolFailure(id: id, code: code, message: message)
+            return toolFailure(id: id, code: code, message: message, blockReason: blockReason)
         }
     }
-    private func toolFailure(id: Any, code: String, message: String) -> Data? {
-        MCPStdioServer.response(id: id, result: ["isError": true, "content": [["type": "text", "text": message]],
-            "_meta": ["app.neantik/errorCode": code, "app.neantik/nextAction": message, "app.neantik/automaticRetry": false]])
+    private func toolFailure(id: Any, code: String, message: String, blockReason: String? = nil) -> Data? {
+        var metadata: [String: Any] = ["app.neantik/errorCode": code, "app.neantik/nextAction": message, "app.neantik/automaticRetry": false]
+        if let blockReason { metadata["app.neantik/blockReason"] = blockReason }
+        return MCPStdioServer.response(id: id, result: ["isError": true, "content": [["type": "text", "text": message]],
+            "_meta": metadata])
     }
     private static func method(_ line: Data) -> String? { (try? JSONSerialization.jsonObject(with: line) as? [String: Any])?["method"] as? String }
     private func send(_ data: Data?) { if let data { MCPStdioServer.write(data) } }
