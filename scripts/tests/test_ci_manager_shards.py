@@ -13,6 +13,16 @@ SPEC.loader.exec_module(MOD)
 
 
 class CIManagerShardTests(unittest.TestCase):
+    def test_pure_native_fixtures_are_excluded_but_mixed_security_suites_remain(self):
+        suites = MOD.catalog()
+        for name in ['WebKitCacheLiveTests', 'WebKitCacheOwnedCleanupTests',
+                     'WebKitSessionLifecycleTests', 'ProxyTesterLiveFixtureTests']:
+            self.assertNotIn(name, suites)
+        for name in ['WebKitCacheMaintenanceTests', 'ProxyRelayLoopbackServerTests',
+                     'ProxyRelayTLSQualificationTests', 'ProxyRelaySocketOwnerInspectorTests',
+                     'PlatformLaunchReceiptTests']:
+            self.assertIn(name, suites)
+
     def test_failure_diagnostics_are_bounded_redacted_and_actionable(self):
         text = 'ordinary secret text\nfile.swift:4: error: missing API\nerror: token=ghp_ABC123 password="private value" http://u:p@host/ 203.0.113.8 /Users/example/file\n'
         lines = MOD.failure_diagnostics(text + ''.join(f'error: extra {i}\n' for i in range(40)))

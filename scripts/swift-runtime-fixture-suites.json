@@ -27,5 +27,21 @@
   ],
   "ProxyRelaySessionAuthorityRuntimeTests": [
     "NEANTIK_RELAY_SESSION_AUTHORITY_FIXTURE"
+  ],
+  "WebKitCacheLiveTests": [
+    "NEANTIK_WEBKIT_CACHE_LIVE",
+    "NEANTIK_WEBKIT_CACHE_FIXTURE_URL",
+    "NEANTIK_WEBKIT_CACHE_OWNED_RUN_ROOT"
+  ],
+  "WebKitCacheOwnedCleanupTests": [
+    "NEANTIK_WEBKIT_CACHE_CLEANUP",
+    "NEANTIK_WEBKIT_CACHE_OWNED_RUN_ROOT"
+  ],
+  "WebKitSessionLifecycleTests": [
+    "NEANTIK_WEBKIT_SESSION_LIVE",
+    "NEANTIK_WEBKIT_SESSION_FIXTURE_URL"
+  ],
+  "ProxyTesterLiveFixtureTests": [
+    "NEANTIK_APPROVED_PROXY_FIXTURE"
   ]
 }
