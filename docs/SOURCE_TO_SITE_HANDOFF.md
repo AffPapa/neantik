@@ -1,4 +1,4 @@
-# Current public release: 0.8.8/build119 · Chromium156.0.8078.12 · [report](../releases/v0.8.8.json)
+# Current public release: 0.8.10/build121 · Chromium156.0.8078.12 · [report](../releases/v0.8.10.json)
 
 0.8.8 published on GitHub/browser.free Sites146. Exact signed WebKit cache A/B and data-preservation checks, Apple ZIP/DMG, hosted bytes, downloaded headed/MCP and live signed feed passed. Manager source027d42c, catalog-only workflow3fa9e09; runtime unchanged. Cloud CI dispatch403, no cloudPASS. Full1.0 remains open; subsequent dated sections are historical pointers. AffPapa excluded.
 

@@ -1,6 +1,6 @@
 # NeAntik: план до версии 1.0
 
-Текущий публичный выпуск — **0.8.8 (119)**, Chromium **156.0.8078.12**. Версия 1.0 ещё не готова. Исследование Fury сохранено; код его AGPL-компонентов в продукт не копируется.
+Текущий публичный выпуск — **0.8.10 (121)**, Chromium **156.0.8078.12**. Версия 1.0 ещё не готова. Исследование Fury сохранено; код его AGPL-компонентов в продукт не копируется.
 
 ## Очередь работ
 
@@ -16,7 +16,7 @@
 
 Добавлены настройка ask/deny для остановленного профиля, перенос через копию/шаблон/экспорт/MCP и формат3 для запрета. Настройка с запретом не читается старыми версиями вместо её игнорирования. Локальные проверки модели, прав владения, настоящих WKFrameInfo и формы Dev прошли. Камера и микрофон не использовались; getUserMedia, прежнее разрешение сайта, системный отказ/отзыв и точная подписанная поставка ещё не проверены. Это development-срез, в0.8.8 его нет.
 
-Добавлены purpose strings и точные camera/audio-input claims в подготовку новой подписи и validator нового updater. Выпущенный0.8.8 сохраняет прежний validator и откажет кандидату с дополнительными правами. Требуется проверенный переход; исправление нового validator само по себе не доказывает обновление старой версии. До этого не менять публичный feed и не обещать автоматический переход.
+Добавлены purpose strings и точные camera/audio-input claims в подготовку новой подписи и validator нового updater. Выпущенный0.8.8 сохраняет прежний validator и откажет кандидату с дополнительными правами. Требуется проверенный переход; исправление нового validator само по себе не доказывает обновление старой версии. Первый переход0.8.8→0.8.10 теперь проверен настоящими install/ACK/relaunch и rollback; опубликованы legacy и v2 feeds. Media остаётся отключена. Включение и следующий переход требуют реального capture, отказа/отзыва и отдельного exact candidate gate.
 
 ## Проверки Chromium 0.8.3
 
@@ -65,7 +65,7 @@
 |34|P1|CRX provenance|реализовано и проверено локально/на runtime|Full CRX3crypto checks and ownnative lifecycle; canceldialog unobserved|
 |35|P1|Импорт|реализовано; ограниченная квалификация|Owned bookmarks import; noencryptedsecret import promise|
 |36|P1|Graceful data close|проверено в ограниченном scope|Owned signed runtime/backup/updater durability; broader crash/timeout matrix open|
-|37|P1|Проверенный updater|опубликовано с ограничениями|Real signed.46→.47 commit/rollback/relaunch; live.83signedfeed; newestpair stillopen|
+|37|P1|Проверенный updater|опубликовано с ограничениями|Exact signed088→0810 install/ACK/relaunch + preACKrollback; metadata2profiles unchanged; feeds live. Futuremedia/multihop/data/OS gates open|
 |38|P2|Bounded MCP observation|частично опубликовано|18management/7read tools; boundedbrowser observation/GUIIPC and realAIclient gates open|
 |39|P2|Self-hosted team|исследование завершено с обоснованным решением|No teaminfra productdecision; noimplementationclaim|
 |40|P0|One vector patch+test|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|

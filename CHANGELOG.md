@@ -1,10 +1,11 @@
 # NeAntik changelog
 
-## Direct 0.8.10 (121) — development candidate — signed installer continuity
+## Direct 0.8.10 (121) — published public alpha — signed installer continuity
 
-- Готовится совместимый переход со старого установщика: кандидат сохраняет прежние подписанные модули без изменения байтов, а следующий запуск использует новые модули из отдельного фиксированного каталога. Подпись, сертификат, SHA-256 и CodeDirectory каждого модуля остаются обязательными; произвольные пути и некорректная новая политика отклоняются.
-- Камера и микрофон WebKit остаются отключены. Новый канал обновлений и публикация требуют проверки настоящего перехода, ACK, перезапуска и rollback на отдельных тестовых профилях.
-- Нативные проверки и выпуск этого кандидата ещё не завершены. Публичный выпуск пока 0.8.8 (119).
+- Сохранены предыдущие подписанные модули; новая primary-пара размещена в фиксированном V2-каталоге. Подпись, сертификат, SHA-256 и CodeDirectory проверяются; malformed V2 не откатывается к legacy. Packaging защищён от временной подмены файлов во время проверки и пропущенного continuity input.
+- Настоящие 0.8.8→0.8.10 install/ACK/relaunch и pre-ACK rollback PASS; два синтетических metadata-only профиля сохранились без изменения байтов. Клавиатура/editor/WebKit choice и отмена черновика проверены. Это не новый свежий cookie durability gate.
+- Developer ID/Apple ZIP+DMG/stapling/Gatekeeper/doctor13/draft4digests/anonymoushostedbytes/freshdownloadedheaded/MCP/Sites147/live dualfeeds PASS. Первая downloaded попытка отказала по ресурсам; после снижения нагрузки свежий отчёт проверен, защиты сохранены.
+- Chromium156.0.8078.12 и сертификат прежние. WebKit media остаётся disabled; глобальная1.0/аппаратная квалификация открыты. [Доказательства и ограничения](releases/v0.8.10.json).
 
 ## Direct 0.8.9 (120) — development candidate — updater transition
 
