@@ -27,6 +27,14 @@ Unknown/shared inputs select full regression. Planning never means PASS.
   declared paths/suite names and required execution capabilities first. A
   permission denial is setup, not a product defect or proof of missing account
   rights. Reuse the working credential route; diagnose before another login.
+- For native QA, run `python3 -B scripts/native-qa-readiness.py --check` in
+  the authorized macOS context before enrollment/launch. Unknown is not normal;
+  kernel pressure, not free-memory percentage, determines readiness. Exit75/78
+  means defer the launch, not repeat it or override manager admission. A normal
+  snapshot only permits an attempt; it is never a native/release PASS.
+- A frozen candidate stays frozen while its delivery gate is open. Independent
+  work during an external wait must not replace its bytes or restart finished
+  stages. Give the pending gate priority when its concrete blocker changes.
 - Plan native QA setup, actions, evidence and cleanup before enrollment/launch.
   Reuse an authorized live authority for its exact app/private manifest until
   consumed or retired. A fixture retry alone does not require a new authority.

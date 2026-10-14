@@ -10,6 +10,15 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_readiness_observer_needs_its_controls_and_real_observation_not_an_app_build(self):
+        result = MOD.plan(['scripts/native-qa-readiness.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_native_qa_readiness']])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+        self.assertIn('real read-only macOS', result['requiredAdditionalGates'][0])
+
     def test_document_only_does_not_rebuild_but_is_not_a_pass(self):
         plan = MOD.plan(["docs/DEVELOPMENT_WORKFLOW.md"], ["WebKitProfileTests"])
         self.assertEqual(plan["swiftMode"], "none")

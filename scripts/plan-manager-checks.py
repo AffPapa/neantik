@@ -89,6 +89,10 @@ def plan(paths, catalog):
             python.update((modules,) if isinstance(modules, str) else modules)
             gates.add('owned network fixture controls; offline analysis is distinct from fresh headed execution')
             reasons.append({'path': path, 'surface': 'standalone-network-harness'}); continue
+        if path == 'scripts/native-qa-readiness.py':
+            python.add('scripts.tests.test_native_qa_readiness')
+            gates.add('real read-only macOS resource observation; readiness is not native qualification')
+            reasons.append({'path': path, 'surface': 'native-qa-readiness'}); continue
         if path.startswith(("scripts/", ".github/")):
             python_full = True; gates.add("changed workflow integration; clean CI is distinct from local tests")
             reasons.append({"path": path, "surface": "workflow"}); continue
