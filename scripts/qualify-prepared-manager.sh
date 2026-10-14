@@ -1,5 +1,6 @@
 #!/bin/zsh
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CANDIDATE_ROOT="${NEANTIK_DIRECT_CANDIDATE_ROOT:?Set the preserved registered candidate root}"
 python3 -B "$PROJECT_DIR/scripts/prepared_manager_bundle.py" verify --project-root "$PROJECT_DIR" --root "$CANDIDATE_ROOT"

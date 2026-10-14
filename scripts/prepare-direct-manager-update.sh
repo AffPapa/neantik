@@ -1,6 +1,7 @@
 #!/bin/zsh
 
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SOURCE_PARENT="$(dirname "$PROJECT_DIR")"

@@ -87,9 +87,11 @@ class PreparedManagerBundleTests(unittest.TestCase):
     def test_mode_order_keeps_build_and_native_qualification_separate(self):
         scripts=Path(__file__).resolve().parents[1]
         text=(scripts/'prepare-direct-manager-update.sh').read_text()
+        self.assertIn('export PYTHONDONTWRITEBYTECODE=1',text)
         self.assertLess(text.index('prepared_manager_bundle.py" finish'),text.index('native-qa-readiness.py'))
         self.assertLess(text.index('native-qa-readiness.py'),text.index('enroll-direct-fingerprint-authority.sh'))
         qualify=(scripts/'qualify-prepared-manager.sh').read_text()
+        self.assertIn('export PYTHONDONTWRITEBYTECODE=1',qualify)
         for banned in ['swift build','ditto','codesign --sign','strip -S','package-update-helpers.py']:
             self.assertNotIn(banned,qualify)
         self.assertLess(qualify.index('native-qa-readiness.py'),qualify.index('reserve-enrollment'))
