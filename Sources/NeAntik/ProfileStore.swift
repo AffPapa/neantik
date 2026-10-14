@@ -22,6 +22,7 @@ final class ProfileStore: ObservableObject {
     @Published private(set) var recoveryNotice: ProfileRecoveryNotice?
     @Published private(set) var metadataUndo: ProfileMetadataUndo?
     @Published var lastError: String?
+    @Published var postCommitWarning: String?
 
     /// Monotonic cache key for derived profile-list indexes.
     ///
@@ -438,12 +439,16 @@ final class ProfileStore: ObservableObject {
         afterPersist: (BrowserProfile) throws -> Void
     ) throws -> BrowserProfile {
         try requireSynchronousMutationAdmission()
+        postCommitWarning = nil
         return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
-            return try upsertAfterMetadataReload(
+            let before = profiles.first(where: { $0.id == profile.id })
+            let saved = try upsertAfterMetadataReload(
                 profile,
                 afterPersist: afterPersist
             )
+            cleanupSessionAfterCommittedChange(before: before, after: saved)
+            return saved
         }
     }
 
@@ -458,6 +463,7 @@ final class ProfileStore: ObservableObject {
         _ mutation: (inout BrowserProfile) throws -> Void
     ) throws -> BrowserProfile {
         try requireSynchronousMutationAdmission()
+        postCommitWarning = nil
         return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             guard var current = profiles.first(where: { $0.id == profileID })
@@ -474,6 +480,7 @@ final class ProfileStore: ObservableObject {
                 throw NeAntikError.invalidProfile
             }
             let saved = try upsertAfterMetadataReload(current, afterPersist: { _ in })
+            cleanupSessionAfterCommittedChange(before: before, after: saved)
             if registerMetadataUndo, ProfileMetadataUndo.onlyAllowedFieldsChanged(before: before, after: saved) {
                 metadataUndo = ProfileMetadataUndo(before: before, after: saved,
                     folderID: organization.folderID(forProfileID: saved.id),
@@ -498,6 +505,7 @@ final class ProfileStore: ObservableObject {
         afterPersist: (BrowserProfile) throws -> Void = { _ in }
     ) throws -> BrowserProfile {
         try requireSynchronousMutationAdmission()
+        postCommitWarning = nil
         return try paths.withProfilesMetadataGuard {
             try reloadLatestProfilesForMutation()
             return try upsertWithFolderAfterMetadataReload(
@@ -590,7 +598,19 @@ final class ProfileStore: ObservableObject {
                 folderID: previousOrganization.folderID(forProfileID: saved.id),
                 organizationRevision: organization.mutationRevision)
         }
+        cleanupSessionAfterCommittedChange(before: previousProfiles.first(where: { $0.id == saved.id }), after: saved)
         return saved
+    }
+
+    /// Metadata and credential rollback has already settled. A failed cleanup
+    /// is a committed success with a warning, not an imaginary failed edit.
+    private func cleanupSessionAfterCommittedChange(before: BrowserProfile?, after: BrowserProfile) {
+        guard let before, before.id == after.id, before.engine == .webkit,
+              before.startupMode == .restoreSession, after.startupMode == .startPage else { return }
+        do { try WebKitSessionStore(paths: paths).discard(for: after.id) }
+        catch {
+            postCommitWarning = "Режим запуска сохранён. Прежний список вкладок не удалось удалить; он остаётся на диске, но восстановление отключено. При повторном включении NeAntik сначала потребует удалить этот список."
+        }
     }
 
     @discardableResult
@@ -963,6 +983,12 @@ final class ProfileStore: ObservableObject {
                 )
             }
             value.revision = 1
+        }
+        if let current, current.engine == .webkit, current.startupMode == .startPage,
+           value.startupMode == .restoreSession {
+            // An old OFF snapshot is not eligible. Refuse before commit if it
+            // cannot be cleared, so a failed opt-out never resurrects it.
+            try WebKitSessionStore(paths: paths).discard(for: value.id)
         }
         value.updatedAt = Date()
         let usedSeeds = Set(
@@ -1701,6 +1727,7 @@ final class ProfileStore: ObservableObject {
                   current.proxy == expected.proxy,
                   current.identity == persistedExpectedIdentity,
                   current.startURL == expected.startURL,
+                  current.startupMode == expected.startupMode,
                   current.isArchived == expected.isArchived else {
                 throw BrowserProfileRevisionConflictError(profileID: expected.id)
             }

@@ -48,6 +48,7 @@ private struct WorkspaceAlertPresentation: Identifiable {
         case local
         case process
         case storage
+        case storageWarning
     }
 
     let source: Source
@@ -539,6 +540,9 @@ struct ContentView: View {
                 title: title,
                 message: storeError
             )
+        }
+        if let warning = store.postCommitWarning {
+            return WorkspaceAlertPresentation(source: .storageWarning, title: "Настройка сохранена", message: warning)
         }
         return nil
     }
@@ -1415,6 +1419,8 @@ struct ContentView: View {
             processes.lastError = nil
         case .storage:
             store.lastError = nil
+        case .storageWarning:
+            store.postCommitWarning = nil
         }
     }
 

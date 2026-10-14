@@ -133,13 +133,13 @@ struct WebKitProfileTests {
         #expect(try store.upsert(changed).engine == .webkit)
     }
 
-    @Test func unsupportedProxyAndSessionRestoreFailBeforeNavigation() throws {
+    @Test func unsupportedProxyFailsAndRestoreIsAnAllowedStartupPreference() throws {
         var profile = BrowserProfile(name: "Boundary", startURL: "about:blank", engine: .webkit)
         try WebKitProfilePolicy.validate(profile)
         profile.proxy = ProxyConfiguration(kind: .socks5, host: "127.0.0.1", port: 1, username: "synthetic")
         #expect(throws: (any Error).self) { try WebKitProfilePolicy.validate(profile) }
         profile.proxy = nil; profile.startupMode = .restoreSession
-        #expect(throws: (any Error).self) { try WebKitProfilePolicy.validate(profile) }
+        try WebKitProfilePolicy.validate(profile)
         #expect(!WebKitProfilePolicy.permits(URL(string: "file:///fixture")!))
         #expect(!WebKitProfilePolicy.permits(URL(string: "javascript:alert(1)")!))
         #expect(WebKitProfilePolicy.permits(URL(string: "https://example.com/")!))

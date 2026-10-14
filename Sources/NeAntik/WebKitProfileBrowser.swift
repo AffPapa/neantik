@@ -36,9 +36,6 @@ enum WebKitProfilePolicy {
         guard profile.proxy == nil else {
             throw WebKitProfileError.unsupported("Прокси для WebKit пока не проверены. Запуск отменён: прямое подключение вместо прокси не выполняется. Для работы с прокси создай профиль Chromium.")
         }
-        guard profile.startupMode == .startPage else {
-            throw WebKitProfileError.unsupported("WebKit пока открывает стартовую страницу. Восстановление вкладок доступно для Chromium.")
-        }
         guard let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL), permits(url) else {
             throw NeAntikError.invalidProfile
         }
@@ -130,6 +127,7 @@ private final class WebKitBrowserTab {
     let row = NSStackView()
     var observations: [NSKeyValueObservation] = []
     var status = "WebKit · данные этого профиля · параметры устройства определяет macOS"
+    var committedURL = "about:blank"
     init(view: WKWebView) { self.view = view }
     func detach(preserveNavigationDelegate: Bool = false) {
         observations.removeAll()
@@ -163,14 +161,31 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var lease: PrivateFileGuardLease?
     private var metadataLease: PrivateFileGuardLease?
     private var onClose: (() -> Void)?
+    private let sessionStore: WebKitSessionStore?
+    private let restoresSession: Bool
+    private var sessionNotice: String?
+    private var restoreIncomplete = false
+    private var pendingSnapshot: WebKitSessionSnapshot?
+    private var sessionSavePending = false
+    private var downloadsSettled = false
+    private var onSessionSaveError: (() -> Void)?
+    private(set) var sessionWriteFailed = false
     private(set) var downloads: WebKitDownloads!
     var tabCount: Int { isClosed ? 0 : order.ids.count }
     var selectedTabID: UUID { order.selected }
+    var selectedTabIndex: Int { order.ids.firstIndex(of: order.selected) ?? 0 }
 
     init(profile: BrowserProfile, lease: PrivateFileGuardLease, metadataLease: PrivateFileGuardLease,
-         downloadPicker: WebKitDownloads.Picker? = nil, onClose: @escaping () -> Void) throws {
+         downloadPicker: WebKitDownloads.Picker? = nil,
+         sessionStore: WebKitSessionStore? = nil, restoredSession: WebKitSessionSnapshot? = nil,
+         sessionWarning: String? = nil, onSessionSaveError: (() -> Void)? = nil,
+         onClose: @escaping () -> Void) throws {
         try WebKitProfilePolicy.validate(profile)
+        if profile.startupMode == .restoreSession, sessionStore == nil { throw WebKitSessionError.unavailable }
+        if let restoredSession { try restoredSession.validate(for: profile.id) }
         profileID = profile.id
+        self.sessionStore = sessionStore; restoresSession = profile.startupMode == .restoreSession
+        self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
         self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
         dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
         dataStore.proxyConfigurations = []
@@ -207,7 +222,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         tabBar.orientation = .horizontal; tabBar.spacing = 8
         tabBar.edgeInsets = NSEdgeInsets(top: 0, left: 12, bottom: 6, right: 12)
         message.font = .systemFont(ofSize: 13); message.textColor = .secondaryLabelColor
-        message.lineBreakMode = .byWordWrapping; message.maximumNumberOfLines = 2
+        message.lineBreakMode = .byWordWrapping; message.maximumNumberOfLines = 4
         let content = NSView(); window.contentView = content
         for view in [bar, tabBar, pageArea, message] { view.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(view) }
         NSLayoutConstraint.activate([
@@ -223,7 +238,23 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             guard let self, event.window === self.window else { return event }
             return self.handleCommand(event) ? nil : event
         }
-        if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) { webView.load(URLRequest(url: url)) }
+        if restoresSession, let restoredSession {
+            first.committedURL = restoredSession.urls[0]
+            webView.load(URLRequest(url: URL(string: restoredSession.urls[0])!))
+            for value in restoredSession.urls.dropFirst() {
+                guard let view = openTab(at: URL(string: value)!), let tab = tabs.values.first(where: { $0.view === view }) else {
+                    restoreIncomplete = true
+                    sessionNotice = "Не все вкладки удалось открыть. Прежний список сохранён; закрой ненужные окна и открой профиль снова."
+                    break
+                }
+                tab.committedURL = value
+            }
+            if order.ids.indices.contains(restoredSession.selectedIndex) { selectTab(order.ids[restoredSession.selectedIndex]) }
+            if !restoreIncomplete, restoredSession.unavailableCount > 0 {
+                sessionNotice = "Некоторые специальные адреса нельзя восстановить. Их вкладки открыты пустыми."
+            }
+            presentSelectedTab()
+        } else if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) { webView.load(URLRequest(url: url)) }
     }
 
     private func button(_ button: NSButton, title: String, help: String, action: Selector) -> NSButton {
@@ -264,8 +295,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             webView.topAnchor.constraint(equalTo: pageArea.topAnchor), webView.bottomAnchor.constraint(equalTo: pageArea.bottomAnchor),
             webView.leadingAnchor.constraint(equalTo: pageArea.leadingAnchor), webView.trailingAnchor.constraint(equalTo: pageArea.trailingAnchor)
         ])
-        address.stringValue = webView.url?.absoluteString ?? "about:blank"
-        message.stringValue = selected.status
+        address.stringValue = webView.url?.absoluteString ?? selected.committedURL
+        message.stringValue = selected.status + (sessionNotice.map { "\n" + $0 } ?? "")
         for id in order.ids { refreshTab(id) }
         tabStrip.layoutSubtreeIfNeeded()
         tabStrip.scrollToVisible(selected.row.frame)
@@ -281,7 +312,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if order.selected == id {
             if window.firstResponder !== address.currentEditor() { address.stringValue = tab.view.url?.absoluteString ?? "about:blank" }
             backButton.isEnabled = tab.view.canGoBack; forwardButton.isEnabled = tab.view.canGoForward
-            message.stringValue = tab.status
+            message.stringValue = tab.status + (sessionNotice.map { "\n" + $0 } ?? "")
         }
     }
     @discardableResult private func appendTab(configuration: WKWebViewConfiguration) -> WKWebView? {
@@ -332,7 +363,10 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     func show() { guard !isClosed else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     /// Manager Stop closes the entire profile, whereas Command-W closes a tab.
-    func close() { if !isClosed { window.performClose(nil) } }
+    func close() {
+        if !isClosed { window.performClose(nil) }
+        else if sessionWriteFailed, let pendingSnapshot { beginSessionSave(pendingSnapshot) }
+    }
     func focusAddress() { if !isClosed { window.makeFirstResponder(address); address.selectText(nil) } }
     fileprivate func handleCommand(_ event: NSEvent) -> Bool {
         guard !isClosed, let command = WebKitWindowCommand.resolve(characters: event.charactersIgnoringModifiers, keyCode: event.keyCode, modifiers: event.modifierFlags) else { return false }
@@ -359,16 +393,45 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     func windowWillClose(_ notification: Notification) {
         guard !isClosed else { return }; isClosed = true
+        if restoresSession, !restoreIncomplete {
+            do {
+                let snapshot = try WebKitSessionSnapshot.capture(profileID: profileID,
+                    // Back/forward entries also track same-document History
+                    // API/fragment changes; provisional requests are not a
+                    // new committed history entry.
+                    urls: order.ids.map { tabs[$0]?.view.backForwardList.currentItem?.url.absoluteString ?? tabs[$0]?.committedURL ?? "about:blank" },
+                    selectedIndex: order.ids.firstIndex(of: order.selected) ?? 0)
+                beginSessionSave(snapshot)
+            } catch { sessionWriteFailed = true; onSessionSaveError?() }
+        }
         if let commandMonitor { NSEvent.removeMonitor(commandMonitor); self.commandMonitor = nil }
         let closingViews = tabs.values.map(\.view)
         for tab in tabs.values { tab.detach(preserveNavigationDelegate: downloads.hasReservations(for: tab.view)) }; tabs.removeAll()
         window.contentView = nil; window.delegate = nil; window.browser = nil
         downloads.close { [self, closingViews] in
             for view in closingViews { view.navigationDelegate = nil }
-            let callback = onClose; onClose = nil
-            metadataLease?.release(); metadataLease = nil; lease?.release(); lease = nil
-            callback?()
+            downloadsSettled = true
+            finishCloseIfSettled()
         }
+    }
+    private func beginSessionSave(_ snapshot: WebKitSessionSnapshot) {
+        guard let sessionStore, !sessionSavePending else { return }
+        pendingSnapshot = snapshot; sessionSavePending = true; sessionWriteFailed = false
+        Task { [self] in
+            let saved = await Task.detached(priority: .utility) {
+                do { try sessionStore.save(snapshot); return true } catch { return false }
+            }.value
+            sessionSavePending = false
+            if saved { pendingSnapshot = nil }
+            else { sessionWriteFailed = true; onSessionSaveError?() }
+            finishCloseIfSettled()
+        }
+    }
+    private func finishCloseIfSettled() {
+        guard downloadsSettled, !sessionSavePending, !sessionWriteFailed else { return }
+        let callback = onClose; onClose = nil; onSessionSaveError = nil
+        metadataLease?.release(); metadataLease = nil; lease?.release(); lease = nil
+        callback?()
     }
     private func owns(_ view: WKWebView) -> Bool { !isClosed && tabs.values.contains { $0.view === view } }
     private func setStatus(_ value: String, for view: WKWebView) {
@@ -421,6 +484,10 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         setStatus("WebKit · данные этого профиля · параметры устройства определяет macOS", for: webView)
+    }
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard owns(webView), let tab = tabs.values.first(where: { $0.view === webView }), let value = webView.url?.absoluteString else { return }
+        tab.committedURL = value
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { navigationFailed(webView, error) }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { navigationFailed(webView, error) }

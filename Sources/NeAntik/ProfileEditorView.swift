@@ -389,7 +389,7 @@ struct ProfileEditorView: View {
           .pickerStyle(.segmented)
           .disabled(original != nil)
           Text(engine == .webkit
-            ? "Системный WebKit в окне NeAntik с вкладками. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS; прокси, расширения и восстановление вкладок пока недоступны."
+            ? "Системный WebKit в окне NeAntik с вкладками. Cookies и данные сайтов разделены по профилям. Параметры устройства определяет macOS. Можно открывать стартовую страницу или сохранять предыдущие вкладки; прокси и расширения пока недоступны."
             : "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения.")
             .font(.callout).foregroundStyle(.secondary)
           if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
@@ -693,20 +693,20 @@ struct ProfileEditorView: View {
           )
 
           if showsAdvancedOptions {
-            if engine == .chromium {
             Picker("При запуске", selection: $startupMode) {
               ForEach(BrowserStartupMode.allCases, id: \.self) { mode in
                 Text(mode.title).tag(mode)
               }
             }
             .accessibilityLabel("При запуске профиля")
-            }
             TextField("Стартовая страница", text: $startURL)
               .accessibilityLabel("Стартовая страница")
               .focused($focusedField, equals: .startURL)
               .id(ProfileEditorField.startURL)
-            Text(engine == .chromium && startupMode == .restoreSession
-              ? "При первом запуске откроется этот адрес, затем — сохранённые вкладки. Вкладки сохраняются после штатного закрытия браузера."
+            Text(startupMode == .restoreSession
+              ? (engine == .webkit
+                  ? "Сохраняются адреса и выбранная вкладка после штатного закрытия. Список адресов, включая параметры, остаётся в приватной папке на этом Mac; в MCP и экспорт настроек список вкладок не попадает. При первом запуске откроется стартовая страница."
+                  : "При первом запуске откроется этот адрес, затем — сохранённые вкладки. Вкладки сохраняются после штатного закрытия браузера.")
               : "Этот адрес открывается при каждом запуске профиля. Для пустой страницы укажи about:blank.")
               .font(.callout)
               .foregroundStyle(.secondary)
@@ -1229,7 +1229,7 @@ struct ProfileEditorView: View {
       profile.tags = normalizedTags
       profile.note = normalizedNote
       profile.startURL = cleanStartURL.absoluteString
-      profile.startupMode = engine == .webkit ? .startPage : startupMode
+      profile.startupMode = startupMode
       let proxy = engine == .webkit ? nil : try makeProxy()
       profile.proxy = proxy
       let locationMatchesProxy = proxy != nil && proxy == detectedProxy

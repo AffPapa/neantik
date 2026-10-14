@@ -10,10 +10,13 @@ struct MCPProfileManagementTests {
         let created = try await engine.call("profile_create", ["name": "WebKit MCP", "engine": "webkit", "changes": ["startURL": "about:blank"]])
         #expect(created["engine"] as? String == "webkit")
         var args = request(created); args["changes"] = ["name": "Renamed WebKit", "tags": ["qa"]]
-        let edited = try await engine.call("profile_update", args)
+        var edited = try await engine.call("profile_update", args)
         #expect(edited["engine"] as? String == "webkit")
         args = request(edited); args["changes"] = ["startupMode": "restoreSession"]
-        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        edited = try await engine.call("profile_update", args)
+        #expect(edited["startupMode"] as? String == "restoreSession")
+        // Proxy and stdio GUI launch remain unsupported; enabling restore is
+        // a metadata capability and must not implicitly start a browser.
         args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1]
         await #expect(throws: Error.self) { try await engine.call("profile_set_proxy", args) }
         args = request(edited); args["name"] = "WebKit copy"
@@ -22,6 +25,45 @@ struct MCPProfileManagementTests {
         await #expect(throws: Error.self) { try await engine.call("profile_start", request(edited)) }
         let id = try #require(UUID(uuidString: edited["id"] as! String))
         #expect(engine.processes.processState(for: id) == .stopped)
+    }
+
+    @Test func webKitSessionAddressesStayOutOfMCPAndConfigurationExport() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "Own restore metadata", "engine": "webkit", "changes": ["startURL": "about:blank", "startupMode": "restoreSession"]])
+        let id = try #require(UUID(uuidString: created["id"] as! String))
+        let marker = "owned-visited-parameter-only"
+        let saved = try WebKitSessionSnapshot.capture(profileID: id, urls: ["https://example.com/visited?marker=\(marker)#selected"], selectedIndex: 0)
+        try WebKitSessionStore(paths: engine.store.paths).save(saved)
+        let result = try await engine.call("profile_get", ["profileID": id.uuidString])
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self).contains(marker))
+        #expect(!String(decoding: try Data(contentsOf: engine.store.paths.profilesFile), as: UTF8.self).contains(marker))
+        let profile = try #require(engine.store.profile(withID: id))
+        let export = try ProfileConfigurationTransferDocument(profiles: [profile])
+        #expect(!String(decoding: try JSONEncoder().encode(export), as: UTF8.self).contains(marker))
+        var args = request(result); args["changes"] = ["startupMode": "startPage"]
+        let off = try await engine.call("profile_update", args)
+        #expect(off["startupMode"] as? String == "startPage" && off["warning"] == nil)
+        #expect(try WebKitSessionStore(paths: engine.store.paths).load(for: id) == nil)
+    }
+
+    @Test func webKitCleanupWarningMeansCommittedEditAndFailedReenableKeepsOff() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "Own cleanup warning", "engine": "webkit", "changes": ["startURL": "about:blank", "startupMode": "restoreSession"]])
+        let id = try #require(UUID(uuidString: created["id"] as! String)), sessions = WebKitSessionStore(paths: engine.store.paths)
+        try sessions.save(.capture(profileID: id, urls: ["about:blank"], selectedIndex: 0))
+        let file = root.appendingPathComponent("WebKitSessions/\(id.uuidString.lowercased()).json"), target = root.appendingPathComponent("own-unrelated-canary")
+        let canary = Data("untouched own fixture".utf8); try canary.write(to: target)
+        try FileManager.default.removeItem(at: file); try FileManager.default.createSymbolicLink(at: file, withDestinationURL: target)
+        var args = request(created); args["changes"] = ["startupMode": "startPage"]
+        let off = try await engine.call("profile_update", args)
+        #expect(off["startupMode"] as? String == "startPage" && off["warning"] as? String != nil)
+        let actual = try await engine.call("profile_get", ["profileID": id.uuidString])
+        #expect(actual["revision"] as? String == off["revision"] as? String)
+        args = request(actual); args["changes"] = ["startupMode": "restoreSession"]
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        let stillOff = try await engine.call("profile_get", ["profileID": id.uuidString])
+        #expect(stillOff["revision"] as? String == off["revision"] as? String && stillOff["startupMode"] as? String == "startPage")
+        #expect(try Data(contentsOf: target) == canary)
     }
 
     @Test func startupModeIsRevisionCheckedAndPersistsWithoutStartingBrowser() async throws {

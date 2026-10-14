@@ -560,6 +560,14 @@ final class BrowserProcessManager: ObservableObject {
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
     private var webKitQuitPending = false
     var hasActiveWebKitDownloads: Bool { webKitBrowsers.values.contains { $0.downloads.activeCount > 0 } }
+    var hasOpenWebKitProfiles: Bool { !webKitBrowsers.isEmpty }
+    var hasFailedWebKitSessionSave: Bool { webKitBrowsers.values.contains { $0.sessionWriteFailed } }
+    #if DEBUG
+    /// In-process owned-fixture observation only; absent from release builds
+    /// and never exposed by MCP, environment variables or a debug socket.
+    func webKitBrowserForTesting(profileID: UUID) -> WebKitProfileBrowser? { webKitBrowsers[profileID] }
+    #endif
+    private static let webKitSessionSaveFailureMessage = "Не удалось сохранить список вкладок. Профиль остаётся занят: проверь свободное место и доступ к папке данных, затем нажми «Остановить» ещё раз. Прежний список не заменён незавершённым файлом."
     private var webKitTerminationObservation: AnyCancellable?
     private let paths: AppPaths
     private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
@@ -2414,10 +2422,21 @@ final class BrowserProcessManager: ObservableObject {
         let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
         do {
             let metadataLease = try paths.acquireWebKitMetadataGuard(for: profile.id)
-            let makeBrowser = { [weak self] in try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease) { [weak self] in
+            let sessionStore = WebKitSessionStore(paths: paths)
+            let makeBrowser = { [weak self] in
+                var restored: WebKitSessionSnapshot?, warning: String?
+                if profile.startupMode == .restoreSession {
+                    do { restored = try sessionStore.load(for: profile.id) }
+                    catch { warning = "Сохранённые вкладки недоступны. Открыта стартовая страница; другие профили не изменены." }
+                }
+                return try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease,
+                    sessionStore: sessionStore, restoredSession: restored, sessionWarning: warning,
+                    onSessionSaveError: { [weak self] in self?.lastError = Self.webKitSessionSaveFailureMessage }) { [weak self] in
                 self?.webKitBrowsers.removeValue(forKey: profile.id)
                 self?.runningProfileIDs.remove(profile.id)
-            } }
+                if let self, !self.hasFailedWebKitSessionSave, self.lastError == Self.webKitSessionSaveFailureMessage { self.lastError = nil }
+                }
+            }
             let browser = try validatesPersistedProfiles
                 ? ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths, operation: makeBrowser)
                 : makeBrowser()
@@ -2442,6 +2461,7 @@ final class BrowserProcessManager: ObservableObject {
         closeWebKitWindows()
         let deadline = ContinuousClock.now.advanced(by: .seconds(10))
         while !webKitBrowsers.isEmpty, ContinuousClock.now < deadline {
+            if hasFailedWebKitSessionSave { return false }
             do { try await Task.sleep(for: .milliseconds(50)) } catch { return false }
         }
         return webKitBrowsers.isEmpty

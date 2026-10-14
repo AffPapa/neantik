@@ -224,6 +224,7 @@ final class MCPProfileManagement {
             return ["profileID": profileID.uuidString, "outcome": state?.latestAttempt.outcome.userSummary ?? "No committed observation", "chromiumRoute": "unverified"]
         default: break
         }
+        store.postCommitWarning = nil
         let result = try processes.withVerifiedStoppedProfileOperation(profileID: profileID) {
             switch name {
             case "profile_update":
@@ -250,7 +251,9 @@ final class MCPProfileManagement {
                 })
             default: throw Failure.invalid
             }
-            return dto(profile)
+            var committed = dto(profile)
+            if let warning = store.postCommitWarning { committed["warning"] = warning }
+            return committed
         }
         if name == "profile_set_proxy" {
             do { try await health.remove(profileID: profileID) }
