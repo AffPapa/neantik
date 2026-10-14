@@ -3994,35 +3994,40 @@ private struct ProfileRow: View {
                             .accessibilityLabel("Есть заметка")
                     }
                     if !isTestingProxy, profile.proxy != nil {
-                        let summary = ProxyCheckSummary(
-                            record: proxyHealth,
-                            currentIdentity: ProxyHealthIdentity(profile: profile)
-                        )
-                        let routeContextIsComplete =
-                            summary.status == .currentSuccess &&
-                            proxyHealth?.state.hasCompleteRouteContext == true
-                        Image(
-                            systemName:
+                        // Refresh this small projection even when every profile is stopped.
+                        // The tick reads cached health only; it never probes the network.
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            let summary = ProxyCheckSummary(
+                                record: proxyHealth,
+                                currentIdentity: ProxyHealthIdentity(profile: profile),
+                                now: context.date
+                            )
+                            let routeContextIsComplete =
+                                summary.status == .currentSuccess &&
+                                proxyHealth?.state.hasCompleteRouteContext == true
+                            Image(
+                                systemName:
+                                    routeContextIsComplete
+                                    ? "checkmark.circle.fill"
+                                    : "exclamationmark.triangle.fill"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(
                                 routeContextIsComplete
-                                ? "checkmark.circle.fill"
-                                : "exclamationmark.triangle.fill"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(
-                            routeContextIsComplete
-                                ? Color.green
-                                : Color.orange
-                        )
-                        .help(
-                            summary.title + (summary.checkedAt.map {
-                                " Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
-                            } ?? "")
-                        )
-                        .accessibilityLabel(
-                            summary.title + (summary.checkedAt.map {
-                                ". Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
-                            } ?? "")
-                        )
+                                    ? Color.green
+                                    : Color.orange
+                            )
+                            .help(
+                                summary.title + (summary.checkedAt.map {
+                                    " Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
+                                } ?? "")
+                            )
+                            .accessibilityLabel(
+                                summary.title + (summary.checkedAt.map {
+                                    ". Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
+                                } ?? "")
+                            )
+                        }
                     }
                 }
                 ViewThatFits(in: .horizontal) {

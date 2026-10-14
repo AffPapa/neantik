@@ -36,6 +36,23 @@ struct ProxyCheckSummaryTests {
     }
 
     @Test
+    func advancingOnlyThePresentationClockExpiresTheSameCachedSuccess() {
+        let cached = record(at: now)
+        let before = ProxyCheckSummary(record: cached, currentIdentity: identity,
+            now: now.addingTimeInterval(ProxyCheckSummary.freshnessLifetime - 1))
+        let boundary = ProxyCheckSummary(record: cached, currentIdentity: identity,
+            now: now.addingTimeInterval(ProxyCheckSummary.freshnessLifetime))
+        let after = ProxyCheckSummary(record: cached, currentIdentity: identity,
+            now: now.addingTimeInterval(ProxyCheckSummary.freshnessLifetime + 1))
+        #expect(before.status == .currentSuccess)
+        #expect(boundary.status == .currentSuccess)
+        #expect(after.status == .staleSuccess)
+        #expect(before.checkedAt == after.checkedAt)
+        #expect(before.lastSuccessfulCheckAt == after.lastSuccessfulCheckAt)
+        #expect(cached == record(at: now))
+    }
+
+    @Test
     func latestFailureDoesNotLookFreshDespiteAnOlderSuccess() {
         let successDate = now.addingTimeInterval(-30_000)
         let failedAttempt = ProxyHealthAttempt(

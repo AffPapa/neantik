@@ -208,7 +208,10 @@ if ! /usr/bin/codesign \
 fi
 
 if (( USE_FRESH_FIXTURE == 1 )); then
-  /usr/libexec/PlistBuddy -c "Set :NeAntikWebKitMediaPolicyEnabled true" "$INFO_PLIST"
+  # Cached Dev bundles may predate this feature key. Recreate it as a bool
+  # only in the disposable Dev copy; production bundle inputs stay unchanged.
+  /usr/libexec/PlistBuddy -c 'Delete :NeAntikWebKitMediaPolicyEnabled' "$INFO_PLIST" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c 'Add :NeAntikWebKitMediaPolicyEnabled bool true' "$INFO_PLIST"
   DEVELOPMENT_FIXTURE_ROOT="$(mktemp -d /private/tmp/neantik-dev-fixture.XXXXXXXX)"
   /usr/libexec/PlistBuddy -c 'Delete :NeAntikDevelopmentFixtureRoot' "$INFO_PLIST" >/dev/null 2>&1 || true
   /usr/libexec/PlistBuddy -c "Add :NeAntikDevelopmentFixtureRoot string $DEVELOPMENT_FIXTURE_ROOT" "$INFO_PLIST"

@@ -1,4 +1,8 @@
 import pathlib
+import plistlib
+import shlex
+import subprocess
+import tempfile
 import unittest
 
 
@@ -51,6 +55,23 @@ class LocalManagerScriptTests(unittest.TestCase):
             "github",
         ):
             self.assertNotIn(forbidden, text)
+
+    @unittest.skipUnless(pathlib.Path("/usr/libexec/PlistBuddy").is_file(), "macOS plist control")
+    def test_fixture_feature_key_handles_cached_bundles(self) -> None:
+        text = SCRIPT.read_text(encoding="utf-8")
+        start = text.index("if (( USE_FRESH_FIXTURE == 1 )); then")
+        end = text.index("  DEVELOPMENT_FIXTURE_ROOT=", start)
+        operations = text[start:end].split("then", 1)[1]
+        for initial in ({}, {"NeAntikWebKitMediaPolicyEnabled": False},
+                        {"NeAntikWebKitMediaPolicyEnabled": "obsolete"}):
+            with self.subTest(initial=initial), tempfile.TemporaryDirectory() as root:
+                info = pathlib.Path(root) / "Info.plist"
+                info.write_bytes(plistlib.dumps({"UnrelatedMarker": "preserved", **initial}))
+                subprocess.run(["/bin/zsh", "-c", "set -e; INFO_PLIST=" +
+                    shlex.quote(str(info)) + "\n" + operations], check=True, capture_output=True)
+                actual = plistlib.loads(info.read_bytes())
+                self.assertIs(actual["NeAntikWebKitMediaPolicyEnabled"], True)
+                self.assertEqual(actual["UnrelatedMarker"], "preserved")
 
     def test_fast_path_never_rewrites_dist(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")

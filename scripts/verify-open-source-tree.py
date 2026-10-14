@@ -355,6 +355,51 @@ def has_explicit_development_preview_marker(
     return True
 
 
+def verify_release_checksums(metadata: dict[str, object]) -> None:
+    """Check current ZIP/DMG records and historical ZIP records without bypassing hashes."""
+    version = metadata.get("version")
+    if not isinstance(version, str) or not re.fullmatch(r"\d+(?:\.\d+){2}", version):
+        fail("invalid version for release checksums")
+    if "artifacts" in metadata:
+        artifacts = metadata["artifacts"]
+        if not isinstance(artifacts, list) or len(artifacts) != 2:
+            fail("release artifacts must contain ZIP and DMG")
+        expected_names = {f"NeAntik-{version}-arm64-notarized.{suffix}" for suffix in ("zip", "dmg")}
+    else:
+        archive = metadata.get("archive")
+        if not isinstance(archive, dict):
+            fail("release checksum records are missing")
+        artifacts = [archive]
+        expected_names = {f"NeAntik-{version}-arm64-notarized.zip"}
+    names: set[str] = set()
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            fail("invalid release artifact record")
+        name, digest = artifact.get("name"), artifact.get("sha256")
+        if not isinstance(name, str) or name not in expected_names or name in names:
+            fail("release artifact name is invalid or duplicated")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            fail("invalid release artifact checksum")
+        names.add(name)
+        sidecar = PROJECT_ROOT / "releases" / f"{name}.sha256"
+        try:
+            actual = sidecar.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            fail("release checksum sidecar is missing or unreadable")
+        if actual != f"{digest}  {name}\n":
+            fail(f"release checksum sidecar does not match releases/v{version}.json")
+    if names != expected_names:
+        fail("release checksum records are incomplete")
+    # Some transitional records carry both forms. They must describe the same ZIP.
+    if "artifacts" in metadata and "archive" in metadata:
+        archive = metadata["archive"]
+        if not isinstance(archive, dict) or archive.get("name") != f"NeAntik-{version}-arm64-notarized.zip" or not any(
+            archive.get("name") == artifact.get("name") and
+            archive.get("sha256") == artifact.get("sha256") for artifact in artifacts
+        ):
+            fail("legacy archive conflicts with current release artifacts")
+
+
 def verify_release_metadata() -> None:
     metadata_files = sorted((PROJECT_ROOT / "releases").glob("v*.json"))
     if not metadata_files:
@@ -372,14 +417,7 @@ def verify_release_metadata() -> None:
         return tuple(int(part) for part in version.split("."))
 
     metadata = max(parsed_metadata, key=version_key)
-    archive = metadata["archive"]
-    sidecar = PROJECT_ROOT / "releases" / f"{archive['name']}.sha256"
-    expected = f"{archive['sha256']}  {archive['name']}\n"
-    if sidecar.read_text(encoding="utf-8") != expected:
-        fail(
-            "release checksum sidecar does not match "
-            f"releases/v{metadata['version']}.json"
-        )
+    verify_release_checksums(metadata)
 
     plist = PROJECT_ROOT / "Resources" / "Info.plist"
     with plist.open("rb") as file:

@@ -18,6 +18,38 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_current_zip_and_dmg_checksums_and_negative_controls(self) -> None:
+        import copy
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "releases").mkdir()
+            artifacts = [{"name": "NeAntik-1.2.3-arm64-notarized." + suffix,
+                          "sha256": char * 64} for suffix, char in (("zip", "a"), ("dmg", "b"))]
+            metadata = {"version": "1.2.3", "artifacts": artifacts}
+            for artifact in artifacts:
+                (root / "releases" / (artifact["name"] + ".sha256")).write_text(
+                    artifact["sha256"] + "  " + artifact["name"] + "\n")
+            with mock.patch.object(MODULE, "PROJECT_ROOT", root):
+                MODULE.verify_release_checksums(metadata)
+                MODULE.verify_release_checksums({"version": "1.2.3", "archive": artifacts[0]})
+                broken = []
+                for replacement in ([], [artifacts[0]], [artifacts[0], artifacts[0]]):
+                    broken.append({"version": "1.2.3", "artifacts": replacement})
+                for field, value in (("name", "../outside.zip"), ("sha256", "c" * 64),
+                                     ("sha256", "not-a-digest")):
+                    candidate = copy.deepcopy(metadata)
+                    candidate["artifacts"][1][field] = value
+                    broken.append(candidate)
+                broken.append({**metadata, "archive": {**artifacts[0], "sha256": "c" * 64}})
+                broken.append({**metadata, "archive": artifacts[1]})
+                broken.append({"version": "1.2.3"})
+                for candidate in broken:
+                    with self.subTest(candidate=candidate), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                        MODULE.verify_release_checksums(candidate)
+                (root / "releases" / (artifacts[1]["name"] + ".sha256")).unlink()
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    MODULE.verify_release_checksums(metadata)
+
     def test_ci_contract_detects_a_required_suite_removed_from_shards(self) -> None:
         required = {"UpdateManifestTests", "BrowserProcessInventoryTests",
                     "FingerprintEvidenceEnrollmentTests", "ProfileOrganizationTests",

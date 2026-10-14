@@ -389,6 +389,22 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn(".contentShape(Rectangle())", note_editor)
         self.assertNotIn("DisclosureGroup", note_editor)
 
+    def test_proxy_badge_expiry_uses_a_clock_without_new_checks(self) -> None:
+        content = CONTENT.read_text(encoding="utf-8")
+        start = content.index("private struct ProfileRow")
+        end = content.index("struct ProfileDetailView", start)
+        row = content[start:end]
+        clock_start = row.index("TimelineView(")
+        clock_end = row.index("ViewThatFits", clock_start)
+        badge = row[clock_start:clock_end]
+        self.assertIn(".periodic(from: .now, by: 60)", badge)
+        self.assertIn("now: context.date", badge)
+        self.assertIn("record: proxyHealth", badge)
+        self.assertIn("summary.status == .currentSuccess", badge)
+        for side_effect in (".task", ".onChange", "await ", "Task {",
+                            "onToggleRunning(", "checkProxy("):
+            self.assertNotIn(side_effect, badge)
+
     def test_profile_note_stays_compact_but_readable_and_searchable(
         self,
     ) -> None:
