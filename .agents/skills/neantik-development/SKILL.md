@@ -22,10 +22,21 @@ Unknown/shared inputs select full regression. Planning never means PASS.
 
 ## Execute
 
+- Before a costly operation, record in CURRENT: changed surface, observable
+  acceptance, existing receipt, and a concrete reason if repeating it. Check
+  declared paths/suite names and required execution capabilities first. A
+  permission denial is setup, not a product defect or proof of missing account
+  rights. Reuse the working credential route; diagnose before another login.
+- Plan native QA setup, actions, evidence and cleanup before enrollment/launch.
+  Reuse an authorized live authority for its exact app/private manifest until
+  consumed or retired. A fixture retry alone does not require a new authority.
+  Do not run an unrelated full audit solely to retire a key; record pending
+  cleanup when no qualified narrow operation exists.
 - `test-manager-fast.py --suite NameTests` (repeat suites) executes tests using
   shared project caches, jobs2 and serial execution. Its lease is shared with
-  `Develop-NeAntik.command`. Use `--all` for integration/release or a concrete
-  shared-dependency risk; do not run it after every docs-only edit.
+  `Develop-NeAntik.command`. Use one `--all` for integration of manager/shared
+  dependency changes or a new app candidate. Standalone harness/prose changes
+  use their relevant contracts; unknown/shared inputs remain full regression.
 - UI work uses the canonical isolated Dev bundle and disposable fixture.
   A build is not native behavior. Bind GUI checks to its actual app/PID/root;
   after quit verify exit rather than rediscovering/relaunching the app.
