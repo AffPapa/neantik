@@ -28,6 +28,11 @@ export function ownedEnvironment(root, environment = process.env) {
   return { PATH: environment.PATH, HOME: root, TMPDIR: root, LANG: 'en_US.UTF-8', NEANTIK_PROFILE_SEED: '21' };
 }
 
+export function documentReady(observed, expectedURL, marker, responseFinished) {
+  return responseFinished === true && observed?.url === expectedURL &&
+    observed?.marker === marker && observed?.readyState === 'complete';
+}
+
 if (process.argv[2] === '--self-test') {
   const isolated = ownedEnvironment('/synthetic/root', { PATH: '/usr/bin', HOME: '/user/home', FAKE_SECRET: 'must-not-inherit', NEANTIK_PROFILE_SEED: '999' });
   assert.equal(isolated.HOME, '/synthetic/root');
@@ -37,6 +42,13 @@ if (process.argv[2] === '--self-test') {
   assert.equal(isCoherent(8, '8', '8'), true);
   assert.equal(isCoherent(8, '32', '32'), false);
   assert.equal(isCoherent(8, null, '8'), false);
+  assert.equal(isCoherent(8, '8', null), false);
+  const ready = { url: 'http://127.0.0.1/prime?run=one', marker: 'one', readyState: 'complete' };
+  assert.equal(documentReady(ready, ready.url, 'one', true), true);
+  assert.equal(documentReady(ready, ready.url, 'one', false), false);
+  assert.equal(documentReady({ ...ready, readyState: 'loading' }, ready.url, 'one', true), false);
+  assert.equal(documentReady(ready, ready.url, 'other', true), false);
+  assert.equal(documentReady(ready, 'http://127.0.0.1/prime?run=two', 'one', true), false);
   assert.equal(isCoherent(Infinity, 'Infinity', 'Infinity'), false);
   assert.equal(isCoherent(NaN, 'NaN', 'NaN'), false);
   assert.equal(isCoherent('8', '8', '8'), false);
@@ -83,11 +95,18 @@ if (version.status !== 0 || !/^\d+\.\d+\.\d+\.\d+$/.test(chromiumVersion ?? '') 
 const executableSHA256 = crypto.createHash('sha256').update(fs.readFileSync(executable)).digest('hex');
 
 const profile = fs.mkdtempSync('/private/tmp/neantik-memory-control-');
+const nonce = crypto.randomBytes(16).toString('hex');
+const primePath = `/prime?run=${nonce}`;
+const navigationPath = `/navigation?run=${nonce}`;
+let primeFinished = false;
+let navigationCount = 0;
 let navigationHeaders = null;
 const server = http.createServer((request, response) => {
   response.setHeader('Accept-CH', 'Sec-CH-Device-Memory, Device-Memory');
   response.setHeader('Cache-Control', 'no-store');
-  if (request.url?.startsWith('/navigation')) {
+  if (request.url === primePath) response.once('finish', () => { primeFinished = true; });
+  if (request.url === navigationPath) {
+    navigationCount += 1;
     navigationHeaders = {
       modern: request.headers['sec-ch-device-memory'] ?? null,
       legacy: request.headers['device-memory'] ?? null,
@@ -101,7 +120,8 @@ const server = http.createServer((request, response) => {
     }));
   } else {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
-    response.end('<!doctype html><meta charset="utf-8"><title>Local memory control</title>');
+    const marker = request.url === primePath || request.url === navigationPath ? nonce : '';
+    response.end(`<!doctype html><meta charset="utf-8"><title>Local memory control</title><meta name="control-run" content="${marker}">`);
   }
 });
 
@@ -134,6 +154,20 @@ function connect(url) {
     socket.addEventListener('open', () => { clearTimeout(timer); resolve(socket); }, { once: true });
     socket.addEventListener('error', () => { clearTimeout(timer); socket.close(); reject(new Error('Local CDP socket failed')); }, { once: true });
   });
+}
+
+async function waitForDocument(socket, expectedURL, responseFinished) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    try {
+      const state = await command(socket, 'Runtime.evaluate', {
+        expression: '({url:location.href,readyState:document.readyState,marker:document.querySelector(\'meta[name="control-run"]\')?.content})',
+        returnByValue: true,
+      });
+      if (documentReady(state.result?.value, expectedURL, nonce, responseFinished())) return;
+    } catch { /* A navigation can temporarily replace its execution context. */ }
+    await delay(125);
+  }
+  throw new Error('The exact Client Hints control document did not complete');
 }
 
 async function waitForExit(child, milliseconds) {
@@ -186,7 +220,7 @@ try {
     '--disable-component-update',
     '--disable-sync',
     '--disable-extensions',
-    `${origin}/`,
+    `${origin}${primePath}`,
   ], {
     // A temporary HOME does not isolate the system Keychain; the explicit
     // mock flag above prevents OSCrypt from accessing user secrets.
@@ -218,7 +252,7 @@ try {
   let page;
   for (let attempt = 0; attempt < 80; attempt += 1) {
     const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1500) })).json();
-    page = targets.find(target => target.type === 'page' && target.url === `${origin}/`);
+    page = targets.find(target => target.type === 'page' && target.url === `${origin}${primePath}`);
     if (page) break;
     await delay(125);
   }
@@ -229,22 +263,12 @@ try {
     // The first navigation teaches Chromium the origin's Accept-CH policy.
     // The second probes the browser-owned navigation path; fetch below probes
     // the separate renderer-owned subresource path.
-    await command(pageSocket, 'Page.navigate', { url: `${origin}/navigation` });
-    let ready = false;
-    for (let attempt = 0; attempt < 80; attempt += 1) {
-      try {
-        const state = await command(pageSocket, 'Runtime.evaluate', {
-          expression: 'location.pathname === "/navigation" && document.readyState === "complete"',
-          returnByValue: true,
-        });
-        if (state.result.value === true) {
-          ready = true;
-          break;
-        }
-      } catch { /* Navigation may replace the execution context. */ }
-      await delay(125);
-    }
-    if (!ready || !navigationHeaders) {
+    // A target URL alone is not a completed response: navigating too early
+    // cancels the Accept-CH priming response and creates a false failure.
+    await waitForDocument(pageSocket, `${origin}${primePath}`, () => primeFinished);
+    await command(pageSocket, 'Page.navigate', { url: `${origin}${navigationPath}` });
+    await waitForDocument(pageSocket, `${origin}${navigationPath}`, () => navigationCount === 1);
+    if (navigationCount !== 1 || !navigationHeaders) {
       throw new Error('The Client Hints navigation probe did not complete');
     }
     const evaluated = await command(pageSocket, 'Runtime.evaluate', {
