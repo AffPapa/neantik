@@ -215,6 +215,18 @@ package enum DirectUpdateCodeSignature {
 
     /// Pure scalar policy only. Supplied dictionaries cannot produce an
     /// observation claiming that a cryptographic signature was verified.
+    /// Purpose strings are part of the verified signed plist. Old managers keep
+    /// their immutable exact contract; only both valid strings admit media claims.
+    package static func managerMediaClaims(_ plist: [String: Any]) throws -> [String: NSObject] {
+        let keys = ["NSCameraUsageDescription", "NSMicrophoneUsageDescription"]
+        guard keys.contains(where: { plist[$0] != nil }) else { return [:] }
+        guard keys.allSatisfy({ (plist[$0] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }) else {
+            throw DirectUpdateCodeSignatureError.policy
+        }
+        return ["com.apple.security.device.camera": NSNumber(value: true),
+                "com.apple.security.device.audio-input": NSNumber(value: true)]
+    }
+
     package static func validatedFields(_ info: [String: Any], role: DirectUpdateCodeRole,
                                 provisionedManager: Bool = false) throws -> DirectUpdateCodeSignatureFields {
         guard !provisionedManager || role == .manager else { throw DirectUpdateCodeSignatureError.policy }
@@ -233,7 +245,10 @@ package enum DirectUpdateCodeSignature {
               let plist = info[kSecCodeInfoPList as String] as? [String: Any],
               let encoded = try? PropertyListSerialization.data(fromPropertyList: plist, format: .binary, options: 0),
               encoded.count <= 1_048_576 else { throw DirectUpdateCodeSignatureError.policy }
-        let claims = provisionedManager ? DirectUpdateProvisioningPolicy.claims(bundle: role.identifier) : role.entitlements
+        var claims = provisionedManager ? DirectUpdateProvisioningPolicy.claims(bundle: role.identifier) : role.entitlements
+        if role == .manager {
+            for (key, value) in try managerMediaClaims(plist) { claims[key] = value }
+        }
         let expected = claims as NSDictionary
         if let rawDictionary = info[kSecCodeInfoEntitlementsDict as String] {
             guard let actual = rawDictionary as? NSDictionary else { throw DirectUpdateCodeSignatureError.policy }

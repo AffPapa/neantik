@@ -4,6 +4,19 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func webKitMediaPolicyIsRevisionCheckedAndRejectsOtherEngines() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "Own media", "engine": "webkit", "changes": ["startURL": "about:blank", "webKitMediaPolicy": "deny"]])
+        #expect(created["webKitMediaPolicy"] as? String == "deny")
+        var args = request(created); args["changes"] = ["webKitMediaPolicy": "ask"]
+        let changed = try await engine.call("profile_update", args)
+        #expect(changed["webKitMediaPolicy"] as? String == "ask")
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        args = request(changed); args["changes"] = ["webKitMediaPolicy": "grant"]
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        await #expect(throws: Error.self) { try await engine.call("profile_create", ["name": "Wrong engine", "changes": ["webKitMediaPolicy": "deny"]]) }
+    }
+
     @Test func webKitCreationAndMetadataKeepEngineAndRejectUnsupportedActions() async throws {
         let (root, engine, _) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -97,7 +110,7 @@ struct MCPProfileManagementTests {
         let list = try await read.call("template_list", [:])
         let rows = try #require(list["templates"] as? [[String: Any]])
         #expect(rows.count == 1 && rows[0]["id"] as? String == template.id.uuidString)
-        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "startupMode", "engine", "tags", "folderID"])
+        #expect(Set(rows[0].keys) == ["id", "name", "startURL", "startupMode", "engine", "webKitMediaPolicy", "tags", "folderID"])
         #expect(!(String(decoding: try JSONSerialization.data(withJSONObject: list), as: UTF8.self)).contains("synthetic-private-note"))
         let args: [String: Any] = ["name": "New QA", "templateID": template.id.uuidString,
             "expectedOrganizationRevision": list["organizationRevision"]!]

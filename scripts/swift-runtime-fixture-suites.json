@@ -43,5 +43,10 @@
   ],
   "ProxyTesterLiveFixtureTests": [
     "NEANTIK_APPROVED_PROXY_FIXTURE"
+  ],
+  "WebKitMediaDelegateLiveTests": [
+    "NEANTIK_WEBKIT_MEDIA_DELEGATE_LIVE",
+    "NEANTIK_WEBKIT_CACHE_FIXTURE_URL",
+    "NEANTIK_WEBKIT_CACHE_OWNED_RUN_ROOT"
   ]
 }

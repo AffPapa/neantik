@@ -1728,6 +1728,7 @@ final class ProfileStore: ObservableObject {
                   current.identity == persistedExpectedIdentity,
                   current.startURL == expected.startURL,
                   current.startupMode == expected.startupMode,
+                  current.webKitMediaPolicy == expected.webKitMediaPolicy,
                   current.isArchived == expected.isArchived else {
                 throw BrowserProfileRevisionConflictError(profileID: expected.id)
             }
@@ -1750,7 +1751,7 @@ final class ProfileStore: ObservableObject {
     /// Chromium. Keep array writes for Chromium-only workspaces.
     nonisolated static func encodeProfiles(_ profiles: [BrowserProfile], encoder: JSONEncoder) throws -> Data {
         try profiles.contains(where: { $0.engine == .webkit })
-            ? encoder.encode(EngineProfilesDocument(schemaVersion: 2, profiles: profiles))
+            ? encoder.encode(EngineProfilesDocument(schemaVersion: profiles.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : 2, profiles: profiles))
             : encoder.encode(profiles)
     }
 
@@ -1759,8 +1760,9 @@ final class ProfileStore: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
             let document = try decoder.decode(LegacyProfilesDocument.self, from: data)
-            guard [1, 2].contains(document.schemaVersion),
-                  document.schemaVersion == 2 || !document.profiles.contains(where: { $0.engine == .webkit }) else {
+            guard [1, 2, 3].contains(document.schemaVersion),
+                  (document.schemaVersion >= 2 || !document.profiles.contains(where: { $0.engine == .webkit })),
+                  (document.schemaVersion >= 3 || !document.profiles.contains(where: { $0.webKitMediaPolicy == .deny })) else {
                 throw UnsupportedProfilesSchemaError()
             }
             return document.profiles
@@ -2081,7 +2083,7 @@ private struct LegacyProfilesDocument: Decodable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
         // Check the contract before interpreting an unknown payload shape.
-        guard [1, 2].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
+        guard [1, 2, 3].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
         profiles = try values.decode([BrowserProfile].self, forKey: .profiles)
     }
 }

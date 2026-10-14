@@ -158,6 +158,7 @@ struct ProfileEditorView: View {
   @State private var selectedFolderID: UUID?
   @State private var startURL: String
   @State private var engine: BrowserEngine
+  @State private var webKitMediaPolicy: WebKitMediaPolicy
   @State private var startupMode: BrowserStartupMode
   @State private var usesProxy: Bool
   @State private var proxyKind: ProxyKind
@@ -184,7 +185,7 @@ struct ProfileEditorView: View {
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -237,6 +238,7 @@ struct ProfileEditorView: View {
     )
     _startURL = State(initialValue: profile.startURL)
     _engine = State(initialValue: profile.engine)
+    _webKitMediaPolicy = State(initialValue: profile.webKitMediaPolicy)
     _startupMode = State(initialValue: profile.startupMode)
     _usesProxy = State(initialValue: profile.proxy != nil)
     _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
@@ -267,7 +269,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -422,6 +424,15 @@ struct ProfileEditorView: View {
           validationLabel(for: .name)
         }
 
+        if engine == .webkit {
+          Section("Камера и микрофон") {
+            Picker("Доступ сайтов", selection: $webKitMediaPolicy) {
+              ForEach(WebKitMediaPolicy.allCases) { Text($0.title).tag($0) }
+            }
+            Text("«Спрашивать» оставляет запрос доступа WebKit и macOS. «Запретить» отклоняет запросы всех сайтов этого профиля. Измени настройку после остановки профиля. Это не отключает сетевые соединения WebRTC.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
+        }
         if engine == .chromium {
         Section("Сеть") {
           HelpLink(topic: .proxy)
@@ -1217,6 +1228,7 @@ struct ProfileEditorView: View {
         name: cleanName
       )
       profile.engine = engine
+      profile.webKitMediaPolicy = engine == .webkit ? webKitMediaPolicy : .ask
       profile.name = cleanName
       profile.colorHex = colorHex
       profile.symbolName = symbolName

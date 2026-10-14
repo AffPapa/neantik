@@ -8,7 +8,7 @@ import Foundation
 /// profile IDs and a new browser identity so a configuration file cannot clone
 /// a live session or silently reuse an identity.
 struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
     static let maximumProfileCount = ProfileStorageLimits.maximumProfileCount
 
     let schemaVersion: Int
@@ -27,7 +27,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             throw ProfileConfigurationTransferError.invalidDate
         }
 
-        self.schemaVersion = profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1
+        self.schemaVersion = profiles.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1)
         self.exportedAt = exportedAt
         self.profiles = try profiles.map { profile in
             let folderName = folderNameByProfileID[profile.id]
@@ -44,7 +44,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             Int.self,
             forKey: .schemaVersion
         )
-        guard [1, 2].contains(schemaVersion) else {
+        guard [1, 2, 3].contains(schemaVersion) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         let exportedAt = try container.decode(Date.self, forKey: .exportedAt)
@@ -55,7 +55,8 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             [ProfileConfigurationTransferEntry].self,
             forKey: .profiles
         )
-        guard schemaVersion == 2 || !profiles.contains(where: { $0.engine == .webkit }) else {
+        guard (schemaVersion >= 2 || !profiles.contains(where: { $0.engine == .webkit })),
+              (schemaVersion >= 3 || !profiles.contains(where: { $0.webKitMediaPolicy == .deny })) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         guard !profiles.isEmpty else {
@@ -93,6 +94,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
                 startURL: entry.startURL,
                 startupMode: entry.startupMode ?? .startPage,
                 engine: entry.engine ?? .chromium,
+                webKitMediaPolicy: entry.webKitMediaPolicy ?? .ask,
                 proxy: entry.proxy,
                 identity: BrowserIdentity(),
                 createdAt: now,
@@ -137,6 +139,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
     let startURL: String
     let startupMode: BrowserStartupMode?
     let engine: BrowserEngine?
+    let webKitMediaPolicy: WebKitMediaPolicy?
     let proxy: ProxyConfiguration?
     let folderName: String?
 
@@ -150,6 +153,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         startURL: String,
         startupMode: BrowserStartupMode? = nil,
         engine: BrowserEngine? = nil,
+        webKitMediaPolicy: WebKitMediaPolicy? = nil,
         proxy: ProxyConfiguration?,
         folderName: String?
     ) {
@@ -162,6 +166,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         self.startURL = startURL
         self.startupMode = startupMode
         self.engine = engine
+        self.webKitMediaPolicy = webKitMediaPolicy
         self.proxy = proxy
         self.folderName = folderName
     }
@@ -186,6 +191,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         startURL = normalized.startURL
         startupMode = normalized.startupMode
         engine = normalized.engine
+        webKitMediaPolicy = normalized.webKitMediaPolicy
         proxy = normalized.proxy
         self.folderName = folderName
     }
@@ -202,6 +208,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
             startURL: startURL,
             startupMode: startupMode ?? .startPage,
             engine: engine ?? .chromium,
+            webKitMediaPolicy: webKitMediaPolicy ?? .ask,
             proxy: proxy,
             identity: BrowserIdentity()
         )

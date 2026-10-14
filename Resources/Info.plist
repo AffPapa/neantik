@@ -40,6 +40,10 @@
 	<string>14.0</string>
 	<key>LSRequiresNativeExecution</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Камера используется только сайтом WebKit-профиля, которому вы разрешите доступ. Запретить доступ можно в настройках профиля.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Микрофон используется только сайтом WebKit-профиля, которому вы разрешите доступ. Запретить доступ можно в настройках профиля.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

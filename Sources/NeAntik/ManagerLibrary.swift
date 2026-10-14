@@ -9,6 +9,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     let startURL: String
     let startupMode: BrowserStartupMode?
     let engine: BrowserEngine?
+    let webKitMediaPolicy: WebKitMediaPolicy?
 
     init(name: String, profile: BrowserProfile, folderID: UUID?) throws {
         guard let name = ProfileFolder.normalizedName(name),
@@ -22,6 +23,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
         self.startURL = profile.startURL
         self.startupMode = profile.startupMode
         self.engine = profile.engine
+        self.webKitMediaPolicy = profile.webKitMediaPolicy
     }
 
     // A template is reusable metadata, not a place to retain URL credentials
@@ -36,7 +38,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     }
 
     func makeProfile() -> BrowserProfile {
-        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium)
+        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium, webKitMediaPolicy: webKitMediaPolicy ?? .ask)
     }
 }
 
@@ -118,8 +120,10 @@ struct ManagerLibraryDocument: Codable, Equatable, Sendable {
     }
 
     func validate() throws {
-        guard [1, 2].contains(schemaVersion),
-              schemaVersion == 2 || !templates.contains(where: { $0.engine == .webkit }),
+        guard [1, 2, 3].contains(schemaVersion),
+              (schemaVersion >= 2 || !templates.contains(where: { $0.engine == .webkit })),
+              (schemaVersion >= 3 || !templates.contains(where: { $0.webKitMediaPolicy == .deny })),
+              !templates.contains(where: { $0.engine != .webkit && $0.webKitMediaPolicy == .deny }),
               templates.count <= Self.maximumItems, filters.count <= Self.maximumItems,
               events.count <= Self.maximumEvents,
               Set(templates.map(\.id)).count == templates.count,
@@ -184,7 +188,7 @@ actor ManagerLibraryRepository {
             var document = try read()
             try change(&document)
             // Older managers must not turn a WebKit template into Chromium.
-            document.schemaVersion = document.templates.contains(where: { $0.engine == .webkit }) ? 2 : 1
+            document.schemaVersion = document.templates.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (document.templates.contains(where: { $0.engine == .webkit }) ? 2 : 1)
             try document.validate()
             let data = try JSONEncoder().encode(document)
             guard data.count <= ManagerLibraryDocument.maximumBytes else { throw ManagerLibraryError.invalidDocument }

@@ -34,7 +34,7 @@ final class MCPProfileManagement {
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let optionalUUID: [String: Any] = ["type": ["string", "null"]]
         let changes: [String: Any] = ["type": "object", "additionalProperties": false, "properties": [
-            "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
+            "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text]]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
@@ -90,7 +90,7 @@ final class MCPProfileManagement {
             try await store.refreshExternalMetadata(force: true)
             try Task.checkCancellation()
             return ["templates": library.templates.map { template -> [String: Any] in
-                ["id": template.id.uuidString, "name": template.name, "startURL": template.startURL, "startupMode": (template.startupMode ?? .startPage).rawValue, "engine": (template.engine ?? .chromium).rawValue,
+                ["id": template.id.uuidString, "name": template.name, "startURL": template.startURL, "startupMode": (template.startupMode ?? .startPage).rawValue, "engine": (template.engine ?? .chromium).rawValue, "webKitMediaPolicy": (template.webKitMediaPolicy ?? .ask).rawValue,
                  "tags": template.tags, "folderID": template.folderID.flatMap {
                      store.organization.folder(withID: $0)?.id.uuidString
                  } as Any? ?? NSNull()]
@@ -308,12 +308,13 @@ final class MCPProfileManagement {
     }
 
     private func apply(_ changes: [String: Any], to profile: inout BrowserProfile) throws {
-        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
+        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "webKitMediaPolicy", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
         for (key, value) in changes {
             switch key {
             case "name": profile.name = try string(changes, key).trimmingCharacters(in: .whitespacesAndNewlines)
             case "startURL": guard let url = BrowserLaunchBuilder.validatedStartURL(try string(changes, key)) else { throw Failure.invalid }; profile.startURL = url.absoluteString
             case "startupMode": guard let mode = BrowserStartupMode(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.startupMode = mode
+            case "webKitMediaPolicy": guard profile.engine == .webkit, let policy = WebKitMediaPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.webKitMediaPolicy = policy
             case "note": guard let note = BrowserProfile.normalizedNote(try string(changes, key)) else { throw Failure.invalid }; profile.note = note
             case "tags": guard let tags = value as? [String], let normalized = BrowserProfile.normalizedTags(tags) else { throw Failure.invalid }; profile.tags = normalized
             case "isPinned", "isArchived": guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else { throw Failure.invalid }; if key == "isPinned" { profile.isPinned = number.boolValue } else { profile.isArchived = number.boolValue }
@@ -357,7 +358,7 @@ final class MCPProfileManagement {
         return ProxyImportDraft(configuration: configuration, password: password)
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
-        ["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "engine": profile.engine.rawValue,
+        ["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()]

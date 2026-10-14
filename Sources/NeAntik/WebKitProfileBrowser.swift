@@ -131,6 +131,10 @@ private final class WebKitBrowserTab {
     init(view: WKWebView) { self.view = view }
     func detach(preserveNavigationDelegate: Bool = false) {
         observations.removeAll()
+        // Public APIs stop any active capture before a tab is detached. They
+        // do not replace the deny policy for future capture requests.
+        view.setCameraCaptureState(.none, completionHandler: nil)
+        view.setMicrophoneCaptureState(.none, completionHandler: nil)
         // stopLoading can abort policy→download conversion without delivering
         // didBecome. Keep that view only until its reserved conversion arrives,
         // then cancel the actual WKDownload and stop the navigation.
@@ -147,6 +151,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     let profileID: UUID
     private(set) var webView: WKWebView
     private let dataStore: WKWebsiteDataStore
+    private let mediaPolicy: WebKitMediaPolicy
     private let window: WebKitBrowserWindow
     private let pageArea = NSView()
     private let tabStrip = NSStackView()
@@ -184,6 +189,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if profile.startupMode == .restoreSession, sessionStore == nil { throw WebKitSessionError.unavailable }
         if let restoredSession { try restoredSession.validate(for: profile.id) }
         profileID = profile.id
+        mediaPolicy = profile.webKitMediaPolicy
         self.sessionStore = sessionStore; restoresSession = profile.startupMode == .restoreSession
         self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
         self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
@@ -478,6 +484,19 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         // WebKit supplies this configuration to preserve opener semantics.
         // Return the owned view; WebKit performs navigation itself.
         return appendTab(configuration: configuration)
+    }
+    func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+                 initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
+                 decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+        let knownType: Bool
+        switch type { case .camera, .microphone, .cameraAndMicrophone: knownType = true; @unknown default: knownType = false }
+        // Do not grant or cache consent. WebKit still enforces frame/Permissions
+        // Policy, secure-context requirements and the system hardware prompt.
+        decisionHandler(mediaPolicy.decision(owned: owns(webView) && frame.webView === webView,
+            persistent: webView.configuration.websiteDataStore.isPersistent,
+            storeID: webView.configuration.websiteDataStore.identifier, profileID: profileID,
+            secureOrigin: WebKitMediaPolicy.permitsOrigin(scheme: origin.protocol, host: origin.host),
+            knownCaptureType: knownType))
     }
     func webViewDidClose(_ webView: WKWebView) {
         if let tab = tabs.values.first(where: { $0.view === webView }) { closeTab(tab.id) }

@@ -23,12 +23,14 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn(control, text)
         self.assertLess(text.index(control), text.index('echo "[2/4] Проверяю изоляцию'))
 
-    def test_manager_direct_signing_claims_only_existing_app_id(self) -> None:
+    def test_manager_direct_signing_claims_existing_app_id_and_explicit_media(self) -> None:
         claims = plistlib.loads(DIRECT_ENTITLEMENTS.read_bytes())
         self.assertEqual(
             claims,
             {"com.apple.application-identifier":
-             "H6VGU2M6JD.app.neantik.desktop"},
+             "H6VGU2M6JD.app.neantik.desktop",
+             "com.apple.security.device.camera": True,
+             "com.apple.security.device.audio-input": True},
         )
 
     def test_release_packaging_resolves_current_swift_bin_path(self) -> None:

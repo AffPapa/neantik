@@ -15,6 +15,39 @@ struct DirectUpdateCodeSignatureTests {
             kSecCodeInfoTimestamp as String: Date(timeIntervalSince1970: 1_800_000_000),
             kSecCodeInfoPList as String: plist, kSecCodeInfoEntitlementsDict as String: role.entitlements]
     }
+    @Test(arguments: [false, true])
+    func managerMediaContractPreservesOldAppsAndRefusesIncompleteClaims(provisioned: Bool) throws {
+        var info = information(.manager)
+        let base = provisioned ? DirectUpdateProvisioningPolicy.claims(bundle: DirectUpdateCodeRole.manager.identifier) : DirectUpdateCodeRole.manager.entitlements
+        info[kSecCodeInfoEntitlementsDict as String] = base
+        _ = try DirectUpdateCodeSignature.validatedFields(info, role: .manager, provisionedManager: provisioned)
+        var plist = try #require(info[kSecCodeInfoPList as String] as? [String: Any])
+        plist["NSCameraUsageDescription"] = "Camera for user-approved website"
+        plist["NSMicrophoneUsageDescription"] = "Microphone for user-approved website"
+        let media = try DirectUpdateCodeSignature.managerMediaClaims(plist)
+        let all = base.merging(media) { _, rhs in rhs }
+        info[kSecCodeInfoPList as String] = plist; info[kSecCodeInfoEntitlementsDict as String] = all
+        _ = try DirectUpdateCodeSignature.validatedFields(info, role: .manager, provisionedManager: provisioned)
+        for key in media.keys {
+            var broken = info, claims = all; claims.removeValue(forKey: key)
+            broken[kSecCodeInfoEntitlementsDict as String] = claims
+            #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.validatedFields(broken, role: .manager, provisionedManager: provisioned) }
+            claims = all; claims[key] = NSNumber(value: 1); broken[kSecCodeInfoEntitlementsDict as String] = claims
+            #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.validatedFields(broken, role: .manager, provisionedManager: provisioned) }
+            claims = all; claims[key] = NSNumber(value: false); broken[kSecCodeInfoEntitlementsDict as String] = claims
+            #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.validatedFields(broken, role: .manager, provisionedManager: provisioned) }
+        }
+        for malformed in ["", " ", "\n"] {
+            var broken = plist; broken["NSCameraUsageDescription"] = malformed
+            #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.managerMediaClaims(broken) }
+        }
+        var broken = plist; broken.removeValue(forKey: "NSCameraUsageDescription")
+        #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.managerMediaClaims(broken) }
+        var extra = all; extra["get-task-allow"] = NSNumber(value: false)
+        info[kSecCodeInfoEntitlementsDict as String] = extra
+        #expect(throws: DirectUpdateCodeSignatureError.policy) { try DirectUpdateCodeSignature.validatedFields(info, role: .manager, provisionedManager: provisioned) }
+    }
+
     @Test(arguments: DirectUpdateCodeRole.allCases)
     func fixedContractAcceptsOnlyCurrentRoleInformation(role: DirectUpdateCodeRole) throws {
         let result = try DirectUpdateCodeSignature.validatedFields(information(role), role: role)

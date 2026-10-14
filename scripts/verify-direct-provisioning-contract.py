@@ -14,7 +14,7 @@ import tempfile
 
 from direct_provisioning_contract import (
     ContractError, PRODUCTION, QA, authenticated_profile, exact_claims,
-    read_regular, verify_app,
+    read_regular, verify_app, media_claims,
 )
 
 
@@ -23,7 +23,8 @@ def prepare_outputs(app: Path, output: Path, profile: bytes, bundle: str) -> Non
     info = plistlib.loads(read_regular(app / "Contents/Info.plist"))
     if info.get("CFBundleIdentifier") != bundle:
         raise ContractError("Bundle identity differs before signing")
-    destinations = [(output, plistlib.dumps(exact_claims(bundle))), (embedded, profile)]
+    claims = {**exact_claims(bundle), **media_claims(info)}
+    destinations = [(output, plistlib.dumps(claims)), (embedded, profile)]
     for path, _ in destinations:
         if not path.is_absolute() or path.exists() or path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
             raise ContractError("New non-symlink signing outputs required")

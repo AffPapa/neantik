@@ -166,3 +166,9 @@ Gatekeeper и публичные байты проверены. Повторна
 предварительная проверка не заменила конечную привязку.
 Disposable DeviceMemory harness использует explicit mock Keychain и
 allowlisted environment; временный HOME сам по себе не изолирует Keychain.
+
+### Среда тестов и fixture-каталог
+
+Полный Swift-прогон включает собственные kernel-process и loopback/Unix-socket controls. В ограниченной среде заранее выбрать разрешённый QA execution context; Permission denied не исправляется ослаблением assertions. Если ограничения обнаружены в первом прогоне, сохранить его как setup failure и повторить только упавшие наборы с тем же input digest. Не объявлять первоначальный прогон зелёным.
+
+Каталог opt-in fixtures перечисляет необходимые environment inputs, включая URLs/roots; не каждый input является boolean enable-флагом. Проверять декларации реальных suite types, поскольку несколько suites могут находиться в одном файле. Каждая @Test в чисто opt-in suite должна иметь явный enabled guard; нулевой или только skipped результат остаётся отказом runner.

@@ -25,6 +25,16 @@ class ContractError(ValueError):
     pass
 
 
+def media_claims(info: dict) -> dict:
+    keys = ("NSCameraUsageDescription", "NSMicrophoneUsageDescription")
+    if not any(key in info for key in keys):
+        return {}
+    if not all(isinstance(info.get(key), str) and info[key].strip() for key in keys):
+        raise ContractError("Both camera and microphone purpose strings required")
+    return {"com.apple.security.device.camera": True,
+            "com.apple.security.device.audio-input": True}
+
+
 def exact_claims(bundle: str) -> dict:
     if bundle not in (PRODUCTION, QA):
         raise ContractError("Unsupported Direct identity")
@@ -142,10 +152,11 @@ def verify_app(helper: Path, app: Path, bundle: str, certificate_sha1: str,
     leaf = signed.get("certificate")
     if not isinstance(leaf, bytes) or hashlib.sha1(leaf).hexdigest() != certificate_sha1.lower() or signed.get("hardenedRuntime") is not True:
         raise ContractError("Actual signed certificate or hardened runtime differs")
+    claims.update(media_claims(info))
     if profile is not None:
         if leaf not in profile["DeveloperCertificates"] or signed.get("entitlements") != claims:
             raise ContractError("Actual signed claims or certificate not authorized")
         return "provisioned"
-    if bundle != PRODUCTION or signed.get("entitlements") != {"com.apple.application-identifier": TEAM + "." + PRODUCTION}:
+    if bundle != PRODUCTION or signed.get("entitlements") != {"com.apple.application-identifier": TEAM + "." + PRODUCTION, **media_claims(info)}:
         raise ContractError("Legacy Direct claim contract differs")
     return "legacy"

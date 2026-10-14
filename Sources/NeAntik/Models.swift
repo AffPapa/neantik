@@ -709,6 +709,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var startURL: String
     var startupMode: BrowserStartupMode
     var engine: BrowserEngine
+    var webKitMediaPolicy: WebKitMediaPolicy
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -728,6 +729,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         startURL: String = BrowserProfile.defaultStartURL,
         startupMode: BrowserStartupMode = .startPage,
         engine: BrowserEngine = .chromium,
+        webKitMediaPolicy: WebKitMediaPolicy = .ask,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -747,6 +749,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.startURL = startURL
         self.startupMode = startupMode
         self.engine = engine
+        self.webKitMediaPolicy = webKitMediaPolicy
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -814,6 +817,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     }
 
     func normalizedForPersistence() -> BrowserProfile? {
+        if engine != .webkit && webKitMediaPolicy != .ask { return nil }
         if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
         let cleanStartURL = startURL.trimmingCharacters(
             in: .whitespacesAndNewlines
@@ -871,6 +875,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             startURL: startURL,
             startupMode: startupMode,
             engine: engine,
+            webKitMediaPolicy: webKitMediaPolicy,
             proxy: proxy,
             identity: BrowserIdentity(),
             createdAt: date,
@@ -894,6 +899,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case startURL
         case startupMode
         case engine
+        case webKitMediaPolicy
         case proxy
         case identity
         case createdAt
@@ -934,6 +940,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         // Missing field preserves the established startup contract of old profiles.
         startupMode = try container.decodeIfPresent(BrowserStartupMode.self, forKey: .startupMode) ?? .startPage
         engine = try container.decodeIfPresent(BrowserEngine.self, forKey: .engine) ?? .chromium
+        webKitMediaPolicy = try container.decodeIfPresent(WebKitMediaPolicy.self, forKey: .webKitMediaPolicy) ?? .ask
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
             forKey: .proxy

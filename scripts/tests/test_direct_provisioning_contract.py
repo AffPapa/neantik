@@ -18,6 +18,36 @@ spec.loader.exec_module(cli)
 
 
 class DirectProvisioningTests(unittest.TestCase):
+    def test_media_purpose_strings_and_exact_grants(self):
+        self.assertEqual(contract.media_claims({}), {})  # Old immutable apps remain supported.
+        info = {"NSCameraUsageDescription": "User-approved website camera",
+                "NSMicrophoneUsageDescription": "User-approved website microphone"}
+        expected = {"com.apple.security.device.camera": True, "com.apple.security.device.audio-input": True}
+        self.assertEqual(contract.media_claims(info), expected)
+        for broken in [{"NSCameraUsageDescription": "camera"},
+                       {**info, "NSMicrophoneUsageDescription": " "},
+                       {**info, "NSCameraUsageDescription": False}]:
+            with self.assertRaises(contract.ContractError): contract.media_claims(broken)
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
+            app = Path(directory) / "QA.app"; (app / "Contents").mkdir(parents=True)
+            (app / "Contents/Info.plist").write_bytes(plistlib.dumps({"CFBundleIdentifier": contract.QA, **info}))
+            output = Path(directory) / "claims.plist"
+            cli.prepare_outputs(app, output, b"own synthetic profile", contract.QA)
+            self.assertEqual(plistlib.loads(output.read_bytes()), {**contract.exact_claims(contract.QA), **expected})
+        profile, sha = self.fixture()
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
+            app = Path(directory) / "QA.app"; (app / "Contents").mkdir(parents=True)
+            (app / "Contents/Info.plist").write_bytes(plistlib.dumps({"CFBundleIdentifier": contract.QA, **info}))
+            (app / "Contents/embedded.provisionprofile").write_bytes(b"own synthetic profile")
+            signed = {"entitlements": {**contract.exact_claims(contract.QA), **expected},
+                      "certificate": profile["DeveloperCertificates"][0], "hardenedRuntime": True}
+            with patch.object(contract, "authenticated_profile", return_value=profile), patch.object(contract, "security_result", return_value=signed):
+                self.assertEqual(contract.verify_app(Path("/helper"), app, contract.QA, sha), "provisioned")
+                for key in expected:
+                    broken = {**signed, "entitlements": {k: v for k, v in signed["entitlements"].items() if k != key}}
+                    with patch.object(contract, "security_result", return_value=broken):
+                        with self.assertRaises(contract.ContractError): contract.verify_app(Path("/helper"), app, contract.QA, sha)
+
     def fixture(self):
         certificate = b"synthetic certificate fixture, not runtime trust proof"
         return {"Platform": ["OSX"], "ProvisionsAllDevices": True,

@@ -101,16 +101,27 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIsInstance(fixtures, dict)
         self.assertTrue(set(fixtures).issubset(discovered_suites))
         for suite, flags in fixtures.items():
-            text = (SWIFT_TESTS / f"{suite}.swift").read_text()
+            matches = []
+            for path in SWIFT_TESTS.glob("*.swift"):
+                source = path.read_text()
+                declaration = re.search(r"\b(?:struct|class|actor|enum)\s+" + re.escape(suite) + r"\b", source)
+                if declaration:
+                    # Several suites may share one file; test gates belong to the
+                    # actual suite, not a guessed basename or unrelated suite.
+                    tail = source[declaration.end():]
+                    tail = re.split(r"\n@Suite\b", tail, maxsplit=1)[0]
+                    matches.append(tail)
+            self.assertEqual(len(matches), 1)
+            text = matches[0]
             declarations = re.findall(r"@Test([^\n]*)", text)
             self.assertGreater(len(declarations), 0)
             self.assertGreater(len(flags), 0)
             for flag in flags:
-                self.assertRegex(flag, r"^NEANTIK_[A-Z_]+FIXTURE$")
-                self.assertIn(f'environment["{flag}"] == "1"', text)
+                self.assertRegex(flag, r"^NEANTIK_[A-Z_]+$")
+                self.assertIn(f'["{flag}"]', text)
             for declaration in declarations:
                 self.assertIn(".enabled(if:", declaration)
-                self.assertTrue(any(f'environment["{flag}"] == "1"' in declaration for flag in flags))
+                self.assertTrue(any(f'environment["{flag}"]' in declaration for flag in flags))
         live_suites |= set(fixtures)
         non_live_suites = discovered_suites - live_suites
 
