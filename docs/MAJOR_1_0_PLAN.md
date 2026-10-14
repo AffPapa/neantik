@@ -1,12 +1,12 @@
 # NeAntik: план до версии 1.0
 
-Текущий публичный выпуск — **0.8.3 (114)**, Chromium **156.0.8078.12**. Версия 1.0 ещё не готова. Исследование Fury сохранено; код его AGPL-компонентов в продукт не копируется.
+Текущий публичный выпуск — **0.8.7 (118)**, Chromium **156.0.8078.12**. Версия 1.0 ещё не готова. Исследование Fury сохранено; код его AGPL-компонентов в продукт не копируется.
 
 ## Очередь работ
 
 1. **Быстрее разрабатывать.** Общие кэши, четыре CI-сегмента, точечный выбор тестов, защита от параллельной записи в кэш и компактные правила. Локальная проверка инструментов выполнена; CloudCI301 выполнен; очередь macOS ARM и cold build учтены отдельно.
 2. **Вкладки WebKit.** Новая вкладка, переключение, закрытие и ссылки, открывающие новое окно. Все вкладки одного профиля используют его хранилище. Данные разных профилей разделены. Опубликовано в0.8.3: exact signed WebKit A/B full restart, public bytes и downloaded launch проверены.
-3. **Сеть и удобства WebKit.** Сначала отдельная проверка полномочий relay, DNS и WebRTC; затем загрузки файлов, восстановление вкладок, операции с данными и управление из MCP. До проверки прокси запуск такого профиля с прокси запрещён.
+3. **Сеть и удобства WebKit.** Загрузки опубликованы в0.8.6, опциональное восстановление вкладок после штатного выхода — в0.8.7 (exact signed/hosted/headed/MCP проверены). Следующий небольшой срез: кэш закрытого профиля с сохранением cookies/LS/IDB/session. Прокси требуют отдельной revocable authority, DNS/WebRTC/no-Direct проверки; до них proxy launch запрещён. GUI-MCP и полный backup остаются открытыми.
 4. **Обязательные проверки 1.0.** Закрыть оставшиеся P0 из таблицы ниже, затем проверить данные, совместимость и обновление между актуальными выпусками.
 5. **Дополнительные функции.** WireGuard и командная работа требуют отдельного решения об инфраструктуре. Финальная 1.0 выпускается только после обязательной квалификации.
 
@@ -65,7 +65,7 @@
 |40|P0|One vector patch+test|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |41|P0|Positive/negative controls|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |42|P0|Values vs behavior|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
-|43|P0|Exact shipped browser|опубликовано publicalpha; major1.0 открыта|Exact.83sign/notary/hosted/headed +18 platform cases; full45/hardwarematrix notclosed|
+|43|P0|Exact shipped browser|опубликовано publicalpha; major1.0 открыта|0.8.7 exact signed/Apple ZIP+DMG/Gatekeeper/hosted/headed/MCP/session и live Site проверены; прежние platform observations сохранены. Все45/OS/hardware gates не закрыты.|
 |44|P1|Version regressionreport|частично реализовано|Per-version JSON reports exist; compatible machine-readable semantic diffs pending|
 |45|P1|Docs/CI truth|реализовано в текущем срезе; общий drift gate открыт|Current source/release/site scopes and docs; new4shardCI/localdriververified; completeclaim drift future|
 
@@ -76,7 +76,7 @@
 |Вкладки/popup|CmdT/W, последнее закрытие, sameprofile store, two-profile cookie/LS/IDB isolation, opener ownership и штатныйquit|
 |Proxy|Новая revocable capability/sessionauthority, credentialsневargv/log, noDirectfallback; controlledDNS/RTC/loopback/IPv6/redirect/worker tests|
 |Downloads|WKDownload фактическиеbytes/hash, filechoice, collision/symlink/cancel/redirect/TLS; неURLSession bypass|
-|Sessionrestore|Штатныйrestart возвращаетURLs; данныесайтовсохранены; crashграницыявны|
+|Sessionrestore|Опубликовано0.8.7: exact signed ⌘Q/processrestart2tabs/order/selected/fullURLs; nativeA/B storage/clone/savefault/retry PASS. Crashlast-unsaved/forms/history не обещаются.|
 |MCP GUI|AuthenticatedlocalIPC/revision/sessionownership; noJS/shell/secretaccess|
 |Данные|Owned closedstore safe delete/cache; public snapshot APIs исследовать доfullbackup promise|
 
