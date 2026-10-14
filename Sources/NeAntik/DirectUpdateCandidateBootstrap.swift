@@ -57,8 +57,12 @@ enum DirectUpdateCandidateBootstrap {
             // helper payload. A supplied path, same team or argv cannot replace it.
             let ownerURL = app.appendingPathComponent("Contents/Helpers/NeAntikUpdateOwner")
             phase = "owner"
-            let ownerCode = try DirectUpdateEmptyEntitlementCode.inspect(ownerURL, identifier: qa ? "app.neantik.update-owner-qa" : "app.neantik.update-owner").pin
-            guard ProxyRelayLiveCodeVerifier.matches(processID: selfIdentity.parentProcessID, expectedProcess: owner, expectedCode: ownerCode) else {
+            let ownerPins = qa
+                ? [try DirectUpdateEmptyEntitlementCode.inspect(ownerURL, identifier: "app.neantik.update-owner-qa").pin]
+                : try DirectUpdateInstalledPolicy.continuationOwners(in: app)
+            guard let ownerCode = ownerPins.first(where: {
+                ProxyRelayLiveCodeVerifier.matches(processID: selfIdentity.parentProcessID, expectedProcess: owner, expectedCode: $0)
+            }) else {
                 throw DirectUpdateInstallSessionError.identity
             }
             phase = "audit-isolation"

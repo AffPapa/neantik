@@ -79,11 +79,19 @@ package actor DirectUpdateAdmissionCoordinator {
                 let code = try DirectUpdateCodeSignature.inspect(app, role: .manager)
                 guard code == signature.manager else { throw DirectUpdateAdmissionError.binding }
                 let metadata = try code.installedUpdateMetadata()
-                guard ownerCDHash.count == 20, metadata.owner.cdHash == ownerCDHash else { throw DirectUpdateAdmissionError.binding }
+                // The prior owner remains in the signed candidate at its fixed
+                // legacy path. This preserves authenticated bootstrap continuity
+                // while the new installation uses the separately pinned V2 owner.
+                guard ownerCDHash.count == 20,
+                      metadata.owner.cdHash == ownerCDHash || metadata.legacyOwner?.cdHash == ownerCDHash else { throw DirectUpdateAdmissionError.binding }
                 try DirectAssessmentHelper.packagedOwner(in: app, releasePayloadSHA256: metadata.owner.sha256,
-                    releaseCDHash: metadata.owner.cdHash).validate()
+                    releaseCDHash: metadata.owner.cdHash, modern: metadata.modernHelpers).validate()
                 try DirectAssessmentHelper.packaged(in: app, releasePayloadSHA256: metadata.assessment.sha256,
-                    releaseCDHash: metadata.assessment.cdHash).validate()
+                    releaseCDHash: metadata.assessment.cdHash, modern: metadata.modernHelpers).validate()
+                if let prior = metadata.legacyOwner, let assessment = metadata.legacyAssessment {
+                    try DirectAssessmentHelper.packagedOwner(in: app, releasePayloadSHA256: prior.sha256, releaseCDHash: prior.cdHash).validate()
+                    try DirectAssessmentHelper.packaged(in: app, releasePayloadSHA256: assessment.sha256, releaseCDHash: assessment.cdHash).validate()
+                }
                 return metadata
             }
             guard try DirectUpdateArchiveIntegrityService.admittedManifest(manifest, configuration: configuration,

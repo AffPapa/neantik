@@ -57,6 +57,39 @@ struct DirectUpdateInstalledPolicyTests {
         #expect(!DirectUpdateDeveloperIdentity.matches(Data(DirectUpdateDeveloperIdentity.certificateSHA1.utf8)))
         #expect(!DirectUpdateDeveloperIdentity.matches(Data()))
     }
+    @Test func modernPolicySelectsNewOwnerAndRetainsOnlySignedPriorPin() throws {
+        var info = plist()
+        let pin: [String: Any] = ["sha256": String(repeating: "c", count: 64), "cdHash": String(repeating: "d", count: 40)]
+        info[DirectUpdateInstalledMetadata.modernHelpersKey] = ["schemaVersion": 2, "owner": pin, "assessment": pin]
+        let parsed = try DirectUpdateInstalledMetadata.parseSigned(info, version: "0.7.33", build: "96")
+        #expect(parsed.modernHelpers)
+        #expect(parsed.owner.cdHash == Data(repeating: 0xdd, count: 20))
+        #expect(parsed.legacyOwner?.cdHash == Data(repeating: 0xbb, count: 20))
+        #expect(parsed.legacyAssessment?.sha256 == String(repeating: "a", count: 64))
+        let old = try DirectUpdateInstalledMetadata.parseSigned(plist(), version: "0.7.33", build: "96")
+        #expect(!old.modernHelpers && old.legacyOwner == nil)
+    }
+    @Test(arguments: ["not-object", "wrong-schema", "boolean-schema", "fractional-schema", "path", "missing-owner", "bad-pin", "invalid-legacy", "required-but-missing", "nonboolean-requirement"])
+    func invalidModernPolicyCannotFallback(control: String) {
+        var info = plist()
+        var modern = info[DirectUpdateInstalledMetadata.helpersKey] as! [String: Any]
+        modern["schemaVersion"] = 2
+        switch control {
+        case "not-object": info[DirectUpdateInstalledMetadata.modernHelpersKey] = false
+        case "wrong-schema": modern["schemaVersion"] = 1
+        case "boolean-schema": modern["schemaVersion"] = true
+        case "fractional-schema": modern["schemaVersion"] = 2.5
+        case "path": modern["path"] = "/tmp/other"
+        case "missing-owner": modern["owner"] = nil
+        case "bad-pin": modern["owner"] = ["sha256": "bad", "cdHash": "bad"]
+        case "invalid-legacy": info[DirectUpdateInstalledMetadata.helpersKey] = nil
+        case "required-but-missing": info["NeAntikUpdateOwnerContinuityRequired"] = true
+        case "nonboolean-requirement": info["NeAntikUpdateOwnerContinuityRequired"] = 1
+        default: break
+        }
+        if control != "not-object" && control != "required-but-missing" { info[DirectUpdateInstalledMetadata.modernHelpersKey] = modern }
+        #expect(throws: (any Error).self) { try DirectUpdateInstalledMetadata.parseSigned(info, version: "0.7.33", build: "96") }
+    }
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_HELPER_PACKAGE_QA"] != nil))
     func actualManagerSignaturePolicyAndUnsignedMutationRefusal() throws {
         let helperApp = URL(fileURLWithPath: ProcessInfo.processInfo.environment["NEANTIK_UPDATE_HELPER_PACKAGE_QA"]!)

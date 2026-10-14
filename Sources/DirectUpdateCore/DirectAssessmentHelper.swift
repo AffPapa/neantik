@@ -49,14 +49,14 @@ final package class DirectAssessmentHelper: @unchecked Sendable, CustomStringCon
         kept = true
     }
     deinit { close(file); close(parent) }
-    package static func packaged(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
-        try .init(url: qualifiedInstalledApp.appendingPathComponent("Contents/Helpers/NeAntikUpdateAssessment"),
+    package static func packaged(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data, modern: Bool = false) throws -> DirectAssessmentHelper {
+        try .init(url: qualifiedInstalledApp.appendingPathComponent(modern ? "Contents/Helpers/v2/NeAntikUpdateAssessment" : "Contents/Helpers/NeAntikUpdateAssessment"),
                   sha256: releasePayloadSHA256, cdHash: releaseCDHash, identifier: identifier)
     }
     /// The owner uses the same bounded retained-file checks, but a different
     /// fixed identifier and path. A caller cannot select an arbitrary helper.
-    package static func packagedOwner(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data) throws -> DirectAssessmentHelper {
-        try .init(url: qualifiedInstalledApp.appendingPathComponent("Contents/Helpers/NeAntikUpdateOwner"),
+    package static func packagedOwner(in qualifiedInstalledApp: URL, releasePayloadSHA256: String, releaseCDHash: Data, modern: Bool = false) throws -> DirectAssessmentHelper {
+        try .init(url: qualifiedInstalledApp.appendingPathComponent(modern ? "Contents/Helpers/v2/NeAntikUpdateOwner" : "Contents/Helpers/NeAntikUpdateOwner"),
                   sha256: releasePayloadSHA256, cdHash: releaseCDHash, identifier: "app.neantik.update-owner")
     }
     // These constructors are used only after the owner derives and validates

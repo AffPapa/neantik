@@ -36,13 +36,18 @@ package struct DirectUpdateHelperPin: Sendable, Equatable {
 /// genuine CodeSignatureObservation; this parser remains independently testable.
 package struct DirectUpdateInstalledMetadata: Sendable, Equatable {
     package static let helpersKey = "NeAntikUpdateHelpers"
+    package static let modernHelpersKey = "NeAntikUpdateHelpersV2"
     package let configuration: UpdateChannelConfiguration
     package let version: String, build: Int
     package let owner, assessment: DirectUpdateHelperPin
+    package let legacyOwner, legacyAssessment: DirectUpdateHelperPin?
+    package var modernHelpers: Bool { legacyOwner != nil }
     private init(configuration: UpdateChannelConfiguration, version: String, build: Int,
-                 owner: DirectUpdateHelperPin, assessment: DirectUpdateHelperPin) {
+                 owner: DirectUpdateHelperPin, assessment: DirectUpdateHelperPin,
+                 legacyOwner: DirectUpdateHelperPin? = nil, legacyAssessment: DirectUpdateHelperPin? = nil) {
         self.configuration = configuration; self.version = version; self.build = build
         self.owner = owner; self.assessment = assessment
+        self.legacyOwner = legacyOwner; self.legacyAssessment = legacyAssessment
     }
     static func parseSigned(_ plist: [String: Any], version: String, build: String) throws -> Self {
         guard let enabled = plist[UpdateChannelConfiguration.enabledKey] as? NSNumber,
@@ -59,8 +64,28 @@ package struct DirectUpdateInstalledMetadata: Sendable, Equatable {
               schema == NSNumber(value: 1) else {
             throw DirectUpdateCodeSignatureError.policy
         }
-        return try .init(configuration: configuration, version: version, build: number,
-                         owner: .parse(helpers["owner"]), assessment: .parse(helpers["assessment"]))
+        let legacyOwner = try DirectUpdateHelperPin.parse(helpers["owner"])
+        let legacyAssessment = try DirectUpdateHelperPin.parse(helpers["assessment"])
+        if let continuity = plist["NeAntikUpdateOwnerContinuityRequired"] {
+            guard let required = continuity as? NSNumber,
+                  CFGetTypeID(required) == CFBooleanGetTypeID(),
+                  !required.boolValue || plist.keys.contains(modernHelpersKey) else { throw DirectUpdateCodeSignatureError.policy }
+        }
+        // A malformed modern policy cannot silently select the older installer.
+        // Both objects are covered by the manager's genuine code signature.
+        if plist.keys.contains(modernHelpersKey) {
+            guard let modern = plist[modernHelpersKey] as? [String: Any],
+                  Set(modern.keys) == ["schemaVersion", "owner", "assessment"],
+                  let schema = modern["schemaVersion"] as? NSNumber,
+                  CFGetTypeID(schema) != CFBooleanGetTypeID(),
+                  ["c", "s", "i", "l", "q", "C", "S", "I", "L", "Q"].contains(String(cString: schema.objCType)),
+                  schema == NSNumber(value: 2) else { throw DirectUpdateCodeSignatureError.policy }
+            return try .init(configuration: configuration, version: version, build: number,
+                             owner: .parse(modern["owner"]), assessment: .parse(modern["assessment"]),
+                             legacyOwner: legacyOwner, legacyAssessment: legacyAssessment)
+        }
+        return .init(configuration: configuration, version: version, build: number,
+                     owner: legacyOwner, assessment: legacyAssessment)
     }
 }
 
@@ -83,6 +108,24 @@ final package class DirectUpdateInstalledPolicy: @unchecked Sendable, CustomStri
     deinit { close(root) }
     package static func inspect(installedApp app: URL) throws -> Self {
         try inspect(app: app, role: .manager)
+    }
+    /// Bootstrap may be driven by the carried prior owner or this release's
+    /// primary owner. Each pin comes from signed policy AND a fixed retained
+    /// helper payload with the pinned certificate; a same-team process is not enough.
+    package static func continuationOwners(in app: URL) throws -> [ProxyRelayExpectedCode] {
+        let code = try DirectUpdateCodeSignature.inspect(app, role: .manager)
+        let metadata = try code.installedUpdateMetadata()
+        let current = try DirectAssessmentHelper.packagedOwner(in: app,
+            releasePayloadSHA256: metadata.owner.sha256, releaseCDHash: metadata.owner.cdHash,
+            modern: metadata.modernHelpers)
+        try current.validate()
+        var pins = [current.expectedCode]
+        if let legacy = metadata.legacyOwner {
+            let prior = try DirectAssessmentHelper.packagedOwner(in: app,
+                releasePayloadSHA256: legacy.sha256, releaseCDHash: legacy.cdHash)
+            try prior.validate(); pins.append(prior.expectedCode)
+        }
+        return pins
     }
     #if DEBUG
     /// Actual signed QA code, never production identity or Keychain access.
@@ -112,8 +155,8 @@ final package class DirectUpdateInstalledPolicy: @unchecked Sendable, CustomStri
         let rootIdentity = try BackupFS.identity(root)
         let code = try DirectUpdateCodeSignature.inspect(app, role: role)
         let metadata = try metadata(code, role: role)
-        let owner = try DirectAssessmentHelper.packagedOwner(in: app, releasePayloadSHA256: metadata.owner.sha256, releaseCDHash: metadata.owner.cdHash)
-        let assessment = try DirectAssessmentHelper.packaged(in: app, releasePayloadSHA256: metadata.assessment.sha256, releaseCDHash: metadata.assessment.cdHash)
+        let owner = try DirectAssessmentHelper.packagedOwner(in: app, releasePayloadSHA256: metadata.owner.sha256, releaseCDHash: metadata.owner.cdHash, modern: metadata.modernHelpers)
+        let assessment = try DirectAssessmentHelper.packaged(in: app, releasePayloadSHA256: metadata.assessment.sha256, releaseCDHash: metadata.assessment.cdHash, modern: metadata.modernHelpers)
         let policy = Self(app: app, root: root, rootIdentity: rootIdentity, metadata: metadata,
                           managerCDHash: code.cdHash, owner: owner, assessment: assessment, role: role)
         kept = true

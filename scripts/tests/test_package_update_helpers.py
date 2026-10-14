@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import os
 from pathlib import Path
 import plistlib
@@ -72,6 +73,85 @@ class PackageUpdateHelpersTests(unittest.TestCase):
             info = plistlib.loads(path.read_bytes()); info["NeAntikUpdateChannelEnabled"] = True
             path.write_bytes(plistlib.dumps(info))
             with self.assertRaises(module.ContractError): module.package(app, binaries, "-", run=lambda _: None)
+
+    def test_release_continuity_cannot_be_accidentally_omitted(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            app, binaries = self.fixture(Path(tmp)); path = app / "Contents/Info.plist"
+            info = plistlib.loads(path.read_bytes()); info["NeAntikUpdateOwnerContinuityRequired"] = True
+            path.write_bytes(plistlib.dumps(info))
+            with self.assertRaises(module.ContractError):
+                module.package(app, binaries, module.CERTIFICATE, run=lambda _: None, inspect=lambda _: "b" * 40)
+            self.assertFalse((app / "Contents/Helpers").exists())
+
+    def legacy(self, root, modern=False):
+        app = root / "Legacy.app"; (app / "Contents/Helpers").mkdir(parents=True)
+        source = app / "Contents/Helpers"
+        if modern: source = source / "v2"; source.mkdir()
+        pins = {"schemaVersion": 2 if modern else 1}
+        for role, name in module.HELPERS.items():
+            data = bytes.fromhex("cffaedfe0c000001") + role.encode().ljust(40, b"\0")
+            (source / name).write_bytes(data)
+            pins[role] = {"sha256": hashlib.sha256(data).hexdigest(), "cdHash": "c" * 40}
+        info = {"CFBundleIdentifier": "app.neantik.desktop", module.MODERN_PIN_KEY if modern else module.PIN_KEY: pins}
+        (app / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
+        return app, source
+
+    def test_carries_prior_primary_without_resigning_and_selects_fixed_modern_paths(self):
+        for modern in (False, True):
+            with self.subTest(modern=modern), tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+                root = Path(tmp); app, binaries = self.fixture(root); old, source = self.legacy(root, modern)
+                calls = []
+                inspect = lambda path: "c" * 40 if path.is_relative_to(old) else "b" * 40
+                module.package(app, binaries, module.CERTIFICATE, run=calls.append, inspect=inspect, legacy_app=old)
+                info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
+                self.assertEqual(info[module.PIN_KEY]["schemaVersion"], 1)
+                self.assertEqual(info[module.MODERN_PIN_KEY]["schemaVersion"], 2)
+                for role, name in module.HELPERS.items():
+                    self.assertEqual((app / "Contents/Helpers" / name).read_bytes(), (source / name).read_bytes())
+                    self.assertEqual(info[module.PIN_KEY][role]["cdHash"], "c" * 40)
+                    self.assertEqual(info[module.MODERN_PIN_KEY][role]["cdHash"], "b" * 40)
+                    self.assertEqual((app / "Contents/Helpers/v2" / name).read_bytes(), (binaries / name).read_bytes())
+                self.assertEqual(len([c for c in calls if "--sign" in c]), 2)
+                self.assertEqual(len([c for c in calls if any(arg.startswith("-R=") for arg in c)]), 4)
+
+    def test_invalid_legacy_or_modern_pins_refuse_before_staging_mutation(self):
+        for control in ("tampered", "cdhash", "bad-modern", "symlink", "signature"):
+            with self.subTest(control=control), tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+                root = Path(tmp); app, binaries = self.fixture(root); old, source = self.legacy(root)
+                before = (app / "Contents/Info.plist").read_bytes()
+                file = source / module.HELPERS["owner"]
+                if control == "tampered": file.write_bytes(file.read_bytes() + b"wrong")
+                if control == "symlink": file.unlink(); file.symlink_to(source / module.HELPERS["assessment"])
+                if control == "bad-modern":
+                    info = plistlib.loads((old / "Contents/Info.plist").read_bytes()); info[module.MODERN_PIN_KEY] = False
+                    (old / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
+                def run(call):
+                    if control == "signature" and any(arg.startswith("-R=") for arg in call): raise module.ContractError("synthetic signature refusal")
+                inspect = lambda _: "d" * 40 if control == "cdhash" else "c" * 40
+                with self.assertRaises((module.ContractError, OSError)):
+                    module.package(app, binaries, module.CERTIFICATE, run=run, inspect=inspect, legacy_app=old)
+                self.assertEqual((app / "Contents/Info.plist").read_bytes(), before)
+                self.assertFalse((app / "Contents/Helpers").exists())
+
+    def test_temporary_policy_swap_during_signature_command_is_refused(self):
+        for control in ("rename", "in-place"):
+            with self.subTest(control=control), tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+                root = Path(tmp); app, binaries = self.fixture(root); old, _ = self.legacy(root)
+                policy = old / "Contents/Info.plist"; original = policy.read_bytes(); backup = old / "Contents/held-original"
+                calls = 0
+                def run(command):
+                    nonlocal calls
+                    if command[-1] != str(old): return
+                    calls += 1
+                    if calls == 1:
+                        if control == "rename": policy.rename(backup); policy.write_bytes(original)
+                        else: policy.write_bytes(original + b"\n"); policy.write_bytes(original)
+                    elif calls == 2 and control == "rename":
+                        policy.unlink(); backup.rename(policy)
+                with self.assertRaises(module.ContractError):
+                    module.package(app, binaries, module.CERTIFICATE, run=run,
+                                   inspect=lambda _: "c" * 40, legacy_app=old)
+                self.assertFalse((app / "Contents/Helpers").exists())
 
 
 if __name__ == "__main__": unittest.main()

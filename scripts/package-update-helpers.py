@@ -19,6 +19,7 @@ from direct_provisioning_contract import ContractError, read_regular
 
 HELPERS = {"owner": "NeAntikUpdateOwner", "assessment": "NeAntikUpdateAssessment"}
 PIN_KEY = "NeAntikUpdateHelpers"
+MODERN_PIN_KEY = "NeAntikUpdateHelpersV2"
 
 
 def binary_bytes(path: Path) -> bytes:
@@ -61,7 +62,72 @@ def cdhash(path: Path) -> str:
     return match[1].decode("ascii")
 
 
-def package(app: Path, binaries: Path, identity: str, run=run_checked, inspect=cdhash) -> dict:
+def legacy_inputs(app: Path, run, inspect) -> tuple[dict, dict]:
+    """Hold every selected input identity through native signature checks."""
+    held = []
+    identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns, s.st_nlink, s.st_uid, s.st_mode)
+    def retain(path, is_directory=False):
+        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+        if is_directory: flags |= os.O_DIRECTORY
+        fd = os.open(path, flags)
+        status = os.fstat(fd)
+        held.append((fd, path, identity(status)))
+        if status.st_uid != os.geteuid() or status.st_mode & 0o7022:
+            raise ContractError("Legacy input ownership or permissions refused")
+    try:
+        directory(app); directory(app / "Contents")
+        retain(app, True); retain(app / "Contents", True)
+        retain(app / "Contents/Info.plist")
+        original = read_regular(app / "Contents/Info.plist")
+        info = plistlib.loads(original)
+        source = app / "Contents/Helpers"
+        directory(source); retain(source, True)
+        if MODERN_PIN_KEY in info:
+            source = source / "v2"; directory(source); retain(source, True)
+        for name in HELPERS.values(): retain(source / name)
+        result = _verified_legacy_inputs(app, run, inspect)
+        # A file swapped just for codesign must fail even if its bytes were
+        # restored afterwards. Retained FDs prevent inode reuse from hiding it.
+        for fd, path, expected in held:
+            if identity(os.fstat(fd)) != expected or identity(path.stat(follow_symlinks=False)) != expected:
+                raise ContractError("Legacy input changed during signature verification")
+        if read_regular(app / "Contents/Info.plist") != original:
+            raise ContractError("Legacy signed policy changed")
+        return result
+    finally:
+        for fd, _, _ in held: os.close(fd)
+
+
+def _verified_legacy_inputs(app: Path, run, inspect) -> tuple[dict, dict]:
+    """Carry the prior primary, never re-sign or trust an unsigned pin file."""
+    directory(app); directory(app / "Contents")
+    requirement = 'anchor apple generic and certificate leaf = H"' + CERTIFICATE + '" and identifier "app.neantik.desktop"'
+    run(["/usr/bin/codesign", "--verify", "--strict", "--all-architectures", "-R=" + requirement, str(app)])
+    info = plistlib.loads(read_regular(app / "Contents/Info.plist"))
+    if info.get("CFBundleIdentifier") != "app.neantik.desktop": raise ContractError("Legacy manager identity refused")
+    modern = MODERN_PIN_KEY in info
+    pins = info.get(MODERN_PIN_KEY if modern else PIN_KEY)
+    if not isinstance(pins, dict) or set(pins) != {"schemaVersion", *HELPERS} or type(pins["schemaVersion"]) is not int or pins["schemaVersion"] != (2 if modern else 1):
+        raise ContractError("Legacy signed helper policy refused")
+    source = app / "Contents/Helpers"
+    if modern: source = source / "v2"
+    directory(source)
+    inputs = {}
+    for role, name in HELPERS.items():
+        pin = pins[role]
+        if not isinstance(pin, dict) or set(pin) != {"sha256", "cdHash"} or not isinstance(pin["sha256"], str) or not isinstance(pin["cdHash"], str) or not re.fullmatch("[0-9a-f]{64}", pin["sha256"]) or not re.fullmatch("[0-9a-f]{40}", pin["cdHash"]):
+            raise ContractError("Legacy helper pin refused")
+        data = binary_bytes(source / name)
+        if hashlib.sha256(data).hexdigest() != pin["sha256"] or inspect(source / name) != pin["cdHash"]:
+            raise ContractError("Legacy helper bytes do not match signed policy")
+        helper_requirement = 'anchor apple generic and certificate leaf = H"' + CERTIFICATE + '" and identifier "app.neantik.update-' + role + '"'
+        run(["/usr/bin/codesign", "--verify", "--strict", "--all-architectures", "-R=" + helper_requirement, str(source / name)])
+        inputs[role] = data
+    run(["/usr/bin/codesign", "--verify", "--strict", "--all-architectures", "-R=" + requirement, str(app)])
+    return inputs, {**pins, "schemaVersion": 1}
+
+
+def package(app: Path, binaries: Path, identity: str, run=run_checked, inspect=cdhash, legacy_app: Path | None = None) -> dict:
     if identity not in ("-", CERTIFICATE):
         raise ContractError("Update helpers must reuse the pinned Developer ID certificate")
     contents = app / "Contents"
@@ -72,8 +138,15 @@ def package(app: Path, binaries: Path, identity: str, run=run_checked, inspect=c
         raise ContractError("Release manager staging identity required")
     if identity == "-" and info.get("NeAntikUpdateChannelEnabled") is not False:
         raise ContractError("Ad-hoc helpers cannot enable the update channel")
+    continuity = info.get("NeAntikUpdateOwnerContinuityRequired", False)
+    if type(continuity) is not bool or (continuity and identity == CERTIFICATE and legacy_app is None):
+        raise ContractError("Signed updater continuity requires a verified prior app")
     # Admit BOTH inputs before any mutation, including a missing second helper.
     inputs = {role: binary_bytes(binaries / name) for role, name in HELPERS.items()}
+    legacy = None
+    if legacy_app is not None:
+        if identity != CERTIFICATE or legacy_app == app: raise ContractError("Legacy continuity requires the pinned Developer ID and a separate signed app")
+        legacy = legacy_inputs(legacy_app, run, inspect)
     helpers = contents / "Helpers"
     if helpers.exists() or helpers.is_symlink(): directory(helpers)
     else: helpers.mkdir(mode=0o755)
@@ -96,12 +169,25 @@ def package(app: Path, binaries: Path, identity: str, run=run_checked, inspect=c
         # No shell follows an existing helper link; replace only fixed entries in
         # this caller-owned staging tree. A failure never enrolls the candidate.
         directory(contents); directory(helpers)
-        for role, name in HELPERS.items():
-            destination = helpers / name
+        current_directory = helpers / "v2" if legacy else helpers
+        if current_directory.exists() or current_directory.is_symlink(): directory(current_directory)
+        destinations = [current_directory / name for name in HELPERS.values()]
+        if legacy: destinations += [helpers / name for name in HELPERS.values()]
+        for destination in destinations:
             if destination.is_symlink() or (destination.exists() and not destination.is_file()):
                 raise ContractError("Existing helper entry refused")
-        for name in HELPERS.values(): os.replace(staging / name, helpers / name)
-        info[PIN_KEY] = pins
+        if legacy:
+            if not current_directory.exists(): current_directory.mkdir(mode=0o755)
+            for role, name in HELPERS.items():
+                carried = staging / ("legacy-" + name)
+                carried.write_bytes(legacy[0][role]); carried.chmod(0o755)
+                os.replace(carried, helpers / name)
+            info[PIN_KEY] = legacy[1]
+            info[MODERN_PIN_KEY] = {**pins, "schemaVersion": 2}
+        else:
+            info[PIN_KEY] = pins
+            info.pop(MODERN_PIN_KEY, None)
+        for name in HELPERS.values(): os.replace(staging / name, current_directory / name)
         seal_capability(app, info, original)
     return pins
 
@@ -112,7 +198,8 @@ def main() -> None:
     parser.add_argument("app", type=Path); parser.add_argument("binaries", type=Path); parser.add_argument("identity")
     args = parser.parse_args()
     try:
-        package(args.app, args.binaries, args.identity)
+        legacy = os.environ.get("NEANTIK_UPDATE_LEGACY_APP")
+        package(args.app, args.binaries, args.identity, legacy_app=Path(legacy) if legacy else None)
         print("PASS: fixed update helpers packaged; channel activation unchanged.")
     except (ContractError, OSError, ValueError, subprocess.SubprocessError):
         parser.exit(65, "Update helper packaging refused; candidate is not enrolled.\n")
