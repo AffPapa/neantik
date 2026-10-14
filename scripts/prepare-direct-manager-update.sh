@@ -353,7 +353,8 @@ printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"
 python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
   --project-root "$PROJECT_DIR" \
-  --evidence "$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence"
+  --evidence "$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence" \
+  --inherited-evidence "$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence"
 verify_reviewed_runtime_evidence
 
 verify_runtime_unchanged

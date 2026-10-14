@@ -74,6 +74,34 @@ class ManagerBaselineTests(unittest.TestCase):
                 with self.assertRaises(ValueError): module.package(project, evidence)
                 self.assertEqual(external.read_bytes(), b"unchanged")
 
+    def test_exact_inherited_observation_replaced_in_new_copy_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project, evidence, old, new = self.fixture(Path(temporary))
+            source = Path(temporary) / "old-signed-evidence"
+            source.mkdir()
+            (source / "release-security-baseline.json").write_bytes(old)
+            (evidence / "release-security-baseline.json").write_bytes(old)
+            module.package(project, evidence, source)
+            module.verify(project, evidence)
+            self.assertEqual((source / "release-security-baseline.json").read_bytes(), old)
+            self.assertEqual((evidence / "security-baseline.json").read_bytes(), old)
+            self.assertEqual((evidence / "release-security-baseline.json").read_bytes(), new)
+
+    def test_inherited_mismatch_same_root_and_hardlink_refuse(self):
+        for kind in ("mismatch", "same-root", "hardlink", "symlink"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as temporary:
+                project, evidence, old, _ = self.fixture(Path(temporary))
+                source = Path(temporary) / "old-signed-evidence"
+                source.mkdir()
+                original = source / "release-security-baseline.json"
+                original.write_bytes(old)
+                destination = evidence / "release-security-baseline.json"
+                if kind == "hardlink": destination.hardlink_to(original)
+                elif kind == "symlink": destination.symlink_to(original)
+                else: destination.write_bytes(b"different" if kind == "mismatch" else old)
+                with self.assertRaises(ValueError): module.package(project, evidence, evidence if kind == "same-root" else source)
+                self.assertEqual(original.read_bytes(), old)
+
     def test_missing_historical_binding_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
             project, evidence, _, _ = self.fixture(Path(temporary))

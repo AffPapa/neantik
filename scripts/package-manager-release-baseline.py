@@ -42,14 +42,24 @@ def verify(project: Path, evidence: Path) -> None:
         raise ValueError("Packaged release baseline differs from current publication gate")
 
 
-def package(project: Path, evidence: Path) -> None:
+def package(project: Path, evidence: Path, inherited_evidence: Path | None = None) -> None:
     current = baseline_inputs(project, evidence)
     destination = evidence / "release-security-baseline.json"
+    inherited_stat = None
     if destination.exists() or destination.is_symlink():
         # Never overwrite a link or an unrelated pre-existing release input.
-        if read_regular(destination) != current:
+        if read_regular(destination) == current:
+            return
+        if inherited_evidence is None or inherited_evidence.resolve() == evidence.resolve():
             raise ValueError("Release baseline already exists with different bytes")
-        return
+        # Manager-only packaging copies the previous signed app into a fresh
+        # unsigned candidate. Only its exact inherited publication observation
+        # can be replaced; the source and historical runtime binding stay intact.
+        source = inherited_evidence / "release-security-baseline.json"
+        inherited = read_regular(source)
+        inherited_stat = destination.stat()
+        if inherited_stat.st_nlink != 1 or read_regular(destination) != inherited:
+            raise ValueError("Inherited release baseline differs or is shared")
     fd, name = tempfile.mkstemp(prefix=".release-baseline-", dir=evidence)
     temporary = Path(name)
     try:
@@ -57,7 +67,13 @@ def package(project: Path, evidence: Path) -> None:
             stream.write(current)
             stream.flush()
             os.fsync(stream.fileno())
-        os.link(temporary, destination)  # Exclusive publication, no overwrite.
+        if inherited_stat is None:
+            os.link(temporary, destination)  # Exclusive publication, no overwrite.
+        else:
+            observed = destination.lstat()
+            if (observed.st_dev, observed.st_ino, observed.st_size, observed.st_mtime_ns, observed.st_ctime_ns) != (inherited_stat.st_dev, inherited_stat.st_ino, inherited_stat.st_size, inherited_stat.st_mtime_ns, inherited_stat.st_ctime_ns) or read_regular(destination) != inherited or read_regular(source) != inherited:
+                raise ValueError("Inherited baseline changed during packaging")
+            os.replace(temporary, destination)  # Fresh unsigned candidate only.
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -67,6 +83,11 @@ if __name__ == "__main__":
     parser.add_argument("--project-root", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--verify-only", action="store_true")
+    parser.add_argument("--inherited-evidence", type=Path)
     args = parser.parse_args()
-    (verify if args.verify_only else package)(args.project_root, args.evidence)
+    if args.verify_only:
+        if args.inherited_evidence is not None: parser.error("Read-only verification does not accept inherited evidence")
+        verify(args.project_root, args.evidence)
+    else:
+        package(args.project_root, args.evidence, args.inherited_evidence)
     print("PASS: historical runtime baseline retained; fresh release baseline packaged separately.")
