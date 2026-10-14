@@ -3,13 +3,11 @@ import Testing
 @testable import NeAntik
 
 struct ProxyTesterLiveFixtureTests {
-    @Test
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_APPROVED_PROXY_FIXTURE"] != nil))
     func approvedLocalProxyFixtureProvidesFreshCrossCheckedContext() async throws {
-        guard let path = ProcessInfo.processInfo.environment[
+        let path = try #require(ProcessInfo.processInfo.environment[
             "NEANTIK_APPROVED_PROXY_FIXTURE"
-        ] else {
-            return
-        }
+        ])
         let lines = try String(
             contentsOfFile: path,
             encoding: .utf8
