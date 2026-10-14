@@ -178,3 +178,9 @@ The first launch, including a fresh copy/import, uses the start page. Restoring
 does not append that URL again. Graceful close lets Chromium save its session;
 a crash may lose work not yet written. Opening extension management or a
 diagnostic fixture uses its explicit target without changing this setting.
+
+## Если редактирование вернуло profile_not_stopped
+
+Этот отказ может означать запущенный браузер или невозможность подтвердить, что данные свободны. Попросите AI вызвать `profile_status` для того же UUID. При `checking` дождитесь нового результата; при внешней сессии закройте её браузер обычным способом. Если получен `stopped`, перечитайте `profile_get` и намеренно повторите редактирование с текущей `revision`. Если статус остаётся неопределённым, изменение безопасно отменяется.
+
+Не создавайте профиль заново из-за отказа редактирования: ранее созданный UUID сохраняется. Не повторяйте автоматически создание, дублирование или неизвестный результат записи. Для 0.8.12 проверен сценарий с явным `stopped` перед первым редактированием; первоначальный быстрый отказ сохранён в отчёте, его устранение не заявляется.
