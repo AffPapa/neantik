@@ -79,6 +79,10 @@ preprocessor branches. Its PASS does not prove the effective browser policy.
 Exact headed UDP/STUN controls, preference/policy/exception/extension influence
 and process cleanup still need independent runtime evidence. A source-checker
 fix does not change or requalify the already published Chromium runtime.
+The switch definition may be in the legacy `chrome_switches.cc` or in the
+M156 inline `chrome_switches.h`. A present invalid legacy file cannot be
+bypassed by a valid header. The pinned M156 upstream blobs provide a real
+source control; patched postimages and compiled runtime remain separate gates.
 
 ## CLI
 

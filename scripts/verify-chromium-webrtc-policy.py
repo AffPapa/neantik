@@ -36,6 +36,11 @@ REQUIRED_SOURCE_MARKERS = {
         "kDisableNonProxiedUdp",
     ),
 }
+SWITCH_IMPLEMENTATION = "chrome/common/chrome_switches.cc"
+SWITCH_INLINE_HEADER = "chrome/common/chrome_switches.h"
+INLINE_SWITCH_MARKERS = (
+    'inline constexpr char kWebRtcIPHandlingPolicy[] = "webrtc-ip-handling-policy";',
+)
 
 
 def source_view(text: str) -> tuple[str, list[bool]]:
@@ -119,7 +124,14 @@ def verify(source_root: Path) -> None:
     source_root = source_root.resolve()
     if not source_root.is_dir():
         raise VerificationError("Chromium source root is missing")
-    for relative, markers in REQUIRED_SOURCE_MARKERS.items():
+    markers_by_source = dict(REQUIRED_SOURCE_MARKERS)
+    implementation = source_root / SWITCH_IMPLEMENTATION
+    # M156 moved switch definitions to the header. Never fall back from a
+    # present but invalid legacy file (including a broken link) to a good header.
+    if not implementation.exists() and not implementation.is_symlink():
+        del markers_by_source[SWITCH_IMPLEMENTATION]
+        markers_by_source[SWITCH_INLINE_HEADER] = INLINE_SWITCH_MARKERS
+    for relative, markers in markers_by_source.items():
         path = source_root / relative
         if not path.is_file() or path.is_symlink():
             raise VerificationError(

@@ -30,6 +30,55 @@ class ChromiumWebRTCPolicyTests(unittest.TestCase):
             self.fixture(root)
             MODULE.verify(root)
 
+    def modern_fixture(self, root: Path) -> Path:
+        self.fixture(root)
+        (root / MODULE.SWITCH_IMPLEMENTATION).unlink()
+        header = root / MODULE.SWITCH_INLINE_HEADER
+        header.write_text("\n".join(MODULE.INLINE_SWITCH_MARKERS) + "\n")
+        return header
+
+    def test_accepts_inline_header_switch_definition(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.modern_fixture(root)
+            MODULE.verify(root)
+
+    def test_modern_header_comment_or_literal_definition_is_refused(self) -> None:
+        for mode in ("comment", "raw_literal"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                header = self.modern_fixture(root)
+                original = header.read_text()
+                header.write_text('/*\n' + original + '*/\n' if mode == 'comment'
+                    else 'const char* unused = R"qa(' + original + ')qa";\n')
+                with self.assertRaisesRegex(MODULE.VerificationError, "contract changed"):
+                    MODULE.verify(root)
+
+    def test_present_invalid_legacy_file_does_not_fall_back_to_header(self) -> None:
+        for mode in ("empty", "directory", "broken_link"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self.modern_fixture(root)
+                legacy = root / MODULE.SWITCH_IMPLEMENTATION
+                if mode == "empty":
+                    legacy.write_text("")
+                elif mode == "directory":
+                    legacy.mkdir()
+                else:
+                    legacy.symlink_to(root / 'absent.cc')
+                with self.assertRaises(MODULE.VerificationError):
+                    MODULE.verify(root)
+
+    def test_modern_header_symlink_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            header = self.modern_fixture(root)
+            original = root / 'untrusted-header.h'
+            header.rename(original)
+            header.symlink_to(original)
+            with self.assertRaisesRegex(MODULE.VerificationError, "missing"):
+                MODULE.verify(root)
+
     def test_rejects_content_shell_force_switch_substitution(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
