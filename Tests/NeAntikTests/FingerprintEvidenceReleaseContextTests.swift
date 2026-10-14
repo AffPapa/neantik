@@ -6,6 +6,87 @@ import Testing
 @testable import NeAntik
 
 struct FingerprintEvidenceReleaseContextTests {
+    @Test(arguments: ["success", "missing", "different-key", "wrong-proof", "target-changed",
+                      "intent-write-fails", "delete-fails", "key-survives", "reservation-survives", "receipt-write-fails"])
+    func retirementRequiresProofDurableIntentAndConfirmedDeletion(control: String) throws {
+        let template = makeContext()
+        let signer = try SoftwareP256FingerprintEvidenceSigner(rawRepresentation: Data(repeating: 0, count: 31) + Data([1]))
+        let foreign = SoftwareP256FingerprintEvidenceSigner()
+        let state = RetirementTestState()
+        let output: any FingerprintEvidenceEnrollmentOutput = control == "receipt-write-fails" ? ThrowingEnrollmentOutput() : template.output
+        func context(_ selectedOutput: any FingerprintEvidenceEnrollmentOutput) -> FingerprintEvidenceReleaseContext {
+            FingerprintEvidenceReleaseContext(request: template.context.request, candidateManifest: template.manifest,
+                metadata: template.context.metadata, binding: template.binding, signerProvider: {
+                    if state.gone || control == "missing" { throw SecureEnclaveFingerprintEvidenceAuthorityError.notEnrolled }
+                    if control == "different-key" { return foreign }
+                    if control == "wrong-proof" { return UpdateAuditWrongProofSigner(publicKeyX963: signer.publicKeyX963, foreign: foreign) }
+                    return signer
+                }, abandonAuthority: { session in
+                    #expect(session == template.binding.sessionID)
+                    state.deletes += 1
+                    if control == "delete-fails" { throw FingerprintEvidenceReleaseError.operationFailed(Int(EIO)) }
+                    if control != "key-survives" { state.gone = true }
+                }, claimStore: template.claimStore,
+                recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: selectedOutput)
+        }
+        let run = context(output)
+        let operation = {
+            try run.retireAuditAuthority(validateCandidate: {
+                if control == "target-changed" { throw FingerprintEvidenceReleaseError.candidateMetadataMismatch }
+            }, confirmRetired: { state.gone && control != "reservation-survives" }, persistIntent: { bytes in
+                if control == "intent-write-fails" { throw FingerprintEvidenceReleaseError.outputUnavailable }
+                state.intent = bytes
+            })
+        }
+        if control == "success" { try operation() } else { #expect(throws: (any Error).self) { try operation() } }
+        #expect(template.claimStore.claimCount == 0)
+        if ["success", "receipt-write-fails", "delete-fails", "key-survives", "reservation-survives"].contains(control) {
+            #expect(state.intent != nil && state.deletes == 1)
+        } else { #expect(state.deletes == 0) }
+        if control == "success" {
+            let receipt = try #require(template.output.payload)
+            let value = try #require(JSONSerialization.jsonObject(with: receipt) as? [String: Any])
+            #expect(value["authorityRetired"] as? Bool == true)
+            #expect(value["releaseQualified"] as? Bool == false)
+            #expect(value["kind"] as? String == "neantik-fingerprint-authority-retirement")
+            #expect(!String(decoding: receipt, as: UTF8.self).contains(template.binding.sessionID.uuidString))
+            let recoveredOutput = PreexistingEnrollmentOutput(existing: receipt)
+            try context(recoveredOutput).retireAuditAuthority(validateCandidate: {},
+                existingIntent: try #require(state.intent), confirmRetired: { state.gone },
+                persistIntent: { _ in Issue.record("must reuse durable intent") })
+            #expect(recoveredOutput.commitCount == 1 && state.deletes == 2)
+        } else { #expect(template.output.commitCount == 0) }
+        if control == "receipt-write-fails" {
+            // Existing signed intent permits cleanup reconciliation after the
+            // key vanished; no second signing/enrollment or release claim.
+            try context(template.output).retireAuditAuthority(validateCandidate: {},
+                existingIntent: try #require(state.intent), confirmRetired: { state.gone }, persistIntent: { _ in Issue.record("must reuse durable intent") })
+            #expect(template.output.commitCount == 1 && state.deletes == 2)
+        }
+    }
+
+    @Test(arguments: ["foreign-proof", "changed-manifest", "malformed", "absent-intent"])
+    func absentKeyCannotBeRetiredWithoutMatchingSignedIntent(control: String) throws {
+        let template = makeContext()
+        let state = RetirementTestState()
+        let signer = control == "foreign-proof" ? SoftwareP256FingerprintEvidenceSigner() : try SoftwareP256FingerprintEvidenceSigner(rawRepresentation: Data(repeating: 0, count: 31) + Data([1]))
+        let prefix = Data("NeAntik fingerprint authority retirement v1\u{0}".utf8)
+        let manifest = control == "changed-manifest" ? Data("changed".utf8) : template.manifest
+        let transcript = prefix + Data(SHA256.hash(data: manifest)) + Data(UUID().uuidString.utf8)
+        let intent = try JSONSerialization.data(withJSONObject: ["kind": "neantik-fingerprint-retirement-intent-v1",
+            "transcript": transcript.base64EncodedString(), "signature": try signer.signatureDER(for: transcript).base64EncodedString()])
+        let context = FingerprintEvidenceReleaseContext(request: template.context.request, candidateManifest: template.manifest,
+            metadata: template.context.metadata, binding: template.binding,
+            signerProvider: { throw SecureEnclaveFingerprintEvidenceAuthorityError.notEnrolled },
+            abandonAuthority: { _ in state.deletes += 1 }, claimStore: template.claimStore,
+            recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: template.output)
+        #expect(throws: (any Error).self) {
+            try context.retireAuditAuthority(validateCandidate: {},
+                existingIntent: control == "absent-intent" ? nil : control == "malformed" ? Data("{}".utf8) : intent,
+                confirmRetired: { state.gone }, persistIntent: { _ in Issue.record("unexpected intent") })
+        }
+        #expect(state.deletes == 0 && template.output.commitCount == 0 && template.claimStore.claimCount == 0)
+    }
     @Test func interactiveUpdateAuditProvesAuthorityWithoutClaimOrReport() throws {
         let fixture = makeContext()
         try fixture.context.authenticateUpdateAuditIsolation()
@@ -1061,6 +1142,12 @@ struct FingerprintEvidenceReleaseContextTests {
             firstRepeat: report.firstRepeat
         )
     }
+}
+
+private final class RetirementTestState: @unchecked Sendable {
+    var gone = false
+    var deletes = 0
+    var intent: Data?
 }
 
 private final class RecordingChallengeClaimStore:

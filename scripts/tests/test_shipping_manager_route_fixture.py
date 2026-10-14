@@ -81,6 +81,14 @@ class ShippingRouteFixtureTests(unittest.TestCase):
         while protected.recv(256): pass
         protected.close()
         self.assertFalse(arm.exists())
+        # Socket shutdown publishes EOF before the watcher finishes recording
+        # its receipt. EOF is not the ledger-completion synchronization point.
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline and not any(
+            e['kind'] == 'cut-active-local-channels' for e in self.fixture.ledger.events
+        ):
+            time.sleep(.01)
+        self.assertTrue(any(e['kind'] == 'cut-active-local-channels' for e in self.fixture.ledger.events))
         events = self.fixture.ledger.events
         heartbeat = next(e for e in events if e['kind']=='stream-first-heartbeat' and e['throughOwnedUpstream'])
         cut = next(e for e in events if e['kind']=='cut-active-local-channels')

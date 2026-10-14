@@ -77,6 +77,15 @@ struct NeAntikApp: App {
             MCPStdioServer.runAndExit(dataRoot: dataRoot, allowsManagement: true)
         case let .fingerprintEnrollment(outputURL):
             Self.runFingerprintEnrollmentAndExit(outputURL: outputURL)
+        case let .fingerprintRetirement(request):
+            do {
+                try FingerprintEvidenceRetirement.run(request)
+                Darwin.exit(EXIT_SUCCESS)
+            } catch {
+                Self.writeControlErrorAndExit(
+                    "Не удалось подтвердить удаление временного ключа аудита: " +
+                        error.localizedDescription + "\n", code: EX_DATAERR)
+            }
         case .invalidControlArguments:
             Self.writeControlErrorAndExit(
                 "Неверные параметры защищённого режима NeAntik.\n",

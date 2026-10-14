@@ -17,6 +17,7 @@ protocol SecureEnclaveFingerprintEvidenceKeyBackend: Sendable {
     ) throws -> SecureEnclaveFingerprintEvidenceSignature
     func deletePrivateKey(applicationTag: Data) throws
     func releaseEnrollment(applicationTag: Data) throws
+    func hasEnrollment(applicationTag: Data) throws -> Bool
 }
 
 enum SecureEnclaveFingerprintEvidenceAuthorityError:
@@ -100,6 +101,11 @@ struct SecureEnclaveFingerprintEvidenceAuthority: Sendable {
         let tag = Self.applicationTag(for: sessionID)
         try backend.deletePrivateKey(applicationTag: tag)
         try backend.releaseEnrollment(applicationTag: tag)
+    }
+
+    func isRetired(sessionID: UUID) throws -> Bool {
+        let tag = Self.applicationTag(for: sessionID)
+        return try backend.publicKeyX963(applicationTag: tag) == nil && !backend.hasEnrollment(applicationTag: tag)
     }
 
     static func applicationTag(for sessionID: UUID) -> Data {
@@ -288,6 +294,18 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
             throw SecureEnclaveFingerprintEvidenceAuthorityError
                 .operationFailed(Int(status))
         }
+    }
+
+    func hasEnrollment(applicationTag: Data) throws -> Bool {
+        var query = enrollmentReservationQuery(applicationTag: applicationTag)
+        query[kSecReturnAttributes as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        let result = SecItemCopyMatching(query as CFDictionary, nil)
+        if result == errSecItemNotFound { return false }
+        guard result == errSecSuccess else {
+            throw SecureEnclaveFingerprintEvidenceAuthorityError.operationFailed(Int(result))
+        }
+        return true
     }
 
     private func secureEnclavePrivateKey(applicationTag: Data) throws -> SecKey? {

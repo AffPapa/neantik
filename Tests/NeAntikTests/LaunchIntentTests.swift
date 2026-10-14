@@ -3,6 +3,29 @@ import Testing
 @testable import NeAntik
 
 struct LaunchIntentTests {
+    @Test func authorityRetirementRequiresExplicitCandidateAndPrivateReceiptName() {
+        let valid = ["/Applications/NeAntik.app/Contents/MacOS/NeAntik",
+                     NeAntikLaunchIntent.fingerprintRetirementArgument,
+                     "--candidate-app", "/private/tmp/owned/NeAntik.app",
+                     "--candidate-manifest", "/private/tmp/owned/manifest.json",
+                     "--output", "/private/tmp/owned/fingerprint-retirement.json"]
+        let parsed = NeAntikLaunchIntent.parse(arguments: valid)
+        #expect(parsed.mode == .fingerprintRetirement(.init(
+            candidateAppURL: URL(fileURLWithPath: valid[3], isDirectory: true),
+            candidateManifestURL: URL(fileURLWithPath: valid[5]), outputURL: URL(fileURLWithPath: valid[7]))))
+        #expect(!parsed.opensAuditWindow && !parsed.opensFingerprintAudit)
+        for index in [3, 5, 7] {
+            for bad in ["relative", "/tmp/../foreign", "/tmp//foreign", valid[5]] {
+                if index == 5 && bad == valid[5] { continue }
+                var args = valid; args[index] = bad
+                #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+            }
+        }
+        for args in [Array(valid.dropLast()), valid + ["--session-id", UUID().uuidString],
+                     [valid[0], valid[1] + "=true"], [valid[0], "--candidate-app", valid[3]]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+        }
+    }
     @Test func noninteractiveControlModesNeverRequestAnAuditWindow() {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-owned-control-test")
         for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner,

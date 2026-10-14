@@ -339,6 +339,8 @@ private final class EnrollmentTestKeyBackend:
         }
     }
 
+    func hasEnrollment(applicationTag: Data) throws -> Bool { locked { reservations.contains(applicationTag) } }
+
     func publicKeyX963(applicationTag: Data) throws -> Data? {
         locked {
             publicKeyCalls += 1

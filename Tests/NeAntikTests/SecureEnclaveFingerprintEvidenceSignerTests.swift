@@ -4,6 +4,19 @@ import Testing
 @testable import NeAntik
 
 struct SecureEnclaveFingerprintEvidenceSignerTests {
+    @Test func retirementRequiresAbsenceOfBothPrivateKeyAndReservation() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(backend: backend)
+        let session = UUID(), tag = SecureEnclaveFingerprintEvidenceAuthority.applicationTag(for: session)
+        #expect(try authority.isRetired(sessionID: session))
+        try backend.reserveEnrollment(applicationTag: tag)
+        #expect(try !authority.isRetired(sessionID: session))
+        _ = try backend.createPrivateKey(applicationTag: tag)
+        try backend.releaseEnrollment(applicationTag: tag)
+        #expect(try !authority.isRetired(sessionID: session))
+        try backend.deletePrivateKey(applicationTag: tag)
+        #expect(try authority.isRetired(sessionID: session))
+    }
     @Test
     func secureEnclaveAuditDoesNotCreateMissingAuthority() throws {
         let backend = InMemoryFingerprintEvidenceKeyBackend()
@@ -336,6 +349,8 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
             }
         }
     }
+
+    func hasEnrollment(applicationTag: Data) throws -> Bool { locked { reservations.contains(applicationTag) } }
 
     func publicKeyX963(applicationTag: Data) throws -> Data? {
         locked {

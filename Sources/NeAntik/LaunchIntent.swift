@@ -6,6 +6,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     static let releaseUpdateAuditArgument = "--neantik-release-update-audit"
     static let fingerprintEnrollmentArgument =
         "--neantik-enroll-fingerprint-evidence"
+    static let fingerprintRetirementArgument = "--neantik-retire-fingerprint-evidence"
+    static let candidateAppArgument = "--candidate-app"
     static let candidateManifestArgument = "--candidate-manifest"
     static let outputArgument = "--output"
     static let mcpStdioArgument = "--neantik-mcp-stdio"
@@ -19,6 +21,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
             automaticallyOpensFingerprintAudit: Bool = true
         )
         case fingerprintEnrollment(outputURL: URL)
+        case fingerprintRetirement(FingerprintEvidenceRetirementRequest)
         case mcpStdio(dataRoot: URL)
         case mcpManagement(dataRoot: URL)
         case proxyRelayOwner
@@ -76,6 +79,23 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     }
 
     static func parse(arguments: [String]) -> Self {
+        if arguments.count == 8,
+           isCanonicalAbsoluteExecutablePath(arguments[0]),
+           arguments[1] == fingerprintRetirementArgument,
+           arguments[2] == candidateAppArgument,
+           isCanonicalAbsoluteFilePath(arguments[3]),
+           arguments[3].hasSuffix("/NeAntik.app"),
+           arguments[4] == candidateManifestArgument,
+           isCanonicalAbsoluteFilePath(arguments[5]),
+           arguments[6] == outputArgument,
+           isCanonicalAbsoluteFilePath(arguments[7]),
+           URL(fileURLWithPath: arguments[7]).lastPathComponent == "fingerprint-retirement.json",
+           arguments[5] != arguments[7] {
+            return Self(mode: .fingerprintRetirement(.init(
+                candidateAppURL: URL(fileURLWithPath: arguments[3], isDirectory: true),
+                candidateManifestURL: URL(fileURLWithPath: arguments[5]),
+                outputURL: URL(fileURLWithPath: arguments[7]))))
+        }
         if arguments.count == 2, isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == proxyRelayOwnerArgument {
             return Self(mode: .proxyRelayOwner)
         }
@@ -149,6 +169,8 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
                 $0.hasPrefix(mcpStdioArgument) ||
                 $0 == candidateManifestArgument ||
                 $0.hasPrefix(fingerprintEnrollmentArgument) ||
+                $0.hasPrefix(fingerprintRetirementArgument) ||
+                $0 == candidateAppArgument ||
                 $0.hasPrefix(releaseFingerprintAuditArgument) ||
                 $0.hasPrefix(releaseUpdateAuditArgument)
         }) {
