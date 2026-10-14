@@ -54,7 +54,7 @@
 |29|P2|WireGuard/profile|исследование завершено с обоснованным решением|WireGuard deferred by justified infrastructure/product design gates|
 |30|P1|Full encrypted backup|опубликовано с ограничениями|Real signedQA restore cookies/LS/IDB/tabs and interruption; sameMac/Keychain only|
 |31|P1|Clone vs restore|реализовано и проверено локально|Clone newidentity vsrestore original; noCrossMacsecret portability|
-|32|P1|Cachecleanup|реализовано; дальнейшая cross-engine квалификация|Chromium safe cacheallowlist; WebKitcache notimplemented|
+|32|P1|Cachecleanup|опубликовано publicalpha|Chromium safe cacheallowlist сохранён; WebKit HTTPdisk/memory cache0.8.8: native/exact A v2/Bv1, cookies/LS/IDB/SW/CacheStorage/session сохранены. Без размера/CodeCache/private paths; major hardware/OS coverage открыта.|
 |33|P1|Extension center|опубликовано с ограничениями|Extension inventory/provenance+ownCRX native lifecycle; notuniversalinstallation|
 |34|P1|CRX provenance|реализовано и проверено локально/на runtime|Full CRX3crypto checks and ownnative lifecycle; canceldialog unobserved|
 |35|P1|Импорт|реализовано; ограниченная квалификация|Owned bookmarks import; noencryptedsecret import promise|
