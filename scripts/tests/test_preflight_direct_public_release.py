@@ -4,6 +4,10 @@ import json
 import os
 import plistlib
 import sys
+import contextlib
+import io
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -31,6 +35,31 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class DirectPublicReleasePreflightTests(unittest.TestCase):
+    def test_doctor_cli_prevents_real_descendant_bytecode_even_without_parent_environment(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-own-doctor-child-') as directory:
+            root = Path(directory)
+            (root/'owned_doctor_module.py').write_text('value = 17\n')
+            def import_child():
+                result = subprocess.run([sys.executable, '-c', 'import owned_doctor_module; print(owned_doctor_module.value)'],
+                                        cwd=root, capture_output=True, text=True, check=True)
+                self.assertEqual(result.stdout.strip(), '17')
+            with mock.patch.dict(os.environ, {}, clear=True):
+                # Broken-propagation control performs an actual child import.
+                import_child()
+                self.assertTrue((root/'__pycache__').is_dir())
+                shutil.rmtree(root/'__pycache__')  # This test owns the entire temporary root.
+                def own_plan(**_):
+                    import_child()
+                    return []
+                with mock.patch.object(sys, 'argv', [str(SCRIPT), '--json']), \
+                     mock.patch.object(MODULE, 'read_plist', return_value={'CFBundleShortVersionString':'0.0.1'}), \
+                     mock.patch.object(MODULE.NOTARY_INSPECTOR, 'inspect_dist', return_value={}), \
+                     mock.patch.object(MODULE, 'verify_direct_public_release_plan', side_effect=own_plan), \
+                     mock.patch.object(MODULE, 'results_to_json', return_value={'fixtureOnly':True}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(MODULE.main(), 0)
+                self.assertFalse((root/'__pycache__').exists())
+
     def test_m154_preflight_uses_candidate_verifier_and_checks_packaged_args(self) -> None:
         import chromium_154_release_evidence
         with tempfile.TemporaryDirectory() as temporary:

@@ -629,6 +629,9 @@ def results_to_json(
 
 
 def main() -> int:
+    # -B protects this interpreter only. Descendant evidence validators must
+    # also avoid executable caches beside the sealed release source inputs.
+    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     parser = argparse.ArgumentParser(
         description="Read-only preflight for the NeAntik Direct Developer ID + notarization release plan.",
     )
