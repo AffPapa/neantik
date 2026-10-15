@@ -71,6 +71,11 @@
   В fixture с собственным shell-stub состояние ресурсов задаётся явно и
   проверяется отдельным pressure-refusal контролем. Реальный браузер, CoreText,
   enrollment и оконные сценарии сохраняют штатный resource gate.
+- Подготовительная компиляция/линковка без исполнения приложения или probe —
+  build-only. Правило native QA не превращает memory warning в запрет такой
+  подготовки. Сохранять прежний output/rollback, один native build, jobs2 и
+  отдельный статус unqualified. Реальный браузер, CoreText probe и release QA
+  по-прежнему требуют штатного admission или точного разрешённого исключения.
 - Перед нативным QA выполнить `python3 -B scripts/native-qa-readiness.py --check`
   в разрешённой macOS-среде. Проверка читает kernel memory pressure и thermal
   state по одному разу, ничего не запускает и не меняет. Exit75 означает

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "source-applied-and-GN-verified;not-compiled-or-linked",
+  "status": "runtime-linked-and-research-copy-signed;headed-not-run",
   "manifest": "runtime/font-policy-v1/chromium-font-witness.json",
   "manifestSHA256": "9645de1b7dac136df452abe2a3e039a12beef1689c58686536b9281b5e7b55b7",
   "dependsOn": "runtime/font-policy-v1/chromium-host-font-policy.json",
@@ -28,19 +28,36 @@
   ],
   "resourceAdmission": {
     "eligibleForAttempt": false,
-    "reason": "memory pressure warning; no compilation or native execution attempted"
+    "reason": "memory pressure warning; browser exception pending; one CoreText-only approval already consumed"
   },
   "ordinaryManagerRegression": "font-manager-development.json; matching inputs retained",
   "actualBrowser": false,
-  "compiled": false,
-  "runtimeLinked": false,
+  "compiled": true,
+  "runtimeLinked": true,
   "shippedRuntimeChanged": false,
   "releaseQualified": false,
   "remaining": [
-    "compile new witness/delegate/renderer objects",
-    "link coherent runtime without replacing rollback",
-    "actual malformed-root/FIFO/policy-redirect and configured/unconfigured headed controls",
-    "exact signed app and hosted-byte qualification"
+    "actual malformed-root/FIFO/policy-redirect controls",
+    "actual native/seeded-native/configured headed font drawing and fallback controls",
+    "nine-context/Font Access/style/collection qualification beyond page+DedicatedWorker",
+    "qualified manager opt-in and exact signed app/hosted-byte release gates"
   ],
-  "capturedAt": "2026-10-15T19:34:58.053010+00:00"
+  "capturedAt": "2026-10-15T20:05:34.029649+00:00",
+  "build": {
+    "changedWitnessObjects": 4,
+    "jobs": 2,
+    "fullRuntimeSeconds": 213.554,
+    "sourcePostimages": 20,
+    "previousRuntimePreserved": true,
+    "runtimeVersion": "156.0.8078.12"
+  },
+  "researchCopy": {
+    "status": "signed and independently inspected; not notarized or qualified",
+    "existingDeveloperID": true,
+    "executableSHA256": "558b5a175f0ccf6c22ec06be547b34e07c44d84e3e971e65e4cebecc4dd082b3",
+    "frameworkSHA256": "a0e890d512e10c32574b624c352582758eb855f7f57107ca23d9ba7bc9fade85",
+    "machoCount": 16,
+    "bundleEntries": 948,
+    "fixedResourceHashesChecked": true
+  }
 }

@@ -65,6 +65,10 @@ Unknown/shared inputs select full regression. Planning never means PASS.
   already authorized QA execution environment. Sandbox denial is a setup
   failure: rerun only affected modules there, retain the original failure and
   never report that first invocation as an all-green run.
+- Pure compilation/linking that does not execute the app/probe is build-only
+  preparation, not native QA. Do not block this preparation solely by applying
+  the launch gate to it. Keep one native build, jobs2, prior outputs/rollback,
+  and an unqualified status; real execution still requires admission.
 - Resource admission applies to app/runtime/enrollment/headed/CoreText QA,
   not reviewed model/filesystem unit tests. Owned shell-stub tests inject
   deterministic resource state and retain an explicit pressure-refusal control;

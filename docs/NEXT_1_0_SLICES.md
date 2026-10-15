@@ -127,7 +127,7 @@ GN graph/header check и7изменённых объектов прошли ко
 
 Это [native primitive](evidence/font-origin-development.json) и скомпилированные
 исходники, ещё не готовая функция поставляемого Chromium и не закрытие пункта1.
-Следом — renderer-local canary witness, headed-контроли, явная версия политики
+Следом — настоящий headed witness, явная версия политики
 без молчаливой смены старых профилей и квалификация нового runtime.
 [Контракт и оставшиеся gates](../runtime/font-policy-v1/README.md).
 Опубликованные0.8.17 и runtime не менялись; их проверки не повторялись.
@@ -141,15 +141,18 @@ launch snapshot сравнивает политику, а копии/импор�
 Пропущенные opt-in/аппаратные тесты не считаются выполненными. Исходные ошибки
 harness сохранены; повторялись только затронутые и ещё не выполненные наборы.
 [Scope и ограничения](evidence/font-manager-development.json).
-Renderer witness и квалификация нового runtime ещё не пройдены.
+Браузерная проверка renderer witness и квалификация нового runtime ещё не пройдены.
 Это development-код, не новая поставляемая функция.
 
 
 Renderer witness подготовлен отдельной дельтой: два собственных фиксированных
 шрифта в bundle, process-only регистрация, raw/effective profile fences,
 отдельный Crashpad path и bounded ACK. GN прошёл5этапов;4offline input-контроля
-ловят повреждение/подмену входов. Компиляция и настоящий браузерный запуск
-не начинались из-за memory pressure warning. Это не renderer PASS и не закрытие
+ловят повреждение/подмену входов. Четыре новых объекта скомпилированы, полный
+runtime собран за214секунд в отдельном output. Исследовательская копия подписана
+тем же Developer ID; проверены все16 Mach-O,948 записей bundle и оба шрифта.
+Memory pressure warning пока останавливает настоящий браузерный запуск.
+Это не renderer PASS и не закрытие
 пункта1. [Подтверждённый scope](evidence/font-witness-development.json).
 
 

@@ -1,7 +1,8 @@
 # System font source policy — development
 
 This development policy now includes a Chromium source patch; its seven changed
-objects compile, but a full runtime has **not been linked or qualified**. It does
+objects compile and a coherent runtime is linked. Its separate research copy is
+Developer ID signed; **headed behavior and release qualification remain open**. It does
 not alter the published runtime or existing profiles. The
 [native result](../../docs/evidence/font-origin-development.json) is not a
 browser or release qualification. See also the
@@ -90,13 +91,16 @@ not counted as executed. See [manager scope](../../docs/evidence/font-manager-de
 This is not a qualified or released font policy.
 
 
-## Fixed browser/renderer QA witness — prepared
+## Fixed browser/renderer QA witness — linked, behavior gate pending
 
 `chromium-font-witness.json` is a separate input contract applied after the
 original policy patch. Its text delta and two NeAntik-original TTF resources
 are separate from the frozen policy manifest. GN generation and four target
-header checks passed. The new objects are **not compiled or linked**; resource
-admission stopped before execution. [Current scope](../../docs/evidence/font-witness-development.json).
+header checks passed. Four new/changed objects and the full runtime now compile
+and link in a separate output; the previous runtime is preserved. The separate
+research copy is signed with the existing Developer ID. All16 Mach-O files,
+948 bundle entries and both fixed font assets were checked without launching
+the browser. Memory warning currently blocks actual headed execution. [Current scope](../../docs/evidence/font-witness-development.json).
 
 The QA seam accepts only `NEANTIK_FONT_QA=owned-v1`, a32-hex correlation nonce,
 and an existing private nonce-bound temporary root. The root has fixed
@@ -122,9 +126,9 @@ metrics, actual fallback/style/custom collection/WOFF2 operations and Font
 Access permission behavior. Missing acknowledgements, contexts, resources or
 completion never imply PASS. Malformed-root/FIFO, managed-policy redirection
 and missing CDP-pipe controls must terminate without touching default data.
-Those operations have not run. Ordinary manager, old primitive and old7object
-receipts remain valid for their unchanged scope; this new seam needs its own
-compile/link/headed gates.
+Those browser operations have not run. Ordinary manager, old primitive and
+old7object receipts remain valid for their unchanged scope; successful new
+compile/link checks do not replace the pending headed and release gates.
 
 Offline input verification (not runtime qualification):
 
@@ -145,3 +149,21 @@ observers found no exposed own face. [Results](../../docs/evidence/font-registra
 This supports the fixed bundle-resource design. It does not prove renderer
 sandbox behavior or replace drawing, browser, compilation or release gates.
 The one-off warning exception is consumed and does not apply to Chromium QA.
+
+
+### Finite headed fixture — prepared, not executed
+
+`run-font-policy.mjs` uses only a separately signed, private research bundle,
+owned temporary profiles, mock Keychain and navigation-only pipe CDP. It pins
+the whole runtime transcript, every Mach-O file, both font resources and its
+source modules. The five modes are native, seed without policy, and policy
+A → B → A with the same A profile reopened. Each browser/renderer must provide
+a complete native selection witness bound to the owned process.
+
+The fixture measures actual page and DedicatedWorker FontFace loads, Canvas
+drawing, DOM metrics, styles, fallback and downloaded TTF/WOFF2 advances.
+It does not use `document.fonts.check()` as font-presence evidence. Offline
+synthetic controls prove the analyzer rejects missing contexts, truncated
+results, local-font leakage, broken rendering and changed A results. They are
+not runtime results. This fixture alone does not cover all nine contexts,
+Font Access permissions, custom collections or the full release gate.
