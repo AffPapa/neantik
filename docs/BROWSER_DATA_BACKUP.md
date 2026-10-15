@@ -148,3 +148,21 @@ The archive format, metadata schema, Keychain scope and profile identity are unc
 
 Apple API references: [Data Protection Keychain](https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain),
 [device-only accessibility](https://developer.apple.com/documentation/security/ksecattraccessiblewhenunlockedthisdeviceonly).
+
+## WebKit: full backup remains unavailable
+
+The settings export and saved tab list are not a backup of website data. Use
+archive to hide a profile reversibly; WebKit data deletion is irreversible.
+The full encrypted BrowserData operation continues to accept Chromium only.
+
+macOS26 introduced public `fetchData(of:)` and `restoreData(_:)` methods. That
+does not establish a full snapshot: the [pinned official implementation](https://github.com/WebKit/WebKit/blob/19ede6f35b64a7cd7ec397b64561ac09876156b4/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm#L605)
+accepts LocalStorage only and rejects other requested types. Combining this with
+the cookie API and saved URLs would still omit IndexedDB, service workers,
+CacheStorage and OPFS, without a demonstrated whole-store atomic restore.
+
+[Source/SDK evidence and return gate](evidence/webkit-backup-api-20261015.json)
+are recorded separately from native proof. The installed system binary was not
+tested for this operation. Do not remove the Chromium-only guard or copy private
+WebKit directories to present a partial export as full backup. Supporting
+macOS26-only export must not silently raise the application's macOS14 minimum.

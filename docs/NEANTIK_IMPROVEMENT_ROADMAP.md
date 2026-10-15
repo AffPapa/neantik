@@ -1,6 +1,6 @@
-# Current public release: 0.8.15/build127 · Chromium156.0.8078.12 · [report](../releases/v0.8.15.json)
+# Current public release: 0.8.16/build128 · Chromium156.0.8078.12 · [report](../releases/v0.8.16.json)
 
-GitHub/browser.free delivery127 is complete in the report scope. Major1.0 remains open; older dated sections below are historical.
+GitHub/browser.free delivery128 is complete in the report scope (Sites153). Major1.0 remains open; older dated sections below are historical. The active remaining scope is in [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md).
 
 
 0.8.8 published on GitHub/browser.free Sites146. Exact signed WebKit cache A/B and data-preservation checks, Apple ZIP/DMG, hosted bytes, downloaded headed/MCP and live signed feed passed. Manager source027d42c, catalog-only workflow3fa9e09; runtime unchanged. Cloud CI dispatch403, no cloudPASS. Full1.0 remains open; subsequent dated sections are historical pointers. AffPapa excluded.

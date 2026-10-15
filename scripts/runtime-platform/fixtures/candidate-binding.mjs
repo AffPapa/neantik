@@ -17,7 +17,7 @@ export function runtimeBinding(app, executableHash) {
   assert.equal(digest(framework), binding.runtimeFrameworkSHA256, 'Framework differs from candidate');
   return { binding, framework, bindingSHA256: digest(file) };
 }
-export function applyManagerLaunch(flags, env) {
+export function applyManagerLaunch(flags, env, expectedSeed = 21) {
   const file = process.env.NEANTIK_PLATFORM_LAUNCH_RECEIPT;
   assert(file && path.isAbsolute(file), 'Compiled manager launch receipt required');
   const receipt = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -27,7 +27,8 @@ export function applyManagerLaunch(flags, env) {
   const allowed = new Set(['--no-first-run', '--no-default-browser-check', '--new-window',
     '--no-proxy-server', '--webrtc-ip-handling-policy=default_public_interface_only', '--disable-features=WebGPUService']);
   assert(receipt.arguments.length === allowed.size && receipt.arguments.every(v => allowed.has(v)) && new Set(receipt.arguments).size === allowed.size, 'Manager Direct policy drift');
-  assert.deepEqual(receipt.environment, {NEANTIK_PROFILE_SEED:'21'});
+  assert(Number.isInteger(expectedSeed) && expectedSeed >= 11 && expectedSeed <= 21, 'Reviewed fixture seeds only');
+  assert.deepEqual(receipt.environment, {NEANTIK_PROFILE_SEED:String(expectedSeed)});
   for (const flag of receipt.arguments) if (!flags.includes(flag)) flags.push(flag);
   Object.assign(env, receipt.environment);
   return digest(file);

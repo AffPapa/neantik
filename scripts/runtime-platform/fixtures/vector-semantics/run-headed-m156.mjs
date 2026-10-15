@@ -124,7 +124,12 @@ const env=browserFixtureEnvironment();
 const flags=['--use-mock-keychain','--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--no-first-run','--no-default-browser-check','--new-window','--disable-background-networking','--disable-component-update','--disable-sync','--disable-extensions'];
 if(probeName==='media-capture-probe.js')flags.push('--use-fake-device-for-media-stream');
 if(mode==='neantik-configured'){
- config={profileSeed:21,scope:'synthetic-direct-manager-policy',launchReceiptSHA256:applyManagerLaunch(flags,env)};
+ let seed=21;
+ if(probeName==='cohort-projection-probe.js'){
+  assert(path.isAbsolute(extraFile));const options=JSON.parse(fs.readFileSync(extraFile,'utf8'));
+  assert.deepEqual(Object.keys(options),['seed']);assert(Number.isInteger(options.seed)&&options.seed>=11&&options.seed<=21);seed=options.seed;
+ }
+ config={profileSeed:seed,scope:'synthetic-direct-manager-policy',launchReceiptSHA256:applyManagerLaunch(flags,env,seed)};
 }
 if(pvtProbe&&extraFile&&extraFile!=='-'){
  assert(mode==='neantik-configured'&&path.isAbsolute(extraFile));const options=JSON.parse(fs.readFileSync(extraFile,'utf8'));
