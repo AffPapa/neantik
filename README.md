@@ -7,7 +7,7 @@ Chromium runtime, собранный из зафиксированных исх�
 
 [English version](README.en.md)
 
-На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.13) и [browser.free](https://browser.free/) опубликована **0.8.13 (125), public alpha**: исправлены ввод SOCKS5, адреса с портом и запуск профилей; MCP сообщает возможности выбранного движка.
+На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.14) и [browser.free](https://browser.free/) опубликована **0.8.14 (126), public alpha**: в режиме «Предыдущие вкладки» WebKit автоматически сохраняет адреса, порядок и выбранную вкладку во время работы.
 Подписанный кандидат прошёл изолированный headed-аудит. Публичные ZIP/DMG совпали по SHA-256 и прошли notarization, stapling и Gatekeeper; скачанный менеджер прошёл отдельный изолированный MCP smoke с перезапуском. Повторный полный headed-аудит не запускался.
 Системный WebKit остаётся preview и не подменяет полный fingerprint. Полная программа 1.0 ещё не завершена.
 
@@ -18,7 +18,7 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.8.13 (125), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.13). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.13.json).
+Последний опубликованный выпуск: [NeAntik 0.8.14 (126), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.14). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.14.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;

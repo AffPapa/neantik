@@ -89,6 +89,9 @@ def main(argv=None):
     cache.mkdir(parents=True, exist_ok=True)
     with cache_lock(cache) as cache_fd:
         env = os.environ.copy()
+        # -B covers this interpreter, not Python children spawned by tests.
+        # Keep generated executable caches out of the release source tree.
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
         env["DEVELOPER_DIR"] = subprocess.check_output([str(ROOT / "scripts/resolve-compatible-developer-dir.sh")], cwd=ROOT, text=True).strip()
         if not env["DEVELOPER_DIR"]:
             raise ValueError("Empty toolchain resolver result")

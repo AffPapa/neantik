@@ -4,6 +4,7 @@ import os
 import importlib.util
 import plistlib
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,44 @@ SPEC.loader.exec_module(MODULE)
 
 
 class DirectHostedDownloadOSSTests(unittest.TestCase):
+    @unittest.skipUnless(Path('/usr/bin/curl').is_file(), 'system curl required')
+    def test_home_curlrc_cannot_add_an_unrequested_file_transfer(self):
+        # A real curl control: default config can add an earlier transfer
+        # before the caller's HTTPS-only operation. Own files/loopback only.
+        actual_run = subprocess.run
+        with tempfile.TemporaryDirectory() as temporary, socket.socket() as listener:
+            home = Path(temporary)
+            canary = home / 'own-canary'; canary.write_text('owned-synthetic-marker')
+            injected = home / 'unexpected-copy'
+            (home / '.curlrc').write_text(
+                f'url = "{canary.as_uri()}"\noutput = "{injected}"\nnext\n')
+            listener.bind(('127.0.0.1', 0)); listener.listen(1)
+            url = f'https://127.0.0.1:{listener.getsockname()[1]}/owned'
+            with mock.patch.dict(os.environ, {'HOME': str(home), 'CURL_HOME': str(home)}):
+                with self.assertRaises(MODULE.HostedDownloadError):
+                    MODULE.download_with_curl(url, home / 'actual.zip', 1024, timeout=1)
+                self.assertFalse(injected.exists())
+                def config_enabled(command, **kwargs):
+                    return actual_run([arg for arg in command if arg != '--disable'], **kwargs)
+                with mock.patch.object(MODULE.subprocess, 'run', side_effect=config_enabled):
+                    with self.assertRaises(MODULE.HostedDownloadError):
+                        MODULE.download_with_curl(url, home / 'broken-control.zip', 1024, timeout=1)
+                self.assertEqual(injected.read_text(), 'owned-synthetic-marker')
+
+    def test_anonymous_child_has_no_ambient_secrets_and_error_is_redacted(self):
+        marker = 'synthetic-do-not-report-credential'
+        child = subprocess.CompletedProcess([], 22, stdout='', stderr=marker)
+        with mock.patch.dict(os.environ, {'HTTPS_PROXY': marker, 'GH_TOKEN': marker,
+                'CURL_CA_BUNDLE': marker, 'SSLKEYLOGFILE': marker}), \
+                mock.patch.object(MODULE.subprocess, 'run', return_value=child) as invoke:
+            with self.assertRaises(MODULE.HostedDownloadError) as caught:
+                MODULE.download_with_curl('https://example.com/owned.zip', Path('/unused'), 10)
+        self.assertNotIn(marker, str(caught.exception))
+        self.assertIn('22', str(caught.exception))
+        passed = invoke.call_args.kwargs['env']
+        for key in ['HTTPS_PROXY', 'GH_TOKEN', 'CURL_CA_BUNDLE', 'SSLKEYLOGFILE']:
+            self.assertNotIn(key, passed)
+
     def test_distribution_fifo_receipt_does_not_block_verification(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -7,7 +7,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.8.13 (125), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.13) and [browser.free](https://browser.free/): corrected SOCKS5 input, host:port URLs and profile launch; MCP exposes engine capabilities.
+**0.8.14 (126), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.14) and [browser.free](https://browser.free/): WebKit automatically saves committed tab addresses, order and selection while you work when “Previous tabs” is enabled.
 The exact signed candidate passed an isolated headed audit. Public ZIP/DMG bytes match and passed notarization, stapling and Gatekeeper. The downloaded manager passed a separate isolated MCP startup/restart smoke; the full headed audit was reused, not rerun.
 System WebKit remains a preview and does not replace the complete fingerprint. WebKit media remains disabled; full1.0 qualification is open.
 
@@ -18,7 +18,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.13 (125), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.13). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.13.json).
+Latest published release: [NeAntik 0.8.14 (126), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.14). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.14.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;

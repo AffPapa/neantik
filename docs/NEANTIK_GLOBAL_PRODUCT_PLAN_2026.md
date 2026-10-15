@@ -1,4 +1,4 @@
-# Current public release: 0.8.12/build124 · Chromium156.0.8078.12 · [report](../releases/v0.8.12.json)
+# Current public release: 0.8.14/build126 · Chromium156.0.8078.12 · [report](../releases/v0.8.14.json)
 
 Website/headed delivery remains open; older dated sections below are historical.
 

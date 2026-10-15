@@ -1,8 +1,14 @@
 import importlib.util
+import contextlib
+import io
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 import re
+from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location("fast_manager", Path(__file__).resolve().parents[1] / "test-manager-fast.py")
 MOD = importlib.util.module_from_spec(SPEC)
@@ -10,6 +16,31 @@ SPEC.loader.exec_module(MOD)
 
 
 class FastManagerWorkflowTests(unittest.TestCase):
+    def test_python_child_cannot_pollute_source_even_when_parent_enables_bytecode(self):
+        # Exercise main's actual child environment without invoking Swift.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / 'Package.swift').write_text('fixture')
+            helper = root / 'owned_import.py'; helper.write_text('value = 1\n')
+            def child(_command, **kwargs):
+                env = dict(kwargs['env'], PYTHONPATH=str(root))
+                subprocess.run([sys.executable, '-c', 'import owned_import'], env=env, check=True)
+                self.assertFalse((root / '__pycache__').exists())
+                kwargs['stdout'].write(('✔ Test owned() passed after 0.1 seconds.\n'
+                    '✔ Test run with 1 test in 1 suite passed\n').encode())
+                return 0
+            with mock.patch.object(MOD, 'ROOT', root), \
+                    mock.patch.object(MOD, 'suites', return_value=['OwnedTests']), \
+                    mock.patch.object(MOD.subprocess, 'check_output', return_value='/fixture/developer\n'), \
+                    mock.patch.object(MOD, 'supervise', side_effect=child), \
+                    mock.patch.dict(os.environ, {'PYTHONDONTWRITEBYTECODE': '0'}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(MOD.main(['--suite', 'OwnedTests']), 0)
+            # Sensitivity control: the same import really generates a cache
+            # when the new transitive protection is intentionally removed.
+            env = dict(os.environ, PYTHONPATH=str(root), PYTHONDONTWRITEBYTECODE='0')
+            subprocess.run([sys.executable, '-c', 'import owned_import'], env=env, check=True)
+            self.assertTrue((root / '__pycache__').is_dir())
+
     def test_unknown_or_regex_suite_never_becomes_a_test_command(self):
         for suites in [[], ["MissingTests"], [".*"], ["ValidTests|OtherTests"], ["ValidTests", "MissingTests"]]:
             with self.assertRaises(ValueError):

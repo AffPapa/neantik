@@ -18,6 +18,21 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_classic_and_fine_grained_tokens_are_rejected_without_echoing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); file = root / 'source.py'
+            with mock.patch.object(MODULE, 'PROJECT_ROOT', root):
+                file.write_text('use a local credential file\n')
+                MODULE.verify_files([file])
+                for prefix in ['ghp_', 'github_pat_']:
+                    marker = prefix + 'A' * 80
+                    file.write_text(marker)
+                    output = io.StringIO()
+                    with redirect_stderr(output), self.assertRaises(SystemExit):
+                        MODULE.verify_files([file])
+                    self.assertIn('possible GitHub token', output.getvalue())
+                    self.assertNotIn(marker, output.getvalue())
+
     def test_current_zip_and_dmg_checksums_and_negative_controls(self) -> None:
         import copy
         with tempfile.TemporaryDirectory() as directory:

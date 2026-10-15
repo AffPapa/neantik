@@ -52,10 +52,13 @@ def verify_current_product_claims(root: Path) -> None:
         # current release. A correct link must not mask a stale earlier build.
         intro = text.split('\n## ', 1)[0]
         intro_claims = re.findall(r'(\d+\.\d+\.\d+) \((\d+)\)', intro)
+        release_url = f"https://github.com/AffPapa/neantik/releases/tag/{latest['tag']}"
+        intro_links = re.findall(r'https://github\.com/AffPapa/neantik/releases/tag/[^)\s]+', intro)
         claim = re.search(r'\[NeAntik (\d+\.\d+\.\d+) \((\d+)\)[^\]]*\]\((https://github\.com/AffPapa/neantik/releases/tag/v[^)]+)\)', text)
         if (not intro_claims or any(pair != (latest['version'], str(latest['build'])) for pair in intro_claims)
+                or not intro_links or any(link != release_url for link in intro_links)
                 or not claim or claim.groups() != (latest['version'], str(latest['build']),
-                f"https://github.com/AffPapa/neantik/releases/tag/{latest['tag']}")
+                release_url)
                 or f"releases/{latest['tag']}.json" not in text):
             raise ValueError('README release claim differs from published evidence: ' + filename)
     for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md', 'SOURCE_TO_SITE_HANDOFF.md'):

@@ -1,4 +1,4 @@
-# Current public release: 0.8.12/build124 · Chromium156.0.8078.12 · [report](../releases/v0.8.12.json)
+# Current public release: 0.8.14/build126 · Chromium156.0.8078.12 · [report](../releases/v0.8.14.json)
 
 GitHub124 is published; browser.free remains148/0811. Saved Sites149/source737a0b65 has passed build/privacy but awaits the downloaded headed gate: macOS pressure2 prevented two launches. Archive assets remain immutable; continue the retained fixture only after changed pressure.
 

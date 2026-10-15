@@ -50,7 +50,7 @@ PRIVATE_SECRET_STORE_PATH_RE = re.compile(
 SYNTHETIC_TEST_USERNAMES = frozenset({"alice", "example", "test"})
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
-    "GitHub token": re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
+    "GitHub token": re.compile(r"\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"),
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
 }
 RELEASE_MARKDOWN_FILENAME = re.compile(

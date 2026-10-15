@@ -114,7 +114,8 @@ def download_with_curl(
 ) -> None:
     completed = subprocess.run(
         [
-            "curl",
+            "/usr/bin/curl",
+            "--disable",
             "--fail",
             "--location",
             "--proto",
@@ -136,11 +137,14 @@ def download_with_curl(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
+        # This is an anonymous artifact check. Ambient proxy credentials,
+        # curl config, TLS overrides and key-log destinations are not inputs.
+        env={key: value for key, value in os.environ.items()
+             if key in {"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE", "USER", "LOGNAME"}},
     )
     if completed.returncode != 0:
-        detail = completed.stderr.strip()
         raise HostedDownloadError(
-            f"download failed with curl exit {completed.returncode}: {detail}"
+            f"download failed with curl exit {completed.returncode}"
         )
 
 
