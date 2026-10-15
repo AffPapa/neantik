@@ -278,3 +278,21 @@ output. Original objects, five frozen manifests and the earlier signed browser
 were preserved. This is not a newly linked headed browser or a release. The
 six-layer runtime still needs its relevant browser gates, manager opt-in and
 exact-candidate qualification. No earlier browser PASS is transferred to it.
+
+
+### Six-layer signed browser qualification
+
+The variation successor was linked once in the preserved COW output (184 seconds),
+signed with the existing Developer ID and inspected as 16 Mach-O files/948 tree
+entries. The separate six-layer binding checks source → completed build → raw
+signer input → actual signed closure. Relabeling the old runtime is rejected.
+
+A new wrapper validates that chain before and after reusing the unchanged
+five-layer font protocols via a validated projection. Four headed font-context
+modes and five Font Access modes pass on the successor, with actual ACKs,
+permissions, blobs, A→B→A, context shutdown and cleanup. Old five-layer receipts
+remain historical evidence for their own bytes. [Exact new result](../../docs/evidence/font-variation-headed-development.json).
+
+This closes the changed font runtime research gate. Manager explicit opt-in,
+trusted runtime capability, native manager smoke and exact shipping artifact
+qualification are still open. The current public release was not replaced.
