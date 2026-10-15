@@ -65,6 +65,11 @@ Unknown/shared inputs select full regression. Planning never means PASS.
   already authorized QA execution environment. Sandbox denial is a setup
   failure: rerun only affected modules there, retain the original failure and
   never report that first invocation as an all-green run.
+- Resource admission applies to app/runtime/enrollment/headed/CoreText QA,
+  not reviewed model/filesystem unit tests. Owned shell-stub tests inject
+  deterministic resource state and retain an explicit pressure-refusal control;
+  real browser fixtures keep production admission. Do not bypass a native gate
+  by calling the fixture a unit test.
 - Keep ordinary CI separate from opt-in native fixtures. The clean CI shards
   share a cache within each job and execute each selected suite in a separate
   process. Nonzero exits and zero tests stop the shard.

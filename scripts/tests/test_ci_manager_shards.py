@@ -16,15 +16,28 @@ class CIManagerShardTests(unittest.TestCase):
     def test_pure_native_fixtures_are_excluded_but_mixed_security_suites_remain(self):
         suites = MOD.catalog()
         for name in ['WebKitCacheLiveTests', 'WebKitCacheOwnedCleanupTests',
-                     'WebKitSessionLifecycleTests', 'ProxyTesterLiveFixtureTests']:
+                     'WebKitSessionLifecycleTests', 'ProxyTesterLiveFixtureTests',
+                     'WebKitDeletionLiveTests']:
             self.assertNotIn(name, suites)
         for name in ['WebKitCacheMaintenanceTests', 'ProxyRelayLoopbackServerTests',
                      'ProxyRelayTLSQualificationTests', 'ProxyRelaySocketOwnerInspectorTests',
                      'PlatformLaunchReceiptTests']:
             self.assertIn(name, suites)
 
+    def test_deletion_fixture_has_only_explicit_phase_gates(self):
+        root = Path(__file__).resolve().parents[2]
+        fixtures = json.loads((root / 'scripts/swift-runtime-fixture-suites.json').read_text())
+        self.assertEqual(set(fixtures['WebKitDeletionLiveTests']),
+            {'NEANTIK_WEBKIT_DELETE_PHASE', 'NEANTIK_WEBKIT_DELETE_ROOT', 'NEANTIK_WEBKIT_DELETE_ORIGIN'})
+        source = (root / 'Tests/NeAntikTests/WebKitDeletionLiveTests.swift').read_text()
+        # Every operation is opt-in headed QA; none is an ordinary unit test.
+        self.assertEqual(source.count('@Test('), 3)
+        self.assertEqual(source.count('@Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_DELETE_PHASE"]'), 3)
+        self.assertNotIn('WebKitDeletionLiveTests', MOD.catalog())
+
     def test_failure_diagnostics_are_bounded_redacted_and_actionable(self):
-        text = 'ordinary secret text\nfile.swift:4: error: missing API\nerror: token=ghp_ABC123 password="private value" http://u:p@host/ 203.0.113.8 /Users/example/file\n'
+        synthetic_home_path = str(Path('/').joinpath('Users', 'example', 'file'))
+        text = 'ordinary secret text\nfile.swift:4: error: missing API\nerror: token=ghp_ABC123 password="private value" http://u:p@host/ 203.0.113.8 ' + synthetic_home_path + '\n'
         lines = MOD.failure_diagnostics(text + ''.join(f'error: extra {i}\n' for i in range(40)))
         self.assertEqual(len(lines), 20)
         self.assertIn('missing API', lines[0])
@@ -49,7 +62,14 @@ class CIManagerShardTests(unittest.TestCase):
         self.assertEqual(MOD.clean_environment(env), {"PATH": "/bin", "LANG": "en_US.UTF-8"})
 
     def test_failed_empty_or_changed_source_stops_before_next_suite(self):
-        for exit_code, output, changed in [(1, b"failed", False), (0, b"Test run with 0 tests in 0 suites passed", False),
+        warning = ("warning: '--build-system native' has been deprecated and will be removed "
+                   "in a future release; please report an issue at "
+                   "https://github.com/swiftlang/swift-package-manager/issues if you are "
+                   "unable to adopt the default build system.\n")
+        interrupted = ("✔ Test works() passed after 0.1 seconds.\n"
+                       "✔ Test run with 1 test in 1 suite" + warning + " passed\n").encode()
+        for exit_code, output, changed in [(1, b"failed", False), (1, interrupted, False),
+                                          (0, b"Test run with 0 tests in 0 suites passed", False),
                                           (0, "➜ Test requiresHardware() skipped: unavailable\n✔ Test run with 1 test in 1 suite passed".encode(), False),
                                           (0, "✔ Test works() passed after 0.1 seconds.\n✔ Test run with 1 test in 1 suite passed".encode(), True)]:
             with self.subTest(exit_code=exit_code, changed=changed), tempfile.TemporaryDirectory() as directory:

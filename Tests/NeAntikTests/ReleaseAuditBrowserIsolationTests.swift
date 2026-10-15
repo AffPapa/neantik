@@ -5,6 +5,11 @@ import Testing
 @testable import NeAntik
 
 @Suite(.serialized) @MainActor struct ReleaseAuditBrowserIsolationTests {
+    // These tests launch only owned shell stubs. Resource state is an explicit
+    // fixture input; live pressure must not hide the custody failure under test.
+    private func fixtureAdmission() -> ManagerLaunchAdmission {
+        ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
+    }
     private func fixture() throws -> (URL, AppPaths, ReleaseAuditBrowserIsolation) {
         let parent = URL(fileURLWithPath: "/private/tmp/neantik-update-audit-" + UUID().uuidString.lowercased())
         let root = parent.appendingPathComponent("manager-data")
@@ -31,7 +36,7 @@ import Testing
         try paths.prepareBaseDirectories()
         try paths.prepareProfileDirectories(for: UUID(uuidString: data.deletingLastPathComponent().lastPathComponent)!)
         try isolation.validateBeforeExec(paths: paths, browserDataDirectory: data)
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+        let manager = BrowserProcessManager(launchAdmission: fixtureAdmission(), paths: paths, processIdentityValidator: { _ in false },
             releaseAuditBrowserIsolation: isolation, browserDataProcessInspector: { _ in .absent })
         defer { manager.suspendPassiveObservations() }
         let reservation = try manager.reserveFingerprintAuditLaunch(startURL: URL(string: "http://127.0.0.1:8000/fixture")!, httpLoopbackPort: 8000)
@@ -94,7 +99,7 @@ import Testing
         let fake = parent.appendingPathComponent("owned-browser")
         try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.args.tmp\"\n/bin/mv \"$0.args.tmp\" \"$0.args\"\nsleep 0.15\n".utf8).write(to: fake)
         #expect(chmod(fake.path, 0o700) == 0)
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+        let manager = BrowserProcessManager(launchAdmission: fixtureAdmission(), paths: paths, processIdentityValidator: { _ in false },
             releaseAuditBrowserIsolation: audit ? isolation : nil, browserDataProcessInspector: { _ in .absent })
         defer { manager.suspendPassiveObservations() }
         let profile = BrowserProfile(name: "Synthetic storage isolation")
@@ -126,13 +131,35 @@ import Testing
         manager.reconcile(profiles: [profile])
         #expect(!manager.runningProfileIDs.contains(profile.id))
     }
+    @Test func pressureRefusesOwnedExecutableBeforeCreatingLease() throws {
+        let (parent, paths, isolation) = try fixture()
+        defer { try? FileManager.default.removeItem(at: parent) }
+        let profile = BrowserProfile(name: "Synthetic pressure refusal")
+        let fake = parent.appendingPathComponent("never-pressure-browser")
+        try paths.prepareBaseDirectories(); try paths.prepareProfileDirectories(for: profile.id)
+        try Data("#!/bin/sh\n/usr/bin/touch \"$0.started\"\n".utf8).write(to: fake)
+        #expect(chmod(fake.path, 0o700) == 0)
+        let admission = fixtureAdmission()
+        admission.setPressureForTesting(true)
+        let manager = BrowserProcessManager(launchAdmission: admission, paths: paths,
+            processIdentityValidator: { _ in false }, releaseAuditBrowserIsolation: isolation,
+            browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations() }
+        #expect(throws: ManagerLaunchAdmissionError.pressure) {
+            try manager.launch(profile: profile,
+                runtime: BrowserRuntime(name: "Synthetic", executableURL: fake, source: "Fixture"))
+        }
+        #expect(!FileManager.default.fileExists(atPath: fake.appendingPathExtension("started").path))
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(try paths.privateFileEntryKind(paths.lockFile(for: profile.id)) == .missing)
+    }
     @Test func finalPreExecRefusalRemovesProvisionalLeaseAndNeverRunsExecutable() throws {
         let (parent, paths, isolation) = try fixture(); defer { try? FileManager.default.removeItem(at: parent) }
         let profile = BrowserProfile(name: "Synthetic refusal"), fake = parent.appendingPathComponent("never-browser")
         try paths.prepareBaseDirectories(); try paths.prepareProfileDirectories(for: profile.id)
         try Data("#!/bin/sh\n/usr/bin/touch \"$0.started\"\n".utf8).write(to: fake); #expect(chmod(fake.path, 0o700) == 0)
         try addACL(paths.browserDataDirectory(for: profile.id))
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+        let manager = BrowserProcessManager(launchAdmission: fixtureAdmission(), paths: paths, processIdentityValidator: { _ in false },
             releaseAuditBrowserIsolation: isolation, browserDataProcessInspector: { _ in .absent })
         defer { manager.suspendPassiveObservations() }
         #expect(throws: NeAntikError.self) { try manager.launch(profile: profile,
@@ -143,7 +170,7 @@ import Testing
     }
     @Test(arguments: ["symlink", "directory"]) func ordinaryReservationCannotFollowReplacedDirectoryAlias(kind: String) throws {
         let (parent, paths, _) = try fixture(); defer { try? FileManager.default.removeItem(at: parent) }
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        let manager = BrowserProcessManager(launchAdmission: fixtureAdmission(), paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
         let profile = BrowserProfile(name: "Synthetic reservation refusal"), url = URL(string: "http://127.0.0.1:8000/fixture")!
         let reservation = try manager.reserveFingerprintAuditLaunch(startURL: url, httpLoopbackPort: 8000)
         let custody = try manager.retainFingerprintAuditDirectory(reservation)
@@ -181,7 +208,7 @@ import Testing
     }
     @Test func releasingUnusedReservationKeepsCleanupCustodyAndIsIdempotent() throws {
         let (parent, paths, isolation) = try fixture(); defer { try? FileManager.default.removeItem(at: parent) }
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+        let manager = BrowserProcessManager(launchAdmission: fixtureAdmission(), paths: paths, processIdentityValidator: { _ in false },
             releaseAuditBrowserIsolation: isolation, browserDataProcessInspector: { _ in .absent })
         defer { manager.suspendPassiveObservations() }
         let reservation = try manager.reserveFingerprintAuditLaunch(startURL: URL(string: "http://127.0.0.1:8000/fixture")!, httpLoopbackPort: 8000)
@@ -199,7 +226,7 @@ import Testing
     }
     @Test func unsafeNestedSymlinkRetainsTreeAndExternalSentinel() throws {
         let (parent, paths, isolation) = try fixture(); defer { try? FileManager.default.removeItem(at: parent) }
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+        let manager = BrowserProcessManager(launchAdmission: fixtureAdmission(), paths: paths, processIdentityValidator: { _ in false },
             releaseAuditBrowserIsolation: isolation, browserDataProcessInspector: { _ in .absent })
         defer { manager.suspendPassiveObservations() }
         let reservation = try manager.reserveFingerprintAuditLaunch(startURL: URL(string: "http://127.0.0.1:8000/fixture")!, httpLoopbackPort: 8000)

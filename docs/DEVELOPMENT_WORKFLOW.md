@@ -67,6 +67,10 @@
   точный `--download-url` и `--json`; использовать уже настроенные signing/notary
   environment. До enrollment/fingerprint ожидаемые отсутствующие gates остаются
   blocked: отчёт не заменяет квалификацию нового кандидата.
+- Обычные model/filesystem unit-тесты не являются нативным app/runtime QA.
+  В fixture с собственным shell-stub состояние ресурсов задаётся явно и
+  проверяется отдельным pressure-refusal контролем. Реальный браузер, CoreText,
+  enrollment и оконные сценарии сохраняют штатный resource gate.
 - Перед нативным QA выполнить `python3 -B scripts/native-qa-readiness.py --check`
   в разрешённой macOS-среде. Проверка читает kernel memory pressure и thermal
   state по одному разу, ничего не запускает и не меняет. Exit75 означает

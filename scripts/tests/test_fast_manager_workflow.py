@@ -60,6 +60,26 @@ class FastManagerWorkflowTests(unittest.TestCase):
         self.assertEqual(MOD.positive_result("✔ Test works() passed after 0.1 seconds.\n➜ Test hardware() skipped: unavailable\n✔ Test run with 17 tests in 2 suites passed"),
                          {"tests": 17, "suites": 2, "passedTestLogLines": 1, "skippedTestLogLines": 1})
 
+    def test_exact_swiftpm_warning_can_interrupt_a_real_success_summary(self):
+        warning = ("warning: '--build-system native' has been deprecated and will be removed "
+                   "in a future release; please report an issue at "
+                   "https://github.com/swiftlang/swift-package-manager/issues if you are "
+                   "unable to adopt the default build system.\n")
+        body = "✔ Test owned() passed after 0.1 seconds.\n"
+        interrupted = "✔ Test run with 22 tests in 1 suite" + warning + " passed after 0.2 seconds.\n"
+        self.assertEqual(MOD.positive_result(body + interrupted),
+            {"tests": 22, "suites": 1, "passedTestLogLines": 1, "skippedTestLogLines": 0})
+        for absent_body in ["", "➜ Test owned() skipped: unavailable\n"]:
+            with self.assertRaises(ValueError): MOD.positive_result(absent_body + interrupted)
+        with self.assertRaises(ValueError):
+            MOD.positive_result(body + interrupted.replace(" passed after", " failed after"))
+
+    def test_unknown_interleaved_diagnostics_are_not_discarded(self):
+        body = "✔ Test owned() passed after 0.1 seconds.\n"
+        for diagnostic in ["warning: unrelated warning\n", "error: failed operation\n"]:
+            interrupted = "✔ Test run with 22 tests in 1 suite" + diagnostic + " passed after 0.2 seconds.\n"
+            with self.assertRaises(ValueError): MOD.positive_result(body + interrupted)
+
     def test_repeated_input_does_not_require_cold_cache_and_changed_input_changes_digest(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); (root / "Package.swift").write_text("package")

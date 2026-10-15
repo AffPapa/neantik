@@ -32,6 +32,17 @@ def selection(requested, catalog):
 
 
 def positive_result(text):
+    # SwiftPM writes this diagnostic to a different stream from Swift Testing.
+    # A merged log can splice it inside the final result, even between "suite"
+    # and " passed". Reconstruct only this exact observed out-of-band message;
+    # preserve every unknown warning/error and all original execution logs.
+    backend_warning = (
+        "warning: '--build-system native' has been deprecated and will be removed "
+        "in a future release; please report an issue at "
+        "https://github.com/swiftlang/swift-package-manager/issues if you are "
+        "unable to adopt the default build system.\n"
+    )
+    text = text.replace(backend_warning, "")
     matches = re.findall(r"Test run with ([1-9][0-9]*) tests? in ([1-9][0-9]*) suites? passed", text)
     if not matches:
         raise ValueError("No positive Swift Testing count; an empty selection is not PASS")
