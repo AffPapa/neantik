@@ -38,7 +38,7 @@
   "shippedRuntimeChanged": false,
   "releaseQualified": false,
   "remaining": [
-    "remaining bootstrap refusal and broader font gates; five page/worker modes and actual cleanup passed",
+    "forced managed-policy redirect needs isolated managed environment; actual nine bootstrap refusal controls passed",
     "actual malformed-root/FIFO/policy-redirect controls",
     "nine-context/Font Access/style/collection qualification beyond page+DedicatedWorker",
     "qualified manager opt-in and exact signed app/hosted-byte release gates"
@@ -109,5 +109,12 @@
     "residualProcesses": 0,
     "residualRoots": 0,
     "fullRuntimeClosureUnchanged": true
+  },
+  "bootstrapResult": {
+    "evidence": "docs/evidence/font-bootstrap-development.json",
+    "actualCases": 9,
+    "allExit13": true,
+    "cleanupPassed": true,
+    "forcedManagedPolicyTested": false
   }
 }

@@ -157,8 +157,11 @@ runtime собран за214секунд в отдельном output. Иссл�
 согласованных настройках текста. Проверены реальное рисование, fallback,
 скачиваемые TTF/WOFF2, нативные ACK browser/renderer и очистка.
 Это [подтверждённый исследовательский срез](evidence/font-headed-development.json),
-а не закрытие полного пункта1: остальные контексты, Font Access, отрицательные
-bootstrap-контроли и точный release candidate ещё впереди.
+а не закрытие полного пункта1: остальные контексты, Font Access и точный release candidate ещё впереди.
+Девять реальных [bootstrap-отказов](evidence/font-bootstrap-development.json)
+прошли на той же подписанной копии: FIFO, права, symlink, неверные marker/request,
+подмена пути/approval и отсутствующие CDP-дескрипторы. Принудительную macOS
+managed policy на пользовательском Mac не меняли; этот отдельный контроль открыт.
 
 
 Отдельный одобренный CoreText-эксперимент завершён: in-memory descriptors

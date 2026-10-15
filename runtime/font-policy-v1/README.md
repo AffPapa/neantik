@@ -133,7 +133,14 @@ metrics, actual fallback/style/custom collection/WOFF2 operations and Font
 Access permission behavior. Missing acknowledgements, contexts, resources or
 completion never imply PASS. Malformed-root/FIFO, managed-policy redirection
 and missing CDP-pipe controls must terminate without touching default data.
-Those complete controls have not passed. Ordinary manager, old primitive and
+Nine actual early-refusal cases passed on this same signed runtime: both
+FIFO paths, profile symlink, permissive root, invalid marker, raw path redirect,
+forged caller approval, invalid request version and missing pipe descriptors.
+Each returned the exact unsupported-parameter exit13 without timeout, font ACK,
+owned profile/crash data or residual processes. The absent raw redirect target
+was not created. [Bootstrap evidence](../../docs/evidence/font-bootstrap-development.json).
+Forced macOS managed policy is a different branch and was not mutated/tested
+on the user machine; it remains an isolated managed-environment gate. Ordinary manager, old primitive and
 old7object receipts remain valid for their unchanged scope; successful new
 compile/link checks do not replace the pending headed and release gates.
 
