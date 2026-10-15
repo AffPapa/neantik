@@ -56,6 +56,12 @@
 
 ## Релиз и обновления
 
+- Direct doctor — `scripts/preflight-direct-public-release.py`, а не AffPapa
+  client. Передавать `--integrated-app`, `--candidate-manifest`,
+  `--gui-fingerprint-report`, `--runtime-lock`, `--release-channel public-alpha`,
+  точный `--download-url` и `--json`; использовать уже настроенные signing/notary
+  environment. До enrollment/fingerprint ожидаемые отсутствующие gates остаются
+  blocked: отчёт не заменяет квалификацию нового кандидата.
 - Перед нативным QA выполнить `python3 -B scripts/native-qa-readiness.py --check`
   в разрешённой macOS-среде. Проверка читает kernel memory pressure и thermal
   state по одному разу, ничего не запускает и не меняет. Exit75 означает
