@@ -24,11 +24,13 @@ struct ProfileBrowserDataBackupSheet: View {
     @State private var complete = false
     @State private var message: String?
     @State private var needsRecovery = false
+    @State private var recoveryPreview: BrowserDataRestoreTransaction.RecoveryPreview?
+    @State private var recoveryBlocked = false
     @State private var task: Task<Void, Never>?
     @FocusState private var passwordFocused: Bool
     private var restoring: Bool { request.mode == .restore }
     private var canConfirm: Bool {
-        file != nil && !busy && !complete && (12...1024).contains(password.utf8.count) &&
+        file != nil && !busy && !complete && !recoveryBlocked && (12...1024).contains(password.utf8.count) &&
             (restoring || password == confirmation)
     }
     var body: some View {
@@ -64,7 +66,7 @@ struct ProfileBrowserDataBackupSheet: View {
                 if needsRecovery { Button("Завершить восстановление") { perform(recovery: true) }.disabled(busy) }
                 Spacer()
                 Button(complete ? "Готово" : "Закрыть") { dismiss() }.disabled(busy).keyboardShortcut(.cancelAction)
-                if !complete && !needsRecovery {
+                if !complete && !needsRecovery && !recoveryBlocked {
                     Button(restoring ? "Восстановить данные" : "Создать копию") { perform() }
                         .disabled(!canConfirm).keyboardShortcut(.defaultAction)
                 }
@@ -90,6 +92,8 @@ struct ProfileBrowserDataBackupSheet: View {
     }
     private func perform(recovery: Bool = false) {
         guard !busy, recovery || canConfirm, let file else { return }
+        let expectedRecovery = recoveryPreview
+        guard !recovery || expectedRecovery != nil else { return }
         guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         busy = true; message = nil
         let password = password, profile = request.profile
@@ -99,7 +103,7 @@ struct ProfileBrowserDataBackupSheet: View {
             var dataOperationCompleted = false
             do {
                 if recovery {
-                    let result = try await service.recoverPending()
+                    let result = try await service.recoverPending(expected: expectedRecovery)
                     dataOperationCompleted = true
                     try await didRestore()
                     complete = true; needsRecovery = false
@@ -121,8 +125,15 @@ struct ProfileBrowserDataBackupSheet: View {
                     message = "Операция с данными завершена, но список не обновился. Перезапусти NeAntik перед запуском профиля."
                     return
                 }
-                needsRecovery = await service.pendingRecoveryRequired()
-                if needsRecovery { message = "Операция не завершена. Данные сохранены; закрой другие версии NeAntik и заверши восстановление." }
+                let pending = await service.pendingRecoveryRequired()
+                if pending { recoveryPreview = try? await service.inspectPendingRecovery() }
+                else { recoveryPreview = nil }
+                needsRecovery = recoveryPreview?.context.profileID == profile.id
+                recoveryBlocked = pending && !needsRecovery
+                if recoveryBlocked {
+                    message = "В NeAntik есть другое или неподтверждённое восстановление. Закрой это окно и перезапусти NeAntik: он проверит журнал перед запуском профилей. Не удаляй файлы данных."
+                }
+                else if needsRecovery { message = "Операция не завершена. Закрой другие версии NeAntik и заверши восстановление этого профиля." }
                 else if error is CancellationError { message = "Операция остановлена до завершения. Проверь выбранный файл перед повторной попыткой." }
                 else if let value = error as? EncryptedBackupError {
                     switch value {

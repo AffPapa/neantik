@@ -101,7 +101,22 @@ import Testing
         do { _ = try await service.recoverPending(); Issue.record("Mismatched scope recovered") } catch {}
         #expect(throws: BrowserDataRestoreError.pending) { try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory) }
         backend.replace(Data(repeating: 9, count: 32))
-        let result = try await service.recoverPending()
+        let preview = try await service.inspectPendingRecovery()
+        let pendingMain = try Data(contentsOf: paths.profilesFile)
+        let pendingPrevious = try Data(contentsOf: paths.profilesBackupFile)
+        let context = preview.context
+        let foreignContext = EncryptedBackupArchive.Manifest(profileID: UUID(), identitySHA256: context.identitySHA256,
+            runtimeExecutableSHA256: context.runtimeExecutableSHA256, runtimeFrameworkSHA256: context.runtimeFrameworkSHA256,
+            runtimeVersion: context.runtimeVersion, compatibilityScopeSHA256: context.compatibilityScopeSHA256, entries: context.entries)
+        for wrong in [BrowserDataRestoreTransaction.RecoveryPreview(context: foreignContext, retainedTree: preview.retainedTree),
+                      .init(context: context, retainedTree: preview.retainedTree.deletingLastPathComponent().appendingPathComponent("foreign-stage"))] {
+            do { _ = try await service.recoverPending(expected: wrong); Issue.record("Different profile/transaction replaced the confirmed recovery") }
+            catch { #expect(error as? BrowserDataBackupStorageError == .incompatibleContext) }
+            #expect(try Data(contentsOf: paths.profilesFile) == pendingMain)
+            #expect(try Data(contentsOf: paths.profilesBackupFile) == pendingPrevious)
+            #expect(throws: BrowserDataRestoreError.pending) { try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory) }
+        }
+        let result = try await service.recoverPending(expected: preview)
         #expect(!result.restored)
         try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory)
     }

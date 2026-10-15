@@ -2,9 +2,9 @@ import CryptoKit
 import Darwin
 import Foundation
 
-/// Service integration is still development-only. Runtime inspection and
-/// scope persistence providers are injected so tests never access a real
-/// Keychain. GUI enablement requires the exact signed manager scope gate.
+/// Runtime inspection and scope providers are injected so tests use no real
+/// Keychain. Production operations require the signed capability selected by
+/// BackupApplicationComposition; filesystem code alone grants no authority.
 @MainActor final class ProfileBrowserDataBackupService {
     private let paths: AppPaths
     private let processes: BrowserProcessManager
@@ -107,11 +107,18 @@ import Foundation
         return try await Task.detached(priority: .utility) { try BrowserDataRestoreTransaction.inspectPending(paths: paths) }.value
     }
 
-    func recoverPending() async throws -> BrowserDataRestoreTransaction.Result {
+    func recoverPending(expected: BrowserDataRestoreTransaction.RecoveryPreview? = nil) async throws -> BrowserDataRestoreTransaction.Result {
         let activity = try ApplicationUpdateAdmission.shared.beginActivity()
         defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
         let paths = paths, scope = scope, inspect = inspectRuntime
         let preview = try await inspectPendingRecovery()
+        // The GUI confirms one pending profile/transaction. A newer journal
+        // must not silently replace that choice between preview and action.
+        if let expected {
+            guard expected.context == preview.context, expected.retainedTree == preview.retainedTree else {
+                throw BrowserDataBackupStorageError.incompatibleContext
+            }
+        }
         return try await processes.withVerifiedStoppedProfileRestore(profileID: preview.context.profileID, retainedTree: preview.retainedTree) { authority in
             let runtime = try Self.validRuntime(inspect())
             let localScope = try scope.digest(createForExport: false)

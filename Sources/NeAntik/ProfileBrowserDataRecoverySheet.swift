@@ -48,7 +48,7 @@ struct ProfileBrowserDataRecoverySheet: View {
     }
 
     private func recover() {
-        guard !busy, preview != nil else { return }
+        guard !busy, let preview else { return }
         guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         busy = true; message = nil
         Task { @MainActor in
@@ -56,7 +56,7 @@ struct ProfileBrowserDataRecoverySheet: View {
             defer { busy = false }
             var recovered = false
             do {
-                let result = try await service.recoverPending()
+                let result = try await service.recoverPending(expected: preview)
                 recovered = true
                 try await didRecover(result)
                 complete = true

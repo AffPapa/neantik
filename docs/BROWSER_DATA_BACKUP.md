@@ -1,12 +1,16 @@
 # BrowserData backup: capability and qualification
 
-The published Direct 0.7.34 (97) metadata does not enable creation of BrowserData
-backups. The unpublished 0.7.35/98 qualification candidate explicitly requests
-this capability and the matching macOS Developer ID provisioning profile; it
-is not a published delivery. Preparation refuses a missing explicit selection
-before compilation or metadata replacement. The operation targets a stopped
-profile and is not exposed through MCP. Configuration export and metadata snapshots
-remain separate operations and do not contain BrowserData.
+The published [Direct 0.8.14 (126)](../releases/v0.8.14.json) enables Chromium
+BrowserData backup through its signed capability and matching macOS Developer
+ID profile. Its downloaded Info.plist has `NeAntikBrowserDataBackupEnabled=true`;
+that selection is not, by itself, evidence of a restore operation. The operation
+targets a stopped profile and is not exposed through MCP. Configuration export
+and metadata snapshots remain separate and do not contain BrowserData.
+
+Earlier default packaging, including 0.7.34, left creation disabled. The
+0.7.35/98 qualification candidate was an intermediate development step, not the
+current public download. Missing explicit selection is still refused before
+compilation or metadata replacement; legacy defaults do not silently gain access.
 
 The archive contains BrowserData only. Restore preserves the profile's settings,
 proxy, folder and identity. Compatibility requires the original profile, Mac,
@@ -125,8 +129,22 @@ were not used. Renaming an installed application is not qualified by that test.
 Startup recovery authenticates the existing journal and obtains fresh authority;
 it does not rely on selecting a profile from pending metadata. The private native
 packaging proof remains separate from the final notarized and published release.
-The latter's ZIP/DMG hosted gates, fresh downloaded headed launch and metadata
-MCP checks passed. See [release record](../releases/v0.7.30.json).
+The historical ZIP/DMG hosted gates, downloaded launch and metadata MCP checks
+are in the [0.7.30 release record](../releases/v0.7.30.json). Current release
+identity and delivery checks are in the 0.8.14 record above; neither delivery
+record replaces the separate data-operation evidence.
+
+### Recovery choice binding in development
+
+Both recovery views now pass the confirmed manifest and retained-stage path to
+the service. The service rereads the active journal and refuses a different
+profile or transaction before obtaining mutation authority. A profile-specific
+sheet cannot offer recovery of another profile or an unverified journal; it
+directs the user to startup recovery instead. The full serial Swift unit suite
+passed locally (summary: 1,553 tests in 180 suites; 68 explicit skips), including
+wrong-profile/stale-stage refusal with unchanged pending metadata and successful
+matching recovery. Native sheet/candidate gates remain before a later release.
+The archive format, metadata schema, Keychain scope and profile identity are unchanged.
 
 Apple API references: [Data Protection Keychain](https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain),
 [device-only accessibility](https://developer.apple.com/documentation/security/ksecattraccessiblewhenunlockedthisdeviceonly).

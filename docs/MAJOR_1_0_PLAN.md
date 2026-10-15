@@ -77,7 +77,7 @@
 |40|P0|One vector patch+test|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |41|P0|Positive/negative controls|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |42|P0|Values vs behavior|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
-|43|P0|Exact shipped browser|опубликовано publicalpha; major1.0 открыта|0.8.8 exact signed cache/Apple ZIP+DMG/Gatekeeper/hosted/headed/MCP и live Site проверены; прежние platform observations сохранены. Все45/OS/hardware gates не закрыты.|
+|43|P0|Exact shipped browser|0.8.14(126) опубликована public alpha; major1.0 открыта|[Точная подпись/Apple ZIP+DMG/Gatekeeper/hosted/headed/WebKit/MCP и live Site](../releases/v0.8.14.json); прежние platform observations сохранены в их scope. Все45/OS/hardware gates не закрыты.|
 |44|P1|Version regressionreport|реализован отчётный инструмент; поведенческая приёмка открыта|[JSON/читаемая сводка и CI snapshot drift](RELEASE_COMPARISON.md); реальные сопоставимые before/after условия и семантические измерения ещё требуются|
 |45|P1|Docs/CI truth|реализовано в текущем срезе; общий drift gate открыт|Current source/release/site scopes and docs; new4shardCI/localdriververified; completeclaim drift future|
 
